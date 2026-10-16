@@ -39,8 +39,9 @@ export function parseErrorCatalog(value: unknown): Readonly<Record<string, Error
       }
     }
     const tokens = code === 'CATALOG_QUERY_FAILED'
-      ? ['{url}', '{port}', '{exitCode}', '{diagnostic}']
-      : code === 'COMFYUI_CONNECTION_FAILED' ? ['{origin}', '{path}', '{diagnostic}'] : []
+      ? ['{url}', '{port}', '{diagnostic}']
+      : code === 'COMFYUI_CONNECTION_FAILED' ? ['{origin}', '{path}', '{diagnostic}']
+        : code === 'SOURCE_QUERY_FAILED' ? ['{operation}', '{id}', '{status}'] : []
     if (tokens.some(token => typeof entry.diagnostic_template !== 'string' || !entry.diagnostic_template.includes(token))) {
       throw new TypeError(`Error catalog ${code}.diagnostic_template: include ${tokens.join(', ')}.`)
     }

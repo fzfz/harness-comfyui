@@ -1,0 +1,34 @@
+{
+  "name": "no-default-model",
+  "tool": "get_catalog_resource",
+  "arguments": {
+    "ref.kind": "workflow",
+    "ref.id": "29"
+  },
+  "fields": {
+    "item.model": null
+  },
+  "httpOverrides": [
+    {
+      "catalogTool": "query_semantic_comfyui_templates",
+      "sourceOperation": "template-bundle",
+      "idFromArgument": "ref.id",
+      "fieldsFromScenario": {
+        "model_id": "item.model"
+      }
+    }
+  ],
+  "collectionOverrides": [
+    {
+      "tool": "search_workflows",
+      "path": "results",
+      "match": {
+        "ref.kind": "workflow",
+        "ref.id": "29"
+      },
+      "fields": {
+        "model": null
+      }
+    }
+  ]
+}

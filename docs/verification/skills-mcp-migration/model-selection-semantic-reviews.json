@@ -1,0 +1,32 @@
+{
+  "reviewers": [
+    "/root/model_selection_skill_semantics",
+    "/root/model_selection_cli_semantics"
+  ],
+  "scope": [
+    ".agents/skills/comfyui-generate/SKILL.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md"
+  ],
+  "completed": true,
+  "fullDocumentSemanticPass": false,
+  "findings": {
+    "skill": [
+      "既有同层段落编号、来源优先级重复、数量下限处理建议",
+      "兼容性核对分支建议将停止创建图片改为等待模型后再继续"
+    ],
+    "cli": [
+      "既有YAML、列表层次、引用、重复说明、重试范围和示例前提建议"
+    ]
+  },
+  "disposition": "按用户批准的两处精确文字实施；符合性回扫通过；本轮验证无默认模型创建场景，其他文字未修改。",
+  "planReviews": {
+    "supplement": {
+      "reviewer": "/root/model_selection_supplement_final_semantics",
+      "result": "passed"
+    },
+    "migrationPlan": {
+      "reviewer": "/root/migration_model_selection_final_semantics",
+      "result": "既有意见保留；本轮引用已放入对应实施条目"
+    }
+  }
+}

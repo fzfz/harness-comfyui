@@ -40,7 +40,7 @@ Skill 执行者把当前用户消息中除 `type=comfyui-context` JSON 行以外
 9. `references/06-slot-order.md`
 10. `references/07-assembly-decision-tree.md`
 
-读取上述十个文件后，Skill 执行者必须使用 `references/07-assembly-decision-tree.md` 第 5 章的组装决策树匹配与用户自然语言意图最接近的画面类型。本节所称“待填槽位”是以下两类槽位的并集：用户明确指定的画面内容所对应的槽位；第 5 章匹配的画面类型表要求填写、但用户没有明确指定内容的槽位。对于后一类槽位，Skill 执行者必须采用该画面类型表建议的槽位内容。Skill 执行者随后按下表的读取条件读取详细资料：
+读取上述十个文件后，Skill 执行者必须使用 `references/07-assembly-decision-tree.md` 第 5 章的组装决策树匹配与用户自然语言意图最接近的画面类型。本节所称“待填槽位”是以下两类槽位的并集：用户明确指定的画面内容所对应的槽位；第 5 章匹配的画面类型表要求填写、但用户没有明确指定内容的槽位。对于后一类槽位，Skill 执行者必须采用该画面类型表列出的槽位内容。Skill 执行者随后按下表的读取条件读取详细资料：
 
 | 文件 | 读取条件 |
 | --- | --- |
@@ -54,9 +54,9 @@ Skill 执行者把当前用户消息中除 `type=comfyui-context` JSON 行以外
 | `references/15-detail-mood.md` | 当 `detail_mood` 是待填槽位时，Skill 执行者读取 `references/15-detail-mood.md`，用于确定画面媒介、色彩范围、运动表现、成像与后期效果、故障与显示介质效果、数字图形和整体氛围。 |
 | `references/16-special-theme.md` | 当 `references/07-assembly-decision-tree.md` 第 5 章 5.7 把画面类型匹配为 NTR、束缚/BDSM、RBQ/物化、男娘/Futa、异种、调教/宠物、胁迫、偷窥/展示、事后、另类日常、大车小孩或隐奸时，Skill 执行者读取 `references/16-special-theme.md`，用于确定该特殊主题需要填入 `count_gender`、`character_series`、`appearance`、`clothing_state`、`pose_action_sex`、`expression_reaction`、`camera_shot`、`scene_environment`、`detail_mood` 或 `natural_language` 的内容。 |
 
-## 读取语义查询说明
+## 查询缺少的 Prompt 素材
 
-Skill 执行者只有在下列具体情况发生时，才先完整读取 `references/semantic-query-interfaces.md`，再按该文件说明判断是否调用 `imagegen-semantic-query`：
+以下任一情况发生时，Skill 执行者通过 NoobAI MCP 获取所需的作品、角色、画师或 Prompt 词条：
 
 1. 当前用户消息的普通文字中出现作品、系列或 IP，并且现有输入不能唯一确定该作品的身份，或者用户要求取得该作品的角色名称。
 2. 用户指定角色，但当前用户消息直接提供的角色 Prompt、该角色对应的 Character 上下文记录和用户指定给 `character_series` 或 `appearance` 的历史 Prompt 文本不能提供该角色的身份标签或用户要求的外貌标签，或者当前作品与角色名称存在歧义。
@@ -64,7 +64,20 @@ Skill 执行者只有在下列具体情况发生时，才先完整读取 `refere
 4. 当前用户消息的普通文字没有写出画师名称、画师别名或可直接写入 `artist_style` 的非空画师 Prompt，当前消息中不存在 `data.kind=style` 的 `comfyui-context` 记录，用户没有把可采用的历史 Prompt 文本指定给 `artist_style`，并且用户没有要求排除全部画师或保持 `artist_style` 为空。
 5. 用户使用自然语言描述外貌、服装、动作、表情、构图、场景或氛围概念，并且已读取的详细资料不能确定与该概念精确对应的规范 Prompt 标签，或者存在两个以上语义相近但画面含义不同的候选标签。
 
-第 4 种情况表示用户没有指定画师。Skill 执行者必须先完整读取 `references/artist-style-query-vocabulary.md`，按该文件构造一条或多条画风查询，再按照 `references/semantic-query-interfaces.md` 的“查询顺序与查询值”执行 Style Search、比较候选并采用选中结果。
+第 4 种情况表示用户没有指定画师。Skill 执行者必须先完整读取 `references/artist-style-query-vocabulary.md`，按该文件形成一条或多条画风查询，通过 NoobAI MCP 查找适用于 ANIMA 的画师素材，并按本节“选择作品、角色、画师与词条”采用结果。
+
+### 查找作品、角色与画师
+
+1. Skill 执行者按“构建并校验提示词”规定的来源顺序采用已有 Prompt。需要补充角色或画师 Prompt 时，已有记录 ID 优先用于通过 NoobAI MCP 获取该记录；没有 ID 时，角色使用名称及已提供的所属作品信息查找，画师使用名称查找。ID 与名称均缺失时，Skill 执行者报告缺少的角色或画师信息，并停止处理该记录。
+2. 用户同时给出作品和角色名称时，Skill 执行者先确认作品，再查找该作品中的指定角色。作品返回的角色名单只用于核对或查找用户已经指定的角色。
+3. Skill 执行者查询画师素材前，通过 NoobAI MCP 确定名称精确为 `anima` 的唯一底模。没有匹配底模或存在多个匹配底模时，Skill 执行者报告实际结果，并停止本次任务的画师查询。画师素材关联其他底模时，Skill 执行者报告该素材及其底模，并停止采用该素材。
+
+### 选择作品、角色、画师与词条
+
+1. Skill 执行者按作品名称、别名和类别核对作品候选，按所属作品、角色名称和别名核对角色候选。角色候选必须具有非空 Prompt。只有一项符合时采用该项；多项符合时，Skill 执行者报告候选标识、名称、别名及区分候选所需的作品信息，并等待用户选择。
+2. 用户指定画师时，Skill 执行者按画师名称和别名核对身份；用户没有指定画师时，Skill 执行者按已经确定的媒介、线条、上色、明暗、纹理和配色比较画师说明。只采用适用于本节确定底模且具有非空 Prompt 的候选。只有一项符合时采用该项；多项符合时，Skill 执行者报告候选标识、名称、别名和画风说明，并等待用户选择。
+3. Skill 执行者按目标概念比较词条的规范标签及别名。只有一项符合时采用该项；多个候选表达相同含义时，按使用数量从大到小、ID 从小到大采用第一项；候选含义不同且 Skill 执行者无法根据用户要求确定唯一候选时，Skill 执行者报告候选标识、规范标签和别名，并等待用户选择。
+4. 作品或角色没有可采用结果时，Skill 执行者报告缺少的作品身份、角色身份或角色 Prompt，并请求用户补充。用户指定画师而没有可采用结果时，Skill 执行者报告缺少该画师的 ANIMA Prompt，并请求用户补充。自动选择画师没有结果时，Skill 执行者沿用已经确定的媒介、线条、上色、明暗、纹理和配色继续构造 Prompt。词条没有可采用结果时，Skill 执行者将该概念的英文自然语言描述写入 `slots.natural_language`。
 
 ## 构建并校验提示词
 
@@ -72,13 +85,13 @@ Skill 执行者构建一个只包含 `slots` 和 `display_text` 的顶层对象�
 
 Skill 执行者必须把 `references/prompt-weight-policy.json` 的 `recommendations.unweighted_quality.content` 依次放在 `quality` 开头并保持未加权。当前用户明确提出其他质量要求时，Skill 执行者把符合 `references/prompt-weight-policy.json` 所定义元素形式的额外质量 payload 放在固定前缀之后；相同 payload 出现多次时，Skill 执行者按数组顺序保留第一个 payload 对应的元素并删除后续元素。当前用户没有提出其他质量要求时，`quality` 只包含该固定前缀。
 
-用户要求排除全部画师或保持 `artist_style` 为空时，Skill 执行者不处理任何画师 Prompt 来源，并把 `artist_style` 设置为空数组。其他情况下，Skill 执行者先移除用户明确排除的具体画师对应的全部 Prompt 来源，再按当前消息中的出现顺序处理用户明确要求直接采用的非空画师 Prompt，然后处理 `data.kind=style` 记录中的非空 `data.prompt_text`，最后处理 Style Search 或 Resolve 的已采用结果中的 `prompt_text`。三类来源都使用“读取当前消息”规定的画师权重外层与前缀规范化步骤并放入 `artist_style`；相同 payload 出现多次时，Skill 执行者保留最先处理的元素。每个 `artist_style` 元素解析后的 payload 必须恰好以一个 `@` 开头。
+用户要求排除全部画师或保持 `artist_style` 为空时，Skill 执行者不处理任何画师 Prompt 来源，并把 `artist_style` 设置为空数组。其他情况下，Skill 执行者先移除用户明确排除的具体画师对应的全部 Prompt 来源，再按当前消息中的出现顺序处理用户明确要求直接采用的非空画师 Prompt，然后处理 `data.kind=style` 记录中的非空 `data.prompt_text`，最后处理从 NoobAI MCP 采用的画师 Prompt。三类来源都使用“读取当前消息”规定的画师权重外层与前缀规范化步骤并放入 `artist_style`；相同 payload 出现多次时，Skill 执行者保留最先处理的元素。每个 `artist_style` 元素解析后的 payload 必须恰好以一个 `@` 开头。
 
 Skill 执行者按照用户为每项历史 Prompt 文本指定的槽位处理该文本。目标槽位是 `artist_style` 时，Skill 执行者先舍弃用户要求排除的画师对应的文本；用户要求保持 `artist_style` 为空时，Skill 执行者舍弃全部历史 `artist_style` 文本；其余历史 `artist_style` 文本使用“读取当前消息”规定的画师权重外层与前缀规范化步骤，并放入 `artist_style`。目标槽位是其他前十一槽时，Skill 执行者按照逗号拆分文本，删除每段首尾空白，按照 `references/prompt-weight-policy.json` 解析元素形式，并把解析后的 payload 转换为小写；每个非空 payload 作为一个候选元素进入用户指定的槽位。目标槽位是 `natural_language` 时，用户指定的每个完整字符串必须是能够放入最终 Prompt 的英文句子；Skill 执行者把句子转换为小写并作为一个数组元素。历史 Prompt 文本与同槽位其他内容发生冲突时，Skill 执行者按照 `references/05-conflict-table.md` 保留当前用户消息中的明确要求，并处理其余冲突内容。
 
-Skill 执行者先按当前消息中的出现顺序处理用户明确要求直接采用的非空角色 Prompt，再处理 `data.kind=character` 记录中的非空 `data.prompt_text`，最后处理 Character Search 或 Resolve 的已采用结果中的 `prompt_text`。Skill 执行者按逗号拆分每个角色提示词来源，删除每段首尾空白，按照 `references/prompt-weight-policy.json` 解析元素形式，并把解析后的 payload 转换为小写。Skill 执行者舍弃空 payload，并依据 `references/08-count-identity.md` 和 `references/09-appearance.md` 定义的内容范围，把角色或作品身份 payload 作为未加权候选元素放入 `character_series`，把外观 payload 作为未加权候选元素放入 `appearance`；`data.character_name`、`data.work_name` 和其他说明用于理解或消歧。
+Skill 执行者先按当前消息中的出现顺序处理用户明确要求直接采用的非空角色 Prompt，再处理 `data.kind=character` 记录中的非空 `data.prompt_text`，最后处理从 NoobAI MCP 采用的角色 Prompt。Skill 执行者按逗号拆分每个角色提示词来源，删除每段首尾空白，按照 `references/prompt-weight-policy.json` 解析元素形式，并把解析后的 payload 转换为小写。Skill 执行者舍弃空 payload，并依据 `references/08-count-identity.md` 和 `references/09-appearance.md` 定义的内容范围，把角色或作品身份 payload 作为未加权候选元素放入 `character_series`，把外观 payload 作为未加权候选元素放入 `appearance`；`data.character_name`、`data.work_name` 和其他说明用于理解或消歧。
 
-Skill 执行者把当前用户意图映射到除 `quality` 和 `artist_style` 以外的十个内容槽位，并用已读取的详细资料决定每个槽位的数组元素。Skill 执行者采用 Prompt-term Search 候选时，只把选中候选的 `canonical_tag` 放入该标签语义对应的内容槽位；`aliases_json` 用于理解和比较候选。Skill 执行者按照 `references/05-conflict-table.md` 删除冲突内容；相同 payload 出现多次时，按数组顺序保留第一个 payload 对应的元素并删除后续元素；再按照 `references/prompt-weighting.md` 设计权重。前十一槽位的每个数组元素必须符合 `references/prompt-weight-policy.json` 定义的形式，解析后的 payload 必须是英文小写且不含逗号；`natural_language` 只能放入英文小写自然语言句子，并且不使用 tag 权重外层。
+Skill 执行者把当前用户意图映射到除 `quality` 和 `artist_style` 以外的十个内容槽位，并用已读取的详细资料决定每个槽位的数组元素。Skill 执行者采用目录词条时，只把选中词条的规范标签放入其语义对应的内容槽位。Skill 执行者按照 `references/05-conflict-table.md` 删除冲突内容；相同 payload 出现多次时，按数组顺序保留第一个 payload 对应的元素并删除后续元素；再按照 `references/prompt-weighting.md` 设计权重。前十一槽位的每个数组元素必须符合 `references/prompt-weight-policy.json` 定义的形式，解析后的 payload 必须是英文小写且不含逗号；`natural_language` 只能放入英文小写自然语言句子，并且不使用 tag 权重外层。
 
 Skill 执行者按照已读取的 `references/03-output-protocol.md` 校验 Prompt 格式并处理校验结果。只有通过格式校验的 Prompt 才能进入“构造生成结果”步骤；未通过格式校验时，Skill 执行者按照该文件处理并停止在本步骤。
 

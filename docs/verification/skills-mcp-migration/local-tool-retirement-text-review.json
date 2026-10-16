@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "scope": [
+    "agent-presets/project-subagent-control.json 中所有人类可读文案",
+    ".planning/skills-mcp-migration/progress.md 第 112、113 项"
+  ],
+  "findings": []
+}

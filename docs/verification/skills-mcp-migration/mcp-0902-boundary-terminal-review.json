@@ -1,0 +1,322 @@
+{
+  "schemaVersion": 1,
+  "文档用途": "记录无默认模型及空实例执行报告的独立事实验收与文字审查结果。",
+  "读取时机": "修订两份执行报告、判定边界行为或复核人工取消终态时。",
+  "reviewedReports": [
+    "docs/verification/skills-mcp-migration/mcp-0902-no-default-workbench-execution.json",
+    "docs/verification/skills-mcp-migration/mcp-0902-empty-instances-execution.json"
+  ],
+  "method": "审查员读取保存的任务输入、工具调用与返回、模型请求和流、取消记录及清理记录。审查员逐项核对每条工具返回是否进入后续模型请求，并核对流分片数与流终态。审查期间仅写入本报告。",
+  "cases": [
+    {
+      "caseId": "5.6-3",
+      "preset": "harness-comfyui-cli-candidate",
+      "verdict": "未通过",
+      "naturalTerminalVerdict": "证据不足",
+      "evidenceDirectory": ".local/skills-mcp-migration-live/mcp-0902-no-default-workbench/",
+      "findings": [
+        {
+          "id": "N1",
+          "seqs": [
+            19,
+            45,
+            46,
+            51,
+            52,
+            54,
+            58,
+            59,
+            60
+          ],
+          "fact": "Skill 已要求缺少默认模型且用户未指定 model_id 时询问用户。seq46 返回 item.model=null 后，Agent 继续查询目录，并在 seq59 枚举工作目录的父目录以寻找额外上下文；seq60 首次向模型暴露 active-probe.json 文件名。",
+          "judgment": "当前执行没有完成缺少 model_id 时的用户询问，且已离开 Skill 指定的当前消息输入来源。"
+        },
+        {
+          "id": "N2",
+          "seqs": [
+            9,
+            59,
+            60,
+            63,
+            64,
+            65,
+            69,
+            70,
+            74,
+            75
+          ],
+          "fact": "初始任务给出工作目录和 Skill 路径。Agent 从工作目录推导 official-environment 路径，先枚举目录，再在 seq64/65 读取 active-probe.json 的 runId、processId 和 createdAt。seq69/70 读取 workspace.json、当前会话及 session-393dc249-c7e7-4606-be35-e90208c6cf89 的 projection cache；seq74 继续搜索会话存储。",
+          "judgment": "首次控制文件内容读取为 seq64/65；路径发现起点为 seq59/60。"
+        },
+        {
+          "id": "N3",
+          "seqs": [
+            88,
+            90
+          ],
+          "fact": "cancellation.json 记录控制线程发起取消。seq90 的 turn/end 为 aborted/user，末个模型流保留 21 个分片并以 aborted 结束。",
+          "judgment": "自然停止和向用户询问 model_id 的最终回复仍缺少执行证据。"
+        }
+      ],
+      "trace": {
+        "sessionEvents": ".local/skills-mcp-migration-live/mcp-0902-no-default-workbench/trace/session-events.jsonl",
+        "modelCalls": 15,
+        "conversationCalls": 14,
+        "titleCalls": 1,
+        "toolCalls": 16,
+        "toolResults": 16,
+        "allToolResultsDelivered": true,
+        "completeStreams": 14,
+        "abortedStreams": 1,
+        "sessionSeqRange": [
+          0,
+          90
+        ]
+      },
+      "generation": {
+        "parameterInspectionObserved": false,
+        "submissionObserved": false,
+        "scope": "已保存的工具调用、返回及会话事件。"
+      },
+      "cleanup": {
+        "evidence": ".local/skills-mcp-migration-live/mcp-0902-no-default-workbench/cleanup.json",
+        "applicationStopped": true,
+        "applicationPortsReleased": true,
+        "fixtureStopped": true,
+        "fixturePortReleased": true
+      },
+      "reportCorrections": [
+        "补充 N1、N2 的资料发现顺序及另一会话缓存读取范围。",
+        "将 acceptanceStatus 从待审更新为本轮未通过，并单独保留自然终态证据不足。"
+      ]
+    },
+    {
+      "caseId": "5.6-6",
+      "preset": "harness-comfyui-cli-candidate",
+      "verdict": "未通过",
+      "naturalTerminalVerdict": "证据不足",
+      "evidenceDirectory": ".local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/",
+      "findings": [
+        {
+          "id": "W1",
+          "seqs": [
+            19,
+            51,
+            52,
+            58,
+            69,
+            70,
+            88,
+            89
+          ],
+          "fact": "seq52 的空实例列表已进入下一模型请求。Agent 从 seq58 开始重复查询，seq69 猜测实例 ID 1，seq88 对猜测的 ID 1、2、3 执行参数检查，seq89 均返回 HTTP 404。",
+          "judgment": "空实例后的停止要求未通过；首次实际参数检查为 seq88。"
+        },
+        {
+          "id": "W2",
+          "seqs": [
+            119,
+            120,
+            126,
+            127,
+            133,
+            134,
+            145,
+            146,
+            150,
+            151,
+            167,
+            168
+          ],
+          "fact": "seq119/120 读取安装包 source-client.json 和 base.json，取得目录接口路径及默认端口 18093。seq133 首次 curl 直连该端口；seq146 获得实例 2，seq151 获得其真实连接地址。",
+          "judgment": "目录数据来源在本轮中已从夹具切换到 Agent 直接访问的真实目录。"
+        },
+        {
+          "id": "W3",
+          "seqs": [
+            191,
+            192,
+            194
+          ],
+          "fact": "控制线程追加诊断取消，seq194 记录 aborted/user。首个参数检查返回至发起取消相隔 79798 毫秒，中间新增 25 次工具调用。seq191 在取消发起后执行，seq192 的返回未进入后续模型请求。",
+          "judgment": "29 个完整模型流与人工取消的会话终态同时成立。"
+        }
+      ],
+      "trace": {
+        "sessionEvents": ".local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/collect/session-events.jsonl",
+        "modelCalls": 29,
+        "conversationCalls": 28,
+        "titleCalls": 1,
+        "toolCalls": 47,
+        "toolResults": 47,
+        "toolResultWithoutSubsequentModelRequest": [
+          192
+        ],
+        "completeStreams": 29,
+        "abortedStreams": 0,
+        "sessionSeqRange": [
+          0,
+          194
+        ]
+      },
+      "generation": {
+        "parameterInspectionObserved": true,
+        "submissionObserved": false,
+        "scope": "已保存的 CLI、curl、Python 调用及返回；外部服务日志未纳入本轮。"
+      },
+      "cleanup": {
+        "evidence": ".local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/workbench/cleanup.json",
+        "applicationStopped": true,
+        "applicationPortsReleased": true,
+        "fixtureStopped": true,
+        "fixturePortReleased": true
+      },
+      "reportCorrections": [
+        "保留未通过结论；补充 seq69 的首次猜测实例 ID，以及 seq133 的首次真实目录直连。"
+      ]
+    },
+    {
+      "caseId": "5.6-6",
+      "preset": "harness-comfyui-iteration",
+      "verdict": "未通过",
+      "naturalTerminalVerdict": "证据不足",
+      "evidenceDirectory": ".local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/",
+      "findings": [
+        {
+          "id": "I1",
+          "seqs": [
+            19,
+            48,
+            49,
+            53,
+            92,
+            93,
+            98,
+            118,
+            119,
+            123,
+            124,
+            133,
+            138,
+            139,
+            153,
+            154,
+            173,
+            174
+          ],
+          "fact": "seq49 的空实例列表已进入下一模型请求。Agent 从 seq53 开始重复查询，seq93、98 猜测实例 ID 1、2。seq119 的 base.json 提供端口 18093，seq124 的 source-client.json 提供接口路径；seq133 首次直连真实目录，seq139 获得实例 2，seq154 获得连接信息，seq173/174 直接读取真实 ComfyUI 的 system_stats。",
+          "judgment": "这些行为发生在控制资料读取之前，已经证实空实例边界行为未通过。"
+        },
+        {
+          "id": "I2",
+          "seqs": [
+            188,
+            189,
+            193,
+            194,
+            213,
+            214,
+            218,
+            219,
+            248,
+            253,
+            254,
+            258,
+            263
+          ],
+          "fact": "seq193/194 读取 cordis.patch.yml，返回 official-session-trace 插件路径、runId、evidenceDirectory 及轨迹文件名。该返回在 2026-10-14T18:11:36.807Z 进入 f2ea6123-cf3a-4908-a3c0-4bf308be39c9.jsonl 的请求。seq213 枚举该目录，seq218/219 读取 run.json 与 activation.json，seq253/254 读取模型请求和流。",
+          "judgment": "控制资料首次送达应记为 seq194；报告当前采用 seq219，遗漏更早的 Profile patch 内容。",
+          "firstControlResultTime": 1792001496572,
+          "cancelRequestedAt": 1792001619165,
+          "resultToCancelMs": 122593,
+          "interveningToolCallCount": 16
+        },
+        {
+          "id": "I3",
+          "seqs": [
+            268,
+            269,
+            279
+          ],
+          "fact": "seq268 在控制资料送达后调用模板 29、实例 2 的参数检查，seq269 返回 HTTP 404；seq279 为 aborted/user。末个模型流保留 74 个分片并以 aborted 结束。",
+          "judgment": "seq268 可用于描述污染后的实际行为；自然停止的验收仍缺少证据。"
+        }
+      ],
+      "trace": {
+        "sessionEvents": ".local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/collect/session-events.jsonl",
+        "modelCalls": 54,
+        "conversationCalls": 53,
+        "titleCalls": 1,
+        "toolCalls": 52,
+        "toolResults": 52,
+        "allToolResultsDelivered": true,
+        "completeStreams": 53,
+        "abortedStreams": 1,
+        "sessionSeqRange": [
+          0,
+          279
+        ]
+      },
+      "generation": {
+        "parameterInspectionObserved": true,
+        "submissionObserved": false,
+        "scope": "已保存的 CLI、curl、Python 调用及返回；外部服务日志未纳入本轮。"
+      },
+      "cleanup": {
+        "evidence": ".local/skills-mcp-migration-live/mcp-0902-empty-instances-xlN5Pg/iteration/cleanup.json",
+        "applicationStopped": true,
+        "applicationPortsReleased": true,
+        "fixtureStopped": true,
+        "fixturePortReleased": true
+      },
+      "reportCorrections": [
+        "将本场景 verdict 改为未通过，并将自然停止证据不足单列；I1 已提供控制资料读取前的违规证据。",
+        "将控制资料首次送达提前至 seq193/194，并补充原始请求 f2ea6123-cf3a-4908-a3c0-4bf308be39c9.jsonl。",
+        "将从首次控制资料返回至取消的间隔改为 122593 毫秒，中间工具调用改为 16 次；原 seq219 起算的 92090 毫秒、11 次可作为后续区间保留。"
+      ]
+    }
+  ],
+  "submissionConclusion": "三个会话的保存轨迹均未出现 generation submit 或向 ComfyUI /prompt 提交请求。两轮空实例工作目录文件清单均为空。此结论覆盖保存的调用轨迹。",
+  "semanticReview": {
+    "status": "完成",
+    "findings": [
+      {
+        "report": "mcp-0902-no-default-workbench-execution.json",
+        "location": "待复核问题",
+        "action": "以本报告的具体结论及剩余自然终态证据缺口替换审查员将来执行的工作描述。"
+      },
+      {
+        "report": "mcp-0902-empty-instances-execution.json",
+        "location": "cases[1].verdict、cases[1].cancellationInterval、cases[1].cancellationExplanation、evidenceLimits[1]",
+        "action": "分别陈述边界行为失败、控制资料首次送达时间和自然终态证据缺口，避免用整体证据不足覆盖已有失败证据。"
+      }
+    ]
+  },
+  "remainingEvidenceLimits": [
+    "无默认模型及迭代空实例各有一个因取消而中断的模型流；其已收到分片均已保存。",
+    "三个会话均由控制线程取消；自然结束或自然等待用户输入仍缺少对应轨迹。",
+    "清理结论依据各轮保存的停止记录及端口释放字段。"
+  ],
+  "correctionsVerified": {
+    "noDefaultWorkbench": {
+      "status": "通过",
+      "report": "docs/verification/skills-mcp-migration/mcp-0902-no-default-workbench-execution.json",
+      "verified": [
+        "acceptanceStatus 已标记独立审查后未通过。",
+        "naturalTerminalVerdict 已单列自然终态证据不足。",
+        "observations 已记录 seq59/60 的路径发现及 seq69/70 的另一会话缓存读取。"
+      ]
+    },
+    "emptyInstances": {
+      "status": "通过",
+      "report": "docs/verification/skills-mcp-migration/mcp-0902-empty-instances-execution.json",
+      "verified": [
+        "两预设 verdict 均为未通过，并分别保留自然终态证据不足。",
+        "工作台已补充 seq69 的首次猜测实例 ID、seq133 的首次真实目录直连及 seq192 未送入后续模型请求。",
+        "迭代已补充控制资料读取前的边界失败证据。",
+        "迭代首次控制资料返回已前移至 seq194，取消间隔已改为 122593 毫秒、16 次工具调用。",
+        "迭代已记录 f2ea6123 请求接收控制资料的时间，并单列 seq219 起算的后续区间。"
+      ]
+    }
+  }
+}

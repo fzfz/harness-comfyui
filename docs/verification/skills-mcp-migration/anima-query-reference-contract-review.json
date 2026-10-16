@@ -1,0 +1,99 @@
+{
+  "purpose": "独立复核 ANIMA 词条回退引用与格式示例修订是否保留既有功能合同。",
+  "status": "passed-static-contract-review",
+  "scope": {
+    "files": [
+      ".agents/skills/anima-prompt-builder/references/06-slot-order.md",
+      ".agents/skills/anima-prompt-builder/references/03-output-protocol.md",
+      "docs/verification/skills-mcp-migration/anima-query-reference-repair.json",
+      "docs/plans/skills-mcp-migration-20261013.md:5.3.1,6"
+    ],
+    "baseline": "git HEAD；既有零结果规则同时核对 HEAD 的 semantic-query-interfaces.md:119。",
+    "modelCalls": 0,
+    "applicationStarts": 0,
+    "productChanges": 0,
+    "independentBasis": "实际文件、git diff、迁移基线与 JSON 示例解析；未使用文字审计结论。",
+    "reviewRound": "复核 ANIMA-RELATION-OBLIGATION 修复。"
+  },
+  "findings": [],
+  "passedChecks": [
+    {
+      "name": "零结果分支来源",
+      "evidence": "当前 SKILL.md:80 与 HEAD semantic-query-interfaces.md:119 均规定词条没有可采用结果时将概念写入 slots.natural_language。",
+      "judgment": "新增引用澄清既有例外，没有授权查询成功、歧义待选择或查询错误直接进入该例外。"
+    },
+    {
+      "name": "引用目标",
+      "evidence": "../SKILL.md 存在，标题“选择作品、角色、画师与词条”存在，第 4 项含所引用规则。",
+      "judgment": "相对链接及目标条目可定位。"
+    },
+    {
+      "name": "关系短句格式",
+      "evidence": "每句只表达一个具体关系或解决一个歧义继续适用于关系短句；概念零结果回退引用入口。",
+      "judgment": "格式适用范围的澄清符合已有两条分支。"
+    },
+    {
+      "name": "输出拼接职责",
+      "evidence": "移除 06-slot-order 中的校验器拼接复述；03-output-protocol 的 Prompt 组合结果继续规定十二槽顺序展开与逗号连接。",
+      "judgment": "自然语言末尾位置仍由格式协议定义。"
+    },
+    {
+      "name": "光线业务边界",
+      "evidence": "15-detail-mood 第 13.8 节未被本次修改；主计划第 6 节保留精确光线词条命中的槽位归属决定。",
+      "judgment": "本次没有新增光线标签类别或无条件自然语言出口。"
+    },
+    {
+      "name": "格式示例",
+      "evidence": {
+        "jsonParse": true,
+        "slotCount": 12,
+        "flattenedSlotsEqualPromptText": true,
+        "displayTextEqual": true,
+        "detailMood": [
+          "cinematic"
+        ]
+      },
+      "judgment": "输入与成功示例一致；cinematic 属于 13.7 表内标签。该示例用于格式，不能证明完整场景语义验收通过。"
+    },
+    {
+      "name": "元数据和帮助标题",
+      "evidence": "两个文件补齐文档用途和读取时机；03-output-protocol 的“帮助与操作提示”改成“命令帮助”，正文未改。",
+      "judgment": "未改变 CLI 调用、错误处理或数据结构。帮助标题变化未列入 repair.changes，建议执行记录同步记载实际差异。"
+    },
+    {
+      "name": "差异格式",
+      "evidence": "对两个参考文件执行 git diff --check，退出码 0。",
+      "judgment": "未发现补丁空白错误。"
+    },
+    {
+      "name": "修复记录同步",
+      "evidence": "anima-query-reference-repair.json 中 changes[0].target 完整包含于当前 06-slot-order.md。",
+      "judgment": "记录与实际第 4.4 节一致。"
+    },
+    {
+      "name": "本轮光线与零结果边界",
+      "evidence": "第 4.4.1 第 2 项仍仅引用词条查询无可采用结果；第 13.8 节继续限制 detail_mood 为六类表内标签。",
+      "judgment": "本轮修复只恢复关系表达义务，没有增加光线标签或将词条命中分支改为自然语言。"
+    }
+  ],
+  "planAlignment": {
+    "5.3.1": "独立合同复审通过；真实模型对照与相邻分支复验仍按计划执行。",
+    "6": "精确光线命中后的目标槽位继续列为待决定，边界保留。",
+    "5.14": "零结果引用澄清与合法格式示例属于范围内修复；本报告要求恢复既有关系规则，不新增业务规则。"
+  },
+  "remainingValidation": [
+    "按原计划固定模型、输入与数据完成实际执行对照；静态合同通过不能证明原柔光失真已修复。",
+    "精确光线词条命中后的槽位归属仍依主计划第 6 节集中处理。"
+  ],
+  "result": "本轮静态合同复审通过。四类关系的强制补充义务已恢复明确，零结果例外保持原有适用条件，光线业务边界保持原状。",
+  "resolvedFindings": [
+    {
+      "id": "ANIMA-RELATION-OBLIGATION",
+      "status": "resolved",
+      "file": ".agents/skills/anima-prompt-builder/references/06-slot-order.md",
+      "line": 59,
+      "evidence": "第 4.4.1 第 1 项明确规定：标签不能准确表达关系时，执行者必须将对应英文自然语言短句写入 natural_language；能够准确表达时不得为同一关系追加短句。",
+      "judgment": "四类关系示例均受该义务约束。必须补充的条件恢复明确；能够通过标签表达时不追加自然语言，与原“只有……才……”限制一致。"
+    }
+  ]
+}

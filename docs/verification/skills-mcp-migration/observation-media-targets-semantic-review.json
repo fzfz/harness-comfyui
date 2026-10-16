@@ -1,0 +1,66 @@
+{
+  "review_type": "独立逐行文字语义审计",
+  "scope": [
+    ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/SKILL.md",
+    ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md",
+    ".local/skills-mcp-migration-live/observation-media-targets/agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+    "docs/plans/skills-mcp-migration-20261013.md:1314-1317（仅第5.12.4节）"
+  ],
+  "summary": "发现4项需修改的文档组织或重复表述问题；未发现需要补充事实的待确认项。",
+  "findings": [
+    {
+      "id": "S1",
+      "file": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        9,
+        52
+      ],
+      "paragraph": "三个二级标题下的正文、表格及编号规则",
+      "original": "第26—29行使用无序列表；其余同层正文未使用有序列表。",
+      "problem": "文档未按用户要求用有序列表组织标题下的同层内容。",
+      "minimal_revision": "将三个二级标题下的同层说明组织为有序列表；将第26—29行改为有序子列表，并将表格缩进到所属列表项。保留现有章节和内容次序。"
+    },
+    {
+      "id": "S2",
+      "file": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        9,
+        16
+      ],
+      "paragraph": "主 Agent、Prompt Builder 和 run_id 的重复定义",
+      "original": "主 Agent 是接收用户请求并派发构图、生成、观察和比较任务的 Agent。／Prompt Builder 是组织模型 Prompt、生成目的与尺寸的 Skill／run_id 标识实际图片生成记录",
+      "problem": "SKILL.md 第10行和第21行已经说明对应职责或定义；records.md 再次定义，形成相关文档的重复解释。",
+      "minimal_revision": "删除第9行首句、第15行分号后的 Prompt Builder 解释和第16行分号后的 run_id 解释。需要定义入口时，仅引用 SKILL.md“定义任务目标和 Agent 职责”节。"
+    },
+    {
+      "id": "S3",
+      "file": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        35,
+        35
+      ],
+      "paragraph": "中性问题定义",
+      "original": "中性问题要求观察 Agent 描述图片中可见的对象、位置、动作或关系，不预设图片应当呈现的结果。",
+      "problem": "SKILL.md 第51行已经解释中性问题并提供示例；本段重复定义，删除后不影响输入输出表的理解与执行。",
+      "minimal_revision": "删除此段；本节直接从文件编号和参数传递说明开始，中性问题沿用 SKILL.md“根据画面目标和观察反馈继续迭代”节第3项。"
+    },
+    {
+      "id": "S4",
+      "file": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/SKILL.md",
+      "lines": [
+        59,
+        61
+      ],
+      "paragraph": "记录后续任务需要的结果",
+      "original": "主 Agent 按交接目录与文件规范更新任务记录，保存各子会话身份和结果文件路径。后续派发引用所需文件，完整生成参数和原始观察保存在所属结果文件中。",
+      "problem": "本节复述本文件第43行及已要求完整读取的 records.md 第13—18、50行的交接记录职责。删除本节不会移除执行步骤、字段定义或读取入口。",
+      "minimal_revision": "删除“记录后续任务需要的结果”标题及其唯一列表项。"
+    }
+  ],
+  "no_additional_findings": [
+    "agent.cordis.yml 的指定文字未发现需要修改的中文语义问题。",
+    "计划第5.12.4节的实施主体、引用对象和验收动作明确，未发现需修改项。"
+  ],
+  "verification_scope": "逐行审阅指定目标；未读取目标引用的合同、参考文档或代码；未审查功能正确性；未修改目标文件。",
+  "facts_to_confirm": []
+}

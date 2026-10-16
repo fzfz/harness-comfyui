@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-14",
+  "scope": "migration plan 5.7 internal clients and packaging",
+  "implementation": {
+    "catalog": "src/host/catalog/catalog-client.ts",
+    "generation": "src/host/generation/source-client.ts",
+    "http": "src/host/source-client/http-client.ts",
+    "protocol": "src/host/source-client/catalog-protocol.mjs",
+    "protocolTypes": "src/host/source-client/catalog-protocol.d.mts",
+    "configuration": "config/source-client.json",
+    "consumers": [
+      "src/host/core/plugin.ts",
+      "src/host/catalog/catalog-service.ts",
+      "scripts/verification/comfyui-workflow-matrix.mjs"
+    ],
+    "removed": [
+      "scripts/source-client/imagegen-semantic-query.mjs",
+      "scripts/source-client/imagegen-comfyui-source-read.mjs",
+      "scripts/source-client/guidance.mjs",
+      "scripts/source-client/guidance-schema.mjs",
+      "config/source-cli-guidance.json"
+    ],
+    "packaging": "internal clients bundled into Host artifacts; no standalone Source executable"
+  },
+  "validation": [
+    {
+      "command": "pnpm exec vitest run tests/unit/internal-source-client.test.ts",
+      "tests": 3,
+      "result": "passed",
+      "red": "initial object Source read test failed because internal module was absent",
+      "coverage": "Source read; UI Catalog search, details and base models; GenerationSource HTTP consumer"
+    },
+    {
+      "command": "pnpm exec vitest run tests/unit/source-data-clients.test.mjs",
+      "tests": 46,
+      "result": "passed",
+      "coverage": "typed inputs, live discovery contracts, invalid UTF-8 and JSON, HTTP failures, connection loss, response interruption, total timeout, caller abort, concurrency, HTTPS, response limit"
+    },
+    {
+      "command": "pnpm exec vitest run tests/unit/catalog-client.test.ts tests/unit/generation-source-client.test.ts",
+      "tests": 39,
+      "result": "passed"
+    },
+    {
+      "command": "pnpm exec vitest run tests/unit/catalog-details.test.ts tests/unit/catalog-service.test.ts",
+      "tests": 26,
+      "result": "passed"
+    },
+    {
+      "command": "pnpm exec vitest run tests/unit/plugin-resources.test.ts",
+      "tests": 43,
+      "result": "passed"
+    },
+    {
+      "command": "pnpm exec vitest run tests/integration/host-plugin.test.ts tests/integration/official-plugin-activation.test.ts --testTimeout=30000",
+      "tests": 26,
+      "result": "passed"
+    },
+    {
+      "command": "pnpm exec vitest run tests/production/plugin-package.test.mjs tests/production/official-candidate-identity.test.mjs --testTimeout=30000",
+      "tests": 37,
+      "result": "passed",
+      "coverage": "actual plugin build/pack, read-only installation with spaces, runtime resources, Source executable absence, candidate byte identity"
+    },
+    {
+      "command": "pnpm typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check -- <assigned internal client, resource, package and test paths>",
+      "result": "passed",
+      "scope": "assigned files"
+    }
+  ],
+  "remaining": [
+    "independent final code review and error text audit by parent",
+    "official Desktop controlled E2E and approved real-model acceptance",
+    "final repository quality gates and commit by parent"
+  ]
+}

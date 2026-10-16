@@ -1,0 +1,36 @@
+{
+  "review_type": "independent_line_by_line_semantic_review",
+  "scope": [
+    ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/SKILL.md",
+    ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md",
+    ".local/skills-mcp-migration-live/observation-media-targets/agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+    "docs/plans/skills-mcp-migration-20261013.md#5.12.4"
+  ],
+  "result": "changes_requested",
+  "findings": [
+    {
+      "id": "S1",
+      "severity": "minor",
+      "file": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md",
+      "line_start": 41,
+      "line_end": 41,
+      "text": "从 rounds/001/generation.md 取得的图片引用和中性问题",
+      "issue": "该短语把图片引用和中性问题共同列为 generation.md 中取得的内容；第 16 行规定的生成记录内容没有中性问题。主 Agent 读取此表时无法明确中性问题由谁提供。",
+      "minimal_change": "改为“从 rounds/001/generation.md 取得的图片引用，以及主 Agent 编写的中性问题”。",
+      "deletion_test": "应保留图片引用的来源和问题提供者；仅删除问题要求会丢失观察任务输入。"
+    },
+    {
+      "id": "S2",
+      "severity": "minor",
+      "file": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md",
+      "line_start": 48,
+      "line_end": 48,
+      "text": "观察任务的输入按 [SKILL.md](../SKILL.md) 的 images 和 questions 参数填写；",
+      "issue": "第 35 行已规定观察材料通过 images 和 questions 提供，第 41 行已指向 SKILL.md 的 images 参数。本句重复规定同一交接方式，且本项的主要用途是接收结果并向后续任务传递文件。",
+      "minimal_change": "删除该分句，保留接收结果、登记路径及向对应 Agent 传递文件的要求。",
+      "deletion_test": "删除后，首次观察和补充观察的输入要求仍由第 35、41、45 行完整提供，不影响执行。"
+    }
+  ],
+  "other_targets": "在本次文字语义审阅范围内，SKILL.md、agent.cordis.yml 和计划第 5.12.4 节未发现需要报告的其他问题。",
+  "limits": "仅审阅指定文字；未检查代码、合同、外部参考或运行行为。目标文件保持原状。"
+}

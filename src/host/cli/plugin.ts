@@ -20,10 +20,8 @@ export async function apply(ctx: Context): Promise<void> {
       cliPath: repositoryResource(runtimeArtifacts.managedCli.outputEntryRelativePath),
       nodeExecutable: process.execPath,
       apiUrl: `${origin}${CLI_ROUTE_PATH}`,
-      semanticQueryCliPath: core.semanticQueryClientPath,
-      sourceAddress: core.sourceAddress,
     })
-    return createCliHandler({ capabilities, catalog: core.catalog, runtime: core.runtime, imageReader: ctx.imageReader, workspaceRegistry: ctx.workspaceRegistry })
+    return createCliHandler({ capabilities, runtime: core.runtime, imageReader: ctx.imageReader, workspaceRegistry: ctx.workspaceRegistry })
   }, core.profile.cliServer)
   ctx.effect(() => async () => { capabilities.clear(); await server.close() }, 'Managed CLI listener')
   ctx.effect(() => {

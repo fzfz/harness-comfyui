@@ -25,8 +25,9 @@ export function apply(ctx, config) {
       try {
         do {
           pending = false
-          for (const { name } of ctx.root.tools.schemas()) {
-            if (name === PTC_TRANSPORT_NAME || denied.has(name)) continue
+          const hostNames = ctx.root.tools.schemas().map(tool => tool.name).filter(name => name !== PTC_TRANSPORT_NAME)
+          for (const name of hostNames) {
+            if (denied.has(name)) continue
             denied.add(name)
             try {
               restrictions.push(ctx.tools.restrict({ deny: [name] }))

@@ -1,0 +1,252 @@
+{
+  "purpose": "记录采集脱敏代码、定向测试与后续启用和清理命令。",
+  "status": "implemented-32-targeted-tests-passed-awaiting-independent-rereview",
+  "authorization": "主计划第5.13.2节及evidence-redaction-review.json:supplementalContract",
+  "scope": {
+    "modified": [
+      ".local/skills-mcp-migration-live/redact-evidence.mjs",
+      ".local/skills-mcp-migration-live/redact-evidence.test.mjs",
+      ".local/skills-mcp-migration-live/llm-observer.mjs",
+      ".local/skills-mcp-migration-live/desktop-driver.mjs"
+    ],
+    "added": [
+      ".local/skills-mcp-migration-live/llm-observer.test.mjs",
+      ".local/skills-mcp-migration-live/desktop-evidence.test.mjs",
+      ".local/skills-mcp-migration-live/cleanup-evidence.mjs",
+      ".local/skills-mcp-migration-live/cleanup-evidence.test.mjs"
+    ],
+    "productCodeChanged": false,
+    "skillsChanged": false,
+    "dependenciesInstalled": false,
+    "profilesChanged": false,
+    "runtimeCopiesChanged": false,
+    "applicationsStarted": 0,
+    "modelCallsStarted": 0,
+    "historicalCleanupApplied": false
+  },
+  "decisions": [
+    "统一脱敏器维护采集生命周期内的已发现值，完整记录先收集值再替换。",
+    "observer逐调用缓冲采集副本，在finally中映射三类delta文本的替换区间，再保存终止状态与脱敏位置。",
+    "observer在保存完成后调用iterator.return；next和yield继续使用原对象。",
+    "desktop所有命令共用writeDesktopEvidence，另存脱敏位置JSON。",
+    "清理脚本按控制索引、state和layout建立白名单，先逐文件收集值，再逐文件脱敏；默认dry-run。",
+    "已停止采集且缺少终止事件的历史文件保留前缀，并在报告标注终止事件缺失。",
+    "完整env行和完整JSON在yield前增量发现；未完成分片在finally中统一发现与遮蔽。"
+  ],
+  "tests": {
+    "command": "node --test .local/skills-mcp-migration-live/redact-evidence.test.mjs .local/skills-mcp-migration-live/llm-observer.test.mjs .local/skills-mcp-migration-live/desktop-evidence.test.mjs .local/skills-mcp-migration-live/cleanup-evidence.test.mjs",
+    "passed": 32,
+    "failed": 0,
+    "log": ".local/skills-mcp-migration-live/evidence-redaction-tests-green.log",
+    "coverage": [
+      "环境赋值、JSON敏感字段、同记录反向重复和跨记录重复",
+      "序列化JSON原文空白和未修改转义保留",
+      "嵌套request/header、pages/records和非空toolHistory.updates.additions声明",
+      "三类delta跨分片与通道隔离、block-end与finish完整副本",
+      "complete、error、timeout、消费者return和写盘失败",
+      "原模型输入、yield对象身份、原异常与终止顺序",
+      "白名单dry-run、活跃采集排除、历史缺失终止事件、合成文件清理幂等",
+      "delta拼接后发现完整值，普通同前缀文本保持原值",
+      "运行时properties及普通tools业务字段、声明位置对照",
+      "隔离Profile的running状态排除关闭句柄采集文件",
+      "同observer完整env或JSON增量发现后的并发保存、分片前缀和未来首次发现边界"
+    ],
+    "toolHistoryTypeEvidence": "node_modules/@deepseek-ai/dsh-llm/lib/types/types.d.ts:477",
+    "redCounterexamplesLog": ".local/skills-mcp-migration-live/evidence-redaction-review-counterexamples-red.log"
+  },
+  "waiMemoryVerification": {
+    "report": ".local/skills-mcp-migration-live/evidence-redaction-wai-memory-verification.json",
+    "files": 32,
+    "knownValueCount": 1,
+    "replacements": 23,
+    "residualCount": 0,
+    "nonCredentialDifferences": 0,
+    "recordCountsUnchanged": true,
+    "sequenceUnchanged": true,
+    "originalFilesWritten": false,
+    "verifiedAt": "2026-10-14T08:46:00.873Z"
+  },
+  "runtimeReferences": {
+    "report": ".local/skills-mcp-migration-live/evidence-redaction-runtime-paths.json",
+    "directories": 7,
+    "allProfileReferencesVerified": true,
+    "paths": [
+      {
+        "layoutPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/layout.json",
+        "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer",
+        "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer/llm-calls",
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "profileReferencesObserver": true,
+        "redactorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer/redact-evidence.mjs",
+        "observerPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer/llm-observer.mjs"
+      },
+      {
+        "layoutPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/layout.json",
+        "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer",
+        "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/llm-calls",
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "profileReferencesObserver": true,
+        "redactorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/redact-evidence.mjs",
+        "observerPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/llm-observer.mjs"
+      },
+      {
+        "layoutPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LMcZ57/layout.json",
+        "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer",
+        "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer/llm-calls",
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "profileReferencesObserver": true,
+        "redactorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer/redact-evidence.mjs",
+        "observerPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer/llm-observer.mjs"
+      },
+      {
+        "layoutPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-MzU1lT/layout.json",
+        "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer",
+        "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/llm-calls",
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "profileReferencesObserver": true,
+        "redactorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/redact-evidence.mjs",
+        "observerPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/llm-observer.mjs"
+      },
+      {
+        "layoutPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/layout.json",
+        "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer",
+        "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/llm-calls",
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "profileReferencesObserver": true,
+        "redactorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/redact-evidence.mjs",
+        "observerPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/llm-observer.mjs"
+      },
+      {
+        "layoutPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-btrKEM/layout.json",
+        "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer",
+        "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer/llm-calls",
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "profileReferencesObserver": true,
+        "redactorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer/redact-evidence.mjs",
+        "observerPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer/llm-observer.mjs"
+      },
+      {
+        "layoutPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/layout.json",
+        "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer",
+        "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-calls",
+        "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "profileReferencesObserver": true,
+        "redactorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/redact-evidence.mjs",
+        "observerPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-observer.mjs"
+      }
+    ],
+    "verificationMethod": "layout JSON字段与对应Profile原文中的观察器路径引用；应用实际加载仍待启用验收。"
+  },
+  "cleanup": {
+    "defaultMode": "dry-run",
+    "report": ".local/skills-mcp-migration-live/evidence-redaction-dry-run.json",
+    "fullScanStatus": "intermediate-snapshot-completed-final-candidate-awaits-review",
+    "sourceFilesWritten": false,
+    "dryRunCommand": "node .local/skills-mcp-migration-live/cleanup-evidence.mjs --report .local/skills-mcp-migration-live/evidence-redaction-dry-run.json",
+    "applyCommand": "node .local/skills-mcp-migration-live/cleanup-evidence.mjs --apply --report .local/skills-mcp-migration-live/evidence-redaction-cleanup.json",
+    "intermediateReport": ".local/skills-mcp-migration-live/evidence-redaction-intermediate-dry-run.json",
+    "intermediateResult": {
+      "processedFiles": 2493,
+      "excludedFiles": 6,
+      "excludedReason": "unfinished-collection",
+      "knownValueCount": 32,
+      "replacements": 2125,
+      "residualCount": 0,
+      "finalCandidateVerification": false
+    },
+    "whitelistReport": ".local/skills-mcp-migration-live/evidence-redaction-whitelist.json",
+    "whitelistFiles": 2537,
+    "finalCandidateFullScanExecuted": false,
+    "pendingDryRunProcesses": 0,
+    "whitelistExcluded": 0,
+    "isolatedProfileStatesRead": 9
+  },
+  "activation": {
+    "condition": "主线程完成对应官方Desktop进程停止与端口释放核对后，按Profile引用路径更新两个运行副本，再重新启动并核对实际采集。",
+    "commands": [
+      {
+        "layout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/layout.json",
+        "commands": [
+          "cp .local/skills-mcp-migration-live/redact-evidence.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer/redact-evidence.mjs",
+          "cp .local/skills-mcp-migration-live/llm-observer.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/observer/llm-observer.mjs"
+        ]
+      },
+      {
+        "layout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LFmeWv/layout.json",
+        "commands": [
+          "cp .local/skills-mcp-migration-live/redact-evidence.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/redact-evidence.mjs",
+          "cp .local/skills-mcp-migration-live/llm-observer.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LFmeWv/runtime/observer/llm-observer.mjs"
+        ]
+      },
+      {
+        "layout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-LMcZ57/layout.json",
+        "commands": [
+          "cp .local/skills-mcp-migration-live/redact-evidence.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer/redact-evidence.mjs",
+          "cp .local/skills-mcp-migration-live/llm-observer.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-LMcZ57/runtime/observer/llm-observer.mjs"
+        ]
+      },
+      {
+        "layout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-MzU1lT/layout.json",
+        "commands": [
+          "cp .local/skills-mcp-migration-live/redact-evidence.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/redact-evidence.mjs",
+          "cp .local/skills-mcp-migration-live/llm-observer.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/observer/llm-observer.mjs"
+        ]
+      },
+      {
+        "layout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-RdWzk1/layout.json",
+        "commands": [
+          "cp .local/skills-mcp-migration-live/redact-evidence.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/redact-evidence.mjs",
+          "cp .local/skills-mcp-migration-live/llm-observer.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-RdWzk1/runtime/observer/llm-observer.mjs"
+        ]
+      },
+      {
+        "layout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-btrKEM/layout.json",
+        "commands": [
+          "cp .local/skills-mcp-migration-live/redact-evidence.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer/redact-evidence.mjs",
+          "cp .local/skills-mcp-migration-live/llm-observer.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/observer/llm-observer.mjs"
+        ]
+      },
+      {
+        "layout": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-spj2aM/layout.json",
+        "commands": [
+          "cp .local/skills-mcp-migration-live/redact-evidence.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/redact-evidence.mjs",
+          "cp .local/skills-mcp-migration-live/llm-observer.mjs /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-spj2aM/runtime/observer/llm-observer.mjs"
+        ]
+      }
+    ]
+  },
+  "openWork": [
+    "主线程在独立审查后运行最终候选的白名单dry-run。",
+    "主线程安排独立代码审查与报告语义审查。",
+    "主线程在进程停止且端口释放后更新运行副本并完成实际采集验收。",
+    "主线程核对白名单后执行历史采集清理，并核对全部副本残留。"
+  ],
+  "strongKillBoundary": "宿主进程被强制终止时，内存中的未保存chunk构成证据缺失；该场景的完整前缀验收保持未通过。",
+  "codeReviewResolution": {
+    "source": "evidence-redaction-code-review.json",
+    "status": "three-findings-reproduced-fixed-awaiting-rereview",
+    "findings": [
+      {
+        "id": "R1",
+        "result": "removed-global-schema-shape-exemption",
+        "contract": "声明位置进入ToolSchema.parameters；普通tool/result和业务tools字段按实际值处理。",
+        "realHeaderEvidence": "WAI 5.5-6 collect.records[event.seq=12].event[type=request/header].data.header.tools"
+      },
+      {
+        "id": "R2",
+        "result": "separated-control-discovery-from-evidence-enumeration",
+        "contract": "控制文件发现包含isolated-profiles的state；活跃run及observer目录从可写证据中排除。"
+      },
+      {
+        "id": "R3",
+        "result": "shared-complete-stream-values-before-yield",
+        "contract": "每调用文本通道增量缓冲；完整env行与完整JSON在yield前进入共享集合，其他调用保存时使用该集合。"
+      }
+    ]
+  },
+  "streamingDiscoveryBoundary": {
+    "guarantee": "同一observer已经收到确定完整的敏感值后，后续保存使用该共享值集合。",
+    "futureFirstDiscovery": "文件保存后才首次收到确定的敏感值时，当前observer保持已保存文件；停止采集后的全文件发现与清理负责处理这些早先副本。",
+    "finalEvidenceGate": "主线程完成采集停止、全部白名单文件值发现、清理和残留核对后，确认最终证据通过。"
+  }
+}

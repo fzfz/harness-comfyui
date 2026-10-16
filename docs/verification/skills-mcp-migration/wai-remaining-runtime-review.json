@@ -1,0 +1,1499 @@
+{
+  "purpose": "独立审查 4 项迭代 WAI 执行。",
+  "readWhen": "核对执行结果、合同缺口与验收范围时。",
+  "reviewMode": "独立功能审查；只读既有输入、安装文件、原始轨迹与产物。",
+  "reviewModelCalls": 0,
+  "reviewApplicationStarts": 0,
+  "summary": "作品歧义停止成立。3 项成品均未满足完整合同。",
+  "requestCount": 101,
+  "entries": [
+    {
+      "caseId": "5.5-1",
+      "modelRequests": 13,
+      "terminalComplete": 13,
+      "actualIdentities": [
+        [
+          "opencode-go",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-4PJvBF/materialized-input.json",
+      "events": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-4PJvBF/collection-1791977728036/all-session-records.json",
+      "rawModelIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-4PJvBF/collection-1791977728036/model-request-index.json",
+      "artifactIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-4PJvBF/collection-1791977728036/artifact-index.json",
+      "artifactCopiesEqual": true,
+      "queryPages": [
+        {
+          "callSeq": 50,
+          "resultSeq": 51,
+          "tool": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "search",
+            "query": "Fate",
+            "page_size": 20
+          },
+          "page": 1,
+          "page_size": 20,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 57,
+          "resultSeq": 58,
+          "tool": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "resolve",
+            "id": "65"
+          },
+          "page": 1,
+          "page_size": 1,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 59,
+          "resultSeq": 60,
+          "tool": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "resolve",
+            "id": "3241"
+          },
+          "page": 1,
+          "page_size": 1,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 64,
+          "resultSeq": 65,
+          "tool": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "search",
+            "query": "Fate stay night",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 66,
+          "resultSeq": 67,
+          "tool": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "search",
+            "query": "Fate Grand Order",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 2,
+          "returnedCount": 2
+        }
+      ],
+      "uncontinuedQueries": [],
+      "cleanupEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-4PJvBF/collection-1791977728036/final-cleanup.json",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "installedCandidateEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-4PJvBF/installed-candidate-comparison.json",
+      "targetVerdict": "pass-stop",
+      "fullContractVerdict": "pass-for-stopping-branch",
+      "assessment": "作品查询返回 2 项 Fate。Agent 列出 65 与 3241 后请求选择及角色名。没有角色查询或 Builder。",
+      "evidenceSequences": [
+        50,
+        51,
+        57,
+        58,
+        59,
+        60,
+        76,
+        86
+      ]
+    },
+    {
+      "caseId": "5.5-2",
+      "modelRequests": 32,
+      "terminalComplete": 32,
+      "actualIdentities": [
+        [
+          "opencode-go",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-2sy5Qg/materialized-input.json",
+      "events": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-2sy5Qg/collection-1791978190382/all-session-records.json",
+      "rawModelIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-2sy5Qg/collection-1791978190382/model-request-index.json",
+      "artifactIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-2sy5Qg/collection-1791978190382/artifact-index.json",
+      "artifactCopiesEqual": true,
+      "queryPages": [
+        {
+          "callSeq": 63,
+          "resultSeq": 64,
+          "tool": "mcp__noobai__query_semantic_characters",
+          "arguments": {
+            "mode": "resolve",
+            "id": "39934"
+          },
+          "page": 1,
+          "page_size": 1,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 73,
+          "resultSeq": 74,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "white shirt",
+            "page_size": 8
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 25,
+          "returnedCount": 8
+        },
+        {
+          "callSeq": 78,
+          "resultSeq": 79,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "standing"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 5,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 83,
+          "resultSeq": 84,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "1girl single female subject count"
+          },
+          "page": 1,
+          "page_size": 5,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 88,
+          "resultSeq": 89,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "window"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 18,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 93,
+          "resultSeq": 94,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "soft light"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 4,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 98,
+          "resultSeq": 99,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "upper body portrait framing"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 103,
+          "resultSeq": 104,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "window light indoors soft daylight"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 108,
+          "resultSeq": 109,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "indoors interior room"
+          },
+          "page": 1,
+          "page_size": 5,
+          "total_count": 8,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 113,
+          "resultSeq": 114,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 4,
+            "query": "looking at viewer"
+          },
+          "page": 1,
+          "page_size": 4,
+          "total_count": 31,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 118,
+          "resultSeq": 119,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 4,
+            "query": "eye level straight on frontal view"
+          },
+          "page": 1,
+          "page_size": 4,
+          "total_count": 5,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 123,
+          "resultSeq": 124,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 4,
+            "query": "facing viewer body orientation"
+          },
+          "page": 1,
+          "page_size": 4,
+          "total_count": 14,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 128,
+          "resultSeq": 129,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "calm expression"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 133,
+          "resultSeq": 134,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "peaceful calm atmosphere mood"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 1,
+          "returnedCount": 1
+        }
+      ],
+      "uncontinuedQueries": [
+        {
+          "callSeq": 73,
+          "resultSeq": 74,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "white shirt",
+            "page_size": 8
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 25,
+          "returnedCount": 8
+        },
+        {
+          "callSeq": 88,
+          "resultSeq": 89,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "window"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 18,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 108,
+          "resultSeq": 109,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 5,
+            "query": "indoors interior room"
+          },
+          "page": 1,
+          "page_size": 5,
+          "total_count": 8,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 113,
+          "resultSeq": 114,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 4,
+            "query": "looking at viewer"
+          },
+          "page": 1,
+          "page_size": 4,
+          "total_count": 31,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 118,
+          "resultSeq": 119,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 4,
+            "query": "eye level straight on frontal view"
+          },
+          "page": 1,
+          "page_size": 4,
+          "total_count": 5,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 123,
+          "resultSeq": 124,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 4,
+            "query": "facing viewer body orientation"
+          },
+          "page": 1,
+          "page_size": 4,
+          "total_count": 14,
+          "returnedCount": 4
+        }
+      ],
+      "cleanupEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-2sy5Qg/collection-1791978190382/final-cleanup.json",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "installedCandidateEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-2sy5Qg/installed-candidate-comparison.json",
+      "targetVerdict": "pass-character-refetch",
+      "fullContractVerdict": "fail",
+      "assessment": "空 Character Prompt 触发 ID 39934 查询。seq 64 返回 Ani、金发、双马尾、长发和蓝眼，最终产物保留这些内容。",
+      "validation": "seq 144 的括号转义失败保留；seq 149、159、164 通过。"
+    },
+    {
+      "caseId": "5.5-4",
+      "modelRequests": 29,
+      "terminalComplete": 29,
+      "actualIdentities": [
+        [
+          "opencode-go",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-IycV4F/materialized-input.json",
+      "events": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-IycV4F/collection-1791978634921/all-session-records.json",
+      "rawModelIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-IycV4F/collection-1791978634921/model-request-index.json",
+      "artifactIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-IycV4F/collection-1791978634921/artifact-index.json",
+      "artifactCopiesEqual": true,
+      "queryPages": [
+        {
+          "callSeq": 71,
+          "resultSeq": 72,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "watercolor painting soft delicate color",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 6,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 73,
+          "resultSeq": 74,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "cel shading hard edge flat color anime style",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 3,
+          "returnedCount": 3
+        },
+        {
+          "callSeq": 78,
+          "resultSeq": 79,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "white shirt collared shirt clothing"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 11,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 80,
+          "resultSeq": 81,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "standing pose upright"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 12,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 82,
+          "resultSeq": 83,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "soft light window light gentle illumination"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 4,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 84,
+          "resultSeq": 85,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "upper body portrait half body shot"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 91,
+          "resultSeq": 92,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "window indoors room interior"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 5,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 93,
+          "resultSeq": 94,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "looking at viewer smile gentle expression"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 18,
+          "returnedCount": 8
+        },
+        {
+          "callSeq": 95,
+          "resultSeq": 96,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "soft lighting daylight sunlight through window"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 3,
+          "returnedCount": 3
+        },
+        {
+          "callSeq": 100,
+          "resultSeq": 101,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "window frame curtain sash"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 8,
+          "returnedCount": 8
+        },
+        {
+          "callSeq": 102,
+          "resultSeq": 103,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "soft lighting diffused gentle illumination"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 4,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 104,
+          "resultSeq": 105,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "pale skin fair complexion"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 5,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 106,
+          "resultSeq": 107,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "sunlight from side sunbeam"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 10,
+          "returnedCount": 8
+        },
+        {
+          "callSeq": 111,
+          "resultSeq": 112,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "window"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 18,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 113,
+          "resultSeq": 114,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "soft lighting"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 6,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 115,
+          "resultSeq": 116,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "1girl solo single girl subject count"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 120,
+          "resultSeq": 121,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "arms at sides hand down relaxed arm pose"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 122,
+          "resultSeq": 123,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "watercolor paper texture visible medium texture"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 3,
+          "returnedCount": 3
+        },
+        {
+          "callSeq": 124,
+          "resultSeq": 125,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "calm gentle peaceful atmosphere mood"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 0,
+          "returnedCount": 0
+        },
+        {
+          "callSeq": 126,
+          "resultSeq": 127,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "front view facing camera centered composition"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 0,
+          "returnedCount": 0
+        },
+        {
+          "callSeq": 131,
+          "resultSeq": 132,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "eye level camera angle straight on"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 133,
+          "resultSeq": 134,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "facing viewer body orientation front"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 6,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 135,
+          "resultSeq": 136,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "overall mood atmosphere scene feeling"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 0,
+          "returnedCount": 0
+        },
+        {
+          "callSeq": 137,
+          "resultSeq": 138,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "composition center focus subject in middle"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 5,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 142,
+          "resultSeq": 143,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "solo focus single subject emphasis"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 6,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 144,
+          "resultSeq": 145,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "centered subject middle of the frame"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 9,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 146,
+          "resultSeq": 147,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "peaceful calm soothing gentle mood"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 3,
+          "returnedCount": 3
+        }
+      ],
+      "uncontinuedQueries": [
+        {
+          "callSeq": 78,
+          "resultSeq": 79,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "white shirt collared shirt clothing"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 11,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 80,
+          "resultSeq": 81,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "standing pose upright"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 12,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 93,
+          "resultSeq": 94,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "looking at viewer smile gentle expression"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 18,
+          "returnedCount": 8
+        },
+        {
+          "callSeq": 106,
+          "resultSeq": 107,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "sunlight from side sunbeam"
+          },
+          "page": 1,
+          "page_size": 8,
+          "total_count": 10,
+          "returnedCount": 8
+        },
+        {
+          "callSeq": 111,
+          "resultSeq": 112,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "window"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 18,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 144,
+          "resultSeq": 145,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "centered subject middle of the frame"
+          },
+          "page": 1,
+          "page_size": 6,
+          "total_count": 9,
+          "returnedCount": 6
+        }
+      ],
+      "cleanupEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-IycV4F/collection-1791978634921/final-cleanup.json",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "installedCandidateEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-IycV4F/installed-candidate-comparison.json",
+      "targetVerdict": "partial-two-style-artifacts",
+      "fullContractVerdict": "fail",
+      "assessment": "分别保存水彩和赛璐璐 Builder；2 个方向未混入同一 Prompt。主场景选择与分页合同仍失败。",
+      "validation": "seq 152 的括号转义失败保留；seq 157、162、182 通过。",
+      "outputMultiplicity": "用户要求保留 2 个候选。安装合同要求单次只构造 1 个生成结果，执行者 seq 55 采用了不同解释。本审查不以双文件本身认定用户意图失败。"
+    },
+    {
+      "caseId": "5.5-6",
+      "modelRequests": 27,
+      "terminalComplete": 27,
+      "actualIdentities": [
+        [
+          "opencode-go",
+          "deepseek-v4.1-flash"
+        ]
+      ],
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-mhGkJY/materialized-input.json",
+      "events": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-mhGkJY/collection-1791979072446/all-session-records.json",
+      "rawModelIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-mhGkJY/collection-1791979072446/model-request-index.json",
+      "artifactIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-mhGkJY/collection-1791979072446/artifact-index.json",
+      "artifactCopiesEqual": true,
+      "queryPages": [
+        {
+          "callSeq": 83,
+          "resultSeq": 84,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "white shirt",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 25,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 85,
+          "resultSeq": 86,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "standing posture",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 26,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 87,
+          "resultSeq": 88,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "window indoors room near window",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 5,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 89,
+          "resultSeq": 90,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "soft lighting window light",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 4,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 94,
+          "resultSeq": 95,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "water drop refraction prismatic light refraction decoration"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 4,
+          "returnedCount": 4
+        },
+        {
+          "callSeq": 96,
+          "resultSeq": 97,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "upper body portrait shot framing"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 98,
+          "resultSeq": 99,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "soft smile looking at viewer calm expression"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 14,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 100,
+          "resultSeq": 101,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "sunlight through window natural lighting daytime"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 5,
+          "returnedCount": 5
+        },
+        {
+          "callSeq": 105,
+          "resultSeq": 106,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "soft light glow gentle illumination"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 7,
+          "returnedCount": 7
+        },
+        {
+          "callSeq": 107,
+          "resultSeq": 108,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "water droplet floating water drops"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 16,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 109,
+          "resultSeq": 110,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "swirl spiral vortex pattern decoration"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 6,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 111,
+          "resultSeq": 112,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "pale skin fair skin complexion"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 10,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 116,
+          "resultSeq": 117,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 100,
+            "category_ids": [
+              "lighting"
+            ],
+            "query": ""
+          },
+          "page": 1,
+          "page_size": 100,
+          "total_count": 137,
+          "returnedCount": 100
+        },
+        {
+          "callSeq": 118,
+          "resultSeq": 119,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "1girl solo single female subject"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 3,
+          "returnedCount": 3
+        },
+        {
+          "callSeq": 120,
+          "resultSeq": 121,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "eye level camera angle straight on view"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 1,
+          "returnedCount": 1
+        },
+        {
+          "callSeq": 122,
+          "resultSeq": 123,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "centered composition subject in center of frame"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 127,
+          "resultSeq": 128,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "category_ids": [
+              "lighting"
+            ],
+            "mode": "search",
+            "page": 2,
+            "page_size": 100,
+            "query": ""
+          },
+          "page": 2,
+          "page_size": 100,
+          "total_count": 137,
+          "returnedCount": 37
+        },
+        {
+          "callSeq": 129,
+          "resultSeq": 130,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "category_ids": [
+              "framing"
+            ],
+            "mode": "search",
+            "page_size": 40,
+            "query": ""
+          },
+          "page": 1,
+          "page_size": 40,
+          "total_count": 43,
+          "returnedCount": 40
+        },
+        {
+          "callSeq": 134,
+          "resultSeq": 135,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "category_ids": [
+              "camera_angle"
+            ],
+            "mode": "search",
+            "page_size": 40,
+            "query": ""
+          },
+          "page": 1,
+          "page_size": 40,
+          "total_count": 71,
+          "returnedCount": 40
+        },
+        {
+          "callSeq": 136,
+          "resultSeq": 137,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "category_ids": [
+              "layout"
+            ],
+            "mode": "search",
+            "page_size": 40,
+            "query": ""
+          },
+          "page": 1,
+          "page_size": 40,
+          "total_count": 95,
+          "returnedCount": 40
+        },
+        {
+          "callSeq": 138,
+          "resultSeq": 139,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "day daily daytime time of day"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 2,
+          "returnedCount": 2
+        },
+        {
+          "callSeq": 143,
+          "resultSeq": 144,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "solo focus only one character in focus"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 14,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 145,
+          "resultSeq": 146,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 20,
+            "query": "centered"
+          },
+          "page": 1,
+          "page_size": 20,
+          "total_count": 6,
+          "returnedCount": 6
+        },
+        {
+          "callSeq": 147,
+          "resultSeq": 148,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "straight-on front facing view of face"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 9,
+          "returnedCount": 9
+        },
+        {
+          "callSeq": 149,
+          "resultSeq": 150,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "slender slim body figure"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 4,
+          "returnedCount": 4
+        }
+      ],
+      "uncontinuedQueries": [
+        {
+          "callSeq": 83,
+          "resultSeq": 84,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "white shirt",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 25,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 85,
+          "resultSeq": 86,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "standing posture",
+            "page_size": 10
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 26,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 98,
+          "resultSeq": 99,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "soft smile looking at viewer calm expression"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 14,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 107,
+          "resultSeq": 108,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "water droplet floating water drops"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 16,
+          "returnedCount": 10
+        },
+        {
+          "callSeq": 129,
+          "resultSeq": 130,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "category_ids": [
+              "framing"
+            ],
+            "mode": "search",
+            "page_size": 40,
+            "query": ""
+          },
+          "page": 1,
+          "page_size": 40,
+          "total_count": 43,
+          "returnedCount": 40
+        },
+        {
+          "callSeq": 134,
+          "resultSeq": 135,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "category_ids": [
+              "camera_angle"
+            ],
+            "mode": "search",
+            "page_size": 40,
+            "query": ""
+          },
+          "page": 1,
+          "page_size": 40,
+          "total_count": 71,
+          "returnedCount": 40
+        },
+        {
+          "callSeq": 136,
+          "resultSeq": 137,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "category_ids": [
+              "layout"
+            ],
+            "mode": "search",
+            "page_size": 40,
+            "query": ""
+          },
+          "page": 1,
+          "page_size": 40,
+          "total_count": 95,
+          "returnedCount": 40
+        },
+        {
+          "callSeq": 143,
+          "resultSeq": 144,
+          "tool": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "solo focus only one character in focus"
+          },
+          "page": 1,
+          "page_size": 10,
+          "total_count": 14,
+          "returnedCount": 10
+        }
+      ],
+      "cleanupEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-mhGkJY/collection-1791979072446/final-cleanup.json",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "installedCandidateEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-remaining-runtime/harness-run-mhGkJY/installed-candidate-comparison.json",
+      "targetVerdict": "pass-composite-natural-language-with-pagination-limit",
+      "fullContractVerdict": "fail",
+      "assessment": "用户明确选择单主体肖像和 1:1。最终 Prompt 保留水滴、折光、旋涡及 three swirling water droplet ornaments。Character 与 say_hana 来自当前非空上下文。",
+      "validation": "seq 160 的括号转义失败保留；seq 165、170 通过。",
+      "naturalLanguageLimit": "组合概念有英文描述。水滴查询只读 10/16 项，不能据此认定候选已完整比较。",
+      "correctPagination": "lighting 分类保持原条件读取第 1、2 页，合计 137 项。"
+    }
+  ],
+  "findings": [
+    {
+      "id": "WAI-PAGINATION",
+      "severity": "material",
+      "cases": [
+        "5.5-2",
+        "5.5-4",
+        "5.5-6"
+      ],
+      "fact": "3 项成品案例均有查询未读完后续页。",
+      "evidence": "各 entries[].uncontinuedQueries 列出原参数、调用序号和返回数量。",
+      "examples": [
+        "5.5-2：white shirt 为 8/25；window 为 6/18。",
+        "5.5-4：white shirt collared shirt clothing 为 10/11。",
+        "5.5-6：framing 为 40/43，camera_angle 为 40/71，layout 为 40/95。"
+      ],
+      "impact": "候选比较未覆盖完整结果。最终词条是否因此变化，本轮未补页验证。",
+      "contract": "实际请求 tools 中 query_semantic_prompt_terms 的分页说明。"
+    },
+    {
+      "id": "WAI-SCENE-STOP",
+      "severity": "material",
+      "cases": [
+        "5.5-2",
+        "5.5-4"
+      ],
+      "fact": "单人肖像与窗边地点同时匹配单主体肖像、环境叙事。用户未指定主场景，Agent 自行选择单主体肖像并保存成品。",
+      "contract": ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md:17",
+      "evidence": "5.5-2 assistant seq 67、112；5.5-4 assistant seq 88；原始 materialized-input.json。",
+      "impact": "未执行多个匹配主场景时的等待选择分支。"
+    },
+    {
+      "id": "WAI-CAMERA-MAPPING",
+      "severity": "material",
+      "cases": [
+        "5.5-6"
+      ],
+      "fact": "选定构图的 POV 和景深没有写入 camera_composition。",
+      "evidence": "assistant seq 142、153 明确讨论省略默认 POV 和景深；tool seq 159/164 的 camera_composition 仅含 upper_body、straight-on、centered composition、solo_focus。",
+      "contract": ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/camera-composition.md:13",
+      "impact": "格式校验通过仍未满足构图映射合同。"
+    }
+  ],
+  "sourceBoundary": {
+    "verdict": "observed-allowed-sources",
+    "assessment": "目录查询使用 MCP；资料读取指向各运行环境的已安装 Skill。shell 还读取环境变量、工作目录并写入任务产物。未见直接查询数据库、外部 HTTP 或生产 checkout 取材。",
+    "limitations": "根据完整工具事件判断来源；没有重新采集网络或进程遥测。"
+  },
+  "limits": [
+    "101 次包含会话标题等宿主模型请求；不是 101 次用户任务提交。",
+    "每项仅 1 次用户提交，没有恢复提示。",
+    "安装核对采用既有 200 文件比对记录；本审查未重新解包候选。",
+    "清理采用停止后的进程与端口证据；本审查没有启动应用。",
+    "此前失败记录保持原判定；本轮成品不追认历史通过。"
+  ],
+  "textReview": {
+    "profile": "for-document",
+    "manualReview": "已逐项复核中文结论、证据位置和限制。JSON 引号属于语法；引用的原始工具参数保持原文。",
+    "stcErrors": 0,
+    "antiEchoPending": 0
+  }
+}

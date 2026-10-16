@@ -1,0 +1,91 @@
+{
+  "purpose": "独立核对观察媒体交接合同的接口、边界、授权与测试可实施性。",
+  "readWhen": "实施观察派发适配器前及确定验收范围时。",
+  "reviewMode": "功能合同审查；未启动应用或模型，未修改产品。",
+  "verdict": "R1与R2均已在当前合同中落实，功能合同可实施。",
+  "readyForImplementation": true,
+  "findings": [
+    {
+      "id": "R1-CANCEL-BOUNDARY",
+      "severity": "合同需修正",
+      "source": "docs/verification/skills-mcp-migration/observation-media-handoff-contract.json#/implementation/5/action",
+      "evidence": [
+        "agent-presets/project-iteration-dispatch.mjs:106",
+        "agent-presets/project-iteration-dispatch.mjs:134",
+        "agent-presets/project-iteration-dispatch.mjs:139"
+      ],
+      "problem": "“任何失败或取消均不创建或续派子任务”覆盖接纳后的等待取消。现有流程先创建或续派，再保存接纳身份并等待；等待时取消已经无法满足零派发。",
+      "requiredChange": "零派发限定为参数准备、身份核验、媒体查询和派发前取消；接纳后的取消沿用身份保存与恢复流程。分别测试派发前零调用与接纳后恢复原会话。",
+      "status": "closed-in-contract"
+    },
+    {
+      "id": "R2-ADAPTER-COVERAGE",
+      "severity": "实施消费者需补齐",
+      "source": "tests/production/native-iteration-roles.test.mjs:15",
+      "evidence": [
+        "tests/production/official-mcp-acceptance.test.mjs:17",
+        "tests/production/fixtures/project-subagent-control-runtime.mjs:50",
+        "tests/production/source-agent-preset.test.mjs:130",
+        "config/plugin-runtime-resources.json:18"
+      ],
+      "problem": "四角色测试和运行夹具按project-iteration-dispatch.mjs路径筛选角色。观察角色换模块后只选中三个角色，导致断言失败或遗漏观察角色。",
+      "requiredChange": "明确更新这些发现与装载消费者，并把新增文件加入运行资源清单。测试必须实际加载观察适配器及core闭包，不能只把观察config继续传给通用apply。",
+      "status": "closed-in-contract"
+    }
+  ],
+  "interfaceChecks": [
+    {
+      "source": "src/host/generation/tool-execution-identity.ts:16",
+      "result": "复用函数从真实exec.agent.session核对唯一callId、实际toolName、cwd及Workspace成员关系。闭包绑定workspaceRegistry可避免mjs复制算法。"
+    },
+    {
+      "source": "src/host/generation/generation-runtime.ts:812",
+      "result": "readGenerationRunMedia逐Run返回规范run_id、媒体ID和file_path或错误项。按MAX_RUN_INPUT_QUERY_IDS分批可支持不限业务数量的images；完整成功后按原引用顺序投影子集并保留重复项。错误项必须阻止派发。"
+    },
+    {
+      "source": "src/host/generation/generation-runtime.ts:959",
+      "result": "底层支持完整Run ID和唯一前缀。映射应关联请求项与对应规范Run结果，避免用输入前缀直接匹配规范run_id。跨Workspace已返回GENERATION_RUN_NOT_FOUND。"
+    },
+    {
+      "source": "src/host/core/plugin.ts:151",
+      "result": "现有CoreServices可增加绑定runtime和workspaceRegistry的解析闭包；当前尚未暴露该接口。适配器显式注入harnessComfyuiCore并访问services符合现有架构。"
+    },
+    {
+      "source": "agent-presets/project-iteration-dispatch.mjs:86",
+      "result": "参数准备可放在taskMessage和observeCompletion之前；完成后复查signal。普通派发、接纳身份、等待与清理可继续复用。"
+    }
+  ],
+  "runtimeVisibility": {
+    "source": ".local/skills-mcp-migration-live/builder-E2-runtime/harness-run-aCty7n/service-visibility.json",
+    "result": "mediaReadType和workspaceResolveType均为function；查询和模型调用计数为0。该证据只证明服务可见，新适配器及真实ToolRuntime身份链仍需实施后探针。"
+  },
+  "readinessBoundary": {
+    "source": "src/host/generation/generation-runtime.ts:827",
+    "result": "媒体读取查询已保存image记录并拼接file_path，不检查磁盘文件存在性。“媒体未就绪”用例应明确为尚无所选媒体记录；查询后文件消失等读取错误仍由local-image-reader报告。"
+  },
+  "causalFit": {
+    "source": "docs/verification/skills-mcp-migration/four-role-handoff-causal-design.json#/conclusions/0",
+    "result": "C1记录父Agent漏抄路径字符、观察者保留错误值、FILE_INVALID以及同会话改正路径后成功。引用解析直接消除路径手工转抄环节。Run和媒体选择、Builder当前消息交接及整体超时仍有各自边界。"
+  },
+  "authorization": {
+    "source": "docs/plans/skills-mcp-migration-20261013.md:1381",
+    "result": "第9节第7项已记录5.11至5.14范围内修复授权，5.12.4引用本合同。闭包、适配器、配置及对应测试属于该范围，无新增依赖或外部目录变更。"
+  },
+  "textReplacements": {
+    "checkedCount": 10,
+    "allOriginalsUnique": true,
+    "result": "十处原文字均唯一存在；生成记录加入media_id与父Agent引用输入一致，观察者仍消费解析后的path。文字独立语义审计由另一队员完成。"
+  },
+  "acceptanceAdditions": [
+    "空引用、空白ID及错误结构在查询与派发前失败；多批次、第二批失败、子集和重复项覆盖。",
+    "伪造callId、工具名不符、无Workspace、跨Workspace及唯一Run前缀覆盖。",
+    "解析中和派发前取消均零派发；接纳后等待取消验证身份保存和原会话恢复。",
+    "媒体夹具含title、parameters和Prompt时，最终消息只采用run_id/media_id/path，其他用户参数原值保持。",
+    "安装包实际加载新增模块，真实ToolRuntime无模型探针通过后，再按授权执行原四角色业务复验。"
+  ],
+  "nextAction": "按已修订合同实施并验收；本审查关闭合同问题，产品实现与官方探针仍待完成。",
+  "closureEvidence": {
+    "R1": "implementation第6项及acceptance第2项限定准备阶段零派发，接纳后保留身份并恢复。",
+    "R2": "implementation第7项、expectedFiles列出运行资源清单与四处发现/装载消费者，明确真实加载观察适配器和core闭包。"
+  }
+}

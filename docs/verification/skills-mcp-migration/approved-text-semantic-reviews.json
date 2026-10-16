@@ -1,0 +1,211 @@
+{
+  "date": "2026-10-13",
+  "scope": "获批最小文字修改后重新逐文件进行干净上下文语义审计",
+  "reports": [
+    {
+      "agent": "approved_krea_semantics",
+      "file": ".agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "findings": [
+        {
+          "lines": "10-12",
+          "issue": "历史查询指引重复"
+        },
+        {
+          "lines": "50",
+          "issue": "资料范围复述"
+        },
+        {
+          "lines": "62",
+          "issue": "无结果与底模规则复述"
+        }
+      ]
+    },
+    {
+      "agent": "approved_artist_semantics",
+      "file": ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+      "findings": [
+        {
+          "lines": "57",
+          "issue": "共同采用条件与冲突条件方向存在问题"
+        },
+        {
+          "lines": "59",
+          "issue": "混合来源排序依据未统一"
+        },
+        {
+          "lines": "1-7",
+          "issue": "缺少YAML头"
+        },
+        {
+          "lines": "16-75",
+          "issue": "同层事项未编号"
+        }
+      ]
+    },
+    {
+      "agent": "approved_character_semantics",
+      "file": ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/character.md",
+      "findings": [
+        {
+          "lines": "1-9",
+          "issue": "缺少YAML头"
+        },
+        {
+          "lines": "19-60",
+          "issue": "无序列表、重复规则和重复定义"
+        },
+        {
+          "lines": "13,28,31",
+          "issue": "缺少角色Prompt时省略和停止顺序存在张力"
+        },
+        {
+          "lines": "39,54",
+          "issue": "角色标识范围不一致"
+        }
+      ]
+    },
+    {
+      "agent": "approved_generationcli_semantics",
+      "file": ".agents/skills/comfyui-generate/references/generation-cli.md",
+      "findings": [
+        {
+          "lines": "1",
+          "issue": "缺少YAML头"
+        },
+        {
+          "lines": "15-136",
+          "issue": "同层事项及示例未编号"
+        },
+        {
+          "lines": "36,54",
+          "issue": "model赋值条件重复"
+        },
+        {
+          "lines": "67,73,89",
+          "issue": "错误存放位置重复"
+        },
+        {
+          "lines": "114",
+          "issue": "错误状态说明章节归属"
+        },
+        {
+          "lines": "136-156",
+          "issue": "提交示例适用条件不足"
+        }
+      ]
+    },
+    {
+      "agent": "approved_templatecli_semantics",
+      "file": ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+      "findings": [
+        {
+          "lines": "1",
+          "issue": "缺少YAML头"
+        },
+        {
+          "lines": "42-92",
+          "issue": "无序列表"
+        },
+        {
+          "lines": "58",
+          "issue": "输出协议章节归属"
+        },
+        {
+          "lines": "56,64,73",
+          "issue": "取值限制定义顺序"
+        },
+        {
+          "lines": "90",
+          "issue": "错误处理分支重叠"
+        }
+      ]
+    },
+    {
+      "agent": "approved_generate_semantics",
+      "file": ".agents/skills/comfyui-generate/SKILL.md",
+      "findings": [
+        {
+          "lines": "8-68",
+          "issue": "同层事项未编号"
+        },
+        {
+          "lines": "24",
+          "issue": "输入优先级重复说明"
+        },
+        {
+          "lines": "46",
+          "issue": "数量下限分支缺少处理"
+        }
+      ]
+    },
+    {
+      "agent": "approved_devdoc_semantics",
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "findings": [
+        {
+          "lines": "1",
+          "issue": "缺少YAML头"
+        },
+        {
+          "lines": "5-129",
+          "issue": "同层事项未编号"
+        },
+        {
+          "lines": "11,19-21",
+          "issue": "预设身份重复"
+        },
+        {
+          "lines": "87-88",
+          "issue": "重试条件重复"
+        },
+        {
+          "lines": "108",
+          "issue": "启动检查来源未明确"
+        },
+        {
+          "lines": "123,126",
+          "issue": "正向句式与明确禁止动作规范冲突"
+        }
+      ]
+    },
+    {
+      "agent": "approved_architecture_semantics",
+      "file": "docs/system/architecture.md",
+      "findings": [
+        {
+          "lines": "1",
+          "issue": "缺少YAML头"
+        },
+        {
+          "lines": "5-204",
+          "issue": "同层事项未编号"
+        },
+        {
+          "lines": "87-179",
+          "issue": "Generation生命周期混入多个主题"
+        },
+        {
+          "lines": "89,111,117,202,204",
+          "issue": "重复Skill流程"
+        },
+        {
+          "lines": "13,36-47,107",
+          "issue": "CLI地址和capability重复"
+        },
+        {
+          "lines": "89",
+          "issue": "四角色配置缺少指代"
+        },
+        {
+          "lines": "81,159",
+          "issue": "历史过程表述"
+        },
+        {
+          "lines": "147,177",
+          "issue": "可删除的自我声明"
+        }
+      ]
+    }
+  ],
+  "disposition": "各文件已重新审计，报告仍有既有问题；按用户批准范围保留其余原文，不将这些报告标为全文通过。获批差异是否准确另由计划符合性回扫判定。"
+}

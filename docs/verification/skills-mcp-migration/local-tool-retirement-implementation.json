@@ -1,0 +1,133 @@
+{
+  "purpose": "记录项目预设 send_message 注册来源退役的实施结果、定向测试证据与官方验收待办。",
+  "readWhen": "审查本次工具注册修改或执行官方 Desktop 验收前。",
+  "status": "产品、配置和测试文件已冻结；9 个定向测试文件的 161 项测试已通过；官方 Desktop 验收待主线程执行。",
+  "authorization": {
+    "basis": "主线程按迁移主计划第 5.14 节派发本次实施，并追加授权 project-subagent-control.json 与 plugin-runtime-resources.json 中的资源登记。",
+    "directory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "delivery": "本次交付保留工作目录中的修改与测试证据，供主线程独立审查和官方验收。"
+  },
+  "changedFiles": [
+    "agent-presets/project-subagent-control.mjs",
+    "agent-presets/project-subagent-control.json",
+    "agent-presets/project-tool-visibility.mjs",
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+    "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+    "config/plugin-runtime-resources.json",
+    "tests/production/project-subagent-control.test.mjs",
+    "tests/production/native-subagent-control.test.mjs",
+    "tests/production/source-agent-preset.test.mjs",
+    "tests/production/native-workbench-subagent.test.mjs",
+    "tests/production/native-iteration-roles.test.mjs",
+    "tests/production/official-agent-preset-resources.test.mjs",
+    "tests/production/plugin-build-presets.test.mjs",
+    "tests/production/fixtures/tool-registry-runtime.mjs",
+    "tests/production/fixtures/project-subagent-control-runtime.mjs",
+    "docs/verification/skills-mcp-migration/local-tool-retirement-implementation.json"
+  ],
+  "implementation": [
+    {
+      "subject": "两个项目预设的 control 来源",
+      "result": "两个 agent.cordis.yml 使用共享 project-subagent-control.mjs，保留官方 list-agents 子入口。共享模块仅注册 interrupt_agent。"
+    },
+    {
+      "subject": "中断服务边界",
+      "result": "工具调用 ctx.subagents.interrupt(agent_id, {kind:ancestor, agent:exec.agent}) 一次，保留调用 Agent 的对象身份。工具返回 accepted:true；官方服务负责权限判断、取消与恢复。服务同步异常通过工具执行框架传播。"
+    },
+    {
+      "subject": "工具配置与参数校验",
+      "result": "project-subagent-control.json 保存工具名称、说明、官方参数 schema、输出 schema、错误文案与渲染模板。模块调用官方 defineTool 编译 schema 并校验执行参数，再交给 tools.register 注册。agent_id 使用官方必填 string 参数合同。"
+    },
+    {
+      "subject": "Host 工具限制",
+      "result": "project-tool-visibility.mjs 删除 configuredDeny 路径；两个预设仅配置 local-only。组件继续限制 Host-global 工具，并保留动态注册、重入、异常清理与卸载行为。"
+    },
+    {
+      "subject": "子 Agent 工具范围",
+      "result": "工作台子任务和迭代四角色保留原 toolFilter。真实 registry 测试按这五份配置创建继承 scope 并限制 interrupt_agent。"
+    },
+    {
+      "subject": "插件包资源",
+      "result": "plugin-runtime-resources.json 登记共享模块与 JSON。打包测试从插件 tarball 解包两个预设，解析模块相对路径、加载配置并验证只注册 interrupt_agent。临时解包目录通过符号链接使用本机已有 SDK 依赖。"
+    }
+  ],
+  "redGreen": [
+    {
+      "redLog": ".local/skills-mcp-migration-live/local-tool-retirement/red-registry-contract.log",
+      "redResult": "37 项通过、5 项失败。真实 SDK registry 在两个预设的原 visibility 配置下均抛出 unknown global tool send_message；严格化的 visibility mock 同样拒绝该名称。",
+      "contractResult": "真实 registry 验证未知名称和 exact-own 名称均被 restrict 拒绝；child scope 可以限制祖先注册的名称，parent scope 保留该注册。",
+      "greenLog": ".local/skills-mcp-migration-live/local-tool-retirement/green-registry-contract.log",
+      "greenResult": "来源替换后 37 项通过。两个父 scope 的 control 注册结果均为单个 interrupt_agent。"
+    },
+    {
+      "redLog": ".local/skills-mcp-migration-live/local-tool-retirement/red-interrupt-parameters.log",
+      "redResult": "直接 tools.register 的适配器对缺失、null、number 参数返回 accepted:true，暴露执行参数未校验的问题。",
+      "schemaFailureLog": ".local/skills-mcp-migration-live/local-tool-retirement/red-interrupt-schema-adapter.log",
+      "schemaFailureResult": "直接把 raw JSON Schema 传给 defineTool 触发 parameters.type must be a value schema object。随后按已安装 SDK 的公共 property-map schema 合同修正 JSON。",
+      "greenLog": ".local/skills-mcp-migration-live/local-tool-retirement/green-interrupt-parameters.log",
+      "greenResult": "11 项通过。适配器使用 defineTool 校验必填 string；参数测试遵循其公开参数合同。"
+    },
+    {
+      "redLog": ".local/skills-mcp-migration-live/local-tool-retirement/red-package-sdk-resolution.log",
+      "redResult": "临时解包目录缺少可解析的宿主 peer SDK，模块加载失败。",
+      "greenResult": "测试夹具将现有 node_modules 接入临时解包目录后，打包模块与配置加载通过。"
+    }
+  ],
+  "testResult": {
+    "command": "pnpm exec vitest run tests/production/project-subagent-control.test.mjs tests/production/native-subagent-control.test.mjs tests/production/source-agent-preset.test.mjs tests/production/native-workbench-subagent.test.mjs tests/production/native-iteration-roles.test.mjs tests/production/official-agent-preset-resources.test.mjs tests/production/plugin-build-presets.test.mjs tests/production/native-subagent-completion.test.mjs tests/unit/plugin-resources.test.ts --maxWorkers=1 --no-file-parallelism",
+    "log": ".local/skills-mcp-migration-live/local-tool-retirement/green-final-targeted.log",
+    "filesPassed": 9,
+    "testsPassed": 161,
+    "testsFailed": 0,
+    "diffCheck": "git diff --check 已通过。",
+    "runtimeIdentity": ".local/skills-mcp-migration-live/local-tool-retirement/sdk-runtime-identity.json"
+  },
+  "verified": [
+    {
+      "surface": "native 声明和 PTC schema",
+      "evidence": [
+        ".local/skills-mcp-migration-live/local-tool-retirement/workbench-surfaces.json",
+        ".local/skills-mcp-migration-live/local-tool-retirement/iteration-surfaces.json"
+      ],
+      "result": "安装的 ToolRuntime 0.2.0-rc.2 对两个父 scope 和五个子 scope 的 wireSchemas、sdkSchemas、生成 SDK 的 callable key 均未提供 send_message。官方 list_agents 的名称提及可以保留；测试验证可调用声明。"
+    },
+    {
+      "surface": "工具解析和执行",
+      "result": "上述七个 scope 在 native 和 ptc 模式中，通过 get、resolveExecution 和 tools.execute 的直接及嵌套路径验证 send_message 缺席；执行结果的 error.info.code 为 UNKNOWN_TOOL。子 scope 的 interrupt_agent 同样无法解析和执行。"
+    },
+    {
+      "surface": "中断参数与身份",
+      "result": "真实 ToolRuntime 在父 native 调用和父 ptc 嵌套调用中，对缺失、null、number agent_id 返回 INVALID_ARGS，并保持服务调用数不变。合法 string 调用向服务桩传递一次目标和原 Agent 对象；独立边界测试验证 accepted 输出、缺少 Agent 的错误以及官方服务异常对象传播。"
+    },
+    {
+      "surface": "Cordis 生命周期",
+      "result": "真实 Cordis scope 卸载中断模块后，interrupt_agent 注册消失，list_agents 测试注册仍可解析；重载恢复中断工具。独立对照 scope 的 send_message 注册和 schema 保持可解析。"
+    },
+    {
+      "surface": "SDK 字符串品牌",
+      "result": "本机已安装 dsh-brand 的 brandString(child-1) 返回同一字符串值；共享 JS 适配器向官方 interrupt API 传递字符串。"
+    }
+  ],
+  "fixtureBoundaries": [
+    "registry、scope、defineTool、schema 投影、SDK 声明生成和 tools.execute 使用本机已安装的官方 SDK 实现。Node 子进程让 Cordis 与 scope 使用同一模块实例。",
+    "systemPrompt 注册接口与 subagents.interrupt 使用服务桩。派发工具、list_agents 和独立对照 scope 的 send_message 使用夹具定义；测试另行核对两个预设保留官方 list-agents 来源。",
+    "PTC 声明测试提供 typescript language 服务桩；嵌套 execute 使用 parent token 占位对象触发官方 nested 分支。测试未运行实际 run_code 程序或 PTC backend。",
+    "本机根依赖无法导入 dsh-subagent 与 dsh-tool-subagent-control。官方服务权限、Activation、取消、inbox、完成通知和真实 standard Preset 仍需在官方应用中验收。"
+  ],
+  "officialAcceptancePending": [
+    "官方 Desktop 安装候选包并真实创建两个项目 Session 与五类子 Session。",
+    "采集官方应用中的 native/PTC 声明与实际调用结果，核对候选应用的 SDK 来源。",
+    "验证子请求中的自动父返回指引及官方原生完成通知。",
+    "通过真实 continuable 子会话验证中断、list_agents 状态、保留 childId 的续派与恢复。",
+    "使用真实 standard Preset 验证隔离、项目卸载和重载对照。",
+    "完成主线程要求的独立代码、配置文案审查及后续发布门禁。"
+  ],
+  "evidenceRetention": {
+    "originalDesktopFailure": ".local/skills-mcp-migration-live/persona-completion-desktop-pnpm-cache.log",
+    "intermediateFixtureLogs": [
+      ".local/skills-mcp-migration-live/local-tool-retirement/red-registry.log",
+      ".local/skills-mcp-migration-live/local-tool-retirement/red-native-error-projection.log"
+    ],
+    "result": "原始 Desktop 失败日志和本轮红绿测试日志均保留在工作目录。"
+  }
+}

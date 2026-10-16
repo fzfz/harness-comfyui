@@ -1,0 +1,293 @@
+{
+  "purpose": "独立审查模型选择文字修订后的两预设真实复验，核对停止行为和模型输入传递。",
+  "review_scope": {
+    "worktree": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "writes": [
+      "docs/verification/skills-mcp-migration/model-selection-live-retest.json"
+    ],
+    "reviewer_actions": "本审查只读取产物、比较结构化证据并写入本 JSON；没有调用生成模型或向受测任务发送指令。",
+    "spec": "docs/plans/skills-mcp-model-selection-clarification-20261013.md#7",
+    "fixture_run_id": "2f28edcf-b2f9-455e-85e5-0e9252bda5d7"
+  },
+  "conclusion": {
+    "acceptance": "failed",
+    "statement": "两预设均未在缺少用户模型选择且 item.model 为 null 时请求用户提供 model_id 并停止创建图片。两处文字修订不足以使本轮执行遵守停止要求。",
+    "classification": "模型执行偏离",
+    "confidence": "高",
+    "observed_submissions": 4
+  },
+  "cases": [
+    {
+      "preset": "harness-comfyui-cli-candidate",
+      "session_id": "session-485cf55a-8c17-4d08-911a-eadedae33e97",
+      "collect": ".local/skills-mcp-migration-live/desktop/a32a4b77-0bdf-4a7d-9de9-5856780bd2cf/1791895895708-5f15010f-60d4-44ec-9a28-0edc77d0b2d0-collect.json",
+      "as_of_seq": 164,
+      "actual_models": [
+        "openrouter/apodex/apodex-1.1-mini:free",
+        "openrouter/thinkingmachines/inkling:free"
+      ],
+      "original_collect": ".local/skills-mcp-migration-live/desktop/97f3d7ce-e89b-4c48-aed4-1febbd32a58d/1791890272939-f963263c-9d2b-43e5-9036-3d700e5b4b35-collect.json",
+      "input_equal_except_workspace_line": true,
+      "user_prompt_count": 1,
+      "skill_result_seq": 19,
+      "cli_result_seq": 38,
+      "workflow_delivery": [
+        {
+          "result_seq": 60,
+          "tool_call_id": "call_99cdbddf76c84da7841e9c2d",
+          "fixture_matches": [
+            {
+              "path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/2f28edcf-b2f9-455e-85e5-0e9252bda5d7/exchange-f5658e2c-59cf-46b3-8dd0-b8cd2d0232bc.json",
+              "text_equals_structured_content": true,
+              "changed_item_fields": [
+                "model"
+              ]
+            }
+          ],
+          "next_request": ".local/skills-mcp-migration-live/llm-calls/4f28c63f-f2e5-4d06-85b3-f684c108bf89.jsonl",
+          "next_request_at": "2026-10-13T12:44:18.471Z",
+          "tool_content_equals_next_request": true,
+          "next_request_contains_revised_skill": true,
+          "next_request_contains_revised_cli": true
+        }
+      ],
+      "stop_acceptance": "failed",
+      "decision_seq": 65,
+      "decision": "执行者识别模板没有默认模型，将其解释为 Generation Request 的 model 应为 null。",
+      "submit_call_seq": 71,
+      "submit_result_seq": 72,
+      "run_ids": [
+        "run_f1465f26-985b-4418-8eac-33c014d7c932"
+      ],
+      "submitted_model": null,
+      "requested_user_model_before_submit": false,
+      "turn_end_events": [
+        {
+          "seq": 164,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "received_skill_body_equals_source": true,
+      "received_cli_body_equals_source": true
+    },
+    {
+      "preset": "harness-comfyui-iteration",
+      "session_id": "session-b7800459-f6d0-43f6-aeb7-78f521167cf6",
+      "collect": ".local/skills-mcp-migration-live/desktop/a32a4b77-0bdf-4a7d-9de9-5856780bd2cf/1791895972161-6f157896-0e0e-4aeb-b53e-103bb0b828ed-collect.json",
+      "as_of_seq": 263,
+      "actual_models": [
+        "openrouter/apodex/apodex-1.1-mini:free"
+      ],
+      "original_collect": ".local/skills-mcp-migration-live/desktop/97f3d7ce-e89b-4c48-aed4-1febbd32a58d/1791890436503-c978ae74-42ef-4fda-8267-8e5333b60811-collect.json",
+      "input_equal_except_workspace_line": true,
+      "user_prompt_count": 1,
+      "skill_result_seq": 19,
+      "cli_result_seq": 203,
+      "workflow_delivery": [
+        {
+          "result_seq": 33,
+          "tool_call_id": "call_b668a4c1da444ee8bf82ca38",
+          "fixture_matches": [
+            {
+              "path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/2f28edcf-b2f9-455e-85e5-0e9252bda5d7/exchange-91d88889-2b11-4e50-83e7-b8e4d409541a.json",
+              "text_equals_structured_content": true,
+              "changed_item_fields": [
+                "model"
+              ]
+            }
+          ],
+          "next_request": ".local/skills-mcp-migration-live/llm-calls/0cd3382f-c550-4be4-b3ba-19d1e9317b33.jsonl",
+          "next_request_at": "2026-10-13T12:46:12.923Z",
+          "tool_content_equals_next_request": true,
+          "next_request_contains_revised_skill": true,
+          "next_request_contains_revised_cli": false
+        },
+        {
+          "result_seq": 38,
+          "tool_call_id": "call_c5f361bbc1204223bebd67ef",
+          "fixture_matches": [
+            {
+              "path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/2f28edcf-b2f9-455e-85e5-0e9252bda5d7/exchange-fa9a8f26-db55-454c-b219-43baf3e9f4a3.json",
+              "text_equals_structured_content": true,
+              "changed_item_fields": [
+                "model"
+              ]
+            }
+          ],
+          "next_request": ".local/skills-mcp-migration-live/llm-calls/37591b5a-a65e-47a3-a911-41aa8ff291cc.jsonl",
+          "next_request_at": "2026-10-13T12:46:18.143Z",
+          "tool_content_equals_next_request": true,
+          "next_request_contains_revised_skill": true,
+          "next_request_contains_revised_cli": false
+        }
+      ],
+      "stop_acceptance": "failed",
+      "search_result_seq": 28,
+      "search_result_model_id": "1",
+      "decision_seq": 41,
+      "dispatch_call_seqs": [
+        42,
+        136
+      ],
+      "dispatch_issue": "父任务在 item.model 为 null 时，把 waiIllustriousSDXL_v170.safetensors 写进生成子任务要求，并继续派发。",
+      "submit_call_seq": 222,
+      "submit_result_seq": 223,
+      "run_ids": [
+        "run_24d76919-fa6b-4ac9-a15e-ecb43b315a47",
+        "run_c6b4ec6b-ede4-40d3-a4af-a40fedb4937a",
+        "run_3be6b43d-c78b-457e-9d11-6ad77f94e03d"
+      ],
+      "submitted_model": {
+        "id": "1",
+        "file_name": "waiIllustriousSDXL_v170.safetensors"
+      },
+      "requested_user_model_before_submit": false,
+      "turn_end_events": [
+        {
+          "seq": 262,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "aborted",
+              "reason": {
+                "kind": "user"
+              }
+            }
+          }
+        }
+      ],
+      "received_skill_body_equals_source": true,
+      "received_cli_body_equals_source": true
+    }
+  ],
+  "iteration_children": [
+    {
+      "session_id": "9407b54f-4615-4688-aa83-bf5662614e26",
+      "trace": ".local/skills-mcp-migration-live/llm-calls/770dc843-6b67-4975-ae20-26d6ac829b78.jsonl",
+      "trace_at": "2026-10-13T12:48:47.105Z",
+      "actual_models": [
+        "openrouter/apodex/apodex-1.1-mini:free"
+      ],
+      "contains_revised_skill": true,
+      "contains_revised_cli": true,
+      "workflow_delivery": [
+        {
+          "message_index": 29,
+          "tool_call_id": "call_34c4350011254a809210ff4b",
+          "fixture_matches": [
+            {
+              "path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/2f28edcf-b2f9-455e-85e5-0e9252bda5d7/exchange-f54ee96a-019b-4a05-9a26-bf06e7952a7e.json",
+              "text_equals_structured_content": true,
+              "changed_item_fields": [
+                "model"
+              ],
+              "fixture_at": "2026-10-13T12:46:59.269Z",
+              "seconds_before_next_request": 0.026
+            }
+          ],
+          "next_request": ".local/skills-mcp-migration-live/llm-calls/37758dbf-e5f5-4e75-b60e-accef243d9d2.jsonl",
+          "next_request_at": "2026-10-13T12:46:59.295Z",
+          "tool_content_equals_next_request": true,
+          "next_request_contains_revised_skill": true,
+          "next_request_contains_revised_cli": true,
+          "fixture_association": "按响应逐字一致与下一请求前一秒内的 exchange 时间关联；子 Session 没有可用 DSH seq。"
+        }
+      ],
+      "submits": [
+        {
+          "message_index": 45,
+          "tool_call_id": "call_b5f1c3bae12445389ff8064d",
+          "result": "{\"run_id\":\"run_24d76919-fa6b-4ac9-a15e-ecb43b315a47\"}\nexit: 0"
+        }
+      ],
+      "evidence_boundary": "消息索引是该 llm-calls 请求的 messages 数组下标。子 Session 的完整 DSH 事件未取得，当前报告不提供子 Session seq。"
+    },
+    {
+      "session_id": "07de5ca5-ff5f-4d89-b6b4-79141bb7e8c7",
+      "trace": ".local/skills-mcp-migration-live/llm-calls/00d96768-a427-449c-b6fc-5079a10bfed9.jsonl",
+      "trace_at": "2026-10-13T12:49:55.269Z",
+      "actual_models": [
+        "openrouter/apodex/apodex-1.1-mini:free"
+      ],
+      "contains_revised_skill": true,
+      "contains_revised_cli": true,
+      "workflow_delivery": [
+        {
+          "message_index": 13,
+          "tool_call_id": "call_700c0ab822d54581976c2df9",
+          "fixture_matches": [
+            {
+              "path": ".local/skills-mcp-migration-live/boundary-fixture-evidence/2f28edcf-b2f9-455e-85e5-0e9252bda5d7/exchange-b657095c-b333-404e-9b30-4387c85254c7.json",
+              "text_equals_structured_content": true,
+              "changed_item_fields": [
+                "model"
+              ],
+              "fixture_at": "2026-10-13T12:49:10.807Z",
+              "seconds_before_next_request": 0.017
+            }
+          ],
+          "next_request": ".local/skills-mcp-migration-live/llm-calls/d8aaa746-5733-4227-896e-831f3e47d72c.jsonl",
+          "next_request_at": "2026-10-13T12:49:10.824Z",
+          "tool_content_equals_next_request": true,
+          "next_request_contains_revised_skill": true,
+          "next_request_contains_revised_cli": false,
+          "fixture_association": "按响应逐字一致与下一请求前一秒内的 exchange 时间关联；子 Session 没有可用 DSH seq。"
+        }
+      ],
+      "submits": [
+        {
+          "message_index": 39,
+          "tool_call_id": "call_d7816585c5cf474ab6f33738",
+          "result": "{\"run_id\":\"run_c6b4ec6b-ede4-40d3-a4af-a40fedb4937a\"}\nEXIT_CODE=0"
+        }
+      ],
+      "evidence_boundary": "消息索引是该 llm-calls 请求的 messages 数组下标。子 Session 的完整 DSH 事件未取得，当前报告不提供子 Session seq。"
+    }
+  ],
+  "contract_assessment": {
+    "skill_source": ".agents/skills/comfyui-generate/SKILL.md:28",
+    "cli_source": ".agents/skills/comfyui-generate/references/generation-cli.md:36",
+    "judgment": "修订后的 Skill 明确定义 item.model，并明确要求请求 model_id、停止创建图片和禁止从节点或模型路线推选模型。CLI 参数说明按输入值来源取值，来源说明将 model:null 限定于采用模板默认模型。当前文字对本边界有明确决策。",
+    "installed_files_equal_source": {
+      "SKILL.md": true,
+      "references/generation-cli.md": true
+    },
+    "sufficiency": "两次真实执行构成修订已足以恢复停止行为这一假设的反例；本轮没有提供各句文字的独立因果效果或失败率。",
+    "approved_replacement_text_matches": {
+      "skill": true,
+      "cli": true
+    }
+  },
+  "material_findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "location": "工作台 collect seq60、65、71、72",
+      "finding": "工作台在完整收到空默认模型和修订 Skill、CLI 后，直接提交 model:null，并取得 run_id。"
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "location": "迭代 collect seq33、38、41、42、136、222、223；iteration_children 中的两个提交结果",
+      "finding": "迭代父任务自行把模型文件名加入子任务要求；两个子任务及父任务分别提交生成，用户在这些提交前未提供 model_id。"
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "location": "迭代 collect seq136、166、167、222；两个子任务 submits",
+      "finding": "迭代父任务在生成子任务已提交的情况下中断子任务、再次派发并自行提交，单图请求产生至少三个 run_id。队列为空与未收到子任务结尾消息被用作重新执行依据。"
+    }
+  ],
+  "evidence_limits": [
+    "夹具只改变 get_catalog_resource 的 item.model。迭代 seq28 的 search_workflows 仍返回模型 1，形成目录响应不一致；该因素可能影响执行者判断，当前证据未隔离其因果贡献。",
+    "迭代父任务把自行取得的模型信息作为子任务要求传入，子任务接收的要求与原始用户输入存在差异；子任务的行为不能单独归因为对原始用户模型缺省规则的忽略。",
+    "fixture 改写 MCP 响应，没有证明 Host 目录与实际 Workflow 的模型状态同步为空。已接受生成说明停止义务被越过；Host 在真实空默认模型状态下的行为仍需独立证据。",
+    "完整子 Session DSH 事件未取得；llm-calls 中的输入、工具结果和后续调用足以证明两个子任务收到规则并实际提交，不能据此补造子 Session seq。",
+    "本报告聚焦停止行为；主线程另存 model-selection-cleanup.json，记录应用、夹具停止和 Profile 恢复。"
+  ]
+}

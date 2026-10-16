@@ -7,9 +7,6 @@ export interface ManagedCliEnvironmentConfiguration {
     readonly nodeExecutable: string
     readonly api: string
     readonly capability: string
-    readonly semanticQueryCli: string
-    readonly sourceUrl: string
-    readonly sourcePort: string
   }
 }
 
@@ -22,9 +19,6 @@ export const ManagedCliEnvironmentSchema = Schema.object({
     nodeExecutable: environmentName,
     api: environmentName,
     capability: environmentName,
-    semanticQueryCli: environmentName,
-    sourceUrl: environmentName,
-    sourcePort: environmentName,
   }).required(),
 })
 
@@ -49,7 +43,7 @@ export function parseManagedCliEnvironment(value: unknown): ManagedCliEnvironmen
     const config = exactRecord(value, ['schemaVersion', 'environmentNames'], 'Managed CLI environment config')
     const environmentNames = exactRecord(
       config.environmentNames,
-      ['executable', 'nodeExecutable', 'api', 'capability', 'semanticQueryCli', 'sourceUrl', 'sourcePort'],
+      ['executable', 'nodeExecutable', 'api', 'capability'],
       'Managed CLI environment config.environmentNames',
     )
     if (new Set(Object.values(environmentNames)).size !== Object.keys(environmentNames).length) {

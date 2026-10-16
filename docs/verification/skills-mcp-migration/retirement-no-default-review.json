@@ -1,0 +1,265 @@
+{
+  "status": "独立验收已完成",
+  "scope": "5.6-3 基础两预设无默认模型边界；H3 独立对照与父子交接分别保留 pending。",
+  "runId": "dd77f5d7-293b-4dbd-8437-88a45325e1b5",
+  "candidate": {
+    "record": ".local/skills-mcp-migration-live/retirement-candidate-identity.json",
+    "packageVersion": "0.45.0",
+    "sourceCommit": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+    "dirty": true,
+    "limitation": "候选身份引用构建记录；本次核对实际模型输入中的 Skill 和参考正文，未重新安装或重建候选。"
+  },
+  "rules": [
+    "生成 Skill 的核对当前选择要求：用户未指定模型且 item.model=null 时请求 model_id 并停止创建图片；禁止从节点或路线推选模型。",
+    "进入创建图片步骤前必须取得采用模型的查询结果。",
+    "计划 §5.11 要求按实际模型输入定位首次偏离；§5.12 要求保留来源与父子等待语义。"
+  ],
+  "cases": [
+    {
+      "preset": "harness-comfyui-iteration",
+      "sessionId": "session-f99c7e4a-645f-47cb-bf33-6889bb19968e",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/dd77f5d7-293b-4dbd-8437-88a45325e1b5/1791946911335-bb448c90-2ad2-4eca-b20c-bd88bd039845-collect.json",
+      "eventCoverage": {
+        "firstSeq": 0,
+        "lastSeq": 65,
+        "eventCount": 66,
+        "turnEndSeq": 65,
+        "turnEndReason": {
+          "kind": "completed"
+        }
+      },
+      "verdict": "未通过",
+      "actualModel": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "request": ".local/skills-mcp-migration-live/llm-calls/8527e28b-3bfd-42d4-afa9-ccb5e3986c7f.jsonl:1"
+      },
+      "ruleDelivery": {
+        "skillMessageIndex": 6,
+        "skillCharacters": 4951,
+        "parameterReferenceMessageIndex": 14,
+        "parameterReferenceContainsNewPrerequisite": true
+      },
+      "workflowDelivery": {
+        "toolResultSeq": 45,
+        "characters": 2761,
+        "itemModel": null,
+        "nextRequest": ".local/skills-mcp-migration-live/llm-calls/66ba7cfe-5b3f-446b-b97a-e3746dc4e749.jsonl:1",
+        "messageIndex": 17,
+        "rawResponseCandidates": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/0331f4fb-3a5a-45f6-94f2-3a454674a6c1/exchange-7b77c8fa-6a0c-4173-b2cb-f5380f6d5cb0.json",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/0331f4fb-3a5a-45f6-94f2-3a454674a6c1/exchange-a078fc1a-ba1e-4fff-8a41-b86bf4b2626e.json"
+        ],
+        "rawEqualsDshEqualsNextModelMessage": true,
+        "structuredContentMatchesText": true,
+        "note": "两次夹具响应正文相同，列出两条原始记录；本报告未将相同正文猜配成独占会话归属。"
+      },
+      "queryTiming": {
+        "assistantDecisionSeq": 43,
+        "workflowCallSeq": 44,
+        "workflowResultSeq": 45,
+        "instanceCallSeq": 46,
+        "instanceResultSeq": 47,
+        "judgment": "Workflow 查询与实例查询属于同一 assistant message 中的工具批次；宿主后执行实例工具时模型尚未消费 Workflow 返回。不能仅因 tool/call 序号较大，认定模型得知缺项后决定查实例。"
+      },
+      "firstPostMissingDecision": {
+        "assistantSeq": 50,
+        "calls": [
+          {
+            "seq": 51,
+            "name": "mcp__noobai__search_models",
+            "arguments": {
+              "base_model": {
+                "id": "2",
+                "name": "wai"
+              },
+              "limit": 10
+            }
+          },
+          {
+            "seq": 53,
+            "name": "mcp__noobai__get_catalog_resource",
+            "arguments": {
+              "ref": {
+                "id": "2",
+                "kind": "base_model"
+              }
+            }
+          }
+        ]
+      },
+      "candidateSource": {
+        "callSeq": 51,
+        "resultSeq": 52,
+        "filter": "Workflow 返回的 base_model.id=2；迭代查询同时传 name=wai。",
+        "resultOrder": [
+          "17",
+          "15",
+          "14",
+          "1"
+        ],
+        "source": "真实目录 search_models 同底模查询，不是从 Workflow 节点或 model_route 反查 ID。",
+        "judgment": "列出真实候选帮助用户选择不构成采用模型；最终推荐动作另行判定。"
+      },
+      "generationActions": {
+        "parameterInspectionCalls": 0,
+        "randomSeedCalls": 0,
+        "submitCalls": 0,
+        "subagentDispatches": 0,
+        "postMissingValidationPrograms": 0,
+        "scope": "逐条核对所有 shell 调用；记录文件内的命令文字和未来步骤未作为实际调用计数。"
+      },
+      "requestModelId": {
+        "assistantSeq": 62,
+        "observed": true
+      },
+      "creationStepAssessment": "没有进入参数检查、Seed 取得或提交；未执行 Builder 校验程序。两者在查询前已有模型分析中的结构/尺寸预检查，迭代产物声称有效的问题另列。",
+      "findings": [
+        {
+          "id": "N1",
+          "severity": "material",
+          "source": "collect seq62 assistant text",
+          "fact": "最终答复要求“请回复一个 model_id（建议 1 或 14，否则模型路线校验会失败）”。",
+          "judgment": "以 model_route 对应 skill_name 为理由建议具体模型，违反禁止从模型路线推选生成模型的合同。与仅展示候选校验事实区分。",
+          "firstVisibleDeviationSeq": 62
+        },
+        {
+          "id": "N2",
+          "severity": "material",
+          "source": "collect seq58 写入任务状态文件；seq62 最终答复",
+          "fact": "状态文件写“有效（结构校验、模型路线校验、负向模式校验、图片尺寸校验全部通过）”，同文又写模型路线待定；最终标题也写 JSON 校验有效。",
+          "judgment": "尚未选定模型，没有实际模型 skill_name 可比对，整体有效结论缺少依据且与待定状态矛盾。",
+          "firstVisibleDeviationSeq": 58
+        }
+      ],
+      "artifact": ".local/desktop-development/official-environment/workspace/retirement-no-default-iteration/5.6-3/任务状态-wai_basic_txt2img.md",
+      "scopeLimitation": "实际 system 是迭代主 Agent persona；模型按用户指定的生成 Skill 直接执行。本次通过的停止子项仅覆盖该入口，不覆盖角色交接。"
+    },
+    {
+      "preset": "harness-comfyui-cli-candidate",
+      "sessionId": "session-3fbf74a6-e618-43b8-832a-adc565022075",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/dd77f5d7-293b-4dbd-8437-88a45325e1b5/1791946910663-ca68369c-8cf9-4a4b-a135-75cdcfa8971f-collect.json",
+      "eventCoverage": {
+        "firstSeq": 0,
+        "lastSeq": 53,
+        "eventCount": 54,
+        "turnEndSeq": 53,
+        "turnEndReason": {
+          "kind": "completed"
+        }
+      },
+      "verdict": "通过（基础停止与来源边界）",
+      "actualModel": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "request": ".local/skills-mcp-migration-live/llm-calls/c287ab47-ebbe-4e8d-b7df-82194d7006b0.jsonl:1"
+      },
+      "ruleDelivery": {
+        "skillMessageIndex": 6,
+        "skillCharacters": 4951,
+        "parameterReferenceMessageIndex": 12,
+        "parameterReferenceContainsNewPrerequisite": true
+      },
+      "workflowDelivery": {
+        "toolResultSeq": 39,
+        "characters": 2761,
+        "itemModel": null,
+        "nextRequest": ".local/skills-mcp-migration-live/llm-calls/07dc73f8-dee6-4ce4-9236-3a56d38797ea.jsonl:1",
+        "messageIndex": 14,
+        "rawResponseCandidates": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/0331f4fb-3a5a-45f6-94f2-3a454674a6c1/exchange-7b77c8fa-6a0c-4173-b2cb-f5380f6d5cb0.json",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture-evidence/0331f4fb-3a5a-45f6-94f2-3a454674a6c1/exchange-a078fc1a-ba1e-4fff-8a41-b86bf4b2626e.json"
+        ],
+        "rawEqualsDshEqualsNextModelMessage": true,
+        "structuredContentMatchesText": true,
+        "note": "两次夹具响应正文相同，列出两条原始记录；本报告未将相同正文猜配成独占会话归属。"
+      },
+      "queryTiming": {
+        "assistantDecisionSeq": 37,
+        "workflowCallSeq": 38,
+        "workflowResultSeq": 39,
+        "instanceCallSeq": 40,
+        "instanceResultSeq": 41,
+        "judgment": "Workflow 查询与实例查询属于同一 assistant message 中的工具批次；宿主后执行实例工具时模型尚未消费 Workflow 返回。不能仅因 tool/call 序号较大，认定模型得知缺项后决定查实例。"
+      },
+      "firstPostMissingDecision": {
+        "assistantSeq": 44,
+        "calls": [
+          {
+            "seq": 45,
+            "name": "mcp__noobai__search_models",
+            "arguments": {
+              "base_model": {
+                "id": "2"
+              },
+              "limit": 20
+            }
+          },
+          {
+            "seq": 47,
+            "name": "bash",
+            "arguments": {
+              "command": "ls -la \"/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/retirement-no-default-workbench\" 2>&1; echo \"---- env ----\"; env | grep -i DSH_HARNESS_COMFYUI | sed 's/=.*/=<set>/'",
+              "description": "Inspect workspace and CLI env vars"
+            }
+          }
+        ]
+      },
+      "candidateSource": {
+        "callSeq": 45,
+        "resultSeq": 46,
+        "filter": "Workflow 返回的 base_model.id=2；迭代查询同时传 name=wai。",
+        "resultOrder": [
+          "17",
+          "15",
+          "14",
+          "1"
+        ],
+        "source": "真实目录 search_models 同底模查询，不是从 Workflow 节点或 model_route 反查 ID。",
+        "judgment": "列出真实候选帮助用户选择不构成采用模型；最终推荐动作另行判定。"
+      },
+      "generationActions": {
+        "parameterInspectionCalls": 0,
+        "randomSeedCalls": 0,
+        "submitCalls": 0,
+        "subagentDispatches": 0,
+        "postMissingValidationPrograms": 0,
+        "scope": "逐条核对所有 shell 调用；记录文件内的命令文字和未来步骤未作为实际调用计数。"
+      },
+      "requestModelId": {
+        "assistantSeq": 51,
+        "observed": true
+      },
+      "creationStepAssessment": "没有进入参数检查、Seed 取得或提交；未执行 Builder 校验程序。两者在查询前已有模型分析中的结构/尺寸预检查，迭代产物声称有效的问题另列。",
+      "findings": [],
+      "notes": [
+        "seq45 中性查询候选；seq47 查看 Workspace 和 CLI 变量存在情况，没有调用生成命令。",
+        "最终只展示同底模候选及路线合同，没有推荐特定 ID；没有声称整体模型路线校验已经通过。",
+        "最终说明预先核对了尺寸与负向模式；该自述不能证明完成采用模型后的完整 Builder 校验。"
+      ]
+    }
+  ],
+  "pendingCoverage": [
+    {
+      "item": "H3 独立因果对照",
+      "status": "pending",
+      "reason": "两预设均读到修改后的参数参考且没有执行参数检查，证明当前条件下该动作停止；没有固定历史生成子任务输入的单变量对照。"
+    },
+    {
+      "item": "父子缺项转达与续派",
+      "status": "pending",
+      "reason": "迭代预设直接执行 comfyui-generate，全程没有 subagent_* 调用或实际父子消息。"
+    },
+    {
+      "item": "用户选择后恢复及成功生成",
+      "status": "pending",
+      "reason": "本轮自然结束于请求 model_id，没有后续用户选择。"
+    },
+    {
+      "item": "H4 延迟通知",
+      "status": "pending",
+      "reason": "本轮没有子任务或完成通知。"
+    }
+  ],
+  "overallConclusion": "工作台基础无默认模型停止与来源边界通过；迭代预设停止参数检查与提交的子项通过，但路线推选及错误校验结论使整体未通过。两条均自然结束、零生成提交。H3 单变量原因验证与父子交接保持 pending。"
+}

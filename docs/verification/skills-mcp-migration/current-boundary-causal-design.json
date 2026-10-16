@@ -1,0 +1,351 @@
+{
+  "purpose": "确定四项边界失败的已验证因果链、责任归属与下一步验证合同。",
+  "readWhen": "决定当前边界失败的修复层次、补证范围和复验条件时。",
+  "status": "只读诊断完成；首次继续检索的可修复原因尚未验证；四项完整合同均保留未通过。",
+  "scope": {
+    "workspace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "writeOwnership": "docs/verification/skills-mcp-migration/current-boundary-causal-design.json",
+    "actions": "读取已保存输入、主事件、原始请求、安装文件、夹具与驱动及相关源码；未启动应用、夹具或模型，未请求外部服务。",
+    "independentReview": "本记录由独立顾问编写，尚待主线程安排独立语义审查。"
+  },
+  "conclusion": [
+    "四轮首次缺项返回均完整进入后继模型请求。缺模型的规则和空实例结果均已到达执行者；现有证据未发现工具响应丢失导致首次继续。",
+    "两轮缺模型的跨任务读取，以及第四轮的直接 HTTP 查询，均晚于首次继续检索。它们分别解释后续资料污染和其他来源实例的取得；首次继续检索的原因仍需对照验证。",
+    "第四轮受管 Host 使用当前夹具63205并拒绝不存在实例；Agent 经 bash/curl 直接访问18093。测试数据接入与全局网络可达性属于两个边界。",
+    "当前安装文档已经规定模型取得、Builder校验、实例选择和参数检查的顺序。没有查到要求在缺项后继续这些生成步骤的冲突规则。继续只读诊断与结束本轮的文字边界仍须按原合同分别判断；本报告保留独立审查已确认的污染、猜测ID、越序检查和未交付失败。",
+    "可直接定位的后续结构问题是 Host 将带404状态的 SourceClientError 转换成只有通用消息的 SOURCE_QUERY_FAILED；它影响错误可解释性，发生在参数检查之后。"
+  ],
+  "contract": {
+    "agent": "comfyui-generate/SKILL.md 核对当前选择负责采用模型及缺模型报告；创建图片第1步及 prompt-result-contract.md 负责顺序校验；第3步负责从MCP列表首项取得实例，空列表报告缺项并停止创建图片。",
+    "cli": "template-parameter-inspection-cli.md 调用条件要求执行者满足Skill前置条件；输入来源要求实例来自第3步。Host接收template_id/instance_id并查询当前数据源，当前合同没有要求Host证明Agent已完成所有语义步骤。",
+    "host": "src/host/core/plugin.ts 的apply创建同一个sourceSettings供CatalogClient和GenerationSourceClient使用；GenerationSourceClient每次读取当前设置，内部HTTP继续为UI、参数检查与生成准备服务。",
+    "genericBash": "四轮首请求都提供bash。声明允许执行bash -c，runtime-context说明workspace-write写入范围，未声明仅可读取Workspace或仅可访问MCP。安装源码和默认配置可被同用户bash读取。",
+    "iteration": "实际任务明确执行comfyui-generate。迭代persona按Skill description选择任务；四轮都没有子派发，因而本轮覆盖两预设中的直接生成Skill，未覆盖四角色或父子传播。",
+    "plan": "主计划5.11要求发现链与因果控制；5.12保留业务不变量；5.13及5.13.1分别要求同场景数据接入与污染判定；5.14授权范围内修复，外部服务、SDK及Skill脚本另受限制。"
+  },
+  "verifiedChains": [
+    {
+      "runtime": "harness-run-YMbXag",
+      "caseId": "5.6-3",
+      "preset": "harness-comfyui-cli-candidate",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-YMbXag/task-input.json",
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/72d2a726-1ee7-49c9-9d36-f93126c876fc/1791972466156-acac12ed-4d34-40ac-946b-c1e4e6f16acc-collect.json",
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls",
+      "events": {
+        "count": 236,
+        "through": 235,
+        "contiguous": true
+      },
+      "firstDeviation": {
+        "seq": 43,
+        "afterMissingResultSeq": 39,
+        "requestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-YMbXag/runtime/observer/llm-calls/107f7b8b-11a3-4958-a97e-ffe5e1a21758.jsonl",
+        "classification": "首次偏离直接报告缺项的任务路径；未据此判定已创建图片或已经推选模型。",
+        "nextDecision": "查看环境并搜索实例",
+        "parallelCaveat": "seq36 读 generation-cli 与 seq38 读取模板属同一响应；后继第5步已包含 seq39。"
+      },
+      "fullContractVerdict": "fail",
+      "knowledgeChain": [
+        "用户指定安装Skill和Workspace路径；skill返回停止与顺序规则；原始request.tools提供MCP与bash。",
+        "seq39模型null→seq43环境/Workspace查询→seq50-67读取本轮observer→seq123-143枚举并读取历史Workspace→后继请求继续调查→最终请求model_id。"
+      ],
+      "actor": "当前主Agent；无子Agent。",
+      "hostBoundary": {
+        "observed": "未调用 generation 检查或提交；MCP 和 shell 返回可见，Run 与媒体为空。",
+        "limit": "这三轮没有触发 Host 生成请求，因此无法由零 Run 证明 Host 对不完整 Generation Request 的拒绝逻辑。",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 56974
+        },
+        "noAddedAssumption": "不将额外只读检索自动等同为创建图片；独立污染、输入ID来源和顺序校验分别报告。"
+      },
+      "analysisUse": "已读取首次后继原始分析块；只用于构造假设，未把分析文本作为因果证明。"
+    },
+    {
+      "runtime": "harness-run-1lytK6",
+      "caseId": "5.6-3",
+      "preset": "harness-comfyui-iteration",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-1lytK6/task-input.json",
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/024c1b14-0d5b-43e1-a312-3304ffbe35e2/1791973025553-e085a73c-7567-4678-84ad-a63b5b09070a-collect.json",
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls",
+      "events": {
+        "count": 206,
+        "through": 205,
+        "contiguous": true
+      },
+      "firstDeviation": {
+        "seq": 42,
+        "afterMissingResultSeq": 36,
+        "requestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-1lytK6/runtime/observer/llm-calls/5f7a510d-a969-47a0-a2a7-31d6c3b065f8.jsonl",
+        "classification": "首次偏离直接报告缺项的任务路径；未据此判定已创建图片或已经推选模型。",
+        "nextDecision": "搜索其他模板和生成模型",
+        "parallelCaveat": "iteration 第4步 seq35 与 seq37 属于同一模型响应，seq37 搜索实例不能描述为看到 seq36 的 null 后决定；真正后继是第5步。"
+      },
+      "fullContractVerdict": "fail",
+      "knowledgeChain": [
+        "用户指定安装Skill和Workspace路径；skill返回停止与顺序规则；原始request.tools提供MCP与bash。",
+        "seq36模型null→seq42/44搜索其他模板和模型→seq160-176枚举并读取第一轮任务报告→seq189继续后续校验→最终请求model_id。"
+      ],
+      "actor": "当前主Agent；无子Agent。",
+      "hostBoundary": {
+        "observed": "未调用 generation 检查或提交；MCP 和 shell 返回可见，Run 与媒体为空。",
+        "limit": "这三轮没有触发 Host 生成请求，因此无法由零 Run 证明 Host 对不完整 Generation Request 的拒绝逻辑。",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 59328
+        },
+        "noAddedAssumption": "不将额外只读检索自动等同为创建图片；独立污染、输入ID来源和顺序校验分别报告。"
+      },
+      "analysisUse": "已读取首次后继原始分析块；只用于构造假设，未把分析文本作为因果证明。"
+    },
+    {
+      "runtime": "harness-run-ruqXDi",
+      "caseId": "5.6-6",
+      "preset": "harness-comfyui-cli-candidate",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-ruqXDi/task-input.json",
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/8a610556-e048-4e6a-98f4-53c5f03ee558/1791973128969-d7a44c36-5f4b-4a1f-b9c8-8b10d2d70eb1-collect.json",
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls",
+      "events": {
+        "count": 103,
+        "through": 102,
+        "contiguous": true
+      },
+      "firstDeviation": {
+        "seq": 51,
+        "afterMissingResultSeq": 47,
+        "requestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ruqXDi/runtime/observer/llm-calls/a4bb40d6-222c-4d1e-9ce9-00f5fbb791ea.jsonl",
+        "classification": "首次缺项后的额外检索；停止规则没有明确禁止所有只读诊断，单独记为偏离路径。",
+        "firstMaterialContractDeviationSeq": 70,
+        "decision": "在无任何实例结果的条件下查询 instance id=1。这个1此前作为模型ID出现，未作为有效实例ID出现；不能由相同数字认定类别间可复用。",
+        "nextDecision": "seq71 not-found 后，后继继续读 CLI help，再检索底模及实例；seq89/91 再次使用 instance_id=1 读节点与状态。",
+        "parallelCaveat": "seq44 模型详情与 seq46 实例查询同属第5步，不是收到模型详情后才校验并检索实例。"
+      },
+      "fullContractVerdict": "fail",
+      "knowledgeChain": [
+        "用户指定安装Skill和Workspace路径；skill返回停止与顺序规则；原始request.tools提供MCP与bash。",
+        "seq47空列表→seq51/53继续搜索→seq70猜测instance1→seq89/91继续以instance1查询→最终报告缺实例，未保存产物。"
+      ],
+      "actor": "当前主Agent；无子Agent。",
+      "hostBoundary": {
+        "observed": "未调用 generation 检查或提交；MCP 和 shell 返回可见，Run 与媒体为空。",
+        "limit": "这三轮没有触发 Host 生成请求，因此无法由零 Run 证明 Host 对不完整 Generation Request 的拒绝逻辑。",
+        "sourceAddress": {
+          "url": "http://127.0.0.1",
+          "port": 62337
+        },
+        "noAddedAssumption": "不将额外只读检索自动等同为创建图片；独立污染、输入ID来源和顺序校验分别报告。"
+      },
+      "analysisUse": "已读取首次后继原始分析块；只用于构造假设，未把分析文本作为因果证明。"
+    },
+    {
+      "runtime": "harness-run-BrpPMj",
+      "caseId": "5.6-6",
+      "preset": "harness-comfyui-iteration",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/task-input.json",
+      "mainEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/2f340616-f309-4eb4-9024-63d103b07f0c/1791973744299-9f6d98fc-b0d7-4ccc-9872-2445ff20ab66-collect.json",
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls",
+      "events": {
+        "count": 402,
+        "through": 401,
+        "contiguous": true
+      },
+      "firstDeviation": {
+        "seq": 47,
+        "afterMissingResultSeq": 41,
+        "requestPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-BrpPMj/runtime/observer/llm-calls/b24bdd4e-b269-489d-b1d3-0b54b56b18f9.jsonl",
+        "classification": "空列表后的额外检索；第6步同时查默认模型1和禁用实例。模型详情查询本身仍有合法来源。",
+        "firstMaterialInputDeviationSeq": 61,
+        "firstInspectViolationSeq": 253,
+        "parallelCaveat": "seq38模板读取与seq40实例读取同属第5步；第6步才是看到seq41后的模型决策。seq59环境读取与seq61猜测实例同属第8步，不能说seq61由seq60环境返回触发。"
+      },
+      "fullContractVerdict": "fail",
+      "knowledgeChain": [
+        "用户指定安装Skill和Workspace路径；skill返回停止与顺序规则；原始request.tools提供MCP与bash。",
+        "seq41空列表→seq47改变筛选→seq61/83/85猜测实例→seq125读取默认MCP配置但直连401→seq162读取默认catalogPort18093→seq228/243读内部operation map→seq248/249直接HTTP获得实例2→seq253参数检查→Host访问63205并404→重复检查直到取消。"
+      ],
+      "actor": "当前主Agent；无子Agent。",
+      "hostBoundary": {
+        "firstInspectCallSeq": 253,
+        "firstFailureSeq": 254,
+        "error": "SOURCE_QUERY_FAILED",
+        "evidenceFiles": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/model-fixture/exchange-3672997a-3582-4458-84fd-b8f8d13009e1.json",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-boundary-runtime/harness-run-BrpPMj/model-fixture/exchange-9391df22-bb7f-4b5d-bb87-5b23357eace9.json"
+        ],
+        "causalChain": "受管CLI调用Host；Host在63205读取模板29成功，读取实例2由边界夹具转为不存在实例1并返回404，CLI返回SOURCE_QUERY_FAILED。",
+        "repeatInspectToolSeqs": [
+          253,
+          260,
+          340,
+          345,
+          355,
+          370,
+          390
+        ],
+        "logicalInspectionRequests": 18,
+        "logicalCountExplanation": "单次、单次、3组测试、5次循环、直接API单次、3次循环、4次循环。",
+        "generationSubmitCalls": 0,
+        "runCount": 0,
+        "limitation": "已观察Host按当前配置读取并拒绝不存在实例。未提交Generation Request，因此未验收submit对缺项或Agent步骤状态的策略。"
+      },
+      "analysisUse": "已读取首次后继原始分析块；只用于构造假设，未把分析文本作为因果证明。"
+    }
+  ],
+  "structuralAssessment": [
+    {
+      "subject": "缺项传输",
+      "result": "四组原始事件均连续：236、206、103、402条；首次缺项事件39、36、47、41的toolCallId与content与后继request.messages一致。",
+      "ownership": "当前没有指向MCP传输或消息收集组件的修复证据。"
+    },
+    {
+      "subject": "安装合同",
+      "result": "本次逐字节核对四个安装根中的SKILL.md、prompt-result-contract.md、template-parameter-inspection-cli.md均与当前工作树一致。原始skill和bash返回包含上述规则。",
+      "ownership": "不能把磁盘未生效或未读停止规则作为已证实原因。"
+    },
+    {
+      "subject": "顺序与文档职责",
+      "result": "Skill从核对当前选择到创建图片具有明确前置关系；参数检查参考的调用条件回指Skill。两轮缺模型最终仍列出后续负向模式和尺寸校验，属于已可识别的执行顺序偏离。早读参考文档本身不等同于执行参数检查。",
+      "ownership": "尚无已验证的文档冲突修复；如拟澄清停止/恢复边界，须先给出对现有规则的差异及独立对照，保持业务规则不变。"
+    },
+    {
+      "subject": "测试输入",
+      "result": "缺模型输入提供template29、instance2、count、seed与完整Builder JSON，未提供model_id；空实例输入提供template29和完整Builder JSON，未提供instance_id。输入保留5.6-*产物目录与generation_purpose=test。Skill实例选择实际由MCP列表首项决定，输入instance_id不能替代列表选择。",
+      "ownership": "这些测试线索可作为模型误判任务目的的假设变量；当前缺项前提仍成立，不应补model_id或instance_id使测试通过。"
+    },
+    {
+      "subject": "测试数据域",
+      "result": "configureScenario校验fixture场景及同一loopback listener，把mcpUrl传给两个预设，把sourceAddress写入隔离Core Profile。当前消费者探针和第四轮Host exchange符合此配置。",
+      "ownership": "旧的MCP/Host分流缺陷在当前已观察路径中没有重现；通用bash仍可访问未覆盖的18093。"
+    },
+    {
+      "subject": "读取能力",
+      "result": "acceptance-read-boundary-review.json已确认官方读取策略与外层Seatbelt启动限制。中性运行目录、空Workspace和historyCopied=false仍允许枚举公共临时目录；本轮成功跨目录读取是当前实证。",
+      "ownership": "继续采用全部轨迹的污染门槛。若要求技术上禁止所有其他文件读取，须有官方宿主或OS支持并覆盖文件工具、bash和主子会话；当前5.14范围内没有已验证可用方案。"
+    },
+    {
+      "subject": "Host内部目录实现",
+      "result": "第四轮从已安装.local/source-client/client.js读到operation map；该实现仍被Host实际业务消费者使用。移除Agent目录CLI没有移除这份Host依赖。",
+      "ownership": "不能直接删除内部客户端，或以隐藏源码、改端口、字符串黑名单宣称通用bash无法访问服务。"
+    },
+    {
+      "subject": "系统提示词",
+      "result": "两预设均有bash失败后调查的宿主文本；首次null和空列表为成功MCP响应，未触发bash非零退出，因此这段文本尚不能解释首次偏离。迭代请求还同时包含persona的Goal限制与宿主更宽的Goal说明；本轮没有Goal调用，未建立其与当前失败的关联。",
+      "ownership": "将其记录为能力/指令背景，不据此改动模型或SDK。"
+    }
+  ],
+  "httpTemplateEvidenceGap": {
+    "actualCalls": "两轮no-default-model的model-fixture/exchange记录中，HTTP只有/internal/comfyui-source/templates/29/bundle、/internal/semantic/comfyui-instances及/internal/comfyui-source/instances/2。没有模板目录search/resolve的HTTP响应。",
+    "currentCode": "boundary-fixture.mjs:220-232按httpOverrides覆盖已存在字段；no-default-model.json只声明model_id从item.model派生。bundle响应只有id/title/workflow_json，缺少model_id，代码因此不写入该字段。",
+    "limit": "bundle不能证明目录模板详情的模型关联已清空；当前也没有证据证明详情实际泄漏了模型字段。第四轮查模板HTTP时属于empty-instances场景，不能补足no-default-model的详情证据。",
+    "nextProbe": "实施者可单独启动只读夹具并使用现有生产CatalogClient查询template29的search和resolve，保存discovery、原始上游响应、覆盖字段、最终返回与实际地址；同时核对MCP详情/搜索、HTTP详情/搜索及bundle原文。该步骤不需要Desktop或模型。",
+    "acceptance": "依据真实字段合同判断所有表达默认模型关联的字段是否一致。字段本来不存在时记录缺省；如仍保留关联字段，先以确定性失败测试证明，再扩展同一场景字段映射，保留workflow_json及其他资源原值。此探针不会改判已发生的Agent失败。"
+  },
+  "diagnosticInformationLoss": {
+    "status": "已定位转换处的信息损失；效果尚未对照。",
+    "evidence": [
+      "src/host/source-client/http-client.ts:6-18 的SourceClientError保存status和responseBody；sourceJsonRequest:100在HTTP失败时填入它们。",
+      "src/host/generation/source-client.ts:140-148 的run把其他SourceClientError转成sourceError(SOURCE_QUERY_FAILED,error.message)；sourceError:21-23只传code和message。",
+      "第四轮seq254只有Source service returned an HTTP error及--help；同次exchange明确实例2映射到不存在实例1并返回404。"
+    ],
+    "causalBoundary": "该损失发生在空实例检索、猜测ID和直接HTTP之后。它可以解释执行者缺少区分不存在记录和连接故障的诊断信息，尚不能证明它导致重复检查，也不能解释首次继续。",
+    "boundedRepairContract": "在GenerationSourceClient.run处理SOURCE_HTTP_ERROR的唯一分支中，用已校验的operation、请求ID和error.status生成明确诊断消息，继续抛出SOURCE_QUERY_FAILED。消息至少表达当前源读取的是模板或实例、请求ID和HTTP状态，并提示核对当前目录记录和数据源配置。HTTP404本身不等于已证明资源不存在，因此正文不匹配已验证协议时只能报告HTTP404，禁止推断服务端原因。通过既有code/message通路让CLI、Run和UI取得诊断；本修复无需扩充GenerationRuntimeError、CLI envelope或Run schema。若确需携带服务端语义消息，实施者须先以现有源响应schema验证允许展示的字段，另列此扩展合同。",
+    "files": "src/host/generation/source-client.ts及tests/unit/generation-source-client.test.ts；在config/error-catalog.json的SOURCE_QUERY_FAILED条目复用diagnostic_template存放唯一文案模板，config/error-catalog-schema.ts校验此模板所需占位符；tests/integration/cli-route.test.ts与既有CLI测试验证原code/message输出。GenerationRuntimeError、CLI envelope及Run schema保持当前结构。",
+    "verification": "TDD：构造相同通用message但status分别404/503的SourceClientError，经readInstance(2)和readTemplate(29)验证诊断携带不同操作、ID和状态；验证异常body中额外字段不会回显，取消、协议错误、超大响应和连接错误保持原分类。通过现有CLI route/CLI测试确认code保持SOURCE_QUERY_FAILED、非零退出及诊断message实际抵达stderr；通过Run失败测试确认相同message可持久化。生产CatalogClient既有行为只作回归核对。之后另建候选做真实参数检查验收，当前四角色候选保持不变。",
+    "originalResponse": {
+      "httpStatus": 404,
+      "requestedPath": "/internal/comfyui-source/instances/2",
+      "forwardedPath": "/internal/comfyui-source/instances/1",
+      "body": {
+        "status": "error",
+        "message": "ComfyUI instance was not found.",
+        "results": [],
+        "page": 1,
+        "page_size": 0,
+        "total_count": 0
+      },
+      "source": "current-boundary-runtime/harness-run-BrpPMj/model-fixture/exchange-9391df22-bb7f-4b5d-bb87-5b23357eace9.json",
+      "cliEvent": 254,
+      "cliMessage": "SOURCE_QUERY_FAILED: Source service returned an HTTP error. Next: … generation inspect-template-parameters --help"
+    },
+    "existingErrorContract": [
+      {
+        "source": "src/host/source-client/http-client.ts:6-18,100",
+        "contract": "SourceClientError具有code、message、status?及responseBody?；HTTP非2xx保留status和解析后的body。"
+      },
+      {
+        "source": "src/host/generation/generation-error.ts:1-13",
+        "contract": "GenerationRuntimeError只有code、message以及可选stage、operation；details参数没有HTTP status、resource ID或responseBody。"
+      },
+      {
+        "source": "src/host/cli/route.ts:16-19,89-106",
+        "contract": "CliErrorBody只有code和message；GenerationRuntimeError序列化为HTTP409及这两个字段。"
+      },
+      {
+        "source": "scripts/cli/harness-comfyui.mjs:140-150",
+        "contract": "CLI验证Host error.code/error.message，再将两者与help提示写stderr。"
+      },
+      {
+        "source": "src/host/generation/generation-runtime.ts:319-322；src/generation/contract.ts:36-37",
+        "contract": "Run失败持久化和展示同样使用errorCode/errorMessage；仅新增异常details不能使当前消费者看见信息。"
+      }
+    ],
+    "sameMechanismConsumers": [
+      {
+        "source": "src/host/generation/source-preparer.ts:155-179",
+        "consumer": "参数检查与生成准备都调用同一GenerationSourceClient的readTemplate/readInstance，均经过run错误映射。"
+      },
+      {
+        "source": "src/host/generation/comfy-http-transport.ts:283",
+        "consumer": "ComfyHttpTransport读取实例连接同样使用readInstance，受同一诊断转换影响。"
+      },
+      {
+        "source": "src/host/catalog/catalog-client.ts:355-368",
+        "consumer": "CatalogClient是另一路内部消费者，当前会把responseBody序列化进CATALOG_QUERY_FAILED诊断模板；它没有同样丢失正文，不能把两条错误路径混为一种缺陷，也不应机械复制任意正文回显。"
+      }
+    ],
+    "classification": "已验证的诊断信息损失，修复目标为可定位错误；首次停止和后续重复行为的模型因果效果均待验证。"
+  },
+  "minimumCausalValidation": [
+    {
+      "hypothesis": "测试表达中的编号或自动化线索促使执行者寻找隐含输入。",
+      "support": "两轮no-default-model的后继分析记录均识别null与停止规则，同时猜测自动化任务期望完成；第一轮随后沿runtime及公共临时目录查找测试资料。",
+      "counterEvidence": "分析记录仅是假设线索；空实例工作台轮没有跨Workspace读取仍继续猜测ID。",
+      "control": "先建立原输入的固定条件对照，仅改变测试控制层自行添加的产物目录编号为中性业务目录，其他JSON、模型、候选及响应均冻结；用户指定的真实业务文件名保留。把该输入记为独立变体，不覆盖原失败。",
+      "measure": "首次缺项后的下一动作、报告位置、所有读源、步骤调用及自然结束；保留污染尝试。因随机性，单对样本只能报告观察差异。"
+    },
+    {
+      "hypothesis": "search_instances的筛选合同被误解为默认过滤。",
+      "support": "第四轮第一次后继分析记录讨论enabled/validation_passed默认过滤，实际下一调用为enabled=false；第三轮改query并加enabled=true。",
+      "counterEvidence": "真实工具声明明确空query或省略可浏览目录；初始调用为{}，结果next=null，且没有suggested_call。未发现要求重试的工具建议。",
+      "control": "先只读核对服务当前省略筛选项的合同与真实响应，确认是否有文档缺项。若确有未说明的默认筛选，再决定文档所属服务的修复权限；不得先在本仓库复制外部工具规范。",
+      "measure": "首次列表的请求条件、返回范围及后续查找是否改变；外部服务/SDK的修改属于本轮范围外。"
+    },
+    {
+      "hypothesis": "参数检查错误的信息损失延长第四轮诊断。",
+      "support": "404在内部错误转换中丢失，后续出现反复CLI检查及网络诊断。",
+      "counterEvidence": "偏离早于404，系统提示词与其他因素也可能影响继续。",
+      "control": "先按diagnosticInformationLoss完成确定性反事实，再固定当前输入、候选其余部分、模型与夹具进行独立场景复验。",
+      "measure": "CLI返回是否保留原因、后续重复检查次数与缺项交付；首次空列表行为单独记录。"
+    }
+  ],
+  "nextActions": [
+    "保留当前四项not-accepted及所有原始记录；先补HTTP模板目录字段的无模型结构探针。",
+    "将诊断信息损失作为独立范围内结构修复候选，完成错误合同调查、独立方案审查及确定性测试；不把它标为首次停止的修复。",
+    "首次继续检索尚无已验证修复时，优先完成上述最小因果控制的设计与输入审查。连续两次同条件失败且无新证据时遵守主计划5.11停止重复模型运行。",
+    "若验收目标升级为强制阻断跨文件/跨网络访问，集中记录宿主能力缺口及范围外授权要求；保留受管CLI、产物读写与正常角色交接所需能力。"
+  ],
+  "sources": [
+    "docs/plans/skills-mcp-migration-20261013.md#5.11—5.14",
+    "docs/verification/skills-mcp-migration/current-boundary-runtime-execution.json",
+    "docs/verification/skills-mcp-migration/current-boundary-runtime-review.json",
+    "docs/verification/skills-mcp-migration/acceptance-read-boundary-review.json",
+    "docs/verification/skills-mcp-migration/boundary-data-domain-design.json",
+    ".local/skills-mcp-migration-live/neutral-runtime.mjs:38-71,187-193",
+    ".local/skills-mcp-migration-live/isolated-profile.mjs:94-148",
+    ".local/skills-mcp-migration-live/boundary-fixture.mjs:170-236,300-350",
+    ".local/skills-mcp-migration-live/boundary-fixture/no-default-model.json",
+    "src/host/core/plugin.ts:102-108",
+    "src/host/generation/source-client.ts:122-150",
+    "src/host/source-client/http-client.ts:6-18,57-102"
+  ]
+}

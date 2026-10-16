@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
-import { lstat, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -26,18 +26,23 @@ import {
 } from './fixtures/renderer-cdp.mjs'
 import { parseOfficialBusinessFixture } from './fixtures/official-business-schema.mjs'
 import { parseOfficialLifecycleFixture } from './fixtures/official-lifecycle-schema.mjs'
-import {
-  assertOfficialCandidateClientSource,
-  compareOfficialCandidateFiles,
-  isOfficialCandidateClientScriptUrl,
-  readOfficialCandidateClientSourceMap,
-} from './fixtures/official-candidate-identity.mjs'
+import { compareOfficialCandidateFiles } from './fixtures/official-candidate-identity.mjs'
+import { captureProjectClientContext } from './fixtures/official-client-context.mjs'
 import { parseOfficialCandidateSourceIdentity } from './fixtures/official-candidate-identity-schema.mjs'
 import { startOfficialBusinessServices } from './fixtures/official-business-services.mjs'
 import { publishSavedDesktopRun } from './fixtures/official-business-media.mjs'
 import { trackedStartProbe } from './fixtures/official-command-cancellation.mjs'
 import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
 import { loadProfile } from '../../src/config/load-profile.ts'
+
+import { startOfficialMcpServices, OFFICIAL_MCP_FIXTURE } from './fixtures/official-mcp-services.mjs'
+import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope } from './fixtures/official-mcp-acceptance.mjs'
+import {
+  COMFYUI_INSTANCE_QUERY_TOOL_NAME, GENERATION_MODEL_RESOLVER_TOOL_NAME,
+  LORA_RESOLVER_TOOL_NAME, TEMPLATE_RESOLVER_TOOL_NAME,
+} from '../../src/host/catalog/catalog-tool.ts'
+import { writeOfficialPresetProfilePatch } from './fixtures/official-preset-overrides.mjs'
+import { collectOfficialSessionTrace } from '../../scripts/verification/collect-session-trace.mjs'
 
 const sourceRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -76,6 +81,9 @@ const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'official-business-failure.json',
   'official-business-failure.png',
   'official-business-install-failure.json',
+  'official-business-mcp.json',
+  'official-business-mcp-scope.json',
+  'official-business-mcp-activation.json',
 ]
 
 function findProfileEntry(entries, entryId) {
@@ -143,6 +151,13 @@ async function persistOfficialBusinessEvidence(fixture) {
       await writeFile(join(durableRunDirectory, filename), contents, { mode: 0o600 })
       copiedEvidence.push(filename)
     }
+    const directoryName = run.config.sessionTrace.directoryName
+    try {
+      await cp(join(run.record.directories.evidence, directoryName), join(durableRunDirectory, directoryName), { recursive: true })
+      copiedEvidence.push(directoryName)
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+    }
     runs.push({
       runId: run.runId,
       state: JSON.parse(runRecordContents.toString('utf8')).state,
@@ -209,6 +224,8 @@ async function startModelRequestCaptureServer() {
     async request(timeoutMs = 10_000) { return services.nextRequest(timeoutMs) },
     async requestWhere(predicate, timeoutMs = 10_000) { return services.nextRequestWhere(predicate, timeoutMs) },
     async readHistory(promptId) { return services.readHistory(promptId) },
+    pauseNextModelResponse(predicate) { return services.pauseNextModelResponse(predicate) },
+    setMcpObservationImages(images) { return services.setMcpObservationImages(images) },
     async close() { return services.close() },
   }
 }
@@ -323,6 +340,24 @@ async function openBusinessSession(page, sessionId) {
   })()`)
   await waitForValue(page, `window.__runPanelTestContext.get('sessions')
     .retainInfo(${JSON.stringify(sessionId)}).getSnapshot().retainedBy.mainView`, value => value === 1)
+}
+
+async function verifySidebarSessionSelection(page, sessionId, title) {
+  await waitForValue(page, `window.__runPanelTestContext.get('sessions')
+    .retainInfo(${JSON.stringify(sessionId)}).getSnapshot().retainedBy.mainView`, value => value === 1, 10_000)
+  await waitForValue(page, `(() => {
+    const item = [...document.querySelectorAll('[role="treeitem"]')]
+      .find(node => node.textContent?.includes(${JSON.stringify(title)}))
+    if (!item) {
+      const expand = [...document.querySelectorAll('button')].find(button =>
+        /^展开其余\\s*\\d+\\s*个会话$/u.test(button.textContent?.trim() ?? '')
+          && !button.disabled && button.checkVisibility())
+      expand?.click()
+      return false
+    }
+    item.scrollIntoView({ block: 'center', inline: 'nearest' })
+    return item.getAttribute('aria-selected') === 'true'
+  })()`, value => value === true, 30_000)
 }
 
 async function verifyWorkflowBrowserSettings(page, context, desktopConfig, profileAdapter, expectedPath) {
@@ -495,7 +530,7 @@ async function seedOfficialBusinessSessions(page, workspacePath) {
   expect(result.workspace).toEqual(expect.objectContaining({ ok: true }))
   expect(result.created).toHaveLength(2)
   for (const entry of result.created) {
-    expect(entry.session).toEqual(expect.objectContaining({ ok: true }))
+    expect(entry.session, JSON.stringify(entry.session)).toEqual(expect.objectContaining({ ok: true }))
     expect(entry.sessionId).toEqual(expect.any(String))
     expect(entry.renamed).toEqual(expect.objectContaining({ ok: true }))
   }
@@ -513,8 +548,9 @@ function createOfficialBusinessConfig(baseConfig, fixtureId, environmentFilePath
   config.modes.development.environmentFilePath = environmentFilePath
   config.modes.development.credentialEnvironmentNames = [
     OFFICIAL_BUSINESS_FIXTURE.provider.apiKeyEnvironmentName,
+    OFFICIAL_MCP_FIXTURE.credentialEnvironmentName,
   ]
-  config.modes.development.requiredEnvironmentNames = [...config.modes.development.credentialEnvironmentNames]
+  config.modes.development.requiredEnvironmentNames = [OFFICIAL_BUSINESS_FIXTURE.provider.apiKeyEnvironmentName]
   config.modes.development.initialProfilePatches = [
     {
       id: 'agent-default-model',
@@ -658,63 +694,7 @@ async function seedDesktopMedia(context, identity, stagedRunRepositoryFile) {
 }
 
 // Capture the plugin's normal Context without replacing its components or services.
-async function captureProjectClientContext(page, sourceIdentity, evidenceDirectory) {
-  await waitForValue(page,
-    'document.readyState === "complete" && document.body.innerText.replace(/\\s+/gu, "").includes("ComfyUI工作台")',
-    value => value === true)
-  await page.command('Page.enable')
-  await page.command('Debugger.enable')
-  const parsedScriptPromise = page.waitForDebuggerScript(
-    params => isOfficialCandidateClientScriptUrl(params.url, sourceIdentity), 30_000,
-  )
-  const { identifier } = await page.command('Page.addScriptToEvaluateOnNewDocument', { source: `
-    let loader
-    Object.defineProperty(window, '__ModuleLoader__', {
-      configurable: true,
-      get: () => loader,
-      set: value => {
-        loader = value
-        const wrap = load => definition => {
-          if (definition.id !== 'harness-comfyui') return load.call(loader, definition)
-          const factory = definition.factory
-          return load.call(loader, { ...definition, factory: require => {
-            const plugin = factory(require)
-            return { ...plugin, apply: ctx => {
-              window.__runPanelTestContext = ctx
-              return plugin.apply(ctx)
-            } }
-          } })
-        }
-        let load = wrap(loader.load)
-        Object.defineProperty(loader, 'load', {
-          configurable: true,
-          get: () => load,
-          set: value => { load = wrap(value) },
-        })
-      },
-    })
-  ` })
-  await page.command('Page.reload')
-  await waitForValue(page, 'window.__runPanelTestContext !== undefined', value => value === true, 10_000)
-  const parsedScript = await parsedScriptPromise
-  const scriptSource = await page.command('Debugger.getScriptSource', { scriptId: parsedScript.scriptId })
-  const sourceMapText = await readOfficialCandidateClientSourceMap({
-    page,
-    sourceIdentity,
-    scriptUrl: parsedScript.url,
-    sourceMapUrl: parsedScript.sourceMapURL,
-  })
-  const loadedClientSource = await assertOfficialCandidateClientSource({
-    sourceIdentity,
-    scriptId: parsedScript.scriptId,
-    scriptUrl: parsedScript.url,
-    sourceMapUrl: parsedScript.sourceMapURL,
-    scriptSource: scriptSource.scriptSource,
-    sourceMapText,
-    evidenceDirectory,
-  })
-  return { identifier, loadedClientSource }
-}
+
 
 async function verifyContextDialog(page, context) {
   const viewport = await page.evaluate(`({ width: window.innerWidth, height: window.innerHeight, deviceScaleFactor: window.devicePixelRatio, mobile: false })`)
@@ -797,6 +777,375 @@ async function verifyKimiPptDisabled(page, sessionId) {
   expect(state.skills.ok).toBe(true)
   expect(state.skills.value.skills.map(skill => skill.name)).not.toContain('kimi-ppt')
 
+}
+
+async function exerciseOfficialMcpWorkflow(page, services, mcp, sessionId) {
+  const requestStart = services.requestLog.length
+  const callStart = mcp.requests.length
+  await openBusinessSession(page, sessionId)
+  await submitComposerPrompt(page, OFFICIAL_MCP_FIXTURE.workflowPrompt)
+  const first = await services.requestWhere(request => request.sequence >= requestStart
+    && (request.body.messages ?? []).some(message => message.role === 'user'
+      && requestMessageText(message).includes(OFFICIAL_MCP_FIXTURE.workflowPrompt)), 30_000)
+  const completed = await services.requestWhere(request => request.sequence >= requestStart
+    && (request.body.messages ?? []).some(message => message.role === 'tool'
+      && JSON.stringify(message.content).includes('workflow_json')), 30_000)
+  const calls = mcp.requests.slice(callStart).filter(request => request.method === 'tools/call')
+  expect(calls.map(request => request.params.name)).toEqual(OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name))
+  expect(calls.every(request => request.status === 200 && request.result.result.isError === false)).toBe(true)
+  return { sessionId, model: first.body.model,
+    tools: (first.body.tools ?? []).map(tool => tool.function?.name ?? tool.name),
+    calls, resultReceivedByModel: completed.body.messages.some(message => message.role === 'tool'
+      && JSON.stringify(message.content).includes('workflow_json')) }
+}
+
+async function verifyOfficialMcpActivationRecovery({
+  fixture, config, environmentFilePath, modelToken, mcp, services, environmentRoot, agentsHome, sourceIdentity,
+}) {
+  const observations = []
+  for (const failure of ['missing-credential', 'invalid-credential', 'unreachable']) {
+    for (const phase of ['failed', 'recovered']) {
+      const failed = phase === 'failed'
+      const credential = failed && failure === 'missing-credential' ? ''
+        : `\n${mcp.credentialEnvironmentName}=${failed && failure === 'invalid-credential' ? randomUUID() : mcp.token}`
+      await writeFile(environmentFilePath, `${OFFICIAL_BUSINESS_FIXTURE.provider.apiKeyEnvironmentName}=${modelToken}${credential}\n`, { mode: 0o600 })
+      if (failed && failure === 'unreachable') await mcp.pause()
+      else await mcp.resume()
+      const run = await startOfficialBusinessDesktop({
+        repositoryRoot: fixture.repositoryRoot, runId: randomUUID(), config,
+        homeDirectory: environmentRoot, agentsHome,
+      })
+      const tracked = { runId: run.record.runId, config, active: true, record: run.record }
+      fixture.runs.push(tracked)
+      const page = await connectOfficialDesktopPage(run.record.ports.rendererCdp, {
+        runId: run.record.runId, repositoryRoot: fixture.repositoryRoot, config,
+      })
+      try {
+        await captureProjectClientContext(page, sourceIdentity, run.record.directories.evidence, waitForValue)
+        const result = await page.evaluate(`(async () => {
+          const workspace = await window.__runPanelTestContext.get('remote.workspace').create({
+            path: ${JSON.stringify(run.record.directories.workspace)}
+          })
+          if (!workspace.ok) return { workspace }
+          const sessions = []
+          for (const presetId of ${JSON.stringify([...PROJECT_PRESET_IDS, 'standard', 'minimal', 'cordis'])}) {
+            sessions.push({ presetId, result: await window.__runPanelTestContext.get('remote.session').create({
+              workspaceId: workspace.value.workspace.workspaceId, agentPreset: presetId,
+            }) })
+          }
+          return { workspace, sessions }
+        })()`)
+        await writeFile(join(run.record.directories.evidence, 'official-business-mcp-activation.json'),
+          JSON.stringify({ failure, phase, ...result, requests: mcp.requests }, null, 2))
+        expect(result.workspace).toMatchObject({ ok: true })
+        for (const session of result.sessions) {
+          expect(session.result.ok, JSON.stringify(session)).toBe(!failed || !PROJECT_PRESET_IDS.includes(session.presetId))
+          if (failed && PROJECT_PRESET_IDS.includes(session.presetId)) {
+            expect(session.result.error.code).toBe('agent-preset/invalid')
+          }
+        }
+        const workflows = []
+        if (!failed) {
+          const projectSessions = result.sessions.filter(session => PROJECT_PRESET_IDS.includes(session.presetId))
+          for (const session of assertSuccessfulProjectActivations(projectSessions, PROJECT_PRESET_IDS)) {
+            workflows.push({ presetId: session.presetId,
+              ...await exerciseOfficialMcpWorkflow(page, services, mcp, session.result.value.sessionId) })
+          }
+        }
+        if (failed) expect(workflows).toHaveLength(0)
+        else assertSuccessfulProjectWorkflows(workflows, PROJECT_PRESET_IDS, OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name))
+        const observation = { failure, phase, runId: run.record.runId, sessions: result.sessions,
+          workflows, recoveryMode: 'application-restart' }
+        await writeFile(join(run.record.directories.evidence, 'official-business-mcp-activation.json'),
+          JSON.stringify({ ...observation, requests: mcp.requests }, null, 2))
+        observations.push(observation)
+      } finally {
+        await page.close()
+        const stopped = await stopProbe({ runId: run.record.runId, repositoryRoot: fixture.repositoryRoot, config })
+        tracked.active = false
+        expect(stopped.record.result.portsReleased).toBe(true)
+      }
+    }
+  }
+  return observations
+}
+
+async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidenceDirectory, traceContext) {
+  const callStart = mcp.requests.length
+  const observations = []
+  const children = []
+  const mcpToolNames = OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name)
+  const globalCatalogToolNames = [
+    TEMPLATE_RESOLVER_TOOL_NAME, LORA_RESOLVER_TOOL_NAME,
+    GENERATION_MODEL_RESOLVER_TOOL_NAME, COMFYUI_INSTANCE_QUERY_TOOL_NAME,
+  ]
+  const iterationDispatchTools = [
+    'subagent_composition', 'subagent_generation', 'subagent_observation', 'subagent_comparison',
+  ]
+  for (const presetId of [...PROJECT_PRESET_IDS, 'standard', 'minimal', 'cordis']) {
+    const created = await page.evaluate(`(async () => window.__runPanelTestContext.get('remote.session').create({
+      workspaceId: ${JSON.stringify(workspaceId)}, agentPreset: ${JSON.stringify(presetId)}
+    }))()`)
+    expect(created, JSON.stringify(created)).toMatchObject({ ok: true })
+    const sessionId = created.value.sessionId
+    await page.evaluate(`window.__runPanelTestContext.get('remote.session').selectModel({
+      sessionId: ${JSON.stringify(sessionId)}, provider: ${JSON.stringify(OFFICIAL_BUSINESS_FIXTURE.provider.id)},
+      model: ${JSON.stringify(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)}
+    })`)
+    let observation
+    if (PROJECT_PRESET_IDS.includes(presetId)) {
+      observation = await exerciseOfficialMcpWorkflow(page, services, mcp, sessionId)
+      assertToolScope(observation.tools, { required: [...mcpToolNames, 'list_agents', 'interrupt_agent'], forbidden: [...globalCatalogToolNames, 'send_message'] })
+    } else {
+      const requestStart = services.requestLog.length
+      await openBusinessSession(page, sessionId)
+      await submitComposerPrompt(page, OFFICIAL_MCP_FIXTURE.scopePrompt)
+      const request = await services.requestWhere(request => request.sequence >= requestStart
+        && (request.body.messages ?? []).some(message => message.role === 'user'
+          && requestMessageText(message) === OFFICIAL_MCP_FIXTURE.scopePrompt), 30_000)
+      observation = {
+        sessionId, tools: (request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name),
+        toolDeclarations: request.body.tools ?? [],
+        systemMessages: (request.body.messages ?? []).filter(message => message.role === 'system'),
+      }
+      assertToolScope(observation.tools, { forbidden: mcpToolNames })
+      assertToolScope(observation.tools, { required: globalCatalogToolNames })
+    }
+    observations.push({ presetId, ...observation })
+  }
+  const iterationPresetIds = PROJECT_PRESET_IDS.filter(id => id !== PRODUCT_PRESET_ID)
+  expect(iterationPresetIds).toHaveLength(1)
+  const childCases = [
+    { presetId: PRODUCT_PRESET_ID, dispatchTool: 'subagent_task' },
+    ...iterationDispatchTools.map(dispatchTool => ({ presetId: iterationPresetIds[0], dispatchTool })),
+  ]
+  for (const { presetId, dispatchTool } of childCases) {
+    const created = await page.evaluate(`(async () => window.__runPanelTestContext.get('remote.session').create({
+      workspaceId: ${JSON.stringify(workspaceId)}, agentPreset: ${JSON.stringify(presetId)}
+    }))()`)
+    expect(created, JSON.stringify(created)).toMatchObject({ ok: true })
+    const parentSessionId = created.value.sessionId
+    await page.evaluate(`window.__runPanelTestContext.get('remote.session').selectModel({
+      sessionId: ${JSON.stringify(parentSessionId)}, provider: ${JSON.stringify(OFFICIAL_BUSINESS_FIXTURE.provider.id)},
+      model: ${JSON.stringify(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)}
+    })`)
+    const childRequestStart = services.requestLog.length
+    const childCallStart = mcp.requests.length
+    const parentPrompt = `${OFFICIAL_MCP_FIXTURE.childPrompt} ${dispatchTool}`
+    const isParentRequest = request => request.sequence >= childRequestStart
+      && (request.body.messages ?? []).some(message => message.role === 'user'
+        && requestMessageText(message) === parentPrompt)
+    const isChildRequest = request => request.sequence >= childRequestStart
+      && (request.body.messages ?? []).some(message => message.role === 'user'
+        && requestMessageText(message).includes(parentPrompt)
+        && requestMessageText(message).includes(OFFICIAL_MCP_FIXTURE.workflowPrompt))
+    await openBusinessSession(page, parentSessionId)
+    await submitComposerPrompt(page, parentPrompt)
+    const parentResultRequest = await services.requestWhere(request => isParentRequest(request)
+      && (request.body.messages ?? []).some(message => message.role === 'tool'
+        && JSON.stringify(message.content).includes('subagentId')), 30_000)
+    const parentTools = (parentResultRequest.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
+    assertToolScope(parentTools, { required: [...mcpToolNames, dispatchTool, 'list_agents', 'interrupt_agent'], forbidden: [...globalCatalogToolNames, 'send_message'] })
+    expect(parentResultRequest.body.messages.flatMap(message => message.tool_calls ?? [])
+      .map(call => call.function?.name)).toEqual([dispatchTool])
+    const childModelRequest = await services.requestWhere(isChildRequest, 30_000)
+    const childTools = (childModelRequest.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
+    assertToolScope(childTools, {
+      required: mcpToolNames,
+      forbidden: [...globalCatalogToolNames, 'subagent_task', ...iterationDispatchTools, 'send_message'],
+    })
+    expect(childModelRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
+    const completed = await services.requestWhere(request => isChildRequest(request)
+      && (request.body.messages ?? []).some(message => message.role === 'tool'
+        && JSON.stringify(message.content).includes('workflow_json')), 30_000)
+    expect(parentResultRequest.sequence).toBeGreaterThan(completed.sequence)
+    expect(parentResultRequest.body.messages.some(message => message.role === 'user'
+      && requestMessageText(message).includes('Background subagent')
+      && requestMessageText(message).includes('finished and will do no further work'))).toBe(true)
+    expect(parentResultRequest.body.messages.some(message => {
+      if (message.role !== 'user') return false
+      try {
+        const identity = JSON.parse(requestMessageText(message))
+        return identity.toolName === dispatchTool && typeof identity.subagentId === 'string'
+          && typeof identity.messageId === 'string' && typeof identity.callId === 'string'
+      } catch { return false }
+    })).toBe(true)
+    const calls = mcp.requests.slice(childCallStart).filter(request => request.method === 'tools/call')
+    expect(calls.map(request => request.params.name)).toEqual(mcpToolNames)
+    expect(calls.every(request => request.status === 200 && request.result.result.isError === false)).toBe(true)
+    children.push({
+      presetId, dispatchTool, parentSessionId,
+      parentToolResults: parentResultRequest.body.messages.filter(message => message.role === 'tool'),
+      parentTools, childTools, childModel: childModelRequest.body.model,
+      childToolDeclarations: childModelRequest.body.tools ?? [], calls,
+      resultReceivedByModel: completed.body.messages.some(message => message.role === 'tool'
+        && JSON.stringify(message.content).includes('workflow_json')),
+    })
+    if (dispatchTool === 'subagent_task') {
+      await verifyOfficialSessionTrace(page, services, parentSessionId, parentPrompt, traceContext)
+    }
+  }
+  expect(children).toHaveLength(5)
+  expect(mcp.requests.slice(callStart).filter(request => request.method === 'tools/call' && request.status === 200))
+    .toHaveLength(2 * (PROJECT_PRESET_IDS.length + childCases.length))
+  await writeFile(join(evidenceDirectory, 'official-business-mcp-scope.json'), JSON.stringify({
+    observations, children, globalCatalogToolNames, requests: mcp.requests,
+  }, null, 2))
+}
+
+async function waitForOfficialSessionEnd(page, sessionId, reasonKind, afterSeq = -1) {
+  const state = await waitForValue(page, `(async () => {
+    const remote = window.__runPanelTestContext.get('remote.session')
+    const projection = await remote.projections({ sessionId: ${JSON.stringify(sessionId)} })
+    if (!projection.ok) return { projection }
+    const history = await remote.page({
+      address: { kind: 'session', sessionId: ${JSON.stringify(sessionId)} },
+      throughSeq: projection.value.asOfSeq, maxMessages: 1,
+    })
+    const sessions = await remote.list({})
+    return { projection, history, sessions }
+  })()`, value => value.history?.ok === true && value.sessions?.ok === true
+    && value.sessions.value.items.some(item => item.sessionId === sessionId && item.running === false)
+    && value.history.value.records.some(record => record.event.type === 'turn/end'
+      && record.event.seq > afterSeq && record.event.data.reason.kind === reasonKind), 30_000)
+  return state.history.value.records.findLast(record => record.event.type === 'turn/end'
+    && record.event.seq > afterSeq && record.event.data.reason.kind === reasonKind).event
+}
+
+async function verifyOfficialSessionTrace(page, services, parentSessionId, parentPrompt, traceContext) {
+  const completedEnd = await waitForOfficialSessionEnd(page, parentSessionId, 'completed')
+  const running = await getProbeStatus({
+    runId: traceContext.runId, repositoryRoot: traceContext.repositoryRoot, config: traceContext.config,
+  })
+  expect(running.record.state).toBe('running')
+  expect(running.processGroupMatchesRun).toBe(true)
+  let childSessionId
+  const exportTrace = async label => {
+    const outputDirectory = join(traceContext.directory, label)
+    const result = await collectOfficialSessionTrace({
+      runId: traceContext.runId, sessionId: parentSessionId, config: traceContext.config, outputDirectory, page,
+    })
+    expect(JSON.parse(await readFile(result.indexPath, 'utf8'))).toEqual(result.index)
+    expect(result.index.sessions).toHaveLength(2)
+    const child = result.index.sessions.find(session => session.parentSessionId === parentSessionId)
+    expect(child).toBeDefined()
+    if (childSessionId === undefined) childSessionId = child.sessionId
+    expect(child.sessionId).toBe(childSessionId)
+    expect(result.index.sessions.map(session => session.sessionId).sort())
+      .toEqual([parentSessionId, childSessionId].sort())
+    expect(result.index.complete).toBe(false)
+    expect(result.index.missing).toHaveLength(4)
+    expect(result.index.missing).toEqual(expect.arrayContaining(
+      [parentSessionId, childSessionId].flatMap(sessionId => [
+        { source: 'model-request', sessionId, code: 'RAW_MODEL_REQUEST_NOT_PERSISTED' },
+        { source: 'model-stream', sessionId, code: 'RAW_MODEL_STREAM_NOT_PERSISTED' },
+      ]),
+    ))
+    const snapshots = new Map()
+    const officialPages = []
+    for (const session of result.index.sessions) {
+      expect(session.coverage.complete).toBe(true)
+      const snapshot = JSON.parse(await readFile(session.path, 'utf8'))
+      expect(snapshot.header.id).toBe(session.sessionId)
+      if (session.parentSessionId !== null) expect(snapshot.header.parentSession).toBe(session.parentSessionId)
+      const address = session.parentSessionId === null
+        ? { kind: 'session', sessionId: session.sessionId }
+        : { kind: 'subagent', parentSessionId, childSessionId: session.sessionId, mode: 'continuable' }
+      const request = { address, throughSeq: session.coverage.lastSeq, maxMessages: 1000 }
+      const response = await page.evaluate(`window.__runPanelTestContext.get('remote.session').page(${JSON.stringify(request)})`)
+      expect(response, JSON.stringify(response)).toMatchObject({ ok: true, value: { hasMore: false } })
+      expect(snapshot.events).toEqual(response.value.records.map(record => record.event))
+      officialPages.push({ sessionId: session.sessionId, request, response })
+      snapshots.set(session.sessionId, snapshot)
+    }
+    await writeFile(join(outputDirectory, 'official-pages.json'), JSON.stringify(officialPages, null, 2) + '\n', { mode: 0o600 })
+    return { ...result, snapshots }
+  }
+  const normal = await exportTrace('completed')
+  const parentEvents = normal.snapshots.get(parentSessionId).events
+  expect(parentEvents).toContainEqual(expect.objectContaining({
+    type: 'subagent/catalog', data: expect.objectContaining({ childId: childSessionId, mode: 'continuable' }),
+  }))
+  const childEvents = normal.snapshots.get(childSessionId).events
+  expect(childEvents).toContainEqual(expect.objectContaining({
+    type: 'subagent/descriptor', data: expect.objectContaining({ mode: 'continuable' }),
+  }))
+  for (const sessionId of [parentSessionId, childSessionId]) {
+    const events = normal.snapshots.get(sessionId).events
+    expect(events.filter(event => event.type === 'turn/end').at(-1).data.reason.kind).toBe('completed')
+    const calls = events.filter(event => event.type === 'tool/call')
+    const results = events.filter(event => event.type === 'tool/result')
+    expect(calls.length).toBeGreaterThan(0)
+    expect(calls.every(call => results.some(result => result.data.message.toolCallId === call.data.callId))).toBe(true)
+  }
+  assertToolScope(childEvents.filter(event => event.type === 'tool/call').map(event => event.data.name), {
+    required: OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name),
+  })
+  expect(childEvents.some(event => event.type === 'tool/result'
+    && JSON.stringify(event.data.message.content).includes('workflow_json'))).toBe(true)
+  const taskRequests = services.requestLog.filter(request => request.body.tools?.length > 0
+    && request.body.messages?.some(message => message.role === 'user'
+      && requestMessageText(message).includes(parentPrompt)))
+  expect(taskRequests.length).toBeGreaterThan(0)
+  for (const request of taskRequests) {
+    expect(request.path).toBe('/v1/chat/completions')
+    expect(request.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
+    expect(request.body.messages.some(message => message.role === 'system'
+      && requestMessageText(message).length > 0)).toBe(true)
+    assertToolScope((request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name), {
+      required: OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name),
+    })
+  }
+  expect(taskRequests.some(request => request.body.messages.some(message =>
+    message.role === 'user' && requestMessageText(message).includes(OFFICIAL_MCP_FIXTURE.workflowPrompt)))).toBe(true)
+
+  const requestStart = services.requestLog.length
+  const paused = services.pauseNextModelResponse(request => request.sequence >= requestStart
+    && request.body.messages?.some(message => message.role === 'user'
+      && requestMessageText(message) === OFFICIAL_MCP_FIXTURE.scopePrompt))
+  try {
+    await openBusinessSession(page, parentSessionId)
+    const responseText = 'Controlled generation accepted.'
+    const responseCount = `document.body.innerText.split(${JSON.stringify(responseText)}).length - 1`
+    const beforePrompt = await page.evaluate(responseCount)
+    await submitComposerPrompt(page, OFFICIAL_MCP_FIXTURE.scopePrompt)
+    const pausedRequest = await paused.started
+    expect(pausedRequest.body.messages.some(message => message.role === 'user'
+      && requestMessageText(message) === OFFICIAL_MCP_FIXTURE.scopePrompt)).toBe(true)
+    await waitForValue(page, responseCount, count => count > beforePrompt, 30_000)
+    const cancellation = await page.evaluate(`window.__runPanelTestContext.get('remote.session').cancel({
+      sessionId: ${JSON.stringify(parentSessionId)}
+    })`)
+    expect(cancellation, JSON.stringify(cancellation)).toMatchObject({ ok: true, value: { accepted: true } })
+    await waitForOfficialSessionEnd(page, parentSessionId, 'aborted', completedEnd.seq)
+    expect(await paused.closed).toMatchObject({ finished: false })
+    const cancelled = await exportTrace('cancelled')
+    const cancelledEvents = cancelled.snapshots.get(parentSessionId).events
+    expect(cancelledEvents.filter(event => event.type === 'turn/end').at(-1).data.reason)
+      .toMatchObject({ kind: 'aborted', reason: { kind: 'user' } })
+    const interruptedMessage = cancelledEvents.filter(event => event.type === 'assistant/message'
+      && event.seq > completedEnd.seq && event.data.interrupted === true).at(-1)
+    expect(interruptedMessage).toBeDefined()
+    expect(requestMessageText(interruptedMessage.data.message)).toContain(responseText)
+    const continued = await getProbeStatus({
+      runId: traceContext.runId, repositoryRoot: traceContext.repositoryRoot, config: traceContext.config,
+    })
+    expect(continued.record.state).toBe('running')
+    expect(continued.processGroupMatchesRun).toBe(true)
+    expect(continued.record.process.pid).toBe(running.record.process.pid)
+    await writeFile(join(traceContext.directory, 'live-assertions.json'), JSON.stringify({
+      runId: traceContext.runId, parentSessionId, childSessionId,
+      completedIndexPath: normal.indexPath, cancelledIndexPath: cancelled.indexPath,
+      exportApplicationPid: running.record.process.pid,
+      interruptedMessageId: interruptedMessage.data.message.id, preservedText: responseText, cancellation,
+      reasoningBlocks: [...cancelled.snapshots.values()].flatMap(snapshot => snapshot.events)
+        .filter(event => event.type === 'assistant/message')
+        .flatMap(event => event.data.message.content)
+        .filter(block => block.type === 'reasoning').length,
+    }, null, 2) + '\n', { mode: 0o600 })
+  } finally {
+    paused.release()
+  }
 }
 
 async function verifyPresetScopedRepositorySkills(page, workspaceId, {
@@ -1376,9 +1725,7 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
   })()`)
 
   await submitComposerPrompt(page, generation.triggerPrompt)
-  await waitForValue(page, `(() => [...document.querySelectorAll('[role="treeitem"]')]
-    .some(node => node.getAttribute('aria-selected') === 'true'
-      && node.textContent?.includes(${sessionJson})))()`, value => value === true, 30_000)
+  await verifySidebarSessionSelection(page, sessionId, generation.sessionTitle)
 
   const firstModelRequest = await services.requestWhere(request =>
     (request.body.messages ?? []).some(message => message.role === 'user'
@@ -1472,6 +1819,7 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
     runTitle: run.title,
     runStatus: run.status,
     output: {
+      mediaId: media.mediaId,
       filename: media.filename,
       mediaType: media.mediaType,
       byteSize: media.byteSize,
@@ -1517,9 +1865,7 @@ async function verifyGenerationAfterRestart(page, generationEvidence, evidenceDi
     } catch (error) { reject(error) }
   })`)
   expect(opened).not.toBe(false)
-  await waitForValue(page, `(() => [...document.querySelectorAll('[role="treeitem"]')]
-    .some(node => node.getAttribute('aria-selected') === 'true'
-      && node.textContent?.includes(${JSON.stringify(generationEvidence.sessionTitle)})))()`, value => value === true)
+  await verifySidebarSessionSelection(page, generationEvidence.sessionId, generationEvidence.sessionTitle)
   await page.evaluate(`window.__runPanelTestContext.sidebarRight.openTab('guide')`)
   await waitForValue(page, `document.querySelector('[data-sidebar-right-guide]') !== null`, value => value === true)
   const pluginEntryOpened = await page.evaluate(`(() => {
@@ -1595,9 +1941,11 @@ describe('official Desktop plugin regression', () => {
     await mkdir(resolve(fixtureRoot, 'artifacts'), { recursive: true, mode: 0o700 })
     await mkdir(startupWorkspacePath, { recursive: true, mode: 0o700 })
     await mkdir(agentsHome, { recursive: true, mode: 0o700 })
+    const mcp = await startOfficialMcpServices()
+    fixture.close = () => mcp.close()
     const testApiKey = randomBytes(24).toString('hex')
     await writeFile(environmentFilePath,
-      `${OFFICIAL_BUSINESS_FIXTURE.provider.apiKeyEnvironmentName}=${testApiKey}\n`,
+      `${OFFICIAL_BUSINESS_FIXTURE.provider.apiKeyEnvironmentName}=${testApiKey}\n${mcp.credentialEnvironmentName}=${mcp.token}\n`,
       { encoding: 'utf8', mode: 0o600 })
     await mkdir(resolve(startupWorkspacePath, '.agents/skills', OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName), { recursive: true, mode: 0o700 })
     await writeFile(resolve(startupWorkspacePath, '.agents/skills', OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, 'SKILL.md'), `---
@@ -1625,7 +1973,7 @@ description: ${USER_SKILL_DESCRIPTION}
 `, { encoding: 'utf8', mode: 0o600 })
 
     const promptCapture = await startModelRequestCaptureServer()
-    fixture.close = promptCapture.close
+    fixture.close = async () => { await promptCapture.close(); await mcp.close() }
     const provider = OFFICIAL_BUSINESS_FIXTURE.provider
     const alternateVisionProvider = OFFICIAL_BUSINESS_FIXTURE.imageReader.alternateProvider
     const customProviders = {
@@ -1748,6 +2096,19 @@ description: ${USER_SKILL_DESCRIPTION}
     fixture.runs.find(run => run.runId === firstRunId).active = false
     expect(firstStopped.record.state).toBe('stopped')
     expect(firstStopped.record.result.portsReleased).toBe(true)
+    installation.presetProfilePatch = await writeOfficialPresetProfilePatch({
+      profilePatchPath: join(dshHome, desktopConfig.paths.profileRelativePath, desktopConfig.paths.profilePatchFilename),
+      profilePatchAdapter: profileYamlAdapter,
+      installedPackageRoot: dirname(installation.installedPackagePath),
+      mcpUrl: mcp.url,
+      roleAgentOptions: Object.fromEntries(['composition-agent', 'generation-agent', 'observation-agent', 'comparison-agent']
+        .map(id => [id, { provider: provider.id, model: provider.modelId }])),
+    })
+
+    installation.mcpRecovery = await verifyOfficialMcpActivationRecovery({
+      fixture, config: desktopConfig, environmentFilePath, modelToken: testApiKey, mcp, services: promptCapture,
+      environmentRoot, agentsHome, sourceIdentity,
+    })
 
     const run = await startOfficialBusinessDesktop({
       repositoryRoot: fixtureRepositoryRoot, runId: randomUUID(), config: desktopConfig,
@@ -1770,9 +2131,15 @@ description: ${USER_SKILL_DESCRIPTION}
       await page.command('Emulation.setEmulatedMedia', {
         features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
       })
-      const firstClientLoad = await captureProjectClientContext(page, sourceIdentity, run.record.directories.evidence)
+      const firstClientLoad = await captureProjectClientContext(page, sourceIdentity, run.record.directories.evidence, waitForValue)
       contextCaptureScript = firstClientLoad.identifier
       installation.loadedClientSource = firstClientLoad.loadedClientSource
+      const traceContext = {
+        runId: run.record.runId,
+        repositoryRoot: fixtureRepositoryRoot,
+        config: desktopConfig,
+        directory: join(run.record.directories.evidence, desktopConfig.sessionTrace.directoryName),
+      }
       const actualWorkspacePath = await realpath(startupWorkspacePath)
       expect(run.record.directories.workspace).toBe(actualWorkspacePath)
       const environmentIsOutsideSourceRepository = !isPathWithin(environmentRoot, sourceRepositoryRoot)
@@ -1793,6 +2160,10 @@ description: ${USER_SKILL_DESCRIPTION}
       }
       await writeFile(join(run.record.directories.evidence, 'official-business-workspace-boundary.json'),
         `${JSON.stringify(outsideRepoWorkspaceProof, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
+      await writeFile(join(context.businessEvidenceDirectory, 'official-business-mcp.json'), JSON.stringify({
+        installedPackageRoot: dirname(installation.installedPackagePath),
+        profilePatch: installation.presetProfilePatch, requests: mcp.requests,
+      }, null, 2))
       identity = await seedOfficialBusinessSessions(page, run.record.directories.workspace)
       mediaFixture = await seedDesktopMedia(context, identity, stagedRunRepository)
       await page.evaluate(`(() => {
@@ -1823,6 +2194,12 @@ description: ${USER_SKILL_DESCRIPTION}
         '.agents',
         'skills',
       ))
+      expect(mcp.requests.some(request => request.method === 'tools/list' && request.status === 200)).toBe(true)
+      await writeFile(join(context.businessEvidenceDirectory, 'official-business-mcp.json'), JSON.stringify({
+        installedPackageRoot: dirname(installation.installedPackagePath),
+        profilePatch: installation.presetProfilePatch,
+        requests: mcp.requests,
+      }, null, 2))
       const presetSessions = await verifyPresetScopedRepositorySkills(page, identity.workspaceId, {
         evidenceDirectory: context.businessEvidenceDirectory,
         workspacePath: run.record.directories.workspace,
@@ -1841,6 +2218,8 @@ description: ${USER_SKILL_DESCRIPTION}
       generationEvidence = await verifyControlledGeneration(
         page, promptCapture, identity.workspaceId, context.businessEvidenceDirectory,
       )
+      promptCapture.setMcpObservationImages([{ run_id: generationEvidence.runId, media_id: generationEvidence.output.mediaId }])
+      await verifyOfficialMcpScope(page, promptCapture, mcp, identity.workspaceId, context.businessEvidenceDirectory, traceContext)
       const catalogRemote = await page.evaluate("window.__runPanelTestContext.get('remote.harnessComfyuiCatalog').baseModels()")
       expect(catalogRemote).toEqual({ ok: true, value: { ok: true, value: { items: [{ id: '123', label: 'Desktop catalog fixture' }] } } })
       const imageModels = await page.evaluate("window.__runPanelTestContext.get('remote.harnessComfyuiImageReader').models()")
@@ -2767,7 +3146,7 @@ description: ${USER_SKILL_DESCRIPTION}
         repositoryRoot: fixtureRepositoryRoot,
         config: desktopConfig,
       })
-      const finalClientLoad = await captureProjectClientContext(page, sourceIdentity, finalRun.record.directories.evidence)
+      const finalClientLoad = await captureProjectClientContext(page, sourceIdentity, finalRun.record.directories.evidence, waitForValue)
       contextCaptureScript = finalClientLoad.identifier
       installation.loadedClientSourceAfterRestart = finalClientLoad.loadedClientSource
       generationRestartEvidence = await verifyGenerationAfterRestart(
@@ -2881,6 +3260,10 @@ description: ${USER_SKILL_DESCRIPTION}
         await writeFile(join(context.businessEvidenceDirectory, 'official-business-failure.png'),
           Buffer.from(failureScreenshot.data, 'base64'), { encoding: 'binary', mode: 0o600 })
       }
+      await writeFile(join(context.businessEvidenceDirectory, 'official-business-mcp.json'), JSON.stringify({
+        installedPackageRoot: dirname(installation.installedPackagePath),
+        profilePatch: installation.presetProfilePatch, requests: mcp.requests,
+      }, null, 2))
       throw error
     } finally {
       if (contextCaptureScript !== undefined) {

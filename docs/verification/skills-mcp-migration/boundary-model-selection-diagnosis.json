@@ -1,0 +1,116 @@
+{
+  "purpose": "诊断两次真实 Apodex Skill 执行在 Workflow 查询返回空默认模型后继续提交的原因。",
+  "scope": {
+    "worktree": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "mode": "只读诊断；本次只写本 JSON；本次未运行模型或提交生成任务。",
+    "model": "apodex/apodex-1.1-mini:free",
+    "cases": [
+      {
+        "session_id": "session-e9955a09-4e4c-449d-8740-5736ffb8f115",
+        "collect": ".local/skills-mcp-migration-live/desktop/97f3d7ce-e89b-4c48-aed4-1febbd32a58d/1791890272939-f963263c-9d2b-43e5-9036-3d700e5b4b35-collect.json",
+        "workflow_tool_call_id": "call_42bf5e9c82a4411dbdd9640b",
+        "workflow_result_seq": 66,
+        "model": null,
+        "fixture_exchange": ".local/skills-mcp-migration-live/boundary-fixture-evidence/6703784d-b936-4496-be08-51b2f2338338/exchange-eeffc2af-f2a4-49e5-8855-7db2a9b6fd70.json",
+        "changed_item_fields": [
+          "model"
+        ],
+        "fixture_text_equals_structured_content": true,
+        "fixture_text_equals_session_result": true,
+        "next_model_input": ".local/skills-mcp-migration-live/llm-calls/2111aa93-c3b2-41fc-9f41-32a0480a0bd4.jsonl",
+        "next_model_input_equals_session_result": true,
+        "next_model_input_contains_stop_rule": true,
+        "decision_seq": 69,
+        "generation_submit_seq": 85,
+        "generation_result_seq": 86,
+        "generation_result": "{\"run_id\":\"run_fc1c9dfc-49b7-4a3e-b69a-edf4bbb9ad33\"}",
+        "submitted_model": {
+          "id": "1",
+          "file_name": "waiIllustriousSDXL_v170.safetensors"
+        }
+      },
+      {
+        "session_id": "session-3f1a4967-cbe6-4f44-8047-f7b656345914",
+        "collect": ".local/skills-mcp-migration-live/desktop/97f3d7ce-e89b-4c48-aed4-1febbd32a58d/1791890436503-c978ae74-42ef-4fda-8267-8e5333b60811-collect.json",
+        "workflow_tool_call_id": "call_accdb3614f07403fa74f805b",
+        "workflow_result_seq": 52,
+        "model": null,
+        "fixture_exchange": ".local/skills-mcp-migration-live/boundary-fixture-evidence/6703784d-b936-4496-be08-51b2f2338338/exchange-ae9c8f8f-c96d-462d-9175-b5be94947cec.json",
+        "changed_item_fields": [
+          "model"
+        ],
+        "fixture_text_equals_structured_content": true,
+        "fixture_text_equals_session_result": true,
+        "next_model_input": ".local/skills-mcp-migration-live/llm-calls/a38997d4-6af8-4e9a-9d28-b755ffa2157c.jsonl",
+        "next_model_input_equals_session_result": true,
+        "next_model_input_contains_stop_rule": true,
+        "decision_seq": 67,
+        "generation_submit_seq": 88,
+        "generation_result_seq": 89,
+        "generation_result": "{\"run_id\":\"run_015bf0c9-2d83-4e67-8af8-83f4864fae36\"}",
+        "submitted_model": null
+      }
+    ]
+  },
+  "conclusion": {
+    "primary_classification": "模型执行未遵守 Skill 已明确规定的等待用户指定模型步骤。",
+    "confidence": "高",
+    "basis": [
+      "两次用户任务均未指定 model_id。两次模型输入均包含完整 Skill 停止规则及 item.model:null。",
+      "两次执行者均识别模板没有保存默认模型，并根据 workflow_json 中 checkpoint 搜索模型。工作台会话随后显式提交模型 1；迭代会话随后提交 model:null。",
+      "迭代会话 seq67 已引用请求用户指定模型的规则，仍把 CLI 接受 null 的数据格式解释成继续执行的依据。"
+    ],
+    "causal_limit": "已定位可观察的决策偏离；两次运行使用不同预设且未控制模型采样，当前证据不能估计发生率，也不能证明某一句文字单独导致偏离。"
+  },
+  "contract_assessment": {
+    "files": [
+      ".agents/skills/comfyui-generate/SKILL.md",
+      ".agents/skills/comfyui-generate/references/generation-cli.md",
+      ".agents/skills/comfyui-generate/references/prompt-result-contract.md"
+    ],
+    "explicit_rule": "用户未指定模型时采用模板关联的默认模型；模板也没有默认模型时，请求用户指定模型后继续。",
+    "supporting_rule": "Prompt Builder 模型路线校验读取核对当前选择步骤采用的模型；用户未指定模型时，查询结果应属于模板保存的默认生成模型。",
+    "clarity_gaps": [
+      "SKILL.md 没有将模板关联的默认模型明确定位为 Workflow 查询结果 item.model，workflow_json 同时暴露 checkpoint 文件名。",
+      "generation-cli.md 参数章节将没有选择生成模型描述为 model:null，来源章节再将 null 限定为采用模板默认模型；两处表述的范围不同。"
+    ],
+    "judgment": "当前停止义务清楚。字段定位和 CLI 表述可以收敛以减少误读，但当前合同没有授权通过 checkpoint 或 model_route 自动补选模型。"
+  },
+  "tool_and_host_assessment": {
+    "mcp_delivery": "两次 fixture → session tool/result → 下一次模型 request 的文本逐字一致；fixture 文本与 structuredContent 结构一致。",
+    "fixture_boundary": "两次 fixture 相对保存的目录响应只改变 item.model，并保留 workflow_json 的 checkpoint。上游快照的原 model.id 为 1。",
+    "host_boundary": "该 fixture 对 MCP 返回进行改写；当前证据未显示 Host 目录数据或实际 Workflow checkpoint 同步改变。两次 generation submit 返回 run_id，证明 Host 接受了请求。",
+    "host_inference_limit": "不能据此认定 Host 在真实无默认模型状态下错误放行，也不能认定 null 提交必然采用何种来源的模型；该因果问题需要同一模板的 Host 侧状态和实际工作流解析证据。",
+    "other_observed_tool_errors": "search_models 拒绝未支持的 name 参数或字符串 base_model 后，执行者修正参数成功。该错误发生在越过等待步骤之后。"
+  },
+  "minimal_falsifiable_retests": [
+    {
+      "id": "R1",
+      "question": "字段含义与 CLI 表述收敛后，执行者是否仍越过空默认模型暂停步骤？",
+      "change": "仅修订 Skill 的默认模型字段定位和 CLI model 来源表述；用户任务、预设、模型、fixture 响应及 checkpoint 保持一致。",
+      "measurement": "记录原文 tool/result 和下一模型输入；检查执行者是否请求用户指定 model_id，并确认没有 generation submit。",
+      "falsifier": "修订后仍从 checkpoint 搜索采用模型或提交，说明这一文字修订不足以恢复规则执行。",
+      "status": "未执行。需要先批准 Skill 修订。"
+    },
+    {
+      "id": "R2",
+      "question": "workflow_json 的 checkpoint 是否是当前偏离行为的必要线索？",
+      "change": "保持当前 Skill 和同一预设，在诊断性夹具中仅省略 workflow_json，并保留 item.model:null；与保留 workflow_json 的条件成对比较。",
+      "measurement": "观察是否请求模型、自动搜索模型及提交。",
+      "falsifier": "省略 workflow_json 后仍自动选择并提交，则 checkpoint 不是必要线索。",
+      "limitation": "这是提示输入的因果探针；省略字段的夹具不用于证明真实 MCP 合同通过。",
+      "status": "未执行。"
+    }
+  ],
+  "recommended_minimal_revision": {
+    "status": "建议，未修改。",
+    "skill": "在核对当前选择步骤定义模板默认模型的唯一来源为 Workflow 查询结果 item.model；用户未指定模型且该字段为 null 时，要求用户提供 model_id，并禁止自动搜索采用模型或继续创建图片。",
+    "cli_reference": "参数章节只定义 model 的允许结构；模型选择条件统一引用 SKILL.md，保留显式模型和已关联默认模型两种提交映射。",
+    "scope": "保留 MCP workflow_json 原始内容；当前证据支持先修订 Skill 合同表达，无须以删除 Workflow 数据或改写 Host 生成逻辑替代该修订。"
+  },
+  "remaining_uncertainty": [
+    "已收集的 Host 证据没有与夹具同步为空的模板状态，Host 空默认模型执行语义尚待独立核对。",
+    "单次或两次真实模型执行不能区分稳定的指令遵循缺陷与采样影响。",
+    "本次 JSON 是诊断结果；独立语义审计由主 Agent 按仓库流程组织。"
+  ]
+}

@@ -1,0 +1,493 @@
+{
+  "schemaVersion": 1,
+  "purpose": "定位首轮真实模型F1的输入来源与首次偏离，提出最小对照并分别登记目标分支和整体合同。",
+  "runId": "7901c32c-9091-411a-b04f-233d2634f4c8",
+  "caseId": "5.5-1",
+  "status": "observed-chain-confirmed-trigger-hypotheses-unverified",
+  "priorReview": "docs/verification/skills-mcp-migration/mcp-0902-first-live-review.json",
+  "scope": {
+    "read": [
+      "首次任务模型请求",
+      "读取Skill后的任务模型请求",
+      "环境查询前的任务模型请求",
+      "对应会话事件及Skill返回正文",
+      "宿主persona、运行上下文、Skill目录与工具声明"
+    ],
+    "modelExecution": false,
+    "productOrSkillEdits": false,
+    "evidenceBoundary": "采集器记录的是宿主llm/stream收到的结构化输入；本次没有提供模型提供方HTTP报文。只能确认这些结构化字段进入宿主模型调用，不能额外断言source元数据如何由适配器编码。"
+  },
+  "actualInputs": [
+    {
+      "callId": "968f1162-c464-4f28-b9c0-2c829538d8a5",
+      "file": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/968f1162-c464-4f28-b9c0-2c829538d8a5.jsonl",
+      "recordLine": 1,
+      "messageCount": 4,
+      "messages": [
+        {
+          "index": 0,
+          "role": "system",
+          "sourceKind": "system-prompt",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 1939
+        },
+        {
+          "index": 1,
+          "role": "user",
+          "sourceKind": "user",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 396
+        },
+        {
+          "index": 2,
+          "role": "user",
+          "sourceKind": "runtime-context",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 574
+        },
+        {
+          "index": 3,
+          "role": "user",
+          "sourceKind": "skill-catalog",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 2029
+        }
+      ],
+      "toolCount": 31,
+      "historyUpdateCount": 0
+    },
+    {
+      "callId": "a6e039fe-cfdf-41a9-af24-4f56101d78de",
+      "file": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/a6e039fe-cfdf-41a9-af24-4f56101d78de.jsonl",
+      "recordLine": 1,
+      "messageCount": 6,
+      "messages": [
+        {
+          "index": 0,
+          "role": "system",
+          "sourceKind": "system-prompt",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 1939
+        },
+        {
+          "index": 1,
+          "role": "user",
+          "sourceKind": "user",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 396
+        },
+        {
+          "index": 2,
+          "role": "user",
+          "sourceKind": "runtime-context",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 574
+        },
+        {
+          "index": 3,
+          "role": "user",
+          "sourceKind": "skill-catalog",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 2029
+        },
+        {
+          "index": 4,
+          "role": "assistant",
+          "sourceKind": "model",
+          "contentTypes": [
+            "text",
+            "tool-call"
+          ],
+          "textCharacters": 58
+        },
+        {
+          "index": 5,
+          "role": "tool",
+          "sourceKind": "tool",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 6368
+        }
+      ],
+      "toolCount": 31,
+      "historyUpdateCount": 0
+    },
+    {
+      "callId": "2710eedf-0141-4b51-90d8-fdb09eac70a5",
+      "file": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/2710eedf-0141-4b51-90d8-fdb09eac70a5.jsonl",
+      "recordLine": 1,
+      "messageCount": 9,
+      "messages": [
+        {
+          "index": 0,
+          "role": "system",
+          "sourceKind": "system-prompt",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 1939
+        },
+        {
+          "index": 1,
+          "role": "user",
+          "sourceKind": "user",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 396
+        },
+        {
+          "index": 2,
+          "role": "user",
+          "sourceKind": "runtime-context",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 574
+        },
+        {
+          "index": 3,
+          "role": "user",
+          "sourceKind": "skill-catalog",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 2029
+        },
+        {
+          "index": 4,
+          "role": "assistant",
+          "sourceKind": "model",
+          "contentTypes": [
+            "text",
+            "tool-call"
+          ],
+          "textCharacters": 58
+        },
+        {
+          "index": 5,
+          "role": "tool",
+          "sourceKind": "tool",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 6368
+        },
+        {
+          "index": 6,
+          "role": "assistant",
+          "sourceKind": "model",
+          "contentTypes": [
+            "reasoning",
+            "tool-call",
+            "tool-call"
+          ],
+          "textCharacters": 239
+        },
+        {
+          "index": 7,
+          "role": "tool",
+          "sourceKind": "tool",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 1618
+        },
+        {
+          "index": 8,
+          "role": "tool",
+          "sourceKind": "tool",
+          "contentTypes": [
+            "text"
+          ],
+          "textCharacters": 1438
+        }
+      ],
+      "toolCount": 31,
+      "historyUpdateCount": 0
+    }
+  ],
+  "sourceAnalysis": [
+    {
+      "source": "用户任务",
+      "location": "首次请求messages[1]；session-events.jsonl seq9",
+      "content": "工作目录、已安装WAI Skill绝对路径、为Fate中的角色构建Prompt。",
+      "assessment": "用户没有指定角色，也没有提交comfyui-context记录。任务未要求检查环境或恢复其他会话上下文。"
+    },
+    {
+      "source": "宿主persona",
+      "location": "首次请求messages[0]；seq8",
+      "content": "先选择并读取匹配Skill，遵守该Skill范围；匹配迭代生成任务时才派发构图、生成、观察和比较。persona包含Handle missing inputs and user choices according to the handoff rules in comfyui-iterate-generation。",
+      "assessment": "persona引导遵循Skill及处理缺失输入，但没有称WAI必须接收comfyui-context，也没有要求从环境或Workspace恢复业务输入。缺失输入措辞可能被过度泛化，当前样本不能确认它触发F1。"
+    },
+    {
+      "source": "宿主运行上下文",
+      "location": "首次请求messages[2]；seq10",
+      "content": "Current runtime context说明workspace-write与ask策略，包含本轮Workspace路径。",
+      "assessment": "内容描述文件权限和审批；没有提供角色或画师资料，也没有规定应检查环境。runtime context与业务comfyui-context在功能上不同。"
+    },
+    {
+      "source": "宿主Skill目录",
+      "location": "首次请求messages[3].content[0].text；seq11",
+      "content": "system-reminder内的ANIMA和Krea2摘要出现comfyui-context；WAI摘要仅说明WAI Prompt构建与历史Run查询。目录明确摘要不能代替已加载Skill的指令。",
+      "assessment": "首次输入中comfyui-context文字只在其他两个Skill的目录摘要中出现。第二次任务调用的可见reasoning提到system reminder about comfyui-context，与此词语位置相符；这是可检验的误归因候选，不是已证实的触发因果。"
+    },
+    {
+      "source": "WAI主文",
+      "location": "第二次任务请求messages[5]；seq18",
+      "content": "第1节要求读取input-contract.md，并从当前用户消息取得自然语言要求、Character与Style上下文；第4节将作品与角色选择交给character.md。",
+      "assessment": "主文列出待处理输入类别，但没有称每类都必须存在；可省略规则由引用文件集中定义。第二次调用时模型尚未取得该引用正文。完整Skill正文已进入模型输入，未发现截断。"
+    },
+    {
+      "source": "输入合同",
+      "location": "第三次任务请求messages[7]；seq23",
+      "content": "当前用户消息由普通文字和零个或多个comfyui-context记录组成；处理顺序第4项明确没有Character和Style记录时只根据普通文字构建。",
+      "assessment": "全文1618字符在环境查询之前已经进入实际模型请求，与工具事件正文一致。可省略规则既在当前用户消息节，也在末尾处理顺序第4项出现。不存在执行环境查询时该规则尚未到达的证据。"
+    },
+    {
+      "source": "bash工具声明",
+      "location": "首次及偏离前请求tools中name=bash的description",
+      "content": "Managed $DSH_* variables expose current harness environment facts。声明另提供工作目录、输出截断和文件权限信息。",
+      "assessment": "声明解释运行变量的可用性，没有把它们指定为角色或画师输入来源。该句提供了检查环境的操作知识；是否促成seq29行为须用对照验证。"
+    },
+    {
+      "source": "消息布局",
+      "location": "三个请求messages数组",
+      "content": "系统persona后依次为用户业务任务、宿主runtime-context、宿主skill-catalog；后两项的role同为user。之后是助手调用及工具返回。第三次请求还保留seq21的错误前提reasoning。",
+      "assessment": "来源元数据明确区分三类user消息；正文中的运行上下文和Skill目录随后出现，可能引起范围混淆。错误前提又在后续输入中重放。当前资料不足以证明布局或重放是原因。"
+    }
+  ],
+  "conflictAssessment": {
+    "inputSourceRulesConflict": false,
+    "basis": "WAI主文将当前消息输入解析交给input-contract.md；该合同明确允许零条记录。宿主没有相反的必填规定，也没有从环境恢复业务上下文的要求。",
+    "timing": "首次错误前提发生于seq21，早于完整输入合同返回seq23；seq28与seq29发生于合同完整到达之后。",
+    "sourceRequirementVersusCapability": "环境变量可读取是工具能力说明。当前业务来源合同仍是用户普通文字、已提供记录和按Skill查询的素材。",
+    "findingPrecision": "F1记录了模型关于上下文必要性的错误前提及额外调查。输入合同规定采用来源，没有单独禁止这次读取；实际未采用环境中的角色或画师输入，也未把上下文缺失设为最终阻塞。该项登记为非阻断观察。"
+  },
+  "observedChain": [
+    {
+      "order": 1,
+      "evidence": "首次请求messages[3]及tools[bash]",
+      "fact": "其他Skill摘要介绍comfyui-context；bash声明介绍DSH运行变量。"
+    },
+    {
+      "order": 2,
+      "evidence": "seq18；第二次请求messages[5]",
+      "fact": "执行者取得WAI主文，其中要求先读取输入合同。"
+    },
+    {
+      "order": 3,
+      "evidence": "seq21",
+      "fact": "模型把comfyui-context描述为system reminder涉及的预期内容，同时请求读取输入合同并列出Skill引用目录。",
+      "causalLimit": "此处是首次可见错误前提；首次任务调用未提供reasoning，不能把该前提提前到更早时点。"
+    },
+    {
+      "order": 4,
+      "evidence": "seq23；第三次请求messages[7]",
+      "fact": "完整输入合同明确零条上下文有效。"
+    },
+    {
+      "order": 5,
+      "evidence": "第三次请求messages[6]；seq28",
+      "fact": "模型输入保留前次错误前提，模型继续认为请求缺少上下文，并提出在Workspace或会话寻找。"
+    },
+    {
+      "order": 6,
+      "evidence": "seq29-30",
+      "fact": "执行者列出本轮Workspace并筛选环境变量；返回含本轮路径和已脱敏的CLI能力字段。"
+    },
+    {
+      "order": 7,
+      "evidence": "seq32、seq35-49",
+      "fact": "执行者取得角色规则后通过MCP查询作品，遇到两个同名候选后等待用户选择；没有调用角色查询或生成。"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "claim": "其他Skill摘要中的comfyui-context被误套用为WAI任务的必需上下文。",
+      "support": "首次输入只有ANIMA/Krea2摘要出现该文字；seq21明确提到system reminder，WAI主文没有该提醒要求。",
+      "counterEvidence": "Skill目录同时明确摘要不可代替Skill指令；输入合同到达后仍发生额外调查。",
+      "status": "plausible-unverified"
+    },
+    {
+      "id": "H2",
+      "claim": "可省略规则在引用文件中稍后到达，首次错误前提通过后续消息重放影响模型纠正。",
+      "support": "seq21先出现错误前提，seq23才返回零条记录规则；第三次请求messages[6]重放seq21。",
+      "counterEvidence": "规则在seq29之前完整到达且文本短；当前证据未证明单纯提前或重排会改变动作。",
+      "status": "plausible-unverified"
+    },
+    {
+      "id": "H3",
+      "claim": "bash对DSH运行变量的介绍促使模型将寻找上下文具体落实为env筛选。",
+      "support": "该操作知识从首次请求就存在；实际命令筛选dsh/comfyui/context。",
+      "counterEvidence": "声明只说运行事实；shell基础知识也足以生成该命令。删除此句仍可能出现同一动作。",
+      "status": "plausible-unverified"
+    },
+    {
+      "id": "H4",
+      "claim": "宿主runtime-context与Skill目录均使用user消息角色，增加了当前用户业务输入与运行信息之间的混淆。",
+      "support": "两类消息紧随用户任务，role均为user；runtime-context使用context名称并提供Workspace路径。",
+      "counterEvidence": "正文清楚说明权限内容，source元数据也区分来源；没有实际把这些字段采用为角色输入。",
+      "status": "lower-priority-unverified"
+    }
+  ],
+  "minimalSingleVariableControl": {
+    "status": "proposed-not-executed",
+    "purpose": "作为非阻断改善调查，检验H1的其他Skill摘要词语是否触发错误前提；保持模型和业务任务不变。对照结果不用于追溯新增本轮业务禁令。",
+    "model": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    "fixedInputs": [
+      "同一业务文字：为Fate中的角色构建Prompt。",
+      "同一WAI Skill、input-contract.md和character.md字节",
+      "同一persona、权限、模型参数、工具名称与参数schema",
+      "同一已安装资源和空Workspace条件",
+      "同一业务目录返回及任务期限；每组使用相同规格的干净随机运行目录"
+    ],
+    "checkpoint": "以第二次任务调用a6e039fe-cfdf-41a9-af24-4f56101d78de的完整输入为诊断检查点；此前已加载WAI Skill，尚未产生seq21错误前提。",
+    "controlA": "保留实际宿主Skill目录摘要。",
+    "variantB": "只在诊断输入副本的Skill目录正文中，将ANIMA与Krea2摘要里的comfyui-context术语替换为语义等价的当前消息结构化上下文记录表述；保留两个Skill的名称、任务范围、其余摘要、WAI摘要与全部实际工具能力。",
+    "singleVariable": "与本任务无关的Skill摘要是否显式出现comfyui-context术语。两处同类替换共同构成这个变量；不调整WAI业务规则。",
+    "executionBoundary": "仅作为独立诊断输入，不写入产品或Skill；若通过现有官方流程无法保持其余输入一致，应先记录该实验不可用，不能用任意不同会话代替单变量对照。",
+    "observations": [
+      "是否仍声称存在要求comfyui-context的system reminder",
+      "是否把零条记录解释为缺失或故障",
+      "完整输入合同返回后是否检查Workspace或环境以寻找该记录",
+      "最终是否仍满足作品歧义停止分支"
+    ],
+    "decisionRule": "按预先固定的相同次数成对重复A/B，记录动作而非只看最终回答；一次成功不足以确认原因。B降低首次错误前提且后续环境查询同步减少，只支持H1在此条件下有贡献；B仍偏离则继续检验H2/H3。",
+    "followUpControls": [
+      {
+        "hypothesis": "H2",
+        "change": "在第三次请求中只把输入合同末尾已有的零记录处理项移至当前用户消息节的零个或多个定义后，删除原位置该项，保持文字与其余输入不变。",
+        "measure": "在已经存在seq21错误前提的条件下，规则位置能否改变seq28的后续判断；此对照只能检验纠正效果，不能证明首次误解来源。"
+      },
+      {
+        "hypothesis": "H3",
+        "change": "在第三次请求的bash说明中仅删除Managed $DSH_* variables expose current harness environment facts这一句，其余消息与工具能力保留。",
+        "measure": "额外调查是否仍发生，是否仍选择env；必须同时记录Workspace探查，防止把换一种探查方式计成恢复正确执行。"
+      }
+    ],
+    "businessRuleChange": false,
+    "additionalProhibitionProposed": false
+  },
+  "acceptanceRegistration": {
+    "caseId": "5.5-1",
+    "targetBranch": {
+      "status": "passed",
+      "definition": "作品同名时报告候选标识、名称、别名和类别，等待用户选择；角色未指定时不查询角色、不构造character内容。",
+      "evidence": [
+        "seq38-39查询返回两条Fate作品",
+        "seq43-46读取两条详情",
+        "seq49等待作品选择及角色名",
+        "seq51自然completed；全部9次工具调用没有角色查询或生成"
+      ]
+    },
+    "executionContract": {
+      "status": "no-violation-observed",
+      "observation": "F1",
+      "evidence": [
+        "seq23规定允许零条上下文，并约束Prompt输入采用",
+        "seq29-30额外调查未返回Character或Style记录",
+        "seq49仅将作品选择和角色名列为必填，未要求补交comfyui-context",
+        "完整轨迹没有角色查询、Prompt构造或环境值作为业务素材的采用"
+      ],
+      "scope": "本轮已核对合同未发现违反；F1保留为非阻断的多余查询观察。"
+    },
+    "materialIsolation": {
+      "status": "passed-for-observed-trace",
+      "evidence": "实际工具返回和模型请求未出现未授权验收资料或其他场景材料。",
+      "scope": "环境读取本身不能自动推导验收资料污染；应按实际返回判定。"
+    },
+    "capture": {
+      "status": "passed-for-this-run",
+      "scope": "7次模型调用与52条事件完整；本轮未覆盖父子、多页和取消。"
+    },
+    "recommendedLedgerFields": [
+      "caseId",
+      "preset",
+      "runId",
+      "targetBranchStatus",
+      "executionContractStatus",
+      "materialIsolationStatus",
+      "evidenceCoverage",
+      "blockingFindingIds",
+      "observationIds",
+      "sourceReview"
+    ],
+    "recommendedLedgerValue": {
+      "caseId": "5.5-1",
+      "preset": "harness-comfyui-iteration",
+      "runId": "7901c32c-9091-411a-b04f-233d2634f4c8",
+      "targetBranchStatus": "passed",
+      "executionContractStatus": "no-violation-observed",
+      "materialIsolationStatus": "passed-for-observed-trace",
+      "blockingFindingIds": [],
+      "observationIds": [
+        "F1"
+      ]
+    },
+    "aggregation": "5.5-1目标分支登记通过；本轮输入采用和资料隔离未发现违反，F1登记为非阻断观察。不得把未明文禁止的多余查询升级为验收失败。其他场景、预设和采集路径继续按各自合同汇总。"
+  },
+  "limitations": [
+    "本次未执行任何模型对照，触发根因仍未验证。",
+    "本次只基于宿主实际导出的reasoning和输入判断；首次任务调用无reasoning，模型隐藏思考不可见。",
+    "宿主结构化请求中source元数据与toolHistory的提供方编码方式未在本次输入中提供。",
+    "没有发现上下文来源规则相互冲突；无法据此断言模型一定遵循或一定受到某句影响。"
+  ],
+  "corrections": [
+    {
+      "id": "C1",
+      "previousExecutionContractStatus": "deviation-open",
+      "revisedExecutionContractStatus": "no-violation-observed",
+      "basis": {
+        "reason": "进一步区分输入来源采用与允许读取范围后，现有证据不足以把额外调查判为输入合同失败。",
+        "contractQuotes": [
+          {
+            "source": "seq23 input-contract.md 当前用户消息",
+            "text": "当前用户消息由普通文字和零个或多个 `comfyui-context` 上下文记录 JSON 行组成。",
+            "meaning": "规定业务输入的结构与可省略性。"
+          },
+          {
+            "source": "seq23 input-contract.md 处理顺序和采用位置 第4项",
+            "text": "当前用户消息既没有 Character 上下文记录，也没有 Style 上下文记录时，Skill 执行者只根据普通文字构建最终 Prompt。",
+            "meaning": "约束最终Prompt的输入采用。该句没有单独禁止Workspace目录或环境读取。"
+          },
+          {
+            "source": "seq32 character.md 用户只提供作品时",
+            "text": "用户尚未指定角色名称时，Skill Agent 不得查询角色或创建 `character` 内容。",
+            "meaning": "本轮必须遵守的停止边界；实际未查询角色或创建character。"
+          },
+          {
+            "source": "计划5.13.1第3项",
+            "text": "被测主 Agent 或子 Agent 读取或接收未获本任务授权的验收资料时，该轮判为资料污染。",
+            "meaning": "需要证明收到的是未授权验收资料；本次环境返回为本轮运行信息，未发现该类资料。"
+          }
+        ],
+        "actualAdoption": "seq30环境返回没有Character或Style记录，后续没有将环境值作为角色或画师Prompt来源，也没有构造Prompt。",
+        "actualBlockingReason": "seq49要求用户选择作品65或3241并提供角色名；没有把缺少comfyui-context列为必须补齐的阻塞项。该回答把画面和风格列为可选补充。",
+        "remainingObservation": "seq21、28、35可见reasoning对上下文必要性存在错误前提，seq29执行多余目录与环境查询。该观察可用于改善和对照调查，当前合同与结果不支持将其设为验收失败。",
+        "gatingConclusion": "5.5-1作品同名目标分支通过。本轮已核对的输入采用与资料隔离合同未发现违反；F1不作为验收阻断项。全矩阵验收仍须分别核对其他场景和预设。"
+      }
+    }
+  ]
+}

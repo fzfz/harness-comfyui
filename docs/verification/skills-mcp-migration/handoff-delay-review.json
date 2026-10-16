@@ -1,0 +1,209 @@
+{
+  "purpose": "独立核对 H4 完成通知延迟控制工具的 SDK 合同、确定性行为、失败边界与证据归属。",
+  "result": "新增启动时间取证的窄范围独立审查通过；30 项定向测试通过，本轮未发现实质问题。原三项发现保持本地闭合状态；官方运行验收仍待执行。",
+  "scope": {
+    "implementationChanged": false,
+    "desktopStarted": false,
+    "modelCalled": false,
+    "dependenciesInstalled": false,
+    "reviewedFiles": [
+      ".local/skills-mcp-migration-live/handoff-delay.mjs",
+      ".local/skills-mcp-migration-live/handoff-delay.test.mjs",
+      "docs/verification/skills-mcp-migration/handoff-delay-control.json"
+    ]
+  },
+  "findings": [
+    {
+      "id": "H4-R1",
+      "priority": "P1",
+      "title": "损坏控制文件会中断无关会话的正常结束",
+      "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:92-94",
+      "evidence": "agent/turn-stopping 回调先执行 readControl()，随后才比较 childSessionId。使用内容为 CANARY_PRIVATE_PROMPT_CONTENT 的控制文件，并向回调传入 unrelated-session，确定性复现 SyntaxError 拒绝。",
+      "impact": "该监听器使用 global:true。控制文件格式损坏时，所有经过该结束钩子的会话都可能被 SDK 记录为错误结束；控制工具会干扰父任务及其他子任务，从而改变 H4 观察对象。",
+      "sdkEvidence": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js:999-1027 将监听器异常转为 turnEnds.kind=error，并写入 turn/end。",
+      "recommendation": "在控制文件读取边界处理读取和解析失败，采用固定的元数据诊断并退出本次控制回调，保证无关会话正常完成。增加损坏 JSON、不可读取路径与无关 child 的回归。",
+      "resolution": {
+        "status": "closed_in_local_review",
+        "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:133-143",
+        "evidence": "结束钩子捕获控制文件读取、JSON 解析与字段校验失败，记录固定诊断后返回。29 项回归及独立 canary 复现均确认无关会话不再拒绝。"
+      }
+    },
+    {
+      "id": "H4-R2",
+      "priority": "P1",
+      "title": "CLI 与结束钩子的原始解析错误会输出控制文件内容片段",
+      "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:18-22,253-255",
+      "evidence": "对包含 CANARY_PRIVATE_PROMPT_CONTENT 的控制文件执行 runCli(status)，抛出的 SyntaxError.message 包含 CANARY。CLI 顶层会原样将此 message 写入 stderr；相同错误也从全局结束钩子传播给 SDK。",
+      "impact": "当错误路径指向含正文或凭据的文件，或者控制文件受到内容污染时，正文片段可能进入终端记录或 SDK 会话错误。现有仅记录元数据的声明未覆盖该失败路径。",
+      "recommendation": "将解析异常转换为不包含原始输入、错误 cause 或原始 message 的固定诊断，仅保留受控错误类别与操作提示。通过真实 CLI 子进程验证非零退出、stdout 为空以及 stderr 和 SDK 错误事件中不存在 canary。",
+      "resolution": {
+        "status": "closed_in_local_review",
+        "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:18-39",
+        "evidence": "readControl() 将读取或解析失败转换为固定 ControlFileError，不携带原始 message 或 cause。真实 CLI 子进程复验确认退出码为 1、stdout 为空、stderr 不含 canary。"
+      }
+    },
+    {
+      "id": "H4-R3",
+      "priority": "P2",
+      "title": "完成后的 trace 持续接收同一 child 后续轮次的通知",
+      "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:56-90,121-127,162-168",
+      "evidence": "traces 仅在插件卸载时清空。连续触发同一 child 的 turn 1 和 turn 2，再注入一条父 user/message 完成通知，确定性复现同一 eventSeq=99 同时记录在 turn=1 与 turn=2 的证据文件。subagent/end 同样只按 child ID 匹配。",
+      "impact": "同一子会话多轮执行或重新激活时，前一次 H4 证据会继续吸收后续通知、subagent/end 与父工具调用。单份证据中的 turn 字段不足以证明这些通知属于该轮次，可能影响完成通知先后与调用次数判定。",
+      "recommendation": "明确 H4 控制实例与 SDK activation/run 的关联和证据关闭边界；结束后关闭对应 trace，或者为后续事件记录独立且可验证的 activation 身份。增加同一 child 的多轮与重新激活测试。",
+      "resolution": {
+        "status": "closed_in_local_review",
+        "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:73-132,146-156",
+        "evidence": "trace 按 runId 和 turn 创建并在后续轮次、activation 替换或匹配的 subagent/end 关闭；关闭后仅保留已捕获 message.id 的消费记录。独立复验在 turn/start 边界关闭第一轮，并在新 activation 已开始后消费原通知，消费记录仅归属原 activation 的第二轮。"
+      }
+    }
+  ],
+  "verifiedContracts": [
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-agent-index.js:242-270",
+      "fact": "agentEvents() 注入 agent，并等待底层 serial()。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js:999-1030",
+      "fact": "正常结束路径等待 agent/turn-stopping，随后追加 turn/end；signal 取消会转为 aborted。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js:470-481,633-654,1246-1268",
+      "fact": "父会话身份位于 header.parentSession；完成通知使用 subagent-settled 和 senderSessionId；continuable 子任务完成清理后才发送通知。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js:1061",
+      "fact": "实际进入本轮的消息通过 user/message 追加，可作为通知消费的观察边界。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js:234-249,262-279",
+      "fact": "subagent 生命周期监听器接收 info，runId 为具体运行身份。"
+    }
+  ],
+  "validation": {
+    "command": "node --test .local/skills-mcp-migration-live/handoff-delay.test.mjs",
+    "passed": 30,
+    "failed": 0,
+    "independentChecks": [
+      "在未创建控制文件时派发 local start、重复 start、remote start 和结束钩子，临时目录保持为空。",
+      "以 performance.now() 前后界限核对缓存的单调时间；重复 start 后的记录仍在首次事件接收范围内。",
+      "重复 start 携带不同 provider，首条证据仍保留首次 provider。",
+      "start 载荷加入正文与凭据 canary，生成证据中不存在 canary；remote run 身份未进入目标证据。"
+    ],
+    "temporaryDirectoriesRemoved": true
+  },
+  "coverageAssessment": {
+    "meaningfulCoverage": "29 项回归覆盖真实临时文件、timer、AbortSignal、CLI 子进程、原三项失败边界、多轮关闭和重新激活后的消息归属；独立补充复验覆盖实际 turn/start 形状和跨 activation 延后消费。",
+    "limitations": [
+      "SDK 合同核对基于指定的本地抽取文件；本轮未重新抽取已安装 app.asar，也未验证文件与当前安装版本逐字一致。",
+      "事件夹具手工派发 SDK 形状事件，不能证明真实 Cordis global 监听器可达、实际调度时序或插件卸载行为。",
+      "未启动 Desktop、未调用模型，真实 H4 的父工具调用、完成通知、Generation Run 和最终交付仍待验收。"
+    ]
+  },
+  "acceptance": "本地审查未发现继续阻碍官方 Desktop 加载验收的实质问题。加载验收应确认插件先于目标子任务启动、捕获实际 runId、产生 delay_started，并核对消息入队与消费的相同 message.id、完整父子轨迹以及卸载后的资源释放。",
+  "initialReview": {
+    "findingsMeaning": "findings 保留首次审查的原始发现和当时源码位置；各项当前状态见 resolution。",
+    "validation": {
+      "command": "node --test .local/skills-mcp-migration-live/handoff-delay.test.mjs",
+      "passed": 21,
+      "failed": 0,
+      "independentReproductions": [
+        "损坏控制文件造成无关 child 回调拒绝。",
+        "原始 JSON.parse 错误包含 canary 文本。",
+        "同一通知 eventSeq 被记录到同一 child 的两个 turn 文件。"
+      ],
+      "temporaryDirectoriesRemoved": true
+    },
+    "coverageAssessment": {
+      "meaningfulCoverage": "现有测试使用真实文件、计时器、AbortSignal 与 CLI 子进程，覆盖正常释放、期限、取消、插件卸载、未 arm、child 过滤及正常事件元数据白名单。",
+      "limitations": [
+        "事件时序测试由夹具手工按预期顺序 emit；它验证记录顺序与字段选择，无法独立证明官方运行时会以该时序触发这些事件。",
+        "CLI 失败测试只覆盖未知参数，尚未覆盖损坏 JSON 内容泄露、缺失控制文件、读取失败、现有释放路径和路径冲突的完整子进程输出。",
+        "未启动官方 Desktop，尚未核对实际插件加载、Cordis global 事件可达性、实际卸载和官方父子消息轨迹。",
+        "本轮核对了指定的本地 SDK 抽取文件；未重新抽取已安装 app.asar 或验证抽取文件与当前安装版本逐字一致。"
+      ]
+    }
+  },
+  "reReview": {
+    "materialNewFindings": [],
+    "implementationRecordReviewed": "docs/verification/skills-mcp-migration/handoff-delay-control.json",
+    "recordAssessment": "实施记录当前说明了 runId 来源、message.id 消费关联、关闭边界及尚待执行的 Desktop 验收，与本地实现相符。",
+    "sdkSourceChecks": [
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js:293-325,1116",
+        "fact": "createActivationObserver() 为 activation 建立 runId 和 local:true，并在 start/end 中复用同一身份；activation 发布时调用 observer.start()。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js:633-654,863-875,1248-1265",
+        "fact": "完成通知通过 createUserMessage() 创建；notifySettlement() 先发送通知，再由 observer.settle() 发布 subagent/end。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-llm-index.js:37-64",
+        "fact": "createUserMessage() 通过 createMessage() 为通知赋予稳定 id。"
+      },
+      {
+        "source": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js:180-207,1061",
+        "fact": "收件箱 splice 保存原消息及 id，user/message 追加本轮选中的消息。"
+      }
+    ],
+    "identityBoundary": "入队通知只含 child 身份，没有 runId；工具依据本地 SDK 的同步通知入队先于 subagent/end 的时序，将消息关联到当前未关闭 trace，再用 message.id 识别后续消费。该时序与身份关联仍需在实际 Desktop 轨迹中核对。"
+  },
+  "reviewHistory": [
+    {
+      "stage": "29-test-reReview",
+      "result": "本地代码与合同复核通过；原三项发现均已在确定性复验中闭合。官方 Desktop 加载与真实 H4 验收待执行。",
+      "validation": {
+        "command": "node --test .local/skills-mcp-migration-live/handoff-delay.test.mjs",
+        "passed": 29,
+        "failed": 0,
+        "independentReproductions": [
+          "损坏控制文件下的 unrelated-session 正常返回，固定日志不含 canary。",
+          "真实 CLI status 子进程失败时 stdout 为空、stderr 不含 canary，退出码为 1。",
+          "通过 SDK 事件形状的 turn/start 关闭上一轮 trace；随后入队通知只归属当前轮。",
+          "新 activation 开始后消费旧 activation 的已捕获通知，eventSeq 只归属原 runId、turn 和 messageId。"
+        ],
+        "temporaryDirectoriesRemoved": true
+      }
+    }
+  ],
+  "startTimeReview": {
+    "scope": [
+      "startedAt、startedMonotonicMs 与 local 的事件接收缓存",
+      "同一 child/runId 重复 start",
+      "subagent_start 写入时机和证据范围",
+      "未 armed 的文件行为与正文、凭据字段排除"
+    ],
+    "findings": [],
+    "sourceChecks": [
+      {
+        "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:80-88",
+        "fact": "仅缓存 local:true 且 runId 为字符串的 start。相同 child/runId 的重复事件直接返回，因此首个接收时间和 provider 保持不变。缓存不创建文件。"
+      },
+      {
+        "location": ".local/skills-mcp-migration-live/handoff-delay.mjs:162-186",
+        "fact": "目标控制命中且产物存在后，首条 subagent_start 记录使用缓存的 UTC 时间、单调时间和 local；controlId、runId、child 与目标轮次同本次 trace 关联。"
+      },
+      {
+        "location": ".local/skills-mcp-migration-live/handoff-delay.test.mjs:489-509",
+        "fact": "新增回归分别推进 Date 150 毫秒并派发重复 start，断言证据保留首个时间和身份。该测试覆盖 UTC 时间；单调时间由本轮独立复验补充。"
+      }
+    ],
+    "validation": {
+      "command": "node --test .local/skills-mcp-migration-live/handoff-delay.test.mjs",
+      "passed": 30,
+      "failed": 0,
+      "independentChecks": [
+        "在未创建控制文件时派发 local start、重复 start、remote start 和结束钩子，临时目录保持为空。",
+        "以 performance.now() 前后界限核对缓存的单调时间；重复 start 后的记录仍在首次事件接收范围内。",
+        "重复 start 携带不同 provider，首条证据仍保留首次 provider。",
+        "start 载荷加入正文与凭据 canary，生成证据中不存在 canary；remote run 身份未进入目标证据。"
+      ],
+      "temporaryDirectoriesRemoved": true
+    },
+    "interpretation": "startedAt 与 startedMonotonicMs 表示本插件接收到首次 subagent/start 回调时的时间。SDK 事件载荷未提供独立的原生时间戳；证据文件在控制命中后补写该观察时间。每个控制 trace 的 subagent_start 行引用同一 activation 的首次观察，跨文件统计应按 runId 识别 activation。",
+    "boundaries": [
+      "本轮仅修改审查 JSON；未修改控制器、测试或实施记录。",
+      "本轮未启动 Desktop 或模型，也未重新核对抽取 SDK 与已安装 app.asar 的一致性。",
+      "真实运行仍需确认 start 事件可达、插件先于子任务加载，以及取证时钟来自同一应用进程。"
+    ]
+  }
+}

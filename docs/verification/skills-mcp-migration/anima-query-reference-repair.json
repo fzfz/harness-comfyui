@@ -1,0 +1,21 @@
+{
+  "status": "implemented-awaiting-review-and-real-model-control",
+  "diagnosis": "anima-light-contract-review.json",
+  "authorization": "主计划5.14",
+  "changes": [
+    {
+      "file": ".agents/skills/anima-prompt-builder/references/06-slot-order.md",
+      "original": "### 4.4 自然语言使用场景及具体写法\n\nSkill 执行者必须优先使用标签；只有标签不能准确表达画面关系时，Skill 执行者才使用英文自然语言短句。Skill 执行者必须把每个 `natural_language` 英文短句放入 `natural_language` 槽位；校验器把该槽位内容连接在全部标签之后。\n\n**必须使用自然语言的场景**：\n\n| 场景 | 原因 | 示例（放在末尾） |\n|---|---|---|\n| 角色间动作关系 | 标签无法描述\"谁对谁做什么\" | `one reaches toward the viewer while the other watches in silence` |\n| 复杂构图/空间关系 | 标签无法描述\"谁在哪、面向谁\" | `girl sitting on boy's lap facing him` |\n| 特殊姿势组合 | 多个动作标签堆叠时主次不清 | `girl pinning wolf boy down while riding him` |\n| 分镜/对比关系 | 标签无法表达时间或状态对比 | `left panel: dressed, right panel: nude` |\n\n**格式规则**：\n\n- Skill 执行者必须让一个英文自然语言短句只表达一个具体关系或解决一个具体歧义。\n\n",
+      "target": "### 4.4 自然语言使用场景及具体写法\n\n#### 4.4.1 使用条件\n\n1. Skill 执行者描述画面关系时必须优先使用标签。标签不能准确表达该关系时，Skill 执行者必须将对应英文自然语言短句写入 `natural_language`；标签能够准确表达时，Skill 执行者不得为同一关系追加自然语言短句。\n2. 词条查询没有可采用结果时，Skill 执行者按 [目录词条采用规则](../SKILL.md#选择作品角色画师与词条)第 4 项处理。\n\n#### 4.4.2 关系表达示例\n\n| 场景 | 需要明确的关系 | 示例 |\n|---|---|---|\n| 角色间动作关系 | 谁对谁做什么 | `one reaches toward the viewer while the other watches in silence` |\n| 复杂构图或空间关系 | 谁在哪、面向谁 | `girl sitting on boy's lap facing him` |\n| 特殊姿势组合 | 多个动作的主次 | `girl pinning wolf boy down while riding him` |\n| 分镜或对比关系 | 时间或状态的对比 | `left panel: dressed, right panel: nude` |\n\n#### 4.4.3 关系表达的格式\n\n1. Skill 执行者必须让用于描述画面关系的每个英文短句只表达一个具体关系或解决一个具体歧义。\n\n"
+    },
+    {
+      "file": ".agents/skills/anima-prompt-builder/references/03-output-protocol.md",
+      "original": "soft lighting",
+      "target": "cinematic",
+      "occurrences": 2
+    }
+  ],
+  "metadata": "两份参考补齐文档用途与读取时机YAML字段。",
+  "businessBoundary": "保留13.8光线标签范围；精确光线词条命中的目标槽位决定尚缺。",
+  "causalLimit": "此处消除文档冲突，不证明原柔光失真或零结果失败已经修复。"
+}

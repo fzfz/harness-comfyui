@@ -7,7 +7,6 @@ import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CLI_ROUTE_PATH } from '../../src/cli/contract.ts'
-import { CatalogCliError } from '../../src/host/catalog/catalog-cli.ts'
 import {
   abortIncompleteCliResponse,
   createCliHandler,
@@ -17,6 +16,9 @@ import {
   GenerationRuntimeError,
   type GenerationPreparationAdapter,
 } from '../../src/host/generation/generation-runtime.ts'
+import { GenerationSourceClient } from '../../src/host/generation/source-client.ts'
+import { SourceGenerationPreparer } from '../../src/host/generation/source-preparer.ts'
+import { SourceClientError } from '../../src/host/source-client/http-client.ts'
 import { ImageReaderError } from '../../src/host/image-reader/errors.ts'
 import {
   IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS,
@@ -144,10 +146,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
       },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
-      },
       runtime: { acceptGeneration, readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() } as never,
       imageReader: unusedImageReader(),
       workspaceRegistry: {
@@ -172,10 +170,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
-      },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
       },
       runtime: {
         acceptGeneration: vi.fn(async (_owner, _request, signal: AbortSignal) => {
@@ -203,6 +197,61 @@ describe('Harness ComfyUI managed CLI route', () => {
     await server.close()
   })
 
+  it('delivers the instance HTTP diagnostic from source reading through parameter inspection to the CLI route', async () => {
+    const reads: string[] = []
+    const preparer = new SourceGenerationPreparer({
+      source: new GenerationSourceClient({
+        settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) },
+        read: async ({ operation, id }) => {
+          reads.push(`${operation}/${id}`)
+          if (operation === 'instance') {
+            throw new SourceClientError('SOURCE_HTTP_ERROR', 'Source service returned an HTTP error.', {
+              status: 404, responseBody: { message: 'Unverified server explanation', extra: 'private-body-value' },
+            })
+          }
+          return { status: 'ok', message: null, results: [{ id: 29, title: 'Test template', workflow_json: { nodes: [] } }], page: 1, page_size: 1, total_count: 1 }
+        },
+      }),
+      defaultInstanceId: '2',
+      compiler: {
+        compile: async () => { throw new Error('unreachable') },
+        inspectRuntimeParameters: async () => { throw new Error('unreachable') },
+      },
+    })
+    const runtime = createRuntime({
+      prepare: preparer.prepare.bind(preparer),
+      inspectRuntimeParameters: preparer.inspectRuntimeParameters.bind(preparer),
+    })
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: {
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
+      },
+      runtime,
+      imageReader: unusedImageReader(),
+      workspaceRegistry: { resolveByPath: vi.fn() },
+    }))
+    try {
+      const response = await post(server.origin, 'trusted', {
+        command: 'generation.inspect-template-parameters', template_id: '29', instance_id: '2',
+      })
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toEqual({
+        ok: false,
+        error: {
+          code: 'SOURCE_QUERY_FAILED',
+          message: '数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。',
+        },
+      })
+      expect(reads).toEqual(['template-bundle/29', 'instance/2'])
+      expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })).toEqual([])
+    } finally {
+      await server.close()
+      runtime.close()
+    }
+  })
+
   it('dispatches read-only template inspection and returns distinct ordinary random Seeds without Workspace lookup', async () => {
     const inspectTemplateRuntimeParameters = vi.fn(async () => ({
       parameters: [],
@@ -219,10 +268,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
-      },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
       },
       runtime: {
         acceptGeneration: vi.fn(),
@@ -269,10 +314,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
       },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
-      },
       runtime: {
         acceptGeneration: vi.fn(),
         readGenerationRunInputs: vi.fn(),
@@ -313,13 +354,6 @@ describe('Harness ComfyUI managed CLI route', () => {
         }
       },
     })
-    const catalog = {
-      resolveTemplate: vi.fn(),
-      resolveGenerationModel: vi.fn(),
-      resolveLora: vi.fn(),
-      queryComfyuiInstances: vi.fn(),
-      search: vi.fn(),
-    }
     const capability = 'capability_cli_1'
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
@@ -328,7 +362,6 @@ describe('Harness ComfyUI managed CLI route', () => {
           ? { sessionId: 'session_7', turn: 4, callId: 'call_cli_9', cwd: '/workspace/current' }
           : undefined,
       },
-      catalog,
       runtime,
       imageReader: unusedImageReader(),
       workspaceRegistry: {
@@ -444,13 +477,6 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: { authorize: value => identities[value as keyof typeof identities] },
-      catalog: {
-        resolveTemplate: vi.fn(),
-        resolveGenerationModel: vi.fn(),
-        resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(),
-        search: vi.fn(),
-      },
       runtime,
       imageReader: unusedImageReader(),
       workspaceRegistry: {
@@ -511,14 +537,12 @@ describe('Harness ComfyUI managed CLI route', () => {
     await server.close()
   })
 
-  it('dispatches catalog commands and rejects untrusted or malformed requests', async () => {
-    const catalog = {
-      resolveTemplate: vi.fn(async id => ({ id, title: 'Template', base_model_id: '1', model_id: null })),
-      resolveGenerationModel: vi.fn(),
-      resolveLora: vi.fn(),
-      queryComfyuiInstances: vi.fn(),
-      search: vi.fn(),
+  it('rejects every retired Catalog request before dispatch while enforcing HTTP and capability boundaries', async () => {
+    const runtime = {
+      acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+      readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
     }
+    const imageReader = unusedImageReader()
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
@@ -526,101 +550,38 @@ describe('Harness ComfyUI managed CLI route', () => {
           ? { sessionId: 'session_1', turn: 0, callId: 'call_1', cwd: '/workspace' }
           : undefined,
       },
-      catalog,
-      runtime: {
-        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
-        readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
-      },
-      imageReader: unusedImageReader(),
+      runtime,
+      imageReader,
       workspaceRegistry: { resolveByPath: vi.fn() },
     }))
-
-    const [resolved, unauthorized, malformed, wrongMethod] = await Promise.all([
-      post(server.origin, 'trusted', { command: 'catalog.template.resolve', id: '39' }),
-      post(server.origin, 'wrong', { command: 'catalog.template.resolve', id: '39' }),
-      post(server.origin, 'trusted', { command: 'catalog.template.resolve', id: 'not-an-id' }),
-      fetch(`${server.origin}${CLI_ROUTE_PATH}`, { method: 'GET' }),
-    ])
-
-    expect(resolved.status).toBe(200)
-    expect(await resolved.json()).toEqual({
-      ok: true,
-      data: { id: '39', title: 'Template', base_model_id: '1', model_id: null },
-    })
-    expect(catalog.resolveTemplate).toHaveBeenCalledWith('39', expect.any(AbortSignal))
-    expect(unauthorized.status).toBe(401)
-    expect(await unauthorized.json()).toEqual({
-      ok: false,
-      error: { code: 'CLI_CAPABILITY_INVALID', message: 'The shell-call capability is missing, expired, or invalid.' },
-    })
-    expect(malformed.status).toBe(400)
-    expect(await malformed.json()).toEqual({
-      ok: false,
-      error: { code: 'CLI_REQUEST_INVALID', message: 'catalog item id is invalid' },
-    })
-    expect(wrongMethod.status).toBe(405)
-    expect(wrongMethod.headers.get('allow')).toBe('POST')
-    await server.close()
-  })
-
-  it('dispatches every remaining Catalog command without exposing execution identity', async () => {
-    const catalog = {
-      resolveTemplate: vi.fn(),
-      resolveGenerationModel: vi.fn(async id => ({ id, kind: 'model' })),
-      resolveLora: vi.fn(async id => ({ id, kind: 'lora' })),
-      queryComfyuiInstances: vi.fn(async input => ({ input, kind: 'instances' })),
-      search: vi.fn(async input => ({ input, kind: 'search' })),
+    try {
+      const requests = [
+        { command: 'catalog.template.resolve', id: '39' },
+        { command: 'catalog.generation-model.resolve', id: '3' },
+        { command: 'catalog.lora.resolve', id: '91' },
+        { command: 'catalog.instance.list' },
+        { command: 'catalog.search', kind: 'model', query: '', page: 1, base_model_id: null },
+      ]
+      for (const body of requests) {
+        const response = await post(server.origin, 'trusted', body)
+        expect(response.status).toBe(400)
+        expect(await response.json()).toEqual({
+          ok: false,
+          error: { code: 'CLI_REQUEST_INVALID', message: 'CLI request command is invalid' },
+        })
+      }
+      const unauthorized = await post(server.origin, 'wrong', requests[0])
+      expect(unauthorized.status).toBe(401)
+      const wrongMethod = await fetch(`${server.origin}${CLI_ROUTE_PATH}`, { method: 'GET' })
+      expect(wrongMethod.status).toBe(405)
+      expect(wrongMethod.headers.get('allow')).toBe('POST')
+      for (const method of Object.values(runtime)) expect(method).not.toHaveBeenCalled()
+      expect(imageReader.inspect).not.toHaveBeenCalled()
+    } finally {
+      await server.close()
     }
-    const identity = { sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace' }
-    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
-      webServer,
-      capabilities: { authorize: () => identity },
-      catalog: catalog as never,
-      runtime: {
-        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
-        readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
-      },
-      imageReader: unusedImageReader(),
-      workspaceRegistry: { resolveByPath: vi.fn() },
-    }))
-
-    const responses = await Promise.all([
-      post(server.origin, 'trusted', { command: 'catalog.generation-model.resolve', id: '3' }),
-      post(server.origin, 'trusted', { command: 'catalog.lora.resolve', id: '91' }),
-      post(server.origin, 'trusted', { command: 'catalog.instance.list' }),
-      post(server.origin, 'trusted', {
-        command: 'catalog.search',
-        kind: 'model',
-        query: 'portrait',
-        page: 2,
-        base_model_id: '1',
-      }),
-    ])
-
-    expect(await Promise.all(responses.map(response => response.json()))).toEqual([
-      { ok: true, data: { id: '3', kind: 'model' } },
-      { ok: true, data: { id: '91', kind: 'lora' } },
-      { ok: true, data: { input: { mode: 'search', query: '', page: 1, page_size: 100 }, kind: 'instances' } },
-      {
-        ok: true,
-        data: {
-          input: { kind: 'model', query: 'portrait', page: 2, baseModelId: '1' },
-          kind: 'search',
-        },
-      },
-    ])
-    expect(catalog.resolveGenerationModel).toHaveBeenCalledWith('3', expect.any(AbortSignal))
-    expect(catalog.resolveLora).toHaveBeenCalledWith('91', expect.any(AbortSignal))
-    expect(catalog.queryComfyuiInstances).toHaveBeenCalledWith(
-      { mode: 'search', query: '', page: 1, page_size: 100 },
-      expect.any(AbortSignal),
-    )
-    expect(catalog.search).toHaveBeenCalledWith(
-      { kind: 'model', query: 'portrait', page: 2, baseModelId: '1' },
-      expect.any(AbortSignal),
-    )
-    await server.close()
   })
+
 
   it('dispatches Run media under the current Workspace and inspects exactly one image', async () => {
     const readGenerationRunMedia = vi.fn(async () => ({
@@ -633,10 +594,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
-      },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
       },
       runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia } as never,
       imageReader: { inspect } as never,
@@ -709,10 +666,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
       },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
-      },
       runtime: { acceptGeneration, inspectTemplateRuntimeParameters, readGenerationRunInputs, readGenerationRunMedia },
       imageReader: { inspect } as never,
       workspaceRegistry: { resolveByPath },
@@ -746,10 +699,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
       },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
-      },
       runtime: {
         acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
         readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
@@ -780,10 +729,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
       },
-      catalog: {
-        resolveTemplate: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(),
-        queryComfyuiInstances: vi.fn(), search: vi.fn(),
-      },
       runtime: {
         acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
         readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
@@ -811,23 +756,12 @@ describe('Harness ComfyUI managed CLI route', () => {
     }
   })
 
-  it('reports route, media type, Catalog, Generation, workspace, and internal failures', async () => {
-    const catalog = {
-      resolveTemplate: vi.fn(async id => {
-        if (id === '1') throw new CatalogCliError('CATALOG_QUERY_FAILED', 'Catalog is unavailable.')
-        if (id === '2') throw new Error('internal details')
-        return { id, title: 'Template', base_model_id: '1', model_id: null }
-      }),
-      resolveGenerationModel: vi.fn(),
-      resolveLora: vi.fn(),
-      queryComfyuiInstances: vi.fn(),
-      search: vi.fn(),
-    }
+  it('reports route, media type, Generation, workspace, and internal failures', async () => {
     const runtime = {
       acceptGeneration: vi.fn(async () => {
         throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', 'The call already accepted another request.')
       }),
-      inspectTemplateRuntimeParameters: vi.fn(),
+      inspectTemplateRuntimeParameters: vi.fn(async () => { throw new Error('internal details') }),
       readGenerationRunInputs: vi.fn(),
     }
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
@@ -835,7 +769,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/missing' }),
       },
-      catalog: catalog as never,
       runtime: { ...runtime, readGenerationRunMedia: vi.fn() },
       imageReader: unusedImageReader(),
       workspaceRegistry: { resolveByPath: vi.fn(async () => undefined) },
@@ -847,7 +780,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       },
     }
 
-    const [routeMissing, mediaType, invalidJson, catalogFailure, internalFailure, workspaceFailure] = await Promise.all([
+    const [routeMissing, mediaType, invalidJson, internalFailure, workspaceFailure] = await Promise.all([
       fetch(`${server.origin}${CLI_ROUTE_PATH}/extra`, {
         method: 'POST', headers: { authorization: 'Bearer trusted', 'content-type': 'application/json' }, body: '{}',
       }),
@@ -857,18 +790,13 @@ describe('Harness ComfyUI managed CLI route', () => {
       fetch(`${server.origin}${CLI_ROUTE_PATH}`, {
         method: 'POST', headers: { authorization: 'Bearer trusted', 'content-type': 'application/json' }, body: '{',
       }),
-      post(server.origin, 'trusted', { command: 'catalog.template.resolve', id: '1' }),
-      post(server.origin, 'trusted', { command: 'catalog.template.resolve', id: '2' }),
+      post(server.origin, 'trusted', { command: 'generation.inspect-template-parameters', template_id: '1', instance_id: '2' }),
       post(server.origin, 'trusted', generationBody),
     ])
 
     expect(routeMissing.status).toBe(404)
     expect(mediaType.status).toBe(415)
     expect(invalidJson.status).toBe(400)
-    expect(catalogFailure.status).toBe(502)
-    expect(await catalogFailure.json()).toEqual({
-      ok: false, error: { code: 'CATALOG_QUERY_FAILED', message: 'Catalog is unavailable.' },
-    })
     expect(internalFailure.status).toBe(500)
     expect(await internalFailure.json()).toEqual({
       ok: false,
@@ -890,7 +818,6 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
       },
-      catalog: catalog as never,
       runtime: { ...runtime, readGenerationRunMedia: vi.fn() },
       imageReader: unusedImageReader(),
       workspaceRegistry: {

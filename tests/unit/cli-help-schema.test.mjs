@@ -4,15 +4,37 @@ import { parseHelpDefinition, parseManagedHelpDefinition } from '../../scripts/c
 import { renderHelp, helpHint } from '../../scripts/cli/help.mjs'
 
 describe('managed CLI help contract', () => {
+  it('exposes only supported business commands through root, category and command help', () => {
+    for (const command of [
+      [], ['image'], ['image', 'inspect'], ['generation'], ['generation', 'submit'],
+      ['generation', 'inspect-template-parameters'], ['generation', 'random-seeds'],
+      ['generation', 'run-inputs'], ['generation', 'resolve-media'],
+    ]) {
+      const output = renderHelp(definition, [...command, '--help'])
+      expect(output).not.toMatch(/catalog|imagegen-semantic-query|DSH_HARNESS_COMFYUI_SOURCE_/u)
+      expect(helpHint(definition, command)).not.toContain('catalog')
+    }
+  })
   it('guides every command through the Host executable without requiring system Node', () => {
     const invocation = 'ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI"'
     expect(renderHelp(definition, ['generation', 'run-inputs', '--help'])).toContain(`${invocation} generation run-inputs`)
     expect(helpHint(definition, ['generation', 'run-inputs'])).toBe(`Next: ${invocation} generation run-inputs --help`)
   })
+  it('defines the result-file protocol once and exposes it from every business command help', () => {
+    for (const command of [['image', 'inspect'], ['generation', 'submit'], ['generation', 'inspect-template-parameters'], ['generation', 'random-seeds'], ['generation', 'run-inputs'], ['generation', 'resolve-media']]) {
+      const output = renderHelp(definition, [...command, '--help'])
+      expect(output).toContain('stdout 只返回该文件的绝对路径和换行')
+      expect(output).toContain('业务命令退出码为 0')
+      expect(output).toContain('CLI_RESULT_FILE_PREPARE_FAILED')
+      expect(output).toContain('CLI_RESULT_FILE_WRITE_FAILED')
+      expect(output).toContain('CLI_RESULT_PATH_WRITE_FAILED')
+      expect(output).not.toContain('stdout JSON')
+    }
+  })
   it('accepts the configured command tree', () => {
     expect(parseManagedHelpDefinition(definition)).toBe(definition)
   })
-  it.each(['splitCommand', 'invalidProperties', 'invalidOption', 'emptyResults', 'availableResults', 'providerFailure'])('requires message %s', key => {
+  it.each(['splitCommand', 'invalidProperties', 'providerFailure', 'resultFilePrepareFailed', 'resultFileWriteFailed', 'resultPathWriteFailed', 'requestTooLarge', 'responseTooLarge', 'invalidApiUrl', 'nonLoopbackApi', 'environmentRecovery'])('requires message %s', key => {
     const data = structuredClone(definition)
     delete data.messages[key]
     expect(() => parseManagedHelpDefinition(data)).toThrow(key)
@@ -27,7 +49,7 @@ describe('managed CLI help contract', () => {
   })
   it('rejects a leaf without a parent and invalid shared details', () => {
     const data = structuredClone(definition)
-    delete data.nodes.catalog
+    delete data.nodes.generation
     expect(() => parseHelpDefinition(data)).toThrow('parent')
     const invalid = { ...definition, commonDetails: [false] }
     expect(() => parseHelpDefinition(invalid)).toThrow('commonDetails')

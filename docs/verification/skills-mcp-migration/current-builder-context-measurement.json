@@ -1,0 +1,717 @@
+{
+  "purpose": "记录当前 Builder 实际请求中的结构化上下文大小。",
+  "readWhen": "评估工具声明和消息资料的实际输入成本时。",
+  "measurement": "紧凑 JSON 的 UTF-8 字节数；不是模型 Token 计数，也不据此推断上下文丢失。",
+  "cases": [
+    {
+      "caseId": "5.3-2",
+      "requests": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/41281b01-32cc-4dbd-b504-519f7924db98.jsonl",
+          "at": "2026-10-14T09:57:18.937Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 4,
+          "messagesBytes": 10889,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/6770451d-3806-4a7d-95d5-08a1f8511971.jsonl",
+          "at": "2026-10-14T09:57:23.674Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 6,
+          "messagesBytes": 29794,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/8a19d74c-6e15-4b3f-a6b5-443b93706883.jsonl",
+          "at": "2026-10-14T09:57:28.327Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 8,
+          "messagesBytes": 32644,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/c754dcf5-344f-4dfe-b931-501d2b02d48f.jsonl",
+          "at": "2026-10-14T09:57:34.315Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 10,
+          "messagesBytes": 43434,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/4947dbfc-b542-4002-a317-a9003b99708e.jsonl",
+          "at": "2026-10-14T09:57:41.900Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 12,
+          "messagesBytes": 66717,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/00aaad2d-5b82-4019-9a34-8d264bee154d.jsonl",
+          "at": "2026-10-14T09:57:52.528Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 14,
+          "messagesBytes": 82431,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/4139b3e4-ca15-4dba-b418-5f818296481f.jsonl",
+          "at": "2026-10-14T09:58:03.670Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 16,
+          "messagesBytes": 95624,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/754b6f64-1301-4d50-8720-f78ad1df5994.jsonl",
+          "at": "2026-10-14T09:58:10.494Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 18,
+          "messagesBytes": 141365,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/249a6db8-4edd-40a6-87cd-4ecd287361e0.jsonl",
+          "at": "2026-10-14T09:58:16.250Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 20,
+          "messagesBytes": 164709,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/12a21d65-8cec-4802-a6c5-e75e3f6fb797.jsonl",
+          "at": "2026-10-14T09:58:24.323Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 22,
+          "messagesBytes": 178192,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/98b67312-3f10-4f8e-aa00-8a6785f1e38a.jsonl",
+          "at": "2026-10-14T09:58:45.203Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 24,
+          "messagesBytes": 186361,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9d405a42-181d-4714-a04f-b1982e62b410.jsonl",
+          "at": "2026-10-14T09:59:07.174Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 27,
+          "messagesBytes": 202054,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/159c34b4-f298-463c-9485-18b62b5dbdfc.jsonl",
+          "at": "2026-10-14T09:59:29.890Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 29,
+          "messagesBytes": 219654,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/d5c20e55-baae-49e3-b3a9-396346e9239e.jsonl",
+          "at": "2026-10-14T09:59:40.688Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 31,
+          "messagesBytes": 223392,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/a82a9dcf-cc88-41d8-80e4-be40a9d9d92f.jsonl",
+          "at": "2026-10-14T09:59:50.906Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 33,
+          "messagesBytes": 227574,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/498f35f1-7162-4559-a47c-785a26407afa.jsonl",
+          "at": "2026-10-14T10:01:00.721Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 36,
+          "messagesBytes": 261936,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/86d1c0f6-659a-4f44-a6c5-777fafb27a4d.jsonl",
+          "at": "2026-10-14T10:01:21.605Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 39,
+          "messagesBytes": 272388,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/d6816033-770d-4059-a62e-06bd5374732f.jsonl",
+          "at": "2026-10-14T10:01:43.413Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 41,
+          "messagesBytes": 276250,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/e06f2ef5-b7f0-40df-b1a8-986a7b0cc3dc.jsonl",
+          "at": "2026-10-14T10:01:59.863Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 43,
+          "messagesBytes": 279649,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/bbf4d2bc-1691-430e-823f-08a26bf70770.jsonl",
+          "at": "2026-10-14T10:02:13.748Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 45,
+          "messagesBytes": 284189,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/348d6c49-fc11-44d1-b796-2c2c90013eb2.jsonl",
+          "at": "2026-10-14T10:02:47.600Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 47,
+          "messagesBytes": 296367,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/702011f5-4498-43b7-b881-2f150496c0d3.jsonl",
+          "at": "2026-10-14T10:03:03.372Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 49,
+          "messagesBytes": 299330,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/0f05e4ce-eab4-4ba0-a788-63066bbb7b2a.jsonl",
+          "at": "2026-10-14T10:03:15.681Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 51,
+          "messagesBytes": 303901,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9410021a-3e69-46fd-8bd4-08766fedee74.jsonl",
+          "at": "2026-10-14T10:03:30.640Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 53,
+          "messagesBytes": 305936,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        }
+      ],
+      "toolDeclarationBytes": [
+        {
+          "name": "bash",
+          "bytes": 2008,
+          "descriptionBytes": 738
+        },
+        {
+          "name": "create_goal",
+          "bytes": 577,
+          "descriptionBytes": 222
+        },
+        {
+          "name": "get_goal",
+          "bytes": 170,
+          "descriptionBytes": 87
+        },
+        {
+          "name": "interrupt_agent",
+          "bytes": 432,
+          "descriptionBytes": 210
+        },
+        {
+          "name": "list_agents",
+          "bytes": 661,
+          "descriptionBytes": 276
+        },
+        {
+          "name": "list_mcp_resource_templates",
+          "bytes": 343,
+          "descriptionBytes": 61
+        },
+        {
+          "name": "list_mcp_resources",
+          "bytes": 317,
+          "descriptionBytes": 44
+        },
+        {
+          "name": "mcp__noobai__get_catalog_resource",
+          "bytes": 8781,
+          "descriptionBytes": 7845
+        },
+        {
+          "name": "mcp__noobai__get_instance_connection",
+          "bytes": 939,
+          "descriptionBytes": 633
+        },
+        {
+          "name": "mcp__noobai__get_instance_node",
+          "bytes": 1035,
+          "descriptionBytes": 652
+        },
+        {
+          "name": "mcp__noobai__get_instance_queue",
+          "bytes": 2219,
+          "descriptionBytes": 1563
+        },
+        {
+          "name": "mcp__noobai__get_instance_status",
+          "bytes": 1686,
+          "descriptionBytes": 1378
+        },
+        {
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "bytes": 5581,
+          "descriptionBytes": 2631
+        },
+        {
+          "name": "mcp__noobai__query_semantic_characters",
+          "bytes": 5843,
+          "descriptionBytes": 2826
+        },
+        {
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "bytes": 11454,
+          "descriptionBytes": 6088
+        },
+        {
+          "name": "mcp__noobai__query_semantic_works",
+          "bytes": 4876,
+          "descriptionBytes": 2396
+        },
+        {
+          "name": "mcp__noobai__search_artist_prompt_strings",
+          "bytes": 5001,
+          "descriptionBytes": 3199
+        },
+        {
+          "name": "mcp__noobai__search_base_models",
+          "bytes": 2586,
+          "descriptionBytes": 1900
+        },
+        {
+          "name": "mcp__noobai__search_instance_nodes",
+          "bytes": 2637,
+          "descriptionBytes": 1856
+        },
+        {
+          "name": "mcp__noobai__search_instances",
+          "bytes": 2892,
+          "descriptionBytes": 2137
+        },
+        {
+          "name": "mcp__noobai__search_loras",
+          "bytes": 5368,
+          "descriptionBytes": 3447
+        },
+        {
+          "name": "mcp__noobai__search_models",
+          "bytes": 4664,
+          "descriptionBytes": 3288
+        },
+        {
+          "name": "mcp__noobai__search_styles",
+          "bytes": 4194,
+          "descriptionBytes": 2955
+        },
+        {
+          "name": "mcp__noobai__search_workflows",
+          "bytes": 6034,
+          "descriptionBytes": 3405
+        },
+        {
+          "name": "read_mcp_resource",
+          "bytes": 353,
+          "descriptionBytes": 101
+        },
+        {
+          "name": "skill",
+          "bytes": 332,
+          "descriptionBytes": 139
+        },
+        {
+          "name": "subagent_comparison",
+          "bytes": 1653,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "subagent_composition",
+          "bytes": 1597,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "subagent_generation",
+          "bytes": 1759,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "subagent_observation",
+          "bytes": 1393,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "update_goal",
+          "bytes": 984,
+          "descriptionBytes": 24
+        }
+      ]
+    },
+    {
+      "caseId": "5.4-2",
+      "requests": [
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7d7b2c30-4a26-4823-8b5d-0dfab8a35a4e.jsonl",
+          "at": "2026-10-14T10:05:20.962Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 4,
+          "messagesBytes": 10507,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/3e44895f-c23b-4301-aaec-bb36625d7bfb.jsonl",
+          "at": "2026-10-14T10:05:25.418Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 6,
+          "messagesBytes": 23027,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/f2147a1e-c9af-4849-99bd-eb3bacedb8d4.jsonl",
+          "at": "2026-10-14T10:05:30.943Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 9,
+          "messagesBytes": 30548,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/eecd04cd-5a12-4034-88a4-956d8e6af79f.jsonl",
+          "at": "2026-10-14T10:05:36.467Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 12,
+          "messagesBytes": 45735,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7da374ba-60fc-46a4-ab6d-219814b9f570.jsonl",
+          "at": "2026-10-14T10:05:41.452Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 15,
+          "messagesBytes": 51059,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/dc173cef-a60c-46ce-beaa-d9f680e91f43.jsonl",
+          "at": "2026-10-14T10:05:49.252Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 18,
+          "messagesBytes": 54211,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/c1413150-4aa5-4d90-b89d-051303e58326.jsonl",
+          "at": "2026-10-14T10:05:54.494Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 21,
+          "messagesBytes": 55955,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/2b633bbf-1e99-43c0-8c7b-273a750b74dd.jsonl",
+          "at": "2026-10-14T10:05:59.483Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 23,
+          "messagesBytes": 60684,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/553fcf84-56e7-4d75-90c5-ccdc22e102d7.jsonl",
+          "at": "2026-10-14T10:06:11.349Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 25,
+          "messagesBytes": 66207,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/9e336c67-c694-4051-979d-2ac63bc0ef63.jsonl",
+          "at": "2026-10-14T10:06:24.384Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 27,
+          "messagesBytes": 73791,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        },
+        {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-vLMOh8/runtime/observer/llm-calls/7525af97-095e-40ec-a9fc-e39429394d94.jsonl",
+          "at": "2026-10-14T10:06:29.457Z",
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash",
+          "messageCount": 29,
+          "messagesBytes": 75633,
+          "toolCount": 31,
+          "toolsBytes": 88401,
+          "toolHistoryBytes": 88424
+        }
+      ],
+      "toolDeclarationBytes": [
+        {
+          "name": "bash",
+          "bytes": 2008,
+          "descriptionBytes": 738
+        },
+        {
+          "name": "create_goal",
+          "bytes": 577,
+          "descriptionBytes": 222
+        },
+        {
+          "name": "get_goal",
+          "bytes": 170,
+          "descriptionBytes": 87
+        },
+        {
+          "name": "interrupt_agent",
+          "bytes": 432,
+          "descriptionBytes": 210
+        },
+        {
+          "name": "list_agents",
+          "bytes": 661,
+          "descriptionBytes": 276
+        },
+        {
+          "name": "list_mcp_resource_templates",
+          "bytes": 343,
+          "descriptionBytes": 61
+        },
+        {
+          "name": "list_mcp_resources",
+          "bytes": 317,
+          "descriptionBytes": 44
+        },
+        {
+          "name": "mcp__noobai__get_catalog_resource",
+          "bytes": 8781,
+          "descriptionBytes": 7845
+        },
+        {
+          "name": "mcp__noobai__get_instance_connection",
+          "bytes": 939,
+          "descriptionBytes": 633
+        },
+        {
+          "name": "mcp__noobai__get_instance_node",
+          "bytes": 1035,
+          "descriptionBytes": 652
+        },
+        {
+          "name": "mcp__noobai__get_instance_queue",
+          "bytes": 2219,
+          "descriptionBytes": 1563
+        },
+        {
+          "name": "mcp__noobai__get_instance_status",
+          "bytes": 1686,
+          "descriptionBytes": 1378
+        },
+        {
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "bytes": 5581,
+          "descriptionBytes": 2631
+        },
+        {
+          "name": "mcp__noobai__query_semantic_characters",
+          "bytes": 5843,
+          "descriptionBytes": 2826
+        },
+        {
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "bytes": 11454,
+          "descriptionBytes": 6088
+        },
+        {
+          "name": "mcp__noobai__query_semantic_works",
+          "bytes": 4876,
+          "descriptionBytes": 2396
+        },
+        {
+          "name": "mcp__noobai__search_artist_prompt_strings",
+          "bytes": 5001,
+          "descriptionBytes": 3199
+        },
+        {
+          "name": "mcp__noobai__search_base_models",
+          "bytes": 2586,
+          "descriptionBytes": 1900
+        },
+        {
+          "name": "mcp__noobai__search_instance_nodes",
+          "bytes": 2637,
+          "descriptionBytes": 1856
+        },
+        {
+          "name": "mcp__noobai__search_instances",
+          "bytes": 2892,
+          "descriptionBytes": 2137
+        },
+        {
+          "name": "mcp__noobai__search_loras",
+          "bytes": 5368,
+          "descriptionBytes": 3447
+        },
+        {
+          "name": "mcp__noobai__search_models",
+          "bytes": 4664,
+          "descriptionBytes": 3288
+        },
+        {
+          "name": "mcp__noobai__search_styles",
+          "bytes": 4194,
+          "descriptionBytes": 2955
+        },
+        {
+          "name": "mcp__noobai__search_workflows",
+          "bytes": 6034,
+          "descriptionBytes": 3405
+        },
+        {
+          "name": "read_mcp_resource",
+          "bytes": 353,
+          "descriptionBytes": 101
+        },
+        {
+          "name": "skill",
+          "bytes": 332,
+          "descriptionBytes": 139
+        },
+        {
+          "name": "subagent_comparison",
+          "bytes": 1653,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "subagent_composition",
+          "bytes": 1597,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "subagent_generation",
+          "bytes": 1759,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "subagent_observation",
+          "bytes": 1393,
+          "descriptionBytes": 221
+        },
+        {
+          "name": "update_goal",
+          "bytes": 984,
+          "descriptionBytes": 24
+        }
+      ]
+    }
+  ],
+  "cliComparisonStatus": "未取得同输入 CLI 基准；本报告仅提供当前 MCP 样本测量。"
+}

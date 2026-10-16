@@ -1,0 +1,38 @@
+{
+  "purpose": "准备迭代预设历史来源验收的真实 Run 与 Workspace 绑定。",
+  "readWhen": "独立复核历史输入变体或执行其前置核对时。",
+  "status": "准备完成，待独立输入审查；尚未修改台账或提交模型",
+  "case": "5.4-1",
+  "preset": "harness-comfyui-iteration",
+  "before": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-preparation/source-task.json",
+  "after": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-preparation/candidate-task.json",
+  "changedBusinessField": "parameters.history_run_id",
+  "sourceExecution": "four-role-current-execution.json",
+  "sourceDatabaseEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/collection-1791975038049/final-generation-run-database.json",
+  "runId": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+  "workspaceId": "a25cfcb7-2580-4213-a381-391f07094571",
+  "runStatus": "succeeded",
+  "historicalPositivePrompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, pale skin, white shirt, standing, facing the viewer, arms at sides, head tilt, light smile, calm expression, looking at the viewer, relaxed shoulders, upper body, eye level, front view, centered composition, depth of field, blurry background, indoors, window, windowsill, envelope on the windowsill, plain wall, small pale flowers at the frame edges, daytime, soft focus, muted color, calm atmosphere, peaceful and relieved mood, soft window light from the front left, diffused lighting, gentle light on her face, bright background outlining her hair, low contrast, gentle vignette, Ani stands in front of the window with a small envelope left on the windowsill behind her.",
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/state.json",
+  "comparisonContext": [
+    {
+      "type": "comfyui-context",
+      "data": {
+        "kind": "character",
+        "id": "3334",
+        "work_name": "Sinoalice",
+        "character_name": "爱丽丝",
+        "prompt_text": "alice \\(sinoalice\\), sinoalice, 1girl, red eyes, short hair, blue hair, dark blue hair, black hair, medium breasts, elbow gloves"
+      }
+    }
+  ],
+  "currentInstruction": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 复用指定历史正向 Prompt，发色改为银色。",
+  "runtimePreconditions": [
+    "等待 four-role-recovery 执行者停止并交回原运行环境；不得与其同时启动或写该 Profile。",
+    "保留真实 Run 所属 Workspace 身份与持久数据，通过官方 API 创建新的迭代预设会话；使用新的任务输出子目录，保存前态文件清单。",
+    "核对当前安装候选及差异范围，使用获准 Go 模型；只要求原 Builder 任务，不创建图片。",
+    "执行者实际通过 run-inputs 查询保存的 Prompt；准备文件中的 Prompt 不注入模型消息。"
+  ],
+  "diagnosticLimit": "该变体使用另一个真实成功 Run，只判断其输入条件下的历史来源合同；保留此前工作台失败。",
+  "modelCalls": 0
+}

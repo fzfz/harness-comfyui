@@ -3,9 +3,10 @@ import { execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:net'
 import { mkdirSync, unlinkSync } from 'node:fs'
-import { access, mkdtemp, readFile, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, readdir, realpath, rm, stat, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -21,6 +22,7 @@ import {
   stopProbe,
 } from '../desktop/fixtures/official-desktop-probe.mjs'
 import { parseDesktopE2ERunRecord } from '../../config/desktop-e2e-schema.mjs'
+import { loadOfficialProfilePatchAdapter } from '../desktop/fixtures/official-profile-patch.mjs'
 import {
   loadDevelopmentEnvironmentOverrides,
   prepareDevelopmentEnvironment,
@@ -66,6 +68,24 @@ describe('official Desktop probe configuration and records', () => {
       .toEqual([runId])
   })
 
+  it('validates an explicit CLI configuration before preparing an application run', async () => {
+    const repositoryRoot = await temporaryRepository()
+    const config = await loadDesktopE2EConfig()
+    config.sessionTrace.export.route = '../invalid'
+    const configPath = join(repositoryRoot, 'invalid-desktop-config.json')
+    await writeFile(configPath, JSON.stringify(config))
+    let failure
+    try {
+      execFileSync(process.execPath, [
+        fileURLToPath(new URL('../desktop/fixtures/official-desktop-probe.mjs', import.meta.url)),
+        'start', '--config', configPath, '--repository-root', repositoryRoot,
+      ], { encoding: 'utf8', stdio: 'pipe' })
+    } catch (error) { failure = error }
+    expect(failure?.status).toBe(1)
+    expect(failure.stderr).toContain('sessionTrace.export.route')
+    await expect(access(join(repositoryRoot, config.paths.runRootRelativePath))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it('loads the approved installed app identity and bounded probe policy', async () => {
     const config = await loadDesktopE2EConfig()
     expect(config.application).toMatchObject({
@@ -79,7 +99,7 @@ describe('official Desktop probe configuration and records', () => {
     const initialProfilePatches = Object.fromEntries(config.modes.development.initialProfilePatches.map(row => [row.id, row.config]))
     expect(initialProfilePatches['agent-default-model']).toEqual({
       provider: 'openrouter',
-      model: 'stealth/space-bunny-alpha',
+      model: 'thinkingmachines/inkling:free',
     })
     expect(initialProfilePatches['llm-pi-ai'].providers.openrouter).toEqual({
       displayName: 'OpenRouter',
@@ -87,9 +107,9 @@ describe('official Desktop probe configuration and records', () => {
       baseURL: 'https://openrouter.ai/api/v1',
       apiKeyEnv: 'OPENROUTER_API_KEY',
       models: [{
-        id: 'stealth/space-bunny-alpha',
+        id: 'thinkingmachines/inkling:free',
         input: ['text', 'image'],
-        contextWindow: 1000000,
+        contextWindow: 1048576,
         maxTokens: 8192,
       }],
     })
@@ -222,6 +242,40 @@ describe('official Desktop probe preparation and lifecycle', () => {
       for (const port of Object.values(prepared.record.ports)) await expect(listenAt(port)).rejects.toMatchObject({ code: 'EADDRINUSE' })
     } finally {
       await releasePortReservations(prepared.record.runId)
+    }
+  })
+
+  it('rejects runtime trace injection configuration', async () => {
+    const config = await loadDesktopE2EConfig()
+    expect(() => parseDesktopE2EConfig({
+      ...config, sessionTrace: { ...config.sessionTrace, enabled: true },
+    })).toThrow()
+  })
+
+  it.each(['fresh', 'development'])('prepares %s without registering a trace plugin', async mode => {
+    const repositoryRoot = await temporaryRepository()
+    const config = await loadDesktopE2EConfig()
+    const adapter = await loadOfficialProfilePatchAdapter(config)
+    const prepared = await prepareProbeRun({ repositoryRoot, mode, config, profilePatchAdapter: adapter })
+    try {
+      const document = await adapter.parse(await readFile(join(
+        prepared.record.directories.profile, config.paths.profilePatchFilename,
+      ), 'utf8'))
+      expect(document).toEqual(mode === 'development'
+        ? [...config.modes.development.initialProfilePatches, {
+          id: config.profilePortPatch.entryId,
+          config: { [config.profilePortPatch.hostField]: config.ports.host,
+            [config.profilePortPatch.portField]: prepared.record.ports.host },
+        }]
+        : [{
+          id: config.profilePortPatch.entryId,
+          config: { [config.profilePortPatch.hostField]: config.ports.host,
+            [config.profilePortPatch.portField]: prepared.record.ports.host },
+        }])
+      expect(await readdir(prepared.record.directories.evidence)).toEqual([])
+    } finally {
+      await releasePortReservations(prepared.record.runId)
+      await prepared.developmentEnvironment?.release()
     }
   })
 

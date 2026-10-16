@@ -1,0 +1,60 @@
+{
+  "purpose": "限定获准免费模型在既有分页失败点的单步能力比较。",
+  "readWhen": "准备和独立复核两次单步模型比较时。",
+  "status": "待独立输入与范围审查，尚未调用模型",
+  "basis": [
+    "builder-E2-runtime-review.json",
+    "builder-pagination-evidence-review.json",
+    "主计划第5.11节及第7节第8项"
+  ],
+  "question": "对已保存的两个分页遗漏输入，获准的另一模型能否给出保持原条件的下一页调用？",
+  "sourceInputs": ".local/skills-mcp-migration-live/builder-E2-preparation/manifest.json",
+  "arms": "仅复用两个baseline；与E2 Go baseline比较，不运行位置变体。",
+  "provider": "openrouter",
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "currentModelMetadata": {
+    "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "name": "NVIDIA: Nemotron 3 Ultra (free)",
+    "context_length": 1000000,
+    "supported_parameters": [
+      "include_reasoning",
+      "max_tokens",
+      "reasoning",
+      "reasoning_effort",
+      "seed",
+      "temperature",
+      "tool_choice",
+      "tools",
+      "top_p"
+    ],
+    "pricing": {
+      "prompt": "0",
+      "completion": "0"
+    }
+  },
+  "catalogEvidence": ".local/skills-mcp-migration-live/free-tool-model-catalog-20261014.json",
+  "mutation": "只替换provider与model；原messages/tools/toolHistory/maxTokens保持与已执行E2 baseline一致。服务地址和凭据使用既有OpenRouter配置，不记录凭据。",
+  "execution": {
+    "api": "与E2相同的官方LlmRuntime.stream",
+    "maximumCalls": 2,
+    "callTimeoutMs": 360000,
+    "maxTokens": 32768,
+    "toolExecutions": 0,
+    "agentLoops": 0,
+    "retries": 0,
+    "beforeCalls": "重新读取公开模型目录，核对所选ID、tools支持、上下文容量及输入输出单价为零；不可用或价格变化则记录环境受阻。",
+    "stop": "每个输入消费一次完整stream，记录失败和finish原因后结束；不执行返回工具。"
+  },
+  "evidence": [
+    "实际options及相对原baseline差异",
+    "完整chunks与可用分析记录",
+    "真实边界request及provider/model",
+    "独立R、候选安装核对、Profile可见配置及清理"
+  ],
+  "judgment": "独立审查员依据实际返回工具名、查询条件、page/page_size判定下一动作；单步符合仅决定是否值得执行独立业务复验，完整Skill验收状态保持原值。",
+  "limits": [
+    "本轮同时改变模型与Provider，仅形成能力比较。",
+    "原采样参数记录缺口沿用E2限制；单个样本不能证明稳定性。",
+    "完整候选未改变原选词，分页合同的业务影响与程序动作分别记录。"
+  ]
+}

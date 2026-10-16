@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "scope": [
+    ".agents/skills/anima-prompt-builder/references/06-slot-order.md#4.4",
+    ".planning/skills-mcp-migration/task_plan.md#5,6,7,11",
+    ".planning/skills-mcp-migration/progress.md#111,114"
+  ],
+  "findings": [],
+  "latest_recheck": {
+    "targets": [
+      ".planning/skills-mcp-migration/progress.md:366",
+      ".planning/skills-mcp-migration/task_plan.md:50"
+    ],
+    "result": "包内文件的比较对象已明确；激活失败已限定为此前候选，当前候选的复验状态清楚。两处文字复审通过。"
+  }
+}

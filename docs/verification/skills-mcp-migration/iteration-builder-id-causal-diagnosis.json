@@ -1,0 +1,531 @@
+{
+  "purpose": "对两项真实 Builder 的首次偏离进行知识来源、能力边界与原因假设诊断，并明确本轮适用的验收范围。",
+  "createdAt": "2026-10-14T08:26:47.784981+00:00",
+  "scope": {
+    "cases": [
+      "5.3-2",
+      "5.4-2"
+    ],
+    "sourceReview": "docs/verification/skills-mcp-migration/iteration-builder-id-review.json",
+    "executionIndex": "docs/verification/skills-mcp-migration/iteration-builder-id-execution.json",
+    "newModelCalls": 0,
+    "applicationStarts": 0,
+    "productChanges": 0,
+    "ledgerChanges": 0,
+    "previousReviewChanged": false,
+    "controlsStatus": "以下最小对照均为待执行方案，本轮没有执行。",
+    "redaction": "证据按原路径引用；报告不复制凭据。"
+  },
+  "evidence": {
+    "5.3-2": {
+      "C": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/b097ca61-2d68-4e4a-a554-868269876313/1791963666875-c6741a94-282b-4da3-bb0e-98f4384b3aa3-collect.json",
+      "RDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/materialized-input.json",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+      "builder": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/workspace-artifacts/5.3-2/builder.json"
+    },
+    "5.4-2": {
+      "C": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/d1030133-b50b-4191-82c6-0dba2d4ba73e/1791964811562-107ef16f-aaa0-4a2a-af37-e9f2b6398361-collect.json",
+      "RDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/materialized-input.json",
+      "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "builder": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/workspace-artifacts/5.4-2/ani-grok-companion-builder.json"
+    }
+  },
+  "reviewClarification": {
+    "finding": "IB54-F3",
+    "previousStart": 43,
+    "correctedBoundary": "seq43 是工具展示指引驱动的封面下载。取得图像与将图像观察作为 Builder 内容来源分别判定；首次能够由产物确认的来源采用偏离是 seq96。",
+    "newEvidence": "首个实际请求的 query_semantic_characters 工具 description 第16项已要求打开 URL 观察封面，第17项要求打开样图。",
+    "conclusion": "保留既有 review 原文；本诊断补全下载前的知识路径，不把下载本身归为没有来源依据的动作。"
+  },
+  "findings": [
+    {
+      "id": "IB53-D1",
+      "relatedFinding": "IB53-F1",
+      "symptom": "最终 Prompt 用 soft focus 表达用户的窗边柔光，未保留柔和照明关系。",
+      "firstObservableDeviation": {
+        "CSeq": 98,
+        "field": "slots.detail_mood",
+        "value": [
+          "soft focus"
+        ],
+        "natural_language": []
+      },
+      "deliveredContracts": [
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+            "section": "查询缺少的Prompt素材第5项；选择作品、角色、画师与词条第4项"
+          },
+          "CSeqs": [
+            18,
+            19
+          ],
+          "meaning": "详细资料不能确定精确标签时查询 MCP；词条没有结果时把英文自然语言写入 natural_language。",
+          "firstR": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/1f408d50-80fd-4b30-85e9-57d9cdb3fe1a.jsonl",
+          "messageIndex": 5
+        },
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/06-slot-order.md",
+            "section": "4.4"
+          },
+          "CSeqs": [
+            37,
+            38
+          ],
+          "quote": "只有标签不能准确表达画面关系时，Skill 执行者才使用英文自然语言短句。",
+          "firstR": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/4fdea6c2-fd06-462e-890f-ce29f41ba718.jsonl",
+          "messageIndex": 13
+        },
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/15-detail-mood.md",
+            "section": "13.1、13.4、13.8"
+          },
+          "CSeqs": [
+            86,
+            87
+          ],
+          "quotes": [
+            "只记录能够与第13.2节至第13.7节表格行直接对应的要求。",
+            "整体柔焦 → soft focus。",
+            "不向 detail_mood 增加其他光线、光影或色调标签。"
+          ],
+          "firstR": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/4cab9750-33fa-46c7-8ade-a5966ed08833.jsonl",
+          "messageIndex": 34
+        },
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-FFuUlo/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/04-final-self-check.md",
+            "section": "第7项"
+          },
+          "CSeqs": [
+            32,
+            33
+          ],
+          "quote": "光线、光影和色调标签符合 §13.8 的组合规则。"
+        }
+      ],
+      "facts": [
+        "用户要求柔光，未要求柔焦。",
+        "13.8 的槽位限制与13.4的柔焦词条均真实送达，未发现这部分响应被裁剪。",
+        "初始工具清单包含 query_semantic_prompt_terms；本轮没有调用该工具。",
+        "seq98开始使用 soft focus，seq125、130、140继续保留，seq147解释为用柔焦表达柔光。",
+        "格式校验输入只含 slots/display_text，完整结果校验输入不含用户请求；两种校验通过无法验证原意是否被保留。"
+      ],
+      "visibleReasoningClues": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-FFuUlo/observer-calls/b097ca61-2d68-4e4a-a554-868269876313/c9475e7e-f5a2-4566-836b-f425a9278c5c.jsonl",
+        "messageIndex": 35,
+        "summary": "记录先区分 soft light 与 soft focus，随后讨论13.8禁止光线标签、自然语言只用于关系的限制，最终选择最近的表格词条。该记录用于形成假设，实际偏离以seq98及最终产物确认。"
+      },
+      "knowledgeAndCapabilityChain": [
+        "当前用户柔光 → 已读13.8光线槽位限制与13.4柔焦标签 → 未执行可用的语义词条查询 → 写入soft focus → 结构校验通过 → 最终声明已表达柔光。"
+      ],
+      "causalAssessment": {
+        "confirmed": "直接失真动作是将照明要求替换为成像效果；该动作发生在读取限制段落之后，并持续进入最终产物。",
+        "hypotheses": [
+          {
+            "id": "H53-1",
+            "statement": "详细资料对光线标签的限制和自然语言关系限制，使执行者将语义保留错误地压缩为在现有表格中选择最近词条。",
+            "support": [
+              "已送达的规则存在上述范围限制。",
+              "可见分析直接讨论两类限制，随后实际输入选soft focus。"
+            ],
+            "counterevidence": [
+              "SKILL.md仍提供词条查询与无结果自然语言分支，未要求把柔光替换为柔焦。"
+            ],
+            "unresolved": "不能仅凭一次轨迹证明限制段落是必要或充分原因；也尚未验证光线概念在全部槽位约束下的唯一合法路由。",
+            "minimalControl": {
+              "fixed": "相同模型、任务、MCP记录、tools、已读上下文与随机性设置。",
+              "variable": "在seq87后的诊断分叉中，仅将13.8最后一句替换为“光线、光影和色调描述写入 natural_language，保留用户原意。”其余消息、工具和字段保持相同。",
+              "observation": "是否仍把柔光写为soft focus，是否保留照明语义，是否执行需要的词条查询。",
+              "falsifier": "移除该限制后仍出现相同替换，否定该限制是本次错误的充分解释。",
+              "limit": "该文本仅为隔离光线承接范围的诊断夹具；它改变了本次对照合同，不能作为原合同验收通过记录，也不是产品修复建议。"
+            }
+          },
+          {
+            "id": "H53-2",
+            "statement": "执行者将词条表内就近选择优先于需要查询时保留语义的合同。",
+            "support": [
+              "工具可用、用户概念未精确匹配，仍未查询。"
+            ],
+            "minimalControl": {
+              "fixed": "相同Builder合同、模型、Style/Character和尺寸。",
+              "variable": "仅把用户的柔光改为整体柔焦。",
+              "observation": "soft focus在对照中应成为精确匹配，而原请求应保留照明语义。",
+              "falsifier": "两请求仍获得相同处理且都被自述为准确，说明错误集中于概念区分/自检，不足以归因为MCP入口缺失。"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "IB54-D1",
+      "relatedFinding": "IB54-F1",
+      "symptom": "新画面只有构建保存要求，最终generation_purpose=test，采用2:3的832×1248档。",
+      "firstObservableDeviation": {
+        "CSeq": 101,
+        "field": "generation_purpose",
+        "value": "test"
+      },
+      "deliveredContracts": [
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+            "section": "生成目的第1、2、4、5条"
+          },
+          "CSeqs": [
+            31,
+            32
+          ],
+          "quotes": [
+            "没有正式交付要求且用户要求测试、比较、预览、筛选、根据反馈修改或继续迭代时选择test。",
+            "新画面没有测试、比较或迭代表述时选择final。",
+            "无法确定是否连接旧测试链时请用户确认。"
+          ],
+          "firstR": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/1e9be141-7b01-477a-ae95-8c2311a9a374.jsonl",
+          "messageIndex": 11
+        },
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-profiles.json",
+            "section": "2:3"
+          },
+          "CSeqs": [
+            31,
+            32
+          ],
+          "values": {
+            "test": [
+              832,
+              1248,
+              1
+            ],
+            "final": [
+              1152,
+              1728,
+              2
+            ]
+          }
+        }
+      ],
+      "facts": [
+        "实际输入没有测试、比较、预览、迭代、历史Prompt或Run要求。",
+        "persona要求调度图片任务，未写test、final或默认清晰度。",
+        "Krea2已读合同明确要求本类新画面选final；test并非该Skill要求。",
+        "安装版迭代Skill要求生成Agent在图片迭代用test尺寸，但本次Krea2没有加载或读取该文件，也没有角色子会话。",
+        "seq101首次补齐字段时写test，seq106保存，seq110称按新画面测试选择test。",
+        "不存在因收到父Agent的测试指令而选择test的可见消息。"
+      ],
+      "visibleReasoningClues": {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/3dbbf761-6aeb-47ec-8b79-cf961cf3997a.jsonl",
+        "messageIndex": 35,
+        "summary": "记录提到需要决定新任务test/final，随后转而查看2:3 test尺寸；未记录把本请求归入test条款的有效依据。"
+      },
+      "causalAssessment": {
+        "confirmed": "选择结果违反已送达的生成目的合同，相关合同和两个尺寸档并未缺失。",
+        "hypotheses": [
+          {
+            "id": "H54-purpose-1",
+            "statement": "执行者在选尺寸时直接选中了test档，遗漏了先按输入确定生成目的的分支判断。",
+            "support": [
+              "可见分析从目的问题转向test尺寸，调用产物也取该档。"
+            ],
+            "counterevidence": [
+              "分析片段只能说明发生顺序，不能证明内部决定机制。"
+            ],
+            "minimalControl": {
+              "fixed": "同一输入、模型、persona、工具和合同。",
+              "variable": "只将generation-profiles.json中每个profile的test/final键顺序对调，数值和合同不变。",
+              "observation": "目的选择是否随数据呈现顺序变化。",
+              "falsifier": "相同错误稳定保留时，削弱由先看到test尺寸诱发的解释；若改变，需重复对照确认呈现顺序效应。"
+            }
+          },
+          {
+            "id": "H54-purpose-2",
+            "statement": "迭代persona使执行者把Builder-only任务归入测试链。",
+            "support": [
+              "运行在iteration preset。"
+            ],
+            "counterevidence": [
+              "persona没有test要求。",
+              "本次未读迭代Skill的test规则；输入没有历史链。"
+            ],
+            "minimalControl": {
+              "fixed": "模型、工具声明、任务、数据和Builder合同全部相同。",
+              "variable": "仅将system中的图片迭代persona换成中性的Builder执行职责；其他system段落不变。",
+              "observation": "是否仍选test，是否改变了其他语义分支。",
+              "falsifier": "中性persona仍发生同样选择则不能把迭代persona视为必要原因；一次转正也仅支持相关性，需重复配对。"
+            }
+          }
+        ],
+        "notEstablished": "尚未有单变量反事实证明是persona、资料顺序或执行遗漏中的哪一项造成；不能据此换模型或加禁止词。"
+      }
+    },
+    {
+      "id": "IB54-D2",
+      "relatedFinding": "IB54-F2",
+      "symptom": "positive_avoidance记录每手五指自然连接，positive_prompt没有该内容。",
+      "firstObservableDeviation": {
+        "CSeq": 101,
+        "fields": [
+          "positive_prompt",
+          "positive_avoidance"
+        ]
+      },
+      "deliveredContract": {
+        "source": {
+          "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+          "section": "Krea2正向规避策略"
+        },
+        "CSeqs": [
+          31,
+          32
+        ],
+        "firstR": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/1e9be141-7b01-477a-ae95-8c2311a9a374.jsonl",
+        "messageIndex": 11,
+        "quotes": [
+          "把完整约束实际并入positive_prompt。",
+          "positive_avoidance必须记录已经并入positive_prompt的内容。"
+        ]
+      },
+      "facts": [
+        "seq96初稿仅两字段，seq97报negative_mode缺失。",
+        "seq101补齐结构时新写positive_avoidance；正文保留双手交握和没有裁掉双手，没有五指及自然连接。",
+        "seq102验证通过；seq106改色调后再次通过，但两字段差异仍在。",
+        "seq110声称五指规避已并入正文，和最终文件不一致。"
+      ],
+      "knowledgeAndCapabilityChain": [
+        "已读完整语义合同 → 初稿缺结构字段 → 校验器返回negative_mode required → 补齐十字段 → 校验成功 → 未完成字段间语义对照。"
+      ],
+      "causalAssessment": {
+        "confirmed": "语义不一致产生于结构补齐时并被保留，既有校验成功未阻止其交付。",
+        "hypotheses": [
+          {
+            "id": "H54-avoidance-1",
+            "statement": "格式失败后的修复关注必填字段，遗漏把新约束同步进正文的语义步骤。",
+            "support": [
+              "错误与补齐调用紧邻，缺失约束恰好在补齐时才写入独立字段。"
+            ],
+            "minimalControl": {
+              "fixed": "同一model、任务、persona、合同及seq97之前的行为。",
+              "variable": "在诊断分叉中提供结构已完整但同样语义不一致的草稿，省去negative_mode缺字段失败。",
+              "observation": "是否仍交付字段不一致结果。",
+              "falsifier": "没有结构失败仍持续不一致时，否定结构错误修复是必要条件，进一步定位完成前自检。",
+              "limit": "该对照需明确记录注入草稿，属于原因测试，不可作为原始业务验收通过证据。"
+            }
+          }
+        ],
+        "boundary": "语义判断由Agent承担；本次校验器只收到生成结果对象，未收到原始用户请求。尚未诊断为结构校验器缺陷。"
+      }
+    },
+    {
+      "id": "IB54-D3",
+      "relatedFinding": "IB54-F3",
+      "symptom": "封面观察中的配饰进入Builder，超出Krea2列明的Prompt来源。",
+      "firstObservableDeviation": {
+        "CSeq": 96,
+        "field": "positive_prompt",
+        "valueExcerpt": "领口内侧衬着一条与发饰呼应的黑色蕾丝颈饰"
+      },
+      "discoveryBeforeAction": {
+        "firstR": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/iteration-builder-id-preparation/harness-run-OVlnF5/observer-calls/d1030133-b50b-4191-82c6-0dba2d4ba73e/0d2bb49d-86b1-46e3-8390-c0de52c8ff54.jsonl",
+        "tool": "mcp__noobai__query_semantic_characters",
+        "descriptionItems": {
+          "15": "results[].prompt_text：Prompt素材；调用者保留素材内容，按目标生成模型的提示词语法组合。",
+          "16": "results[].cover_url：示例展示；null表示没有封面。打开URL观察封面。",
+          "17": "results[].sample_image_urls：示例展示；按返回顺序打开图片，观察记录的示例。"
+        },
+        "skillCatalog": "同一初始请求已列出local-image-reader的名称、用途与加载skill工具的方法。"
+      },
+      "deliveredContracts": [
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+            "section": "构建单条Krea2动漫Prompt；完成前自检第4项"
+          },
+          "CSeqs": [
+            17,
+            18
+          ],
+          "meaning": "六类Prompt输入和MCP只采用选中角色/画师Prompt的来源边界。"
+        },
+        {
+          "source": {
+            "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/input-contract.md",
+            "section": "Character上下文记录"
+          },
+          "CSeqs": [
+            29,
+            30
+          ],
+          "meaning": "空prompt_text使用ID查询，从MCP采用的角色Prompt产生角色内容。"
+        }
+      ],
+      "knowledgeAndCapabilityChain": [
+        {
+          "seqs": [
+            38,
+            39
+          ],
+          "event": "resolve返回非空角色Prompt，同时返回cover_url；地址首次出现在该工具结果。"
+        },
+        {
+          "seqs": [
+            43,
+            44
+          ],
+          "event": "主Agent用bash/curl下载该URL，返回200 image/webp。"
+        },
+        {
+          "seqs": [
+            50,
+            51,
+            59,
+            60,
+            71,
+            72
+          ],
+          "event": "PIL不可用；which/sips发现已有magick，完成转换。"
+        },
+        {
+          "seqs": [
+            76,
+            77,
+            81,
+            82
+          ],
+          "event": "根据已知Skill名称加载local-image-reader，并读取image-inspection-cli参考，取得image inspect命令及受管入口。"
+        },
+        {
+          "seqs": [
+            86,
+            87
+          ],
+          "event": "独立视觉调用返回观察，其中包含黑色蕾丝颈饰；该信息不在seq39的角色prompt_text中。"
+        },
+        {
+          "seqs": [
+            96,
+            106,
+            110
+          ],
+          "event": "Agent把颈饰写入Prompt并保留，最终以封面作为身份和配饰一致性的依据。"
+        }
+      ],
+      "runtimeCapability": "该会话暴露通用bash，实际执行curl和已有magick；local-image-reader通过受管CLI进入图片读取服务。本次没有生图调用、依赖安装或修改全局命令。",
+      "causalAssessment": {
+        "confirmed": [
+          "封面读取知识来自首个请求的MCP展示指引和Skill catalog。",
+          "封面地址来自本轮MCP结果；视觉观察经过实际图片读取服务返回。",
+          "观察内容进入Prompt的来源链完整。"
+        ],
+        "interfaceBoundary": "MCP声明同时区分Prompt素材与示例展示，却用无条件动作句要求观察封面；Krea2合同列明可进入Prompt的来源，未包含封面观察。两者可以同时满足：观察用于展示，构建仍用允许来源。实际偏离是把展示证据继续用作Prompt来源。",
+        "hypotheses": [
+          {
+            "id": "H54-cover-1",
+            "statement": "MCP的打开观察指引促成了本次额外图像读取。",
+            "support": [
+              "指引先于URL和下载动作进入模型。",
+              "后续动作完整沿这条能力路径执行。"
+            ],
+            "counterevidence": [
+              "ANIMA同轮也收到相同工具指引和URL，但未读取封面；因此该指引不是充分条件。"
+            ],
+            "minimalControl": {
+              "fixed": "Krea2输入、角色Prompt、cover_url、模型、persona、Skill合同和其他工具描述。",
+              "variable": "仅移除工具description第16/17项中的观察动作句，保留字段含义和URL返回。",
+              "observation": "是否仍下载、调用视觉服务及将观察用于构建。",
+              "falsifier": "仍执行相同行为说明该指引不是必要条件；若仅下载减少但仍加入外部外观，需继续查其他来源。"
+            }
+          },
+          {
+            "id": "H54-cover-2",
+            "statement": "已完成封面观察后，执行者把真实观察自动升级为角色Prompt来源。",
+            "support": [
+              "观察包含颈饰、角色Prompt没有；实际草稿与最终答复采用该来源。"
+            ],
+            "minimalControl": {
+              "fixed": "保留封面查看链路、Builder输入与所有合同。",
+              "variable": "在seq87后的诊断分叉中只撤去观察文本，替换为明确的读取失败结果；其他角色Prompt保持不变。",
+              "observation": "是否仍出现颈饰及封面来源归因。",
+              "falsifier": "无观察仍写同一配饰，说明该配饰可能来自自由设计或其他已知信息；届时不能继续把配饰本身作为视觉来源因果证据。",
+              "limit": "该夹具只验证来源依赖，不能假装真实视觉失败或作为业务成功验收。"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "roleAndAcceptanceBoundary": {
+    "actualUserScope": "两项输入均要求只构建并保存Builder JSON；5.3额外明确test及尺寸，5.4没有测试语句。",
+    "actualPersona": {
+      "CSeq": 8,
+      "quote": "Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison.",
+      "otherRelevantText": "Keep the image goal and essential elements throughout prompt revisions. Deliver the image and supporting comparison findings when the comparison confirms ...",
+      "priority": "system/persona高于用户消息与工具返回。"
+    },
+    "skillSelectionCondition": {
+      "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-OVlnF5/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/SKILL.md:3",
+      "quote": "主Agent在用户要求根据故事和人物构思画面，并通过生图、独立观察、比较反馈和小步Prompt修复迭代达成画面目标时使用。"
+    },
+    "actualBehavior": "两轮主Agent直接运行指定Builder；无subagent_*调用、无子Session、无生图。5.3读取迭代资料中的Builder文件说明，5.4没有读取迭代Skill。",
+    "conflictAssessment": {
+      "confirmed": "persona用图片迭代任务描述整个入口，实际输入是Builder-only；persona未规定独立Builder任务的分支。",
+      "judgment": "存在任务入口适用范围未明确的文本边界；当前证据没有确立一个要求对所有Builder请求额外生图的业务合同。完整迭代Skill的触发条件与Builder-only请求不同，因此不能仅凭没有四角色把这两次分支验收判失败。",
+      "remainingQuestion": "若产品确实要求迭代预设中的所有Builder-only任务也必须由生成Agent执行，需要先从既有需求确定该范围；当前已读原计划没有给出这项全称要求。",
+      "minimalControl": "相同Builder-only输入、相同工具和模型，仅替换persona中的图片迭代职责段，比较主/子路由与Builder语义结果；该对照用于检验persona影响，不改变本轮交付范围。"
+    },
+    "planSources": [
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md:419",
+        "applies": "5.3缺少Prompt但有资源ID分支，核对保留规则和查询入口。"
+      },
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md:598",
+        "applies": "5.4角色ID补全，核对来源顺序、默认设计、停止条件与校验结果。"
+      },
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md:1235",
+        "applies": "5.9.3要求每项任务在两个预设各执行一次，保持明确Skill路径、工作目录与参数。"
+      },
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md:1239",
+        "applies": "5.9.5按对应步骤要求逐项检查，不以最终答复或自动测试替代轨迹。"
+      },
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md:1245",
+        "applies": "5.9.8另行要求实际生成和至少一轮四角色交接；本轮Builder-only不能证明该项通过。"
+      },
+      {
+        "path": "docs/plans/skills-mcp-migration-20261013.md:1302",
+        "applies": "5.13.8按依赖顺序区分Builder分支、真实生成、历史复用和完整角色交接。"
+      },
+      {
+        "path": ".local/skills-mcp-migration-live/task-matrix.json",
+        "applies": "5.3-2和5.4-2固定输入均为只构建保存，两个preset分别执行。"
+      }
+    ],
+    "thisRoundApplicable": [
+      "角色ID补全及身份核对",
+      "当前消息来源顺序及明确画面要求",
+      "Builder整体合同、默认目的和尺寸、正向规避",
+      "MCP目录入口与既有CLI校验入口",
+      "真实模型身份、完整消息工具轨迹、资料来源和重试",
+      "官方候选身份与运行资源清理的操作证据"
+    ],
+    "separateAcceptance": [
+      "真实图片生成、Run/Actual Workflow与媒体交付",
+      "四角色交接及父子结果通知",
+      "观察与比较对实际生成图片的目标达成判断"
+    ],
+    "finalStatus": "目标ID分支通过；整体Builder语义合同未通过；四角色完整链由独立项目验收。"
+  },
+  "diagnosisStatus": {
+    "factsEstablished": "知识首次进入、实际允许能力、调用消费者和产物传播已定位。",
+    "causalClaimsPending": "各假设的必要性或充分性仍需所列单变量对照；本轮没有运行模型对照。",
+    "nextReviewableStep": "先逐项确认对照的唯一变量、保留原始失败及数据来源，再由主任务按授权选择执行；本报告没有提出产品修复文字或模型替换。"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "purpose": "补齐无默认模型夹具的 HTTP 模板目录详情与搜索证据。",
+  "readWhen": "核对 no-default-model 场景跨协议字段一致性时。",
+  "status": "结构探针完成，待独立复核",
+  "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/evidence.json",
+  "modelCalls": 0,
+  "consumer": "当前 src/host/catalog/catalog-client.ts 的 CatalogClient.search、resolveTemplate、details",
+  "observed": {
+    "upstreamTemplate29ModelId": "1",
+    "httpResolvedTemplate29ModelId": null,
+    "httpDetailsTemplate29ModelId": null,
+    "mcpResolvedTemplate29Model": null,
+    "mcpSearchTemplate29Model": null
+  },
+  "httpExchanges": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-d0a14adf-acc3-4f92-9fda-b227bffbfd3f.json",
+      "request": {
+        "mode": "resolve",
+        "id": "29"
+      },
+      "fields": {
+        "results.0.model_id": {
+          "before": 1,
+          "after": null
+        }
+      },
+      "returned": [
+        [
+          29,
+          null
+        ]
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-0a289d52-d1c9-4bdf-9241-dd89764fe371.json",
+      "request": {
+        "mode": "search",
+        "query": "wai_basic_txt2img",
+        "page": 1,
+        "page_size": 8
+      },
+      "fields": {
+        "results.0.model_id": {
+          "before": 1,
+          "after": null
+        }
+      },
+      "returned": [
+        [
+          29,
+          null
+        ]
+      ]
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-15387f00-7d8f-46e9-929c-ff2a8b078ed8.json",
+      "request": {
+        "mode": "resolve",
+        "id": "29"
+      },
+      "fields": {
+        "results.0.model_id": {
+          "before": 1,
+          "after": null
+        }
+      },
+      "returned": [
+        [
+          29,
+          null
+        ]
+      ]
+    }
+  ],
+  "scope": "本轮独立只读夹具补证；原四项模型失败仍按各自轨迹判定。",
+  "cleanup": {
+    "runId": "f666fdfb-8e22-421d-8e76-34b540751a01",
+    "pid": 76782,
+    "scenario": "no-default-model",
+    "status": "stopped",
+    "url": "http://127.0.0.1:59936/mcp",
+    "mcpUrl": "http://127.0.0.1:59936/mcp",
+    "sourceAddress": {
+      "url": "http://127.0.0.1",
+      "port": 59936
+    },
+    "port": 59936,
+    "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture",
+    "startedAt": "2026-10-14T10:55:21.985Z",
+    "stoppedAt": "2026-10-14T10:55:23.411Z",
+    "portReleased": true
+  }
+}

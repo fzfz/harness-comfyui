@@ -1,0 +1,49 @@
+{
+  "purpose": "记录两轮迭代文字审计发现的处理结果。",
+  "readWhen": "核对最终迭代文字或构建候选前。",
+  "reports": [
+    "observation-media-text-review.json",
+    "iteration-final-text-review.json"
+  ],
+  "resolution": [
+    {
+      "id": "T1",
+      "status": "addressed"
+    },
+    {
+      "id": "T2",
+      "status": "addressed"
+    },
+    {
+      "id": "T3",
+      "status": "addressed"
+    },
+    {
+      "id": "T4",
+      "status": "addressed"
+    },
+    {
+      "id": "T5",
+      "status": "addressed"
+    },
+    {
+      "id": "TEXT-1",
+      "status": "addressed"
+    },
+    {
+      "id": "TEXT-2",
+      "status": "addressed"
+    },
+    {
+      "id": "TEXT-3",
+      "status": "addressed"
+    },
+    {
+      "id": "TEXT-4",
+      "status": "addressed"
+    }
+  ],
+  "manualVerification": "已对照两份报告逐项核对原句与最终正文。输出字段集中在记录表；参数集中在 Skill 参数表；派发和缺项处理按条件分项；保留原身份、来源、等待和恢复要求。",
+  "textTargets": "三个产品文件与对应目标快照逐字一致。",
+  "codeChanged": false
+}

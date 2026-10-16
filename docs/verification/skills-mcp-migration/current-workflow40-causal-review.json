@@ -1,0 +1,180 @@
+{
+  "purpose": "依据本轮模板40编译证据定位连接结构分歧，并界定根因证据与修复授权范围。",
+  "reviewedAt": "2026-10-14T17:27:23.058186+00:00",
+  "verdict": "已确认seed连接在前端输出中对应wildcard_text；首个发生重排的具体函数尚缺节点状态证据。",
+  "currentEvidence": {
+    "directory": ".local/mcp-investigation/2026-10-15-implementation/workflow40-compile-node-mode",
+    "result": ".local/mcp-investigation/2026-10-15-implementation/workflow40-compile-node-mode/result.json",
+    "frontend": ".local/mcp-investigation/2026-10-15-implementation/workflow40-compile-node-mode/frontend.jsonl",
+    "apiWorkflow": ".local/mcp-investigation/2026-10-15-implementation/workflow40-compile-node-mode/cache/8536747db6f126d4d71f99620b73bde029e6f0e6602707944e6fa14715e8e3db.json",
+    "failure": {
+      "startedAt": "2026-10-14T17:19:29.188Z",
+      "finishedAt": "2026-10-14T17:19:44.486Z",
+      "status": "failed",
+      "code": "COMFYUI_API_WORKFLOW_OVERLAY_FAILED",
+      "message": "Official API Workflow node \"3\" input \"wildcard_text\" connection structure does not match the runtime projection.",
+      "stack": "GenerationRuntimeError: Official API Workflow node \"3\" input \"wildcard_text\" connection structure does not match the runtime projection.\n    at runtimeError (/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/src/host/generation/official-api-workflow.ts:82:9)\n    at overlayRuntimeApiWorkflow (/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/src/host/generation/official-api-workflow.ts:273:11)\n    at OfficialApiWorkflowCompiler.compile (/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/src/host/generation/official-api-workflow.ts:323:20)\n    at async ComfyWorkflowCompiler.compile (/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/src/host/generation/workflow-compiler.ts:2327:23)\n    at async SourceGenerationPreparer.prepare (/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/src/host/generation/source-preparer.ts:184:22)\n    at async file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/[eval1]:26:19",
+      "runsCreated": 0,
+      "generationSubmissions": 0
+    }
+  },
+  "causalChain": [
+    {
+      "stage": "目录返回的UI模板",
+      "source": ".local/mcp-investigation/2026-10-15-implementation/workflow40-compile-node-mode/template.json",
+      "node3": {
+        "id": 3,
+        "type": "ImpactWildcardProcessor",
+        "inputs": [
+          {
+            "name": "seed",
+            "type": "INT",
+            "widget": {
+              "name": "seed"
+            },
+            "link": 70
+          }
+        ],
+        "seedLink": [
+          70,
+          40,
+          0,
+          3,
+          0,
+          "INT"
+        ],
+        "wildcardWidgetKind": "str"
+      },
+      "assessment": "节点3的序列化inputs数组仅含seed，位于索引0；连接70的目标slot也是0。因此目录模板内部的输入名称、slot和连接互相一致。"
+    },
+    {
+      "stage": "运行时投影",
+      "sourceLocations": [
+        "src/host/generation/workflow-compiler.ts:2101",
+        "src/host/generation/workflow-compiler.ts:2130",
+        "src/host/generation/workflow-compiler.ts:2143",
+        "src/host/generation/workflow-compiler.ts:2046"
+      ],
+      "historicalRawEvidence": ".local/skills-mcp-migration-live/multiple-lora-preparation/pre-export-projection.json",
+      "currentProjectionSnapshotPresent": false,
+      "assessment": "projectRuntimeApiWorkflow先映射widget，再按序列化input.name把链接结果写入inputs；resolveWorkflowLink返回源节点和输出索引。对原图节点3，这条路径把链接70写入seed，并保留wildcard_text字符串。历史原始投影直接记录该结果，本轮错误也证实wildcard_text并非连接类型。"
+    },
+    {
+      "stage": "调用官方前端",
+      "sourceLocations": [
+        "src/host/generation/workflow-compiler.ts:2327",
+        "src/host/generation/official-api-workflow.ts:410",
+        "src/host/generation/comfy-frontend-browser.ts:508"
+      ],
+      "assessment": "编译器将actualWorkflow传给frontend.exportWorkflow；exportExpression先await app.loadGraphData(workflow)，随后await app.graphToPrompt()。"
+    },
+    {
+      "stage": "loadGraphData之后的节点状态",
+      "observed": false,
+      "missing": [
+        "node3.inputs完整数组及顺序",
+        "node3.widgets名称、值、转换状态",
+        "app.graph.links[70]完整信息",
+        "node4相同字段作为同机制对照"
+      ],
+      "assessment": "frontend.jsonl仅保存attempt=1,status=succeeded。现有exportExpression只返回prompt.output，当前材料无法确定加载后的第0槽名称，也无法确认链接何时改绑。"
+    },
+    {
+      "stage": "graphToPrompt输出及缓存",
+      "source": ".local/mcp-investigation/2026-10-15-implementation/workflow40-compile-node-mode/cache/8536747db6f126d4d71f99620b73bde029e6f0e6602707944e6fa14715e8e3db.json",
+      "node3": {
+        "inputs": {
+          "wildcard_text": [
+            "40",
+            0
+          ],
+          "populated_text": "",
+          "mode": "populate",
+          "seed": 0,
+          "Select to add Wildcard": "Select the Wildcard to add to the text"
+        },
+        "class_type": "ImpactWildcardProcessor",
+        "_meta": {
+          "title": "POSITIVE"
+        }
+      },
+      "node4": {
+        "inputs": {
+          "wildcard_text": [
+            "40",
+            0
+          ],
+          "populated_text": "",
+          "mode": "populate",
+          "seed": 0,
+          "Select to add Wildcard": "Select the Wildcard to add to the text"
+        },
+        "class_type": "ImpactWildcardProcessor",
+        "_meta": {
+          "title": "NEGATIVE"
+        }
+      },
+      "assessment": "节点3与4均把来自节点40输出0的连接写入wildcard_text，seed变为字面值0。缓存存于overlay之前；normalizeOfficialApiWorkflow只处理字面量载体并保持输入键名，不会把seed键重命名为wildcard_text。"
+    },
+    {
+      "stage": "overlay拒绝",
+      "sourceLocations": [
+        "src/host/generation/official-api-workflow.ts:260",
+        "src/host/generation/official-api-workflow.ts:270",
+        "src/host/generation/official-api-workflow.ts:273"
+      ],
+      "assessment": "official wildcard_text为连接，runtime wildcard_text为字符串，触发连接结构不一致错误。这一拒绝保护阻止合并两份执行含义不同的图。"
+    }
+  ],
+  "firstObservableDivergence": {
+    "before": "UI模板与按名称生成的运行时投影：seed连接节点40输出0，wildcard_text为字符串。",
+    "after": "官方API输出：wildcard_text连接节点40输出0，seed=0。",
+    "boundedStage": "app.loadGraphData至app.graphToPrompt返回之间。",
+    "exactFunctionProven": false
+  },
+  "supportedFindings": [
+    "原图node3中seed位于唯一输入slot0，link70的target_slot=0；原图没有同一slot对应wildcard_text的自相矛盾。",
+    "本轮完整编译在官方导出成功后、overlay阶段失败；result.json调用栈指向compile的cache-miss分支第323行，并保存本轮frontend成功记录。",
+    "节点4具有同机制的输出错位，因此错误涉及两个Wildcard节点。",
+    "历史原始模板直接导出控制也出现相同wildcard_text连接，说明历史失败不要求先应用69/89或运行参数替换。该控制属于旧证据，本轮没有重跑。"
+  ],
+  "hypotheses": [
+    {
+      "statement": "当前前端把widget输入展开到节点inputs列表，而旧模板只序列化转换后的seed输入；链接按旧target_slot=0绑定了当前首个wildcard_text。",
+      "support": "历史object_info required顺序以wildcard_text起始；旧slot0与输出错位吻合。",
+      "unproven": "object_info字段顺序不能直接证明loadGraphData后app.graph.inputs的布局；缺少加载前后快照与相关前端/节点扩展代码调用证据。"
+    },
+    {
+      "statement": "节点扩展配置或graphToPrompt阶段改变了输入名或链接含义。",
+      "support": "当前证据没有把加载后图与导出后图分开采集。",
+      "unproven": "尚未观察该阶段的具体重排或赋值操作。"
+    }
+  ],
+  "repairBoundary": {
+    "currentDecision": "维持模板40阻塞，并保留overlay保护；当前证据不足以选定修复归属。",
+    "internalPlanWork": "补齐轨迹和诊断、核对当前直接消费者合同属于计划第5.11及5.14节范围。若后续证据证明计划涉及的内部数据转换改变了输入合同，再按具体消费者范围处理。",
+    "catalogOrNodeWork": "如须改写真实模板、调整ComfyUI节点扩展或外部前端，计划5.14.2及第8节未授予这类修改权限。",
+    "compilerWork": "当前没有证据证明overlay保护错误，也没有证据支持新增模板40专用槽位重映射；不能仅因合并错误而把外部兼容问题改写为内部编译器修复。"
+  },
+  "nextEvidenceRequired": [
+    "在获准的受控复验中保存传给loadGraphData的完整图、loadGraphData返回后的节点3/4输入与widget快照，以及调用graphToPrompt后的相同快照和原始输出。",
+    "核对实际加载的ComfyUI前端及Impact节点扩展版本与输入转换函数。",
+    "分别对原模板与实际参数图复验，并用同节点的当前前端原生保存图作单变量对照，确定兼容转换责任。"
+  ],
+  "priorEvidence": [
+    ".local/skills-mcp-migration-live/multiple-lora-preparation/input-layout-observation.json",
+    ".local/skills-mcp-migration-live/multiple-lora-preparation/original-export-comparison.json",
+    ".local/skills-mcp-migration-live/multiple-lora-preparation/original-api-workflow.json"
+  ],
+  "authorizationSources": [
+    "docs/plans/skills-mcp-migration-20261013.md:1633",
+    "docs/plans/skills-mcp-migration-20261013.md:1635",
+    "docs/plans/skills-mcp-migration-20261013.md:1680"
+  ],
+  "actions": {
+    "applicationsStarted": 0,
+    "browsersStarted": 0,
+    "modelInvocations": 0,
+    "productOrTemplateMutations": 0
+  }
+}

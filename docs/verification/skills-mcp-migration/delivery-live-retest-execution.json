@@ -1,0 +1,868 @@
+{
+  "purpose": "记录最终候选三组真实模型复验及四角色长调用变体的执行身份与原始证据。",
+  "readWhen": "独立审查本轮业务执行、模型请求、交接与清理时。",
+  "status": "execution-collected-and-stopped-pending-independent-review",
+  "preparationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/preparation.json",
+  "candidateIdentityPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/candidate-source-identity.json",
+  "serviceEvidence": {
+    "initialize": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/mcp-initialize.json",
+    "tools": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/mcp-tools-list.json",
+    "httpHealth": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/http-health.json",
+    "httpSourcePreflight": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/http-source-preflight.json"
+  },
+  "visionCheckPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/vision-check.json",
+  "entries": [
+    {
+      "caseId": "5.3-2",
+      "status": "naturally-completed-collected-and-stopped",
+      "preset": "harness-comfyui-iteration",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBg0Tt",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBg0Tt/environment/workspace",
+      "profileDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBg0Tt/environment/dsh-home/profiles/desktop",
+      "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/desktop-e2e.json",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/business-input.json",
+      "sourceInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/current-builder-runtime/harness-run-g6AXRL/materialized-input.json",
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2",
+      "limits": {
+        "allowedModels": [
+          {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free"
+          }
+        ],
+        "modelCallTimeoutMs": 360000,
+        "maxModelCalls": 90,
+        "taskTimeoutMs": 900000,
+        "cancelOn": [
+          "call deadline",
+          "call count limit",
+          "task deadline",
+          "unapproved model identity"
+        ]
+      },
+      "historyRunId": null,
+      "workspaceId": "31997d15-66d2-432a-a958-1c6c2755dd59",
+      "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBg0Tt/candidate.tgz",
+      "runId": "951bdb75-3e47-44df-a67e-f9edf5ed605e",
+      "startResultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/start-install.json",
+      "installPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/official-install.json",
+      "candidateComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/installed-candidate-comparison.json",
+      "roleAgentOptions": {
+        "composition-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "generation-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "comparison-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "observation-agent": {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      },
+      "imageReader": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free",
+        "maxTokens": 8192
+      },
+      "installRunId": "6f2e98b3-6608-44cc-9377-71f487ac0669",
+      "traceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-bBg0Tt/.local/desktop-e2e/951bdb75-3e47-44df-a67e-f9edf5ed605e/evidence/session-trace",
+      "previousUnsubmittedRunId": "d5184e16-6bae-4938-8f42-77a83890ca07",
+      "tracePreparationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/trace-preparation-provider-ready/trace-index.json",
+      "sessionId": "session-451d9a9d-e494-406e-a8a8-547b3bf0254c",
+      "submittedAt": "2026-10-15T03:27:20.572Z",
+      "traceIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/trace/trace-index.json",
+      "sessionCount": 1,
+      "modelCallCount": 22,
+      "terminalEvent": {
+        "type": "turn/end",
+        "seq": 129,
+        "time": 1792035408777,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "actualModels": [
+        "opencode-go/deepseek-v4.1-flash"
+      ],
+      "runtimeModelCallCount": 22,
+      "generationEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/generation-database.json",
+      "generationRuns": [],
+      "mediaCount": 0,
+      "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/cleanup.json",
+      "cleanup": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-15T03:37:04.345Z",
+        "portsReleased": true
+      },
+      "allHostModelCallsDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/host-model-calls",
+      "profileRestoration": "trace-override-removed-dedicated-profile-retained",
+      "completedAt": "2026-10-15T03:37:04.375Z",
+      "semanticReviewStatus": "pending-independent-review",
+      "intermediateJsonFiles": [
+        {
+          "source": "/tmp/anima-slots-test1.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/intermediate-json/anima-slots-test1.json",
+          "bytes": 801
+        },
+        {
+          "source": "/tmp/anima-slots-final.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/intermediate-json/anima-slots-final.json",
+          "bytes": 840
+        },
+        {
+          "source": "/tmp/anima-prompt-result.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/intermediate-json/anima-prompt-result.json",
+          "bytes": 578
+        },
+        {
+          "source": "/tmp/anima-gen-output.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/intermediate-json/anima-gen-output.json",
+          "bytes": 769
+        },
+        {
+          "source": "/tmp/anima-gen-validated.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/intermediate-json/anima-gen-validated.json",
+          "bytes": 729
+        }
+      ],
+      "userPromptSubmissions": 1,
+      "traceComplete": true,
+      "traceMissing": [],
+      "postStopStatusPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/post-stop-status.json",
+      "preparationIncident": {
+        "operation": "首次Go模型选择",
+        "result": "session/model-unavailable",
+        "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/unsubmitted-model-selection.json",
+        "resolution": "执行者在首次业务Prompt提交前，复用了原成功Profile中的Go Provider声明。"
+      },
+      "cleanupVerified": {
+        "processGroupPresent": false,
+        "portOwners": [
+          {
+            "port": 50831,
+            "pids": []
+          },
+          {
+            "port": 50832,
+            "pids": []
+          },
+          {
+            "port": 50833,
+            "pids": []
+          }
+        ]
+      },
+      "artifacts": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.3-2/workspace-artifacts/output-7b844b34-e91f-4ea8-b352-bf7e3b765af7/anima-builder.json",
+          "bytes": 770
+        }
+      ]
+    },
+    {
+      "caseId": "5.4-1",
+      "status": "naturally-completed-collected-and-stopped",
+      "preset": "harness-comfyui-iteration",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+      "profileDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/profiles/desktop",
+      "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/desktop-e2e.json",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/business-input.json",
+      "sourceInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-runtime/before/materialized-input.json",
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1",
+      "limits": {
+        "allowedModels": [
+          {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free"
+          }
+        ],
+        "modelCallTimeoutMs": 360000,
+        "maxModelCalls": 90,
+        "taskTimeoutMs": 900000,
+        "cancelOn": [
+          "call deadline",
+          "call count limit",
+          "task deadline",
+          "unapproved model identity"
+        ]
+      },
+      "historyRunId": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+      "workspaceId": "a25cfcb7-2580-4213-a381-391f07094571",
+      "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/candidate.tgz",
+      "runId": "a1c74be9-da98-4ffd-be7f-9cd5a403ff35",
+      "installPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/official-install.json",
+      "candidateComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/installed-candidate-comparison.json",
+      "roleAgentOptions": {
+        "composition-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "generation-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "comparison-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "observation-agent": {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      },
+      "imageReader": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free",
+        "maxTokens": 8192
+      },
+      "installRunId": "d97617f0-5f87-4a31-b4ad-8de5f0c61df0",
+      "traceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/.local/desktop-e2e/a1c74be9-da98-4ffd-be7f-9cd5a403ff35/evidence/session-trace",
+      "tracePreparationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/trace-preparation/trace-index.json",
+      "sessionId": "session-fb337d1b-19a4-4055-9302-74fb193a79f8",
+      "submittedAt": "2026-10-15T03:38:56.649Z",
+      "traceIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/trace/trace-index.json",
+      "sessionCount": 1,
+      "modelCallCount": 19,
+      "terminalEvent": {
+        "type": "turn/end",
+        "seq": 103,
+        "time": 1792035832488,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "actualModels": [
+        "opencode-go/deepseek-v4.1-flash"
+      ],
+      "runtimeModelCallCount": 19,
+      "generationEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/generation-database.json",
+      "generationRuns": [
+        {
+          "runId": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+          "status": "succeeded",
+          "workspaceId": "a25cfcb7-2580-4213-a381-391f07094571",
+          "sessionId": "2b99eed8-5355-49e7-9d30-26360393951a",
+          "actualWorkflowPath": "workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/actual-workflow.json"
+        }
+      ],
+      "mediaCount": 1,
+      "generationCopyErrors": [
+        {
+          "path": "workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/source-snapshot.json",
+          "code": "ENOENT"
+        },
+        {
+          "path": "workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/actual-workflow.json",
+          "code": "ENOENT"
+        },
+        {
+          "path": "workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/api-workflow.json",
+          "code": "ENOENT"
+        }
+      ],
+      "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/cleanup.json",
+      "cleanup": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-15T03:44:29.779Z",
+        "portsReleased": true
+      },
+      "allHostModelCallsDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/host-model-calls",
+      "profileRestoration": "original-profile-patch-restored",
+      "completedAt": "2026-10-15T03:44:29.792Z",
+      "semanticReviewStatus": "pending-independent-review",
+      "preservationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/preservation.json",
+      "resolvedGenerationFiles": [
+        {
+          "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs/workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/source-snapshot.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/generation-files/run_42c008fc-d38e-477e-9b47-560e1947e563-source_snapshot_path.json",
+          "field": "source_snapshot_path"
+        },
+        {
+          "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs/workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/actual-workflow.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/generation-files/run_42c008fc-d38e-477e-9b47-560e1947e563-actual_workflow_path.json",
+          "field": "actual_workflow_path"
+        },
+        {
+          "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs/workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/api-workflow.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/generation-files/run_42c008fc-d38e-477e-9b47-560e1947e563-api_workflow_path.json",
+          "field": "api_workflow_path"
+        },
+        {
+          "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/media/a4/12/media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323.png",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/generation-files/media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323.png",
+          "mediaId": "media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323"
+        }
+      ],
+      "generationRunsProduced": [],
+      "intermediateJsonFiles": [
+        {
+          "source": "/tmp/krea2_input.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/intermediate-json/krea2_input.json",
+          "bytes": 1545
+        },
+        {
+          "source": "/tmp/krea2_out.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/intermediate-json/krea2_out.json",
+          "bytes": 1504
+        },
+        {
+          "source": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-wLhYys/result.json",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/intermediate-json/result.json",
+          "bytes": 4929
+        }
+      ],
+      "userPromptSubmissions": 1,
+      "traceComplete": true,
+      "traceMissing": [],
+      "postStopStatusPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/post-stop-status.json",
+      "generationFileCopyStatus": "resolved",
+      "cleanupVerified": {
+        "processGroupPresent": false,
+        "portOwners": [
+          {
+            "port": 53654,
+            "pids": []
+          },
+          {
+            "port": 53655,
+            "pids": []
+          },
+          {
+            "port": 53656,
+            "pids": []
+          }
+        ]
+      },
+      "artifacts": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/history-current-5.4-1-28b0f54d-4293-4b84-b767-152672bb6c96/builder.json",
+          "bytes": 2201
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/output-8bbbf148-73b9-4cae-88f3-3cc284bfed0c/builder.json",
+          "bytes": 1504
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/materials.json",
+          "bytes": 1410
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/task.md",
+          "bytes": 3833
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/composition/001.md",
+          "bytes": 10165
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/rounds/001/observation-001.md",
+          "bytes": 5070
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/rounds/001/generation.md",
+          "bytes": 7616
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/rounds/001/comparison-001.md",
+          "bytes": 20016
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/rounds/001/observation-002.md",
+          "bytes": 4088
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/5.4-1/workspace-artifacts/image-task/rounds/001/builder.json",
+          "bytes": 1292
+        }
+      ]
+    },
+    {
+      "caseId": "four-role-round",
+      "status": "executor-limit-cancelled-partial-collected-and-stopped",
+      "preset": "harness-comfyui-iteration",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-8n3fxd",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-8n3fxd/environment/workspace",
+      "profileDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-8n3fxd/environment/dsh-home/profiles/desktop",
+      "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/desktop-e2e.json",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/business-input.json",
+      "sourceInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/materialized-input.json",
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round",
+      "limits": {
+        "allowedModels": [
+          {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free"
+          }
+        ],
+        "modelCallTimeoutMs": 360000,
+        "maxModelCalls": 180,
+        "taskTimeoutMs": 1800000,
+        "cancelOn": [
+          "call deadline",
+          "call count limit",
+          "task deadline",
+          "unapproved model identity"
+        ]
+      },
+      "historyRunId": null,
+      "workspaceId": "3a7fef24-8baa-4e0d-9500-10d3b341111e",
+      "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-8n3fxd/candidate.tgz",
+      "runId": "037865ad-a929-4c42-a19e-e7514ab407b4",
+      "installPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/official-install.json",
+      "candidateComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/installed-candidate-comparison.json",
+      "roleAgentOptions": {
+        "composition-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "generation-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "comparison-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "observation-agent": {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      },
+      "imageReader": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free",
+        "maxTokens": 8192
+      },
+      "installRunId": "2c6d5c51-da4d-4943-a0f9-f586ae15e091",
+      "traceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-8n3fxd/.local/desktop-e2e/037865ad-a929-4c42-a19e-e7514ab407b4/evidence/session-trace",
+      "tracePreparationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/trace-preparation/trace-index.json",
+      "sessionId": "session-a16d7ab6-e08c-4ca1-84bd-1c03e48839e4",
+      "submittedAt": "2026-10-15T03:46:44.219Z",
+      "traceIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/trace/trace-index.json",
+      "traceComplete": false,
+      "traceMissing": [
+        {
+          "source": "model-call",
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/trace/model-calls/fee51f9d-b115-4997-bb92-4cef0f7dd89c.jsonl",
+          "callId": "fee51f9d-b115-4997-bb92-4cef0f7dd89c",
+          "code": "MODEL_STREAM_INCOMPLETE",
+          "reason": "模型流采集保留了已收到的分片，结束状态为 collecting。"
+        },
+        {
+          "kind": "session-events",
+          "code": "snapshot-unavailable",
+          "sessionId": "session-a16d7ab6-e08c-4ca1-84bd-1c03e48839e4",
+          "throughSeq": null,
+          "beforeSeq": null
+        },
+        {
+          "kind": "session-events",
+          "code": "snapshot-unavailable",
+          "sessionId": "8b67cb64-c50b-4eae-9b64-9e4c847afdd3",
+          "throughSeq": null,
+          "beforeSeq": null
+        }
+      ],
+      "modelCallCount": 15,
+      "runtimeModelCallCount": 15,
+      "sessionCount": 2,
+      "allHostModelCallsDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/host-model-calls",
+      "actualModels": [
+        "opencode-go/deepseek-v4.1-flash"
+      ],
+      "naturalTurnCompleted": false,
+      "cancellationEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/executor-cancellation-and-stop.json",
+      "postStopTraceSummaryPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/post-stop-trace-summary.json",
+      "sessionTerminalEvidence": [
+        {
+          "sessionId": "session-a16d7ab6-e08c-4ca1-84bd-1c03e48839e4",
+          "parentSession": null,
+          "firstSeq": 0,
+          "lastSeq": 66,
+          "eventCount": 67,
+          "lastEvent": "subagent/catalog",
+          "turnEnd": null
+        },
+        {
+          "sessionId": "8b67cb64-c50b-4eae-9b64-9e4c847afdd3",
+          "parentSession": "session-a16d7ab6-e08c-4ca1-84bd-1c03e48839e4",
+          "firstSeq": 3,
+          "lastSeq": 46,
+          "eventCount": 44,
+          "lastEvent": "step/start",
+          "turnEnd": null
+        }
+      ],
+      "cleanup": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-15T03:57:51.091Z",
+        "portsReleased": true
+      },
+      "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/cleanup.json",
+      "postStopStatusPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/post-stop-status.json",
+      "profileRestoration": "trace-override-removed-dedicated-profile-retained",
+      "generationRuns": [],
+      "generationRunsProduced": [],
+      "generationEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/generation-database.json",
+      "mediaCount": 0,
+      "attemptedRoles": [
+        "composition"
+      ],
+      "unexecutedRoles": [
+        "generation",
+        "observation",
+        "comparison"
+      ],
+      "visualResponseStatus": "not-executed",
+      "semanticReviewStatus": "pending-independent-review",
+      "completedAt": "2026-10-15T03:59:01.440Z",
+      "collectionOperationErrors": [
+        {
+          "operation": "parent-session-cancel",
+          "error": "timed out waiting for CDP Runtime.evaluate response"
+        },
+        {
+          "operation": "collection-wrapper-stop-after-successful-explicit-stop",
+          "error": "DEVELOPMENT_ENVIRONMENT_LEASE_MISSING"
+        }
+      ],
+      "userPromptSubmissions": 1,
+      "cancelRpcRequestedAt": null,
+      "cancelRpcTimeEvidence": "取消调用在超限分支中发起；等待RPC前未单独写入发起时间。",
+      "nativeModelTimeoutObserved": false,
+      "cleanupVerified": {
+        "processGroupPresent": false,
+        "portOwners": [
+          {
+            "port": 55867,
+            "pids": []
+          },
+          {
+            "port": 55868,
+            "pids": []
+          },
+          {
+            "port": 55869,
+            "pids": []
+          }
+        ]
+      },
+      "artifacts": [
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/workspace-artifacts/image-task/materials.json",
+          "bytes": 1410
+        },
+        {
+          "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/workspace-artifacts/image-task/task.md",
+          "bytes": 2463
+        }
+      ]
+    },
+    {
+      "caseId": "four-role-round",
+      "variant": "long-call",
+      "status": "root-directed-early-stop-collected-and-stopped",
+      "preset": "harness-comfyui-iteration",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QYsjhI",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QYsjhI/environment/workspace",
+      "profileDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QYsjhI/environment/dsh-home/profiles/desktop",
+      "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/desktop-e2e.json",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/business-input.json",
+      "sourceInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round/business-input.json",
+      "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call",
+      "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QYsjhI/candidate.tgz",
+      "limits": {
+        "allowedModels": [
+          {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free"
+          }
+        ],
+        "modelCallTimeoutMs": 900000,
+        "maxModelCalls": 180,
+        "taskTimeoutMs": 1800000,
+        "cancelOn": [
+          "call deadline",
+          "call count limit",
+          "task deadline",
+          "unapproved model identity"
+        ]
+      },
+      "historyRunId": null,
+      "workspaceId": "a09b2232-a672-4708-88c8-8b0c75775420",
+      "roleAgentOptions": {
+        "composition-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "generation-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "comparison-agent": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        "observation-agent": {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      },
+      "imageReader": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free",
+        "maxTokens": 8192
+      },
+      "controlComparison": {
+        "sourceEntryIndex": 2,
+        "onlyControlFieldChanged": "limits.modelCallTimeoutMs",
+        "previousValue": 360000,
+        "currentValue": 900000,
+        "candidateArchiveBytesEqual": true,
+        "materialsBytesEqual": true
+      },
+      "runId": "2cbf05fe-ed72-4f0e-91e8-cc09ee84b2d3",
+      "installPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/official-install.json",
+      "candidateComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/installed-candidate-comparison.json",
+      "installRunId": "09718424-1549-41e7-8f2c-f5d99d075ba6",
+      "traceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QYsjhI/.local/desktop-e2e/2cbf05fe-ed72-4f0e-91e8-cc09ee84b2d3/evidence/session-trace",
+      "tracePreparationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/trace-preparation/trace-index.json",
+      "sessionId": "session-be888c9f-f3e0-4b81-8990-3bed2651ea35",
+      "submittedAt": "2026-10-15T04:04:49.401Z",
+      "userPromptSubmissions": 1,
+      "observedStages": {
+        "composition": {
+          "status": "completed",
+          "sessionId": "91b6f9c5-b16c-41d8-89e2-ca86922f37d3",
+          "artifactRelativePath": "image-task/composition/001.md"
+        },
+        "generation": {
+          "status": "host-run-failed-executor-stopped-during-media-poll",
+          "sessionId": "c4661937-b5bb-423c-86c6-c6622d5d1856",
+          "runId": "run_cf6bbee9-acc1-4cb2-b4fc-996750af71ac",
+          "promptId": "ec98c6b9-9264-4638-9acc-14a17e59d61c",
+          "hostStatus": "failed",
+          "hostErrorCode": "SOURCE_QUERY_FAILED",
+          "hostErrorMessage": "read ECONNRESET",
+          "upstreamStatus": "success",
+          "hostOutputs": 0,
+          "hostMedia": 0,
+          "submitCount": 1
+        },
+        "observation": {
+          "status": "not-started-host-media-unavailable"
+        },
+        "comparison": {
+          "status": "not-started"
+        }
+      },
+      "firstGenerationFailureIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/first-generation-failure/index.json",
+      "upstreamDiagnosticIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/upstream-job-diagnostic/index.json",
+      "upstreamImagePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/upstream-job-diagnostic/comfyui-WAI_00049_.png",
+      "liveSnapshotIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/stage-generation-failure-snapshot/trace-index.json",
+      "diagnosticVisibility": "控制侧证据保存于被测Workspace之外，未发送给被测Agent或写入Host Run媒体。",
+      "generationFailureVisibilityToAgent": {
+        "mediaPollReturnSequence": 152,
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/upstream-job-diagnostic/first-media-poll-return.json",
+        "returnedFields": [
+          "run_id",
+          "lookup_status",
+          "title",
+          "parameters",
+          "images"
+        ],
+        "lookupStatus": "available",
+        "images": [],
+        "statusAndErrorFieldsReturned": false
+      },
+      "traceIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/trace/trace-index.json",
+      "sessionCount": 3,
+      "modelCallCount": 43,
+      "terminalEvent": {
+        "type": "turn/end",
+        "seq": 68,
+        "time": 1792038300136,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "aborted",
+            "reason": {
+              "kind": "user"
+            }
+          }
+        }
+      },
+      "actualModels": [
+        "opencode-go/deepseek-v4.1-flash"
+      ],
+      "runtimeModelCallCount": 43,
+      "generationEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/generation-database.json",
+      "generationRuns": [
+        {
+          "runId": "run_cf6bbee9-acc1-4cb2-b4fc-996750af71ac",
+          "status": "failed",
+          "workspaceId": "a09b2232-a672-4708-88c8-8b0c75775420",
+          "sessionId": "c4661937-b5bb-423c-86c6-c6622d5d1856",
+          "actualWorkflowPath": "workspaces/a09b2232-a672-4708-88c8-8b0c75775420/runs/run_cf6bbee9-acc1-4cb2-b4fc-996750af71ac/actual-workflow.json"
+        }
+      ],
+      "mediaCount": 0,
+      "ending": {
+        "reason": "root-directed-early-stop-host-terminal-block",
+        "requestedBy": "root",
+        "classification": "executor-directed-stop",
+        "nativeModelTimeout": false,
+        "naturalCompletion": false,
+        "hostRunId": "run_cf6bbee9-acc1-4cb2-b4fc-996750af71ac",
+        "hostStatus": "failed",
+        "hostErrorCode": "SOURCE_QUERY_FAILED",
+        "evidenceSavedAt": "2026-10-15T04:24:59.413Z",
+        "cancelRequestedAt": "2026-10-15T04:24:59.413Z",
+        "stopRequestedAt": "2026-10-15T04:24:59.414Z",
+        "stopReturnedAt": "2026-10-15T04:25:05.107Z",
+        "cleanup": {
+          "exitCode": null,
+          "error": null,
+          "completedAt": "2026-10-15T04:25:05.106Z",
+          "portsReleased": true
+        }
+      },
+      "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/cleanup.json",
+      "cleanup": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-15T04:25:05.106Z",
+        "portsReleased": true
+      },
+      "allHostModelCallsDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/host-model-calls",
+      "profileRestoration": "trace-override-removed-dedicated-profile-retained",
+      "completedAt": "2026-10-15T04:25:05.107Z",
+      "semanticReviewStatus": "pending-independent-review",
+      "terminalEventBeforeCancellation": null,
+      "postStopHostTraceIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/post-stop-host-trace/index.json",
+      "traceCoverage": {
+        "complete": true,
+        "missing": [],
+        "nativeApiSnapshotCount": 3,
+        "collectedBeforeCancellation": true
+      },
+      "postStopStatusPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/post-stop-status.json",
+      "postStop": {
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 60439,
+            "pids": []
+          },
+          {
+            "port": 60440,
+            "pids": []
+          },
+          {
+            "port": 60441,
+            "pids": []
+          }
+        ]
+      },
+      "profileRestorationEvidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/profile-restoration.json",
+      "postExecutionCandidateComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/post-execution-candidate-comparison.json",
+      "configuredVisionInvocations": 0,
+      "executionNotes": {
+        "completedMediaPollBatches": [
+          {
+            "toolCallSeq": 151,
+            "toolResultSeq": 152,
+            "iterations": 10
+          },
+          {
+            "toolCallSeq": 156,
+            "toolResultSeq": 157,
+            "iterations": 18
+          }
+        ],
+        "activeMediaPollAtCancellation": {
+          "toolCallSeq": 168,
+          "requestedIterations": 30,
+          "toolTimeoutMs": 700000,
+          "resultCaptured": false
+        },
+        "capTriggered": false,
+        "nativeModelTimeout": false,
+        "naturalTaskCompletion": false,
+        "upstreamCompletedAt": "2026-10-15T04:14:57.380Z",
+        "hostFailureAt": "2026-10-15T04:14:13.182Z",
+        "networkFailureEvidenceScope": "Host Run stores SOURCE_QUERY_FAILED and read ECONNRESET; raw historical directory HTTP exchange was not captured. Diagnostic log file is absent; saved stdout/stderr do not contain the error. Code call-site findings are owned by independent root review.",
+        "unexecutedStagesVerdict": "观察与比较尚未执行；本执行报告不对其产品行为作判断。"
+      }
+    }
+  ],
+  "semanticReviewStatus": "pending-independent-review",
+  "memoryUse": {
+    "path": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "47-50",
+    "use": "保存输入、工具发现、调用返回、产物与结束状态的实际轨迹。"
+  },
+  "updatedAt": "2026-10-15T04:26:45.442012+00:00",
+  "schemaVersion": 1,
+  "candidateIdentity": {
+    "schemaVersion": 1,
+    "packageName": "harness-comfyui",
+    "packageVersion": "0.45.0",
+    "archivePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.45.0.tgz",
+    "sourceCommit": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+    "dirty": true
+  },
+  "catalogVersion": "0.90.2",
+  "modelAuthorization": {
+    "source": "用户本轮确认",
+    "opencodeGoSubscriptionActive": true,
+    "useBalance": false
+  },
+  "remainingScope": [
+    "四角色完整交接尚未覆盖：long-call变体已完成构图并提交唯一生成Run，Host错误终态阻断媒体交付；观察与比较尚未执行。",
+    "三组原执行与long-call变体的独立业务审核由根线程完成。"
+  ],
+  "executionSourceOnly": true,
+  "scopePreservation": {
+    "productCodeModified": false,
+    "skillsModified": false,
+    "dependenciesModifiedInRepository": false,
+    "acceptanceMatrixModified": false,
+    "businessPromptSubmissionsPerCase": 1,
+    "existingCollectorRuntimeCopiesPrepared": true,
+    "newExecutionEntrypointFilesAuthored": false
+  },
+  "finalRawIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/delivery-live-retest/four-role-round-long-call/final-raw-index.json"
+}

@@ -1,0 +1,712 @@
+{
+  "source": "input-preflight-review.json",
+  "variants": [
+    {
+      "case": "5.3-1",
+      "before": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "after": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "purpose": "补齐非目标尺寸缺项，保留该任务原有的目录查询与构图条件。",
+      "review": {
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+        "previous_reviews": [
+          {
+            "input": {
+              "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。",
+              "contexts": [
+                {
+                  "type": "comfyui-context",
+                  "data": {
+                    "kind": "character",
+                    "id": "39934",
+                    "work_name": "其它",
+                    "character_name": "Ani (Grok Companion)",
+                    "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+                  }
+                },
+                {
+                  "type": "comfyui-context",
+                  "data": {
+                    "kind": "style",
+                    "id": "12415",
+                    "name": "say_hana",
+                    "prompt_text": "say_hana"
+                  }
+                }
+              ]
+            },
+            "review": {
+              "case_id": "5.3-1",
+              "verdict": "未通过",
+              "target_branch_preserved": true,
+              "non_target_size_gap_resolved": false,
+              "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+              "source_locations": [
+                "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+              ],
+              "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+              "reviewed_at": "2026-10-14T03:43:00.726073+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "5.3-2",
+      "before": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": ""
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "after": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": ""
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "purpose": "补齐非目标尺寸缺项，保留该任务原有的目录查询与构图条件。",
+      "review": {
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+        "previous_reviews": [
+          {
+            "input": {
+              "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。",
+              "contexts": [
+                {
+                  "type": "comfyui-context",
+                  "data": {
+                    "kind": "character",
+                    "id": "39934",
+                    "work_name": "其它",
+                    "character_name": "Ani (Grok Companion)",
+                    "prompt_text": ""
+                  }
+                },
+                {
+                  "type": "comfyui-context",
+                  "data": {
+                    "kind": "style",
+                    "id": "12415",
+                    "name": "say_hana",
+                    "prompt_text": "say_hana"
+                  }
+                }
+              ]
+            },
+            "review": {
+              "case_id": "5.3-2",
+              "verdict": "未通过",
+              "target_branch_preserved": true,
+              "non_target_size_gap_resolved": false,
+              "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+              "source_locations": [
+                "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+              ],
+              "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+              "reviewed_at": "2026-10-14T03:43:00.726246+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "5.3-3",
+      "before": {
+        "request": "为 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。"
+      },
+      "after": {
+        "request": "为 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。"
+      },
+      "purpose": "补齐非目标尺寸缺项，保留该任务原有的目录查询与构图条件。",
+      "review": {
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+        "previous_reviews": [
+          {
+            "input": {
+              "request": "为 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。"
+            },
+            "review": {
+              "case_id": "5.3-3",
+              "verdict": "未通过",
+              "target_branch_preserved": true,
+              "non_target_size_gap_resolved": false,
+              "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+              "source_locations": [
+                "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+              ],
+              "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+              "reviewed_at": "2026-10-14T03:43:00.726256+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "5.3-4",
+      "before": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 画风为玻璃蚀刻与干燥矿物粉末版画。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 人物为原创角色。"
+      },
+      "after": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 画风为玻璃蚀刻与干燥矿物粉末版画。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 人物为原创角色。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。"
+      },
+      "purpose": "补齐非目标尺寸缺项，保留该任务原有的目录查询与构图条件。",
+      "review": {
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+        "previous_reviews": [
+          {
+            "input": {
+              "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 画风为玻璃蚀刻与干燥矿物粉末版画。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 人物为原创角色。 图片尺寸明确为宽 1024 像素、高 1536 像素。"
+            },
+            "review": {
+              "case_id": "5.3-4",
+              "verdict": "未通过",
+              "target_branch_preserved": true,
+              "non_target_size_gap_resolved": false,
+              "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+              "source_locations": [
+                "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+              ],
+              "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+              "reviewed_at": "2026-10-14T03:43:00.726264+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "5.3-5",
+      "before": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 衣服上有三重旋涡形水滴折光装饰。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "after": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 衣服上有三重旋涡形水滴折光装饰。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "purpose": "补齐非目标尺寸缺项，保留该任务原有的目录查询与构图条件。",
+      "review": {
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:29"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+        "previous_reviews": [
+          {
+            "input": {
+              "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 衣服上有三重旋涡形水滴折光装饰。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。",
+              "contexts": [
+                {
+                  "type": "comfyui-context",
+                  "data": {
+                    "kind": "character",
+                    "id": "39934",
+                    "work_name": "其它",
+                    "character_name": "Ani (Grok Companion)",
+                    "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+                  }
+                },
+                {
+                  "type": "comfyui-context",
+                  "data": {
+                    "kind": "style",
+                    "id": "12415",
+                    "name": "say_hana",
+                    "prompt_text": "say_hana"
+                  }
+                }
+              ]
+            },
+            "review": {
+              "case_id": "5.3-5",
+              "verdict": "未通过",
+              "target_branch_preserved": true,
+              "non_target_size_gap_resolved": false,
+              "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+              "source_locations": [
+                "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md:30"
+              ],
+              "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+              "reviewed_at": "2026-10-14T03:43:00.726270+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "5.5-3",
+      "before": {
+        "request": "原创女性单人站立半身像，金色长双马尾、蓝眼、白色翻领衬衫，窗边柔光，花卉背景；采用给定画师 Prompt，本次用于测试，画幅 2:3。请完成本 Skill 的提示词构建流程并保存最终结构化结果。 景别为头到腰的中景，相机平视，第三人称外部视点，以面部为主焦点，景深为全部清晰；主体居中，前景为空，中景为人物，背景为窗与花卉，无遮挡，画面在腰部以下裁剪，头部、肩部和双臂完整可见。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12344",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "after": {
+        "request": "原创女性单人站立半身像，金色长双马尾、蓝眼、白色翻领衬衫，窗边柔光，花卉背景；采用给定画师 Prompt，本次用于测试，画幅 2:3。请完成本 Skill 的提示词构建流程并保存最终结构化结果。 景别为头到腰的中景，相机平视，第三人称外部视点，以面部为主焦点，景深为全部清晰；主体居中，前景为空，中景为人物，背景为窗与花卉，无遮挡，画面在腰部以下裁剪，头部、肩部和双臂完整可见。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12344",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "purpose": "补齐非目标尺寸缺项，保留该任务原有的目录查询与构图条件。",
+      "review": {
+        "verdict": "通过",
+        "review_scope": "仅审核尺寸补齐及目标分支保持",
+        "target_branch_preserved": true,
+        "non_target_size_gap_resolved": true,
+        "verified_dimensions": {
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864,
+          "relative_megapixel_error": 0
+        },
+        "reason": "after 明确提供全部四项尺寸。宽高均为正整数，约分比例为 2:3，总像素数与 1.572864 百万像素完全一致，满足当前尺寸合同。相对 before 仅追加尺寸说明，角色、画师、构图及目标目录分支均保留；task-matrix 与 after 一致。",
+        "source_locations": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md:26"
+        ],
+        "reviewed_at": "2026-10-14T03:44:19.667688+00:00",
+        "previous_reviews": [
+          {
+            "input": {
+              "request": "原创女性单人站立半身像，金色长双马尾、蓝眼、白色翻领衬衫，窗边柔光，花卉背景；采用给定画师 Prompt，本次用于测试，画幅 2:3。请完成本 Skill 的提示词构建流程并保存最终结构化结果。 景别为头到腰的中景，相机平视，第三人称外部视点，以面部为主焦点，景深为全部清晰；主体居中，前景为空，中景为人物，背景为窗与花卉，无遮挡，画面在腰部以下裁剪，头部、肩部和双臂完整可见。 图片尺寸明确为宽 1024 像素、高 1536 像素。",
+              "contexts": [
+                {
+                  "type": "comfyui-context",
+                  "data": {
+                    "kind": "style",
+                    "id": "12344",
+                    "name": "say_hana",
+                    "prompt_text": "say_hana"
+                  }
+                }
+              ]
+            },
+            "review": {
+              "case_id": "5.5-3",
+              "verdict": "未通过",
+              "target_branch_preserved": true,
+              "non_target_size_gap_resolved": false,
+              "reason": "before 与 after 的唯一区别是追加宽 1024、高 1536；角色、画师、构图和目标目录分支均保留。after 同时保留 2:3，形成 aspect_ratio、width、height 三项组合，当前尺寸合同未允许该组合；执行者仍须请求用户选择并停止构造结果。",
+              "source_locations": [
+                "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md:28"
+              ],
+              "remaining_condition": "明确补充 megapixels=1.572864 形成全部四项，或明确撤回 aspect_ratio 后仅提供 width=1024、height=1536；其他材料阻塞继续保留。",
+              "reviewed_at": "2026-10-14T03:43:00.726277+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "case": "5.4-5",
+      "before": {
+        "request": "必须画出角色未登记角色霁轮的准确身份与外观。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "9999999999999999999",
+              "work_name": "",
+              "character_name": "未登记角色霁轮",
+              "prompt_text": ""
+            }
+          }
+        ]
+      },
+      "after": {
+        "request": "为角色未登记角色霁轮构建并保存一份 Krea2 Builder JSON。Prompt 必须准确描述该角色的身份与外观。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "9999999999999999999",
+              "work_name": "",
+              "character_name": "未登记角色霁轮",
+              "prompt_text": ""
+            }
+          }
+        ]
+      },
+      "purpose": "明确Builder任务动作，保留准确身份与外观缺失的目标前提。",
+      "review": {
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "evidence": "krea-iteration-build-action-review.json",
+        "scope": "正式输入变体适用性与本次迭代执行；保留原输入执行记录。"
+      }
+    },
+    {
+      "case": "5.4-1",
+      "before": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 复用指定历史正向 Prompt，发色改为银色。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          }
+        ],
+        "history_run_id": null
+      },
+      "after": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 复用指定历史正向 Prompt，发色改为银色。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "3334",
+              "work_name": "Sinoalice",
+              "character_name": "爱丽丝",
+              "prompt_text": "alice \\(sinoalice\\), sinoalice, 1girl, red eyes, short hair, blue hair, dark blue hair, black hair, medium breasts, elbow gloves"
+            }
+          }
+        ],
+        "history_run_id": "run_b7457c0a-5a98-4354-a59a-5b6461fd34ec"
+      },
+      "purpose": "以真实角色上下文与成功历史Run构成可判定来源冲突。",
+      "review": {
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "evidence": "history-input-preflight-review.json"
+      }
+    },
+    {
+      "case": "5.3-3",
+      "before": {
+        "request": "为 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。"
+      },
+      "after": {
+        "request": "为所属作品尚待确认的已有角色 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。"
+      },
+      "purpose": "明确已有角色语义，保留作品待确认目标。",
+      "review": {
+        "verdict": "通过",
+        "target_branch_preserved": true,
+        "evidence": "alice-identity-choice-review.json"
+      }
+    },
+    {
+      "case": "5.3-5",
+      "before": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 衣服上有三重旋涡形水滴折光装饰。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "after": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 衣服上有三重旋涡形水滴折光装饰。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "3334",
+              "work_name": "Sinoalice",
+              "character_name": "爱丽丝",
+              "prompt_text": "alice \\(sinoalice\\), sinoalice, 1girl, red eyes, short hair, blue hair, dark blue hair, black hair, medium breasts, elbow gloves"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "purpose": "补齐非目标输入前置，保留复合装饰概念以验证词条未覆盖关系的处理。",
+      "review": {
+        "verdict": "通过输入准备",
+        "target_branch_preserved": true,
+        "evidence": "term-fallback-input-review.json",
+        "criteria": "term-zero-result-criteria-review.json"
+      }
+    },
+    {
+      "case": "5.5-6",
+      "before": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 三重旋涡形水滴折光装饰。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          }
+        ]
+      },
+      "after": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 三重旋涡形水滴折光装饰。 本轮主要场景明确选择单主体肖像。画幅为 1:1。采用 say_hana 画风；画风说明：花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12344",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "purpose": "补齐非目标输入前置，保留复合装饰概念以验证词条未覆盖关系的处理。",
+      "review": {
+        "verdict": "通过输入准备",
+        "target_branch_preserved": true,
+        "evidence": "term-fallback-input-review.json",
+        "criteria": "term-zero-result-criteria-review.json"
+      }
+    }
+  ]
+}

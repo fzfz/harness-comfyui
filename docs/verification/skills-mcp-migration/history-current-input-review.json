@@ -1,0 +1,76 @@
+{
+  "purpose": "独立审查历史 Run 替换后的来源优先级目标与执行前置条件。",
+  "readWhen": "提交 5.4-1 迭代预设历史来源任务前。",
+  "reviewedAt": "2026-10-14T11:48:01.922835+00:00",
+  "readyForExecution": true,
+  "readinessMeaning": "当前候选保留来源优先级目标，原 Run 和 Workspace 持久数据可用，原应用已停止；执行时仍须通过官方会话与 run-inputs 验证查询权限。",
+  "reviewMode": "只读准备文件、Krea Skill、持久记录与 SQLite；未启动应用或提交模型。",
+  "modelCalls": 0,
+  "contract": "history-current-input-contract.json",
+  "findings": [],
+  "inputComparison": {
+    "before": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-preparation/source-task.json",
+    "after": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/history-current-preparation/candidate-task.json",
+    "changedBusinessFields": [
+      "parameters.history_run_id"
+    ],
+    "changedExecutionMetadata": [
+      "runtimeCondition"
+    ],
+    "requestPreserved": true,
+    "contextsPreserved": true,
+    "newRunId": "run_42c008fc-d38e-477e-9b47-560e1947e563"
+  },
+  "sourcePriority": {
+    "source": ".agents/skills/krea2-anime-prompt-builder/SKILL.md#构建单条 Krea2 动漫 Prompt",
+    "targetPreserved": true,
+    "currentInstruction": "银发覆盖历史金发；单人站立半身、白衬衫、窗边柔光、只保存 Builder JSON 保持。",
+    "history": "保存请求中的 Ani 身份、蓝眼、长发和双马尾仍与 Alice 上下文形成可判定冲突。",
+    "context": "Alice/Sinoalice 身份、红眼、短发及蓝黑发不能覆盖历史基线；medium breasts、elbow gloves 由执行 Agent 判断与既定服装和画面是否兼容。",
+    "styleLimit": "历史 Run 含 say_hana；执行者仍须遵守 Krea2 规则及对应画师来源约束，当前预检不预判目录候选。"
+  },
+  "currentEvidence": {
+    "databasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+    "databaseMode": "ro",
+    "runId": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+    "workspaceId": "a25cfcb7-2580-4213-a381-391f07094571",
+    "runStatus": "succeeded",
+    "savedPromptEqualsContract": true,
+    "sourceSnapshotExists": true,
+    "actualWorkflowExists": true,
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+    "profileDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/profiles/desktop",
+    "profileId": "47ec7de7-ec83-4982-a3ac-2fd1988973bf",
+    "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/state.json",
+    "cleanupEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/final-cleanup.json",
+    "recordState": "stopped",
+    "portsRefusedConnection": [
+      56247,
+      56248,
+      56249
+    ]
+  },
+  "preflightRelationship": {
+    "previousReview": "history-input-preflight-review.json",
+    "previousRunId": "run_b7457c0a-5a98-4354-a59a-5b6461fd34ec",
+    "conclusion": "前次报告的历史 Run 和 Workspace 只适用于前次候选。本次以原四角色成功 Run 的数据库、请求文件与持久 Workspace 为依据。"
+  },
+  "executionPreconditions": [
+    "启动前再次核对 Profile 未被其他执行者占用、候选安装和获准 Go 模型配置。",
+    "通过官方 API 在 a25cfcb7-2580-4213-a381-391f07094571 Workspace 创建新的迭代预设会话，使用新的任务输出子目录。",
+    "向模型只提交候选请求、上下文与 Run ID；准备合同里的历史 Prompt 由模型实际调用 generation run-inputs 查询。",
+    "保存首次实际模型请求、查询原始返回和 Builder 校验输出；分别核对当前修改、历史基线与不冲突上下文的采用。",
+    "查询失败按真实错误保留为查询前置失败；本轮只构建 Builder，不创建图片。"
+  ],
+  "blockingItems": [],
+  "coverageLimits": [
+    "当前数据库与文件存在性支持执行准备；实际 run-inputs 的 Workspace 权限和可用返回尚待本轮真实执行。",
+    "原工作台历史来源失败和原四角色失败保持原判定。",
+    "readyForExecution 表示输入与持久环境条件就绪；它不保证模型一次完成或全部 Builder 语义通过。"
+  ],
+  "memoryUse": {
+    "path": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "31-43",
+    "use": "以原始调用轨迹核对执行摘要，并保持原因推断与观察事实分离。"
+  }
+}

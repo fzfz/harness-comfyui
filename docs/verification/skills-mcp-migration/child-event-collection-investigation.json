@@ -1,0 +1,15 @@
+{
+  "status": "待官方应用验证",
+  "finding": "此前采集将子ID作为kind=session，并使用父会话throughSeq；官方API声明支持kind=subagent及父子ID。",
+  "priorInput": ".local/skills-mcp-migration-live/model-selection-child-page.json",
+  "contract": ".local/skills-mcp-migration-live/dsh-api-session-controller-typert.remote-client.js:620",
+  "change": "collect在传入parentSessionId时使用subagent地址；首段取得子事件序号后固定分页上界。仅在子任务结束后执行完整采集。",
+  "limitation": "接口地址修正是否消除agent-busy仍须实际验证；不得把模型消息当子DSH事件。",
+  "verified_repair": {
+    "address": "subagent(parentSessionId, childSessionId, mode)",
+    "cursor": "session.follow initial snapshot projections.asOfSeq; then session.page fixed throughSeq",
+    "discarded_attempt": "Number.MAX_SAFE_INTEGER throughSeq returned gateway/bad-request",
+    "live_collect": ".local/skills-mcp-migration-live/desktop/e15110e5-1cdf-4fe5-91ba-045981bb5bc0/1791946327565-3bda061a-0fad-4384-a6af-53dd69ce9fe3-collect.json",
+    "status": "success"
+  }
+}

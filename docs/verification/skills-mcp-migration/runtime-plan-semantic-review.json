@@ -1,0 +1,96 @@
+{
+  "status": "PASS",
+  "scope": [
+    "docs/plans/skills-mcp-migration-20261013.md:5.2.1",
+    "docs/plans/skills-mcp-migration-20261013.md:5.13.1",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md:YAML头",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md:系统提示词段落可见性"
+  ],
+  "method": "逐行语义审计；仅阅读指定内容及理解术语、章节层级所需的本文前文；未读取链接资料或实现代码。",
+  "findings": [],
+  "passed": [
+    "开发规范 YAML 头已明确文档用途与读取时机。",
+    "两个目标正文节均使用有序列表组织同层要求。"
+  ],
+  "target_files_modified": false,
+  "initial_review": {
+    "status": "CHANGES_REQUESTED",
+    "findings": [
+      {
+        "id": "S1",
+        "path": "docs/plans/skills-mcp-migration-20261013.md",
+        "lines": [
+          159,
+          1294
+        ],
+        "issue": "第 5.2.1、5.13.1 节与其上级第 5.2、5.13 节均使用三级标题，编号表达的从属关系与 Markdown 标题层级不一致。",
+        "impact": "文档目录和按标题读取的消费者会将子节识别为同层步骤。",
+        "recommendation": "将第 5.2.1、5.13.1 节改为四级标题。"
+      },
+      {
+        "id": "S2",
+        "path": "docs/plans/skills-mcp-migration-20261013.md",
+        "lines": [
+          1296
+        ],
+        "issue": "“中性运行目录”未定义“中性”的判定条件，本句其他内容已经规定仓库之外、每场景独立以及目录用途。",
+        "impact": "实施者无法据此判断目录是否满足额外的“中性”要求；删除“中性”不会损失本句已明确的执行条件。",
+        "recommendation": "删除“中性”，保留“在仓库之外准备独立的运行目录”。"
+      },
+      {
+        "id": "S3",
+        "path": "docs/plans/skills-mcp-migration-20261013.md",
+        "lines": [
+          1297,
+          1298
+        ],
+        "issue": "“提交模型”缺少提交对象；下一项使用“执行者摄入”，没有明确指向场景中的主 Agent、子 Agent，还是前文定义的实施者。",
+        "impact": "读者无法准确定位资料检查的发生时机，以及资料污染判定覆盖的主体。",
+        "recommendation": "明确为向模型提交场景输入前，并明确资料污染判定针对本轮被测主 Agent 与子 Agent 实际读取或接收的资料。"
+      },
+      {
+        "id": "S4",
+        "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+        "lines": [
+          58
+        ],
+        "issue": "“该组件在当前 Preset scope 的 system-prompt/assemble waterfall 完成后……”用文档复述组件的运行时执行步骤，夹用 scope、waterfall 也增加了中文阅读负担。",
+        "impact": "开发规范同时承担组件实现说明，执行时机和过滤逻辑会形成需要随代码维护的另一处描述。",
+        "recommendation": "本节保留加载要求、配置归属和必须保持的行为约束，将组件执行时机与过滤逻辑改为引用 project-system-prompt-visibility.mjs。"
+      }
+    ],
+    "passed": [
+      "开发规范 YAML 头已明确文档用途与读取时机。",
+      "两个目标正文节均使用有序列表组织同层要求。"
+    ]
+  },
+  "re_review": {
+    "status": "PASS",
+    "scope": [
+      "docs/plans/skills-mcp-migration-20261013.md:5.2.1",
+      "docs/plans/skills-mcp-migration-20261013.md:5.13.1",
+      "docs/agents/comfyui-workbench-preset-and-skill-development.md:YAML头",
+      "docs/agents/comfyui-workbench-preset-and-skill-development.md:系统提示词段落可见性"
+    ],
+    "resolutions": [
+      {
+        "id": "S1",
+        "result": "两处子节均已使用四级标题，与编号的从属关系一致。"
+      },
+      {
+        "id": "S2",
+        "result": "运行目录要求已明确为仓库之外、每场景独立及使用无场景含义的随机名称。"
+      },
+      {
+        "id": "S3",
+        "result": "提交对象已明确为场景输入；资料污染判定主体已明确为本轮被测主 Agent 或子 Agent。"
+      },
+      {
+        "id": "S4",
+        "result": "开发规范已保留加载与配置要求，并通过链接引用组件，移除了运行时执行步骤的复述。"
+      }
+    ],
+    "findings": [],
+    "conclusion": "已逐行复审原指定范围，初审四项均已解决，未发现新增语义问题。"
+  }
+}

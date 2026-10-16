@@ -1,0 +1,136 @@
+{
+  "purpose": "记录两份诊断报告的独立文字审计。",
+  "readWhen": "修改诊断文字并准备交付前。",
+  "summary": "发现 4 项需修改内容。原因判断已区分可见决策与诱因假设，首次偏离的命名仍需收窄。",
+  "scope": [
+    "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json",
+    "docs/verification/skills-mcp-migration/run-query-result-reuse-diagnosis.json"
+  ],
+  "boundary": "仅审查两份对象的文字自洽性。未读取引用证据、实现或其他报告；未核实外部事实。",
+  "findings": [
+    {
+      "id": "D1",
+      "path": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json",
+      "lines": [
+        13,
+        265,
+        270,
+        271,
+        273
+      ],
+      "original": [
+        "首次偏离：可见记录中首次偏离任务合同的决策。",
+        "搜索前，Agent 已将材料齐全视为继续生成的暗示。"
+      ],
+      "reason": "seq22 引语仍在试探是否继续，并决定先搜索。正文另将 seq29 命名为首次明确决策。把 seq22 放在以决策定义的首次偏离字段中，混淆试探解释与已确定的选择。",
+      "minimumChange": "将 seq22 字段命名为 firstDivergentReasoning，说明这是首次出现的偏离解释。保留 seq29 的 firstCommittedDecision，作为首次明确选择。同步说明两个名称的含义。",
+      "rules": [
+        "G1",
+        "G15",
+        "G21"
+      ]
+    },
+    {
+      "id": "D2",
+      "path": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json",
+      "lines": [
+        126,
+        128,
+        129,
+        130,
+        348,
+        350,
+        351
+      ],
+      "original": [
+        "仅删除当前 Character 记录，构建 Builder。比较 Ani 身份是否恢复。",
+        "仅将历史角色标签改写为等义自然语言身份。比较是否仍以旧底模理由删除。",
+        "固定材料，仅删除产物目录包装。比较是否仍推断必须生成。"
+      ],
+      "reason": "数组呈现为连续步骤，没有明确各变体独立恢复原始基线。执行者可能在上一变体上继续删改，改变多个因素；这与文中单变量验证目标冲突。",
+      "minimumChange": "在两组 minimalNextVerification 前各说明：每个变体均从未修改的原始基线独立开始。各变体只应用本项改动，其他固定项保持一致。",
+      "rules": [
+        "I4",
+        "G14"
+      ]
+    },
+    {
+      "id": "D3",
+      "path": "docs/verification/skills-mcp-migration/run-query-result-reuse-diagnosis.json",
+      "lines": [
+        49,
+        50,
+        51,
+        52
+      ],
+      "original": [
+        "核对所有保留的 Run 查询消费者及首次保存约定。",
+        "比较命令生成结果文件与首次调用重定向两种方式的职责、失败处理和接口影响。",
+        "确定方案后先更新计划及精确文字或代码合同，再独立审查和同输入复验。"
+      ],
+      "reason": "后续动作未给出执行者；最后一项也未区分方案确定、合同修改和独立审查的主体及执行条件。读者无法据此分派任务。",
+      "minimumChange": "为 nextInvestigation 指定调查执行者。将最后一项拆为：方案编写者更新计划；方案获确认后由实施者修改合同；独立审查员审查；验收执行者按同一输入复验。未确定的角色由主 Agent 指派。",
+      "rules": [
+        "I4",
+        "D5"
+      ]
+    },
+    {
+      "id": "D4",
+      "path": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json",
+      "lines": [
+        523
+      ],
+      "original": "交由主 Agent 安排；本调查员未另派队员。",
+      "reason": "reviewStatus 已记录等待独立语义审计。未另派队员的过程说明不影响读者判断诊断结论或执行后续验证。",
+      "minimumChange": "仅保留“由主 Agent 安排独立语义审计。”",
+      "rules": [
+        "G20"
+      ]
+    }
+  ],
+  "factsToSupply": [],
+  "retainedAssessment": [
+    {
+      "location": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json#/definitions",
+      "reason": "已验证原因限定为可见错误决策。causeBoundary 和 hypotheses 明确保留内部诱因的不确定性，未把尚未执行的反事实实验写成完成。"
+    },
+    {
+      "location": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json#/cases/1/repairLevel",
+      "reason": "宿主状态保存写为候选方向，增加提交门禁以继续验证为前提。保留此条件可防止读者直接将可调用提交接口判为基础设施缺陷。"
+    },
+    {
+      "location": "docs/verification/skills-mcp-migration/run-query-result-reuse-diagnosis.json#/causalConclusion",
+      "reason": "结论限定为重复查询的可见动机。limits 明确首次保存能否消除行为尚未验证。"
+    },
+    {
+      "location": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json#/cases/*/fullToolTrace",
+      "reason": "逐项工具序号及证据指向用于追踪首次偏离前后的调用。路径重复仍承担每项记录的定位用途。"
+    },
+    {
+      "location": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json#/cases/1/firstDeviation/quote",
+      "reason": "长引语用于区分试探解释与明确决策，保持原文。JSON 双引号属于语法，不按中文引号改写。"
+    }
+  ],
+  "checks": {
+    "manualReviewCompleted": true,
+    "objectsStc": [
+      {
+        "file": "docs/verification/skills-mcp-migration/history-generation-causal-diagnosis.json",
+        "errors": 0,
+        "warnings": 97,
+        "antiEchoPending": 0
+      },
+      {
+        "file": "docs/verification/skills-mcp-migration/run-query-result-reuse-diagnosis.json",
+        "errors": 0,
+        "warnings": 19,
+        "antiEchoPending": 0
+      }
+    ],
+    "reportStcErrors": 0,
+    "reportAntiEchoPending": 0,
+    "warningHandling": "原文引述保留准确措辞；JSON 引号保留语法。修正说明中的完整条件经人工复核后保留。"
+  },
+  "objectChanges": 0
+}

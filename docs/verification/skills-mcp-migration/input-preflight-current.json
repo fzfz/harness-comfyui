@@ -1,0 +1,2060 @@
+{
+  "schema_version": 1,
+  "purpose": "为迁移计划 23 类真实验收任务提供当前输入、目录数据与资源准备状态。",
+  "read_when": "主线程派发真实模型验收前，或刷新 acceptance-matrix.json 准备状态时。",
+  "checked_at": "2026-10-14T03:29:31.597908+00:00",
+  "worktree": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "sources": {
+    "plan": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-20261013.md",
+    "sections": [
+      "5.9",
+      "5.13"
+    ],
+    "task_matrix": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+    "tools_list": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947656078-056e2796-5da1-4de7-90eb-50bbfa5fa4db-tools-list.json",
+    "query_index": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/input-preflight-current/query-index.json"
+  },
+  "scope": {
+    "write_ownership": [
+      "docs/verification/skills-mcp-migration/input-preflight-current.json",
+      ".local/skills-mcp-migration-live/input-preflight-current/",
+      "本次 catalog.mjs 写出的只读查询证据"
+    ],
+    "model_tasks_executed": 0,
+    "real_catalog_writes": 0,
+    "dependency_installs": 0,
+    "product_changes": 0,
+    "credential_source_variable": "main checkout .env: NOOBAI_MCP_TOKEN"
+  },
+  "summary": {
+    "total_cases": 23,
+    "preset_executions": 46,
+    "ready": 20,
+    "blocked": 3,
+    "status_meaning": "ready 表示本轮输入材料或目标数据条件已取得；正式验收结论由官方应用独立执行轨迹和审查记录给出。",
+    "current_catalog": "恢复后的非空 query 检索、稳定 ID 详情与无 query 浏览均可读。",
+    "current_instance_read": "实例 2 当前 reachable=true、HTTP200；模板 29/37 使用的 CheckpointLoaderSimple 与 LoraLoader 枚举均已取得。",
+    "real_data_gap": "Krea2多画师目录为空；同义词条缺少跨记录同义证据；多个LoRA现有WAI模板编译或容量不满足。"
+  },
+  "current_resource_facts": [
+    {
+      "ref": {
+        "kind": "model",
+        "id": "1"
+      },
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "file_name": "waiIllustriousSDXL_v170.safetensors",
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710836-79da6360-cdc5-484f-980a-861433180261-get_catalog_resource.json",
+      "current_instance_file_status": "available",
+      "historical_instance_matches": [
+        "waiIllustriousSDXL_v170.safetensors"
+      ],
+      "historical_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791889954126-06ebad88-aff4-44d3-9b6b-e427c05e2675-get_instance_node.json",
+      "current_instance_matches": [
+        "waiIllustriousSDXL_v170.safetensors"
+      ],
+      "current_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+      "current_instance_checked_at": "2026-10-14T03:25:22.369Z"
+    },
+    {
+      "ref": {
+        "kind": "model",
+        "id": "3"
+      },
+      "base_model": {
+        "id": "1",
+        "name": "anima"
+      },
+      "file_name": "anima-aesthetic-v1.1.safetensors",
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710877-b69855f8-5a11-4691-8df4-824aa530ff91-get_catalog_resource.json",
+      "current_instance_file_status": "not_required_for_compatibility_stop",
+      "historical_instance_matches": [],
+      "historical_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791889954126-06ebad88-aff4-44d3-9b6b-e427c05e2675-get_instance_node.json",
+      "current_instance_matches": [],
+      "current_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+      "current_instance_checked_at": "2026-10-14T03:25:22.369Z"
+    },
+    {
+      "ref": {
+        "kind": "model",
+        "id": "14"
+      },
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "file_name": "hassakuXLIllustrious_v13StyleA.safetensors",
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710879-21ec7586-a837-4dc9-bde7-44836fef3f02-get_catalog_resource.json",
+      "current_instance_file_status": "available",
+      "historical_instance_matches": [
+        "hassakuXLIllustrious_v13StyleA.safetensors"
+      ],
+      "historical_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791889954126-06ebad88-aff4-44d3-9b6b-e427c05e2675-get_instance_node.json",
+      "current_instance_matches": [
+        "hassakuXLIllustrious_v13StyleA.safetensors"
+      ],
+      "current_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+      "current_instance_checked_at": "2026-10-14T03:25:22.369Z"
+    },
+    {
+      "ref": {
+        "kind": "lora",
+        "id": "102"
+      },
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "file_name": "rimixxO2.safetensors",
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710907-5d69b50f-da5c-4222-bf91-2fa8d44a7324-get_catalog_resource.json",
+      "current_instance_file_status": "not_in_current_loader_enum",
+      "trigger_words": [],
+      "weight": 1,
+      "historical_instance_matches": [],
+      "historical_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791889954153-ffff9a3a-5fd9-4a21-863e-269d159ad239-get_instance_node.json",
+      "current_instance_matches": [],
+      "current_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json",
+      "current_instance_checked_at": "2026-10-14T03:25:22.525Z"
+    },
+    {
+      "ref": {
+        "kind": "lora",
+        "id": "89"
+      },
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "file_name": "GBF_Illustrious.safetensors",
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710999-deb5c93e-ec9a-4244-a517-3616158a02da-get_catalog_resource.json",
+      "current_instance_file_status": "available",
+      "trigger_words": [
+        "gbf_style"
+      ],
+      "weight": 1,
+      "historical_instance_matches": [
+        "wai\\GBF_Illustrious.safetensors"
+      ],
+      "historical_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791889954153-ffff9a3a-5fd9-4a21-863e-269d159ad239-get_instance_node.json",
+      "current_instance_matches": [
+        "wai\\GBF_Illustrious.safetensors"
+      ],
+      "current_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json",
+      "current_instance_checked_at": "2026-10-14T03:25:22.525Z"
+    },
+    {
+      "ref": {
+        "kind": "lora",
+        "id": "69"
+      },
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "file_name": "GTHAN-EQ.safetensors",
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822202-05ff1ac7-99ef-4c09-8917-9114bd6f2712-get_catalog_resource.json",
+      "current_instance_file_status": "available",
+      "trigger_words": [
+        "gthan"
+      ],
+      "weight": 0.8,
+      "historical_instance_matches": [
+        "wai\\GTHAN-EQ.safetensors"
+      ],
+      "historical_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791889954153-ffff9a3a-5fd9-4a21-863e-269d159ad239-get_instance_node.json",
+      "current_instance_matches": [
+        "wai\\GTHAN-EQ.safetensors"
+      ],
+      "current_instance_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json",
+      "current_instance_checked_at": "2026-10-14T03:25:22.525Z"
+    }
+  ],
+  "queries": [
+    {
+      "key": "character-39934",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "resolve",
+        "id": "39934"
+      },
+      "checked_at": "2026-10-14T03:15:10.214Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 1,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json"
+    },
+    {
+      "key": "missing-character",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "resolve",
+        "id": "9999999999999999999"
+      },
+      "checked_at": "2026-10-14T03:15:10.204Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_REF_NOT_FOUND",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710204-b066b17a-1f84-4dfc-b0f9-fa13be624ded-query_semantic_characters.json"
+    },
+    {
+      "key": "alice",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "search",
+        "query": "Alice",
+        "page_size": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.200Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710200-f87d52fc-87c2-4c6b-a908-490fd7a1c79d-query_semantic_characters.json"
+    },
+    {
+      "key": "fate",
+      "tool": "query_semantic_works",
+      "arguments": {
+        "mode": "search",
+        "query": "Fate",
+        "page_size": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.212Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710212-8acca875-e97c-46ce-8919-b7db24148ad9-query_semantic_works.json"
+    },
+    {
+      "key": "style-anima",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "style",
+          "id": "12415"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.358Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710360-0941fd77-6f9e-4acd-81d4-a22ac43c7991-get_catalog_resource.json"
+    },
+    {
+      "key": "style-wai",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "style",
+          "id": "12344"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.399Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710399-3110ed82-04bd-46c7-a209-df9b1d098368-get_catalog_resource.json"
+    },
+    {
+      "key": "anima-no-artist",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "anima"
+        },
+        "query": "玻璃蚀刻与干燥矿物粉末版画",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.397Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710397-08a21b07-2381-4a21-ab05-03791173c4d1-search_styles.json"
+    },
+    {
+      "key": "krea-no-artist",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "krea2"
+        },
+        "query": "玻璃蚀刻与干燥矿物粉末版画",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.400Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 0,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710400-1afb5e65-e6f8-4d9d-93bf-7ac467a71974-search_styles.json"
+    },
+    {
+      "key": "krea-watercolor",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "krea2"
+        },
+        "query": "透明水彩、淡雅蓝绿配色与细线稿",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.512Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 0,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710512-7f2c98d1-a08d-45da-bc54-0db75b625d8d-search_styles.json"
+    },
+    {
+      "key": "krea-browse",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "krea2"
+        },
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.555Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 0,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710557-64d4727d-b1f4-4980-b593-a4316bd62d56-search_styles.json"
+    },
+    {
+      "key": "wai-watercolor",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "wai"
+        },
+        "query": "水彩淡雅",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.589Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710590-8dcc5b98-6f2e-4acf-bb03-3bc217ece81f-search_styles.json"
+    },
+    {
+      "key": "wai-cel",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "wai"
+        },
+        "query": "硬边赛璐璐",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.573Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710574-d9cf1036-87e0-47fe-bf1d-61b4fc61a88e-search_styles.json"
+    },
+    {
+      "key": "term-no-result",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "search",
+        "query": "三重旋涡形水滴折光装饰",
+        "page_size": 20
+      },
+      "checked_at": "2026-10-14T03:15:10.675Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710676-2930fc66-6b44-4118-b59b-95f397ffb0f7-query_semantic_prompt_terms.json"
+    },
+    {
+      "key": "term-blue-eyes",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "search",
+        "query": "蓝色眼睛、碧蓝眼眸",
+        "page_size": 100
+      },
+      "checked_at": "2026-10-14T03:15:10.710Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710711-56e288e7-fd19-404f-9468-220f73d24d3e-query_semantic_prompt_terms.json"
+    },
+    {
+      "key": "workflow-29",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "workflow",
+          "id": "29"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.721Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json"
+    },
+    {
+      "key": "workflow-37",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "workflow",
+          "id": "37"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.748Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710750-acd70923-8ffa-4fd1-9e21-e5c97a102c07-get_catalog_resource.json"
+    },
+    {
+      "key": "model-1",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "model",
+          "id": "1"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.836Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710836-79da6360-cdc5-484f-980a-861433180261-get_catalog_resource.json"
+    },
+    {
+      "key": "model-3",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "model",
+          "id": "3"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.877Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710877-b69855f8-5a11-4691-8df4-824aa530ff91-get_catalog_resource.json"
+    },
+    {
+      "key": "model-14",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "model",
+          "id": "14"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.879Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710879-21ec7586-a837-4dc9-bde7-44836fef3f02-get_catalog_resource.json"
+    },
+    {
+      "key": "lora-102",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "lora",
+          "id": "102"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.907Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710907-5d69b50f-da5c-4222-bf91-2fa8d44a7324-get_catalog_resource.json"
+    },
+    {
+      "key": "lora-89",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "lora",
+          "id": "89"
+        }
+      },
+      "checked_at": "2026-10-14T03:15:10.998Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710999-deb5c93e-ec9a-4244-a517-3616158a02da-get_catalog_resource.json"
+    },
+    {
+      "key": "instance-status",
+      "tool": "get_instance_status",
+      "arguments": {
+        "instance_id": "2"
+      },
+      "checked_at": "2026-10-14T03:15:11.047Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711047-35c46f47-b9de-4c22-9472-1a9b8e94d9f7-get_instance_status.json"
+    },
+    {
+      "key": "instance-checkpoints",
+      "tool": "get_instance_node",
+      "arguments": {
+        "instance_id": "2",
+        "class_name": "CheckpointLoaderSimple"
+      },
+      "checked_at": "2026-10-14T03:15:11.051Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "MCP_INSTANCE_REMOTE_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711051-344d070d-b9fe-4cb8-bbaf-9f147ad3e442-get_instance_node.json"
+    },
+    {
+      "key": "instance-loras",
+      "tool": "get_instance_node",
+      "arguments": {
+        "instance_id": "2",
+        "class_name": "LoraLoader"
+      },
+      "checked_at": "2026-10-14T03:15:11.083Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "MCP_INSTANCE_REMOTE_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711083-e1e04e56-382f-40e7-8e8d-75ffca73ccb4-get_instance_node.json"
+    },
+    {
+      "key": "workflow-search",
+      "tool": "search_workflows",
+      "arguments": {
+        "query": "wai_basic_txt2img",
+        "base_model": {
+          "name": "wai"
+        },
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:11.155Z",
+      "http_status": 200,
+      "tool_is_error": true,
+      "code": "CATALOG_DEPENDENCY_UNAVAILABLE",
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711157-f7e47f48-2fcf-4f4d-9165-ac301ae58058-search_workflows.json"
+    },
+    {
+      "key": "instances",
+      "tool": "search_instances",
+      "arguments": {
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:15:11.209Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 1,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711209-5c120140-09e8-4a55-aedb-d9aa684b50e8-search_instances.json"
+    },
+    {
+      "key": "alice-3334",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "resolve",
+        "id": "3334"
+      },
+      "checked_at": "2026-10-14T03:16:33.145Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 1,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793145-282123b1-1f64-47d7-b0aa-ccdceb845f9e-query_semantic_characters.json"
+    },
+    {
+      "key": "alice-23363",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "resolve",
+        "id": "23363"
+      },
+      "checked_at": "2026-10-14T03:16:33.143Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 1,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793143-b2f3de48-0f34-4299-9c21-abb5ee99c531-query_semantic_characters.json"
+    },
+    {
+      "key": "fate-65",
+      "tool": "query_semantic_works",
+      "arguments": {
+        "mode": "resolve",
+        "id": "65"
+      },
+      "checked_at": "2026-10-14T03:16:33.157Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 1,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793157-cb55fa6f-7553-4b7b-b58c-b2e4f6d51831-query_semantic_works.json"
+    },
+    {
+      "key": "fate-3241",
+      "tool": "query_semantic_works",
+      "arguments": {
+        "mode": "resolve",
+        "id": "3241"
+      },
+      "checked_at": "2026-10-14T03:16:33.151Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 1,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793151-74c9de47-8f57-4426-80d2-01d6c0929639-query_semantic_works.json"
+    },
+    {
+      "key": "wai-loras-browse",
+      "tool": "search_loras",
+      "arguments": {
+        "base_model": {
+          "name": "wai"
+        },
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:16:33.298Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 13,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793298-37022faa-4b33-483c-8437-9a76f1a4888e-search_loras.json"
+    },
+    {
+      "key": "eye-categories",
+      "tool": "list_prompt_term_categories",
+      "arguments": {
+        "level": "categories",
+        "q": "眼",
+        "page_size": 100
+      },
+      "checked_at": "2026-10-14T03:16:33.305Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 6,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793305-ee6ee2f5-1439-4218-883b-9cfb734df759-list_prompt_term_categories.json"
+    },
+    {
+      "key": "wai-styles-browse",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "wai"
+        },
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:16:33.312Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 20,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793312-30c0971c-a751-4c82-a30f-2b36bc649568-search_styles.json"
+    },
+    {
+      "key": "krea-artists-browse",
+      "tool": "search_artist_prompt_strings",
+      "arguments": {
+        "base_model": {
+          "name": "krea2"
+        },
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:16:33.314Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 0,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793314-245242ce-a3c5-4505-8abd-02399b4649da-search_artist_prompt_strings.json"
+    },
+    {
+      "key": "eye-terms-browse",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "search",
+        "category_ids": [
+          "eye_color"
+        ],
+        "page_size": 100
+      },
+      "checked_at": "2026-10-14T03:17:02.239Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 47,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822239-97082ade-6cec-47e3-be8d-f4c5f83c607f-query_semantic_prompt_terms.json"
+    },
+    {
+      "key": "lora-69",
+      "tool": "get_catalog_resource",
+      "arguments": {
+        "ref": {
+          "kind": "lora",
+          "id": "69"
+        }
+      },
+      "checked_at": "2026-10-14T03:17:02.202Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822202-05ff1ac7-99ef-4c09-8917-9114bd6f2712-get_catalog_resource.json"
+    },
+    {
+      "key": "recovery-alice",
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "search",
+        "query": "Alice",
+        "page_size": 20
+      },
+      "checked_at": "2026-10-14T03:25:22.207Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 20,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322207-a27fbfdc-9b95-4650-87cb-7099dba70019-query_semantic_characters.json"
+    },
+    {
+      "key": "recovery-fate",
+      "tool": "query_semantic_works",
+      "arguments": {
+        "mode": "search",
+        "query": "Fate",
+        "page_size": 20
+      },
+      "checked_at": "2026-10-14T03:25:22.203Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 2,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322204-4dc240dc-3fab-44c8-9f07-ef503ffbeb36-query_semantic_works.json"
+    },
+    {
+      "key": "recovery-anima-no-artist",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "anima"
+        },
+        "query": "玻璃蚀刻与干燥矿物粉末版画",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:25:22.205Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 0,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322206-02f99b76-7e86-4328-beca-1ad6060865ca-search_styles.json"
+    },
+    {
+      "key": "recovery-wai-watercolor",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "wai"
+        },
+        "query": "水彩淡雅",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:25:22.215Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 11,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322216-f66b6dc1-ef83-4cb0-829c-099128adce32-search_styles.json"
+    },
+    {
+      "key": "recovery-wai-cel",
+      "tool": "search_styles",
+      "arguments": {
+        "base_model": {
+          "name": "wai"
+        },
+        "query": "硬边赛璐璐",
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:25:27.104Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 9,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327104-ea1f8e76-5202-4a2e-847e-01b18f979699-search_styles.json"
+    },
+    {
+      "key": "recovery-term-no-result",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "search",
+        "query": "三重旋涡形水滴折光装饰",
+        "page_size": 20
+      },
+      "checked_at": "2026-10-14T03:25:27.094Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 7,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json"
+    },
+    {
+      "key": "recovery-term-blue-eyes",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "search",
+        "query": "蓝色眼睛、碧蓝眼眸",
+        "page_size": 100
+      },
+      "checked_at": "2026-10-14T03:25:27.111Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 27,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327111-37e0a8f0-02ab-480d-a0df-eefc7a8be2f2-query_semantic_prompt_terms.json"
+    },
+    {
+      "key": "recovery-instance-checkpoints",
+      "tool": "get_instance_node",
+      "arguments": {
+        "instance_id": "2",
+        "class_name": "CheckpointLoaderSimple"
+      },
+      "checked_at": "2026-10-14T03:25:22.370Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json"
+    },
+    {
+      "key": "recovery-instance-loras",
+      "tool": "get_instance_node",
+      "arguments": {
+        "instance_id": "2",
+        "class_name": "LoraLoader"
+      },
+      "checked_at": "2026-10-14T03:25:22.526Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": null,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json"
+    },
+    {
+      "key": "recovery-workflow-search",
+      "tool": "search_workflows",
+      "arguments": {
+        "query": "wai_basic_txt2img",
+        "base_model": {
+          "name": "wai"
+        },
+        "limit": 20
+      },
+      "checked_at": "2026-10-14T03:25:27.327Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 4,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327327-85ef21d3-e1d9-4228-bb37-48d9f883efba-search_workflows.json"
+    },
+    {
+      "key": "recovery-swirl-synonym",
+      "tool": "query_semantic_prompt_terms",
+      "arguments": {
+        "mode": "search",
+        "query": "漩涡",
+        "page_size": 100
+      },
+      "checked_at": "2026-10-14T03:27:33.242Z",
+      "http_status": 200,
+      "tool_is_error": false,
+      "code": null,
+      "result_count": 16,
+      "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948453242-22bf7435-7e55-4954-883a-b0ff4d642f84-query_semantic_prompt_terms.json"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "5.3-1",
+      "skill": "anima-prompt-builder",
+      "task": "已有 Prompt 的上下文",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "当前上下文提供角色和 ANIMA Style 的非空 Prompt；角色 39934 与 Style 12415 的 ID 详情均可读取。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710360-0941fd77-6f9e-4acd-81d4-a22ac43c7991-get_catalog_resource.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。"
+    },
+    {
+      "case_id": "5.3-2",
+      "skill": "anima-prompt-builder",
+      "task": "缺少 Prompt 但有资源 ID",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": ""
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "角色上下文省略 Prompt，真实 ID 39934 当前可解析出非空 Prompt。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710360-0941fd77-6f9e-4acd-81d4-a22ac43c7991-get_catalog_resource.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。"
+    },
+    {
+      "case_id": "5.3-3",
+      "skill": "anima-prompt-builder",
+      "task": "重名角色",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "为所属作品尚待确认的已有角色 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "恢复后的 Alice 真实语义搜索返回 20 项、total_count=22，其中爱丽丝 ID 3334 和 23363 均有非空 Prompt；重名候选输入已取得。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710200-f87d52fc-87c2-4c6b-a908-490fd7a1c79d-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793145-282123b1-1f64-47d7-b0aa-ccdceb845f9e-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793143-b2f3de48-0f34-4299-9c21-abb5ee99c531-query_semantic_characters.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322207-a27fbfdc-9b95-4650-87cb-7099dba70019-query_semantic_characters.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。",
+      "test_reply_rule": {
+        "phase_1": "先独立核对执行者等待用户选择。",
+        "phase_2": {
+          "selected_character_id": "3334",
+          "source": "alice-3334 的实际 resolve 返回记录；执行时还须属于本轮实际候选。"
+        }
+      },
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322207-a27fbfdc-9b95-4650-87cb-7099dba70019-query_semantic_characters.json"
+      ],
+      "variantReview": "alice-identity-choice-review.json"
+    },
+    {
+      "case_id": "5.3-4",
+      "skill": "anima-prompt-builder",
+      "task": "自动画师无结果",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 画风为玻璃蚀刻与干燥矿物粉末版画。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 人物为原创角色。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "恢复后的 ANIMA 指定画风查询返回 results=[]、next=null；本项取得真实零结果证据。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710397-08a21b07-2381-4a21-ab05-03791173c4d1-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322206-02f99b76-7e86-4328-beca-1ad6060865ca-search_styles.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。",
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322206-02f99b76-7e86-4328-beca-1ad6060865ca-search_styles.json"
+      ]
+    },
+    {
+      "case_id": "5.3-5",
+      "skill": "anima-prompt-builder",
+      "task": "词条无结果",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 衣服上有三重旋涡形水滴折光装饰。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "3334",
+              "work_name": "Sinoalice",
+              "character_name": "爱丽丝",
+              "prompt_text": "alice \\(sinoalice\\), sinoalice, 1girl, red eyes, short hair, blue hair, dark blue hair, black hair, medium breasts, elbow gloves"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12415",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "已固定独立审查认可的输入变体；目标复合装饰原文保持，非目标身份、尺寸、场景与画师前置按该场景补齐。真实回退分支尚待完整轨迹。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710676-2930fc66-6b44-4118-b59b-95f397ffb0f7-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "绑定本轮官方安装路径、全新Workspace与获准模型，执行并独立审查。",
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json"
+      ],
+      "test_reply_rule": {
+        "candidateUnexpectedWait": "若候选执行仍请求已明确的身份、主场景、尺寸或画师，先保留等待事件及实际模型可见输入；只能重述候选中已有材料，不新增规则提示。",
+        "originalWaiSceneFallback": {
+          "condition": "若仍选择执行原WAI输入，实际等待列出的候选包含单主体肖像且原画面仍满足该行条件。",
+          "reply": "本轮主要场景选择单主体肖像；画幅为1:1。"
+        },
+        "artistFallback": {
+          "condition": "原WAI执行实际等待画师选择，候选中真实包含12344、say_hana、底模wai且Prompt与完整说明可用，并满足它实际提出的视觉特点。",
+          "reply": "选择画师12344（say_hana）。",
+          "otherwise": "不根据预存ID盲选；先独立核对真实候选与等待原因。"
+        },
+        "termAmbiguity": "词条含义存在真实选择需求时先审实际候选。没有预授权回复指定swirl、宣布其他候选不可采用或要求写自然语言；这些判断属于被测Skill任务。",
+        "decorationPlacement": "WAI原句未指定载体；本候选保持这一点。Skill可按构图补充兼容位置；若它实际请求用户确定位置，可固定回复“装饰位于白衬衫上。”，只补位置，完整复合概念保持。"
+      },
+      "preparation_review": "term-fallback-input-review.json"
+    },
+    {
+      "case_id": "5.4-1",
+      "skill": "krea2-anime-prompt-builder",
+      "task": "历史 Prompt 与上下文同时存在",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 复用指定历史正向 Prompt，发色改为银色。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "3334",
+              "work_name": "Sinoalice",
+              "character_name": "爱丽丝",
+              "prompt_text": "alice \\(sinoalice\\), sinoalice, 1girl, red eyes, short hair, blue hair, dark blue hair, black hair, medium breasts, elbow gloves"
+            }
+          }
+        ],
+        "history_run_id": "run_b7457c0a-5a98-4354-a59a-5b6461fd34ec"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "当前输入缺少 history_run_id；历史来源优先级任务等待真实成功 Run。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json"
+      ],
+      "dependencies": [
+        {
+          "kind": "successful_real_run",
+          "statement": "当前 history_run_id 为 null；本项等待通过 Builder 校验后完成的真实服务生成，再固定同一隔离 Profile 可查询的 Run ID。",
+          "evidence_paths": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json"
+          ]
+        }
+      ],
+      "builder_dependency": null,
+      "run_dependency": {
+        "status": "blocked",
+        "history_run_id": null,
+        "required_profile": "本 worktree 隔离官方 Profile",
+        "depends_on": [
+          "通过三类 Builder 的真实执行与对应校验",
+          "真实目录和目标实例完成图片生成",
+          "取得成功 Run、Actual Workflow 与媒体原始证据"
+        ]
+      },
+      "next_action": "由主线程补齐 dependencies 后刷新本项目准备状态。",
+      "priorPreparation": {
+        "case_id": "5.4-1",
+        "skill": "krea2-anime-prompt-builder",
+        "task": "历史 Prompt 与上下文同时存在",
+        "status": "blocked",
+        "status_scope": "当前验收输入与真实数据前置条件",
+        "parameters": {
+          "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 复用指定历史正向 Prompt，发色改为银色。",
+          "contexts": [
+            {
+              "type": "comfyui-context",
+              "data": {
+                "kind": "character",
+                "id": "39934",
+                "work_name": "其它",
+                "character_name": "Ani (Grok Companion)",
+                "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+              }
+            }
+          ],
+          "history_run_id": null
+        },
+        "presets": [
+          "harness-comfyui-cli-candidate",
+          "harness-comfyui-iteration"
+        ],
+        "facts": "当前输入缺少 history_run_id；历史来源优先级任务等待真实成功 Run。",
+        "evidence_paths": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json"
+        ],
+        "dependencies": [
+          {
+            "kind": "successful_real_run",
+            "statement": "当前 history_run_id 为 null；本项等待通过 Builder 校验后完成的真实服务生成，再固定同一隔离 Profile 可查询的 Run ID。",
+            "evidence_paths": [
+              "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json"
+            ]
+          }
+        ],
+        "builder_dependency": null,
+        "run_dependency": {
+          "status": "blocked",
+          "history_run_id": null,
+          "required_profile": "本 worktree 隔离官方 Profile",
+          "depends_on": [
+            "通过三类 Builder 的真实执行与对应校验",
+            "真实目录和目标实例完成图片生成",
+            "取得成功 Run、Actual Workflow 与媒体原始证据"
+          ]
+        },
+        "next_action": "由主线程补齐 dependencies 后刷新本项目准备状态。"
+      },
+      "review": "history-input-preflight-review.json",
+      "runtimeCondition": "使用run_b7457c0a所属Workspace"
+    },
+    {
+      "case_id": "5.4-2",
+      "skill": "krea2-anime-prompt-builder",
+      "task": "角色 ID 补全",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": ""
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "角色上下文省略 Prompt，真实 ID 39934 当前可解析出非空 Prompt。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。"
+    },
+    {
+      "case_id": "5.4-3",
+      "skill": "krea2-anime-prompt-builder",
+      "task": "多个画师候选",
+      "status": "blocked",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 使用透明水彩、淡雅蓝绿配色与细线稿。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "Krea2 Style 无 query 浏览、指定水彩查询及画师串浏览均返回空结果；当前真实目录缺少至少两个可采用画师候选。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710512-7f2c98d1-a08d-45da-bc54-0db75b625d8d-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710557-64d4727d-b1f4-4980-b593-a4316bd62d56-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793314-245242ce-a3c5-4505-8abd-02399b4649da-search_artist_prompt_strings.json"
+      ],
+      "dependencies": [
+        {
+          "kind": "real_catalog_data",
+          "statement": "当前 Krea2 Style 与画师串目录均为空；需要既有真实资源满足两个候选条件。",
+          "evidence_paths": []
+        }
+      ],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程补齐 dependencies 后刷新本项目准备状态。"
+    },
+    {
+      "case_id": "5.4-4",
+      "skill": "krea2-anime-prompt-builder",
+      "task": "自动画师无结果",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 使用玻璃蚀刻与干燥矿物粉末版画。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "Krea2 指定画风查询返回 results=[]、next=null，Style 与画师串目录浏览也返回空结果。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710400-1afb5e65-e6f8-4d9d-93bf-7ac467a71974-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710557-64d4727d-b1f4-4980-b593-a4316bd62d56-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793314-245242ce-a3c5-4505-8abd-02399b4649da-search_artist_prompt_strings.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。"
+    },
+    {
+      "case_id": "5.4-5",
+      "skill": "krea2-anime-prompt-builder",
+      "task": "必需主体信息不足",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "为角色未登记角色霁轮构建并保存一份 Krea2 Builder JSON。Prompt 必须准确描述该角色的身份与外观。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "9999999999999999999",
+              "work_name": "",
+              "character_name": "未登记角色霁轮",
+              "prompt_text": ""
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "输入要求准确身份和外观，角色 Prompt 为空；给定角色 ID 的真实 resolve 返回 CATALOG_REF_NOT_FOUND。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710204-b066b17a-1f84-4dfc-b0f9-fa13be624ded-query_semantic_characters.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。",
+      "inputVariantReview": "krea-iteration-build-action-review.json"
+    },
+    {
+      "case_id": "5.5-1",
+      "skill": "wai-sdxl-prompt-builder",
+      "task": "作品同名",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "为 Fate 中的角色构建 Prompt。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "恢复后的 Fate 真实语义搜索返回两条同名作品 ID 65 和 3241；作品重名候选输入已取得。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710212-8acca875-e97c-46ce-8919-b7db24148ad9-query_semantic_works.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793157-cb55fa6f-7553-4b7b-b58c-b2e4f6d51831-query_semantic_works.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793151-74c9de47-8f57-4426-80d2-01d6c0929639-query_semantic_works.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322204-4dc240dc-3fab-44c8-9f07-ef503ffbeb36-query_semantic_works.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。",
+      "test_reply_rule": {
+        "phase_1": "先独立核对执行者等待用户选择。",
+        "phase_2": {
+          "selected_work_id": "65",
+          "source": "fate-65 的实际 resolve 返回记录；执行时还须属于本轮实际候选。"
+        }
+      },
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322204-4dc240dc-3fab-44c8-9f07-ef503ffbeb36-query_semantic_works.json"
+      ]
+    },
+    {
+      "case_id": "5.5-2",
+      "skill": "wai-sdxl-prompt-builder",
+      "task": "角色缺少 Prompt",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": ""
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "角色上下文省略 Prompt，真实 ID 39934 当前可解析出非空 Prompt。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。"
+    },
+    {
+      "case_id": "5.5-3",
+      "skill": "wai-sdxl-prompt-builder",
+      "task": "画师 Prompt 已有但说明缺失",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "原创女性单人站立半身像，金色长双马尾、蓝眼、白色翻领衬衫，窗边柔光，花卉背景；采用给定画师 Prompt，本次用于测试，画幅 2:3。请完成本 Skill 的提示词构建流程并保存最终结构化结果。 景别为头到腰的中景，相机平视，第三人称外部视点，以面部为主焦点，景深为全部清晰；主体居中，前景为空，中景为人物，背景为窗与花卉，无遮挡，画面在腰部以下裁剪，头部、肩部和双臂完整可见。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12344",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "当前上下文提供 say_hana Prompt 并省略说明；WAI Style 12344 的 ID 详情返回完整 style_description。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710399-3110ed82-04bd-46c7-a209-df9b1d098368-get_catalog_resource.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。"
+    },
+    {
+      "case_id": "5.5-4",
+      "skill": "wai-sdxl-prompt-builder",
+      "task": "多个画风方向",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 水彩淡雅与硬边赛璐璐两个画风方向均保留作为候选。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "恢复后的 WAI 水彩查询返回 11 项，硬边赛璐璐查询返回 9 项；两方向均取得含非空 Prompt 和画风说明的真实候选。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710590-8dcc5b98-6f2e-4acf-bb03-3bc217ece81f-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710574-d9cf1036-87e0-47fe-bf1d-61b4fc61a88e-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793312-30c0971c-a751-4c82-a30f-2b36bc649568-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322216-f66b6dc1-ef83-4cb0-829c-099128adce32-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327104-ea1f8e76-5202-4a2e-847e-01b18f979699-search_styles.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。",
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322216-f66b6dc1-ef83-4cb0-829c-099128adce32-search_styles.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327104-ea1f8e76-5202-4a2e-847e-01b18f979699-search_styles.json"
+      ],
+      "candidate_resource_evidence": [
+        {
+          "direction": "水彩淡雅",
+          "ref": {
+            "kind": "style",
+            "id": "12343"
+          },
+          "name": "ds_mile",
+          "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322216-f66b6dc1-ef83-4cb0-829c-099128adce32-search_styles.json"
+        },
+        {
+          "direction": "赛璐璐",
+          "ref": {
+            "kind": "style",
+            "id": "12314"
+          },
+          "name": "aoe ui",
+          "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327104-ea1f8e76-5202-4a2e-847e-01b18f979699-search_styles.json"
+        }
+      ]
+    },
+    {
+      "case_id": "5.5-5",
+      "skill": "wai-sdxl-prompt-builder",
+      "task": "同义词条",
+      "status": "blocked",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 蓝色眼睛、碧蓝眼眸。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "恢复后的原蓝眼查询返回 27 项；原请求所需跨记录同义关系待独立审查。另一次漩涡查询取得 ID 9089 与 17067，两项别名均为漩涡并具有使用数量。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710711-56e288e7-fd19-404f-9468-220f73d24d3e-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793305-ee6ee2f5-1439-4218-883b-9cfb734df759-list_prompt_term_categories.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822239-97082ade-6cec-47e3-be8d-f4c5f83c607f-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327111-37e0a8f0-02ab-480d-a0df-eefc7a8be2f2-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948453242-22bf7435-7e55-4954-883a-b0ff4d642f84-query_semantic_prompt_terms.json"
+      ],
+      "dependencies": [
+        {
+          "kind": "distinct_synonym_candidates",
+          "statement": "独立 Agent 核对原蓝眼查询中的跨记录同义关系；漩涡变体的规范标签与别名关系也须独立核对，随后由主线程固定选用变体。",
+          "evidence_paths": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327111-37e0a8f0-02ab-480d-a0df-eefc7a8be2f2-query_semantic_prompt_terms.json",
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948453242-22bf7435-7e55-4954-883a-b0ff4d642f84-query_semantic_prompt_terms.json"
+          ]
+        }
+      ],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程补齐 dependencies 后刷新本项目准备状态。",
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327111-37e0a8f0-02ab-480d-a0df-eefc7a8be2f2-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948453242-22bf7435-7e55-4954-883a-b0ff4d642f84-query_semantic_prompt_terms.json"
+      ],
+      "candidate_input_variant": {
+        "status": "pending_independent_semantic_review_and_input_freeze",
+        "parameters_delta": {
+          "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。衣服上有漩涡形装饰。"
+        },
+        "candidate_records": [
+          {
+            "id": "9089",
+            "canonical_tag": "swirl",
+            "aliases": [
+              "漩涡"
+            ],
+            "post_count": 669
+          },
+          {
+            "id": "17067",
+            "canonical_tag": "vortex",
+            "aliases": [
+              "漩涡"
+            ],
+            "post_count": 136
+          }
+        ],
+        "evidence_paths": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948453242-22bf7435-7e55-4954-883a-b0ff4d642f84-query_semantic_prompt_terms.json"
+        ],
+        "original_parameters_retained": true
+      }
+    },
+    {
+      "case_id": "5.5-6",
+      "skill": "wai-sdxl-prompt-builder",
+      "task": "词条无结果",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 三重旋涡形水滴折光装饰。 本轮主要场景明确选择单主体肖像。画幅为 1:1。采用 say_hana 画风；画风说明：花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。",
+        "contexts": [
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "character",
+              "id": "39934",
+              "work_name": "其它",
+              "character_name": "Ani (Grok Companion)",
+              "prompt_text": "Ani_(Grok), blonde hair, twintails, long hair, blue eyes"
+            }
+          },
+          {
+            "type": "comfyui-context",
+            "data": {
+              "kind": "style",
+              "id": "12344",
+              "name": "say_hana",
+              "prompt_text": "say_hana"
+            }
+          }
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "已固定独立审查认可的输入变体；目标复合装饰原文保持，非目标身份、尺寸、场景与画师前置按该场景补齐。真实回退分支尚待完整轨迹。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710676-2930fc66-6b44-4118-b59b-95f397ffb0f7-query_semantic_prompt_terms.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "绑定本轮官方安装路径、全新Workspace与获准模型，执行并独立审查。",
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327094-c72f511b-d146-4b63-9dac-e2dbbdaef21b-query_semantic_prompt_terms.json"
+      ],
+      "test_reply_rule": {
+        "candidateUnexpectedWait": "若候选执行仍请求已明确的身份、主场景、尺寸或画师，先保留等待事件及实际模型可见输入；只能重述候选中已有材料，不新增规则提示。",
+        "originalWaiSceneFallback": {
+          "condition": "若仍选择执行原WAI输入，实际等待列出的候选包含单主体肖像且原画面仍满足该行条件。",
+          "reply": "本轮主要场景选择单主体肖像；画幅为1:1。"
+        },
+        "artistFallback": {
+          "condition": "原WAI执行实际等待画师选择，候选中真实包含12344、say_hana、底模wai且Prompt与完整说明可用，并满足它实际提出的视觉特点。",
+          "reply": "选择画师12344（say_hana）。",
+          "otherwise": "不根据预存ID盲选；先独立核对真实候选与等待原因。"
+        },
+        "termAmbiguity": "词条含义存在真实选择需求时先审实际候选。没有预授权回复指定swirl、宣布其他候选不可采用或要求写自然语言；这些判断属于被测Skill任务。",
+        "decorationPlacement": "WAI原句未指定载体；本候选保持这一点。Skill可按构图补充兼容位置；若它实际请求用户确定位置，可固定回复“装饰位于白衬衫上。”，只补位置，完整复合概念保持。"
+      },
+      "preparation_review": "term-fallback-input-review.json"
+    },
+    {
+      "case_id": "5.6-1",
+      "skill": "comfyui-generate",
+      "task": "用户指定模型",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "template_id": "29",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013,
+        "request": "使用随本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片，随后查询实际 Run 和媒体。",
+        "model_id": "14"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "模板 29 默认模型为 1，显式模型 14 同属 wai 且 ID 不同；恢复后的 CheckpointLoaderSimple 同时列出两项文件，本项等待真实校验通过的 Builder 结果。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710836-79da6360-cdc5-484f-980a-861433180261-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710879-21ec7586-a837-4dc9-bde7-44836fef3f02-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711051-344d070d-b9fe-4cb8-bbaf-9f147ad3e442-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948240955-9a77e309-bb73-4521-a085-c44b0dd5a344-get_instance_status.json"
+      ],
+      "dependencies": [
+        {
+          "kind": "validated_builder_result",
+          "statement": "当前矩阵未提供本项目标路线的可复用真实 Builder 结果及校验记录；已有 WAI 完整构图产物的独立审查判定失败。",
+          "evidence_paths": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/live-case-5.5-3-apodex-workbench-complete-scene.json",
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/approved-apodex-wai3-complete-scene/5.5-3/wai-prompt-result.json"
+          ]
+        }
+      ],
+      "builder_dependency": {
+        "model_route": "wai-illustrious-sdxl",
+        "required": true,
+        "status": "blocked",
+        "result_path": null,
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json"
+      },
+      "run_dependency": null,
+      "next_action": "由主线程补齐 dependencies 后刷新本项目准备状态。",
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json"
+      ],
+      "previous_builder_preparation": {
+        "status": "blocked",
+        "checked_at": "2026-10-14T03:29:31.597908+00:00"
+      },
+      "preparationResolution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/index.json",
+      "currentPrerequisiteConclusion": "独立审查认可的实际Builder文件已提供，原校验器通过，当前目录与实例文件已核实；原任务参数保持。"
+    },
+    {
+      "case_id": "5.6-2",
+      "skill": "comfyui-generate",
+      "task": "模板默认模型",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "template_id": "29",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013,
+        "request": "使用随本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片，随后查询实际 Run 和媒体。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "模板 29 当前登记默认模型 1，恢复后的 CheckpointLoaderSimple 列出其文件；本项等待真实校验通过的 Builder 结果。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710836-79da6360-cdc5-484f-980a-861433180261-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711051-344d070d-b9fe-4cb8-bbaf-9f147ad3e442-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948240955-9a77e309-bb73-4521-a085-c44b0dd5a344-get_instance_status.json"
+      ],
+      "dependencies": [
+        {
+          "kind": "validated_builder_result",
+          "statement": "当前矩阵未提供本项目标路线的可复用真实 Builder 结果及校验记录；已有 WAI 完整构图产物的独立审查判定失败。",
+          "evidence_paths": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/live-case-5.5-3-apodex-workbench-complete-scene.json",
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/approved-apodex-wai3-complete-scene/5.5-3/wai-prompt-result.json"
+          ]
+        }
+      ],
+      "builder_dependency": {
+        "model_route": "wai-illustrious-sdxl",
+        "required": true,
+        "status": "blocked",
+        "result_path": null,
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json"
+      },
+      "run_dependency": null,
+      "next_action": "由主线程补齐 dependencies 后刷新本项目准备状态。",
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json"
+      ],
+      "previous_builder_preparation": {
+        "status": "blocked",
+        "checked_at": "2026-10-14T03:29:31.597908+00:00"
+      },
+      "preparationResolution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/index.json",
+      "currentPrerequisiteConclusion": "独立审查认可的实际Builder文件已提供，原校验器通过，当前目录与实例文件已核实；原任务参数保持。"
+    },
+    {
+      "case_id": "5.6-3",
+      "skill": "comfyui-generate",
+      "task": "无默认模型",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "template_id": "29",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013,
+        "request": "使用本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "批准边界方案及固定 WAI 输入文件当前存在；本项使用 no-default-model 夹具。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-input/wai-result.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md"
+      ],
+      "dependencies": [],
+      "builder_dependency": {
+        "model_route": "wai-illustrious-sdxl",
+        "required": true,
+        "status": "approved_boundary_material",
+        "result_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-input/wai-result.json",
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md"
+      },
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。",
+      "fixture_runtime_dependency": "执行前按批准边界方案启动对应只读夹具，核对本轮工具、搜索和详情响应一致。"
+    },
+    {
+      "case_id": "5.6-4",
+      "skill": "comfyui-generate",
+      "task": "底模不一致",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "template_id": "29",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013,
+        "request": "核对模板 29 与用户指定模型 3 的底模兼容性。",
+        "model_id": "3"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "模板 29 的底模为 wai，模型 3 的底模为 anima；两项 ID 详情当前可读。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710877-b69855f8-5a11-4691-8df4-824aa530ff91-get_catalog_resource.json"
+      ],
+      "dependencies": [],
+      "builder_dependency": null,
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。"
+    },
+    {
+      "case_id": "5.6-5",
+      "skill": "comfyui-generate",
+      "task": "多个 LoRA",
+      "status": "blocked",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "template_id": "37",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013,
+        "request": "单人白衬衫半身像，窗边柔光。",
+        "model_id": "1",
+        "lora_ids": [
+          "102",
+          "89"
+        ]
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "模板40参数检查及模型1、69→89 LoRA、尺寸映射通过；官方前端导出后，节点3 wildcard_text连接结构与运行时投影不一致，编译合并失败，未提交生成。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710750-acd70923-8ffa-4fd1-9e21-e5c97a102c07-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710836-79da6360-cdc5-484f-980a-861433180261-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710907-5d69b50f-da5c-4222-bf91-2fa8d44a7324-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710999-deb5c93e-ec9a-4244-a517-3616158a02da-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822202-05ff1ac7-99ef-4c09-8917-9114bd6f2712-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947793298-37022faa-4b33-483c-8437-9a76f1a4888e-search_loras.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711083-e1e04e56-382f-40e7-8e8d-75ffca73ccb4-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948240955-9a77e309-bb73-4521-a085-c44b0dd5a344-get_instance_status.json"
+      ],
+      "dependencies": [
+        {
+          "kind": "workflow_compile_failure",
+          "statement": "需要可完成官方编译的现有兼容多LoRA模板；模板40的前端导出与投影差异尚待定位，未改变编译器或真实目录。",
+          "evidence_paths": [
+            "docs/verification/skills-mcp-migration/multiple-lora-compile-review.json"
+          ]
+        },
+        {
+          "kind": "alternative_model_route_missing",
+          "statement": "Krea2模板42候选路线的五项模型skill_name均为空，生成Skill模型路线前置失败。",
+          "evidence_paths": [
+            "docs/verification/skills-mcp-migration/multiple-lora-alternative-review.json"
+          ]
+        }
+      ],
+      "builder_dependency": {
+        "model_route": "wai-illustrious-sdxl",
+        "required": true,
+        "status": "blocked",
+        "result_path": null,
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json"
+      },
+      "run_dependency": null,
+      "next_action": "集中保留现有资源前置受阻：WAI模板40官方导出错位；Krea2模板42有两个LoRA槽，但可查询模型skill_name均为空，且尚缺完整有效Builder。",
+      "candidate_input_variant": {
+        "lora_ids": [
+          "89",
+          "69"
+        ],
+        "status": "resources_ready_pending_builder_and_template_parameter_check",
+        "source": "真实目录现有记录及上一轮实例文件枚举",
+        "trigger_words": [
+          "gbf_style",
+          "gthan"
+        ],
+        "weights": [
+          1,
+          0.8
+        ],
+        "evidence_paths": [
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710999-deb5c93e-ec9a-4244-a517-3616158a02da-get_catalog_resource.json",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947822202-05ff1ac7-99ef-4c09-8917-9114bd6f2712-get_catalog_resource.json",
+          "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json"
+        ],
+        "current_instance_file_names": [
+          "wai\\GBF_Illustrious.safetensors",
+          "wai\\GTHAN-EQ.safetensors"
+        ],
+        "current_instance_checked_at": "2026-10-14T03:25:22.525Z",
+        "original_parameters_retained": true
+      },
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322526-80d617dd-67d6-449b-a8e7-5c74fc986e76-get_instance_node.json"
+      ],
+      "alternative_review": "docs/verification/skills-mcp-migration/multiple-lora-alternative-review.json"
+    },
+    {
+      "case_id": "5.6-6",
+      "skill": "comfyui-generate",
+      "task": "空实例列表",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "template_id": "29",
+        "request": "使用本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片。"
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "批准边界方案及固定 WAI 输入文件当前存在；本项使用 empty-instances 夹具，真实实例目录当前含 ID 2。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711209-5c120140-09e8-4a55-aedb-d9aa684b50e8-search_instances.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-input/wai-result.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md"
+      ],
+      "dependencies": [],
+      "builder_dependency": {
+        "model_route": "wai-illustrious-sdxl",
+        "required": true,
+        "status": "approved_boundary_material",
+        "result_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-input/wai-result.json",
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/plans/skills-mcp-migration-boundary-acceptance-20261013.md"
+      },
+      "run_dependency": null,
+      "next_action": "由主线程固定输入后派发官方应用独立执行队员。",
+      "fixture_runtime_dependency": "执行前按批准边界方案启动对应只读夹具，核对本轮工具、搜索和详情响应一致。"
+    },
+    {
+      "case_id": "5.6-7",
+      "skill": "comfyui-generate",
+      "task": "目录搜索后选择资源",
+      "status": "ready",
+      "status_scope": "当前验收输入与真实数据前置条件",
+      "parameters": {
+        "request": "搜索 wai_basic_txt2img 模板并展示候选，供我选择后使用默认模型创建一张图片。",
+        "instance_id": "2",
+        "count": 1,
+        "seed": 20261013
+      },
+      "presets": [
+        "harness-comfyui-cli-candidate",
+        "harness-comfyui-iteration"
+      ],
+      "facts": "恢复后的 wai_basic_txt2img 查询返回 4 项，含模板 29；默认模型 1 的文件已列出。本项等待第一轮选择验收及补入真实校验通过的 Builder 结果。",
+      "evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711157-f7e47f48-2fcf-4f4d-9165-ac301ae58058-search_workflows.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327327-85ef21d3-e1d9-4228-bb37-48d9f883efba-search_workflows.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948240955-9a77e309-bb73-4521-a085-c44b0dd5a344-get_instance_status.json"
+      ],
+      "dependencies": [
+        {
+          "kind": "validated_builder_result",
+          "statement": "当前矩阵未提供本项目标路线的可复用真实 Builder 结果及校验记录；已有 WAI 完整构图产物的独立审查判定失败。",
+          "evidence_paths": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/live-case-5.5-3-apodex-workbench-complete-scene.json",
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-development/official-environment/workspace/approved-apodex-wai3-complete-scene/5.5-3/wai-prompt-result.json"
+          ]
+        },
+        {
+          "kind": "selection_round",
+          "statement": "先独立核对第一轮展示实际候选并等待选择，再按预先保存的规则选择本轮返回的模板 29。",
+          "evidence_paths": [
+            "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327327-85ef21d3-e1d9-4228-bb37-48d9f883efba-search_workflows.json"
+          ]
+        }
+      ],
+      "builder_dependency": {
+        "model_route": "wai-illustrious-sdxl",
+        "required": true,
+        "status": "blocked",
+        "result_path": null,
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json"
+      },
+      "run_dependency": null,
+      "next_action": "由主线程补齐 dependencies 后刷新本项目准备状态。",
+      "test_reply_rule": {
+        "phase_1": "先独立核对执行者展示实际模板候选并等待选择。",
+        "phase_2": {
+          "selected_template_id": "29",
+          "condition": "模板 29 属于本轮实际搜索候选，随后原样补入真实校验通过的 Builder 结果。"
+        }
+      },
+      "recovery_evidence_paths": [
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948327327-85ef21d3-e1d9-4228-bb37-48d9f883efba-search_workflows.json",
+        "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948322370-e70f8c71-fd98-48fb-a6ad-7670d187b54e-get_instance_node.json"
+      ],
+      "previous_builder_preparation": {
+        "status": "blocked",
+        "checked_at": "2026-10-14T03:29:31.597908+00:00"
+      },
+      "preparationResolution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/index.json",
+      "currentPrerequisiteConclusion": "独立审查认可的实际Builder文件已提供，原校验器通过，当前目录与实例文件已核实；原任务参数保持。"
+    }
+  ],
+  "previous_preflight": {
+    "checked_at": "2026-10-14T03:20:38.803145+00:00",
+    "ready": 10,
+    "blocked": 13,
+    "report_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/input-preflight-current/before-recovery.json"
+  },
+  "recovery": {
+    "scope": "追加目录服务恢复后的原阻塞查询及实时节点证据。",
+    "instance_status_evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948240955-9a77e309-bb73-4521-a085-c44b0dd5a344-get_instance_status.json",
+    "instance_reachable": true,
+    "http_status": 200,
+    "instance_status_checked_at": "2026-10-14T03:24:00.952Z",
+    "template_loader_classes": [
+      {
+        "template_id": "29",
+        "classes": [
+          "CheckpointLoaderSimple"
+        ],
+        "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710722-83ceb93b-f7ca-492c-b8d5-8848161265be-get_catalog_resource.json"
+      },
+      {
+        "template_id": "37",
+        "classes": [
+          "CheckpointLoaderSimple",
+          "LoraLoader"
+        ],
+        "evidence_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710750-acd70923-8ffa-4fd1-9e21-e5c97a102c07-get_catalog_resource.json"
+      }
+    ],
+    "added_readonly_queries": 11,
+    "evidence_preservation": "恢复前的原始响应路径保留在 queries 与对应 cases；恢复前报告保存在 previous_preflight.report_path。"
+  },
+  "followup_resolution": {
+    "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/index.json",
+    "cases": [
+      "5.6-1",
+      "5.6-2",
+      "5.6-7"
+    ],
+    "scope": "仅解除Builder缺失前置条件；历史预检和业务执行结论保留。"
+  }
+}

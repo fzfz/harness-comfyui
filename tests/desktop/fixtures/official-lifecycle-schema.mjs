@@ -39,7 +39,7 @@ const OPERATION_KEYS = [
 ]
 const CANDIDATE_CLIENT_SCRIPT_KEYS = [
   'scriptUrlPrefix', 'sourceMapUrlPrefix', 'sourceMapRequestPrefix', 'revisionQueryPrefix', 'revisionPattern',
-  'moduleRoutePattern', 'candidateModuleMustBeLast', 'moduleMapSuffix', 'sourceUrlDirectivePrefix',
+  'moduleRoutePattern', 'moduleMapSuffix', 'sourceUrlDirectivePrefix',
   'sourceUrlDirectiveValuePattern', 'sourceMapDirectiveValuePattern',
   'moduleSeparator', 'sourceMapTrailerTemplate', 'evidenceFilenameTemplate',
   'sourceMapEvidenceFilenameTemplate', 'evidenceRecordFilenameTemplate',
@@ -234,7 +234,6 @@ export function parseOfficialLifecycleFixture(value) {
     || candidateClientScript.revisionQueryPrefix !== '&rev='
     || candidateClientScript.revisionPattern !== '^[a-f0-9]{12}$'
     || candidateClientScript.moduleRoutePattern !== '^(?:@deepseek-ai/[a-z0-9][a-z0-9-]*|harness-comfyui)/client\\.js$'
-    || candidateClientScript.candidateModuleMustBeLast !== true
     || candidateClientScript.moduleMapSuffix !== '.map'
     || candidateClientScript.sourceUrlDirectivePrefix !== '//# sourceURL='
     || candidateClientScript.sourceUrlDirectiveValuePattern !== '+'

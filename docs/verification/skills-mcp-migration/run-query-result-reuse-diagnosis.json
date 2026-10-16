@@ -1,0 +1,57 @@
+{
+  "purpose": "记录默认模型验收中重复查询 Run 的事件原因和结果保存合同缺口。",
+  "readWhen": "评估 Run 查询结果复用修复或准备同机制复验时。",
+  "status": "trace-verified-repair-not-selected",
+  "sourceEvents": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/collection-1791979002308/all-session-records.json",
+  "sourceReview": "remaining-generation-runtime-review.json",
+  "caseId": "5.6-2",
+  "preset": "harness-comfyui-iteration",
+  "sessionId": "session-bd102914-936a-43ec-afac-ec8f423c83c5",
+  "events": [
+    {
+      "seq": 90,
+      "fact": "首次 run-inputs 仅输出 stdout，没有保存文件。"
+    },
+    {
+      "seq": 91,
+      "fact": "返回 available 的生成参数和 Actual Workflow，退出码 0。",
+      "stdoutBytes": 3698,
+      "lookupStatus": "available",
+      "workflowStatus": "available"
+    },
+    {
+      "seq": 104,
+      "fact": "可见分析决定重新执行命令，将 Run 查询与媒体查询输出保存到文件。"
+    },
+    {
+      "seq": 105,
+      "fact": "对相同 run_ids 再次执行 run-inputs，并重定向到 run-inputs.json。"
+    },
+    {
+      "seq": 106,
+      "fact": "保存 run-inputs.json，3691 字节。"
+    }
+  ],
+  "contract": {
+    "path": ".agents/skills/comfyui-generate/references/generation-cli.md",
+    "ruleSection": "调用次数与结果复用",
+    "exampleSection": "完整调用示例",
+    "rule": "相同有序数组的成功结果必须复用，用户明确要求重新查询时才替换。",
+    "example": "首次查询示例只输出 stdout，未约定首次保存文件。",
+    "implementation": "scripts/cli/harness-comfyui.mjs:154 直接输出 JSON。"
+  },
+  "causalConclusion": "重复调用的可见动机是保存记录；首次成功结果没有文件引用，后续采用重新查询保存的方式。",
+  "limits": [
+    "尚未通过单变量复验确认首次保存文件可以消除此行为。",
+    "模型能从既有输出重建文件，但这种方式仍依赖模型复制完整 Workflow。",
+    "本报告没有修改命令输出合同，也没有放宽调用次数规则。"
+  ],
+  "nextInvestigation": [
+    "主 Agent 核对所有保留的 Run 查询消费者及首次保存约定。",
+    "主 Agent 比较命令生成结果文件与首次调用重定向的职责、失败处理和接口影响。",
+    "主 Agent 确定修复合同后，更新计划对应步骤。范围内修复沿用主计划第 5.14 节授权。",
+    "主 Agent 指派实施者按已确定合同修改产物。",
+    "独立审查员核对修订后的合同与实现。",
+    "审查通过后，验收执行者按相同输入复验，并保存完整轨迹。"
+  ]
+}

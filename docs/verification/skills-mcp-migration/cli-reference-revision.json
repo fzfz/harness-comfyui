@@ -1,0 +1,30 @@
+{
+  "files": [
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+    ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+    ".agents/skills/comfyui-image-review/references/cli.md",
+    ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+    ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+    ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md"
+  ],
+  "target_help_text": "1. Skill 执行者需要核对命令参数或输入示例时，在本文件对应命令的调用入口中，将 `--stdin` 替换为 `--help`，读取该命令帮助。",
+  "basis": "catalog-cli-discovery-chain.json",
+  "plan": "5.7.5",
+  "semantic_review": {
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md": "passed",
+    ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md": "passed",
+    ".agents/skills/comfyui-image-review/references/cli.md": "passed",
+    ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md": "passed",
+    ".agents/skills/comfyui-generate/references/generation-cli.md": "passed",
+    ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md": "passed",
+    ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md": "passed",
+    ".agents/skills/anima-prompt-builder/references/generation-cli.md": "passed",
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md": "passed"
+  },
+  "file_specific_help_text": {
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md": "1. Skill 执行者需要核对命令参数或输入示例时，在本文件“命令与调用时机”的调用入口中，将 `--stdin` 替换为 `--help`，读取图片读取命令的帮助。"
+  }
+}

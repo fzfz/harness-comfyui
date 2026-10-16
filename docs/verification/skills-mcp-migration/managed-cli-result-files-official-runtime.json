@@ -1,0 +1,148 @@
+{
+  "purpose": "记录受管 CLI 结果文件的官方前台 shell 验收。",
+  "readWhen": "复核结果文件传输、跨调用读取及验收设施失败时。",
+  "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-candidate.tgz",
+  "installedResources": {
+    "count": 201,
+    "allEqual": true,
+    "evidence": ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/candidate-verification-summary.json"
+  },
+  "input": ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/cli-probe-input.json",
+  "inputReview": ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/cli-probe-input-review.json",
+  "attempts": [
+    {
+      "runId": "a3caa910-3edc-4457-b0c4-5c777edd14a5",
+      "state": ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-1-state.json",
+      "remoteModelCalls": 0,
+      "generationSubmissions": 0,
+      "status": "blocked-before-cli-start",
+      "observations": [
+        {
+          "step": "control execute",
+          "result": "harness-comfyui-cli-candidate 与 harness-comfyui-iteration 两个预设的 bash 均返回 127，Node 可执行文件环境变量为空。",
+          "cause": "控制端未记录tool/call，未满足shell-capability.identityFor的前台调用身份条件。"
+        },
+        {
+          "step": "recorded foreground call",
+          "result": "补齐tool/call和tool/result后，两预设仍返回127。",
+          "cause": "实际图片读取插件因hasApiKey缺项配置校验失败；依赖该插件的CLI没有注册shellEnv。"
+        }
+      ],
+      "evidence": [
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/shell-env-diagnosis.json",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/plugin-fiber-diagnosis.json",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-cli-candidate-cli-first-input.json",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-cli-candidate-cli-first-result.json",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-cli-candidate-recorded-first-expression.txt",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-cli-candidate-recorded-first-result.json",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-iteration-cli-first-input.json",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-iteration-cli-first-result.json",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-iteration-recorded-first-expression.txt",
+        ".local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/harness-comfyui-iteration-recorded-first-result.json"
+      ],
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      }
+    },
+    {
+      "runId": "28f375b8-91c6-4ee9-b6e6-c2bd6054debc",
+      "cases": [
+        {
+          "preset": "harness-comfyui-cli-candidate",
+          "sessionId": "session-a73c59cf-31b4-44a7-aa2f-fce5bd4cb1f7",
+          "historyPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/28f375b8-91c6-4ee9-b6e6-c2bd6054debc/1791989262343-bb6568dc-ea6d-44af-a099-43c5a19b6f19-collect.json",
+          "historyRecords": 8,
+          "toolCalls": 2,
+          "toolResults": 2,
+          "firstPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-cli-candidate-files/first.json",
+          "secondPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-cli-candidate-files/second.json",
+          "commandCount": 4,
+          "transportPassed": true,
+          "businessJsonPassed": true,
+          "subsequentReadPassed": true
+        },
+        {
+          "preset": "harness-comfyui-iteration",
+          "sessionId": "session-cda42989-e911-4a3d-a515-0896cc96b732",
+          "historyPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/28f375b8-91c6-4ee9-b6e6-c2bd6054debc/1791989262843-109f24e3-7e56-46dc-9866-542767e83c88-collect.json",
+          "historyRecords": 8,
+          "toolCalls": 2,
+          "toolResults": 2,
+          "firstPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-iteration-files/first.json",
+          "secondPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-iteration-files/second.json",
+          "commandCount": 4,
+          "transportPassed": true,
+          "businessJsonPassed": true,
+          "subsequentReadPassed": true
+        }
+      ],
+      "after": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/run-data-cli-attempt-2-after/index.json",
+        "databasePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/run-data-cli-attempt-2-after/runs.sqlite",
+        "snapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/run-data-cli-attempt-2-after/snapshot.json",
+        "tableCounts": [
+          {
+            "name": "generation_media",
+            "count": 0
+          },
+          {
+            "name": "generation_media_staging",
+            "count": 0
+          },
+          {
+            "name": "generation_run_outputs",
+            "count": 0
+          },
+          {
+            "name": "generation_runs",
+            "count": 0
+          },
+          {
+            "name": "schema_migrations",
+            "count": 1
+          }
+        ],
+        "sourcePaths": {
+          "dataDir": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ubBHTl/runtime/environment/dsh-home/data/plugins/harness-comfyui",
+          "apiWorkflowCacheDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ubBHTl/runtime/environment/dsh-home/data/plugins/harness-comfyui/api-workflow-cache",
+          "runRepositoryFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ubBHTl/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+          "runDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ubBHTl/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs",
+          "savedMediaDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ubBHTl/runtime/environment/dsh-home/data/plugins/harness-comfyui/media",
+          "logDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ubBHTl/runtime/environment/dsh-home/data/plugins/harness-comfyui/logs"
+        }
+      },
+      "modelRequests": 0,
+      "generationSubmissions": 0,
+      "status": "passed-independent-review-pending",
+      "configurationEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-configured.json",
+      "activationEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-plugin-fibers.json",
+      "observerEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-observer-copy.json",
+      "before": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/run-data-cli-attempt-2-before/index.json",
+      "cleanup": {
+        "runId": "28f375b8-91c6-4ee9-b6e6-c2bd6054debc",
+        "cleanup": {
+          "portsReleased": true,
+          "processGroupPresent": false
+        },
+        "status": "stopped"
+      },
+      "toolEvidence": [
+        {
+          "first": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-cli-candidate-first-result.json",
+          "second": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-cli-candidate-second-result.json"
+        },
+        {
+          "first": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-iteration-first-result.json",
+          "second": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/result-files-runtime/harness-run-ubBHTl/attempt-2-harness-comfyui-iteration-second-result.json"
+        }
+      ]
+    }
+  ],
+  "status": "foreground-file-transport-passed-independent-review-pending",
+  "limits": [
+    "本轮覆盖两个预设中的 random-seeds、run-inputs、resolve-media、inspect-template-parameters。",
+    "submit 成功和 image inspect 的结果文件由真实业务场景独立验收。",
+    "本轮没有模型请求；模型是否复用首次结果仍须原 5.6-2 同业务输入复验。"
+  ]
+}

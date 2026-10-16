@@ -1,0 +1,36 @@
+{
+  "purpose": "记录指定运行时验收文字的逐行语义审计结果。",
+  "readWhen": "修订指定字段或复核本次文字审计结果时。",
+  "scope": [
+    {
+      "file": "docs/verification/skills-mcp-migration/managed-cli-result-files-official-runtime.json",
+      "fields": "全部字段"
+    },
+    {
+      "file": "docs/verification/skills-mcp-migration/remaining-handoff-driver-implementation.json",
+      "fields": "review.activationRepair"
+    }
+  ],
+  "status": "revision-required",
+  "findings": [
+    {
+      "file": "docs/verification/skills-mcp-migration/managed-cli-result-files-official-runtime.json",
+      "locations": [
+        "attempts[0].observations[0].result",
+        "attempts[0].observations[1].result"
+      ],
+      "issue": "“两个预设”和“两预设”未在正文中给出名称，读者需要从证据文件名推断验收对象。",
+      "minimalRevision": "在首次出现的“两个预设”处写明两个预设的名称；第二处保留“两预设”引用。"
+    },
+    {
+      "file": "docs/verification/skills-mcp-migration/remaining-handoff-driver-implementation.json",
+      "locations": [
+        "review.activationRepair.coverage[2]"
+      ],
+      "issue": "前两项均描述两个控制插件，本项“仅生成 1 个已挂载插件”未说明计数对象，读者无法确定该项描述单个插件重复附加还是两个插件的总数。",
+      "minimalRevision": "明确重复附加的插件名称和计数范围；若断言针对每个插件分别计数，改为“重复附加后，每个控制插件均只有 1 个已挂载实例。”"
+    }
+  ],
+  "reviewBoundary": "本次审计仅核对指定文字的表达与指代。程序行为和证据内容需由对应验收记录确认。",
+  "targetFilesChanged": false
+}

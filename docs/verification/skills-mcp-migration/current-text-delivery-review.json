@@ -1,0 +1,116 @@
+{
+  "purpose": "记录指定交接合同、措辞替换和 YAML 头的独立文字审计。",
+  "readWhen": "主 Agent 修改指定文字并准备交付前。",
+  "summary": "交接合同有 3 项需修改内容。14 项措辞替换及 15 份文档的 YAML 头未发现需修改项。",
+  "scope": {
+    "A": "docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json",
+    "B": ".local/skills-mcp-migration-live/stc-review/skill-wording-changes.json",
+    "BReview": "逐项比较 14 项 before/after，并阅读全文核对替换后的语义。",
+    "CReview": "只检查指定 15 份文档的 YAML 头及正文中的用途、读取条件定义。",
+    "boundary": "未读取实现、测试报告或合同引用的背景资料。未修改审计对象。"
+  },
+  "findings": [
+    {
+      "id": "T2",
+      "path": "docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json",
+      "lines": [
+        424,
+        436,
+        437,
+        442,
+        448,
+        490
+      ],
+      "original": [
+        "运行 capture，再以 desktop-driver submit 提交唯一首轮 prompt。",
+        "核对首轮真实等待条件。",
+        "缺项内容正确且生成计数为 0。",
+        "仅按该场景恢复规则向原父 Session 发送 1 条回复。",
+        "核对同子续派、实际参数、Run、媒体和最终交付。"
+      ],
+      "reason": "通用执行步骤缺少适用条件。H3 明确不能使用普通 submit 入口；通知延迟场景直接生成，无法满足缺项且生成计数为 0。H3 和通知延迟也不发送恢复消息。",
+      "minimumChange": "步骤 3 分别引用 H3 的 parentStrategy 与其他场景的 submit。步骤 5、6 仅用于 Builder 缺项和模型选择场景。步骤 7 按各场景 expected、observation 或 ordering 验收。",
+      "rules": [
+        "I4",
+        "G14"
+      ],
+      "disposition": "change-required"
+    },
+    {
+      "id": "T3",
+      "path": "docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json",
+      "lines": [
+        10,
+        341,
+        345,
+        442
+      ],
+      "original": [
+        "仅在首轮等待验收通过后，发送预定义选择或材料的实施者。",
+        "父 Agent 转达实际缺项和候选，不把节点模型或路线当选择。",
+        "若首轮只有索取 model_id 而没有候选，先登记候选缺口。可按预定义测试回复要求列出兼容候选；不得由控制器伪造候选已返回。该额外轮次单独计入。"
+      ],
+      "reason": "首轮等待验收要求已有候选，但缺候选分支允许追加索取候选的回复。测试用户定义只允许等待验收通过后回复，且步骤 6 只允许 1 条。追加回复的主体、前置条件和原文未定义。",
+      "minimumChange": "在 candidateGap 明确测试用户可在已确认缺模型且生成计数为 0 时追加索取候选的回复，并给出固定原文。测试用户定义和步骤 6 引用该例外。候选返回并通过等待验收后，再发送 recoveryRule 的模型选择消息。",
+      "rules": [
+        "I3",
+        "I4",
+        "G14"
+      ],
+      "disposition": "change-required"
+    },
+    {
+      "id": "T4",
+      "path": "docs/verification/skills-mcp-migration/remaining-handoff-input-contract.json",
+      "lines": [
+        14,
+        246,
+        252,
+        253
+      ],
+      "original": [
+        "B：已由真实 Builder 生成并经独立审查可用于生成的完整 JSON 原文。",
+        "每个预设各运行 A、B；共 4 个干净子任务。"
+      ],
+      "reason": "B 同时表示完整 Builder JSON 和 H3 的一个对照组。两者出现在同一合同，引用 B 时需要读者重新判断含义。",
+      "minimumChange": "将 definitions.B 改名为 builderJson，并同步改写所有表示完整 Builder JSON 的 B 引用。保留 H3 对照组 A、B。历史原始 arguments 保持原文。",
+      "rules": [
+        "G1",
+        "G8"
+      ],
+      "disposition": "change-required"
+    }
+  ],
+  "wordingReview": {
+    "items": 14,
+    "verdict": "通过",
+    "reason": "替换保留动作、对象、条件与否定范围。应改为必须的 2 项符合上下文的明确要求。删除示例括注后，片段示例标题仍说明示例范围。"
+  },
+  "headerReview": {
+    "documents": 15,
+    "verdict": "通过",
+    "reason": "7 份文档直接写明读取条件；8 份通过具名正文小节定位条件。用途摘要未另行定义执行规则。正文保留执行顺序或采用边界，删除这些内容会丢失操作条件。"
+  },
+  "retainedItems": [
+    {
+      "kind": "原始输入",
+      "reason": "历史 arguments 和任务模板属于审计要求保留的输入。长句包含输入字段、限定条件和完整交接材料，不能仅因句长删减。"
+    },
+    {
+      "kind": "YAML 指向",
+      "reason": "按正文小节读取的写法保留读取条件的唯一来源。具名小节可定位，不要求复制条件到 YAML。"
+    }
+  ],
+  "factsToSupply": [],
+  "manualReview": {
+    "completed": true,
+    "checks": [
+      "核对主体、条件、动作和状态。",
+      "逐项检查替换是否保留原义。",
+      "检查用途与读取条件是否重复定义。",
+      "区分实际问题与句长、JSON 引号警告。"
+    ],
+    "reportStcErrors": 0,
+    "warningHandling": "JSON 引号属于语法；原句引述保留原文。句长警告按完整条件与修正范围保留。"
+  }
+}

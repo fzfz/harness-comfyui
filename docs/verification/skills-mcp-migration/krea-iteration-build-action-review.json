@@ -1,0 +1,457 @@
+{
+  "purpose": "独立审查迭代预设Krea2缺主体任务的输入动作对照。",
+  "executionIndex": ".local/skills-mcp-migration-live/krea-iteration-build-action-execution.json",
+  "runId": "346fd665-717f-4b12-ba52-b07f88d30581",
+  "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+  "baselineSessionId": "session-253f132f-3591-433c-b168-501902acf36c",
+  "collect": ".local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791955049397-5a9641f8-3049-4dae-96ce-8b88df41bae1-collect.json",
+  "verdicts": {
+    "targetBranchCoverage": "实际覆盖",
+    "targetBranchVerdict": "通过",
+    "fullApplicableSkillContractVerdict": "通过（缺主体停止分支）",
+    "formalVariantEligible": true,
+    "generationSuccessContract": "此分支停止于缺主体询问，成功JSON构造、校验和图片生成不适用。"
+  },
+  "inputComparison": {
+    "baseline": {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-iteration",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-aS6Xcn",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-aS6Xcn\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md\n任务参数：{\"request\":\"必须画出角色未登记角色霁轮的准确身份与外观。\"}\n将本任务产物保存到工作目录中的 5.4-5 目录。\n{\"type\":\"comfyui-context\",\"data\":{\"kind\":\"character\",\"id\":\"9999999999999999999\",\"work_name\":\"\",\"character_name\":\"未登记角色霁轮\",\"prompt_text\":\"\"}}"
+    },
+    "variant": {
+      "caseId": "5.4-5",
+      "preset": "harness-comfyui-iteration",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-gb4jt6_u",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-gb4jt6_u\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md\n任务参数：{\"request\":\"为角色未登记角色霁轮构建并保存一份 Krea2 Builder JSON。Prompt 必须准确描述该角色的身份与外观。\"}\n将本任务产物保存到工作目录中的 5.4-5 目录。\n{\"type\":\"comfyui-context\",\"data\":{\"kind\":\"character\",\"id\":\"9999999999999999999\",\"work_name\":\"\",\"character_name\":\"未登记角色霁轮\",\"prompt_text\":\"\"}}"
+    },
+    "normalizedDiff": [
+      "--- baseline\n",
+      "+++ build-action\n",
+      "@@ -1,5 +1,5 @@\n",
+      " 工作目录：WORKSPACE",
+      " 执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      "-任务参数：{\"request\":\"必须画出角色未登记角色霁轮的准确身份与外观。\"}",
+      "+任务参数：{\"request\":\"为角色未登记角色霁轮构建并保存一份 Krea2 Builder JSON。Prompt 必须准确描述该角色的身份与外观。\"}",
+      " 将本任务产物保存到工作目录中的 5.4-5 目录。",
+      " {\"type\":\"comfyui-context\",\"data\":{\"kind\":\"character\",\"id\":\"9999999999999999999\",\"work_name\":\"\",\"character_name\":\"未登记角色霁轮\",\"prompt_text\":\"\"}}"
+    ],
+    "verifiedInvariant": "除了request动作表述和新Workspace，两份输入的caseId、preset、provider、model、Skill路径、产物目录名及comfyui-context逐字相同。",
+    "semanticChange": "原输入要求画出准确身份与外观；变体明确只构建并保存Krea2 Builder JSON，保留准确身份与外观要求。",
+    "missingSubjectPreserved": "同一必需角色、同一19位ID、空work_name、空prompt_text；两组均无外观描述或历史Prompt。变体没有补齐被测缺项。"
+  },
+  "actualContextComparison": {
+    "baselineFirstRequest": ".local/skills-mcp-migration-live/llm-calls/54e0b432-f19d-40fc-85d8-5412425bd9b1.jsonl",
+    "variantFirstRequest": ".local/skills-mcp-migration-live/llm-calls/284bd3f6-d14c-4cc9-bf3e-5b832ef086ab.jsonl",
+    "sameTools": true,
+    "toolCount": 31,
+    "sameSystemContentAfterWorkspaceSessionNormalization": true,
+    "model": "所有本轮9次请求均为opencode-go/deepseek-v4.1-flash；8次业务响应以responseId关联到collect，另1次标题请求。",
+    "inputDeliveredVerbatim": true,
+    "persona": "两轮均保留Use comfyui-iterate-generation to dispatch...的迭代预设首段；本轮没有修改persona。",
+    "comparisonBoundary": "会话、Workspace、时间、消息ID和模型随机执行不同；后续查询行为是观测结果。此对照不足以证明稳定性或排除其他随机因素。"
+  },
+  "route": {
+    "actual": "seq18调用krea2-anime-prompt-builder；seq19完整加载；无iterate Skill、composition或其他子任务调用。children=[]，turn/end64自然完成。",
+    "baseline": "原轮seq17调用comfyui-iterate-generation；seq31错误使用get_catalog_resource(ref.kind=character)，seq32返回枚举验证错误；随后进入composition。基线Krea2目标Skill未实际读取。",
+    "sourceOfToolKnowledge": "本轮第一实际请求声明query_semantic_characters及resolve/id结构；seq19 Skill要求已有ID优先获取角色，seq31 input-contract明确空prompt_text的ID用于角色精确查询。seq41决定resolve，seq42执行。",
+    "firstDivergence": "两轮首次Skill选择即不同。本轮seq17/18选择Krea2，基线seq16/17选择迭代Skill。不能从后续相似缺项问答推导基线覆盖Krea2。"
+  },
+  "queryAudit": {
+    "id": "9999999999999999999",
+    "format": "19位正十进制字符串，符合实际query_semantic_characters声明的1至20位格式。",
+    "resolve": {
+      "callSeq": 42,
+      "resultSeq": 43,
+      "tool": "query_semantic_characters",
+      "arguments": {
+        "mode": "resolve",
+        "id": "9999999999999999999"
+      },
+      "result": "CATALOG_REF_NOT_FOUND",
+      "meaning": "本轮目录接受该ID格式，并报告该记录不存在。"
+    },
+    "baselineErrorComparison": "原轮拒绝的是get_catalog_resource的ref.kind=character，不能支持记录不存在；本轮已使用正确角色Resolve，真实缺项有独立工具证据。",
+    "searches": [
+      {
+        "callSeq": 44,
+        "resultSeq": 45,
+        "query": "霁轮",
+        "results": 8,
+        "names": [
+          "轮回",
+          "野山野林檎",
+          "黄金体验镇魂曲",
+          "云居一轮"
+        ]
+      },
+      {
+        "callSeq": 49,
+        "resultSeq": 50,
+        "query": "未登记角色霁轮",
+        "results": 2,
+        "names": [
+          "未使用角色"
+        ]
+      },
+      {
+        "callSeq": 51,
+        "resultSeq": 52,
+        "query": "霁轮 unregistered character",
+        "results": 0,
+        "names": []
+      },
+      {
+        "callSeq": 56,
+        "resultSeq": 57,
+        "query": "霁",
+        "results": 4,
+        "names": [
+          "雾岛",
+          "神崎诗织"
+        ]
+      }
+    ],
+    "semanticAssessment": "已逐项看完整返回的名称、别名、作品、Prompt；这些角色名称均不同，别名数组为空，Prompt也没有目标身份。非空模糊搜索结果未被误采为目标角色。",
+    "scopeOfAbsence": "指定ID不存在、已执行搜索无可采用角色得到支持；这些返回不能证明全部外部资料或未来目录都不存在该角色。最终文字把有限查询概括为目录全局无匹配，范围略宽，未改变本次停止所需事实。"
+  },
+  "contractAudit": {
+    "sources": {
+      "installedRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder",
+      "idLookup": "SKILL.md:66",
+      "candidateSelection": "SKILL.md:71",
+      "noCharacterResult": "SKILL.md:74",
+      "stopCondition": "SKILL.md:78",
+      "defaultSubject": "references/krea2-prompt-rules.md:29：主体身份、年龄感和外观由用户主题决定。"
+    },
+    "decision": "seq34在查询前识别潜在缺项；seq43确认ID不存在；seq45/50/52/57无可采用角色。seq55及62逐项检查空Prompt、无历史来源、无主体设定及默认设计无法定义准确身份，按缺主体规则停止。",
+    "actualQuestion": "seq62要求补充霁轮的外观与身份，或选择含非空prompt_text的Character记录；另给原创角色加外观的选项。问题针对实际缺项。",
+    "questionQualification": "选项1列出的细目较多，完整Skill未规定每次必须由用户逐项提供鞋履等内容；但选项2接受有效Character Prompt，当前也未拒绝用户材料。后续恢复应继续按来源能否定义主体判断，不把此列表变成新的强制输入schema。",
+    "artifacts": "seq21、59显示Workspace为空；审查时实地目录仍为空，5.4-5不存在。此分支按合同报告并停止，不应伪造成功Builder JSON。缺项报告以seq62最终回答交付。",
+    "unneededBranches": "没有历史run_id、动作迁移、具体动漫画风或服装原型要求；已知主体不足时不进入画师/生成阶段，条件参考资料不提供该角色身份。",
+    "earliestMaterialContractDeviation": "本轮未发现影响目标分支或适用Skill合同的偏离。"
+  },
+  "causalAssessment": {
+    "supported": "保持工具声明、系统正文、模型、Skill路径及缺主体材料相同，明确任务动作是构建Builder JSON后，本轮直接加载Krea2、正确Resolve、按其缺主体规则询问。此结果支持输入动作语义参与了本次路由选择。",
+    "notEstablished": [
+      "每组一次执行不足以证明动作措辞是唯一原因或保证以后稳定路由。",
+      "本轮没有改变Skill或persona，不能作为产品修复已完成的证据。",
+      "本轮正确Resolve与路由变化共同出现，不能仅凭这两轮把基线错误工具参数的独立原因归结为动作词。"
+    ],
+    "minimalFurtherControl": "需要稳定性证据时，在同候选及同预设重复原动作/Builder动作两组新会话，保留相同缺主体上下文并记录首次Skill选择；不要同时修改persona或Skill。"
+  },
+  "formalVariant": {
+    "eligible": true,
+    "reason": "本轮仍具备5.4-5要求的必需主体缺少可用Prompt且其他来源无法完整定义条件；本轮真实执行目标Krea2 Skill并正确询问。动作明确化使任务与Builder验收目标一致。",
+    "recording": "作为harness-comfyui-iteration的5.4-5输入动作变体独立记录，保留原输入失败/未覆盖记录、完整新输入、Session和本报告。",
+    "limit": "可验收本候选本轮Krea缺主体分支；不覆盖迭代生成、父子交接或该变体的补充后恢复。"
+  },
+  "installedReferenceDelivery": [
+    {
+      "file": "SKILL.md",
+      "fullInstalledBodyInResults": [
+        19
+      ]
+    },
+    {
+      "file": "references/input-contract.md",
+      "fullInstalledBodyInResults": [
+        31
+      ]
+    },
+    {
+      "file": "references/krea2-prompt-rules.md",
+      "fullInstalledBodyInResults": [
+        31
+      ]
+    },
+    {
+      "file": "references/generation-output-contract.md",
+      "fullInstalledBodyInResults": [
+        36
+      ]
+    },
+    {
+      "file": "references/generation-output-schema.json",
+      "fullInstalledBodyInResults": [
+        36
+      ]
+    },
+    {
+      "file": "references/generation-profiles.json",
+      "fullInstalledBodyInResults": [
+        36
+      ]
+    },
+    {
+      "file": "references/generation-cli.md",
+      "fullInstalledBodyInResults": [
+        38
+      ]
+    }
+  ],
+  "modelRequestAssociation": [
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/284bd3f6-d14c-4cc9-bf3e-5b832ef086ab.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        17
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/a2080580-a187-44a1-a6b5-690746b8d7dc.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": "session-title",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": []
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/b063a1ec-4ef7-45b8-973b-dcc1aa51c774.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        24
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/6000b447-5588-4a8c-8654-ca5a17c42f2f.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        29
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/2e8b0c81-ec26-4749-8ce4-e223e4e0e7bf.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        34
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/ffcd5215-ca77-4012-9c7c-af3a136f83f8.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        41
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/84965063-0fcf-4af3-94d4-e3288ae70569.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        48
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/74cbcca3-5dd3-4169-92c1-a3bbdbc59760.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        55
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/d7d50cf8-0183-4554-a272-9b33bdfade0c.jsonl",
+      "sessionId": "session-e3aced89-edb9-4e09-80cb-8e7573ad24a3",
+      "purpose": null,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "assistantSeqs": [
+        62
+      ]
+    }
+  ],
+  "toolResultDelivery": [
+    {
+      "callSeq": 18,
+      "resultSeq": 19,
+      "tool": "skill",
+      "callId": "call_00_zgp4lwav8iz4vo1a7pm2m368",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/b063a1ec-4ef7-45b8-973b-dcc1aa51c774.jsonl"
+    },
+    {
+      "callSeq": 20,
+      "resultSeq": 21,
+      "tool": "bash",
+      "callId": "call_01_mjoig3421gy3qn1xmaa6le19",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/b063a1ec-4ef7-45b8-973b-dcc1aa51c774.jsonl"
+    },
+    {
+      "callSeq": 25,
+      "resultSeq": 26,
+      "tool": "bash",
+      "callId": "call_00_t4pecz8709nti7938bzb23wm",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/6000b447-5588-4a8c-8654-ca5a17c42f2f.jsonl"
+    },
+    {
+      "callSeq": 30,
+      "resultSeq": 31,
+      "tool": "bash",
+      "callId": "call_00_and7mbksc2rk25jhapgj7z1e",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/2e8b0c81-ec26-4749-8ce4-e223e4e0e7bf.jsonl"
+    },
+    {
+      "callSeq": 35,
+      "resultSeq": 36,
+      "tool": "bash",
+      "callId": "call_00_3n9kbcpv2iwr62beddp8cvd1",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/ffcd5215-ca77-4012-9c7c-af3a136f83f8.jsonl"
+    },
+    {
+      "callSeq": 37,
+      "resultSeq": 38,
+      "tool": "bash",
+      "callId": "call_01_n5kfi3jpntel0v7rd0qnfloz",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/ffcd5215-ca77-4012-9c7c-af3a136f83f8.jsonl"
+    },
+    {
+      "callSeq": 42,
+      "resultSeq": 43,
+      "tool": "mcp__noobai__query_semantic_characters",
+      "callId": "call_00_gy7zcy4g8fiow4xo3q2iyk75",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/84965063-0fcf-4af3-94d4-e3288ae70569.jsonl"
+    },
+    {
+      "callSeq": 44,
+      "resultSeq": 45,
+      "tool": "mcp__noobai__query_semantic_characters",
+      "callId": "call_01_oogrtybywltdye469f660tzm",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/84965063-0fcf-4af3-94d4-e3288ae70569.jsonl"
+    },
+    {
+      "callSeq": 49,
+      "resultSeq": 50,
+      "tool": "mcp__noobai__query_semantic_characters",
+      "callId": "call_00_vugsij3viacq759rtm51f7m1",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/74cbcca3-5dd3-4169-92c1-a3bbdbc59760.jsonl"
+    },
+    {
+      "callSeq": 51,
+      "resultSeq": 52,
+      "tool": "mcp__noobai__query_semantic_characters",
+      "callId": "call_01_vookpvu5lvixdy9vytoe4t8d",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/74cbcca3-5dd3-4169-92c1-a3bbdbc59760.jsonl"
+    },
+    {
+      "callSeq": 56,
+      "resultSeq": 57,
+      "tool": "mcp__noobai__query_semantic_characters",
+      "callId": "call_00_yubgq4rgl06oq638rc0ql8q2",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/d7d50cf8-0183-4554-a272-9b33bdfade0c.jsonl"
+    },
+    {
+      "callSeq": 58,
+      "resultSeq": 59,
+      "tool": "bash",
+      "callId": "call_01_zr426ri21xllh2kduuar7mpv",
+      "fullContentMatchedIn": ".local/skills-mcp-migration-live/llm-calls/d7d50cf8-0183-4554-a272-9b33bdfade0c.jsonl"
+    }
+  ],
+  "decisionContextChecks": [
+    {
+      "assistantSeq": 34,
+      "actualRequest": ".local/skills-mcp-migration-live/llm-calls/2e8b0c81-ec26-4749-8ce4-e223e4e0e7bf.jsonl",
+      "allPriorResultsExactlyRetained": [
+        19,
+        21,
+        26,
+        31
+      ]
+    },
+    {
+      "assistantSeq": 41,
+      "actualRequest": ".local/skills-mcp-migration-live/llm-calls/ffcd5215-ca77-4012-9c7c-af3a136f83f8.jsonl",
+      "allPriorResultsExactlyRetained": [
+        19,
+        21,
+        26,
+        31,
+        36,
+        38
+      ]
+    },
+    {
+      "assistantSeq": 48,
+      "actualRequest": ".local/skills-mcp-migration-live/llm-calls/84965063-0fcf-4af3-94d4-e3288ae70569.jsonl",
+      "allPriorResultsExactlyRetained": [
+        19,
+        21,
+        26,
+        31,
+        36,
+        38,
+        43,
+        45
+      ]
+    },
+    {
+      "assistantSeq": 55,
+      "actualRequest": ".local/skills-mcp-migration-live/llm-calls/74cbcca3-5dd3-4169-92c1-a3bbdbc59760.jsonl",
+      "allPriorResultsExactlyRetained": [
+        19,
+        21,
+        26,
+        31,
+        36,
+        38,
+        43,
+        45,
+        50,
+        52
+      ]
+    },
+    {
+      "assistantSeq": 62,
+      "actualRequest": ".local/skills-mcp-migration-live/llm-calls/d7d50cf8-0183-4554-a272-9b33bdfade0c.jsonl",
+      "allPriorResultsExactlyRetained": [
+        19,
+        21,
+        26,
+        31,
+        36,
+        38,
+        43,
+        45,
+        50,
+        52,
+        57,
+        59
+      ]
+    }
+  ],
+  "end": {
+    "type": "turn/end",
+    "seq": 64,
+    "time": 1791955048240,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    }
+  },
+  "reviewerActions": "只读证据与Workspace，未操作Desktop、调用执行模型、修改产品或共享台账；唯一写入本报告。"
+}

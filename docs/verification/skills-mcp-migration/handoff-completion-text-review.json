@@ -1,0 +1,179 @@
+{
+  "reviewType": "独立逐行语义审计",
+  "scope": [
+    ".agents/skills/comfyui-iterate-generation/SKILL.md：派发任务并接收结果文件",
+    ".agents/skills/comfyui-iterate-generation/references/records.md：YAML 头和 task.md 表格行",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md：Tool schema 可见性、工作台预设的子 Agent 续派、迭代预设的四个子 Agent 与 Workspace、派发工具的完成与恢复",
+    "docs/plans/skills-mcp-migration-20261013.md：第 5.12.2、5.13.2 节",
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml：subagent_task description",
+    "agent-presets/harness-comfyui-iteration/agent.cordis.yml：四个角色派发工具 description"
+  ],
+  "basis": "仅阅读指定文件自身及指定段落的上下文，依据任务给定的文字规范审计。未读取引用的诊断、方案或实现文件，未判断实现对错。",
+  "result": "复审通过",
+  "findings": [],
+  "sectionsWithoutFindings": [
+    "当前指定范围全部段落。"
+  ],
+  "targetFilesModified": false,
+  "initialReview": {
+    "result": "需要修订",
+    "findings": [
+      {
+        "id": "S1",
+        "severity": "medium",
+        "locations": [
+          {
+            "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+            "lines": [
+              39,
+              56
+            ]
+          },
+          {
+            "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+            "lines": [
+              66,
+              78
+            ]
+          }
+        ],
+        "issue": "“Tool schema 可见性”“工作台预设的子 Agent 续派”“迭代预设的四个子 Agent 与 Workspace”以无编号段落组织同层内容；Host Tool 清单使用无序列表，与本次要求的有序列表结构不符。",
+        "requiredRevision": "将各节的独立要求组织成有序列表；保留在本节确有用途的清单时，也使用有序列表。"
+      },
+      {
+        "id": "S2",
+        "severity": "medium",
+        "locations": [
+          {
+            "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+            "lines": [
+              70,
+              78
+            ]
+          }
+        ],
+        "issue": "第 70 行逐个复述配置字段、固定取值和输出字段，第 72 行复述角色复用规则，第 74 行复述 Skill 的派发材料、文件交付和角色 Skill 选择，第 76 行逐步复述 Workspace 组件的处理逻辑。这些内容分别已有配置文件、SKILL.md 或组件作为来源，文档再次维护相同逻辑。",
+        "requiredRevision": "将配置细节和 Workspace 处理步骤改为对应配置或组件的定位引用；第 72、74 行的角色执行流程统一引用 comfyui-iterate-generation 的对应章节和 records.md。保留开发者需要遵守的 Workspace 附加时机及失败报告约束。"
+      },
+      {
+        "id": "S3",
+        "severity": "medium",
+        "locations": [
+          {
+            "path": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+            "lines": [
+              29,
+              45
+            ]
+          },
+          {
+            "path": ".agents/skills/comfyui-iterate-generation/references/records.md",
+            "lines": [
+              13,
+              13
+            ]
+          }
+        ],
+        "issue": "第 45 行要求读取“已接纳任务的身份记录”，但未指明记录位置；第 43 行只明确保存 subagentId，records.md 的 task.md 行则要求保存“各次接纳消息标识”。读者需要自行把身份记录、task.md、subagentId 和 messageId 对应起来。",
+        "requiredRevision": "在 records.md 的 task.md 行直接使用 subagentId 和 messageId 两个字段名；Skill 的保存和恢复步骤引用 task.md，并明确恢复时从哪里读取已接纳任务的身份。相关定义集中保留一处。"
+      },
+      {
+        "id": "S4",
+        "severity": "low",
+        "locations": [
+          {
+            "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+            "lines": [
+              70,
+              70
+            ]
+          }
+        ],
+        "issue": "“工具输出 schema 首次返回”把 schema 写成执行返回动作的主体，主谓关系不准确。",
+        "requiredRevision": "若按照 S2 保留输出字段说明，改为“工具首次调用返回……，续派调用返回……”，或将该句替换为输出定义的来源引用。"
+      },
+      {
+        "id": "S5",
+        "severity": "low",
+        "locations": [
+          {
+            "path": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+            "lines": [
+              65,
+              77
+            ]
+          },
+          {
+            "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+            "lines": [
+              71,
+              80
+            ]
+          },
+          {
+            "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+            "lines": [
+              193,
+              202
+            ]
+          },
+          {
+            "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+            "lines": [
+              322,
+              331
+            ]
+          },
+          {
+            "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+            "lines": [
+              434,
+              443
+            ]
+          }
+        ],
+        "issue": "五个工具的顶层 description 重复解释 agent_id 的首次省略和续派填写规则，相邻的 agent_id 参数 description 已定义相同规则；工作台顶层 description 还重复解释 description 和 task 参数。",
+        "requiredRevision": "参数含义及首次、续派的填写规则只保留在参数 description；顶层 description 保留工具用途、等待边界、返回身份、通知及中断恢复说明。删除重复参数说明后，工具 schema 仍提供完整调用信息。"
+      }
+    ],
+    "sectionsWithoutFindings": [
+      "records.md 的 YAML 头用途和读取时机明确。",
+      "计划第 5.12.2、5.13.2 节具有明确执行主体、动作、引用对象和验收动作；依据本次只读范围未发现需要修订的语义问题。",
+      "“派发工具的完成与恢复”节具有有序列表，主体与动作清楚。",
+      "五个派发工具 description 的等待、通知和中断恢复句子用途明确；本次未验证这些句子与实现是否一致。"
+    ]
+  },
+  "reReview": {
+    "scope": "原指定六类目标全文段落，审计范围保持不变。",
+    "basis": "仅核对目标自身上下文；原报告仅用于保留首轮意见。未读取实现、引用的诊断文件或其他审查报告。",
+    "initialFindingDisposition": [
+      {
+        "id": "S1",
+        "status": "已解决",
+        "evidence": "开发规范第 39—43、53—60 行已采用有序列表。"
+      },
+      {
+        "id": "S2",
+        "status": "已解决",
+        "evidence": "开发规范第 53、58—60 行已引用配置、Skill 和组件，仅保留 Workspace 附加时机与失败处理约束。"
+      },
+      {
+        "id": "S3",
+        "status": "已解决",
+        "evidence": "records.md 第 13 行以 subagentId 和 messageId 明确接纳身份；SKILL.md 第 43、45 行已明确 task.md 的保存位置与工具附加上下文的恢复来源。"
+      },
+      {
+        "id": "S4",
+        "status": "已解决",
+        "evidence": "开发规范已删除以 schema 为返回动作主体的句子。"
+      },
+      {
+        "id": "S5",
+        "status": "已解决",
+        "evidence": "五个顶层工具 description 已删除参数填写规则的重复说明。"
+      }
+    ],
+    "newFindings": [],
+    "conclusion": "当前指定范围未发现需要修订的语义问题。计划第 5.12.2、5.13.2 节、records.md 的 YAML 头和派发完成恢复说明仍符合本次语义审计要求。"
+  }
+}

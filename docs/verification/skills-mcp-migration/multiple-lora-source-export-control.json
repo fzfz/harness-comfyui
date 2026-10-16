@@ -1,0 +1,81 @@
+{
+  "at": "2026-10-14T06:26:39.733Z",
+  "originalTemplateExport": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-api-workflow.json",
+  "modifiedInputProjection": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/pre-export-projection.json",
+  "sourceInputs": [
+    {
+      "name": "seed",
+      "type": "INT",
+      "widget": {
+        "name": "seed"
+      },
+      "link": 70
+    }
+  ],
+  "originalExportNode3InputKinds": {
+    "wildcard_text": {
+      "kind": "connection",
+      "value": [
+        "40",
+        0
+      ]
+    },
+    "populated_text": {
+      "kind": "str"
+    },
+    "mode": {
+      "kind": "str"
+    },
+    "seed": {
+      "kind": "int"
+    },
+    "Select to add Wildcard": {
+      "kind": "str"
+    }
+  },
+  "runtimeProjectionNode3InputKinds": {
+    "wildcard_text": {
+      "kind": "str"
+    },
+    "populated_text": {
+      "kind": "str"
+    },
+    "mode": {
+      "kind": "str"
+    },
+    "seed": {
+      "kind": "connection",
+      "value": [
+        "40",
+        0
+      ]
+    },
+    "Select to add Wildcard": {
+      "kind": "str"
+    }
+  },
+  "conclusion": "未应用本次模型/LoRA/运行参数替换的原始模板直接导出，同样将节点40连接放在wildcard_text。该连接错位在参数替换前已存在；尚需定位模板序列化与当前前端加载行为的具体契约差异。",
+  "lifecycle": [
+    {
+      "event": "created",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-browser-PRo4Xy"
+    },
+    {
+      "event": "spawn",
+      "pid": 61174
+    },
+    {
+      "event": "exit",
+      "pid": 61174,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "event": "removed",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/multiple-lora-preparation/original-browser-PRo4Xy"
+    }
+  ],
+  "generationSubmitted": false,
+  "purpose": "记录原始模板直接官方导出与参数替换路径的结构对照。",
+  "independentReview": "docs/verification/skills-mcp-migration/multiple-lora-compile-review.json"
+}

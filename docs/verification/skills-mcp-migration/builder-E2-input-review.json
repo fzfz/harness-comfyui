@@ -1,0 +1,122 @@
+{
+  "purpose": "记录 E2 原始输入、变体差异和公共调用合同的独立审查。",
+  "readWhen": "实施 E2 单步诊断前。",
+  "readyForExecution": true,
+  "readinessMeaning": "两组输入可用于合同限定的单步诊断；执行者仍须完成 Profile、调用边界和证据保存前置核对。",
+  "reviewMode": "只读原实现与本地证据；未启动应用、服务或模型。",
+  "modelCalls": 0,
+  "findings": [],
+  "inputChecks": [
+    {
+      "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/9d405a42-181d-4714-a04f-b1982e62b410.jsonl",
+      "sourceLocation": "首个 kind=request 记录",
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-preparation/9d405a42-181d-4714-a04f-b1982e62b410-baseline.json",
+      "variant": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-preparation/9d405a42-181d-4714-a04f-b1982e62b410-variant.json",
+      "baselineExactlyEqualsRecordedRequest": true,
+      "actualChangedPaths": [
+        "/messages/25/content/-",
+        "/toolHistory/tools/14/description",
+        "/tools/14/description"
+      ],
+      "matchesDeclaredThreePaths": true,
+      "targetToolCallMatches": true,
+      "sameRuleInBothDeclarationCopies": true,
+      "appendedBlockExactlyEqualsRule": true,
+      "targetPagination": {
+        "page": 1,
+        "page_size": 10,
+        "total_count": 21
+      },
+      "messagesCount": 27,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "originalResultBlocksPreserved": true
+    },
+    {
+      "source": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-calls/86d1c0f6-659a-4f44-a6c5-777fafb27a4d.jsonl",
+      "sourceLocation": "首个 kind=request 记录",
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-preparation/86d1c0f6-659a-4f44-a6c5-777fafb27a4d-baseline.json",
+      "variant": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-preparation/86d1c0f6-659a-4f44-a6c5-777fafb27a4d-variant.json",
+      "baselineExactlyEqualsRecordedRequest": true,
+      "actualChangedPaths": [
+        "/messages/37/content/-",
+        "/toolHistory/tools/14/description",
+        "/tools/14/description"
+      ],
+      "matchesDeclaredThreePaths": true,
+      "targetToolCallMatches": true,
+      "sameRuleInBothDeclarationCopies": true,
+      "appendedBlockExactlyEqualsRule": true,
+      "targetPagination": {
+        "page": 1,
+        "page_size": 6,
+        "total_count": 28
+      },
+      "messagesCount": 39,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "originalResultBlocksPreserved": true
+    }
+  ],
+  "publicRuntimeContract": {
+    "package": "@deepseek-ai/dsh-llm",
+    "version": "0.2.0-rc.2",
+    "sources": [
+      "node_modules/@deepseek-ai/dsh-llm/package.json:5",
+      "node_modules/@deepseek-ai/dsh-llm/README.md:36",
+      "node_modules/@deepseek-ai/dsh-llm/lib/types/types.d.ts:489",
+      "node_modules/@deepseek-ai/dsh-llm/lib/types/index.d.ts:412"
+    ],
+    "entry": "已挂载 LlmRuntime 和获准 provider adapter 的 Cordis 上下文中调用 ctx.llm.stream(options)，使用 for await 消费至 finish。",
+    "requiredOptions": [
+      "provider",
+      "model",
+      "messages"
+    ],
+    "minimalReplayOptions": [
+      "provider",
+      "model",
+      "messages",
+      "tools",
+      "toolHistory",
+      "maxTokens",
+      "sessionId"
+    ],
+    "optionalRecordedOptions": "system 存在时原样传入；purpose 仅接受 compaction 或 session-title，原日志 null 表示未设置，调用时省略。",
+    "nonOptionMetadata": [
+      "at",
+      "callId",
+      "kind"
+    ],
+    "toolChoice": "已安装 GenerateOptions 未声明 toolChoice；两组源请求均没有此字段，因此当前输入无需传递。",
+    "control": "使用 AbortController 的 signal 和 360000 毫秒计时限制单次调用；保存 finish 的 complete/error/aborted 分类，同时捕获中间件或消费者抛出的异常。",
+    "executionBudget": "仅四次 stream 调用，不挂接 Agent 工具执行循环，不启用重试或会话标题生成。"
+  },
+  "parameterPreservation": {
+    "beforeCall": "为每次调用保存实际传入的全部可序列化 GenerateOptions，另存 signal 的超时与取消信息；原始基线与变体保留为独立文件。",
+    "atRuntimeBoundary": "在 llm/stream 边界保存实际 options 的全部可序列化字段、实际 provider/model、时间、所有 chunks 与最终结果；为未提供字段保存明确的 omitted 标记。",
+    "originalObserverEvidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-g6AXRL/runtime/observer/llm-observer.mjs:30",
+    "originalEvidenceGap": "原观察器仅复制 messages、tools、toolHistory、system、toolChoice、maxTokens；temperature、reasoningEffort、stop 等原值未记录。源日志缺少字段不能证明当时未传入。",
+    "adapterBoundary": "llm/stream 记录是 provider-neutral 请求证据；adapter 的线级转换和服务端默认值需另有证据才可声称一致。"
+  },
+  "executionPreconditions": [
+    "核对获准 Go Profile 路由和凭据可用性；凭据保留于原配置，不写入报告。",
+    "保存实际调用参数，避免把观察日志的 at、callId、kind、purpose:null 当作 GenerateOptions。",
+    "完成输入核对后只运行合同规定的四次单步调用。"
+  ],
+  "blockingItems": [],
+  "coverageLimits": [
+    "结构相同只覆盖已记录的 provider-neutral 请求。",
+    "变体同时改变分页规则所在渠道与位置；不能把差异单独归因于其中一个因素。",
+    "每点每臂一个样本，只判断下一动作及查询条件是否保持；不能证明完整分页、稳定修复或业务验收。",
+    "两组请求的目标结果后都仍有另一条工具结果；变体没有把分页规则移到整个 messages 的末尾。",
+    "本审查未验证真实 provider 连通性、模型输出或新启动进程的清理结果。"
+  ],
+  "memoryUse": {
+    "path": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "19-29",
+    "use": "按接口合同和实际证据界定审查范围。"
+  }
+}

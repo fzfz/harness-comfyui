@@ -1,0 +1,46 @@
+{
+  "reviewer": "diagnostic_evidence_review",
+  "reviewedAt": "2026-10-14T11:43:21.557356+00:00",
+  "method": "独立读取原始请求、响应、安装文件、源代码合同和产物；本轮只读取本机进程与端口。",
+  "reviewModelCalls": 0,
+  "reviewServicesStarted": 0,
+  "purpose": "复核模板 29 无默认模型的跨协议结构探针。",
+  "readWhen": "核对 HTTP 与 MCP 模型关联及服务清理时。",
+  "status": "passed",
+  "findings": [],
+  "conclusion": "HTTP search 原始响应、resolve、details，以及 MCP 搜索与详情中的模板 29 模型关联均为空。",
+  "evidence": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/evidence.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe.mjs:5",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-0a289d52-d1c9-4bdf-9241-dd89764fe371.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-15387f00-7d8f-46e9-929c-ff2a8b078ed8.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-20a78a35-7f5d-406c-95f0-1189db1ae685.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-2aa1d3d0-217f-4710-b3a0-055d271e91ae.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-477d8e30-8f07-4cff-95e3-5c8f663578aa.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-cafe2b54-3dd7-46e2-bf81-21ae983ee2d8.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-d0a14adf-acc3-4f92-9fda-b227bffbfd3f.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/no-default-http-probe-1791975321936/fixture/exchange-da0103f4-5ced-46ac-bd8a-7549a50fdab3.json"
+  ],
+  "checks": [
+    {
+      "item": "真实消费者",
+      "judgment": "源码直接导入生产 CatalogClient 并执行 search、resolveTemplate、details。search 产品输出没有 model_id 字段；其底层 HTTP 模板记录 model_id 为 null，resolveTemplate 和 details 产品输出也为 null。"
+    },
+    {
+      "item": "夹具与上游差异",
+      "judgment": "独立比较全部 8 份 exchange。三个 HTTP 模板响应只改变 results.0.model_id；MCP 详情只改变 item.model；MCP 搜索只改变 results.0.model；三个 HTTP 服务描述无差异。模型 ID 从 1 改为 null。"
+    },
+    {
+      "item": "关联范围",
+      "judgment": "模板 29 的目录模型关联为空。MCP 搜索中的其他模板保留各自模型；Workflow JSON 保留 checkpoint 文件名。"
+    },
+    {
+      "item": "调用与清理",
+      "judgment": "探针只调用目录 HTTP/MCP 接口，全部交换记录为目录读取；夹具状态 stopped，独立确认 PID 76782 已退出、59936 无监听。",
+      "modelCalls": 0
+    }
+  ],
+  "scopeLimits": [
+    "本轮证明受控夹具的跨协议一致性，原模型失败继续按原轨迹判断。"
+  ]
+}

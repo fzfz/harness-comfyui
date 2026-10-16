@@ -1,85 +1,97 @@
+---
+文档用途: 定义当前源码实现的领域术语，并索引对应源码和规范。
+读取时机: 阅读、设计或修改领域模块前。
+---
 # Harness ComfyUI 领域上下文
 
-本文件定义当前源码已经实现的领域术语。系统结构和运行规则以 `docs/system/` 中的规范为准。官方插件交付决策见 [ADR 0016](docs/adr/0016-official-desktop-plugin-delivery.md)。
+1. 模块边界和运行规则见[系统架构](docs/system/architecture.md)，插件交付决策见 [ADR 0016](docs/adr/0016-official-desktop-plugin-delivery.md)。
 
-## 平台
+## 平台与会话
 
-**Harness Core**：项目接入的 DeepSeek Harness `0.2.0-rc.2` 公共运行能力，包括 Cordis 生命周期、Session、Agent、Tool、Skill 和 Web Client 加载。项目通过官方公开 package exports 与 Profile plugin composition 接入，不修改 Harness package 源码。
+1. **Harness Core**：项目通过官方公共接口接入的 DeepSeek Harness 运行框架。依赖声明见 [package.json](package.json)，接入边界见[官方宿主与插件载入](docs/system/architecture.md#官方宿主与插件载入)。
 
-**Host Plugin**：官方 Harness Desktop 加载的 `harness-comfyui` 插件模块。Host Plugin 在启用时加载并校验 `production` Configuration Profile，注册数据源服务 Settings、Catalog Remote、Generation Remote、两个 Generation Tool、图片读取能力、插件存储和 Generation Coordinator。
+2. **Workspace**：Harness 中的最高会话隔离边界，一个 Workspace 包含多个会话。项目接入规则见[项目 Preset、Skills 与目录访问](docs/system/architecture.md#项目-presetskills-与目录访问)。
 
-**Client Module**：插件提供的浏览器模块。Client Module 通过官方 Harness ModuleLoader 加载，并使用 Harness 原生设置入口、会话输入区和右侧栏呈现统一 ComfyUI 设置页、项目入口、上下文控件及 Generation Run/Media 结果页。插件通过宿主服务操作自有页签，保留 Harness 对 root、sidebar、conversation 和 composer 的管理。Session 的创建和打开由宿主响应用户操作处理。
+3. **Session**：Workspace 中的一段持续对话。项目的会话接入入口见[会话界面入口](src/client/index.tsx)。
 
-**Project Tool Registry**：`src/host/tools/register-project-tools.ts` 定义的项目 Tool 唯一注册入口。Host Plugin 通过该入口注册 `query_semantic_comfyui_templates`、`query_semantic_loras`、`query_semantic_generation_models`、`query_semantic_comfyui_instances`、`generate_with_comfyui`、`read_comfyui_run_inputs`、`get_generation_run_media` 和 `inspect_image` 八个项目 Tool。
+4. **Chat Turn**：一条用户消息及下一条用户消息出现前产生的回复与调用。生成记录中的会话与轮次结构见 [GenerationIdentity](src/host/generation/generation-runtime.ts)。
 
-**Repository Skills**：随插件包发布在 `.agents/skills/` 的八个 Harness Skill：`anima-prompt-builder`、`character-portrait-prompt-designer`、`comfyui-generate`、`comfyui-image-review`、`comfyui-iterate-generation`、`krea2-anime-prompt-builder`、`local-image-reader` 和 `wai-sdxl-prompt-builder`。各 Skill 按自身参考文档调用业务 CLI、读取生成结果或执行图片观察。
+## 配置与插件服务
 
-**Preset-scoped Repository Skill Source**：安装包内的 `.agents/skills/` 目录。`ComfyUI工作台预设` 与 `ComfyUI迭代预设` 从自己的包内 component 解析该目录；其他 Preset 不读取项目 Repository Skills。Preset component 与 Skill 路径相对安装包解析，不依赖 checkout 或调用者用户主目录中的项目链接。
+1. **Configuration Profile**：Host 使用的一组结构化业务配置，当前配置为 `production`。字段定义见 [config/schema.ts](config/schema.ts)，加载入口见 [loadProfile()](src/config/load-profile.ts)，配置覆盖规则见 [Configuration Profile 计算顺序](docs/system/configuration.md#configuration-profile-计算顺序)。
 
-**ComfyUI Workbench Preset**：官方插件注册的可选项目 Agent Preset，显示名称为 `ComfyUI工作台预设`，兼容性内部 ID 为 `harness-comfyui-cli-candidate`。用户在官方会话界面选择该 Preset；插件保留用户设定的官方全局默认 Preset。该 Preset 隐藏项目 Host Tool schema，使用包内 Repository Skills，并移除 `harness:identity`、`harness:source` 和 `app:web-surface` 三个系统提示词段落。
+2. **Host Plugin**：官方 Harness Desktop 加载的 `harness-comfyui` 插件模块。插件入口见 [src/host/plugin.ts](src/host/plugin.ts)，服务装配见 [ComfyuiCoreService](src/host/core/plugin.ts)。
 
-**ComfyUI Iteration Preset**：官方插件注册的可选项目 Agent Preset，显示名称为 `ComfyUI迭代预设`，内部 ID 为 `harness-comfyui-iteration`。用户在官方会话界面选择该 Preset；插件保留用户设定的官方全局默认 Preset。该 Preset 读取与工作台 Preset 相同的包内 Repository Skills，隐藏相同的项目 Host Tool schema，并使用四个角色工具分别执行构图、生成、观察和比较。构图与生成角色可续派原有子会话，观察与比较角色每轮创建新会话；各角色使用自己的 persona、模型和工具限制。子 Session 在开始执行前加入父 Session 所属 Workspace。
+3. **Official Desktop Plugin Runtime**：官方 DeepSeek Harness Desktop 中运行的 Host Plugin 实例。应用进程、Profile 和插件生命周期的职责见[宿主职责](docs/system/startup.md#宿主职责)。
 
-## 运行
+4. **Plugin Storage**：Host Plugin 保存 SQLite、生成文件、媒体、日志和缓存的持久目录。目录配置见 [config/base.json](config/base.json)，路径归属规则见[官方插件配置与存储校验](docs/system/configuration.md#官方插件配置与存储校验)。
 
-**Official Desktop Plugin Runtime**：官方 DeepSeek Harness Desktop 中运行的 `harness-comfyui` 插件实例。官方应用管理应用进程、Profile 和插件启停；插件 Host 使用官方 DSH home 与配置保存业务数据。
+5. **Managed CLI Server**：Host Plugin 为官方前台 Bash Tool Call 提供的专用回环 HTTP 服务，使用短期 capability 标识调用者。服务入口见 [src/host/cli/plugin.ts](src/host/cli/plugin.ts)，请求入口见 [src/host/cli/route.ts](src/host/cli/route.ts)。
 
-**Plugin Storage**：插件 Host 的 SQLite、Run、媒体、日志和缓存存储。默认根目录为 `<DSH_HOME>/data/plugins/harness-comfyui/`；用户可在官方 Profile 的 `harness-comfyui-core.config.dataDirectory` 设置绝对目录。插件在激活时验证存储目录及 Run Repository 文件可访问。
+6. **Image Reader Configuration**：官方 Profile 中由 `harness-comfyui-image-reader` Settings 管理的命名读图配置与独立凭据。配置结构见 [ImageReaderConfiguration](src/image-reader/settings.ts)，设置规则见[图片读取设置](docs/system/configuration.md#图片读取设置)。
 
-**Configuration Profile**：Host 使用的一组结构化业务配置。当前只有 `production` Configuration Profile；其结构由 `config/schema.ts` 定义，默认值由 `config/base.json` 与 `config/profiles/production.json` 合并，再按 `config/environment-overrides.json` 处理已声明环境覆盖。
+7. **Image Inspection**：按照 Image Reader Configuration 调用视觉模型读取单张本地图片的能力，由 `inspect_image` 与 `image inspect --stdin` 提供。实现入口见 [ImageReaderService.inspect()](src/host/image-reader/image-reader-service.ts)。
 
-**Data Source Service**：使用者独立安装并运行、通过 HTTP 或 HTTPS 接受请求的数据源服务。使用者可连接本机服务，也可连接部署在另一台机器上的服务。
+8. **Client Module**：Host Plugin 提供的浏览器界面模块，负责设置、上下文选择与生成结果展示。模块入口见 [src/client/index.tsx](src/client/index.tsx)，宿主界面接入规则见 [Client 工作台、结果与媒体访问](docs/system/architecture.md#client-工作台结果与媒体访问)。
 
-**Built-in Source Clients**：插件发行包中的 `scripts/source-client/imagegen-semantic-query.mjs` 与 `scripts/source-client/imagegen-comfyui-source-read.mjs`。Host 使用前者完成 Catalog discovery 和语义查询，使用后者完成 Source discovery、ComfyUI 实例读取和 Workflow bundle 读取。两个客户端只请求 Data Source Service，不读取或执行数据源仓库文件。
+## 数据源
 
-**Managed CLI Server**：插件 Host 启动的专用回环 HTTP listener。该服务只接收由官方 Harness 前台 Bash Tool Call 提供短期 capability 的项目 CLI 请求；路由校验 capability 和调用者身份。卸载插件时 listener 停止并等待已接纳请求结束。
+1. **Data Source Service**：使用者独立安装并运行、通过 HTTP 或 HTTPS 提供目录和生成来源数据的服务。服务边界见 [ADR 0015](docs/adr/0015-independent-data-source-service.md)。
 
-**Source Template Bundle**：Data Source Service 为一个 Workflow 模板返回的对象，包含 `id`、`title` 和 `workflow_json`。
+2. **Source Service Configuration**：官方 Profile 中 `harness-comfyui-core` Settings 保存的 Data Source Service 地址与端口。字段定义见 [src/source-settings.ts](src/source-settings.ts)，设置规则见[Host 内部数据源设置](docs/system/configuration.md#host-内部数据源设置)。
 
-**Catalog 目录图片展示数据**：Data Source Service Catalog 资源通过 `sample_image_urls` 提供目录图片 URL。Host 将这些 URL 映射为 Client Module 的 `CatalogItem.sampleImageUrls` 用于 Catalog 图片展示；这些 URL 不进入 Message Context。
+3. **Built-in Source Clients**：随 Host Plugin 构建的内部 HTTP 客户端模块，用于访问 Data Source Service。公共 HTTP 入口位于 [src/host/source-client/](src/host/source-client/)，业务入口见 [CatalogClient](src/host/catalog/catalog-client.ts) 和 [GenerationSourceClient](src/host/generation/source-client.ts)。
 
-## 数据
+4. **Source Template Bundle**：Data Source Service 返回的单个 Workflow 模板数据对象。响应解析入口见 [parseTemplate()](src/host/generation/source-client.ts)。
 
-**Workspace**：Harness 中的最高会话隔离边界。一个 Workspace 包含多个 Session。
+5. **Catalog 目录图片展示数据**：Data Source Service 提供、用于 Client Module 目录展示的图片 URL。来源映射入口见 [CatalogClient](src/host/catalog/catalog-client.ts)，展示结构见 [CatalogItem.sampleImageUrls](src/catalog/contract.ts)。
 
-**Session**：Workspace 中的一段持续对话。
+## Workflow 处理
 
-**Chat Turn**：一条用户消息及下一条用户消息出现前产生的回复与调用。
+1. **运行时 API Workflow 投影**：编译器为本次 UI Workflow 生成的运行输入和执行结构。投影入口见 [projectRuntimeApiWorkflow()](src/host/generation/workflow-compiler.ts)。
 
-**Run Repository**：保存 Generation Run 记录的 SQLite 数据库，位于 Plugin Storage 根目录的 `runs.sqlite`。
+2. **编译后活动输出节点集合**：Workflow 编译结果中用于筛选生成输出的活动输出节点 ID 集合。计算入口见 [projectRuntimeOutputNodes()](src/host/generation/workflow-compiler.ts)，运行时结构见 [PreparedGeneration.expectedOutputNodeIds](src/host/generation/generation-runtime.ts)。
 
-**Saved Media**：Generation Run 输出图片和视频的原文件，位于 Plugin Storage 根目录的 `media/`。
+3. **Official Base API Workflow**：目标 ComfyUI 实例的官方前端加载本次 UI Workflow 后，通过 `graphToPrompt()` 导出的 API Workflow。导出接口见 [ComfyFrontendExporter](src/host/generation/official-api-workflow.ts)。
 
-**Generation Run**：一次 `generate_with_comfyui` Tool Call 对应的持久异步运行。不同 `callId` 创建不同 Run；每个 Run 独立保存请求、来源快照、Actual Workflow 和 API Workflow。
+4. **ChromeComfyFrontend**：使用本机 Chrome 或 Chromium 导出 Official Base API Workflow 的浏览器适配器。实现入口见 [ChromeComfyFrontend.exportWorkflow()](src/host/generation/comfy-frontend-browser.ts)，Worker 调用入口见 [NodeWorkerComfyFrontend](src/host/generation/comfy-frontend-worker-client.ts)。
 
-**Generation Run Input Query**：`read_comfyui_run_inputs` Tool 与 managed CLI 的 `generation run-inputs --stdin` 只读查询。一次查询接收 1 至 20 个完整 Run ID 或至少包含八个 UUID 字符的短 Run ID。Runtime 在当前 Workspace 中把短 ID 解析为唯一匹配的完整 Run ID，按输入顺序返回创建 Run 时保存的 Generation Tool 参数与 Actual Workflow；单项无匹配或歧义不终止其他 Run 的查询。
+5. **Official API Workflow Cache**：Plugin Storage 中保存 Official Base API Workflow 的文件缓存。目录配置见 [config/base.json](config/base.json) 的 `paths.apiWorkflowCacheDirectory`，缓存实现见 [OfficialApiWorkflowCompiler](src/host/generation/official-api-workflow.ts)。
 
-**Generation Run Media Query**：`get_generation_run_media` Tool 与 managed CLI 的 `generation resolve-media --stdin` 只读查询。一次查询接收一至二十个完整 Run ID，或以 `run_` 开头且至少包含 UUID 前八个字符、并在当前 Workspace 中唯一匹配的规范前缀。查询保留输入顺序和重复值；单个 Run 的查询错误不终止其他 Run 的查询。
+6. **Runtime Input Overlay**：将运行时 API Workflow 投影的输入值应用到 Official Base API Workflow 的处理过程。实现入口见 [overlayRuntimeApiWorkflow()](src/host/generation/official-api-workflow.ts)。
 
-**Image Reader Configuration**：官方 Profile 中 `harness-comfyui-image-reader` Settings 保存的当前配置 ID、命名配置列表和每份 OpenAI 兼容配置的独立凭据。每份配置选择系统 Provider 或 OpenAI 兼容接口，并独立保存视觉模型、默认读图 Prompt、`temperature` 和最大输出 Token。Client 不从当前 Session 模型或 ComfyUI 生图模型推导视觉模型。
+## 生成记录与媒体
 
-**Source Service Configuration**：官方 Profile 中 `harness-comfyui-core` Settings 保存的数据源服务 URL 和端口。Host 在每次 Catalog 查询、ComfyUI 实例读取和 Workflow bundle 读取前读取最新值。Client 在统一 ComfyUI 设置页的“数据源服务”页签修改该值。
+1. **Generation Run**：一次 `generate_with_comfyui` Tool Call 对应的持久异步运行。创建入口见 [GenerationRuntime.acceptGeneration()](src/host/generation/generation-runtime.ts)，记录生命周期见 [Generation Run 生命周期与历史查询](docs/system/architecture.md#generation-run-生命周期与历史查询)。
 
-**Image Inspection**：`inspect_image` Tool 与 managed CLI 的 `image inspect --stdin` 单图视觉读取。系统 Provider 配置通过 Harness Attachment 和 LLM Runtime 调用视觉模型；OpenAI 兼容配置把单张本地图片编码为 Data URL，并向配置的完整 Chat Completions 地址发送请求。该能力不读取 Generation Request 参数，也不比较或改写 Prompt。
+2. **Run Repository**：Plugin Storage 中保存 Generation Run 记录的 SQLite 数据库。目录配置见 [config/base.json](config/base.json) 的 `paths.runRepositoryFile`，建表入口见 [GenerationRuntime.initializeDatabase()](src/host/generation/generation-runtime.ts)。
 
-**Generation Media**：一个 Generation Run 保存的一项图片或视频输出。每项 Media 通过自己的 `run_id` 解析所属 Run 的 Actual Workflow；Session 和 Chat Turn 只用于筛选。
+3. **Saved Media**：Generation Run 输出图片和视频的原始文件。目录配置见 [config/base.json](config/base.json) 的 `paths.savedMediaDirectory`，保存入口见 [GenerationRuntime.persistMedia()](src/host/generation/generation-runtime.ts)。
 
-**Session Media Viewer**：Host 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。查看页按 `created_at DESC, output_index DESC, media_id DESC` 排列当前 Session 媒体，显示文件固有像素尺寸与该 Run 保存的 `parameters.positive_prompt`，并通过较新与较早方向切换媒体。官方 Desktop Modal 验证当前 iframe 消息与 Session 媒体归属，在 iframe 上方显示完整 `run_id`，并以独立按钮复制该 ID。下载操作通过同源 `/download` 路由返回 Saved Media 原始字节及 ComfyUI 原文件名。
+4. **Generation Media**：Generation Run 保存的一项图片或视频输出记录，关联对应的 Saved Media。记录结构见 [GenerationMediaSnapshot](src/host/generation/generation-runtime.ts)。
 
-**运行时 API Workflow 投影**：`ComfyWorkflowCompiler` 根据当前 UI Workflow、目标实例 `/object_info`、请求参数、模型、LoRA、节点输入名称、节点活动状态和上下游连线生成输入值与执行结构。该投影不能直接提交给 ComfyUI `/prompt`。
+5. **Generation Run Input Query**：读取当前 Workspace 中 Generation Run 的生成参数和实际 Workflow 的只读查询，由 `read_comfyui_run_inputs` 与 `generation run-inputs --stdin` 提供。查询实现见 [GenerationRuntime.readGenerationRunInputs()](src/host/generation/generation-runtime.ts)，输入输出结构见 [src/generation/run-input-contract.ts](src/generation/run-input-contract.ts)。
 
-**编译后活动输出节点集合**：`ComfyWorkflowCompiler` 从目标实例实时 `/object_info` 选择 `output_node: true` 且已满足必需输入的 Workflow 节点。Generation Runtime 把该集合保存到 `generation_runs.expected_output_node_ids_json`，并传给 Comfy transport 筛选 Jobs API 输出。该集合是 compiler 输出，不是 Source TemplateBundle 字段。
+6. **Generation Run Media Query**：读取当前 Workspace 中 Generation Run 的生成参数和本地输出图片路径的只读查询，由 `get_generation_run_media` 与 `generation resolve-media --stdin` 提供。查询实现见 [GenerationRuntime.readGenerationRunMedia()](src/host/generation/generation-runtime.ts)，输出结构见 [src/image-reader/run-media-contract.ts](src/image-reader/run-media-contract.ts)。
 
-**Official Base API Workflow**：目标 ComfyUI 实例官方前端加载 Actual Workflow 后，通过 `graphToPrompt()` 返回的 API Workflow。该对象是最终节点拓扑、连接 tuple、虚拟节点和自定义 widget 序列化结构的权威来源。
+7. **Session Media Viewer**：Host Plugin 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。渲染入口见 [renderGenerationMediaViewerPage()](src/host/generation/media-viewer-page.ts)，访问与下载入口见 [registerGenerationMediaRoutes()](src/host/generation/media-routes.ts)，界面行为见 [Client 工作台、结果与媒体访问](docs/system/architecture.md#client-工作台结果与媒体访问)。
 
-**Official API Workflow Cache**：Plugin Storage 下的 `api-workflow-cache/`。每个缓存项保存实例身份、实例 origin、Host 级缓存代次、编译器 schema 版本、原始 UI Workflow 哈希、执行结构哈希和 Official Base API Workflow；缓存项不保存认证信息或覆盖后的本次请求值。Host 级缓存代次变化时，全部已登记实例的旧缓存均不再命中。
+## 项目 Tool、Skill 与 Preset
 
-**Runtime Input Overlay**：Host 深拷贝 Official Base API Workflow，并使用运行时 API Workflow 投影覆盖已存在的同名非连接输入。Runtime Input Overlay 保留官方连接 tuple、虚拟节点和额外输入；官方值使用 `{ "__value__": ... }` 包装时只替换 `__value__`。
+1. **Project Tool Registry**：Host Plugin 注册项目 Tool 的唯一入口。实现见 [registerProjectTools()](src/host/tools/register-project-tools.ts)。
 
-**ChromeComfyFrontend**：Host 通过 `process.execPath` 启动的官方前端导出 Worker。Worker 在缓存未命中时直接启动配置的本机 Chrome 或 Chromium，通过 Chrome DevTools Protocol 在导航前设置实例认证信息，等待前端与自定义节点初始化，再调用 `loadGraphData()` 和 `graphToPrompt()`。
+2. **Repository Skills**：随插件包发布在 `.agents/skills/` 中的八个 Harness Skill。发布文件清单见 [config/plugin-runtime-resources.json](config/plugin-runtime-resources.json)，各 Skill 的用途与执行步骤由其 `SKILL.md` 定义。
+
+3. **Preset-scoped Repository Skill Source**：为项目 Preset 提供插件包内 Repository Skills 的文件系统 Skill 来源。注册入口见 [agent-presets/project-installed-skills.mjs](agent-presets/project-installed-skills.mjs)。
+
+4. **ComfyUI Workbench Preset**：显示名称为 `ComfyUI工作台预设`、内部 ID 为 `harness-comfyui-cli-candidate` 的可选项目 Agent Preset，负责按 Repository Skills 执行 ComfyUI 任务。定义入口见 [工作台 Preset 配置](agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml)。
+
+5. **ComfyUI Iteration Preset**：显示名称为 `ComfyUI迭代预设`、内部 ID 为 `harness-comfyui-iteration` 的可选项目 Agent Preset，负责协调构图、生成、观察和比较四个角色完成图片迭代。定义入口见[迭代 Preset 配置](agent-presets/harness-comfyui-iteration/agent.cordis.yml)。
+
+6. 两项 ComfyUI 产品 Preset 的资源作用域、Tool schema 可见性、系统提示词和子 Agent 执行规则见[产品预设与项目 Skill 开发规范](docs/agents/comfyui-workbench-preset-and-skill-development.md)。
 
 ## 发布
 
-**Product Version**：根 `package.json.version` 中的 SemVer。候选变更及状态见 `docs/releasenotes.md`。
+1. **Product Version**：根 [package.json](package.json) 的 `version` 字段保存的 SemVer。版本与候选状态见 [docs/releasenotes.md](docs/releasenotes.md)。
 
-**GitHub Release**：指向已通过本地发布门禁和独立审查的精确提交的 Git tag 与 GitHub Release。标签按 `v<package.json.version>` 命名；Release 附加该提交构建的 `harness-comfyui-<version>.tgz` 插件包。
+2. **GitHub Release**：与通过发行门禁的源码提交对应的版本标签和插件发布条目。标签命名、插件附件和发布步骤见 [Git tag、GitHub Release 与插件附件](docs/system/releasing.md#git-taggithub-release-与插件附件)。

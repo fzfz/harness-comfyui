@@ -1,4 +1,3 @@
-import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../catalog/contract.ts'
 import { toGenerationRequest, type CliRequest } from '../../cli/contract.ts'
 import { GenerationRuntimeError } from '../generation/generation-runtime.ts'
 import type { CliHandlerOptions } from './schema.ts'
@@ -39,21 +38,6 @@ export async function dispatch(
   signal: AbortSignal,
 ): Promise<unknown> {
   switch (request.command) {
-    case 'catalog.template.resolve':
-      return options.catalog.resolveTemplate(request.id, signal)
-    case 'catalog.generation-model.resolve':
-      return options.catalog.resolveGenerationModel(request.id, signal)
-    case 'catalog.lora.resolve':
-      return options.catalog.resolveLora(request.id, signal)
-    case 'catalog.instance.list':
-      return options.catalog.queryComfyuiInstances(CATALOG_COMFYUI_INSTANCE_QUERY, signal)
-    case 'catalog.search':
-      return options.catalog.search({
-        kind: request.kind,
-        query: request.query,
-        page: request.page,
-        baseModelId: request.base_model_id,
-      }, signal)
     case 'generation.submit': {
       const owner = await generationIdentity(options, identity)
       const accepted = await options.runtime.acceptGeneration(owner, toGenerationRequest(request.request), signal)

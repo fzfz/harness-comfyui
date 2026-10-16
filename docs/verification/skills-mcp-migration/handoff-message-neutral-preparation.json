@@ -1,0 +1,396 @@
+{
+  "purpose": "记录H4两组中性运行根的配置、真实纯构图执行、通知与文件读取顺序及清理。",
+  "preparedAt": "2026-10-14T07:01:19.238Z",
+  "status": "两组真实执行和取证已完成，进程与端口已释放，Profile已恢复；完整轨迹待独立复核。",
+  "ownership": {
+    "report": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/handoff-message-neutral-preparation.json",
+    "runtimeRootsR": "由通过独立复核的neutral-runtime驱动创建两个仓库外中性独立根。",
+    "driverSource": "neutral-runtime_driver负责进行中的驱动；本轮未读取或修改该文件。",
+    "controlCheckoutC": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "ownedPreparationDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral"
+  },
+  "groups": [
+    {
+      "labelInC": "baseline",
+      "R": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3",
+      "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime",
+      "C": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3/state.json",
+      "profilePatch": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3/input.json",
+      "officialInstallRunId": "c6f901d1-83af-41d6-91a6-d6ab44fb7317",
+      "configurationLoadRunId": "d4c02b78-977d-490e-a896-075603fd602a",
+      "inventory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/d4c02b78-977d-490e-a896-075603fd602a/1791961116364-795d4eac-b339-42b9-9283-4888b15fdb32-remote.json",
+      "activeCaptureModules": [
+        {
+          "entryId": "include:skills-migration-live-observer",
+          "moduleName": "file:///private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/observer/llm-observer.mjs",
+          "enabled": true,
+          "fiberPhase": "active"
+        },
+        {
+          "entryId": "include:skills-migration-handoff-delay",
+          "moduleName": "file:///private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/runtime-events/controller.mjs",
+          "enabled": true,
+          "fiberPhase": "active"
+        }
+      ],
+      "controller": {
+        "id": "skills-migration-handoff-delay",
+        "name": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/runtime-events/controller.mjs",
+        "config": {
+          "controlPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/runtime-events/control.json",
+          "evidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/runtime-events/events",
+          "pollIntervalMs": 25
+        }
+      },
+      "releaseSignalPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/runtime-events/release.signal",
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-2jFkU3/runtime/observer",
+      "sourceComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3/module-source-comparison.json",
+      "roleComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3/role-configuration-comparison.json",
+      "profileOriginalInC": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3/profile-original.yml",
+      "profilePreparedInC": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3/profile-prepared.yml",
+      "preflight": {
+        "status": "stopped",
+        "workspaceEntries": [],
+        "observerCallCount": 0,
+        "controlArmed": false,
+        "controlEvidenceExists": false,
+        "profileContainsControlCheckout": false,
+        "symlinksPointingToControlCheckout": 0,
+        "configuredPorts": [
+          {
+            "port": 53438,
+            "pids": []
+          },
+          {
+            "port": 53439,
+            "pids": []
+          },
+          {
+            "port": 53440,
+            "pids": []
+          }
+        ],
+        "startupObservedPorts": [
+          {
+            "port": 53438,
+            "pids": [],
+            "lsofExitCode": 1
+          },
+          {
+            "port": 53439,
+            "pids": [],
+            "lsofExitCode": 1
+          },
+          {
+            "port": 53455,
+            "pids": [],
+            "lsofExitCode": 1
+          }
+        ]
+      }
+    },
+    {
+      "labelInC": "send-message-denied",
+      "R": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk",
+      "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime",
+      "C": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk/state.json",
+      "profilePatch": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk/input.json",
+      "officialInstallRunId": "f84944c9-29b6-45bb-b26a-7441f5e349b4",
+      "configurationLoadRunId": "dfa8f45b-a875-4175-891a-3520496a2ed8",
+      "inventory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/dfa8f45b-a875-4175-891a-3520496a2ed8/1791961127265-d54f46b7-93fc-487c-81d6-cd8c040fd674-remote.json",
+      "activeCaptureModules": [
+        {
+          "entryId": "include:skills-migration-live-observer",
+          "moduleName": "file:///private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/observer/llm-observer.mjs",
+          "enabled": true,
+          "fiberPhase": "active"
+        },
+        {
+          "entryId": "include:skills-migration-handoff-delay",
+          "moduleName": "file:///private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/runtime-events/controller.mjs",
+          "enabled": true,
+          "fiberPhase": "active"
+        }
+      ],
+      "controller": {
+        "id": "skills-migration-handoff-delay",
+        "name": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/runtime-events/controller.mjs",
+        "config": {
+          "controlPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/runtime-events/control.json",
+          "evidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/runtime-events/events",
+          "pollIntervalMs": 25
+        }
+      },
+      "releaseSignalPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/runtime-events/release.signal",
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-U4Lufk/runtime/observer",
+      "sourceComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk/module-source-comparison.json",
+      "roleComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk/role-configuration-comparison.json",
+      "profileOriginalInC": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk/profile-original.yml",
+      "profilePreparedInC": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk/profile-prepared.yml",
+      "preflight": {
+        "status": "stopped",
+        "workspaceEntries": [],
+        "observerCallCount": 0,
+        "controlArmed": false,
+        "controlEvidenceExists": false,
+        "profileContainsControlCheckout": false,
+        "symlinksPointingToControlCheckout": 0,
+        "configuredPorts": [
+          {
+            "port": 53493,
+            "pids": []
+          },
+          {
+            "port": 53494,
+            "pids": []
+          },
+          {
+            "port": 53495,
+            "pids": []
+          }
+        ],
+        "startupObservedPorts": [
+          {
+            "port": 53493,
+            "pids": [],
+            "lsofExitCode": 1
+          },
+          {
+            "port": 53494,
+            "pids": [],
+            "lsofExitCode": 1
+          },
+          {
+            "port": 53515,
+            "pids": [],
+            "lsofExitCode": 1
+          }
+        ]
+      }
+    }
+  ],
+  "frozenInputs": {
+    "manifest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/freeze-manifest.json",
+    "candidateTarball": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/package.tgz",
+    "businessInputTemplate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/business-input-template.json",
+    "modelSettings": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/model-settings.json",
+    "previousUnexecutedPreparation": "handoff-message-control的仓库内四角色配置保留为历史；本轮两组均重新准备。"
+  },
+  "runtimeLayoutRequirements": {
+    "rootNames": "两R的目录名使用相同中性前缀和独立随机ID；基线/实验标签只保存在C的映射表。",
+    "profile": "每组R创建自己的dsh-home、user-data、Profile、官方安装包与Workspace；预设和Skill路径从所属R的实际安装位置读取。",
+    "candidate": "C冻结包原样复制到所属R的中性安装文件路径；官方安装只接收R中的该路径。",
+    "controller": {
+      "moduleRelativeDirectory": "runtime-events",
+      "package": {
+        "name": "local-runtime-events",
+        "version": "0.0.0",
+        "private": true,
+        "type": "module",
+        "externalDependencies": 0
+      },
+      "fileCopies": [
+        {
+          "from": "source-snapshots/handoff-delay.mjs",
+          "to": "runtime-events/controller.mjs",
+          "method": "原始字节复制"
+        }
+      ],
+      "configBindings": {
+        "controlPath": "所属R内本轮control.json的绝对路径。",
+        "evidenceDirectory": "所属R内本轮events目录的绝对路径。",
+        "pollIntervalMs": 25
+      },
+      "controlPayloadBindings": {
+        "childSessionId": "真实父角色工具返回的子会话ID。",
+        "artifactPath": "同一派发调用output_files中指定的绝对文件路径。",
+        "deadlineAt": "本轮任务截止前10秒的UTC毫秒时间。",
+        "releaseSignalPath": "所属R内本轮release.signal的绝对路径。"
+      }
+    },
+    "observer": {
+      "moduleRelativeDirectory": "observer",
+      "package": {
+        "name": "local-runtime-capture",
+        "version": "0.0.0",
+        "private": true,
+        "type": "module",
+        "externalDependencies": 0
+      },
+      "fileCopies": [
+        {
+          "from": "source-snapshots/llm-observer.mjs",
+          "to": "observer/llm-observer.mjs",
+          "method": "原始字节复制"
+        },
+        {
+          "from": "source-snapshots/redact-evidence.mjs",
+          "to": "observer/redact-evidence.mjs",
+          "method": "原始字节复制"
+        }
+      ],
+      "importRelationship": "llm-observer.mjs中的./redact-evidence.mjs保持相同相对关系。",
+      "output": "源码按import.meta.url写入所属R/runtime/observer/llm-calls；准备阶段为空，本轮完整模型记录已保存并复制到C。",
+      "config": {
+        "allowed": [
+          {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free"
+          }
+        ],
+        "maxCalls": 3000,
+        "timeoutMs": 360000
+      }
+    },
+    "cOnlyMaterials": [
+      "分组映射与预期判断",
+      "配置差异、源码比较与审查报告",
+      "此前批次日志、模型答复、产物和会话记录",
+      "安装和配置备份",
+      "业务输入模板及取证步骤"
+    ],
+    "rAllowedMaterials": [
+      "本轮官方Profile与安装候选",
+      "本轮Workspace任务文件与子产物",
+      "本轮实际加载的控制器和观察器源码",
+      "本轮控制操作文件、控制事件与模型原始请求记录",
+      "官方应用本轮必要状态与日志"
+    ],
+    "driverState": "驱动状态、冻结源索引、配置比较、安装备份和执行计划保存于C；实际应用所需的Profile及本轮运行数据保存于R。",
+    "applicationReferences": "模型输入、实际Include模块入口、控制器配置及应用当前工作目录只指向所属R的必要本轮路径；进行中的驱动API复核将检查R内引用是否回到C。"
+  },
+  "preflightComparisons": {
+    "installedCandidate": "两R相同相对路径的安装文件直接比较原始字节，源为C冻结候选。",
+    "moduleIdentity": "控制器和observer位于两个不同本地package身份中，避免同一包来源被官方client-modules重复识别。",
+    "moduleBytes": "两R的controller/observer/redactor分别与C源快照逐字节相同。",
+    "effectiveProfile": "排除本轮必要目录、随机ID和端口后，业务配置只允许composition-agent拒绝列表追加send_message；保留其余字段。",
+    "actualInput": "仅替换工作目录与已安装迭代Skill路径，其他任务文字、模型及preset保持相同。",
+    "runtimeIdentity": "提交前通过官方pluginInventory核对两个采集条目enabled/active，并核对control未arm及observer本轮输出目录无历史文件。"
+  },
+  "executionControls": {
+    "runsPerGroup": 1,
+    "holdMs": 90000,
+    "modelCallTimeoutMs": 360000,
+    "taskTimeoutMs": 600000,
+    "textMaxOutputTokens": 32768,
+    "armTrigger": "父工具真实派发及其结果将child ID与output_files关联后启用。控制器只在该child的agent/turn-stopping中验证普通文件存在后等待。",
+    "releaseTrigger": "从真实delay_started回调时间开始计90秒，通过R内控制文件对应CLI写释放信号。",
+    "lateHold": "任务剩余时间不足完整90秒时保留实际时间与原因，将完整90秒控制标记为未覆盖。",
+    "modelMessaging": "模型执行期间不追加提示或补充要求。",
+    "missingPath": "没有真实派发、缺少产物或补材料等路径按实际记录；不强迫进入预期路径。"
+  },
+  "liveEvidenceRequirements": [
+    "每组完整父子事件、工具参数和返回、模型system/messages/tools及流式响应。",
+    "原始subagent/start回调时间与同一SDK activation/runId归属、turn-stopping命中、artifact stat、release、turn/end和subagent/end。",
+    "实际首次子请求的完整工具集合及宿主continuable主动转达段；分别保存差异，不从配置直接推断实际输入。",
+    "父轮询目录、读取正文、主动relay、原生settled入队/消费、同一messageId与最终交付。",
+    "所有共享文件系统历史读取的工具调用、返回、路径发现来源、后续模型请求和被读文件来源。",
+    "本轮停止记录、进程归属、配置及实际监听端口释放、Profile配置恢复与操作文件清理。"
+  ],
+  "runtimeReadabilityLimits": [
+    "R内采集模块源码和本轮事件/模型记录可被拥有普通文件读取能力的Agent访问。中性目录名只减少输入中的实验标签，未建立文件读取隔离边界。",
+    "同机R可通过父目录遍历、DSH环境路径、已安装Skill路径或工具返回被发现；两R亦可能互相读取。任何实际路径发现与读取都须记录。",
+    "C和此前运行目录仍位于共享文件系统。R不包含它们的显式引用或历史记录，但本方案未提供操作系统级读取封锁。",
+    "后续完整轨迹审查判定测试设施或历史读取是否污染模型上下文；当前准备报告不预判对照有效性。"
+  ],
+  "driverApiPending": [],
+  "executionIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/execution-index.json",
+  "driverValidation": {
+    "implementation": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/neutral-runtime-implementation.json",
+    "independentReview": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/neutral-runtime-review.json",
+    "officialSmoke": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/neutral-runtime-smoke.json",
+    "usedApis": [
+      "prepareRuntime",
+      "startRuntime",
+      "installRuntime",
+      "stopRuntime",
+      "configureRuntime",
+      "statusRuntime"
+    ]
+  },
+  "preparedComparisons": {
+    "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/candidate-comparison.json",
+    "installedFilesEach": 198,
+    "installedFilesBytesEqual": true,
+    "runtimeArchiveEqualsFrozenCandidate": true,
+    "configuration": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/groups-configuration-comparison.json",
+    "onlyBusinessDifference": "实验组composition-agent的config.toolFilter.deny追加send_message；另三角色保持基线。",
+    "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/groups-input-comparison.json",
+    "onlyInputDifferences": [
+      "工作目录",
+      "已安装迭代Skill路径"
+    ],
+    "controllerBytesEach": 16075,
+    "controllerAndObserverSourceByteEqualFrozen": true,
+    "modelLimits": {
+      "modelCallTimeoutMs": 360000,
+      "taskTimeoutMs": 600000,
+      "textMaxOutputTokens": 32768,
+      "holdMs": 90000
+    }
+  },
+  "pendingLiveChecks": [],
+  "modelRequests": 66,
+  "profileRestoration": "两组应用均已停止；各自Profile逐字节恢复C内profile-original.yml，控制及释放操作文件已移除，取证文件保留。",
+  "executionRecordedAt": "2026-10-14T07:34:20.488Z",
+  "execution": {
+    "operationIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/execution-index.json",
+    "independentConfigurationReview": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/handoff-neutral-config-review.json",
+    "groups": [
+      {
+        "label": "baseline",
+        "observationReport": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-2jFkU3/group-observation.json",
+        "plannedHoldMs": 90000,
+        "observedHoldMs": 90119,
+        "modelCalls": 36,
+        "firstBodyReadBeforeNativeEnd": true,
+        "nativeNoticeDeliveredAndConsumed": true,
+        "profileRestored": true,
+        "portsReleased": true
+      },
+      {
+        "label": "send-message-denied",
+        "observationReport": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/run-data/harness-run-U4Lufk/group-observation.json",
+        "plannedHoldMs": 90000,
+        "observedHoldMs": 90093,
+        "modelCalls": 30,
+        "firstBodyReadBeforeNativeEnd": true,
+        "nativeNoticeDeliveredAndConsumed": true,
+        "profileRestored": true,
+        "portsReleased": true
+      }
+    ],
+    "firstRequestsComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-neutral/first-requests-comparison.json",
+    "actualInitialDifferences": {
+      "parentSystemAndContextEqualAfterRootAndSessionIdNormalization": true,
+      "parentToolDeclarationsEqual": true,
+      "childSystemRuntimeContextAndSkillCatalogEqualAfterRootAndSessionIdNormalization": true,
+      "childCommonToolDeclarationsEqual": true,
+      "baselineOnlyChildTool": "send_message",
+      "baselineOnlyHostInitialContentBlock": "官方continuable主动转达要求",
+      "parentGeneratedTaskDifferences": [
+        "基线任务使用Workspace根目录，实验任务使用task-window-portrait子目录。",
+        "基线requirements共8项，实验requirements共6项；完整正文和原始材料文件均保存。"
+      ]
+    },
+    "observedBehavior": "两组父Agent首次正文读取均先于子turn/end和原生settled消费。过滤组没有relay，父Agent依文件存在推进读取与首轮交付；释放后原生settled投递和消费完成。基线另有父Agent自行发出的修复续派及产物后续修改。",
+    "controllerClockMeaning": "start在原始subagent/start回调内捕获Date与performance时间，命中后才写入；控制器at是回调观察时间，持久会话event.time是官方会话时间。",
+    "readBoundaryAssessment": "基线子Agent实际读取本轮probe元数据并发现R内设施；两组执行选择、材料及派发文本存在实际差异。完整路径链已交付，污染及对照适用范围由独立轨迹审查判定。",
+    "environmentRepairDuringModelExecution": 0,
+    "operatorAddedModelPrompts": 0,
+    "scope": "每组一次构图执行；本轮没有扩大其他三角色或提交生成请求。",
+    "stabilityAcceptance": "本轮未执行重复稳定性验收。"
+  },
+  "pendingIndependentReview": [
+    "原生结束与文件读取/交付的合同判定。",
+    "基线probe元数据读取、两组材料发现和模型生成派发差异对对照适用范围的影响。"
+  ]
+}

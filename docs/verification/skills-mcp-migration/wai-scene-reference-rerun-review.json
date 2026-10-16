@@ -1,0 +1,919 @@
+{
+  "reviewedAt": "2026-10-14T05:07:25.053007+00:00",
+  "scope": "两例 WAI 引用修订实际复验独立 Spec 验收；仅写本文件，未启动模型或修改其他文件。",
+  "status": "未通过",
+  "executionIndex": ".local/skills-mcp-migration-live/wai-scene-reference-execution.json",
+  "packageEvidence": {
+    "candidate": ".local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+    "installedRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+    "waiPackageFilesCompared": 75,
+    "allInstalledWaiFilesMatchCandidateBytes": true
+  },
+  "method": "语义由审查者逐项判断；程序仅用于 JSON 读取、源文字节比较、事件关联及请求正文完整性定位。模型决策只记录高层摘要。实际规则保留以 jsonl 第1行 request.messages 中完整源文比较为据，未以 callId 或 Host 原结果代替。",
+  "cases": [
+    {
+      "variant": "original",
+      "status": "未通过",
+      "targetBranch": "未通过：多候选等待未发生",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-original-input.json",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791953846063-128bf7c3-9798-4d30-bae2-660822e7e7b2-collect.json",
+      "sessionId": "session-1c46e032-68f7-42ce-9f36-3d213e876b6a",
+      "end": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      },
+      "findings": [
+        {
+          "id": "O1",
+          "severity": "high",
+          "title": "同输入仍自行选定主场景，目标等待未通过",
+          "firstDeviation": {
+            "hostSeq": 35,
+            "request": ".local/skills-mcp-migration-live/llm-calls/483990a7-f234-4f4a-b1e6-51e5c3a7d34d.jsonl:1"
+          },
+          "observed": "矩阵 seq30 完整返回且实际请求 messages[10] 完整保留；新首段位于 messages[5]。seq35 已将单主体肖像视为主场景并转入位置映射。随后无选择问题或用户回复，直接构图、查询、校验、写文件。",
+          "contract": "references/composition-scenario-branches.md:16：多个匹配场景须等待。单主体肖像、遮挡与深度、环境叙事均匹配。",
+          "causeAssessment": "旧自行选择首段已不存在，因此它不是此输入自主选择行为的必要条件。不能把本次失败继续归因于旧段未移除或关键矩阵被裁剪。可见决策直接由单主体画面跳到主场景，未执行完整候选匹配；模型未贯彻已可见规则是行为定位，信息负载、示例影响及默认肖像推断仅属未证实假设。"
+        },
+        {
+          "id": "O2",
+          "severity": "medium",
+          "title": "没有已采用 Character Prompt 仍创建 character 位置",
+          "firstArtifactSeq": 177,
+          "request": ".local/skills-mcp-migration-live/llm-calls/bbe37087-2e17-4d73-894f-94e09a3a2c7f.jsonl:1",
+          "observed": "positions.character=[original]，输入无 Character 记录、完整角色 Prompt 或历史来源；自然语言“原创女性”属于主体描述。",
+          "contract": "references/wai-prompt-position-order.md 的 Character 来源内容规定：不存在已采用 Character Prompt 内容时不创建 character。该文件全文在首次写入请求中保留。",
+          "impact": "格式校验器允许该键，语义来源职责仍未满足。"
+        },
+        {
+          "id": "O3",
+          "severity": "medium",
+          "title": "底模查询与 Style 获取在同一模型响应内一并发出，缺少结果确认关口",
+          "decisionSeq": 66,
+          "request": ".local/skills-mcp-migration-live/llm-calls/c855b600-34ae-4b7b-819e-855ca9e85518.jsonl:1",
+          "toolSeqs": [
+            67,
+            68,
+            69,
+            70,
+            71,
+            72
+          ],
+          "observed": "工具宿主按顺序返回唯一 wai 后执行 Style，但调用 Style 的决定与底模查询一起产生，产生决定时尚未收到底模结果；底模缺失或重名时没有模型判断停止的机会。",
+          "contract": "references/artist-adoption.md:11 要求获取画师素材前先确定精确 wai 唯一底模。完整规则已在决定请求中存在。",
+          "outcome": "本次实际底模为唯一 wai id2，Style12344 匹配且说明完整；未观察到错误素材采用。查询调用名顺序改善，不足以确认业务前置条件已执行。"
+        },
+        {
+          "id": "O4",
+          "severity": "medium",
+          "title": "前中后景与裁剪所需空间关系规则未完整读取",
+          "observed": "完整调用轨迹没有读取 spatial-relation-rules.md 的命令；实际请求未出现该文件全文。 build-record.json 却把它列入 structure_rules_read。",
+          "contract": "references/prompt-position-rules/camera-composition.md 空间关系，以及矩阵遮挡与深度分支要求读取。",
+          "actualFullDocumentInRequests": false
+        },
+        {
+          "id": "O5",
+          "severity": "medium",
+          "title": "最后回复未返回校验 stdout 中的完整生成结果",
+          "finalSeq": 204,
+          "request": ".local/skills-mcp-migration-live/llm-calls/ad28fb27-6d7a-436d-ae20-61552a890336.jsonl:1",
+          "observed": "最终消息返回说明和文件链接，未直接返回完整十属性对象。seq199 的先前展示也仅给 Prompt 和删减属性表。",
+          "contract": "SKILL.md 第 7 节及 generation-output-contract.md 校验结果要求返回 stdout 中生成结果。",
+          "deliveryBoundary": "用户要求保存的 generation-output.json 十字段完整且与校验结果一致，文件交付通过；本项按 Skill 的直接返回要求记录，不把文件误报为缺 positive_prompt。"
+        }
+      ],
+      "actualRequestRetention": [
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/483990a7-f234-4f4a-b1e6-51e5c3a7d34d.jsonl:1",
+          "at": "2026-10-14T04:47:26.960Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/composition-scenario-branches.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 10,
+                  "role": "tool",
+                  "messageCharacters": 23872
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/c855b600-34ae-4b7b-819e-855ca9e85518.jsonl:1",
+          "at": "2026-10-14T04:51:43.524Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/artist-adoption.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 17,
+                  "role": "tool",
+                  "messageCharacters": 15536
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/bbe37087-2e17-4d73-894f-94e09a3a2c7f.jsonl:1",
+          "at": "2026-10-14T04:54:27.242Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/wai-prompt-position-order.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 11,
+                  "role": "tool",
+                  "messageCharacters": 8250
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/ad28fb27-6d7a-436d-ae20-61552a890336.jsonl:1",
+          "at": "2026-10-14T04:57:19.488Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/generation-output-contract.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 20,
+                  "role": "tool",
+                  "messageCharacters": 23470
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "actualResponseDelivery": [
+        {
+          "hostResultSeq": 68,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/aba5141e-e3de-47d8-8765-b4ae2a79caf8.jsonl:1",
+          "messageIndex": 25
+        },
+        {
+          "hostResultSeq": 70,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/aba5141e-e3de-47d8-8765-b4ae2a79caf8.jsonl:1",
+          "messageIndex": 26
+        },
+        {
+          "hostResultSeq": 72,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/aba5141e-e3de-47d8-8765-b4ae2a79caf8.jsonl:1",
+          "messageIndex": 27
+        },
+        {
+          "hostResultSeq": 178,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/9cc9c372-a268-4bfa-8b97-66c88f4512d5.jsonl:1",
+          "messageIndex": 74
+        },
+        {
+          "hostResultSeq": 183,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/0b5ea82b-04ad-4e33-b9d2-320baccd3d36.jsonl:1",
+          "messageIndex": 76
+        },
+        {
+          "hostResultSeq": 188,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/224e95cb-2037-4210-a6e0-697632f0148e.jsonl:1",
+          "messageIndex": 78
+        }
+      ],
+      "artifacts": {
+        "generationResult": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-2L7uJG/5.5-3/generation-output.json",
+        "positions": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-2L7uJG/5.5-3/prompt-positions.json",
+        "otherFiles": [
+          "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-2L7uJG/5.5-3/build-record.json"
+        ],
+        "savedResultHasTenFields": true,
+        "savedEqualsActualValidatorResult": true,
+        "dimensions": {
+          "generation_purpose": "test",
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864
+        },
+        "usableScope": "结构化生成候选，可供后续修改；当前完整 Spec 未通过，不能作为已验收成功结果。"
+      },
+      "styleAdoption": "保持用户 Style Prompt say_hana；查询返回花卉与少女、淡雅配色、诗意氛围、细腻柔美，最终氛围有采用，未替换画师。",
+      "actualValidation": [
+        {
+          "callSeq": 177,
+          "resultSeq": 178,
+          "mode": "prompt-format",
+          "exitCode": 0
+        },
+        {
+          "callSeq": 182,
+          "resultSeq": 183,
+          "mode": "prompt-format revised",
+          "exitCode": 0
+        },
+        {
+          "callSeq": 187,
+          "resultSeq": 188,
+          "mode": "generation-result",
+          "exitCode": 0
+        }
+      ],
+      "waiting": {
+        "actualSceneChoiceQuestion": false,
+        "testReplyApplicable": false,
+        "note": "original 应等待而未等待；explicit-primary 已明确主场景，无需补选择。末尾泛化生图询问不属于预定义场景等待。"
+      },
+      "unrequestedGenerationObserved": false,
+      "generationEvidence": "完整工具调用中无生成提交；仅目录 MCP、文件与原校验器。",
+      "toolLedger": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "resultSeq": 18
+        },
+        {
+          "seq": 22,
+          "name": "bash",
+          "resultSeq": 23
+        },
+        {
+          "seq": 24,
+          "name": "bash",
+          "resultSeq": 25
+        },
+        {
+          "seq": 29,
+          "name": "bash",
+          "resultSeq": 30
+        },
+        {
+          "seq": 31,
+          "name": "bash",
+          "resultSeq": 32
+        },
+        {
+          "seq": 36,
+          "name": "bash",
+          "resultSeq": 37
+        },
+        {
+          "seq": 38,
+          "name": "bash",
+          "resultSeq": 39
+        },
+        {
+          "seq": 46,
+          "name": "bash",
+          "resultSeq": 47
+        },
+        {
+          "seq": 48,
+          "name": "bash",
+          "resultSeq": 49
+        },
+        {
+          "seq": 53,
+          "name": "bash",
+          "resultSeq": 54
+        },
+        {
+          "seq": 55,
+          "name": "bash",
+          "resultSeq": 56
+        },
+        {
+          "seq": 60,
+          "name": "bash",
+          "resultSeq": 61
+        },
+        {
+          "seq": 62,
+          "name": "bash",
+          "resultSeq": 63
+        },
+        {
+          "seq": 67,
+          "name": "mcp__noobai__search_base_models",
+          "resultSeq": 68
+        },
+        {
+          "seq": 69,
+          "name": "mcp__noobai__get_catalog_resource",
+          "resultSeq": 70
+        },
+        {
+          "seq": 71,
+          "name": "mcp__noobai__search_styles",
+          "resultSeq": 72
+        },
+        {
+          "seq": 76,
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "resultSeq": 77
+        },
+        {
+          "seq": 78,
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "resultSeq": 79
+        },
+        {
+          "seq": 80,
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "resultSeq": 81
+        },
+        {
+          "seq": 82,
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "resultSeq": 83
+        },
+        {
+          "seq": 87,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 88
+        },
+        {
+          "seq": 89,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 90
+        },
+        {
+          "seq": 91,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 92
+        },
+        {
+          "seq": 93,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 94
+        },
+        {
+          "seq": 98,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 99
+        },
+        {
+          "seq": 100,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 101
+        },
+        {
+          "seq": 102,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 103
+        },
+        {
+          "seq": 104,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 105
+        },
+        {
+          "seq": 109,
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "resultSeq": 110
+        },
+        {
+          "seq": 111,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 112
+        },
+        {
+          "seq": 113,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 114
+        },
+        {
+          "seq": 115,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 116
+        },
+        {
+          "seq": 120,
+          "name": "mcp__noobai__list_prompt_term_categories",
+          "resultSeq": 121
+        },
+        {
+          "seq": 122,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 123
+        },
+        {
+          "seq": 124,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 125
+        },
+        {
+          "seq": 126,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 127
+        },
+        {
+          "seq": 131,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 132
+        },
+        {
+          "seq": 133,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 134
+        },
+        {
+          "seq": 135,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 136
+        },
+        {
+          "seq": 137,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 138
+        },
+        {
+          "seq": 142,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 143
+        },
+        {
+          "seq": 144,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 145
+        },
+        {
+          "seq": 149,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 150
+        },
+        {
+          "seq": 151,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 152
+        },
+        {
+          "seq": 153,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 154
+        },
+        {
+          "seq": 155,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 156
+        },
+        {
+          "seq": 160,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 161
+        },
+        {
+          "seq": 162,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 163
+        },
+        {
+          "seq": 167,
+          "name": "bash",
+          "resultSeq": 168
+        },
+        {
+          "seq": 172,
+          "name": "bash",
+          "resultSeq": 173
+        },
+        {
+          "seq": 177,
+          "name": "bash",
+          "resultSeq": 178
+        },
+        {
+          "seq": 182,
+          "name": "bash",
+          "resultSeq": 183
+        },
+        {
+          "seq": 187,
+          "name": "bash",
+          "resultSeq": 188
+        },
+        {
+          "seq": 192,
+          "name": "bash",
+          "resultSeq": 193
+        },
+        {
+          "seq": 200,
+          "name": "bash",
+          "resultSeq": 201
+        }
+      ]
+    },
+    {
+      "variant": "explicit-primary",
+      "status": "未通过",
+      "targetBranch": "通过：用户已指定单主体肖像且条件成立，直接选定",
+      "input": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-explicit-primary-input.json",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791953550333-439157f3-a49d-48f2-bd05-ed931fca9c95-collect.json",
+      "sessionId": "session-55593e45-6171-4eb3-995a-973aa58103da",
+      "end": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      },
+      "findings": [
+        {
+          "id": "E1",
+          "severity": "high",
+          "title": "明确构图要求在 Prompt 中丢失，自检宣称完整",
+          "firstDecisionSeq": 105,
+          "firstArtifactSeq": 111,
+          "request": ".local/skills-mcp-migration-live/llm-calls/c2afa83f-2c29-4f6b-a08d-a09722d67738.jsonl:1",
+          "artifactRequest": ".local/skills-mcp-migration-live/llm-calls/505a052e-e78d-470c-8994-767d96f86951.jsonl:1",
+          "observed": "camera_composition 仅 medium shot、eye level、from outside、depth of field、centered；没有全部清晰、面部主焦点、空前景、人物中景、窗与花卉背景层级、无遮挡、腰部以下裁剪及头肩双臂完整可见的明确表达。detailed face 是细节强调，不能表达面部主焦点；depth of field 没有规定全部清晰。",
+          "contract": "references/prompt-position-rules/camera-composition.md 使用选定候选构图及完成检查；references/wai-prompt-position-order.md 组合前检查。",
+          "causeAssessment": "seq105 的决策把明确层级和清晰度视为可由现有标签、负向或参数推得，但实际 negative_prompt 没有防模糊项，尺寸也不表达景深。seq115 自检声称这些内容已满足，最终 seq128 继续如此报告。完整规则及用户输入仍在真实请求中，属于语义映射和自检偏离；未证明需要更强禁令或新代码。"
+        },
+        {
+          "id": "E2",
+          "severity": "medium",
+          "title": "已明确主场景后未登记其他匹配场景的次要约束",
+          "observed": "seq128 明称无次要约束；输入明确含裁剪、层级、窗边地点，符合遮挡与深度及环境叙事。",
+          "contract": "references/composition-scenario-branches.md:18 要求选定唯一主场景后登记其他匹配场景。",
+          "scope": "明确单主体肖像的直接选定目标本身通过，后续次要约束处理未通过。"
+        },
+        {
+          "id": "E3",
+          "severity": "medium",
+          "title": "底模查询与 Style 获取在同一模型响应内一并发出，缺少结果确认关口",
+          "decisionSeq": 56,
+          "request": ".local/skills-mcp-migration-live/llm-calls/1c67fc55-fd00-4794-95e8-0da6586f6d39.jsonl:1",
+          "toolSeqs": [
+            57,
+            58,
+            59,
+            60
+          ],
+          "observed": "工具宿主按顺序返回唯一 wai 后执行 Style，但调用 Style 的决定与底模查询一起产生，产生决定时尚未收到底模结果；底模缺失或重名时没有模型判断停止的机会。",
+          "contract": "references/artist-adoption.md:11 要求获取画师素材前先确定精确 wai 唯一底模。完整规则已在决定请求中存在。",
+          "outcome": "本次实际底模为唯一 wai id2，Style12344 匹配且说明完整；未观察到错误素材采用。查询调用名顺序改善，不足以确认业务前置条件已执行。"
+        },
+        {
+          "id": "E4",
+          "severity": "medium",
+          "title": "前中后景与裁剪所需空间关系规则未完整读取",
+          "observed": "完整调用轨迹没有读取 spatial-relation-rules.md 的命令；实际请求未出现该文件全文。",
+          "contract": "references/prompt-position-rules/camera-composition.md 空间关系，以及矩阵遮挡与深度分支要求读取。",
+          "actualFullDocumentInRequests": false
+        },
+        {
+          "id": "E5",
+          "severity": "medium",
+          "title": "最后回复未返回校验 stdout 中的完整生成结果",
+          "finalSeq": 128,
+          "request": ".local/skills-mcp-migration-live/llm-calls/3b2d1b5c-3ac9-49a0-bdd3-5fa15fbc27ca.jsonl:1",
+          "observed": "最终消息返回说明和文件链接，未直接返回完整十属性对象。正文列出 Prompt、负向和尺寸，但未返回校验后的十属性 JSON。",
+          "contract": "SKILL.md 第 7 节及 generation-output-contract.md 校验结果要求返回 stdout 中生成结果。",
+          "deliveryBoundary": "用户要求保存的 generation-output.json 十字段完整且与校验结果一致，文件交付通过；本项按 Skill 的直接返回要求记录，不把文件误报为缺 positive_prompt。"
+        }
+      ],
+      "actualRequestRetention": [
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/80f4cab9-2a4f-4bd6-af7d-f2717f288e05.jsonl:1",
+          "at": "2026-10-14T04:47:26.978Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/composition-scenario-branches.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 10,
+                  "role": "tool",
+                  "messageCharacters": 8041
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/1c67fc55-fd00-4794-95e8-0da6586f6d39.jsonl:1",
+          "at": "2026-10-14T04:47:55.295Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/artist-adoption.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 14,
+                  "role": "tool",
+                  "messageCharacters": 18436
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/c2afa83f-2c29-4f6b-a08d-a09722d67738.jsonl:1",
+          "at": "2026-10-14T04:48:47.351Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/prompt-position-rules/camera-composition.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 13,
+                  "role": "tool",
+                  "messageCharacters": 18707
+                }
+              ]
+            },
+            {
+              "source": "references/prompt-self-check.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 16,
+                  "role": "tool",
+                  "messageCharacters": 24355
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/505a052e-e78d-470c-8994-767d96f86951.jsonl:1",
+          "at": "2026-10-14T04:48:58.736Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/prompt-position-rules/camera-composition.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 13,
+                  "role": "tool",
+                  "messageCharacters": 18707
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/3b2d1b5c-3ac9-49a0-bdd3-5fa15fbc27ca.jsonl:1",
+          "at": "2026-10-14T04:51:19.966Z",
+          "newSkillParagraphInMessages": [
+            5
+          ],
+          "documents": [
+            {
+              "source": "references/generation-output-contract.md",
+              "fullTextInActualRequest": [
+                {
+                  "messageIndex": 17,
+                  "role": "tool",
+                  "messageCharacters": 14164
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "actualResponseDelivery": [
+        {
+          "hostResultSeq": 58,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/e5e3023a-42b2-40f9-ad55-f70320f161c5.jsonl:1",
+          "messageIndex": 22
+        },
+        {
+          "hostResultSeq": 60,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/e5e3023a-42b2-40f9-ad55-f70320f161c5.jsonl:1",
+          "messageIndex": 23
+        },
+        {
+          "hostResultSeq": 112,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/52b773e1-c52c-48f7-8927-f6522c3f51b3.jsonl:1",
+          "messageIndex": 45
+        },
+        {
+          "hostResultSeq": 117,
+          "firstRequestWithExactFullResult": ".local/skills-mcp-migration-live/llm-calls/3b8c3f79-409e-41e3-91d0-9c0a86c1d911.jsonl:1",
+          "messageIndex": 47
+        }
+      ],
+      "artifacts": {
+        "generationResult": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-5dXG1x/5.5-3/generation-output.json",
+        "positions": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-5dXG1x/5.5-3/prompt-positions.json",
+        "otherFiles": [
+          "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-5dXG1x/5.5-3/prompt.txt",
+          "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-5dXG1x/5.5-3/generation-output.pretty.json",
+          "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-5dXG1x/5.5-3/negative.txt"
+        ],
+        "savedResultHasTenFields": true,
+        "savedEqualsActualValidatorResult": true,
+        "dimensions": {
+          "generation_purpose": "test",
+          "aspect_ratio": "2:3",
+          "width": 1024,
+          "height": 1536,
+          "megapixels": 1.572864
+        },
+        "usableScope": "结构化生成候选，可供后续修改；当前完整 Spec 未通过，不能作为已验收成功结果。"
+      },
+      "styleAdoption": "保持用户 Style Prompt say_hana；查询返回花卉与少女、淡雅配色、诗意氛围、细腻柔美，最终氛围有采用，未替换画师。",
+      "actualValidation": [
+        {
+          "callSeq": 111,
+          "resultSeq": 112,
+          "mode": "prompt-format",
+          "exitCode": 0
+        },
+        {
+          "callSeq": 116,
+          "resultSeq": 117,
+          "mode": "generation-result",
+          "exitCode": 0
+        }
+      ],
+      "waiting": {
+        "actualSceneChoiceQuestion": false,
+        "testReplyApplicable": false,
+        "note": "original 应等待而未等待；explicit-primary 已明确主场景，无需补选择。末尾泛化生图询问不属于预定义场景等待。"
+      },
+      "unrequestedGenerationObserved": false,
+      "generationEvidence": "完整工具调用中无生成提交；仅目录 MCP、文件与原校验器。",
+      "toolLedger": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "resultSeq": 18
+        },
+        {
+          "seq": 22,
+          "name": "bash",
+          "resultSeq": 23
+        },
+        {
+          "seq": 24,
+          "name": "bash",
+          "resultSeq": 25
+        },
+        {
+          "seq": 29,
+          "name": "bash",
+          "resultSeq": 30
+        },
+        {
+          "seq": 31,
+          "name": "bash",
+          "resultSeq": 32
+        },
+        {
+          "seq": 36,
+          "name": "bash",
+          "resultSeq": 37
+        },
+        {
+          "seq": 38,
+          "name": "bash",
+          "resultSeq": 39
+        },
+        {
+          "seq": 43,
+          "name": "bash",
+          "resultSeq": 44
+        },
+        {
+          "seq": 45,
+          "name": "bash",
+          "resultSeq": 46
+        },
+        {
+          "seq": 50,
+          "name": "bash",
+          "resultSeq": 51
+        },
+        {
+          "seq": 52,
+          "name": "bash",
+          "resultSeq": 53
+        },
+        {
+          "seq": 57,
+          "name": "mcp__noobai__search_base_models",
+          "resultSeq": 58
+        },
+        {
+          "seq": 59,
+          "name": "mcp__noobai__get_catalog_resource",
+          "resultSeq": 60
+        },
+        {
+          "seq": 64,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 65
+        },
+        {
+          "seq": 66,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 67
+        },
+        {
+          "seq": 71,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 72
+        },
+        {
+          "seq": 73,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 74
+        },
+        {
+          "seq": 78,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 79
+        },
+        {
+          "seq": 80,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 81
+        },
+        {
+          "seq": 85,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 86
+        },
+        {
+          "seq": 87,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 88
+        },
+        {
+          "seq": 92,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 93
+        },
+        {
+          "seq": 94,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 95
+        },
+        {
+          "seq": 99,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 100
+        },
+        {
+          "seq": 101,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "resultSeq": 102
+        },
+        {
+          "seq": 106,
+          "name": "bash",
+          "resultSeq": 107
+        },
+        {
+          "seq": 111,
+          "name": "bash",
+          "resultSeq": 112
+        },
+        {
+          "seq": 116,
+          "name": "bash",
+          "resultSeq": 117
+        },
+        {
+          "seq": 121,
+          "name": "bash",
+          "resultSeq": 122
+        }
+      ]
+    }
+  ],
+  "revisionEffect": {
+    "observed": "引用责任已统一，但原输入本轮仍自主选择主场景；明确主场景变体的直接选择通过。",
+    "conclusion": "此次引用修改没有在同输入复验中实现目标等待，完整流程两例均未通过。上一轮旧首段提供竞争来源的证据仍成立，本轮反证其为唯一原因或必要原因的说法。",
+    "hypotheses": "模型可能按单人肖像直接套用常见流程，或因文档量、示例显著性而遗漏条件；当前证据不能区分这些解释。实际矩阵全文仍在首次偏离请求中，不支持规则被裁剪的解释。",
+    "nextEvidence": "后续若诊断，应围绕 seq35 实际输入中已可见选择规则如何进入决策进行受控对照，保持其他条件；本报告不授权改 Skill 或继续模型。"
+  },
+  "structuralBoundary": "两例保存结果均通过实际原校验器、十字段和尺寸一致；结构有效不等于语义通过。",
+  "originalFailuresPreserved": [
+    "builder-success-review.json",
+    "wai-limit-rerun-review.json"
+  ]
+}

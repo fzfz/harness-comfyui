@@ -1,0 +1,31 @@
+{
+  "purpose": "记录采集模块运行副本的准备合同与验证范围",
+  "evidence": {
+    "profile": "tests/desktop/fixtures/official-session-trace.mjs:prepareOfficialSessionTraceProfile",
+    "observed": "Profile原先直接引用worktree中的采集模块，其父目录包含其他场景的验收资料。",
+    "requirement": "主计划5.13.1要求采集模块及依赖在本轮独立运行目录。"
+  },
+  "repairScope": {
+    "owner": "现有采集模块的Profile准备函数",
+    "files": [
+      "tests/desktop/fixtures/official-session-trace.mjs",
+      "tests/desktop/fixtures/official-trace-evidence.mjs",
+      "config/desktop-e2e-schema.mjs"
+    ],
+    "operation": "复制三份原文件并保持相对布局，逐字节核对；Profile及激活验证使用同一副本路径。",
+    "failure": "准备或复制失败在写入Profile前报错。"
+  },
+  "verification": [
+    "运行副本可直接导入",
+    "副本与当前源码逐字节一致",
+    "Profile及激活记录路径一致",
+    "worktree路径的激活记录被拒绝",
+    "已有probe及导出回归",
+    "官方Desktop采集与中断测试"
+  ],
+  "status": "运行副本及导出/probe定向测试通过；独立复审与Desktop验证中",
+  "tests": {
+    "captureAndEvidence": 17,
+    "exportAndProbe": 71
+  }
+}

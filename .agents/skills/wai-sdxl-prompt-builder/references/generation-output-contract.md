@@ -1,3 +1,7 @@
+---
+文档用途: 规定 WAI 生成结果的构造与校验。
+读取时机: 按 SKILL.md 构造生成结果时。
+---
 # WAI 生成结果构造与校验
 
 ## 结构化数据来源
@@ -35,7 +39,7 @@ Skill 执行者使用 `references/generation-profiles.json` 中 `model_routes.wa
 
 - `model_route` 使用 `"wai-illustrious-sdxl"`。
 - `negative_mode` 使用该路线的 `negative_mode`。
-- `negative_prompt` 先按原顺序复制该路线的 `base_negative_items[]`。Skill 执行者再按用户要求出现的顺序，把用户明确要求从画面中排除的每项内容写成一个或多个描述不应出现内容的英文标签或短语，并按写出顺序追加每个标签或短语。Skill 执行者删除完全相同的重复字符串，最后使用 `, ` 连接全部字符串。
+- `negative_prompt` 先按原顺序复制该路线的 `base_negative_items[]`。Skill 执行者再按用户要求出现的顺序，把用户明确要求从画面中排除的每项内容写成一个或多个描述待排除内容的英文标签或短语，并按写出顺序追加每个标签或短语。Skill 执行者删除完全相同的重复字符串，最后使用 `, ` 连接全部字符串。
 - `positive_avoidance` 使用 `null`。
 
 ## 生成结果
@@ -90,6 +94,6 @@ ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals
 
 退出码 `0` 对应的 stdout、stderr 或从 stdout 解析得到的 JSON 对象不符合退出码 `0` 的成功结果结构，或者退出码 `2` 对应的 stdout、stderr 或从 stderr 首行解析得到的 `violations[]` 不符合退出码 `2` 的失败结果结构时，Skill 执行者报告实际退出码、不符合要求的输出通道或属性、实际结果和预期要求，然后停止本次执行。
 
-## 帮助与操作提示
+## 命令帮助
 
 Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 提示。错误结果按照前述校验结果规则处理。

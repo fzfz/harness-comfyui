@@ -1,0 +1,86 @@
+{
+  "purpose": "核对获准免费模型的两次Builder单步对照输入与调用边界。",
+  "readWhen": "执行builder-model-comparison-contract.json规定的两次调用前。",
+  "readyForExecution": true,
+  "readinessMeaning": "合同与既有baseline可用于两次单步比较；调用前仍须保存派生options、核对隔离配置和当时免费状态。",
+  "reviewModelCalls": 0,
+  "reviewApplicationStarts": 0,
+  "findings": [],
+  "inputChecks": [
+    {
+      "sourceCallId": "9d405a42-181d-4714-a04f-b1982e62b410",
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-preparation/9d405a42-181d-4714-a04f-b1982e62b410-baseline.json",
+      "executedOptions": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-runtime/inputs/9d405a42-181d-4714-a04f-b1982e62b410-baseline-options.json",
+      "messagesCount": 27,
+      "sourceBytes": 449053,
+      "allExecutedOptionFieldsMatchSource": true,
+      "permittedChangedOptionFields": [
+        "provider",
+        "model"
+      ],
+      "maxTokens": 32768
+    },
+    {
+      "sourceCallId": "86d1c0f6-659a-4f44-a6c5-777fafb27a4d",
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-preparation/86d1c0f6-659a-4f44-a6c5-777fafb27a4d-baseline.json",
+      "executedOptions": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/builder-E2-runtime/inputs/86d1c0f6-659a-4f44-a6c5-777fafb27a4d-baseline-options.json",
+      "messagesCount": 39,
+      "sourceBytes": 522826,
+      "allExecutedOptionFieldsMatchSource": true,
+      "permittedChangedOptionFields": [
+        "provider",
+        "model"
+      ],
+      "maxTokens": 32768
+    }
+  ],
+  "metadataCheck": {
+    "source": "https://openrouter.ai/api/v1/models",
+    "savedCatalog": ".local/skills-mcp-migration-live/free-tool-model-catalog-20261014.json",
+    "checkedAt": "2026-10-14T11:55:06.184005+00:00",
+    "exactId": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "liveReadMatchesSavedCoreFields": true,
+    "context_length": 1000000,
+    "topProviderMaxCompletionTokens": 65536,
+    "requestedMaxTokens": 32768,
+    "toolsSupported": true,
+    "toolChoiceSupported": true,
+    "promptPrice": "0",
+    "completionPrice": "0",
+    "modalities": "text->text",
+    "capacityAssessment": "两份序列化源输入约449KB与523KB，目录公布的上下文容量充足；实际adapter请求token计数尚未取得，执行时保存usage和上下文错误。该任务仅消费文本及工具声明，无图像输入需求。",
+    "pricingBoundary": "已核对带:free后缀的精确ID；无后缀模型的收费端点目录不能代替此项验证。"
+  },
+  "authorization": {
+    "source": "docs/plans/skills-mcp-migration-20261013.md:1373",
+    "result": "第7节第8项允许获准免费OpenRouter模型并要求调用前核对能力与免费状态；本合同只使用该范围内精确ID。"
+  },
+  "runtimeBoundary": {
+    "api": "官方LlmRuntime.stream",
+    "calls": 2,
+    "timeoutMsEach": 360000,
+    "toolExecutions": 0,
+    "agentLoops": 0,
+    "retries": 0,
+    "optionConstruction": "从已执行E2 baseline options复制，仅替换顶层provider/model；保留sessionId、messages、tools、toolHistory与maxTokens。源request中的at/callId/kind及purpose:null继续按E2规则排除。signal单独传递并保存超时信息。",
+    "preservation": "不改历史assistant source/replayState中的原provider/model，不追加提示，不把对照结果送回原会话。历史provider信息属于固定上下文。",
+    "beforeCalls": [
+      "保存两份派生options并深比较，差异仅允许顶层provider/model。",
+      "隔离Profile注册所选精确ID及允许的maxTokens，观察器allowlist涵盖该ID，预算限制为2；运行时实际provider/model必须保存。",
+      "调用前重新读取公开目录确认免费与tools能力，失败或价格变化记录环境受阻。",
+      "保存官方边界options、完整chunks和finish/异常；不执行返回工具，停止并核对自有应用清理。"
+    ]
+  },
+  "judgment": {
+    "point9d405a42": "必须调用query_semantic_prompt_terms，保留mode=search、query=black bow hair ornament、page_size=10及其他原条件，page=2。",
+    "point86d1c0f6": "必须调用query_semantic_prompt_terms，保留mode=search、query=twintails、page_size=6及其他原条件，page=2。",
+    "classification": "改词、增加分类、改变page_size或省略page继续默认第一页分别记录为新查询；返回工具调用尚未执行。"
+  },
+  "limits": [
+    "模型与Provider同时变化，只支持本次能力比较，无法单独归因模型。",
+    "原采样参数缺口、跨Provider adapter对历史推理块和replayState的处理差异保留；边界options一致不代表线级请求相同。",
+    "每点一个样本；单步成功不证明完整分页、稳定修复或完整Skill通过。",
+    "两次调用无需位置变体或Go重复基线；E1完整候选语义复核已完成，E2原失败状态保留。"
+  ],
+  "nextAction": "执行者落实beforeCalls后执行合同内两次调用，独立审查实际返回；本报告未执行模型。"
+}

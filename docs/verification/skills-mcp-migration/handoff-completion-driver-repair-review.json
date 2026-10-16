@@ -1,0 +1,144 @@
+{
+  "purpose": "独立复核 C1 驱动修复、34 份历史请求离线回放和反例测试。",
+  "recordedAt": "2026-10-14T11:11:51.487358+00:00",
+  "overallVerdict": "pass",
+  "originalC1ChecksVerdict": "pass",
+  "capturedSampleVerdict": "pass",
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P2",
+      "title": "续派子模型请求丢失任务时，驱动仍判定通过",
+      "locations": [
+        ".local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs:47",
+        ".local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs:30",
+        ".local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs:60",
+        ".local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs:75"
+      ],
+      "evidence": "request-evidence-complete 仅核对请求数量、序号和 body 对象。activationFor 以 messageId 连接 child inbox；tool-results-visible-and-consistent 只比较父侧工具结果。子侧实际 HTTP 请求未与任务或 child inbox 关联。",
+      "reproduction": {
+        "source": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/evidence-index.json",
+        "method": "加载原始 execution、events、34 份 requests 后，仅在内存中将 sequence=13 的 request.body.messages 改为 []，调用 assessControlledLifecycle。",
+        "originalRequest": "native-workbench / child-CONTINUE，原始 messages 包含 CONTROLLED_CHILD_CONTINUE:native-workbench。",
+        "observed": {
+          "status": "pass",
+          "exitCode": 0,
+          "failedCheckCount": 0
+        },
+        "secondCounterexample": "保留 CONTINUE messageId，仅将对应 child inbox 内容及 child 历史中的同条内容改为 WRONG_TASK，实际请求保持原样；结果同样为 pass、exitCode=0、failedCheckCount=0。"
+      },
+      "impact": "子任务投递或子模型上下文构造发生回归时，即使新 Activation 正常结束，驱动仍可能通过。离线回放的成功当前只证明已实现的结构断言通过。",
+      "recommendation": "从实际派发参数、accepted messageId、child inbox、child Activation 和对应实际 HTTP 请求建立关联，断言受控任务标记进入子模型请求；增加任务缺失及 inbox 与实际请求不一致的反例。",
+      "status": "resolved",
+      "resolvedAt": "2026-10-14T11:11:51.487358+00:00",
+      "historicalEvidenceQualification": "本条 evidence、reproduction 和 impact 保留首次审查时的行为；当前复验结果见 followupR1Review。"
+    }
+  ],
+  "coverageLimits": [
+    "实际官方样本仍是既有 6Xztjj；本次未启动应用、模型或服务。",
+    "本次核对受控生命周期结构；真实模型业务质量、标准官方 Preset 对照、PTC 取消冷续派仍未验证。",
+    "测试依赖 .local 下的既有采集，不是可独立重建的自包含夹具。",
+    "本报告提出的是驱动覆盖缺口；既有原始请求中的续派任务实际存在。"
+  ],
+  "worktreeChanges": "仅更新本审查 JSON；离线 CLI 复验的临时输出已删除；未修改驱动、测试或原始采集。",
+  "initialReviewRecordedAt": "2026-10-14T10:52:47.489749+00:00",
+  "openFindingCount": 0,
+  "verdictScope": "当前 C1 与 R1 的受控生命周期结构及离线退出状态通过独立复核。",
+  "initialVerification": {
+    "localTests": {
+      "command": "node --test .local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+      "exitCode": 0,
+      "passed": 18,
+      "failed": 0
+    },
+    "originalReplay": {
+      "capturedRequestCount": 34,
+      "status": "pass",
+      "exitCode": 0,
+      "failedCheckCount": 0,
+      "method": "独立重新加载原始证据调用 assessControlledLifecycle；18 项测试中的 CLI replay 另经真实子进程验证成功与失败退出码。"
+    },
+    "exitPropagation": {
+      "run": ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:296-298 将统一 assessment.exitCode 写入 process.exitCode；main catch 于 357 行将异常设为 1。",
+      "replay": ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:343 将 replay assessment.exitCode 写入进程退出码。CLI 测试验证基线为 0，变更历史后的失败为 1。",
+      "qualification": "本次未启动 live run；run 退出状态接入通过代码审查确认，replay 退出状态通过离线 CLI 测试确认。"
+    },
+    "originalC1Counterexamples": "空 roster、错误 CONTINUE、复用 Activation ID、父结果早于子结束、native/PTC DENY 意外成功、旁路投递、历史缺失、父结果与 HTTP 不一致、首次恢复请求缺少 accepted 身份均有失败断言且当前测试通过。",
+    "redGreenEvidence": "continue、completion-order、denial、evidence-consistency、identity 的 red 日志包含对应 AssertionError，当前 18 项测试全部通过。roster 为移除断言后的敏感性验证；原始实现的 roster red 不存在。exit-gate red 首先因未知 --evidence-index 失败；replay-preservation red 因错误文案未匹配失败。上述两份 red 日志分别证明 CLI 接入和文案差异，不能单独证明原驱动错误业务结果曾退出 0。"
+  },
+  "followupR1Review": {
+    "verdict": "pass",
+    "newFindings": [],
+    "locations": [
+      ".local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs:45",
+      ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:104",
+      ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:292",
+      ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:339",
+      ".local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs:296"
+    ],
+    "structuralEvidence": "CONTINUE 实际参数与 controlledDispatchArgs 完全匹配；accepted messageId 关联原 child 的 inbox 和已提交 user/message，消息包含精确 task 或 requirements JSON。实际 HTTP 请求中的完整 user 文本与 inbox 拼接文本相等。关联同时核对 childRequests 序号、case、child-CONTINUE 阶段、request/header 模型、请求时间及 Activation 结束时间。",
+    "delivery": [
+      {
+        "case": "native-workbench",
+        "requestSequence": 13,
+        "childId": "fe6e0fdf-9bfb-4863-8936-68f9af8caa20",
+        "messageId": "96938455-2776-4a2a-9f00-8413932a5a4a",
+        "activationId": "e210025d-5f57-4e1c-9ac8-017560ca143c",
+        "eventIndexes": {
+          "call": 139,
+          "inbox": 141,
+          "committed": 145,
+          "header": 146
+        }
+      },
+      {
+        "case": "native-iteration",
+        "requestSequence": 18,
+        "childId": "30a0345a-6c6b-4d76-851e-a90809afed4a",
+        "messageId": "1211815c-0db0-4174-b483-d94793def1a1",
+        "activationId": "911d6d6d-c6d6-491e-8615-b3dea84cd32c",
+        "eventIndexes": {
+          "call": 182,
+          "inbox": 184,
+          "committed": 188,
+          "header": 189
+        }
+      }
+    ],
+    "localTests": {
+      "command": "node --test .local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+      "passed": 22,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "independentReplay": {
+      "source": ".local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/evidence-index.json",
+      "requests": 34,
+      "checks": 46,
+      "failedChecks": 0,
+      "assessmentExitCode": 0,
+      "cliExitCode": 0
+    },
+    "independentCounterexamples": [
+      {
+        "mutation": "request-13.body.messages=[]",
+        "assessmentExitCode": 1,
+        "cliExitCode": 1,
+        "failedCheck": "native-workbench:continuation-task-in-child-request"
+      },
+      {
+        "mutation": "request-18.body.messages=[]",
+        "assessmentExitCode": 1,
+        "failedCheck": "native-iteration:continuation-task-in-child-request"
+      }
+    ],
+    "counterexampleTests": "新增四项测试覆盖清空子请求、修改 inbox 和已提交历史而保留原 HTTP、同步修改 requirements 而保留 description、直接 user/message 旁路。各项均检查目标断言失败；本次重跑全部通过。",
+    "redGreenEvidence": "continuation-request-red.log 记录新增四项断言失败；本次 22 项测试全部通过。",
+    "exitPropagation": "run.mjs:292-294 和 339 仍将统一 assessment.exitCode 传递到进程退出状态；异常路径在 353 行设为 1。原始样本及清空 request-13 的 CLI replay 由本次独立启动离线 Node 子进程验证。",
+    "limits": [
+      "本次验证两条 native CONTINUE 请求中的固定任务和完整转发文本；首次派发内容与其他业务任务不在 R1 修复验收范围。",
+      "HTTP 请求与子 Activation 通过采集序号、阶段、时间窗口和模型关联，未引入跨传输层 request ID。当前两个续派各匹配一份实际请求。",
+      "live run 的退出状态接入经代码核对；本次未重新启动官方应用、模型或服务。"
+    ]
+  }
+}

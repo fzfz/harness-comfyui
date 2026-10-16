@@ -1,0 +1,69 @@
+{
+  "scope": [
+    ".agents/skills/anima-prompt-builder/references/03-output-protocol.md：YAML 头、标准输入和成功结果 JSON 示例",
+    ".agents/skills/anima-prompt-builder/references/06-slot-order.md：YAML 头、第 4.4 节",
+    "docs/plans/skills-mcp-migration-20261013.md：第 5.3.1、5.12.2.1、6 节",
+    ".planning/skills-mcp-migration/progress.md：第 36 节第 104—110 项",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md：Tool schema 可见性第 3 项",
+    "docs/plans/skills-mcp-migration-20261013.md：第 5.12.2 节第 1 项"
+  ],
+  "method": "已逐行阅读指定范围及必要相邻内容；未读取被引用资料，未运行脚本判断语义，未修改被审阅文件。",
+  "findings": [],
+  "noFindings": [
+    "两份参考文件的 YAML 头均明确说明文档用途和读取时机。",
+    "03-output-protocol.md 两个指定 JSON 示例的槽位内容、拼接后的 prompt_text 和 display_text 在文字层面一致。",
+    "计划第 5.12.2.1 节的执行主体、操作对象及验证方式清晰，本次文字审计未发现问题。",
+    "Tool schema 可见性第 3 项明确给出中断工具的注册模块和父 Agent 继续子任务的调用入口，本次文字审计未发现问题。",
+    "计划第 5.12.2 节第 1 项明确给出实施主体、修复对象、工具注册引用及先补证据再实施的顺序，本次文字审计未发现问题。"
+  ],
+  "limitations": "本次仅审阅文字含义与组织方式；引用文件的实际合同、实现行为及进度中事实性结论未在本次范围内核验。",
+  "status": "passed",
+  "resolvedFindings": [
+    {
+      "id": "S1",
+      "location": "06-slot-order.md:59-69",
+      "result": "使用条件保留在第 4.4.1 节，表格改为关系表达示例，已消除必须使用自然语言的绝对判断。"
+    },
+    {
+      "id": "S2",
+      "location": "06-slot-order.md:59-69",
+      "result": "已删除校验器拼接说明和示例末尾位置说明。"
+    },
+    {
+      "id": "S3",
+      "location": "06-slot-order.md:57-73",
+      "result": "使用条件、示例和格式已使用四级标题，规则已使用有序项目。"
+    },
+    {
+      "id": "S4",
+      "location": "skills-mcp-migration-20261013.md:423",
+      "result": "已明确实施者及上述两个 Markdown 文件。"
+    },
+    {
+      "id": "S5",
+      "location": "skills-mcp-migration-20261013.md:1341-1343",
+      "result": "待决策章节已删除已确定的修复范围说明。"
+    },
+    {
+      "id": "S6",
+      "location": "progress.md:359",
+      "result": "已补明应用报告的逐文件记录，以及运行目录与归档副本两个比较对象。"
+    },
+    {
+      "id": "S7",
+      "location": "progress.md:359",
+      "result": "已提供应用后复查报告链接。"
+    },
+    {
+      "id": "S8",
+      "location": "progress.md:357,361",
+      "result": "测试结果保存说明已替换为具体日志路径，已删除无具体动作的保持业务边界短语。"
+    },
+    {
+      "id": "S9",
+      "location": "progress.md:362",
+      "result": "已删除未修改脚本的附加说明。"
+    }
+  ],
+  "conclusion": "指定范围复审通过，S1—S9 均已解决，未发现新增文字问题。"
+}

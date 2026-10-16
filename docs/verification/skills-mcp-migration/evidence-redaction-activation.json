@@ -1,0 +1,33 @@
+{
+  "status": "applied-independent-review-complete-with-recorded-limits",
+  "dryRun": ".local/skills-mcp-migration-live/evidence-redaction-dry-run.json",
+  "files": 2537,
+  "knownValueCount": 32,
+  "replacements": 2206,
+  "dryRunRemainingKnownValueOccurrences": 0,
+  "dryRunNonCredentialDifferences": 0,
+  "dryRunStructuralFailures": 0,
+  "observerCopyInventory": ".local/skills-mcp-migration-live/observer-copy-inventory.json",
+  "observerCopyActivation": ".local/skills-mcp-migration-live/observer-copy-activation.json",
+  "observerCopiesUpdated": 14,
+  "copyByteEquality": true,
+  "historicalApplication": ".local/skills-mcp-migration-live/evidence-redaction-applied.json",
+  "independentPostApplicationReview": "evidence-redaction-post-application-review.json",
+  "applicationSummary": {
+    "mode": "apply",
+    "knownValueCount": 32,
+    "replacements": 2206,
+    "remainingKnownValueOccurrences": 0,
+    "files": 2537,
+    "excluded": 0,
+    "changed": 614,
+    "nonCredentialDifferences": 0,
+    "structuralFailures": 0
+  },
+  "independentRuntimeCopyReview": "evidence-redaction-post-application-review.json",
+  "reviewLimits": [
+    "Only 3 independently reconstructable credential values were checked; original 32-value set was not retained.",
+    "Before/after noncredential equality relies on application-time in-memory comparison.",
+    "Six historical files lacked terminal records; this pre-existing evidence limit remains."
+  ]
+}

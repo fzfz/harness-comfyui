@@ -1,0 +1,102 @@
+{
+  "purpose": "限定观察派发的媒体引用解析方案及实施前核对项。",
+  "readWhen": "核对图片路径转交的修复范围和内部服务接口时。",
+  "status": "内部服务可见性已核对；完整实施合同待独立审查，产品尚未修改",
+  "basis": "four-role-handoff-causal-design.json 中 C1 与 R1",
+  "verifiedProblem": "父 Agent 将已查询的图片路径转抄到观察工具参数时漏写字符；派发组件原样传递错误值，读图返回 FILE_INVALID。",
+  "responsibilities": {
+    "parent": "从本任务实际生成记录中选择 run_id 与 media_id，提供中性问题和输出文件。",
+    "dispatch": "按真实调用会话所属 Workspace 解析所选媒体，将查询所得路径传给观察 Agent，并沿用既有等待与恢复机制。",
+    "observer": "按收到的本地路径调用 local-image-reader，记录原始观察。"
+  },
+  "candidateContract": [
+    "观察工具 images 每项使用 run_id 与 media_id 两个必填字符串；移除该工具的 path 输入字段。只处理父任务明确列出的媒体，保留顺序及重复项。",
+    "复用 GenerationRuntime.readGenerationRunMedia 和 deriveGenerationToolExecutionIdentity 的 Workspace 归属核验；内部解析只返回实际 run_id、media_id、file_path，不把原 Prompt、parameters 或 title 带入观察消息。",
+    "调用方保持 questions 与 output_files 原值。子任务消息仍提供读图 Skill 所需的 path；该值逐字来自媒体查询结果的 file_path。",
+    "所有引用解析成功后才创建或续派子会话；参数准备期间的引用无效、媒体未就绪、跨 Workspace 或取消均保持零派发。接纳后取消沿用既有身份保存和恢复流程。",
+    "生成查询结果保存完整原始输出，生成记录向主 Agent 提供媒体身份；观察记录继续保存图片路径及 Run 对应关系。"
+  ],
+  "preImplementationChecks": [
+    "确认官方运行时的观察派发组件能够注入当前插件内部服务，并从真实 Tool Call 取得 Workspace 身份。",
+    "确定共享身份核验与媒体读取的单一入口；复用既有服务，不复制 Workspace 归属算法。",
+    "核对仅迭代预设具有 subagent_observation；工作台通用派发保持原参数合同。",
+    "将完整代码合同及受影响 Skill 目标文字纳入主计划，经独立功能与文字审查后实施。"
+  ],
+  "expectedFiles": [
+    "agent-presets/project-iteration-dispatch.mjs 的观察输入适配入口或同层专用观察适配器",
+    "agent-presets/harness-comfyui-iteration/agent.cordis.yml 的 observation-agent",
+    "src/host/core/plugin.ts 的内部服务接口及共享媒体查询消费者",
+    "src/host/generation/tool-execution-identity.ts 的现有身份核验消费者",
+    "相关配置、确定性测试及 .agents/skills/comfyui-iterate-generation 的输入交接说明",
+    "src/host/core/schema.ts",
+    "src/host/generation/observation-media.ts",
+    "agent-presets/project-observation-dispatch.mjs",
+    "config/plugin-runtime-resources.json",
+    "tests/production/native-iteration-roles.test.mjs",
+    "tests/production/official-mcp-acceptance.test.mjs",
+    "tests/production/source-agent-preset.test.mjs",
+    "tests/production/fixtures/project-subagent-control-runtime.mjs"
+  ],
+  "acceptance": [
+    "对原 Run 的已保存媒体结果执行无模型回放，核对进入子任务的路径逐字一致且没有 Prompt 或目标泄漏。",
+    "覆盖指定多图子集、重复引用、超过单批数量、无媒体、错误媒体 ID、无效 Run、跨 Workspace；参数准备失败或派发前取消时零子任务，接纳后取消保留身份并恢复原子会话。",
+    "完成官方安装与真实 ToolRuntime 探针，再以相同模型、输入、数据执行原一轮一图场景，独立核对完整轨迹。"
+  ],
+  "limits": [
+    "官方服务可见性已经核对；实际媒体解析与派发流程仍需实施后的官方 ToolRuntime 验证。",
+    "该修复针对路径转抄，不能据此关闭 Builder 当前消息交接失败或整体超时。",
+    "父 Agent 仍负责正确选择 Run 和媒体；身份输入错误必须显式失败。"
+  ],
+  "runtimeEvidence": {
+    "path": ".local/skills-mcp-migration-live/builder-E2-runtime/harness-run-aCty7n/service-visibility.json",
+    "claim": "官方隔离 Host 显式注入的 core runtime.readGenerationRunMedia 与 workspaceRegistry.resolveByPath 均可调用；本项未执行媒体读取或派发。"
+  },
+  "implementation": [
+    {
+      "owner": "src/host/generation/observation-media.ts",
+      "action": "提供内部解析函数，以 ToolRunContext、实际工具名及所选 run_id/media_id 为输入；通过 deriveGenerationToolExecutionIdentity 取得当前 Workspace；复用 readGenerationRunMedia 查询。按 MAX_RUN_INPUT_QUERY_IDS 分批处理 Run 引用，完整查询后按原顺序映射所选媒体，保留重复项；只返回 run_id、media_id、path。"
+    },
+    {
+      "owner": "src/host/core/schema.ts 与 plugin.ts",
+      "action": "在现有 CoreServices 上暴露上述解析函数的闭包，绑定既有 runtime 和 workspaceRegistry；工具调用上下文与工具名由调用者传入。"
+    },
+    {
+      "owner": "agent-presets/project-iteration-dispatch.mjs",
+      "action": "为现有派发注册函数提供可选的异步参数准备回调；参数准备在创建观察器、创建或续派子会话之前完成；完成后复查取消信号。普通派发使用原参数，全部角色复用现有等待与接纳身份流程。"
+    },
+    {
+      "owner": "agent-presets/project-observation-dispatch.mjs",
+      "action": "新增仅供观察角色加载的轻量适配器；显式注入 tools、subagents、harnessComfyuiCore，调用共享派发函数，通过内部解析闭包替换 images，保留其余参数。"
+    },
+    {
+      "owner": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "action": "仅 observation-agent 更换适配器路径；images 的 path 参数改为必填 media_id，run_id 保留。生成 persona 在生成结果中记录查询取得的媒体身份。输出 schema 与其他角色参数保持现有合同。"
+    },
+    {
+      "owner": "错误处理与测试",
+      "action": "空引用和无效结构在派发前报告具体参数错误；逐 Run 查询错误保留其已有错误码；所属 Run 没有所选媒体时使用 GENERATION_MEDIA_NOT_FOUND 并指出 run_id/media_id；参数准备、身份核验、媒体查询失败或派发前取消均保持零派发；接纳后取消保留已有身份，沿用既有恢复流程。对真实会话归属、分批、选定子集、重复引用、失败与取消、去除目标参数、普通派发回归编写确定性测试。"
+    },
+    {
+      "owner": "运行资源清单与角色发现消费者",
+      "action": "将新增适配器加入 config/plugin-runtime-resources.json；同步 tests/production/native-iteration-roles.test.mjs、official-mcp-acceptance.test.mjs、source-agent-preset.test.mjs 与 fixtures/project-subagent-control-runtime.mjs 的角色发现与装载。测试实际加载观察适配器及 core 闭包，其他角色继续使用共享派发。"
+    },
+    {
+      "owner": "文字目标",
+      "action": "将 textTargets 指向的独立审计目标用于对应文件；目标包含媒体身份交接说明及文档列表组织、重复定义清理，不改业务选择条件。"
+    }
+  ],
+  "textTargets": [
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "targetPath": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/SKILL.md"
+    },
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "targetPath": ".local/skills-mcp-migration-live/observation-media-targets/.agents/skills/comfyui-iterate-generation/references/records.md"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "targetPath": ".local/skills-mcp-migration-live/observation-media-targets/agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+    }
+  ]
+}

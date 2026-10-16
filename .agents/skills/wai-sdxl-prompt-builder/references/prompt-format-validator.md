@@ -1,3 +1,7 @@
+---
+文档用途: 提供 WAI Prompt 格式校验器的输入输出合同。
+读取时机: 按正文“读取时机与调用入口”读取。
+---
 # Prompt 格式校验器
 
 ## 读取时机与调用入口
@@ -139,6 +143,6 @@ Skill 执行者从 stdout JSON 读取 `prompt_text` 和 `display_text`；`prompt
 
 Skill 执行者报告不符合协议的具体退出码值、JSON 属性或输出通道及其不符合协议的内容，然后停止本次执行。返回协议错误不进入三次格式校验流程。
 
-## 帮助与操作提示
+## 命令帮助
 
 Skill 执行者运行 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --help` 查看输入合同、示例和模式入口。省略 `--quiet` 时，成功结果的 stderr 包含 `NEXT:` 提示。输入格式失败时，stderr 首行 JSON 后附有 `NEXT:` 修正指引。Skill 执行者结合该指引，按照“输入格式失败”一节处理错误。

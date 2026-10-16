@@ -1,0 +1,3093 @@
+{
+  "purpose": "记录官方观察媒体回放的实际调用、数据保护和停止恢复证据。",
+  "readWhen": "独立复核原媒体官方回放结果时读取。",
+  "status": "driver-configuration-failed-before-application-start-restored",
+  "controlPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/control.json",
+  "observerReviewPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/observer-injection-code-review.json",
+  "observerSourceComparison": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/observer-source-comparison.json",
+  "executionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/execution.json",
+  "error": {
+    "name": "Error",
+    "message": "desktop E2E config.modes.development.initialProfilePatches must be a non-empty array",
+    "outputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/execution.json"
+  },
+  "remoteModelCalls": 0,
+  "mappedFixtureStage": "not-implemented-not-executed",
+  "semanticVerdict": "not-assessed",
+  "at": "2026-10-14T14:50:46.097Z",
+  "firstAttemptExecutionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/execution.json",
+  "finalRecovery": {
+    "recoveryPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/failed-start-recovery.json",
+    "profileRestored": true,
+    "profileComparison": {
+      "equal": true,
+      "differences": []
+    },
+    "runCount": 1,
+    "mediaCount": 1,
+    "originalMediaBytes": 1331702,
+    "originalMediaBytesPreserved": true,
+    "sourceStateBytesPreserved": true,
+    "oldSessionCount": 9,
+    "allOldSessionPrefixesPreserved": true,
+    "workspacePreserved": true,
+    "stopProofPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/final-stop-proof.json"
+  },
+  "configurationRepairPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/configuration-repair.json",
+  "applicationStarts": 0,
+  "localModelRequests": 0,
+  "casesExecuted": 0,
+  "originalStageComplete": false,
+  "unfrozenOwnedCodeChanges": false,
+  "pending": [
+    "当前配置修复的独立代码复审。",
+    "按修复入口重新准备实际控制目录。",
+    "候选官方安装与 201 项逐文件核对。",
+    "原 9 项官方回放、取消和续派轨迹。"
+  ],
+  "firstAttempt": {
+    "schemaVersion": 1,
+    "phase": "execution-incomplete",
+    "controlPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/control.json",
+    "controlDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review",
+    "beforeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before",
+    "contractPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/observation-media-runtime-contract.json",
+    "sourceStatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/state.json",
+    "source": {
+      "schemaVersion": 1,
+      "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol",
+      "controlRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol",
+      "probeRepositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime",
+      "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/neutral-desktop-e2e.json",
+      "profileDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/profiles/desktop",
+      "profilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+      "observerDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/observer",
+      "observerEvidenceDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/observer/llm-calls",
+      "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/harness-comfyui-candidate.tgz",
+      "sourceProfilePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "sourceCandidatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-candidate.tgz",
+      "historyCopied": false,
+      "modelCalls": 0,
+      "createdAt": "2026-10-14T09:58:48.777Z",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/state.json",
+      "profileId": "47ec7de7-ec83-4982-a3ac-2fd1988973bf",
+      "scenario": "four-role",
+      "sourceRepositoryRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime",
+      "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime",
+      "sceneDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol",
+      "layoutStateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/layout.json",
+      "sourceProfilePatchPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "modelSelectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/model-switch.json",
+      "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment",
+      "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home",
+      "userData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/user-data",
+      "modelSelection": {
+        "date": "2026-10-14T03:12:16.493Z",
+        "provider": "opencode-go",
+        "selected": "deepseek-v4.1-flash",
+        "textMaxOutputTokens": 32768,
+        "modelCallTimeoutMs": 360000,
+        "roles": {
+          "composition": "deepseek-v4.1-flash",
+          "generation": "deepseek-v4.1-flash",
+          "observation": "thinkingmachines/inkling:free",
+          "comparison": "deepseek-v4.1-flash"
+        },
+        "imageReader": "thinkingmachines/inkling:free",
+        "authorization": {
+          "activeGoSubscription": true,
+          "useBalance": false,
+          "source": "User confirmation in current conversation"
+        }
+      },
+      "observer": {
+        "id": "skills-migration-live-observer",
+        "name": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/observer/llm-observer.mjs",
+        "config": {
+          "allowed": [
+            {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash"
+            },
+            {
+              "provider": "openrouter",
+              "model": "thinkingmachines/inkling:free"
+            }
+          ],
+          "maxCalls": 3000,
+          "timeoutMs": 360000
+        }
+      },
+      "imageReaderEntry": {
+        "id": "harness-comfyui-image-reader",
+        "name": "harness-comfyui/image-reader",
+        "config": {
+          "configuration": {
+            "activeProfileId": "skills-migration-inkling",
+            "profiles": [
+              {
+                "id": "default",
+                "name": "默认配置",
+                "connectionType": "runtime",
+                "provider": "",
+                "endpoint": "",
+                "model": "",
+                "hasApiKey": false,
+                "defaultPrompt": "请准确描述图片中的主体、构图、姿态、服装、环境、光线、风格、明显缺陷和可见文字。只报告图片中可以观察到的内容。",
+                "temperature": 0.2,
+                "maxTokens": 2048
+              },
+              {
+                "id": "skills-migration-inkling",
+                "name": "Skills MCP 验收",
+                "connectionType": "runtime",
+                "provider": "openrouter",
+                "endpoint": "",
+                "model": "thinkingmachines/inkling:free",
+                "defaultPrompt": "描述图片中可以直接观察到的人物、构图、姿态、服装、背景与光线。",
+                "temperature": 0.2,
+                "maxTokens": 8192,
+                "hasApiKey": false
+              }
+            ]
+          },
+          "credentialRefs": {}
+        }
+      },
+      "copiedEntryIds": [
+        "agent-default-model",
+        "llm-pi-ai",
+        "webserver",
+        "ui-settings-account",
+        "skills-migration-live-observer"
+      ],
+      "probeRecordRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/.local/desktop-e2e",
+      "status": "stopped",
+      "runId": "1af626f5-9203-4dbc-af40-5a9df889170d",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/.local/desktop-e2e/1af626f5-9203-4dbc-af40-5a9df889170d/run.json",
+      "ports": {
+        "host": 56247,
+        "rendererCdp": 56248,
+        "hostInspector": 56249
+      },
+      "installation": {
+        "runId": "cffa6dbd-1de6-477f-8ed4-9b4e27ecbe0d",
+        "resultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/install-result-cffa6dbd-1de6-477f-8ed4-9b4e27ecbe0d.json",
+        "status": "installed",
+        "enabled": true,
+        "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/harness-comfyui-candidate.tgz"
+      },
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "evidenceArchives": [
+        {
+          "runId": "cffa6dbd-1de6-477f-8ed4-9b4e27ecbe0d",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/probe-runs/cffa6dbd-1de6-477f-8ed4-9b4e27ecbe0d",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/observer-calls/cffa6dbd-1de6-477f-8ed4-9b4e27ecbe0d",
+          "archivedAt": "2026-10-14T10:00:31.724Z"
+        },
+        {
+          "runId": "97fbe0ed-8981-46f8-b6f6-9f58840b2344",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/probe-runs/97fbe0ed-8981-46f8-b6f6-9f58840b2344",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/observer-calls/97fbe0ed-8981-46f8-b6f6-9f58840b2344",
+          "archivedAt": "2026-10-14T10:50:49.978Z"
+        },
+        {
+          "runId": "1af626f5-9203-4dbc-af40-5a9df889170d",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/runtime-control/probe-runs/1af626f5-9203-4dbc-af40-5a9df889170d",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-recovery/runtime-control/observer-calls/1af626f5-9203-4dbc-af40-5a9df889170d",
+          "archivedAt": "2026-10-14T11:37:58.360Z"
+        }
+      ],
+      "sourceConfigurationBaseline": {
+        "present": false,
+        "value": null
+      },
+      "configuration": {
+        "configuredAt": "2026-10-14T10:01:26.159Z",
+        "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+        "fixtureStateFile": null,
+        "fixtureRunId": null,
+        "mcpUrl": null,
+        "sourceAddress": null,
+        "roleAgentOptions": {
+          "composition-agent": {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          "generation-agent": {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          "observation-agent": {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free"
+          },
+          "comparison-agent": {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          }
+        },
+        "allowedModels": [
+          {
+            "provider": "opencode-go",
+            "model": "deepseek-v4.1-flash"
+          },
+          {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free"
+          }
+        ],
+        "textMaxOutputTokens": 32768,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000
+      },
+      "probeStatus": {
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/.local/desktop-e2e/1af626f5-9203-4dbc-af40-5a9df889170d/run.json",
+        "state": "stopped",
+        "processGroupMatchesRun": false,
+        "processGroupPresent": false,
+        "ports": [
+          {
+            "port": 56247,
+            "pids": []
+          },
+          {
+            "port": 56248,
+            "pids": []
+          },
+          {
+            "port": 56249,
+            "pids": []
+          }
+        ]
+      }
+    },
+    "candidatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/frozen-candidate.tgz",
+    "candidateSourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz",
+    "originalCandidateSourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/harness-comfyui-candidate.tgz",
+    "candidateResourceCount": 201,
+    "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/state.json",
+    "profileManifest": [
+      {
+        "path": ".plugin-manager",
+        "mode": 448,
+        "kind": "directory"
+      },
+      {
+        "path": ".plugin-manager/logs",
+        "mode": 448,
+        "kind": "directory"
+      },
+      {
+        "path": ".plugin-manager/logs/operation-E7Uryd",
+        "mode": 448,
+        "kind": "directory"
+      },
+      {
+        "path": ".plugin-manager/logs/operation-E7Uryd/pnpm.log",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 322
+      },
+      {
+        "path": "cordis.patch.yml",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 36705
+      },
+      {
+        "path": "cordis.yml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 223
+      },
+      {
+        "path": "node_modules",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/.bin",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/.bin/semver",
+        "mode": 493,
+        "kind": "symlink",
+        "target": "../semver/bin/semver.js"
+      },
+      {
+        "path": "node_modules/.modules.yaml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2191
+      },
+      {
+        "path": "node_modules/.pnpm",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/.pnpm-workspace-state-v1.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 993
+      },
+      {
+        "path": "node_modules/.pnpm/lock.yaml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 15462
+      },
+      {
+        "path": "node_modules/@img",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/colour",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/colour/color.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 45136
+      },
+      {
+        "path": "node_modules/@img/colour/index.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 49
+      },
+      {
+        "path": "node_modules/@img/colour/index.d.ts",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 21569
+      },
+      {
+        "path": "node_modules/@img/colour/LICENSE.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 4433
+      },
+      {
+        "path": "node_modules/@img/colour/package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1515
+      },
+      {
+        "path": "node_modules/@img/colour/README.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 562
+      },
+      {
+        "path": "node_modules/@img/sharp-darwin-arm64",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/sharp-darwin-arm64/index.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 141
+      },
+      {
+        "path": "node_modules/@img/sharp-darwin-arm64/lib",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/sharp-darwin-arm64/lib/sharp-darwin-arm64-0.35.4.node",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 280256
+      },
+      {
+        "path": "node_modules/@img/sharp-darwin-arm64/LICENSE",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 10273
+      },
+      {
+        "path": "node_modules/@img/sharp-darwin-arm64/package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 862
+      },
+      {
+        "path": "node_modules/@img/sharp-darwin-arm64/README.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 699
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/lib",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/lib/glib-2.0",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/lib/glib-2.0/include",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/lib/glib-2.0/include/glibconfig.h",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5981
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/lib/index.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 28
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.18.6.dylib",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 18164536
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 876
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/README.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 4333
+      },
+      {
+        "path": "node_modules/@img/sharp-libvips-darwin-arm64/versions.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 597
+      },
+      {
+        "path": "node_modules/detect-libc",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/detect-libc/index.d.ts",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 436
+      },
+      {
+        "path": "node_modules/detect-libc/lib",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/detect-libc/lib/detect-libc.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7503
+      },
+      {
+        "path": "node_modules/detect-libc/lib/elf.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 982
+      },
+      {
+        "path": "node_modules/detect-libc/lib/filesystem.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1097
+      },
+      {
+        "path": "node_modules/detect-libc/lib/process.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 569
+      },
+      {
+        "path": "node_modules/detect-libc/LICENSE",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 11357
+      },
+      {
+        "path": "node_modules/detect-libc/package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1278
+      },
+      {
+        "path": "node_modules/detect-libc/README.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 3215
+      },
+      {
+        "path": "node_modules/harness-comfyui",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/agents",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/agents/openai.yaml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 226
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/00-template-header.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 41
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/01-quick-start.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 3119
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/02-role.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 686
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/03-output-protocol.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5329
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/04-final-self-check.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2519
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/05-conflict-table.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 4524
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/06-slot-order.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7543
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/07-assembly-decision-tree.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 14018
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/08-count-identity.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2115
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/09-appearance.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 7026
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/10-clothing-state.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 15908
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/11-pose-action-sex.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 27679
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/12-expression-reaction.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 11772
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/13-camera-shot.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 9941
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/14-scene-environment.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 8100
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/15-detail-mood.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 3959
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/16-special-theme.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 20007
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/artist-style-query-vocabulary.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 7627
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 8861
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6818
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-output-schema.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1012
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/generation-profiles.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1527
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/prompt-weight-policy.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1413
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/references/prompt-weighting.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5531
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/scripts",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/scripts/cli-help-schema.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 779
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/scripts/cli-help.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2953
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/scripts/cli-help.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2351
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/scripts/validate-output.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 14877
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 17773
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/evals",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/evals/evals.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2999
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/evals/verification-report.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 4249
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/references/color-theory.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7822
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5129
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/references/prompt-structure.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 8912
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/character-portrait-prompt-designer/SKILL.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 30534
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 13527
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-builder-model-routes.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 267
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 5460
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1012
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 14463
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 8732
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-image-review",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-image-review/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-image-review/references/cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 14592
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-image-review/SKILL.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 5759
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/references/composition-design.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2040
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/references/iteration-method.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1606
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/references/records.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5454
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5641
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/SKILL.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6571
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/agents",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/agents/openai.yaml",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 282
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/anime-style-presets.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2975
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 8882
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7065
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-output-schema.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1012
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/generation-profiles.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1786
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/input-contract.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5074
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/krea2-prompt-rules.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 5872
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/motion-migration-constraints.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2980
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/references/游戏服装多样性库.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 15442
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/scripts",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/scripts/cli-help-schema.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 779
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/scripts/cli-help.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1679
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/scripts/cli-help.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2351
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/scripts/validate-output.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 6097
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/krea2-anime-prompt-builder/SKILL.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 11448
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/local-image-reader",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/local-image-reader/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/local-image-reader/references/image-inspection-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 11450
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/local-image-reader/SKILL.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 3250
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/agents",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/agents/openai.yaml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 243
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/action-structure.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7671
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 15019
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/artist-style-query-vocabulary.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 3453
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/composition-decision-tree.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 43326
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 14166
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/NTR.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1855
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/RBQ与物化.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2062
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/事后.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2020
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/偷窥与展示.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1950
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/另类日常.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2071
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/异种.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1925
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/束缚与BDSM.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1924
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/男娘与Futa.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1770
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/胁迫.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1987
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/调教与宠物.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1824
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/隐奸.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2495
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/before-after-storyboard.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2389
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/camera-action-pairing.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2704
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/environment-narrative.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1587
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/multi-subject-attribution.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2486
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/nsfw-action-structure.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2260
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/occlusion-and-depth.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1326
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/single-subject-portrait.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1851
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/examples/two-subject-interaction.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2145
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 8775
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 10045
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1012
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2322
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/input-contract.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2846
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-conflict-rules.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 11738
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-format-validator.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7811
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/action.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 459
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/appearance.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 431
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/artist.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 765
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/camera-composition.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 555
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/character.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1099
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/detail-mood.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 421
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/environment.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 437
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/expression-reaction.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 448
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/lighting.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 489
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/non-artist-style.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 417
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/outfit.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 412
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/quality.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 499
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/relation-narrative.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 553
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/subject.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 328
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/technical.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 395
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/action.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2082
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/appearance.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 3404
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/artist.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1453
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/camera-composition.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2128
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/character.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6763
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/detail-mood.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2379
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/environment.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2125
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/expression-reaction.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1914
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/lighting.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2066
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/non-artist-style.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1962
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/outfit.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 3331
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/quality.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1486
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/relation-narrative.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2487
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/subject.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2084
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/technical.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1582
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-self-check.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 22370
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-weight-policy.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1464
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-weighting.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 16802
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/spatial-relation-rules.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7318
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/storyboard-panel-rules.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6946
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/visual-design-slot-order.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2775
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/wai-artist-syntax.md",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 5602
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/wai-prompt-position-order.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 13612
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/scripts",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/scripts/cli-help-schema.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 779
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 3098
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2351
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/scripts/validate-output.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 17747
+      },
+      {
+        "path": "node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 12545
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-cli",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-cli/harness-comfyui.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 126846
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-client",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-client/client.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 326596
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/browser-settings-schema-DIsKQQUJ.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 64379
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/cli-workspace.js",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 779
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/cli.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 23208
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/comfy-frontend-worker.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 34785
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/core.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 191070
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/error-catalog-CWB1G5_4.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 47601
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/errors-CkknegYz.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 4000
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/generation-error-s7pDSYyC.js",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 601
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/generation-runtime-DdQjiRqU.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 74203
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/image-reader.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 48135
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/index.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 107
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/pending-requests-BrC9NqCi.js",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 493
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/plugin-71HUHqJW.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 35458
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/register-project-tools-CVRhLPdG.js",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2526
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/resource-path-BIO8Ow0Q.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1555
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/settings-Dasly0hU.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 11714
+      },
+      {
+        "path": "node_modules/harness-comfyui/.local/source-host/web.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 107
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/harness-comfyui-cli-candidate",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 4680
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/harness-comfyui-cli-candidate/preset.yml",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 207
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/harness-comfyui-iteration",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 21389
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/harness-comfyui-iteration/preset.yml",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 184
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/noobai-mcp.cordis.yml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 295
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/presets.cordis.yml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1070
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-installed-presets.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 768
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-installed-skills.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 842
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-iteration-dispatch.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5071
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-subagent-control.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 845
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-subagent-control.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 909
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-subagent-workspace.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 3844
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-system-prompt-visibility.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 1470
+      },
+      {
+        "path": "node_modules/harness-comfyui/agent-presets/project-tool-visibility.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1742
+      },
+      {
+        "path": "node_modules/harness-comfyui/config",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/base.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1124
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/browser-settings.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1279
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/environment-overrides.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 3513
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/error-catalog.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 45932
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/image-reader-processing.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 447
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/image-reader-profiles.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2819
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/image-reader-runtime.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 155
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/managed-cli-environment.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 257
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/managed-cli-help.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 9518
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/node-script-runtime.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 93
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/plugin-package-schema.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 4753
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/plugin-package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1138
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/plugin-runtime-resources-schema.ts",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 4909
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/plugin-runtime-resources.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 12497
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/plugin-storage.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 236
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/product-agent-schema.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2100
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/product-agent.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 276
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/profiles",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/profiles/production.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 571
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/runtime-artifacts.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1268
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/schema.ts",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 3350
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/settings-entry-ids.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 86
+      },
+      {
+        "path": "node_modules/harness-comfyui/config/source-client.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2711
+      },
+      {
+        "path": "node_modules/harness-comfyui/cordis.patch.yml",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 362
+      },
+      {
+        "path": "node_modules/harness-comfyui/package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6556
+      },
+      {
+        "path": "node_modules/harness-comfyui/scripts",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/scripts/cli",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/harness-comfyui/scripts/cli/help-schema.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2113
+      },
+      {
+        "path": "node_modules/harness-comfyui/scripts/cli/help.mjs",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 2556
+      },
+      {
+        "path": "node_modules/semver",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/semver/bin",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/semver/bin/semver.js",
+        "mode": 493,
+        "kind": "file",
+        "bytes": 4957
+      },
+      {
+        "path": "node_modules/semver/classes",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/semver/classes/comparator.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 3631
+      },
+      {
+        "path": "node_modules/semver/classes/index.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 143
+      },
+      {
+        "path": "node_modules/semver/classes/range.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 15647
+      },
+      {
+        "path": "node_modules/semver/classes/semver.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 9891
+      },
+      {
+        "path": "node_modules/semver/functions",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/semver/functions/clean.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 205
+      },
+      {
+        "path": "node_modules/semver/functions/cmp.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 961
+      },
+      {
+        "path": "node_modules/semver/functions/coerce.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2004
+      },
+      {
+        "path": "node_modules/semver/functions/compare-build.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 281
+      },
+      {
+        "path": "node_modules/semver/functions/compare-loose.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 132
+      },
+      {
+        "path": "node_modules/semver/functions/compare.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 170
+      },
+      {
+        "path": "node_modules/semver/functions/diff.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1423
+      },
+      {
+        "path": "node_modules/semver/functions/eq.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 126
+      },
+      {
+        "path": "node_modules/semver/functions/gt.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 124
+      },
+      {
+        "path": "node_modules/semver/functions/gte.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 127
+      },
+      {
+        "path": "node_modules/semver/functions/inc.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 478
+      },
+      {
+        "path": "node_modules/semver/functions/lt.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 124
+      },
+      {
+        "path": "node_modules/semver/functions/lte.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 127
+      },
+      {
+        "path": "node_modules/semver/functions/major.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 136
+      },
+      {
+        "path": "node_modules/semver/functions/minor.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 136
+      },
+      {
+        "path": "node_modules/semver/functions/neq.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 128
+      },
+      {
+        "path": "node_modules/semver/functions/parse.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 331
+      },
+      {
+        "path": "node_modules/semver/functions/patch.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 136
+      },
+      {
+        "path": "node_modules/semver/functions/prerelease.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 234
+      },
+      {
+        "path": "node_modules/semver/functions/rcompare.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 132
+      },
+      {
+        "path": "node_modules/semver/functions/rsort.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 163
+      },
+      {
+        "path": "node_modules/semver/functions/satisfies.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 247
+      },
+      {
+        "path": "node_modules/semver/functions/sort.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 161
+      },
+      {
+        "path": "node_modules/semver/functions/truncate.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1021
+      },
+      {
+        "path": "node_modules/semver/functions/valid.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 176
+      },
+      {
+        "path": "node_modules/semver/index.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2691
+      },
+      {
+        "path": "node_modules/semver/internal",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/semver/internal/constants.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 873
+      },
+      {
+        "path": "node_modules/semver/internal/debug.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 240
+      },
+      {
+        "path": "node_modules/semver/internal/identifiers.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 525
+      },
+      {
+        "path": "node_modules/semver/internal/lrucache.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 802
+      },
+      {
+        "path": "node_modules/semver/internal/parse-options.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 338
+      },
+      {
+        "path": "node_modules/semver/internal/re.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 8139
+      },
+      {
+        "path": "node_modules/semver/LICENSE",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 765
+      },
+      {
+        "path": "node_modules/semver/package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1661
+      },
+      {
+        "path": "node_modules/semver/preload.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 83
+      },
+      {
+        "path": "node_modules/semver/range.bnf",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 702
+      },
+      {
+        "path": "node_modules/semver/ranges",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/semver/ranges/gtr.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 231
+      },
+      {
+        "path": "node_modules/semver/ranges/intersects.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 224
+      },
+      {
+        "path": "node_modules/semver/ranges/ltr.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 227
+      },
+      {
+        "path": "node_modules/semver/ranges/max-satisfying.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 593
+      },
+      {
+        "path": "node_modules/semver/ranges/min-satisfying.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 591
+      },
+      {
+        "path": "node_modules/semver/ranges/min-version.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1514
+      },
+      {
+        "path": "node_modules/semver/ranges/outside.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2204
+      },
+      {
+        "path": "node_modules/semver/ranges/simplify.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1355
+      },
+      {
+        "path": "node_modules/semver/ranges/subset.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 7478
+      },
+      {
+        "path": "node_modules/semver/ranges/to-comparators.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 282
+      },
+      {
+        "path": "node_modules/semver/ranges/valid.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 326
+      },
+      {
+        "path": "node_modules/semver/README.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 25669
+      },
+      {
+        "path": "node_modules/sharp",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/sharp/dist",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/sharp/dist/channel.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5383
+      },
+      {
+        "path": "node_modules/sharp/dist/channel.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5376
+      },
+      {
+        "path": "node_modules/sharp/dist/colour.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5622
+      },
+      {
+        "path": "node_modules/sharp/dist/colour.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5610
+      },
+      {
+        "path": "node_modules/sharp/dist/composite.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 9332
+      },
+      {
+        "path": "node_modules/sharp/dist/composite.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 9325
+      },
+      {
+        "path": "node_modules/sharp/dist/constructor.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 20364
+      },
+      {
+        "path": "node_modules/sharp/dist/constructor.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 20340
+      },
+      {
+        "path": "node_modules/sharp/dist/index.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 620
+      },
+      {
+        "path": "node_modules/sharp/dist/index.d.cts",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 92867
+      },
+      {
+        "path": "node_modules/sharp/dist/index.d.mts",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 87968
+      },
+      {
+        "path": "node_modules/sharp/dist/index.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 573
+      },
+      {
+        "path": "node_modules/sharp/dist/input.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 33741
+      },
+      {
+        "path": "node_modules/sharp/dist/input.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 33729
+      },
+      {
+        "path": "node_modules/sharp/dist/is.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2932
+      },
+      {
+        "path": "node_modules/sharp/dist/is.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 2930
+      },
+      {
+        "path": "node_modules/sharp/dist/libvips.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5833
+      },
+      {
+        "path": "node_modules/sharp/dist/libvips.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 5828
+      },
+      {
+        "path": "node_modules/sharp/dist/operation.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 32882
+      },
+      {
+        "path": "node_modules/sharp/dist/operation.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 32875
+      },
+      {
+        "path": "node_modules/sharp/dist/output.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 65416
+      },
+      {
+        "path": "node_modules/sharp/dist/output.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 65399
+      },
+      {
+        "path": "node_modules/sharp/dist/resize.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 22784
+      },
+      {
+        "path": "node_modules/sharp/dist/resize.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 22777
+      },
+      {
+        "path": "node_modules/sharp/dist/sharp.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6199
+      },
+      {
+        "path": "node_modules/sharp/dist/sharp.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6294
+      },
+      {
+        "path": "node_modules/sharp/dist/utility.cjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 9786
+      },
+      {
+        "path": "node_modules/sharp/dist/utility.mjs",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 9862
+      },
+      {
+        "path": "node_modules/sharp/install",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/sharp/install/build.js",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 860
+      },
+      {
+        "path": "node_modules/sharp/lib",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/sharp/lib/index.d.ts",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 92867
+      },
+      {
+        "path": "node_modules/sharp/LICENSE",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 10273
+      },
+      {
+        "path": "node_modules/sharp/package.json",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 8115
+      },
+      {
+        "path": "node_modules/sharp/README.md",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 3162
+      },
+      {
+        "path": "node_modules/sharp/src",
+        "mode": 493,
+        "kind": "directory"
+      },
+      {
+        "path": "node_modules/sharp/src/binding.gyp",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 10805
+      },
+      {
+        "path": "node_modules/sharp/src/common.cc",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 41423
+      },
+      {
+        "path": "node_modules/sharp/src/common.h",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 10988
+      },
+      {
+        "path": "node_modules/sharp/src/metadata.cc",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 15320
+      },
+      {
+        "path": "node_modules/sharp/src/metadata.h",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1878
+      },
+      {
+        "path": "node_modules/sharp/src/operations.cc",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 17412
+      },
+      {
+        "path": "node_modules/sharp/src/operations.h",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 3625
+      },
+      {
+        "path": "node_modules/sharp/src/pipeline.cc",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 90883
+      },
+      {
+        "path": "node_modules/sharp/src/pipeline.h",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 10131
+      },
+      {
+        "path": "node_modules/sharp/src/sharp.cc",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1529
+      },
+      {
+        "path": "node_modules/sharp/src/stats.cc",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 6756
+      },
+      {
+        "path": "node_modules/sharp/src/stats.h",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 1267
+      },
+      {
+        "path": "node_modules/sharp/src/utilities.cc",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 9532
+      },
+      {
+        "path": "node_modules/sharp/src/utilities.h",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 741
+      },
+      {
+        "path": "package.json",
+        "mode": 384,
+        "kind": "file",
+        "bytes": 385
+      },
+      {
+        "path": "pnpm-lock.yaml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 15462
+      },
+      {
+        "path": "pnpm-workspace.yaml",
+        "mode": 420,
+        "kind": "file",
+        "bytes": 61
+      }
+    ],
+    "profileRootMode": 448,
+    "snapshotTrees": [
+      {
+        "label": "Profile",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/profiles/desktop",
+        "snapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/profile",
+        "manifestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/profile-manifest.json"
+      },
+      {
+        "label": "Workspace",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+        "snapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/workspace",
+        "manifestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/workspace-manifest.json"
+      },
+      {
+        "label": "Plugin data",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui",
+        "snapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/plugin-data",
+        "manifestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/plugin-data-manifest.json"
+      },
+      {
+        "label": "Observer",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/observer",
+        "snapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observers/observer",
+        "manifestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observer-0-manifest.json"
+      },
+      {
+        "label": "Observer",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/observer-history-current",
+        "snapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observers/observer-history-current",
+        "manifestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observer-1-manifest.json"
+      }
+    ],
+    "originalDatabase": {
+      "databasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+      "databaseMode": "ro",
+      "runs": [
+        {
+          "run_id": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+          "workspace_id": "a25cfcb7-2580-4213-a381-391f07094571",
+          "session_id": "2b99eed8-5355-49e7-9d30-26360393951a",
+          "turn": 1,
+          "call_id": "call_00_hgdhxerbuzhvic7ylhniuo95",
+          "title": "图片 1",
+          "instance_id": "2",
+          "instance_title": "win3080",
+          "instance_origin": "http://192.168.110.122:8188",
+          "template_id": "29",
+          "template_title": "wai_basic_txt2img",
+          "status": "succeeded",
+          "revision": 27,
+          "prompt_id": "df18210f-a42a-462f-911d-ed2a944edba0",
+          "request_json": "{\"instanceId\":\"2\",\"loras\":[],\"model\":{\"fileName\":\"hassakuXLIllustrious_v13StyleA.safetensors\",\"id\":\"14\"},\"parameters\":{\"batch_size\":1,\"height\":1024,\"negative_prompt\":\"bad quality, worst quality, worst detail, sketch, censor, pen, looking out the window, 2girls, 1boy, wind, fluttering curtain, foreground obstruction, full of flowers, shirt pattern, jewelry, shiny skin, backlighting\",\"positive_prompt\":\"masterpiece, best quality, ultra-detailed, highres, say_hana, 1girl, Ani_\\\\(Grok\\\\), blonde hair, twintails, long hair, blue eyes, pale skin, white shirt, standing, facing the viewer, arms at sides, head tilt, light smile, calm expression, looking at the viewer, relaxed shoulders, upper body, eye level, front view, centered composition, depth of field, blurry background, indoors, window, windowsill, envelope on the windowsill, plain wall, small pale flowers at the frame edges, daytime, soft focus, muted color, calm atmosphere, peaceful and relieved mood, soft window light from the front left, diffused lighting, gentle light on her face, bright background outlining her hair, low contrast, gentle vignette, Ani stands in front of the window with a small envelope left on the windowsill behind her.\",\"seed\":20261013,\"width\":1024},\"templateId\":\"29\",\"title\":\"图片 1\"}",
+          "source_snapshot_path": "workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/source-snapshot.json",
+          "actual_workflow_path": "workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/actual-workflow.json",
+          "api_workflow_path": "workspaces/a25cfcb7-2580-4213-a381-391f07094571/runs/run_42c008fc-d38e-477e-9b47-560e1947e563/api-workflow.json",
+          "expected_output_node_ids_json": "[\"7\"]",
+          "missing_observed_at": null,
+          "error_code": null,
+          "error_message": null,
+          "created_at": 1791974832602,
+          "updated_at": 1791974861364
+        }
+      ],
+      "media": [
+        {
+          "media_id": "media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323",
+          "run_id": "run_42c008fc-d38e-477e-9b47-560e1947e563",
+          "workspace_id": "a25cfcb7-2580-4213-a381-391f07094571",
+          "session_id": "2b99eed8-5355-49e7-9d30-26360393951a",
+          "turn": 1,
+          "node_id": "7",
+          "output_index": 0,
+          "media_kind": "image",
+          "filename": "WAI_00046_.png",
+          "relative_path": "a4/12/media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323.png",
+          "media_type": "image/png",
+          "byte_size": 1331702,
+          "created_at": 1791974861362
+        }
+      ]
+    },
+    "oldSessions": [
+      {
+        "sessionId": "session-08d8026d-c079-4c00-a294-337c97e85193",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/session-08d8026d-c079-4c00-a294-337c97e85193-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/session-08d8026d-c079-4c00-a294-337c97e85193.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--Users-fzfz-Documents-deepseek-harness-default-workspace--/session-08d8026d-c079-4c00-a294-337c97e85193/session.v4.jsonl.zstd",
+        "recordCount": 5,
+        "frameCount": 3,
+        "inputBytes": 423,
+        "consumedBytes": 423,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "session-08d8026d-c079-4c00-a294-337c97e85193",
+          "createdAt": 1791971939656,
+          "cwd": "/Users/fzfz/Documents/deepseek-harness/default-workspace",
+          "isSeeded": false,
+          "delegationDepth": 0,
+          "agentPreset": "standard"
+        },
+        "maxSeq": 3,
+        "maxTurn": 0,
+        "lastTurnEnd": null
+      },
+      {
+        "sessionId": "2854ee4e-5a01-4d60-b83a-b131f3100069",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/2854ee4e-5a01-4d60-b83a-b131f3100069-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/2854ee4e-5a01-4d60-b83a-b131f3100069.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/2854ee4e-5a01-4d60-b83a-b131f3100069/session.v4.jsonl.zstd",
+        "recordCount": 70,
+        "frameCount": 38,
+        "inputBytes": 39327,
+        "consumedBytes": 39327,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "2854ee4e-5a01-4d60-b83a-b131f3100069",
+          "createdAt": 1791974962490,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+          "isSeeded": false,
+          "origin": "subagent",
+          "delegationDepth": 1,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 68,
+        "maxTurn": 1,
+        "lastTurnEnd": null
+      },
+      {
+        "sessionId": "2b99eed8-5355-49e7-9d30-26360393951a",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/2b99eed8-5355-49e7-9d30-26360393951a-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/2b99eed8-5355-49e7-9d30-26360393951a.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/2b99eed8-5355-49e7-9d30-26360393951a/session.v4.jsonl.zstd",
+        "recordCount": 230,
+        "frameCount": 127,
+        "inputBytes": 298618,
+        "consumedBytes": 298618,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "2b99eed8-5355-49e7-9d30-26360393951a",
+          "createdAt": 1791974364781,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+          "isSeeded": false,
+          "origin": "subagent",
+          "delegationDepth": 1,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 228,
+        "maxTurn": 1,
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 228,
+          "time": 1791974947230,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      },
+      {
+        "sessionId": "49225271-e00a-4fd0-b982-2f47b74e2043",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/49225271-e00a-4fd0-b982-2f47b74e2043-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/49225271-e00a-4fd0-b982-2f47b74e2043.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/49225271-e00a-4fd0-b982-2f47b74e2043/session.v4.jsonl.zstd",
+        "recordCount": 48,
+        "frameCount": 24,
+        "inputBytes": 39242,
+        "consumedBytes": 39242,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "49225271-e00a-4fd0-b982-2f47b74e2043",
+          "createdAt": 1791977361397,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+          "isSeeded": false,
+          "origin": "subagent",
+          "delegationDepth": 1,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 46,
+        "maxTurn": 1,
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 46,
+          "time": 1791977457510,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      },
+      {
+        "sessionId": "626ce758-0768-4c57-b7ca-be19a4fbbf9d",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/626ce758-0768-4c57-b7ca-be19a4fbbf9d-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/626ce758-0768-4c57-b7ca-be19a4fbbf9d.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/626ce758-0768-4c57-b7ca-be19a4fbbf9d/session.v4.jsonl.zstd",
+        "recordCount": 70,
+        "frameCount": 36,
+        "inputBytes": 66133,
+        "consumedBytes": 66133,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "626ce758-0768-4c57-b7ca-be19a4fbbf9d",
+          "createdAt": 1791973820981,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+          "isSeeded": false,
+          "origin": "subagent",
+          "delegationDepth": 1,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 68,
+        "maxTurn": 1,
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 68,
+          "time": 1791974114438,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      },
+      {
+        "sessionId": "9da768cd-279e-4c7d-9dc2-162fb2fa1cb1",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/9da768cd-279e-4c7d-9dc2-162fb2fa1cb1-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/9da768cd-279e-4c7d-9dc2-162fb2fa1cb1.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/9da768cd-279e-4c7d-9dc2-162fb2fa1cb1/session.v4.jsonl.zstd",
+        "recordCount": 66,
+        "frameCount": 34,
+        "inputBytes": 117335,
+        "consumedBytes": 117335,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "9da768cd-279e-4c7d-9dc2-162fb2fa1cb1",
+          "createdAt": 1791977624562,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+          "isSeeded": false,
+          "origin": "subagent",
+          "delegationDepth": 1,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 64,
+        "maxTurn": 1,
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 64,
+          "time": 1791977808732,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      },
+      {
+        "sessionId": "dfc7fb0f-fe8e-4992-912b-25769e0f8ee5",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/dfc7fb0f-fe8e-4992-912b-25769e0f8ee5/session.v4.jsonl.zstd",
+        "recordCount": 63,
+        "frameCount": 33,
+        "inputBytes": 44660,
+        "consumedBytes": 44660,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "dfc7fb0f-fe8e-4992-912b-25769e0f8ee5",
+          "createdAt": 1791977477540,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "parentSession": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+          "isSeeded": false,
+          "origin": "subagent",
+          "delegationDepth": 1,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 61,
+        "maxTurn": 1,
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 61,
+          "time": 1791977599188,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      },
+      {
+        "sessionId": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae/session.v4.jsonl.zstd",
+        "recordCount": 147,
+        "frameCount": 66,
+        "inputBytes": 137883,
+        "consumedBytes": 137883,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+          "createdAt": 1791973789585,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "isSeeded": false,
+          "delegationDepth": 0,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 145,
+        "maxTurn": 2,
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 145,
+          "time": 1791977835570,
+          "data": {
+            "turn": 2,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      },
+      {
+        "sessionId": "session-edcd3d9d-f0ae-46e1-927e-1a3a7e6041e3",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/session-edcd3d9d-f0ae-46e1-927e-1a3a7e6041e3-persisted.json",
+        "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/sessions/session-edcd3d9d-f0ae-46e1-927e-1a3a7e6041e3.jsonl.zstd",
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-TpyZol-runtime-environment-workspace--/session-edcd3d9d-f0ae-46e1-927e-1a3a7e6041e3/session.v4.jsonl.zstd",
+        "recordCount": 102,
+        "frameCount": 55,
+        "inputBytes": 94893,
+        "consumedBytes": 94893,
+        "header": {
+          "type": "session",
+          "version": 4,
+          "id": "session-edcd3d9d-f0ae-46e1-927e-1a3a7e6041e3",
+          "createdAt": 1791978898360,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+          "isSeeded": false,
+          "delegationDepth": 0,
+          "agentPreset": "harness-comfyui-iteration"
+        },
+        "maxSeq": 100,
+        "maxTurn": 1,
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 100,
+          "time": 1791979038538,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      }
+    ],
+    "observerSnapshots": [
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/observer",
+        "copyPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observers/observer",
+        "manifestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observer-0-manifest.json"
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/observer-history-current",
+        "copyPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observers/observer-history-current",
+        "manifestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observer-1-manifest.json"
+      }
+    ],
+    "mediaPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/dsh-home/data/plugins/harness-comfyui/media/a4/12/media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323.png",
+    "mediaCopyPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/original-media.bin",
+    "mediaBytes": 1331702,
+    "workspaceId": "a25cfcb7-2580-4213-a381-391f07094571",
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-TpyZol/runtime/environment/workspace",
+    "profileMutated": true,
+    "applicationStarts": 0,
+    "remoteModelCalls": 0,
+    "managedRunIds": [],
+    "cases": [],
+    "createdAt": "2026-10-14T14:12:56.557Z",
+    "preflightBaseline": {
+      "restoreSnapshotVerified": true,
+      "originalBaselineVerified": true,
+      "checks": [
+        {
+          "label": "Profile",
+          "root": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/profile",
+          "entries": 403,
+          "readableFiles": 334
+        },
+        {
+          "label": "Workspace",
+          "root": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/workspace",
+          "entries": 14,
+          "readableFiles": 9
+        },
+        {
+          "label": "Plugin data",
+          "root": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/plugin-data",
+          "entries": 18,
+          "readableFiles": 9
+        },
+        {
+          "label": "Observer",
+          "root": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observers/observer",
+          "entries": 102,
+          "readableFiles": 101
+        },
+        {
+          "label": "Observer",
+          "root": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/before/observers/observer-history-current",
+          "entries": 19,
+          "readableFiles": 18
+        }
+      ],
+      "sessionCount": 9,
+      "runCount": 1,
+      "mediaCount": 1,
+      "applicationStarts": 0,
+      "providerStarts": 0,
+      "at": "2026-10-14T14:45:30.099Z",
+      "outputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/baseline-validation-2af3c5ac-f2a3-45f1-8b2f-32e5ce423794.json"
+    },
+    "runStartedAt": "2026-10-14T14:45:30.194Z",
+    "cleanupDeadlineAt": 1791989730194,
+    "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/runtime-events.jsonl",
+    "reviewPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/observation-media-probe-code-review.json",
+    "launchIntent": true,
+    "failure": {
+      "name": "TypeError",
+      "message": "desktop E2E config.modes.development.initialProfilePatches must be a non-empty array"
+    },
+    "profileRestored": false,
+    "cleanup": {
+      "phase": "cleanup-unconfirmed",
+      "profileRestored": false,
+      "rollback": [],
+      "errors": [
+        {
+          "stage": "stop-or-restore",
+          "message": "desktop E2E config.modes.development.initialProfilePatches must be a non-empty array"
+        }
+      ],
+      "outputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/cleanup.json"
+    },
+    "localModelRequestCount": 0,
+    "originalStageComplete": false,
+    "mappedFixtureStage": "not-executed",
+    "semanticVerdict": "not-assessed"
+  }
+}

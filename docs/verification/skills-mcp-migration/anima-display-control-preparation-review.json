@@ -1,0 +1,115 @@
+{
+  "purpose": "独立核对 ANIMA 宿主展示段对照的安装、配置、输入、运行准备和证据采集条件。",
+  "decision": "可进入两组首轮模型对照；当前结论为准备通过，展示段的实际送达差异与最终回答效果由后续请求和会话证据判定。",
+  "materialFindings": [],
+  "reviewScope": {
+    "implementationChanged": false,
+    "desktopStarted": false,
+    "modelCalled": false,
+    "writtenFile": "docs/verification/skills-mcp-migration/anima-display-control-preparation-review.json",
+    "preparationReport": "docs/verification/skills-mcp-migration/anima-display-control-preparation.json",
+    "index": ".local/skills-mcp-migration-live/anima-display-control/index.json"
+  },
+  "validation": {
+    "command": "node --test .local/skills-mcp-migration-live/anima-display-control.test.mjs",
+    "passed": 2,
+    "failed": 0,
+    "candidateComparison": "逐个读取共同 tarball 的 198 个普通文件，并与两组已安装位置的对应字节比较；两组各 198 个文件全部一致，覆盖 197 个运行文件及 package.json。",
+    "configurationComparison": "读取两组当前 cordis.patch.yml，分别确认与 profile-after.json 相同；使用官方 applyEntryPatches 重新计算各已安装预设的 composition，再对完整 Profile、有效 composition 和输入作结构比较。"
+  },
+  "groups": {
+    "baseline": {
+      "profileId": "7040f70b-2a8e-4eee-8297-c579c738ad47",
+      "installationRunId": "6cf85191-c6e0-4d89-b49e-9df2dfcfcd95",
+      "dshHome": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/environment/dsh-home",
+      "userData": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/environment/user-data",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-DkpM8Y",
+      "ports": {
+        "host": 61534,
+        "rendererCdp": 61535,
+        "hostInspector": 61536
+      },
+      "developmentPersistent": true,
+      "candidateFilesCompared": 198,
+      "candidateMismatches": [],
+      "workspaceEntryCount": 0,
+      "officialRecordState": "stopped"
+    },
+    "experimental": {
+      "profileId": "74a04801-a560-4c8e-b207-18bf51a129e7",
+      "installationRunId": "3358f88c-b5e3-4419-a9d4-b71de2e169bb",
+      "dshHome": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/environment/dsh-home",
+      "userData": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/environment/user-data",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-AgqW3u",
+      "ports": {
+        "host": 62973,
+        "rendererCdp": 62974,
+        "hostInspector": 62975
+      },
+      "developmentPersistent": true,
+      "candidateFilesCompared": 198,
+      "candidateMismatches": [],
+      "workspaceEntryCount": 0,
+      "officialRecordState": "stopped"
+    }
+  },
+  "confirmed": [
+    {
+      "subject": "有效配置的差异范围",
+      "evidence": "规范化当前 Workspace、DSH_HOME、user-data 和 Host 端口后，完整 Profile 仅在被测工作台 Include patch 的 hiddenSectionNames[3] 多出 ui:deliverable-file-references；有效 composition 仅在该工作台的 project-system-prompt-visibility 条目多出相同值。迭代预设没有差异。",
+      "source": ".local/skills-mcp-migration-live/anima-display-control.mjs:17-28"
+    },
+    {
+      "subject": "输入和状态隔离",
+      "evidence": "两组输入在替换各组绝对路径后结构相同，caseId、模型、任务语义和 600000 毫秒等待一致；两个目标 Workspace 当前均为空。Profile、安装路径、Workspace 和端口各自独立。",
+      "source": ".local/skills-mcp-migration-live/anima-display-control/baseline/input.json"
+    },
+    {
+      "subject": "模型、角色和 MCP 来源",
+      "evidence": "两组 modelSelection、observer、imageReaderEntry 与 sourceConfigurationBaseline 完整相同；有效 composition 除目标 section 外相同。候选文件字节核对覆盖 Skill、02-role、角色插件和 MCP 声明。",
+      "source": ".local/skills-mcp-migration-live/anima-display-control/experimental/installed-match.json"
+    },
+    {
+      "subject": "模型调用准备状态",
+      "evidence": "两组官方记录均为 stopped。各 Profile 仅发现一个安装时创建的默认空会话，其 sessionStats.turns/steps、tokenUsage 和 lastTurn 均为零，pending model 为空；本地请求观察目录未发现这些会话对应的模型记录。现有本地证据支持尚未提交本轮模型输入。",
+      "source": ".local/skills-mcp-migration-live/anima-display-control/index.json"
+    },
+    {
+      "subject": "配置加载方式",
+      "evidence": "prepareDisplayVariant() 要求目标实例停止后保存实际 Profile；startScenario() 使用 development 启动，两个配置均为 persistent。probe 的 writeProfilePortPatch() 通过 adapter 更新端口条目并保留其他配置。重新启动可加载保存的展示控制补丁。",
+      "source": ".local/skills-mcp-migration-live/isolated-profile.mjs:158-167; tests/desktop/fixtures/official-desktop-probe.mjs:275-325"
+    },
+    {
+      "subject": "实际 system/tools 的采集可行性",
+      "evidence": "两组加载相同 llm-observer。该观察器在 llm/stream 的 prepend 回调中、调用 next() 前，将 sessionId、provider、model、messages、tools、system 等写入独立 callId JSONL；desktop-driver 的 submit 返回 sessionId，可据此准确关联各组请求。",
+      "source": ".local/skills-mcp-migration-live/llm-observer.mjs:12-24; .local/skills-mcp-migration-live/desktop-driver.mjs:26-35"
+    }
+  ],
+  "operationalNotes": [
+    {
+      "subject": "sourceAddress 读取须单独执行 remote",
+      "detail": "futureExecution.capture 给出的 capture 命令只建立 Client Context 并读取 roster/settings；capture 分支不执行输入文件中的 namespace/method。若要取得 sourceAddress 实际回读，完成 capture 后，再用 remote 子命令传入 isolated-profile-source-address-readback.json。该事项不影响当前已验证的 Profile 配置一致性。",
+      "source": ".local/skills-mcp-migration-live/desktop-driver.mjs:18-25"
+    },
+    {
+      "subject": "请求比较的解释范围",
+      "detail": "两组必然包含不同的 Profile、Workspace、Skill 安装路径、端口、时间、PID 与会话 ID。当前准备构成独立状态基线上的配置对照；不能称为模型请求字节级单变量。规范化须明确字段，并保留实际原始请求。"
+    },
+    {
+      "subject": "样本范围",
+      "detail": "每组一个首轮样本可观察该次结果，单次差异不足以排除模型采样波动。是否需要重复由实际结果决定。"
+    }
+  ],
+  "runtimeAcceptance": [
+    "按各组已准备的 state 直接 start；若再次执行 configure，则重新应用 variant patch 并复核。",
+    "启动后先 capture 取得 Client Context 与实际 Preset，再分别回读源地址和核对插件加载状态。",
+    "分别提交既定 input，保留 sessionId 及首个实际 llm request；确认展示段只在 baseline 可见，并比较规范化后的 system 与工具声明。",
+    "从后续工具调用和请求 messages 核对 ANIMA SKILL.md 与 02-role 的实际读取和送达，不能仅凭安装文件存在判定模型已经读取。",
+    "保留纯 JSON 最终回答、保存 JSON、校验结果及所有失败轨迹；结束后核对进程和端口释放。"
+  ],
+  "limitations": [
+    "本轮未启动 Desktop，因此未验证两组实际 system-prompt/assemble 输出或模型最终回答。",
+    "本轮没有读取压缩原始会话文件；未提交结论基于空会话投影、准备记录和观察器记录检索。",
+    "两项确定性测试验证官方 Include patch 与组件过滤合同，真实宿主 section 注册顺序和工具可见性仍需运行请求证据确认。"
+  ]
+}

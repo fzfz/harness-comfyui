@@ -1,0 +1,86 @@
+{
+  "purpose": "记录迭代 Skill 及交接规范的独立语义审计结果。",
+  "readWhen": "修改审计对象及核对文字交付前。",
+  "summary": "发现 4 项需修改问题，涉及重复定义和规则拆分。无待补事实。",
+  "scope": [
+    ".agents/skills/comfyui-iterate-generation/SKILL.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md"
+  ],
+  "findings": [
+    {
+      "id": "TEXT-1",
+      "file": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        20
+      ],
+      "original": "ComfyUI 图片保留在实际生成位置，generation.md 记录查询所得媒体 ID 和图片路径。",
+      "problem": "第 16 行已定义 generation.md 包含媒体 ID 和实际图片路径。第 20 行重复定义这两项内容。",
+      "rules": [
+        "I7",
+        "G20"
+      ],
+      "minimalChange": "保留“ComfyUI 图片保留在实际生成位置。”。将“查询所得”移到第 16 行的 media_id 和实际图片路径前。删除第 20 行后半句。",
+      "deletionCheck": "第 16 行仍定义记录内容，且保留查询来源要求。"
+    },
+    {
+      "id": "TEXT-2",
+      "file": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "lines": [
+        35
+      ],
+      "original": "构图、生成和比较的材料通过 input_files 提供，对应参考通过 reference_files 提供，用户要求通过 requirements 提供；观察材料通过 images 和 questions 提供。",
+      "problem": "SKILL.md 第 37 至 42 行已定义这些参数的内容与适用角色。第 35 行重复参数规则。",
+      "rules": [
+        "I7",
+        "G20"
+      ],
+      "minimalChange": "删除本句。保留本项前两句的编号替换和路径转换规则。",
+      "deletionCheck": "第 31 行已链接 SKILL.md 参数表，读者仍能查到完整填写规则。"
+    },
+    {
+      "id": "TEXT-3",
+      "file": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "lines": [
+        31
+      ],
+      "original": "主 Agent 调用对应角色工具，并填写以下参数。角色工具等待子 Agent 本轮工作结束后返回。首次任务省略 agent_id，工具返回 kind=continuable 和 subagentId。构图和生成的后续任务仍调用原角色工具，agent_id 填原 subagentId；返回的 messageId 标识本次接纳的消息。每轮观察与比较分别创建新子 Agent。",
+      "problem": "同一条规则混合工具返回时机、首次派发、继续任务和新建子 Agent。不同条件下的要求难以逐项引用。",
+      "rules": [
+        "I3"
+      ],
+      "minimalChange": "保留调用工具和参数表的引导句。将返回时机、首次任务、构图与生成的后续任务、每轮观察与比较拆成 4 个有序子项。",
+      "deletionCheck": "这些规则决定子 Agent 的使用方式，必须保留。只拆分条目。"
+    },
+    {
+      "id": "TEXT-4",
+      "file": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "lines": [
+        61
+      ],
+      "original": "目标未达成时，主 Agent 将比较文件交给原生成 Agent，要求原生成 Agent 针对比较指出的具体偏差修改 Prompt，再继续生成、观察和比较。材料理解或构图问题交给原构图 Agent，新的构图文件用于后续生成。缺少关键观察时，先针对实际图片补充中性读图，再比较。",
+      "problem": "同一项包含 Prompt 偏差、材料或构图问题、缺少观察 3 种处理条件。末句还省略了派发补充读图的主体。",
+      "rules": [
+        "I3",
+        "I4"
+      ],
+      "minimalChange": "按 3 种条件拆成有序子项。补充读图项改为“缺少关键观察时，主 Agent 先派发补充中性读图，再派发比较任务。”。",
+      "deletionCheck": "3 种处理条件均影响后续任务，必须保留。拆分后分别写清条件和主 Agent 的动作。"
+    }
+  ],
+  "factsToSupply": [],
+  "reviewNotes": [
+    "已逐行审阅两份对象全文。未读取实现、测试及其他报告。",
+    "已检查用途、读取时机、文档头和标题层级。",
+    "已核对术语、职责、指代、条件和动作。",
+    "已按删除后的理解与执行影响判断保留内容。",
+    "对象检查返回 0 处错误、9 处句长警告。",
+    "已人工复核 9 处警告。第 61 行的条件混合列入 TEXT-4。",
+    "其余句长警告保留：分别承载触发条件、交接字段或路径转换规则。",
+    "未修改被审文件。"
+  ],
+  "reportValidation": {
+    "profile": "for-document",
+    "errors": 0,
+    "manualReview": "已复核报告全文。JSON 双引号属于语法，保留。原句引用保留句长，供定位核对。“实现”指程序代码，保留。"
+  }
+}

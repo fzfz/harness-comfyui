@@ -1,0 +1,472 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-15",
+  "case": "5.6-3",
+  "runId": "f95d013f-c328-42a5-b244-b27bbe46f831",
+  "sessionId": "session-93120f77-a820-44e7-b41e-d43e27c6949f",
+  "evidenceRoot": ".local/skills-mcp-migration-live/mcp-0902-neutral-output-control",
+  "baselineRoot": ".local/skills-mcp-migration-live/mcp-0902-no-default-resource-baseline",
+  "conclusion": {
+    "noDefaultModelBranch": "pass",
+    "fullSkillContract": "fail_validation_order",
+    "traceEvidence": "pass",
+    "cleanup": "pass",
+    "causalAttribution": "not_established"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "scope": "Prompt Builder 结果校验顺序与报告一致性",
+      "summary": "模型路线校验无法完成时，模型仍执行并公布后续图片尺寸校验结论。",
+      "contractEvidence": {
+        "eventSeq": 26,
+        "quote": "Skill 执行者保持结果 JSON 的属性和值不变，并按照结构校验、模型路线校验、负向模式校验和图片尺寸校验的顺序执行；当前校验未通过时，Skill 执行者停止执行后续校验。"
+      },
+      "actualEvidence": [
+        {
+          "eventSeq": 57,
+          "fact": "可见 reasoning 确认没有采用的模型、路线校验无法完成，随后实际计算 gcd(1024,1536)=512 和百万像素偏差，决定报告 structure ✓、size ✓、model route 未完成。"
+        },
+        {
+          "eventSeq": 65,
+          "artifactLines": [
+            33,
+            47,
+            49
+          ],
+          "fact": "写入 model-missing-report.md：一方面称尚未进入创建图片第1步，另一方面记录结构与图片尺寸校验结果，路线校验无法执行。"
+        },
+        {
+          "eventSeq": 69,
+          "fact": "最终答复明确标记“图片尺寸校验 ✅ 通过”，同时标记“模型路线校验 ⏸ 无法执行”。"
+        }
+      ],
+      "impact": "用户收到跳过前序校验的后序通过结论；整体 Skill 合同不能记为全部通过。没有因此选择模型或提交生成。",
+      "firstObservedSeq": 57
+    }
+  ],
+  "inputControl": {
+    "status": "pass_with_runtime_differences",
+    "facts": [
+      "业务用户消息与 input.json.taskText 完全一致。与编号基线相比，从“任务参数：”开始的文本仅将产物目录“5.6-3”替换为“result”；template_id=29、instance_id=2、count=1、seed=20261013 与完整 Prompt Builder JSON 保持相同，未指定 model_id。",
+      "两轮初始 persona 内容、Skill 目录内容、31个工具声明完全相同；已加载 Skill 的 skill_instructions 正文完全相同。",
+      "初始 request 除 messages 外仅 sessionId 不同；messages 中 persona 和目录内容相同，用户任务与运行上下文中的独立临时路径不同，消息ID等宿主元数据不同。",
+      "两轮全部调用均为 opencode-go/deepseek-v4.1-flash，预设及超时/调用次数限制相同。",
+      "两轮 installed-files.json 各有200项且全部 matchesCandidate=true；逐项读取两轮仍保留的安装文件后，200项内容全部相同，未新增hash校验。prepare记录 loadedClientSource.matchesCandidate=true。"
+    ],
+    "candidate": {
+      "packageVersion": "0.45.0",
+      "sourceCommit": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+      "dirty": true,
+      "comparedFileCount": 200
+    },
+    "uncontrolledFactors": [
+      "独立 runtime/workspace/session、服务端口、调用时刻与模型非确定性；未开展重复随机对照。"
+    ]
+  },
+  "preflightAndBoundary": {
+    "status": "pass_corrected_fixture",
+    "facts": [
+      "初始 fixture 误用证据封装对象，HTTP 前检发现默认模型未置空。preflight-error记录初始夹具于17:54:57.770Z关闭并释放64993，modelTaskSubmitted=false。",
+      "本轮 input.fixtureStateFile 指向 corrected-fixture；corrected-fixture 于17:54:57.856Z启动，使用 no-default-model 场景及65129端口。任务 startedAt=1792000610291，对应17:56:50.291Z，晚于正确夹具启动。",
+      "profile-before中的Host HTTP为65129，两个MCP覆盖均为http://127.0.0.1:65129/mcp。",
+      "seq47模型实际取得的Workflow结果与编号基线seq43完全相同：item.model=null，完整workflow_json保留检查点节点。seq54目录查询中的Workflow29也为model:null。",
+      "mcp-consumer及corrected-http-consumers共同确认Workflow29默认模型为空；HTTP bundle保留完整图。原fixture及http-consumers仅作为前检错误记录，不作为模型本轮有效边界证据。",
+      "正确夹具上游初始化为noobai-catalog 0.90.2，protocolVersion=2025-03-26，tools/resources/skills扩展能力与基线相同。模型工具声明相同。实际模型未读取MCP资源，故本轮不能重复证明所有资源方法行为。"
+    ],
+    "evidence": [
+      "preflight-error.json",
+      "corrected-fixture/state.json",
+      "corrected-fixture/upstream-da0d3665-5908-4d49-97a1-c8c885e5d396.json",
+      "mcp-consumer.json",
+      "corrected-http-consumers/index.json",
+      "corrected-http-consumers/template.json",
+      "corrected-http-consumers/bundle.json",
+      "profile-before.json",
+      "trace seq47、54"
+    ]
+  },
+  "trace": {
+    "status": "pass",
+    "eventCount": 72,
+    "seqRange": [
+      0,
+      71
+    ],
+    "continuous": true,
+    "sessionRecordsMatch": true,
+    "indexComplete": true,
+    "missing": [],
+    "models": [
+      {
+        "callId": "98728b3c-e84a-4c72-b608-5063540b0985",
+        "at": "2026-10-14T17:56:58.426Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 4,
+        "complete": true,
+        "receivedChunks": 26,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "98b5d50e-7d48-4d45-9121-d22c3b98d602",
+        "at": "2026-10-14T17:56:58.470Z",
+        "purpose": "session-title",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 1,
+        "complete": true,
+        "receivedChunks": 7,
+        "finish": [
+          {
+            "kind": "stop"
+          }
+        ]
+      },
+      {
+        "callId": "9e5e7f9d-a840-4b83-b24d-b747f1257f33",
+        "at": "2026-10-14T17:57:03.267Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 6,
+        "complete": true,
+        "receivedChunks": 226,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "2ec57a92-d25b-4703-b07b-aef90f3405b4",
+        "at": "2026-10-14T17:57:12.409Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 9,
+        "complete": true,
+        "receivedChunks": 231,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "823ef962-8da5-4a92-a62b-949aea34173c",
+        "at": "2026-10-14T17:57:20.249Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 12,
+        "complete": true,
+        "receivedChunks": 209,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "9c34e05f-1af9-4461-a207-305450216df7",
+        "at": "2026-10-14T17:57:27.518Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 15,
+        "complete": true,
+        "receivedChunks": 149,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "ed583634-f4c4-45a8-883c-ae920e40653b",
+        "at": "2026-10-14T17:57:32.544Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 18,
+        "complete": true,
+        "receivedChunks": 929,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "ec188080-f4e4-4b07-93f9-3fcb0a1bfc24",
+        "at": "2026-10-14T17:58:12.908Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 21,
+        "complete": true,
+        "receivedChunks": 698,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "cf9216f4-aa01-4f51-b35f-5282181abb56",
+        "at": "2026-10-14T17:58:39.961Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 24,
+        "complete": true,
+        "receivedChunks": 1367,
+        "finish": [
+          {
+            "kind": "tool-calls"
+          }
+        ]
+      },
+      {
+        "callId": "36121629-c1a7-40c6-b70f-21d69b5db2f4",
+        "at": "2026-10-14T18:00:07.092Z",
+        "purpose": null,
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "messageCount": 26,
+        "complete": true,
+        "receivedChunks": 223,
+        "finish": [
+          {
+            "kind": "stop"
+          }
+        ]
+      }
+    ],
+    "taskCalls": 9,
+    "titleCalls": 1,
+    "subagents": 0,
+    "toolCalls": [
+      {
+        "seq": 18,
+        "name": "skill",
+        "arguments": "{\"name\":\"comfyui-generate\"}"
+      },
+      {
+        "seq": 23,
+        "name": "bash",
+        "arguments": "{\"command\":\"ls -R /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate\",\"description\":\"List Skill directory contents\"}"
+      },
+      {
+        "seq": 25,
+        "name": "bash",
+        "arguments": "{\"command\":\"cat \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md\\\"\",\"description\":\"Read prompt result contract\"}"
+      },
+      {
+        "seq": 30,
+        "name": "bash",
+        "arguments": "{\"command\":\"cd \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references\\\" && cat prompt-result-schema.json && echo \\\"=====ROUTES=====\\\" && cat prompt-builder-model-routes.json\",\"description\":\"Read schema and model routes\"}"
+      },
+      {
+        "seq": 32,
+        "name": "bash",
+        "arguments": "{\"command\":\"cat \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md\\\"\",\"description\":\"Read generation CLI reference\"}"
+      },
+      {
+        "seq": 37,
+        "name": "bash",
+        "arguments": "{\"command\":\"cat \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md\\\"\",\"description\":\"Read template parameter inspection reference\"}"
+      },
+      {
+        "seq": 39,
+        "name": "bash",
+        "arguments": "{\"command\":\"echo \\\"DSH_HARNESS_COMFYUI_NODE_EXECUTABLE=$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\"; echo \\\"DSH_HARNESS_COMFYUI_CLI=$DSH_HARNESS_COMFYUI_CLI\\\"; echo \\\"PWD=$(pwd)\\\"; env | grep -i dsh\",\"description\":\"Check harness environment variables\"}"
+      },
+      {
+        "seq": 44,
+        "name": "bash",
+        "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation inspect-template-parameters --help 2>&1 | head -60\",\"description\":\"Read inspect-template-parameters help\"}"
+      },
+      {
+        "seq": 46,
+        "name": "mcp__noobai__get_catalog_resource",
+        "arguments": "{\"ref\":{\"kind\":\"workflow\",\"id\":\"29\"}}"
+      },
+      {
+        "seq": 51,
+        "name": "bash",
+        "arguments": "{\"command\":\"ls -la \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/\\\" && echo \\\"--- .agents ---\\\" && ls -la \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/\\\"\",\"description\":\"Inspect harness-comfyui package layout\"}"
+      },
+      {
+        "seq": 53,
+        "name": "mcp__noobai__search_workflows",
+        "arguments": "{\"base_model\":{\"name\":\"wai\"},\"limit\":20}"
+      },
+      {
+        "seq": 58,
+        "name": "bash",
+        "arguments": "{\"command\":\"ls -la \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/workspace\\\" 2>&1; mkdir -p \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/workspace/result\\\" && echo \\\"result dir ready\\\"\",\"description\":\"Inspect workspace and create result dir\"}"
+      },
+      {
+        "seq": 60,
+        "name": "mcp__noobai__search_instances",
+        "arguments": "{\"limit\":5}"
+      },
+      {
+        "seq": 65,
+        "name": "bash",
+        "arguments": "{\"command\":\"cat > \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/workspace/result/model-missing-report.md\\\" <<'MD'\\n# 创建图片任务：已停止，等待 model_id\\n\\n## 结论\\n\\n本次**未创建任何图片**，也**未提交任何 Generation Request**。\\n\\n停止原因：Workflow 模板 `29` 保存的默认生成模型为 `null`，且当前请求未指定 `model_id`。\\n按 `comfyui-generate` Skill“核对当前选择”的规定，此时必须请求用户提供 `model_id` 并停止创建图片，\\n且**不得**从 Workflow 节点或 Prompt Builder 结果 JSON 的 `model_route` 推选生成模型。\\n\\n## 已确认的输入\\n\\n| 项目 | 值 | 来源 |\\n| --- | --- | --- |\\n| Workflow 模板 | `29`（name: `wai_basic_txt2img`，type: `text_to_image`） | 任务参数直接指定；NoobAI MCP 查询结果 |\\n| 模板关联底模 | `2`（name: `wai`） | NoobAI MCP Workflow 查询结果 |\\n| 模板默认模型 `item.model` | `null` | NoobAI MCP Workflow 查询结果 |\\n| 模板关联 LoRA `item.lora` | `null` | NoobAI MCP Workflow 查询结果（LoRA ID 有序列表为空） |\\n| ComfyUI 实例 | `2`（name: `win3080`，`http://192.168.110.122:8188/`） | 任务参数直接指定；NoobAI MCP 实例列表中唯一/首个实例 |\\n| 待创建图片数量 | 1 | 任务参数 `count: 1` |\\n| 指定 Seed | `20261013` | 任务参数 `seed` |\\n\\n## 停止位置\\n\\n`comfyui-generate` 的“创建图片”流程通常依次为：\\n\\n1. 校验 Prompt Builder 结果并确定待创建图片\\n2. 构造 Prompt 并分配生成模型和 LoRA\\n3. 检查 Workflow 参数\\n4. 取得 Seed、构造 Generation Request 并提交\\n\\n其中“进入创建图片步骤前，Skill 执行者必须已取得所采用生成模型的查询结果”。\\n由于步骤“核对当前选择”无法确定所采用的生成模型，**尚未进入第 1 步**，\\n第 3、4 步（`generation inspect-template-parameters`、`generation submit`）均未调用，\\n因此本次没有 `run_id`。\\n\\n## Prompt Builder 结果 JSON 的处理情况\\n\\n已完整读取 `references/prompt-result-contract.md`、`references/prompt-result-schema.json`、\\n`references/prompt-builder-model-routes.json`。该结果 JSON 未被判定为“无效”，\\n但在“核对当前选择”停止后，“模型路线校验”缺少必要输入（所采用生成模型的 `skill_name`），无法执行。\\n\\n已可核对的项：\\n\\n- 结构校验：10 项必填属性齐全，`additionalProperties: false` 未触发，枚举值与类型均符合\\n  `prompt-result-schema.json`。\\n- 图片尺寸校验：`gcd(1024, 1536) = 512`，构造出 `2:3`，与 `aspect_ratio` 完全一致；\\n  `abs(1024 × 1536 ÷ 1,000,000 − 1.572864) ÷ 1.572864 = 0`，小于等于 `0.05`。\\n- 模型路线校验（无法执行）：`model_route` 为 `wai-illustrious-sdxl`，对应\\n  `skill_name = wai-sdxl-prompt-builder`，需要与所采用生成模型的 `skill_name` 比对；\\n  当前没有所采用的生成模型，故无法比对。\\n- 负向模式校验：未执行（按合同顺序在模型路线校验之后）。\\n\\n## 需要用户提供\\n\\n请提供一个 `model_id`，作为本模板采用的生成模型。约束：\\n\\n1. 该模型的 `base_model` 必须与模板 `29` 的关联底模 `2`（`wai`）一致，\\n   否则需同时更换 Workflow 模板、生成模型或 LoRA。\\n2. 该模型在 NoobAI MCP 中的 `skill_name` 需与 `wai-illustrious-sdxl` 路线对应的\\n   `wai-sdxl-prompt-builder` 一致，Prompt Builder 结果 JSON 才能通过模型路线校验。\\n3. 提供后需要一并确认：是否继续使用实例 `2`、Seed `20261013`，以及是否新增 LoRA。\\n\\n说明：本报告仅记录事实，未推荐、也未代入任何具体模型 ID；模板 `29` 的 Workflow 节点中虽出现\\n检查点文件名，但按 Skill 规定该信息不得用于推选生成模型。\\nMD\\necho \\\"written\\\"; wc -l \\\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-zjyGdx/.local/desktop-development/official-environment/workspace/result/model-missing-report.md\\\"\",\"description\":\"Write blocked-status report to result dir\"}"
+      }
+    ],
+    "toolResultReplay": "14个工具结果的content均完整进入后续模型请求；无工具错误。",
+    "terminal": {
+      "eventSeq": 71,
+      "reason": "completed",
+      "finalModelFinish": "stop"
+    }
+  },
+  "knowledgeAndBehavior": [
+    {
+      "seq": [
+        18,
+        19
+      ],
+      "fact": "模型调用skill加载本轮安装的comfyui-generate；工具知识最初来自首轮工具声明。"
+    },
+    {
+      "seq": [
+        23,
+        25,
+        30,
+        32,
+        37
+      ],
+      "fact": "模型列出Skill目录并读取结果合同、schema、routes、generation-cli及参数检查CLI参考。"
+    },
+    {
+      "seq": [
+        39,
+        40
+      ],
+      "fact": "模型读取DSH环境变量，得到本轮运行路径和CLI路径，能力凭据已脱敏。"
+    },
+    {
+      "seq": [
+        44,
+        45
+      ],
+      "fact": "实际执行generation inspect-template-parameters --help；返回离线帮助。没有传--stdin或模板/实例业务参数，没有执行业务参数检查。帮助调用发生在获得null结果之前。"
+    },
+    {
+      "seq": [
+        46,
+        47,
+        50
+      ],
+      "fact": "模型读取Workflow29，随后可见思考多次确认null停止规则，同时猜测benchmark/trap/test并讨论是否存在测试提示。"
+    },
+    {
+      "seq": [
+        51,
+        52,
+        53,
+        54
+      ],
+      "fact": "模型列出安装包及.skills目录、查询wai Workflow列表。没有打开验收控制源、旧验收答案或会话缓存；额外读取本身不构成合同失败。"
+    },
+    {
+      "seq": [
+        57,
+        58,
+        59,
+        60,
+        61
+      ],
+      "fact": "模型明确停止创建图片，创建用户指定的result目录，查询实例列表，确认实例2。seq57另外出现F1的越序校验。"
+    },
+    {
+      "seq": [
+        65,
+        66,
+        69,
+        71
+      ],
+      "fact": "模型保存停止报告，最终要求model_id并自然结束。未采用模型、未执行参数检查业务、未调用generation submit或随机Seed、未创建子代理。"
+    }
+  ],
+  "artifact": {
+    "path": "result/model-missing-report.md",
+    "evidence": [
+      "artifact.json",
+      "trace seq65–66"
+    ],
+    "status": "created_with_F1",
+    "notes": [
+      "产物对默认模型为空、没有Run的说明与轨迹一致。",
+      "“未调用generation inspect-template-parameters”的文字未说明已调用--help；应按“未执行业务参数检查”理解，不能据此漏记真实帮助调用。",
+      "最终还要求重新确认已给定实例和Seed及是否新增LoRA；这是额外确认请求，本轮未继续执行，未据此登记新的实质合同失败。"
+    ]
+  },
+  "comparisonAndCausality": {
+    "facts": [
+      "编号基线58条事件、8次模型调用；中性目录本轮72条事件、10次模型调用。两轮均自然要求model_id且没有生成提交。",
+      "基线查询模型候选并检查未创建的5.6-3目录；本轮查询Workflow列表、查看安装包、读取CLI帮助并写入result报告。",
+      "本轮seq50、57仍明确猜测测试意图；中性目录未消除这些可见推测。",
+      "最先出现的执行路径差异在seq22–25的读取布局；这些差异不足以单独认定偏离。首次已证实合同不符合为本轮seq57的校验顺序。"
+    ],
+    "judgment": "两轮相同业务停止分支均通过。没有证据证明“5.6-3”目录名是原异常的必要原因，或“result”目录名能阻止测试推测/额外探索。单次对照只支持本轮观察，不推定修复因果与稳定成功率。"
+  },
+  "cleanup": {
+    "status": "pass",
+    "evidence": [
+      "cleanup.json",
+      "profile-restored.json",
+      "已安装agent-presets/noobai-mcp.cordis.yml"
+    ],
+    "facts": [
+      "Desktop run f95d013f-c328-42a5-b244-b27bbe46f831 stopped，error=null，portsReleased=true。",
+      "正确夹具e257f1f1-a477-4ae0-9176-0bd3c45d82f6 stopped，65129已释放；初始错误夹具64993也已释放。",
+      "恢复后Profile的Host HTTP端口为18093，两个MCP临时覆盖已移除；已安装共享noobai-mcp.cordis.yml默认指向http://127.0.0.1:18943/mcp。",
+      "这是恢复配置文件与停止证据，未重启应用验证恢复后的运行连通性。"
+    ]
+  },
+  "scopeLimits": [
+    "生成提交为0根据本轮完整Agent调用轨迹判断；未提供全局Host Run数据库或ComfyUI队列快照。",
+    "本报告将5.6-3目标分支通过与F1整体Skill合同问题分别登记，不以最终回答代替轨迹。",
+    "可见思考中对benchmark的推断是被审查模型的猜测；审查未将其当作真实任务设计事实。"
+  ],
+  "nextControlProposal": {
+    "status": "appropriate_unrun_single_instruction_control",
+    "hypothesis": "控制侧额外要求保存任务产物，可能促使模型在无法创建图片时构造说明报告，再为报告补充信息而执行后序校验。",
+    "supportingEvidence": [
+      {
+        "seq": 50,
+        "fact": "模型将“保存result产物”理解为任务应存在产品，反复权衡停止和产物要求。"
+      },
+      {
+        "seq": 57,
+        "fact": "模型明确引用保存产物要求，决定写阻塞报告；随后决定补充结构和尺寸校验，称其为 informative report，并在意识到合同顺序后仍认为额外信息有用。"
+      },
+      {
+        "seq": 65,
+        "fact": "实际写出含这些后序校验结论的报告。"
+      }
+    ],
+    "causalStatus": "这是可见思考支持的候选动机链；尚未通过反事实验证。模型也可能在没有产物指令时自行补充尺寸信息，编号基线虽有产物指令却未出现同样报告，故该指令尚不能被认定为充分原因。",
+    "minimalChange": "下一轮仅删除用户任务中的“将本任务产物保存到工作目录中的 result 目录。”一句；保留业务参数、完整Builder JSON、Skill/候选包、模型与调用参数、宿主persona、工具声明、无默认模型场景和协议；继续使用独立运行目录，并记录不可避免的运行路径差异。",
+    "measurement": [
+      "以完整轨迹检查是否仍明确请求model_id并自然停止，是否仍零生成提交。",
+      "分别记录是否主动构造/保存阻塞报告、是否在路线未完成前执行尺寸校验、是否在答复中宣称尺寸通过。",
+      "独立记录额外目录查询、CLI帮助、测试意图猜测；这些观察不自动折算为合同失败。"
+    ],
+    "interpretation": "若删除指令后未越序，仅增加关联证据，单次未复现不能证明原因。若仍越序，说明删除该指令不足以消除问题。当前证据支持先做输入对照，不支持直接修改Skill或增加业务规则。",
+    "execution": "本审查未发起模型或应用。"
+  }
+}

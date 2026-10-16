@@ -1,0 +1,37 @@
+{
+  "purpose": "核对工作流矩阵脚本迁移后的实际入口与配置传递。",
+  "scope": [
+    "scripts/verification/comfyui-workflow-matrix.mjs",
+    "tests/unit/comfyui-workflow-matrix-script.test.ts"
+  ],
+  "findings": [
+    {
+      "symptom": "context is not defined",
+      "cause": "runMatrix使用不存在的context读取instanceCacheEpoch",
+      "repair": "使用该函数实际加载的profile配置"
+    },
+    {
+      "symptom": "SOURCE_QUERY_FAILED: Invalid URL",
+      "cause": "settings.get返回嵌套configuration，而两个内部Client要求平铺SourceAddress",
+      "repair": "返回url和port；测试保留真实Client及HTTP适配器"
+    }
+  ],
+  "validation": {
+    "targetedTests": 9,
+    "typecheck": "passed",
+    "independentReview": "passed",
+    "requestBoundary": "受控loopback HTTP核对六次请求的Host及路径",
+    "cache": "真实配置epoch与miss→hit",
+    "realBrowserOrModel": false
+  },
+  "sameMechanismAudit": {
+    "callSites": [
+      "scripts/verification/comfyui-workflow-matrix.mjs:370",
+      "scripts/verification/comfyui-workflow-matrix.mjs:371",
+      "src/host/core/plugin.ts:107",
+      "src/host/core/plugin.ts:108"
+    ],
+    "productionSource": "core.plugin sourceSettings.get() 返回 configuredSourceAddress 的平铺SourceAddress，符合readSourceAddress合同。",
+    "additionalDefects": []
+  }
+}

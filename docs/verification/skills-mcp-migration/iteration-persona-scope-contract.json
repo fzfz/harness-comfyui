@@ -1,0 +1,175 @@
+{
+  "purpose": "核对迭代预设的任务入口合同，并提供职责澄清与验收归属方案。",
+  "createdAt": "2026-10-14T08:38:19.148931+00:00",
+  "scope": {
+    "workspace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "productChanges": 0,
+    "applicationStarts": 0,
+    "modelCalls": 0,
+    "catalogWrites": 0,
+    "ownedOutput": "docs/verification/skills-mcp-migration/iteration-persona-scope-contract.json",
+    "status": "诊断和方案已完成；修复及真实复验待实施。"
+  },
+  "conclusion": {
+    "confirmed": "迭代预设 persona 当前对图片任务直接要求四角色派发，缺少任务匹配条件。仓库入口规范按 Skill description 选取 Skill，批准计划分别要求独立 Skill 分支和完整角色交接；这两处合同在独立构建、直接生成和历史查询入口发生范围冲突。",
+    "recommendedLayer": "替换迭代预设主 Agent 的 persona.config.prefix，引用 comfyui-iterate-generation 的 description 作为四角色流程的适用条件。独立任务遵循匹配 Skill 的任务范围和交付条件。",
+    "authorizationAssessment": "计划 5.2.4、5.12.3 和 5.14.2—3 已将预设职责一致性和文字冲突澄清纳入范围。此方案保留四角色业务职责与全部 Skill 业务规则，可作为范围内修复补入计划。",
+    "productDecisionRequiredNow": false,
+    "causalLimit": "本轮确认静态合同冲突和实际送达内容；没有执行模型对照，尚未证明文字澄清会改变路由或改善 Builder 语义结果。"
+  },
+  "evidence": [
+    {
+      "path": "agent-presets/harness-comfyui-iteration/agent.cordis.yml:23",
+      "fact": "主 persona 使用无条件四角色指令，并以比较通过作为图片交付条件。",
+      "quote": "You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison. Assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Handle missing inputs and user choices according to the handoff rules in comfyui-iterate-generation. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. In this preset, use Goal tools only for a Goal the user has started with /goal. Use get_goal to read that Goal and update_goal to mark it complete once its objective is achieved; leave Goal creation, editing, pausing and resuming to the user. Reply in the user's language."
+    },
+    {
+      "path": ".agents/skills/comfyui-iterate-generation/SKILL.md:3",
+      "quote": "主 Agent 在用户要求根据故事和人物构思画面，并通过生图、独立观察、比较反馈和小步 Prompt 修复迭代达成画面目标时使用。",
+      "fact": "迭代 Skill 定义了有条件的任务入口。"
+    },
+    {
+      "path": "docs/agents/comfyui-workbench-preset-and-skill-development.md:90",
+      "fact": "项目 Skill 按 frontmatter description 匹配用户请求，并在使用前完整读取；两个预设均提供八个项目 Skill。"
+    },
+    {
+      "path": "docs/plans/skills-mcp-migration-20261013.md:1235",
+      "clause": "5.9.3",
+      "fact": "第 5.3 至 5.6 节的每项独立 Skill 任务在两个预设分别执行。"
+    },
+    {
+      "path": "docs/plans/skills-mcp-migration-20261013.md:1245",
+      "clause": "5.9.8",
+      "fact": "计划另行要求真实生成及媒体、一轮构图生成观察比较交接。"
+    },
+    {
+      "path": "docs/plans/skills-mcp-migration-20261013.md:1295",
+      "clause": "5.13.1、5.13.8及7.4",
+      "fact": "23类任务展开为46项；执行顺序区分 Builder、真实生成、历史复用和完整角色交接；三类 Builder 独立结果按各自校验器验收。"
+    },
+    {
+      "path": ".agents/skills/comfyui-generate/SKILL.md:3",
+      "fact": "生成 Skill 单独支持创建图片、兼容性核对、历史 Run 查询和历史 Seed 复用。"
+    },
+    {
+      "path": ".agents/skills/krea2-anime-prompt-builder/SKILL.md:3",
+      "fact": "Builder 支持独立构建、改写、检查和历史参数查询；这些任务的交付物由该 Skill 定义。"
+    }
+  ],
+  "primaryTraceChecks": [
+    {
+      "case": "5.3-2",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/b097ca61-2d68-4e4a-a554-868269876313/1791963666875-c6741a94-282b-4da3-bb0e-98f4384b3aa3-collect.json",
+      "checkedEvents": [
+        8,
+        9
+      ],
+      "observed": "用户要求只构建并保存 Builder JSON，并明确测试尺寸；当前主 persona 仍要求四角色。projection.subagentCatalog 为空。"
+    },
+    {
+      "case": "5.4-2",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/d1030133-b50b-4191-82c6-0dba2d4ba73e/1791964811562-107ef16f-aaa0-4a2a-af37-e9f2b6398361-collect.json",
+      "checkedEvents": [
+        8,
+        9
+      ],
+      "observed": "用户要求只构建并保存 Builder JSON；projection.subagentCatalog 为空。"
+    },
+    {
+      "case": "5.6-1",
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/6f84e928-1a01-4018-81ff-e830f0992328/1791963006200-9bb8f97b-d5d9-4b20-a972-624b50b30708-collect.json",
+      "checkedEvents": [
+        8,
+        9,
+        18,
+        98,
+        100
+      ],
+      "observed": "seq 8 实际送达无条件四角色 persona；seq 9 要求按完整 final Builder 生成一张图并查询 Run/媒体；seq 18 直接加载 comfyui-generate；seq 98 交付实际 Run/媒体，seq 100 正常结束，子会话目录为空。"
+    }
+  ],
+  "repair": {
+    "file": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+    "location": "id=persona / config.prefix",
+    "operation": "整段替换原文，保持 YAML folded scalar 和现有组件配置。",
+    "original": "You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison. Assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Handle missing inputs and user choices according to the handoff rules in comfyui-iterate-generation. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. In this preset, use Goal tools only for a Goal the user has started with /goal. Use get_goal to read that Goal and update_goal to mark it complete once its objective is achieved; leave Goal creation, editing, pausing and resuming to the user. Reply in the user's language.",
+    "target": "You are the main Agent for the user's ComfyUI task. Select and read the project Skill whose description matches the user's request, and follow that Skill's task scope and deliverable requirements. When the request matches the description of comfyui-iterate-generation, use that Skill to dispatch composition, generation, independent observation and comparison. For that iteration task, assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Handle missing inputs and user choices according to the handoff rules in comfyui-iterate-generation. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. In this preset, use Goal tools only for a Goal the user has started with /goal. Use get_goal to read that Goal and update_goal to mark it complete once its objective is achieved; leave Goal creation, editing, pausing and resuming to the user. Reply in the user's language.",
+    "singleSource": "匹配条件继续由 comfyui-iterate-generation 的 description 定义；persona 引用该条件，避免复制自然语言触发场景清单。",
+    "preservedContracts": [
+      "完整迭代继续由构图、生成、独立观察与比较四角色完成，角色配置、工具参数及 Tool scope 保持当前值。",
+      "文件交接、输入缺项与选择、原 Agent 续派、提交重试和等待合同继续由现有 Skill 与派发组件定义。",
+      "完整迭代保留画面目标与核心要素，同一图片满足全部要求后交付图片及比较依据。",
+      "Builder 来源、画师、尺寸、数量、输出 schema，以及生成兼容性、Seed、Run 与媒体合同保持当前值。",
+      "Goal 限制与回复语言段逐字保留。"
+    ],
+    "planInsertion": {
+      "location": "5.12.3 后增加入口范围条目；随后条目顺延，已有引用据实际编号同步。",
+      "completeText": "实施者按项目 Skill 的 description 匹配本次用户请求。迭代预设主 Agent 对符合 comfyui-iterate-generation description 的请求执行四角色流程；其他请求按匹配 Skill 的任务范围和交付条件执行。实施者按 iteration-persona-scope-contract.json 的 repair.original 与 repair.target 替换主 persona，并保留该记录列出的业务合同。第 5.9 节第 3 项的独立 Skill 分支与第 8 项的完整角色交接分别验收，验收记录分别保存 Skill 业务结果、当轮 persona 遵循情况和四角色专项结果。"
+    },
+    "additionalProductFiles": [],
+    "implementationGate": "主线程先将本方案纳入计划，由独立队员核对诊断与目标文字，修改后进行独立语义审计和计划回扫。"
+  },
+  "acceptanceClassification": {
+    "fields": [
+      "Skill业务结果",
+      "当轮persona遵循情况",
+      "四角色专项结果"
+    ],
+    "builderOnly": "按对应 Builder 的完整语义与结构合同验收；四角色专项记未覆盖。已有 ANIMA/Krea2 语义失败保持原判。",
+    "directGeneration": "按 comfyui-generate 的参数、提交、Run、Actual Workflow 与媒体合同验收；四角色专项记未覆盖。",
+    "historyOnly": "按指定 Skill 的 Run 查询、来源与交付合同验收；四角色专项记未覆盖。",
+    "fullIteration": "核对四角色、子 Session、各角色输入输出、原始观察、逐图比较与终止或交付条件；缺少所需交接时判未通过或证据不足。",
+    "historyTreatment": "保留原报告及当时送达的 persona。原始 5.6-1 生成业务通过、persona 未遵循、四角色专项未覆盖可同时成立；新增报告说明当前适用合同。新增 persona 只用于其实际送达的复验轮次。"
+  },
+  "affectedCases": [
+    {
+      "scope": "迭代预设下23项独立分支",
+      "action": "入口 persona 改动后逐项重验或由独立审查员说明未受影响依据；Builder语义结果单独判断。"
+    },
+    {
+      "scope": "历史Run查询、参数检查、直接生成、Builder构建和检查",
+      "action": "选择各类代表任务核对不会因预设名称自动扩展交付物。"
+    },
+    {
+      "scope": "完整四角色图片迭代",
+      "action": "重验角色进入、生成交接、观察比较及缺项恢复，确认入口澄清没有削弱完整迭代。"
+    },
+    {
+      "scope": "工作台预设的23项分支",
+      "action": "保留候选与证据对应关系；主persona文件只影响迭代预设，是否复用工作台既有通过项由独立审查员核对共享文件变更。"
+    }
+  ],
+  "validation": {
+    "deterministic": [
+      "解析修改后 YAML，确认 persona 组件仍被加载；比较修改前后结构，除主 persona.prefix 外各字段一致。",
+      "在现有 preset resource、native iteration roles 与 system-prompt/assemble 测试路径核对预设注册、四角色参数、工具作用域与实际 assembly 中 persona 保留；不编写关键词测试判断任务语义。",
+      "执行相关 production 回归后，通过 pnpm test:desktop 验证候选打包安装与生命周期；在最终候选执行 pnpm quality 和 git diff --check。"
+    ],
+    "realControl": {
+      "fixed": "分别固定5.3-2、5.4-2、5.6-1原任务输入、模型、工具声明、Skill文件、目录数据来源和执行限制。",
+      "variable": "仅主persona.prefix；各轮使用干净官方会话及独立运行目录，保存实际送达系统消息。",
+      "observe": "Skill选择、主子路由、请求范围、生成次数、Run/媒体和最终交付物；Builder语义按自身完整合同另行判断。",
+      "interpretation": "原轮已直接执行独立任务，因此复验继续直执行只能证明与澄清后合同一致；不能据此声称修复改变了行为。若同时修改Builder或工具声明，仅可报告该候选综合验收结果。"
+    },
+    "realSiblingCases": [
+      "历史查询使用已授权且属于本Workspace的真实Run，只请求参数与Actual Workflow。",
+      "完整故事人物迭代请求执行至少一轮四角色交接，保留角色实际模型身份和各自结果文件。",
+      "完整迭代中的缺少模型或空实例按既有边界方案等待，补齐后续派原Agent。",
+      "用户明确只构建Prompt或只生成一次的请求按匹配Skill完成；含故事描述本身由独立审查员结合完整请求判断。"
+    ],
+    "evidence": "保存原始输入、候选与安装身份、主子Session、实际模型请求、工具与文件读取、通知、产物和独立逐项判定。"
+  },
+  "decisionBoundary": {
+    "currentMissingBusinessDecisions": [],
+    "ifExclusivePresetDesired": [
+      "若要求迭代预设所有请求均使用四角色，须明确独立Builder和历史查询是否仍受支持，以及其产物是否扩展为生成图片。",
+      "若独立任务也必须交给生成角色，须明确该角色对仅构建和仅查询的范围、交付条件，以及是否保留角色当前的生成步骤。",
+      "上述任一选择会改变已批准的独立分支合同，需业务决定后同步Skill入口、角色职责和验收矩阵。"
+    ],
+    "currentRecommendation": "依据已批准的分支范围澄清persona条件；本轮未找到要求所有独立任务额外生图或强制交给生成角色的既有条款。"
+  },
+  "uncertainty": [
+    "本轮核对的是明确列出的计划、仓库规范、Skill入口和原始记录；尚未执行修改后模型复验。",
+    "独立Builder已有语义失败具有各自来源链；本报告未验证其与persona的因果关系。"
+  ]
+}

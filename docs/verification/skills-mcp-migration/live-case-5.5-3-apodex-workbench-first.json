@@ -1,0 +1,41 @@
+{
+  "caseId": "5.5-3",
+  "preset": "harness-comfyui-cli-candidate",
+  "runId": "64ca19cf-15fa-421e-8400-de2c4aef89f6",
+  "provider": "openrouter",
+  "model": "apodex/apodex-1.1-mini:free",
+  "status": "未通过",
+  "evidence": ".local/skills-mcp-migration-live/desktop/64ca19cf-15fa-421e-8400-de2c4aef89f6/1791889204836-collect.json",
+  "passedChecks": [
+    {
+      "check": "已有Style Prompt仍补取说明",
+      "seqs": [
+        79,
+        80
+      ],
+      "resource": "style/12344"
+    },
+    {
+      "check": "保留输入Prompt say_hana",
+      "output": "generation-result.json"
+    },
+    {
+      "check": "运行格式与完整生成结果校验器",
+      "seqs": [
+        103,
+        104,
+        108,
+        109
+      ]
+    }
+  ],
+  "failure": {
+    "check": "未指定镜头和空间属性时构造候选B/C",
+    "actual": "事件128保存summary.md明确说明只构造A；未按SKILL第2节构造B/C。",
+    "seqs": [
+      128,
+      154
+    ]
+  },
+  "nextInput": "后续该迁移场景明确给出全部镜头和空间属性；当前失败记录保留，不据此宣称未指定构图分支通过。"
+}

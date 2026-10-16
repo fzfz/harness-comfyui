@@ -1,0 +1,311 @@
+{
+  "purpose": "记录工具注册修复候选的官方 Desktop 回归与退出核对。",
+  "readWhen": "核对本轮候选应用验收结果与临时资源清理时。",
+  "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-candidate.tgz",
+  "candidateContents": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-candidate-contents.json",
+  "command": "env pnpm_config_store_dir=/Users/fzfz/Library/pnpm/store pnpm test:desktop",
+  "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/local-control-desktop.log",
+  "result": {
+    "files": 13,
+    "tests": 269,
+    "passed": 269,
+    "failed": 0,
+    "durationSeconds": 262.34
+  },
+  "cleanup": {
+    "observedAt": "2026-10-14T09:52:45.026Z",
+    "method": "只读核对本轮记录的进程组及回环端口；测试自身的退出结果同时保留。",
+    "records": [
+      {
+        "runId": "1abe5732-d010-4995-b3a4-e4c9f0bd0982",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52531,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52532,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52533,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/1abe5732-d010-4995-b3a4-e4c9f0bd0982/run.json"
+      },
+      {
+        "runId": "36b86490-7eac-445e-a4d3-ad030e96dc32",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 51375,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 51376,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 51377,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/36b86490-7eac-445e-a4d3-ad030e96dc32/run.json"
+      },
+      {
+        "runId": "39b3f9cf-189c-4074-b07f-dd8d339c7671",
+        "state": "cancelled",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52404,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52405,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52406,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/39b3f9cf-189c-4074-b07f-dd8d339c7671/run.json"
+      },
+      {
+        "runId": "57b73bca-ab8a-4c55-9a2f-2c27afd91fbb",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 51378,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 51379,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 51380,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/57b73bca-ab8a-4c55-9a2f-2c27afd91fbb/run.json"
+      },
+      {
+        "runId": "99b168ee-89d2-400e-acd5-14183fb61ac3",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 51842,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 51843,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 51844,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/99b168ee-89d2-400e-acd5-14183fb61ac3/run.json"
+      },
+      {
+        "runId": "9e8c4033-3414-4422-abd2-83c6ee539d3d",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 51712,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 51713,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 51714,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/9e8c4033-3414-4422-abd2-83c6ee539d3d/run.json"
+      },
+      {
+        "runId": "a52ed010-9f63-441f-ad35-3149be1f0d53",
+        "state": "failed",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52371,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52372,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52373,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/a52ed010-9f63-441f-ad35-3149be1f0d53/run.json"
+      },
+      {
+        "runId": "b5665c8d-dd67-42eb-a8a4-09387be25274",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52151,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52152,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52153,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/b5665c8d-dd67-42eb-a8a4-09387be25274/run.json"
+      },
+      {
+        "runId": "b70519ce-d8e1-4305-91f5-938feef237ff",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52299,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52300,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52301,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/b70519ce-d8e1-4305-91f5-938feef237ff/run.json"
+      },
+      {
+        "runId": "b7f0275d-81b7-46c6-9808-f950d221cda8",
+        "state": "failed",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52449,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52450,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52451,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/b7f0275d-81b7-46c6-9808-f950d221cda8/run.json"
+      },
+      {
+        "runId": "d12a9f97-01de-4f08-bf89-55f12b688714",
+        "state": "stopped",
+        "processGroupPresent": false,
+        "recordedPortsReleased": true,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52039,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52040,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52041,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/d12a9f97-01de-4f08-bf89-55f12b688714/run.json"
+      },
+      {
+        "runId": "ee2424c6-bdda-41d6-a044-05eff0bfb005",
+        "state": "failed",
+        "processGroupPresent": false,
+        "recordedPortsReleased": false,
+        "ports": [
+          {
+            "name": "host",
+            "port": 52527,
+            "listening": false
+          },
+          {
+            "name": "rendererCdp",
+            "port": 52528,
+            "listening": false
+          },
+          {
+            "name": "hostInspector",
+            "port": 52529,
+            "listening": false
+          }
+        ],
+        "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/ee2424c6-bdda-41d6-a044-05eff0bfb005/run.json"
+      }
+    ]
+  },
+  "diagnosticCorrection": "首次使用默认配置调用 getProbeStatus，生命周期夹具的专属目录被身份校验拒绝；该调用未修改或停止任何进程。随后按记录直接只读观察进程组及端口。",
+  "remaining": "真实模型业务及受控取消恢复、PTC backend 验收另行记录。"
+}

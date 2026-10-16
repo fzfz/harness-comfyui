@@ -1,158 +1,163 @@
+---
+文档用途: 提供 Generation CLI 的调用条件、输入输出与错误处理规则。
+读取时机: Skill 执行者首次调用本文件所列命令前。
+---
 # Generation CLI
 
 ## 调用入口
 
-受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 Generation CLI 入口脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下入口以 Node 模式调用三个命令：
+1. 受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 Generation CLI 入口脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下入口以 Node 模式调用三个命令：
 
-```sh
-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin
-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin
-```
+   ```sh
+   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin
+   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin
+   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin
+   ```
 
 ## 命令与调用条件
 
-- 用户要求查询、核对或复用一个或多个 `run_id` 保存的生成参数或 Actual Workflow 时，Skill 执行者调用 `generation run-inputs --stdin`。
-一张或多张图片没有使用用户给出的 Seed 或历史 Generation Run 保存的 Seed 时，Skill 执行者按照“调用次数与结果复用”一节调用 `generation random-seeds --stdin`。
-每张图片的 Generation Request 通过全部参数检查后，Skill 执行者按照“调用次数与结果复用”一节提交该图片。
+1. 用户要求查询、核对或复用一个或多个 `run_id` 保存的生成参数或 Actual Workflow 时，Skill 执行者调用 `generation run-inputs --stdin`。
+2. 一张或多张图片没有使用用户给出的 Seed 或历史 Generation Run 保存的 Seed 时，Skill 执行者按照“调用次数与结果复用”一节调用 `generation random-seeds --stdin`。
+3. 每张图片的 Generation Request 通过全部参数检查后，Skill 执行者按照“调用次数与结果复用”一节提交该图片。
 
 ## 参数与标准输入
 
 ### 查询 Generation Run
 
-`generation run-inputs --stdin` 的标准输入是只包含 `run_ids` 的 JSON 对象。`run_ids` 是包含 1 至 20 个字符串的数组。每个字符串可以是完整 Run ID，也可以是 `run_` 加 canonical UUID 起始片段的短 Run ID；UUID 起始片段至少包含八个字符。命令按照数组顺序查询每一项，并保留重复项。
+1. `generation run-inputs --stdin` 的标准输入是只包含 `run_ids` 的 JSON 对象。`run_ids` 是包含 1 至 20 个字符串的数组。每个字符串可以是完整 Run ID，也可以是 `run_` 加 canonical UUID 起始片段的短 Run ID；UUID 起始片段至少包含八个字符。命令按照数组顺序查询每一项，并保留重复项。
 
 ### 取得 Seed
 
-`generation random-seeds --stdin` 的标准输入是只包含 `count` 的 JSON 对象。`count` 是 1 至 20 的整数，并等于本次需要命令返回 Seed 的图片数量。
+1. `generation random-seeds --stdin` 的标准输入是只包含 `count` 的 JSON 对象。`count` 是 1 至 20 的整数，并等于本次需要命令返回 Seed 的图片数量。
 
 ### 提交 Generation Request
 
-`generation submit --stdin` 的标准输入是包含以下六个属性的 JSON 对象：
+1. `generation submit --stdin` 的标准输入是包含以下六个属性的 JSON 对象：
 
-- `title` 必须是包含 1 至 500 个字符且不含控制字符的运行标题。
-- `instance_id` 保存 ComfyUI 实例 ID。
-- `template_id` 保存 Workflow 模板 ID。
-- `model` 必须是包含所选生成模型 `id` 和 `file_name` 的 JSON 对象；没有选择生成模型时，`model` 必须是 `null`。
-- `parameters` 必须是以 Workflow 参数检查结果中的 `parameter_id` 为属性名的 JSON 对象。
-- `loras` 必须是按用户指定顺序排列的 LoRA 数组，并且最多包含 100 项；没有选择 LoRA 时，`loras` 必须是空数组。每项 LoRA 必须包含 `id`、`file_name`、有限数字 `weight` 和不重复的 `trigger_words` 字符串数组；`trigger_words` 最多包含 100 项，每个字符串必须包含 1 至 500 个字符且不含控制字符。
+   1. `title` 必须是包含 1 至 500 个字符且不含控制字符的运行标题。
+   2. `instance_id` 保存 ComfyUI 实例 ID。
+   3. `template_id` 保存 Workflow 模板 ID。
+   4. `model` 必须是包含生成模型 `id` 和 `file_name` 的 JSON 对象，或者为 `null`；取值按本文件“输入值的来源”一节确定。
+   5. `parameters` 必须是以 Workflow 参数检查结果中的 `parameter_id` 为属性名的 JSON 对象。
+   6. `loras` 必须是按用户指定顺序排列的 LoRA 数组，并且最多包含 100 项；没有选择 LoRA 时，`loras` 必须是空数组。每项 LoRA 必须包含 `id`、`file_name`、有限数字 `weight` 和不重复的 `trigger_words` 字符串数组；`trigger_words` 最多包含 100 项，每个字符串必须包含 1 至 500 个字符且不含控制字符。
 
-`parameters` 使用 Workflow 参数检查结果中 `kind` 分别为 `positive_prompt`、`seed` 和 `batch_size` 的唯一项目的 `parameter_id` 作为属性名。结果 JSON 的 `negative_mode` 为 `native_negative` 时，负向 Prompt 写入 `kind` 为 `negative_prompt` 的唯一项目的 `parameter_id` 对应属性；`negative_mode` 为 `positive_rewrite` 时，`parameters` 中省略负向 Prompt 属性。`batch_size` 对应属性的值是整数 `1`。图片尺寸使用 Workflow 参数检查后选定的一种尺寸参数组合。
+2. Skill 执行者按 [Workflow 参数检查参考](template-parameter-inspection-cli.md#generation-request-参数检查)“Generation Request 参数检查”检查参数。`parameters` 使用检查结果中 `kind` 为 `positive_prompt`、`seed` 和 `batch_size` 的项目的 `parameter_id` 作为属性名。结果 JSON 的 `negative_mode` 为 `native_negative` 时，负向 Prompt 写入 `kind` 为 `negative_prompt` 的项目对应属性；`negative_mode` 为 `positive_rewrite` 时，`parameters` 中省略负向 Prompt 属性。`batch_size` 的取值按该检查节执行。图片尺寸使用该参考“图片尺寸选择”一节选定的参数组合。
 
-Skill 执行者使用 Workflow 参数检查结果中 `kind` 为 `seed` 的项目验证每个 Seed。Seed 必须是整数，并且满足该项目返回的 `minimum`、`maximum` 和 `allowed_values`。用户给出的 Seed 或历史 Seed 不符合限制时，报告该 Seed 和限制，并等待用户提供新值。`generation random-seeds --stdin` 返回的 Seed 不符合限制时，报告该 Seed 和限制，并等待用户提供一个符合限制的整数。
+3. Skill 执行者使用 Workflow 参数检查结果中 `kind` 为 `seed` 的项目验证每个 Seed。Seed 必须是整数，并且满足该项目返回的 `minimum`、`maximum` 和 `allowed_values`。Seed 不符合限制时，Skill 执行者报告该 Seed 和限制，并等待用户提供符合限制的整数。
 
 ## 输入值的来源
 
-- `run_ids[]` 来自用户指定的 Generation Run ID。
-- `title` 来自用户指定的运行标题；用户没有指定运行标题时，Skill 执行者按照待创建图片顺序使用 `图片 1`、`图片 2` 至 `图片 20`。
-- `template_id` 来自 `catalog template resolve` 返回的 `id`。
-- `instance_id` 来自 `catalog instance list` 返回的 `results[0].id`。
-- `model.id`、`model.file_name` 和 `loras[]` 的各属性来自对应的 Catalog 查询结果。
-- `parameters` 的属性名和取值限制来自 `generation inspect-template-parameters --stdin` 的返回结果。
-正向 Prompt、负向 Prompt 或正向规避内容来自已经通过 `references/prompt-result-contract.md` 检查的结果 JSON。
+1. `run_ids[]` 来自用户指定的 Generation Run ID。
+2. `title` 来自用户指定的运行标题；用户没有指定运行标题时，Skill 执行者按照待创建图片顺序使用 `图片 1`、`图片 2` 至 `图片 20`。
+3. `template_id` 使用 [SKILL.md](../SKILL.md)“核对当前选择”确定的模板 ID。
+4. `instance_id` 使用 [SKILL.md](../SKILL.md)“检查 Workflow 参数”确定的实例 ID。
+5. `model.id`、`model.file_name` 和 `loras[]` 的各属性来自 [SKILL.md](../SKILL.md)“核对当前选择”采用的模型与 LoRA 资源。用户显式指定模型时，Skill 执行者使用该模型构造 Generation Request 的 `model` 对象；用户未指定模型而采用模板默认模型时，Generation Request 的 `model` 为 `null`。
+6. `parameters` 的属性名和取值限制来自 [SKILL.md](../SKILL.md)“检查 Workflow 参数”取得的结果。
+7. 正向 Prompt、负向 Prompt 或正向规避内容来自已经通过 [Prompt Builder 结果合同](prompt-result-contract.md) 检查的结果 JSON。
 
 ### Seed 的来源
 
 1. 用户为一张图片给出整数 Seed 时，该图片使用这个整数。用户给出整数 Seed 但没有指定图片时，当前请求中的全部图片使用这个整数。
 2. 用户要求固定 Seed，但没有给出整数或历史 `run_id` 时，Skill 执行者等待用户提供整数或 `run_id`。
-3. 用户要求复用历史 Seed 时，Skill 执行者先查询该 `run_id`。当前 Workflow 参数检查结果中只有一个 `kind` 为 `seed` 的项目，并且历史 Run 的 `arguments.parameters` 在该项目的 `parameter_id` 下保存了整数时，使用该整数；其他情况均报告无法确定历史 Seed，并等待用户提供整数或选择重新取得 Seed。
+3. 用户要求复用历史 Seed 时，Skill 执行者先查询该 `run_id`。当前 Workflow 符合 [Workflow 参数检查参考](template-parameter-inspection-cli.md#generation-request-参数检查)“Generation Request 参数检查”对 Seed 项数量的要求，并且历史 Run 的 `arguments.parameters` 在该项目的 `parameter_id` 下保存了整数时，使用该整数；其他情况均报告无法确定历史 Seed，并等待用户提供整数或选择重新取得 Seed。
 4. 没有使用前三项来源的图片，按照图片顺序使用 `generation random-seeds --stdin` 返回的 `seeds[]`。
 
-## 成功输出与失败输出
+## 结果文件中的 JSON
 
-上述三个 `--quiet` 命令成功时退出码为 `0`，stderr 为空，stdout 包含一行完整 JSON。命令失败时退出码非零，stderr 使用 `错误码: 错误消息` 格式。
+1. 以下结构定义各命令结果文件中的业务 JSON。
 
-`generation run-inputs --stdin` 在当前 Workspace 中匹配 `run_id`。短 Run ID 只匹配一项时，返回完整 Run ID；匹配多项或没有匹配项时，在对应的 `runs[]` 项中返回错误。
+2. `generation run-inputs --stdin` 在当前 Workspace 中匹配 `run_id`。短 Run ID 只匹配一项时，返回完整 Run ID；匹配多项或没有匹配项时，在对应的 `runs[]` 项中返回错误。
 
-`generation run-inputs --stdin` 返回与 `run_ids` 等长且顺序相同的 `runs` 数组：
+3. `generation run-inputs --stdin` 返回与 `run_ids` 等长且顺序相同的 `runs` 数组：
 
-- 查询成功且 Actual Workflow 可用时，该项包含 `run_id`、`lookup_status: "available"`、`arguments`、`workflow_status: "available"` 和 `workflow`。
-- 查询成功但 Actual Workflow 不可用时，该项包含 `run_id`、`lookup_status: "available"`、`arguments`、`workflow_status: "unavailable"` 和 `workflow_error`。
-- 单项查询失败时，该项包含请求的 `run_id`、`lookup_status: "error"` 和 `error`；`error` 包含 `code` 和 `message`。
+   1. 查询成功且 Actual Workflow 可用时，该项包含 `run_id`、`lookup_status: "available"`、`arguments`、`workflow_status: "available"` 和 `workflow`。
+   2. 查询成功但 Actual Workflow 不可用时，该项包含 `run_id`、`lookup_status: "available"`、`arguments`、`workflow_status: "unavailable"` 和 `workflow_error`。
+   3. 单项查询失败时，该项包含请求的 `run_id`、`lookup_status: "error"` 和 `error`；`error` 包含 `code` 和 `message`。
 
-`arguments` 包含 `title`、`template_id`、`parameters` 和 `loras`，并可能包含 `instance_id` 和 `model`。`workflow` 是该 Generation Run 保存的 Actual Workflow。
+4. `arguments` 包含 `title`、`template_id`、`parameters` 和 `loras`，并可能包含 `instance_id` 和 `model`。`workflow` 是该 Generation Run 保存的 Actual Workflow。
 
-`generation random-seeds --stdin` 返回 `{"seeds":[...]}`。`seeds` 的长度等于 `count`；每项是 0 至 2,147,483,647 的整数；同一数组中的整数互不相同。
+5. `generation random-seeds --stdin` 返回 `{"seeds":[...]}`。`seeds` 的长度等于 `count`；每项是 0 至 2,147,483,647 的整数；同一数组中的整数互不相同。
 
-`generation submit --stdin` 成功时返回：
+6. `generation submit --stdin` 成功时返回：
 
-```json
-{"run_id":"<durable-run-id>"}
-```
+   ```json
+   {"run_id":"<durable-run-id>"}
+   ```
 
-该 `run_id` 表示 Generation Run 已接受异步处理。Skill 执行者向用户返回每张图片对应的 `run_id`。
+7. 该 `run_id` 表示 Generation Run 已接受异步处理。Skill 执行者向用户返回每张图片对应的 `run_id`。
 
 ## 错误处理与重试
 
-`generation run-inputs --stdin` 的单项错误保存在对应的 `runs[]` 中。Skill 执行者报告该项的 `run_id`、`error.code` 和 `error.message`，并继续处理数组中的其他项。
+1. 公共文件错误按“命令帮助”处理。以下规则处理其他业务错误。
 
-- `GENERATION_RUN_ID_INVALID`：Skill 执行者等待用户提供符合“参数与标准输入”一节的 Run ID。
-- `GENERATION_RUN_ID_AMBIGUOUS`：Skill 执行者等待用户提供更长的 Run ID。
-- `GENERATION_RUN_NOT_FOUND`：Skill 执行者报告当前 Workspace 中没有匹配的 Run，并等待用户提供属于当前 Workspace 的 Run ID。
-- `GENERATION_REQUEST_INVALID` 或 `GENERATION_RUN_LOOKUP_FAILED`：Skill 执行者报告错误码和错误消息，暂停依赖该项结果的操作，并请用户根据错误消息处理后明确是否重新查询。
+2. `generation run-inputs --stdin` 的单项错误保存在对应的 `runs[]` 中。Skill 执行者报告该项的 `run_id`、`error.code` 和 `error.message`，并继续处理数组中的其他项。
 
-`generation run-inputs --stdin` 或 `generation random-seeds --stdin` 返回 `CLI_REQUEST_INVALID` 时，标准输入未通过对应命令的结构检查。`generation submit --stdin` 返回 `CLI_REQUEST_INVALID` 时，标准输入未通过 JSON 解析或 Generation Request 结构检查，并且该次调用没有创建 Generation Run。错误来自 Skill 执行者构造的 JSON 时，Skill 执行者修正 JSON 后重试一次；重试仍返回对应错误码时，Skill 执行者报告错误码和错误消息，并停止依赖该命令结果的操作。错误来自用户提供的 JSON 属性值时，Skill 执行者报告属性名、无效值和该属性的约束，并等待用户修正。
+3. `GENERATION_RUN_ID_INVALID`：Skill 执行者等待用户提供符合“参数与标准输入”一节的 Run ID。
+4. `GENERATION_RUN_ID_AMBIGUOUS`：Skill 执行者等待用户提供更长的 Run ID。
+5. `GENERATION_RUN_NOT_FOUND`：Skill 执行者报告当前 Workspace 中没有匹配的 Run，并等待用户提供属于当前 Workspace 的 Run ID。
+6. `GENERATION_REQUEST_INVALID` 或 `GENERATION_RUN_LOOKUP_FAILED`：Skill 执行者报告错误码和错误消息，暂停依赖该项结果的操作，并请用户根据错误消息处理后明确是否重新查询。
 
-`generation run-inputs --stdin` 返回退出码 `0`，但 stdout 不符合“成功输出与失败输出”一节时，Skill 执行者报告实际输出与预期结构的差异，并停止依赖本次查询结果的操作。
+7. `generation run-inputs --stdin` 或 `generation random-seeds --stdin` 返回 `CLI_REQUEST_INVALID` 时，标准输入未通过对应命令的结构检查。`generation submit --stdin` 返回 `CLI_REQUEST_INVALID` 时，标准输入未通过 JSON 解析或 Generation Request 结构检查，并且该次调用没有创建 Generation Run。错误来自 Skill 执行者构造的 JSON 时，Skill 执行者修正 JSON 后重试一次；重试仍返回对应错误码时，Skill 执行者报告错误码和错误消息，并停止依赖该命令结果的操作。错误来自用户提供的 JSON 属性值时，Skill 执行者报告属性名、无效值和该属性的约束，并等待用户修正。
 
-`generation random-seeds --stdin` 的成功输出不符合“成功输出与失败输出”一节时，Skill 执行者报告输出与预期结构的差异，并停止构造使用这些 Seed 的 Generation Request。
+8. `generation run-inputs --stdin` 返回退出码 `0`，但结果文件中的 JSON 不符合“结果文件中的 JSON”一节时，Skill 执行者报告实际输出与预期结构的差异，并停止依赖本次查询结果的操作。
 
-`generation submit --stdin` 返回退出码 `0`，但 stdout 不符合“成功输出与失败输出”一节时，Skill 执行者报告输出与预期结构的差异，并说明该次提交可能已经创建 Generation Run。Skill 执行者仅在用户明确决定再次提交后，才再次提交同一个 Generation Request。
+9. `generation random-seeds --stdin` 的结果文件中的 JSON 不符合“结果文件中的 JSON”一节时，Skill 执行者报告输出与预期结构的差异，并停止构造使用这些 Seed 的 Generation Request。
 
-`generation submit --stdin` 返回 `CLI_REQUEST_INVALID` 以外的非零退出码时，Skill 执行者报告 stderr，并等待用户决定是否再次提交。用户决定再次提交且命令成功时，命令创建一项新的 Generation Run。
+10. `generation submit --stdin` 返回退出码 `0`，但结果文件中的 JSON 不符合“结果文件中的 JSON”一节时，Skill 执行者报告输出与预期结构的差异，并说明该次提交可能已经创建 Generation Run。Skill 执行者仅在用户明确决定再次提交后，才再次提交同一个 Generation Request。
 
-前述规则未覆盖的命令级错误发生时，Skill 执行者报告失败命令、stderr 中的错误码和错误消息。`generation run-inputs --stdin` 失败时，停止依赖本次查询结果的操作；`generation random-seeds --stdin` 失败时，停止构造需要这些 Seed 的 Generation Request。
+11. `generation submit --stdin` 返回 `CLI_REQUEST_INVALID` 以外的非零退出码时，该调用仍可能对应一项失败状态的 Generation Run。Skill 执行者保留完整 Generation Request、报告 stderr，并等待用户决定是否再次提交。用户决定再次提交且命令成功时，命令创建一项新的 Generation Run。
+
+12. 前述规则未覆盖的命令级错误发生时，Skill 执行者报告失败命令、stderr 中的错误码和错误消息。`generation run-inputs --stdin` 失败时，停止依赖本次查询结果的操作；`generation random-seeds --stdin` 失败时，停止构造需要这些 Seed 的 Generation Request。
 
 ## 调用次数与结果复用
 
-- 本次待创建图片总数必须为 1 至 20；总数不在该范围内时，Skill 执行者报告实际数量，并且不调用 `generation random-seeds --stdin` 或 `generation submit --stdin`。
-- 对于一份完整且顺序不变的 `run_ids` 数组，Skill 执行者调用一次 `generation run-inputs --stdin`。本次任务后续步骤再次需要同一数组的成功结果时，Skill 执行者按数组下标复用已经返回的 `runs[]`；用户明确要求重新查询时，Skill 执行者调用一次该命令，并用新的成功结果替换此前保存的结果。
-- Skill 执行者为全部尚未取得 Seed 的图片调用一次 `generation random-seeds --stdin`，再按图片顺序与数组下标分配并复用返回的 `seeds[]`。待取得 Seed 的图片集合发生变化，或者用户明确要求重新取得这些图片的 Seed 时，Skill 执行者按变化后的图片集合调用一次该命令，并用新的成功结果替换此前为这些图片保存的结果。
-- Skill 执行者按照待创建图片顺序为每张图片建立独立的提交序号，并为每张图片的第一次提交调用一次 `generation submit --stdin`。Skill 执行者把成功返回的 `run_id` 和完整 Generation Request 保存到该图片的当前提交序号下。本次 Skill 执行的后续步骤再次处理同一图片的同一成功提交时，Skill 执行者复用该提交序号对应的 `run_id`；另一张图片即使使用完全相同的 Generation Request，也必须独立提交。某张图片的 Generation Request 在成功提交后发生变化，或者用户明确要求使用相同 Generation Request 再创建一项 Run 时，Skill 执行者为该图片建立下一个提交序号、调用一次命令，并分别保留新旧提交序号及其 `run_id`。
-- `generation submit --stdin` 返回 `CLI_REQUEST_INVALID` 以外的非零退出码时，该调用仍可能对应一项失败状态的 Generation Run。Skill 执行者保留完整 Generation Request。
+1. 本次待创建图片总数必须为 1 至 20；总数不在该范围内时，Skill 执行者报告实际数量，并且不调用 `generation random-seeds --stdin` 或 `generation submit --stdin`。
+2. 对于一份完整且顺序不变的 `run_ids` 数组，Skill 执行者调用一次 `generation run-inputs --stdin`。本次任务后续步骤再次需要同一数组的成功结果时，Skill 执行者按数组下标复用已经返回的 `runs[]`；用户明确要求重新查询时，Skill 执行者调用一次该命令，并用新的成功结果替换此前保存的结果。
+3. Skill 执行者为全部尚未取得 Seed 的图片调用一次 `generation random-seeds --stdin`，再按图片顺序与数组下标分配并复用返回的 `seeds[]`。待取得 Seed 的图片集合发生变化，或者用户明确要求重新取得这些图片的 Seed 时，Skill 执行者按变化后的图片集合调用一次该命令，并用新的成功结果替换此前为这些图片保存的结果。
+4. Skill 执行者按照待创建图片顺序为每张图片建立独立的提交序号，并为每张图片的第一次提交调用一次 `generation submit --stdin`。Skill 执行者把成功返回的 `run_id` 和完整 Generation Request 保存到该图片的当前提交序号下。本次 Skill 执行的后续步骤再次处理同一图片的同一成功提交时，Skill 执行者复用该提交序号对应的 `run_id`；另一张图片即使使用完全相同的 Generation Request，也必须独立提交。某张图片的 Generation Request 在成功提交后发生变化，或者用户明确要求使用相同 Generation Request 再创建一项 Run 时，Skill 执行者为该图片建立下一个提交序号、调用一次命令，并分别保留新旧提交序号及其 `run_id`。
 
-Skill 执行者只复用退出码为 `0` 且符合“成功输出与失败输出”一节结构的命令结果。
+5. Skill 执行者只复用退出码为 `0` 且符合“结果文件中的 JSON”一节结构的命令结果。
 
 ## 完整调用示例
 
-Skill 执行者使用以下命令查询两个 Generation Run：
+1. Skill 执行者使用以下命令查询两个 Generation Run：
 
-```sh
-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
-{"run_ids":["run_3c0ad3ed","run_d26923be"]}
-JSON
-```
+   ```sh
+   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation run-inputs --stdin <<'JSON'
+   {"run_ids":["run_3c0ad3ed","run_d26923be"]}
+   JSON
+   ```
 
-Skill 执行者使用以下命令为三张图片取得 Seed：
+2. Skill 执行者使用以下命令为三张图片取得 Seed：
 
-```sh
-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin <<'JSON'
-{"count":3}
-JSON
-```
+   ```sh
+   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation random-seeds --stdin <<'JSON'
+   {"count":3}
+   JSON
+   ```
 
-Skill 执行者使用以下命令提交一张图片：
+3. Skill 执行者使用以下命令提交一张图片：
 
-```sh
-ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin <<'JSON'
-{
-  "title":"角色立绘",
-  "instance_id":"2",
-  "template_id":"39",
-  "model":{"id":"3","file_name":"anima-aesthetic-v1.1.safetensors"},
-  "parameters":{
-    "positive_prompt":"1girl, portrait",
-    "negative_prompt":"worst quality, low quality",
-    "seed":184273991,
-    "width":1024,
-    "height":1024,
-    "batch_size":1
-  },
-  "loras":[]
-}
-JSON
-```
+   ```sh
+   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation submit --stdin <<'JSON'
+   {
+     "title":"角色立绘",
+     "instance_id":"2",
+     "template_id":"39",
+     "model":{"id":"3","file_name":"anima-aesthetic-v1.1.safetensors"},
+     "parameters":{
+       "positive_prompt":"1girl, portrait",
+       "negative_prompt":"worst quality, low quality",
+       "seed":184273991,
+       "width":1024,
+       "height":1024,
+       "batch_size":1
+     },
+     "loras":[]
+   }
+   JSON
+   ```
 
-## 帮助与操作提示
+## 命令帮助
 
-需要逐层查看能力、命令和输入示例时，Skill 执行者从 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --help` 开始，按“下一步”进入分类和命令帮助。省略 `--quiet` 时，成功调用在 stderr 输出 `NEXT:` 操作提示，退出码仍为 `0`。
+1. 首次调用受管 CLI 前，Skill 执行者将本文件调用入口中的 `--stdin` 替换为 `--help`，读取该命令帮助。公共输出与文件错误按帮助处理。本文件的成功 JSON 指返回路径中的文件内容。

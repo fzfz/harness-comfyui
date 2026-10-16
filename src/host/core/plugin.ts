@@ -6,7 +6,7 @@ import {
   readSourceAddress,
   type SourceAddress,
 } from '../../source-settings.ts'
-import { CatalogCli } from '../catalog/catalog-cli.ts'
+import { CatalogClient } from '../catalog/catalog-client.ts'
 import {
   createComfyuiInstanceQueryTool,
   createGenerationModelResolverTool,
@@ -24,8 +24,9 @@ import {
   type GenerationRunInputLookupErrorReport,
 } from '../generation/generation-runtime.ts'
 import { generationToolForContext } from '../generation/generation-tool.ts'
+import { resolveObservationMedia } from '../generation/observation-media.ts'
 import { OfficialApiWorkflowCompiler } from '../generation/official-api-workflow.ts'
-import { GenerationSourceCli } from '../generation/source-cli.ts'
+import { GenerationSourceClient } from '../generation/source-client.ts'
 import { SourceGenerationPreparer } from '../generation/source-preparer.ts'
 import { ComfyWorkflowCompiler } from '../generation/workflow-compiler.ts'
 import { registerProjectTools } from '../tools/register-project-tools.ts'
@@ -103,16 +104,8 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       return configuredSourceAddress(config.configuration, effectiveProfile.source.catalogPort)
     },
   }
-  const semanticQueryClientPath = runtimeResources.semanticQueryClient
-  const sourceReadClientPath = runtimeResources.sourceReadClient
-  const catalog = new CatalogCli({
-    executable: semanticQueryClientPath,
-    settings: sourceSettings,
-  })
-  const source = new GenerationSourceCli({
-    executable: sourceReadClientPath,
-    settings: sourceSettings,
-  })
+  const catalog = new CatalogClient({ settings: sourceSettings })
+  const source = new GenerationSourceClient({ settings: sourceSettings })
   const generationLogger = ctx.logger('harness-comfyui')
   const frontendCompiler = new NodeWorkerComfyFrontend({
     nodeExecutable: process.execPath,
@@ -155,7 +148,12 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       runtime.close()
     }
   }, 'Generation coordinator')
-  new ComfyuiCoreService(ctx, { catalog, runtime, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings), semanticQueryClientPath })
+  new ComfyuiCoreService(ctx, {
+    catalog, runtime, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings),
+    resolveObservationMedia: (exec, toolName, images) => resolveObservationMedia(
+      { runtime, workspaceRegistry: ctx.workspaceRegistry }, exec, toolName, images,
+    ),
+  })
   ctx.effect(() => registerProjectTools(ctx, [
     createTemplateResolverTool(catalog),
     createLoraResolverTool(catalog),

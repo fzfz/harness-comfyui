@@ -1,3 +1,7 @@
+---
+文档用途: 提供 WAI Prompt 位置顺序与职责。
+读取时机: 按正文“用途和读取时机”读取。
+---
 # WAI Prompt 位置顺序与职责
 
 ## 用途和读取时机
@@ -33,7 +37,7 @@ Skill 执行者按照 [SKILL.md 第 1 节](../SKILL.md#1-读取本轮输入)规�
 1. 第一优先级：Skill 执行者选择当前用户消息作为来源，并采用该消息中直接提供且要求整体采用的完整角色 Prompt 作为 Character Prompt 内容。
 2. 第二优先级：Skill 执行者选择 `data.prompt_text` 非空的 Character 上下文记录作为来源，并采用该记录的 `data.prompt_text` 作为 Character Prompt 内容。
 3. 第三优先级：Skill 执行者选择用户指定复用的历史 Generation Run 输入作为来源，并采用该输入中的完整角色 Prompt 作为 Character Prompt 内容。
-4. 第四优先级：Skill 执行者选择按照[语义查询接口与调用流程](semantic-tool-orchestration.md)取得的 Character 查询结果作为来源，并采用该结果的 `prompt_text` 作为 Character Prompt 内容。
+4. 第四优先级：Skill 执行者选择按照 [目录素材查询](../SKILL.md#4-查询缺少的角色画师与风格效果-prompt-内容)取得的 MCP 角色查询结果作为来源，并采用选中角色的 Prompt 作为 Character Prompt 内容。
 
 前三种来源均未提供当前角色的完整角色 Prompt 时，Skill 执行者才查询该角色。本节把 Skill 执行者为角色选定的用户消息、Character 上下文记录、历史 Generation Run 输入或 Character 查询结果称为“已采用 Character Prompt 来源”，把从该来源取得的完整角色 Prompt 文本称为“已采用 Character Prompt 内容”。
 
@@ -42,7 +46,7 @@ Skill 执行者按照 [SKILL.md 第 1 节](../SKILL.md#1-读取本轮输入)规�
 1. 第一优先级：Skill 执行者选择当前用户消息作为来源，并采用该消息中直接提供且要求采用的画师 Prompt 作为 Style Prompt 内容。
 2. 第二优先级：Skill 执行者选择 `data.prompt_text` 非空的 Style 上下文记录作为来源，并采用该记录的 `data.prompt_text` 作为 Style Prompt 内容。
 3. 第三优先级：Skill 执行者选择用户指定复用的历史 Generation Run 输入作为来源，并采用该输入中的画师 Prompt 作为 Style Prompt 内容。
-4. 第四优先级：Skill 执行者选择按照[语义查询接口与调用流程](semantic-tool-orchestration.md)取得的 Style 查询结果作为来源，并采用该结果的 `prompt_text` 作为 Style Prompt 内容。
+4. 第四优先级：Skill 执行者选择按照 [目录素材查询](../SKILL.md#4-查询缺少的角色画师与风格效果-prompt-内容)取得的 MCP 画师查询结果作为来源，并采用选中画师的 Prompt 作为 Style Prompt 内容。
 
 前三种来源均未提供当前画师的 Prompt 时，Skill 执行者才查询该画师。本节把 Skill 执行者为画师选定的用户消息、Style 上下文记录、历史 Generation Run 输入或 Style 查询结果称为“已采用 Style Prompt 来源”，把从该来源取得的画师 Prompt 文本称为“已采用 Style Prompt 内容”。
 
@@ -65,14 +69,14 @@ Skill 执行者必须按照以下顺序确定本轮使用的位置：
 “实际内容”是至少一项与本轮画面一致、符合该位置唯一职责并且可以直接写入 WAI Prompt 的非空提示词内容。
 
 1. 把当前主场景在[场景分支矩阵](composition-scenario-branches.md)中要求的位置加入必选位置集合。
-2. 对当前用户消息中不属于已采用 Character Prompt 来源或已采用 Style Prompt 来源的已保留画面要求，以及已采用 Work 和 Prompt-term 查询结果中的提示词内容，按照“固定顺序和唯一职责”表加入对应位置。
+2. 对当前用户消息中不属于已采用 Character Prompt 来源或已采用 Style Prompt 来源的已保留画面要求，以及已采用目录词条的规范标签，按照“固定顺序和唯一职责”表加入对应位置。
 3. 每轮都把 `quality` 加入必选位置集合，并写入 WAI 质量标签和用户明确要求的质量内容。对已采用 Style Prompt 内容中的每项已保留提示词内容，按照“固定顺序和唯一职责”表加入对应位置并写入该内容；其中具体画师提示词只进入 `artist`，非画师画风或创作媒介类别只进入 `non_artist_style`。存在已采用 Character Prompt 内容时，把 `character` 加入位置集合并写入本轮 Character Prompt。
 4. 本轮已经选择的前十四个位置完成内容映射后，如果这些位置仍不能准确表达主体关系或分组、动作归属、物件或接触关系归属、空间关系、画格关系或者剧情内容归属，则把 `relation_narrative` 加入位置集合。
 5. 步骤 2 至步骤 4 完成后，必选位置仍没有实际内容时，Skill 执行者按照该位置规则补全能够满足主场景要求、符合该位置唯一职责并且能够与全部已保留内容同时成立的提示词内容。只有不属于必选位置集合并且没有实际内容的位置才可以删除；最终 Prompt 不保留空位置。
 
-Skill 执行者按照[语义查询接口与调用流程](semantic-tool-orchestration.md)读取 Style、Character、Work 和 Prompt-term 的接口用途与字段用途。
 
-位置映射只改变内容在 WAI Prompt 中的位置，不改变用户要求、已采用 Character Prompt 来源、已采用 Style Prompt 来源、Work 和 Prompt-term 查询结果或 Skill 执行者补充内容的来源身份和既有优先级。
+
+位置映射只改变内容在 WAI Prompt 中的位置，不改变用户要求、已采用 Character Prompt 来源、已采用 Style Prompt 来源、目录词条查询结果或 Skill 执行者补充内容的来源身份和既有优先级。
 
 ## 易混淆内容的位置边界
 
@@ -88,7 +92,7 @@ Skill 执行者按照[语义查询接口与调用流程](semantic-tool-orchestra
 
 Skill 执行者必须确认：
 
-- 当前用户消息中不属于已采用 Character Prompt 来源或已采用 Style Prompt 来源的每项已保留要求、本轮 Character Prompt、已采用 Style Prompt 内容、Work 和 Prompt-term 查询结果中的每项已保留提示词内容，以及每项已经保留的 Skill 执行者补充内容都已写入本轮待组合的位置内容；
+- 当前用户消息中不属于已采用 Character Prompt 来源或已采用 Style Prompt 来源的每项已保留要求、本轮 Character Prompt、已采用 Style Prompt 内容、目录词条查询结果中的每项已保留规范标签，以及每项已经保留的 Skill 执行者补充内容都已写入本轮待组合的位置内容；
 - 每项已采用 Character Prompt 内容中经过冲突处理后保留的内容都完整写入 `character`；本轮 Character Prompt 以外的每项已保留提示词内容都按照“固定顺序和唯一职责”表分别进入对应位置；只有 `subject` 为完整表达主体数量、性别组合、主体类别和特殊身份类型所需的信息，以及 `relation_narrative` 为明确关系所需的主体、动作、物件和目标可以按本文件规定再次出现；
 - 除上述两类重述外，Skill 执行者没有在本轮 Character Prompt 以外重复写入该 Prompt 已经包含的内容；
 - 本轮位置集合包含 `subject` 时，该位置准确表达整幅画面的主体总数，并包含本轮画面设计中已经确定的性别组合、主体类别和特殊身份类型；

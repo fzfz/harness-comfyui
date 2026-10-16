@@ -1,0 +1,658 @@
+{
+  "reviewedAt": "2026-10-14T04:38:23.244530+00:00",
+  "scope": "5.5-3 WAI 同输入限额复验；独立只读 Spec 验收。未操作 Desktop、Profile、模型或修改 Skill。",
+  "status": "未通过",
+  "originalFailurePreserved": "builder-success-review.json cases[2] 保留原 8192 输出耗尽结果。",
+  "execution": {
+    "index": ".local/skills-mcp-migration-live/wai-limit-rerun.json",
+    "collect": ".local/skills-mcp-migration-live/desktop/f4f2133f-890d-4106-a95b-499c9515aac7/1791952326556-a4b196f8-e846-4e6f-a104-3b693a004c5e-collect.json",
+    "runId": "f4f2133f-890d-4106-a95b-499c9515aac7",
+    "sessionId": "session-4dffd404-5fda-4a2e-95e8-2b7da6b3fb79",
+    "throughSeq": 154,
+    "end": "completed",
+    "model": "opencode-go/deepseek-v4.1-flash",
+    "mainRequestMaxTokens": 32768,
+    "observerTimeoutMs": 360000,
+    "mainAgentCalls": 23,
+    "titleCalls": 1,
+    "causality": "本轮同时调整输出限额和 observer 超时并新建会话，正常结束只证明本轮完成，不能归因于任一单独调整。标题调用的 64-token 限额结束单独记录。"
+  },
+  "contracts": [
+    "docs/plans/skills-mcp-migration-20261013.md 第 5.3、5.4、5.5、5.9、5.13 节及新增 5.5.2 节",
+    ".agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+    "references/input-contract.md",
+    "references/composition-scenario-branches.md",
+    "references/composition-decision-tree.md",
+    "references/wai-prompt-position-order.md",
+    "references/artist-adoption.md",
+    "references/generation-output-contract.md",
+    "references/generation-output-schema.json"
+  ],
+  "sourceDelivery": [
+    {
+      "resultSeq": 18,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/b1493914-f35c-4154-9ed8-041748014709.jsonl:1",
+      "at": "2026-10-14T04:26:35.886Z"
+    },
+    {
+      "resultSeq": 28,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/131d6f1e-62b6-469d-88ca-4f36f360cbb0.jsonl:1",
+      "at": "2026-10-14T04:26:41.168Z"
+    },
+    {
+      "resultSeq": 38,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/167b9423-d959-4126-8e2f-0153c3f06cac.jsonl:1",
+      "at": "2026-10-14T04:26:51.021Z"
+    },
+    {
+      "resultSeq": 43,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/002bf1a5-c15a-42b4-b921-12a9dfdc0ea5.jsonl:1",
+      "at": "2026-10-14T04:26:54.701Z"
+    },
+    {
+      "resultSeq": 73,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/02074eaf-1231-491c-ac9a-981df21c1c32.jsonl:1",
+      "at": "2026-10-14T04:28:04.924Z"
+    },
+    {
+      "resultSeq": 78,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/cb969054-561a-42ce-a733-c70865dfe6df.jsonl:1",
+      "at": "2026-10-14T04:28:15.390Z"
+    },
+    {
+      "resultSeq": 129,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/95aaaee8-2431-42f5-8ecb-4a67938cb1fd.jsonl:1",
+      "at": "2026-10-14T04:30:22.980Z"
+    },
+    {
+      "resultSeq": 134,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/29bbb9d9-27c5-40c3-81ac-e1824c7ee098.jsonl:1",
+      "at": "2026-10-14T04:30:30.624Z"
+    },
+    {
+      "resultSeq": 149,
+      "firstActualModelRequest": ".local/skills-mcp-migration-live/llm-calls/256be3ea-fbb8-4f80-9ef3-e3a689c47979.jsonl:1",
+      "at": "2026-10-14T04:31:03.939Z"
+    }
+  ],
+  "fullDocumentDelivery": {
+    "sceneMatrixSeq28": true,
+    "artistRulesSeq38": true,
+    "generationContractSeq43": true,
+    "skillSeq18": "Skill 工具封装正文；YAML 元数据不作为正文输出，第 2 节的自行选择段已送达。"
+  },
+  "findings": [
+    {
+      "id": "WAI-R1",
+      "severity": "high",
+      "title": "多候选主场景应等待用户选择，执行者自行选择单主体肖像",
+      "expected": "矩阵第 16 行要求未指定主场景且存在多个匹配场景时列出全部候选并等待，回复前停止候选构图。",
+      "observed": "输入同时匹配单主体肖像、遮挡与深度、环境叙事；未指定主场景。执行者 seq51 自行选择单主体肖像，后续构图、校验和交付均继续。seq152 将另外两类登记为次要约束。",
+      "sources": [
+        "SKILL.md:31",
+        "references/composition-scenario-branches.md:16",
+        "references/composition-scenario-branches.md:24",
+        "references/composition-scenario-branches.md:29",
+        "references/composition-scenario-branches.md:30",
+        "collect seq18、28、47–48、51、152"
+      ],
+      "diagnosis": "SKILL 第 2 节以主体与主要动作的容纳程度自行选择，矩阵按全部画面要求形成候选并等待用户。两处承担同一个选择责任且给出不同决策方式。完整矩阵已在 seq28 送达；seq48 又返回选择规则。首次偏离为 seq51 在这些材料均可见后继续自行确定主场景。实际最终解释沿用首段容纳标准，支持重复决策来源的诊断；尚未经过单变量复验确认移除此来源即可纠正行为。"
+    },
+    {
+      "id": "WAI-R2",
+      "severity": "medium",
+      "title": "Style 记录获取先于唯一 WAI 底模确认",
+      "expected": "artist-adoption.md:11 要求通过 MCP 获取画师素材前确认唯一精确 wai 底模。",
+      "observed": "seq72/73 获取 Style 12344 后，seq77/78 才查询并确定唯一 wai id2。",
+      "sources": [
+        "references/artist-adoption.md:11",
+        "collect seq38、72–78"
+      ],
+      "impact": "实际记录底模匹配、说明补齐、用户现有 say_hana Prompt 保留；本次无错误素材采用，但前置顺序未遵循。",
+      "diagnosis": "规则完整送达后发生独立执行偏离；主场景引用替换不改变本项规则。"
+    },
+    {
+      "id": "WAI-R3",
+      "severity": "medium",
+      "title": "最终回答标称校验通过的 JSON 缺少 positive_prompt",
+      "expected": "generation-output-schema.json:7 要求 positive_prompt；generation-output-contract.md:32 要求采用格式校验器 prompt_text 构造完整对象。",
+      "observed": "seq133/134 校验的完整对象及 generation-result.json 包含 positive_prompt。seq152 回答的 JSON 删除了该字段，虽然其上方另有 Prompt 文本，复制该 JSON 仍无法作为完整生成结果。",
+      "firstDeviation": "seq152 最终文本重新组织结构化对象时出现；seq149 文件复读仍完整。未发现再次对该删减对象运行校验。",
+      "sources": [
+        "references/generation-output-schema.json:7",
+        "references/generation-output-contract.md:32",
+        "collect seq133–134、149、152",
+        ".local/skills-mcp-migration-live/llm-calls/256be3ea-fbb8-4f80-9ef3-e3a689c47979.jsonl"
+      ],
+      "diagnosis": "最终交付重排导致文件与内联结果不一致；没有证据确认特定宿主段落造成字段遗漏。主场景修复不覆盖本项。"
+    }
+  ],
+  "branchAndSemanticReview": {
+    "style": "目标 5.5-3 分支确实调用 MCP 获取缺失 style_description，结果为花卉与少女、淡雅配色、诗意氛围、细腻柔美。最终保持 say_hana，并采用柔和氛围与窗光，未重选画师。查询顺序另列失败。",
+    "inputCoverage": "最终 Prompt 保留单名原创女性、金色长双马尾、蓝眼、白色翻领衬衫、站立及面向镜头、温柔神情、室内窗边与花卉、头到腰、平视、第三人称、居中、面部焦点、前中后景、无遮挡、裁剪及可见部位、全景清晰；补充柔和逆光、轮廓光、面部补光和向前投影能够同时成立。",
+    "positions": "11 个有实际内容的位置按固定顺序排列；未提供 Character Prompt，不创建 character。无独立非画师媒介、生产形态或未表达关系，省略相应位置有依据。质量与单名中性画师均保留，无额外高权重元素。",
+    "candidate": "已明确五项镜头属性及七项空间属性，只构造候选 A 符合构图分支；其前置主场景选择仍失败。",
+    "canonicalTags": "查询返回规范标签采用了空格形式及自然语言表达；本报告未把下划线替换本身判为语义失败，标签身份与逐字形式要求应分别判定。"
+  },
+  "validation": {
+    "actualRuns": [
+      {
+        "seq": 128,
+        "resultSeq": 129,
+        "command": "scripts/validate-output.mjs --quiet --prompt-format",
+        "exitCode": 0
+      },
+      {
+        "seq": 133,
+        "resultSeq": 134,
+        "command": "scripts/validate-output.mjs --quiet",
+        "exitCode": 0
+      }
+    ],
+    "savedResultDimensions": {
+      "generation_purpose": "test",
+      "aspect_ratio": "2:3",
+      "width": 1024,
+      "height": 1536,
+      "megapixels": 1.572864
+    },
+    "savedPositivePromptPresent": true,
+    "limitation": "结构有效不等于语义通过；原校验器不裁决主场景用户选择、MCP 查询顺序或最终回答重排。"
+  },
+  "artifacts": [
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-oMtNwB/5.5-3/generation-result.json",
+      "exists": true,
+      "use": "generation-result.json 可作为后续生成的结构化候选输入；应先处理主场景流程验收。"
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-oMtNwB/5.5-3/positive-prompt.txt",
+      "exists": true,
+      "use": "核对保存的 Prompt 与位置映射"
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-oMtNwB/5.5-3/prompt-positions.json",
+      "exists": true,
+      "use": "核对保存的 Prompt 与位置映射"
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-oMtNwB/5.5-3/prompt-format-validation.json",
+      "exists": true,
+      "use": "核对保存的 Prompt 与位置映射"
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-oMtNwB/5.5-3/build-report.md",
+      "exists": true,
+      "use": "核对保存的 Prompt 与位置映射"
+    }
+  ],
+  "waiting": {
+    "actualUserVisibleQuestion": false,
+    "replyApplicableNow": false,
+    "preauthorizedCondition": "只有后续真实可见提问列出实际匹配主场景、要求选择其中一个时，才能回复选择单主体肖像并保留原画面要求。当前已结束且无提问，不能补发答案追认先前自行选择。"
+  },
+  "generationAuthorization": {
+    "requested": false,
+    "observedGeneration": false,
+    "evidence": "完整工具调用只有 Skill、文件读取/写入、目录 MCP 和校验器，未见生成提交或生成 Skill 执行。"
+  },
+  "proposalSpecReview": {
+    "plan": "docs/plans/skills-mcp-migration-20261013.md:951",
+    "status": "方案范围与来源诊断一致，效果待复验；当前未修改 Skill。",
+    "replacement": "Skill 执行者完整读取[场景分支矩阵](references/composition-scenario-branches.md)，并按该文件的“主场景选择”确定本轮主场景。",
+    "assessment": "整体替换 SKILL 第 2 节首段将移除自行最适配选择及分镜优先选择的第二套入口，把选择责任交还矩阵。矩阵现有的主次冲突、多个指定主场景、单个指定主场景条件验证、未指定候选匹配、等待与恢复、次要约束登记及分镜内容匹配规则均保留。",
+    "minimalVerification": "保持模型、32768/360000 限额、目录数据、原用户输入和其余 Skill 内容一致，仅替换该段，以干净会话复验。第一阶段应列出全部实际候选并等待，收到预定义真实选择回复后再验收后续流程。相邻输入覆盖明确主场景与多候选；另外核对分镜请求仍依矩阵处理。",
+    "independentFailures": "Style 前置顺序与最终 JSON 完整性单独记录，不能由该引用修改推定解决。",
+    "causalityLimit": "一次复验只能记录该轮效果；若结果不稳定，应重复同条件对照。独立文字审计由主线程另行派发。"
+  },
+  "toolLedger": [
+    {
+      "seq": 17,
+      "name": "skill",
+      "resultSeq": 18
+    },
+    {
+      "seq": 22,
+      "name": "bash",
+      "resultSeq": 23
+    },
+    {
+      "seq": 27,
+      "name": "bash",
+      "resultSeq": 28
+    },
+    {
+      "seq": 32,
+      "name": "bash",
+      "resultSeq": 33
+    },
+    {
+      "seq": 37,
+      "name": "bash",
+      "resultSeq": 38
+    },
+    {
+      "seq": 42,
+      "name": "bash",
+      "resultSeq": 43
+    },
+    {
+      "seq": 47,
+      "name": "bash",
+      "resultSeq": 48
+    },
+    {
+      "seq": 52,
+      "name": "bash",
+      "resultSeq": 53
+    },
+    {
+      "seq": 57,
+      "name": "bash",
+      "resultSeq": 58
+    },
+    {
+      "seq": 62,
+      "name": "bash",
+      "resultSeq": 63
+    },
+    {
+      "seq": 67,
+      "name": "bash",
+      "resultSeq": 68
+    },
+    {
+      "seq": 72,
+      "name": "mcp__noobai__get_catalog_resource",
+      "resultSeq": 73
+    },
+    {
+      "seq": 77,
+      "name": "mcp__noobai__search_base_models",
+      "resultSeq": 78
+    },
+    {
+      "seq": 79,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 80
+    },
+    {
+      "seq": 81,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 82
+    },
+    {
+      "seq": 83,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 84
+    },
+    {
+      "seq": 88,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 89
+    },
+    {
+      "seq": 90,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 91
+    },
+    {
+      "seq": 92,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 93
+    },
+    {
+      "seq": 94,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 95
+    },
+    {
+      "seq": 99,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 100
+    },
+    {
+      "seq": 101,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 102
+    },
+    {
+      "seq": 103,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 104
+    },
+    {
+      "seq": 105,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 106
+    },
+    {
+      "seq": 110,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 111
+    },
+    {
+      "seq": 112,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 113
+    },
+    {
+      "seq": 114,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 115
+    },
+    {
+      "seq": 116,
+      "name": "bash",
+      "resultSeq": 117
+    },
+    {
+      "seq": 121,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 122
+    },
+    {
+      "seq": 123,
+      "name": "mcp__noobai__query_semantic_prompt_terms",
+      "resultSeq": 124
+    },
+    {
+      "seq": 128,
+      "name": "bash",
+      "resultSeq": 129
+    },
+    {
+      "seq": 133,
+      "name": "bash",
+      "resultSeq": 134
+    },
+    {
+      "seq": 138,
+      "name": "bash",
+      "resultSeq": 139
+    },
+    {
+      "seq": 143,
+      "name": "bash",
+      "resultSeq": 144
+    },
+    {
+      "seq": 148,
+      "name": "bash",
+      "resultSeq": 149
+    }
+  ],
+  "actualRequestRetentionVerification": {
+    "reviewedAt": "2026-10-14T04:45:26.189707+00:00",
+    "method": "解析每个 jsonl 第 1 行记录的实际 request.messages，直接比对正文全文与规则原句；只在 role=tool 文本中的完整源文匹配上判定规则保留。请求与首次偏离由该请求响应中的 responseId 对应宿主 seq51、71、152，未以 callId 存在代替正文。",
+    "prunerConfig": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:134–139 配置 thresholdChars=8192、headChars=4096、tailChars=1024。",
+    "requests": [
+      {
+        "request": ".local/skills-mcp-migration-live/llm-calls/fb313544-8034-4e7b-abf1-5948a539094a.jsonl:1",
+        "requestAt": "2026-10-14T04:27:13.600Z",
+        "checks": [
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 9,
+                "role": "tool",
+                "messageTextCharacters": 15189,
+                "sourceStartCharacter": 8841,
+                "fullSourceCharacters": 6347
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 13,
+                "role": "tool",
+                "messageTextCharacters": 23995,
+                "sourceStartCharacter": 42,
+                "fullSourceCharacters": 6374
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 15,
+                "role": "tool",
+                "messageTextCharacters": 28695,
+                "sourceStartCharacter": 14580,
+                "fullSourceCharacters": 5659
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 15,
+                "role": "tool",
+                "messageTextCharacters": 28695,
+                "sourceStartCharacter": 20293,
+                "fullSourceCharacters": 1011
+              }
+            ]
+          },
+          {
+            "rule": "首段完整原文",
+            "exactText": "Skill 执行者读取 [场景分支矩阵](references/composition-scenario-branches.md)，并从该文件列出的场景类型中选择最能容纳全部主体和主要动作的一种主场景。用户要求多个画格、前后变化、过程或状态对比时，Skill 执行者选择该文件中的分镜与状态变化场景。",
+            "matches": [
+              {
+                "messageIndex": 5,
+                "role": "tool",
+                "messageTextCharacters": 6488,
+                "sourceStartCharacter": 2050
+              }
+            ]
+          },
+          {
+            "rule": "多候选等待句",
+            "exactText": "剩余多个场景时，Skill 执行者列出全部剩余场景并等待用户选择一个。",
+            "matches": [
+              {
+                "messageIndex": 9,
+                "role": "tool",
+                "messageTextCharacters": 15189,
+                "sourceStartCharacter": 9588
+              },
+              {
+                "messageIndex": 17,
+                "role": "tool",
+                "messageTextCharacters": 17978,
+                "sourceStartCharacter": 725
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "request": ".local/skills-mcp-migration-live/llm-calls/7014fa22-e86d-425f-a532-66adf336db17.jsonl:1",
+        "requestAt": "2026-10-14T04:27:54.295Z",
+        "checks": [
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 9,
+                "role": "tool",
+                "messageTextCharacters": 15189,
+                "sourceStartCharacter": 8841,
+                "fullSourceCharacters": 6347
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 13,
+                "role": "tool",
+                "messageTextCharacters": 23995,
+                "sourceStartCharacter": 42,
+                "fullSourceCharacters": 6374
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 15,
+                "role": "tool",
+                "messageTextCharacters": 28695,
+                "sourceStartCharacter": 14580,
+                "fullSourceCharacters": 5659
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 15,
+                "role": "tool",
+                "messageTextCharacters": 28695,
+                "sourceStartCharacter": 20293,
+                "fullSourceCharacters": 1011
+              }
+            ]
+          },
+          {
+            "rule": "首段完整原文",
+            "exactText": "Skill 执行者读取 [场景分支矩阵](references/composition-scenario-branches.md)，并从该文件列出的场景类型中选择最能容纳全部主体和主要动作的一种主场景。用户要求多个画格、前后变化、过程或状态对比时，Skill 执行者选择该文件中的分镜与状态变化场景。",
+            "matches": [
+              {
+                "messageIndex": 5,
+                "role": "tool",
+                "messageTextCharacters": 6488,
+                "sourceStartCharacter": 2050
+              }
+            ]
+          },
+          {
+            "rule": "多候选等待句",
+            "exactText": "剩余多个场景时，Skill 执行者列出全部剩余场景并等待用户选择一个。",
+            "matches": [
+              {
+                "messageIndex": 9,
+                "role": "tool",
+                "messageTextCharacters": 15189,
+                "sourceStartCharacter": 9588
+              },
+              {
+                "messageIndex": 17,
+                "role": "tool",
+                "messageTextCharacters": 17978,
+                "sourceStartCharacter": 725
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "request": ".local/skills-mcp-migration-live/llm-calls/256be3ea-fbb8-4f80-9ef3-e3a689c47979.jsonl:1",
+        "requestAt": "2026-10-14T04:31:03.939Z",
+        "checks": [
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 9,
+                "role": "tool",
+                "messageTextCharacters": 15189,
+                "sourceStartCharacter": 8841,
+                "fullSourceCharacters": 6347
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 13,
+                "role": "tool",
+                "messageTextCharacters": 23995,
+                "sourceStartCharacter": 42,
+                "fullSourceCharacters": 6374
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 15,
+                "role": "tool",
+                "messageTextCharacters": 28695,
+                "sourceStartCharacter": 14580,
+                "fullSourceCharacters": 5659
+              }
+            ]
+          },
+          {
+            "source": ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+            "fullSourcePresent": true,
+            "matches": [
+              {
+                "messageIndex": 15,
+                "role": "tool",
+                "messageTextCharacters": 28695,
+                "sourceStartCharacter": 20293,
+                "fullSourceCharacters": 1011
+              }
+            ]
+          },
+          {
+            "rule": "首段完整原文",
+            "exactText": "Skill 执行者读取 [场景分支矩阵](references/composition-scenario-branches.md)，并从该文件列出的场景类型中选择最能容纳全部主体和主要动作的一种主场景。用户要求多个画格、前后变化、过程或状态对比时，Skill 执行者选择该文件中的分镜与状态变化场景。",
+            "matches": [
+              {
+                "messageIndex": 5,
+                "role": "tool",
+                "messageTextCharacters": 6488,
+                "sourceStartCharacter": 2050
+              }
+            ]
+          },
+          {
+            "rule": "多候选等待句",
+            "exactText": "剩余多个场景时，Skill 执行者列出全部剩余场景并等待用户选择一个。",
+            "matches": [
+              {
+                "messageIndex": 9,
+                "role": "tool",
+                "messageTextCharacters": 15189,
+                "sourceStartCharacter": 9588
+              },
+              {
+                "messageIndex": 17,
+                "role": "tool",
+                "messageTextCharacters": 17978,
+                "sourceStartCharacter": 725
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "conclusion": "seq51 对应请求的 messages[9] 保留完整矩阵，包含多候选等待全文；messages[5] 保留旧第 2 节首段完整原文。Style 首次提前获取所对应 seq71 请求的 messages[13] 保留完整 artist-adoption，包括先确认唯一 wai 的顺序规则。最终输出 seq152 对应请求 messages[15] 保留完整生成结果合同及 JSON schema。三项偏离所需规则均在对应记录请求中完整存在，未发现这些关键段被裁剪。",
+    "causalBoundaryCorrection": "此前 sourceDelivery 只通过 toolCallId 确认请求携带对应工具消息，fullDocumentDelivery 只比较宿主工具结果，二者本身不足以证明偏离时请求保留正文。本次补充直接文本比对后，关键段完整保留结论获得请求级证据。仅凭 pruner 配置数值不能推断本轮已裁剪；本次未追查 pruner 生命周期或捕获线上 HTTP 字节，不对为何未裁剪作因果判断。重复决策来源仍是已证实合同结构问题，移除后的行为效果仍待对照。"
+  }
+}

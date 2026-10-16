@@ -1,0 +1,189 @@
+{
+  "purpose": "记录第三轮官方零远程结构验收与应用清理。",
+  "readWhen": "根线程核对交接验收进度与本轮证据时。",
+  "status": "两个预设的请求接纳、查询与取消结构条件通过；模型流采集存在缺口，整体验收由根线程复核。",
+  "runId": "39b8177e-a41a-4353-8ac8-54595457215d",
+  "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz",
+  "scope": {
+    "presetCount": 2,
+    "maxDepth": 1,
+    "remoteModelCalls": 0,
+    "runsCreated": 0,
+    "productChanges": 0,
+    "driverChanges": 0,
+    "pDelay": "未执行"
+  },
+  "activation": {
+    "processGroupMatchesRun": true,
+    "inspectorPort": 60346,
+    "control": {
+      "available": true,
+      "activation": {
+        "at": "2026-10-14T14:47:16.567Z",
+        "kind": "observer/activated",
+        "pid": 24499,
+        "inspectorPort": 60346
+      },
+      "recordCount": 1
+    },
+    "observerSourceEqual": true,
+    "controlSourceEqual": true,
+    "identityEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-start-identity.json",
+    "moduleEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-deployed-modules.json",
+    "profile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-profile.patch.yml"
+  },
+  "cases": [
+    {
+      "caseId": "zero-workbench",
+      "preset": "harness-comfyui-cli-candidate",
+      "maxDepth": 1,
+      "parentSessionId": "session-c28e65dd-815d-4c7a-b69c-f34ba6c4c983",
+      "childSessionId": "e34f62f7-cc76-480b-a0c1-5213a60b0525",
+      "activationRunId": "7513c3ab-fc08-4a1e-b2ea-ca08f5d48a52",
+      "workspaceId": "b8ec9ec8-f6e9-476f-8811-1d98c98b84fd",
+      "promptJournal": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-workbench-prompt.json",
+      "requestId": "109b020a-b4e4-4d5f-b027-fbdbe44d4cdb",
+      "sendCount": 2,
+      "uniqueAcceptanceCount": 1,
+      "registry": {
+        "callerAgentId": "session-c28e65dd-815d-4c7a-b69c-f34ba6c4c983",
+        "callerSessionId": "session-c28e65dd-815d-4c7a-b69c-f34ba6c4c983",
+        "listIsError": false,
+        "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-workbench-list-agents-result.json"
+      },
+      "childAfterParentCancel": "running",
+      "cancel": {
+        "childAgeAtInitiationMs": 1004,
+        "cancellationPassed": true,
+        "interruptRegistryAccepted": true,
+        "turnEndReason": {
+          "kind": "aborted",
+          "reason": {
+            "kind": "parent"
+          }
+        },
+        "stopReason": "aborted",
+        "terminalClassification": "interrupted",
+        "finalParent": {
+          "status": "idle",
+          "hasPendingInbox": false
+        },
+        "snapshots": [
+          {
+            "stage": "before",
+            "runCount": 0,
+            "mediaCount": 0
+          },
+          {
+            "stage": "after-requests",
+            "runCount": 0,
+            "mediaCount": 0
+          },
+          {
+            "stage": "final",
+            "runCount": 0,
+            "mediaCount": 0
+          }
+        ],
+        "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-workbench-cancel-tree-result.json"
+      },
+      "parentHistory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/39b8177e-a41a-4353-8ac8-54595457215d/1791989375545-7ffa9c57-54d8-4be8-8987-d2df89029560-collect.json",
+      "childHistory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/39b8177e-a41a-4353-8ac8-54595457215d/1791989376168-83d1058d-731c-4319-9acb-c2035e29aef4-collect.json",
+      "parentEventCount": 34,
+      "childEventCount": 17,
+      "acceptanceEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-workbench-acceptance.json"
+    },
+    {
+      "caseId": "zero-iteration",
+      "preset": "harness-comfyui-iteration",
+      "maxDepth": 1,
+      "parentSessionId": "session-29f2ce7b-9e42-4f81-a0a5-9967d30b485a",
+      "childSessionId": "8cb38965-20d4-4c95-bf43-21d0494d2549",
+      "activationRunId": "59a86a71-8959-4d53-8158-88052cd19c29",
+      "workspaceId": "be085ede-de52-491c-9104-d9d117cf9a58",
+      "promptJournal": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-iteration-prompt.json",
+      "requestId": "ebdcf4d1-d8cc-402d-9c7a-51416fc9205e",
+      "sendCount": 2,
+      "uniqueAcceptanceCount": 1,
+      "registry": {
+        "callerAgentId": "session-29f2ce7b-9e42-4f81-a0a5-9967d30b485a",
+        "callerSessionId": "session-29f2ce7b-9e42-4f81-a0a5-9967d30b485a",
+        "listIsError": false,
+        "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-iteration-list-agents-result.json"
+      },
+      "childAfterParentCancel": "running",
+      "cancel": {
+        "childAgeAtInitiationMs": 1041,
+        "cancellationPassed": true,
+        "interruptRegistryAccepted": true,
+        "turnEndReason": {
+          "kind": "aborted",
+          "reason": {
+            "kind": "parent"
+          }
+        },
+        "stopReason": "aborted",
+        "terminalClassification": "interrupted",
+        "finalParent": {
+          "status": "idle",
+          "hasPendingInbox": false
+        },
+        "snapshots": [
+          {
+            "stage": "before",
+            "runCount": 0,
+            "mediaCount": 0
+          },
+          {
+            "stage": "after-requests",
+            "runCount": 0,
+            "mediaCount": 0
+          },
+          {
+            "stage": "final",
+            "runCount": 0,
+            "mediaCount": 0
+          }
+        ],
+        "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-iteration-cancel-tree-result.json"
+      },
+      "parentHistory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/39b8177e-a41a-4353-8ac8-54595457215d/1791989380441-a8eb6f56-784a-4891-8ef3-d2c5f3210461-collect.json",
+      "childHistory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/39b8177e-a41a-4353-8ac8-54595457215d/1791989380994-1ccaaab8-14e5-4af1-b79a-d309c9624b73-collect.json",
+      "parentEventCount": 34,
+      "childEventCount": 17,
+      "acceptanceEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-zero-iteration-acceptance.json"
+    }
+  ],
+  "modelRequests": {
+    "localEndpoint": "http://127.0.0.1:59183/v1",
+    "localRequestCount": 6,
+    "modelIds": [
+      "completion-local-model"
+    ],
+    "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-provider-requests.jsonl",
+    "sharedModelStreamNewFiles": 0,
+    "streamIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-model-call-index.json"
+  },
+  "captureGap": {
+    "observation": "observer/llm-calls 保留历史文件，本轮新增文件数为零。",
+    "configurationIssue": "共享 Profile helper 将 skills-migration-live-observer 写为普通 patch 行。",
+    "source": ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:136",
+    "parserReplay": "当前 patch 对空入口列表执行真实 applyEntryPatches 后，观察模块数量为零，并报告 entry not found。",
+    "parserEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-observer-patch-replay.json",
+    "verificationLimit": "该回放验证新增入口的插入行为；本轮模型请求使用本地 Provider 日志取证。"
+  },
+  "cleanup": {
+    "portsReleased": true,
+    "processGroupPresent": false,
+    "evidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-cleanup.json",
+    "finalState": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-final-state.json",
+    "databaseBeforeStop": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-database-before-stop.json",
+    "sharedProviderOwner": "根线程"
+  },
+  "evidenceIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-3-execution-progress.json",
+  "remaining": [
+    "根线程独立复核第三轮结构证据。",
+    "共享模型流采集入口的配置与实际激活待核对。",
+    "P-delay 未执行。"
+  ]
+}

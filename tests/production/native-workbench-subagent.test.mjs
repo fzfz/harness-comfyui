@@ -16,12 +16,26 @@ const role = composition.find(entry => entry.id === 'task-agent')
 
 function setup() {
   const registered = new Map()
+  const listeners = new Map()
+  const emit = (name, ...args) => { for (const callback of listeners.get(name) ?? []) callback(...args) }
+  const finish = childId => {
+    emit('session/event', { id: childId, header: { parentSession: 'parent-1' } }, {
+      type: 'agent/inbox/spliced', data: { inserted: [{ id: 'message-1' }] },
+    })
+    emit('subagent/end', { id: childId, runId: 'activation-1', stopReason: 'completed' })
+  }
   const subagents = {
-    startContinuable: vi.fn(async () => ({ childId: 'child-1' })),
-    sendMessage: vi.fn(async () => 'message-1'),
+    startContinuable: vi.fn(async () => { finish('child-1'); return { childId: 'child-1', messageId: 'message-1' } }),
+    sendMessage: vi.fn(async (_parent, childId) => { finish(childId); return 'message-1' }),
     interrupt: vi.fn(),
   }
   const ctx = {
+    effect: callback => callback(),
+    on(name, callback) {
+      if (!listeners.has(name)) listeners.set(name, new Set())
+      listeners.get(name).add(callback)
+      return () => listeners.get(name).delete(callback)
+    },
     tools: { register: tool => {
       assertObjectJsonSchema(tool.parameters)
       assertSupportedJsonSchema(tool.output.schema)
@@ -34,7 +48,7 @@ function setup() {
 }
 
 function execution(signal = new AbortController().signal) {
-  return { agent: { id: 'parent-1' }, signal }
+  return { agent: { id: 'parent-1' }, signal, deferContext: vi.fn() }
 }
 
 const task = { description: '核对生成参数', task: '读取输入文件并核对本轮生成参数。\n报告具体结果。' }
@@ -48,7 +62,7 @@ describe('workbench project subagent dispatch component', () => {
     expect(role.config.parameters.additionalProperties).toBe(false)
     expect(role.config.agentOptions).toEqual({})
     expect(composition.find(entry => entry.name === '../project-subagent-workspace.mjs')).toBeDefined()
-    expect(composition.find(entry => entry.name === '@deepseek-ai/dsh-tool-subagent-control')).toBeDefined()
+    expect(composition.find(entry => entry.name === '../project-subagent-control.mjs')).toBeDefined()
   })
 
   it('requests a continuable child through the Subagents service boundary', async () => {
@@ -58,7 +72,7 @@ describe('workbench project subagent dispatch component', () => {
     expect(result).toEqual({ kind: 'continuable', subagentId: 'child-1' })
     expect(validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
     expect(subagents.startContinuable).toHaveBeenCalledExactlyOnceWith({
-      provider: 'spawn', label: task.description, signal: exec.signal,
+      provider: 'spawn', label: task.description, signal: expect.any(AbortSignal),
       request: {
         parent: exec.agent, label: task.description, prompt: message,
         persona: role.config.persona, agentOptions: {},
@@ -75,7 +89,7 @@ describe('workbench project subagent dispatch component', () => {
     expect(result).toEqual({ messageId: 'message-1' })
     expect(validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
     expect(subagents.sendMessage).toHaveBeenCalledExactlyOnceWith(exec.agent, 'child-1', message,
-      { signal: exec.signal })
+      { signal: expect.any(AbortSignal) })
     expect(subagents.startContinuable).not.toHaveBeenCalled()
   })
 

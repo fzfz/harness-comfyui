@@ -15,7 +15,7 @@ export function parseHelpDefinition(value) {
 
 export function parseManagedHelpDefinition(value) {
   const help = parseHelpDefinition(value)
-  for (const key of ['splitCommand', 'invalidCommand', 'invalidProperties', 'invalidOption', 'emptyResults', 'availableResults', 'providerFailure']) {
+  for (const key of ['splitCommand', 'invalidCommand', 'invalidProperties', 'providerFailure', 'resultFilePrepareFailed', 'resultFileWriteFailed', 'resultPathWriteFailed', 'requestTooLarge', 'responseTooLarge', 'invalidApiUrl', 'nonLoopbackApi', 'environmentRecovery']) {
     if (typeof help.messages?.[key] !== 'string' || !help.messages[key]) throw new TypeError(`Managed CLI help requires message ${key}`)
   }
   if (!Array.isArray(help.providerErrorCodes) || help.providerErrorCodes.length === 0) throw new TypeError('Managed CLI help requires providerErrorCodes')

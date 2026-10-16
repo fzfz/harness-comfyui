@@ -1,0 +1,396 @@
+{
+  "purpose": "记录受管 CLI 结果文件冻结候选的独立代码、Spec 与 Standards 审查。",
+  "readWhen": "根线程决定是否进入官方应用和真实模型验收前。",
+  "recordedAt": "2026-10-14T13:35:09.065810+00:00",
+  "worktree": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "implementationRecord": "docs/verification/skills-mcp-migration/managed-cli-result-files-implementation.json",
+  "specSources": [
+    "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+    "docs/plans/skills-mcp-migration-20261013.md#573-受管-cli-的结果文件与复用"
+  ],
+  "reviewedFiles": [
+    "scripts/cli/result-file.mjs",
+    "scripts/cli/harness-comfyui.mjs",
+    "scripts/cli/help.mjs",
+    "scripts/cli/help.d.mts",
+    "scripts/cli/help-schema.mjs",
+    "config/managed-cli-help.json",
+    "tests/unit/cli-result-file.test.mjs",
+    "tests/unit/cli-help-schema.test.mjs",
+    "tests/integration/cli-command.test.ts",
+    "tests/support/managed-cli-result-file-fault.mjs",
+    "tests/production/plugin-package.test.mjs",
+    ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+    ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md",
+    ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+    ".agents/skills/comfyui-image-review/references/cli.md",
+    ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+    ".agents/skills/comfyui-image-review/SKILL.md",
+    ".agents/skills/local-image-reader/SKILL.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+    "docs/system/architecture.md",
+    "docs/system/configuration.md",
+    "docs/system/directory-structure.md",
+    "docs/system/testing.md",
+    "docs/verification/skills-mcp-migration/managed-cli-result-files-implementation.json"
+  ],
+  "status": "passed-no-material-findings",
+  "codeFindings": [],
+  "specFindings": [],
+  "standardsFindings": [],
+  "checks": [
+    {
+      "contract": "architecture.responsibilities / singleSources",
+      "status": "passed",
+      "result": "文件生命周期归 result-file 模块；main 分别处理请求、保存及输出阶段。帮助模板集中在 managed-cli-help.json；未新增 Host 文件状态。",
+      "sources": [
+        "scripts/cli/result-file.mjs:9",
+        "scripts/cli/harness-comfyui.mjs:163",
+        "config/managed-cli-help.json:145"
+      ]
+    },
+    {
+      "contract": "commandCoverage / interfaceBreak",
+      "status": "passed",
+      "result": "6 条命令及普通、quiet 调用均写原业务 JSON 加换行，stdout 返回不同绝对路径；请求数据与身份不变。",
+      "sources": [
+        "scripts/cli/harness-comfyui.mjs:187",
+        "tests/integration/cli-command.test.ts:153"
+      ]
+    },
+    {
+      "contract": "fileLifecycle.root / ownership / allocation",
+      "status": "passed",
+      "result": "os.tmpdir 下独立 mkdtemp；目录 0700，wx 文件 0600。参数与环境检查后、HTTP 前分配；准备失败未发送请求。",
+      "sources": [
+        "scripts/cli/result-file.mjs:9",
+        "scripts/cli/harness-comfyui.mjs:161",
+        "tests/unit/cli-result-file.test.mjs:95",
+        "tests/integration/cli-command.test.ts:246"
+      ]
+    },
+    {
+      "contract": "fileLifecycle.uniqueness / content",
+      "status": "passed",
+      "result": "并发调用无锁、无缓存。UTF-8、空格路径、重复项、顺序、逐项错误及完整 Workflow 字节均有回归。",
+      "sources": [
+        "scripts/cli/result-file.mjs:15",
+        "scripts/cli/result-file.mjs:31",
+        "tests/integration/cli-command.test.ts:334"
+      ]
+    },
+    {
+      "contract": "fileLifecycle.publication / retention",
+      "status": "passed",
+      "result": "writeFile 和 close 成功后设置 saved，再发布路径；已保存文件不会被 discard 删除，进程退出后仍可读取。无扫描清理或定时清理。",
+      "sources": [
+        "scripts/cli/result-file.mjs:38",
+        "scripts/cli/result-file.mjs:45",
+        "scripts/cli/harness-comfyui.mjs:205"
+      ]
+    },
+    {
+      "contract": "fileLifecycle.cleanup / limits",
+      "status": "passed",
+      "result": "Host、协议及保存错误清理当前未发布目录；清理异常附带目录和系统错误。仅清理当前 handle；SIGKILL 与掉电保证未被引入。",
+      "sources": [
+        "scripts/cli/result-file.mjs:21",
+        "scripts/cli/result-file.mjs:45",
+        "scripts/cli/harness-comfyui.mjs:101",
+        "tests/unit/cli-result-file.test.mjs:73"
+      ]
+    },
+    {
+      "contract": "fileLifecycle.pathBoundary",
+      "status": "passed",
+      "result": "resolve 生成绝对路径，拒绝 C0、DEL、C1 控制字符；真实临时目录覆盖 Unicode 与空格。",
+      "sources": [
+        "scripts/cli/result-file.mjs:10",
+        "scripts/cli/result-file.mjs:14",
+        "tests/unit/cli-result-file.test.mjs:85"
+      ]
+    },
+    {
+      "contract": "fileLifecycle.stdoutFailure / diagnosticFailure",
+      "status": "passed",
+      "result": "write 回调被 await；error 监听器消费异步事件并设置失败码。stdout EPIPE 保留文件并报告路径；NEXT 或诊断 stderr 失败返回非零且无业务重试。",
+      "sources": [
+        "scripts/cli/harness-comfyui.mjs:20",
+        "scripts/cli/harness-comfyui.mjs:85",
+        "scripts/cli/harness-comfyui.mjs:91",
+        "tests/integration/cli-command.test.ts:296"
+      ]
+    },
+    {
+      "contract": "exitAndErrorContract.help / success / existingFailure",
+      "status": "passed",
+      "result": "帮助不分配文件、不访问 Host；quiet 成功 stderr 为空；普通 NEXT 来自内存业务结果。既有参数及环境失败退出 2，Host 和协议失败退出 1。",
+      "sources": [
+        "scripts/cli/harness-comfyui.mjs:107",
+        "scripts/cli/help.mjs:46",
+        "tests/integration/cli-command.test.ts:166"
+      ]
+    },
+    {
+      "contract": "exitAndErrorContract.prepareFailure / saveFailure / publishFailure / serializationFailure",
+      "status": "passed",
+      "result": "3 类错误模板按阶段调用；serialization 单测覆盖。submit 保存失败包含已接纳 run_id，image 保存失败只调用测试服务 1 次。",
+      "sources": [
+        "config/managed-cli-help.json:137",
+        "scripts/cli/harness-comfyui.mjs:193",
+        "tests/integration/cli-command.test.ts:263",
+        "tests/integration/cli-command.test.ts:278"
+      ]
+    },
+    {
+      "contract": "implementationContract.responseJson",
+      "status": "passed",
+      "result": "成功 data 拒绝缺失、null、数组和其他非对象值；submit 要求非空字符串 run_id。协议拒绝先于保存，且删除未发布文件。",
+      "sources": [
+        "scripts/cli/harness-comfyui.mjs:67",
+        "scripts/cli/harness-comfyui.mjs:184",
+        "tests/integration/cli-command.test.ts:203"
+      ]
+    },
+    {
+      "contract": "implementationContract.help / schema / declarations",
+      "status": "passed",
+      "result": "nextSteps 已替换为纯 renderNextSteps，声明同步；检索未发现旧调用者。全部叶帮助包含公共协议，3 个错误模板有必填检查。",
+      "sources": [
+        "scripts/cli/help.mjs:46",
+        "scripts/cli/help.d.mts:4",
+        "scripts/cli/help-schema.mjs:16",
+        "tests/unit/cli-help-schema.test.mjs:37"
+      ]
+    },
+    {
+      "contract": "consumerInventory.skillReferences / skillEntrypoints",
+      "status": "passed",
+      "result": "9 份参考要求首次读取对应 --help，成功 JSON 指文件内容；2 个直接 Skill 入口读取返回路径。复用、刷新及原输入重试条件保留。Python 示例通过实际 CLI 入口执行。",
+      "sources": [
+        ".agents/skills/local-image-reader/references/image-inspection-cli.md:126",
+        ".agents/skills/local-image-reader/SKILL.md:28",
+        ".agents/skills/comfyui-image-review/SKILL.md:16",
+        "tests/integration/cli-command.test.ts:180"
+      ]
+    },
+    {
+      "contract": "consumerInventory.directAutomatedConsumer / localEvidenceConsumers",
+      "status": "passed",
+      "result": "runCli 保留原 stdout 并读取文件；normal 与 quiet 比较内容且要求路径不同。检索 tracked 消费者及当前 remaining-generation/history-current 脚本，未发现遗漏的 managed CLI stdout JSON 解析；现存 JSON stdout 解析属于 Builder、采集器或其他程序。",
+      "sources": [
+        "tests/integration/cli-command.test.ts:51",
+        ".local/skills-mcp-migration-live/remaining-generation-runtime/runner.mjs:73",
+        "tests/desktop/official-desktop-lifecycle.test.mjs:1155"
+      ]
+    },
+    {
+      "contract": "implementationContract.packaging",
+      "status": "passed",
+      "result": "实际 tarball 在 checkout 外、含空格且只读的目录执行 CLI；新模块由既有 bundle 导入，结果写入系统临时目录。",
+      "sources": [
+        "scripts/cli/harness-comfyui.mjs:16",
+        "tests/production/plugin-package.test.mjs:204",
+        "tests/production/plugin-package.test.mjs:299"
+      ]
+    },
+    {
+      "contract": "implementationContract.systemDocs / records",
+      "status": "passed",
+      "result": "架构、配置、目录说明与当前代码一致；records 要求复制已保存文件并记录副本路径。文案独立语义审计不计入本报告。",
+      "sources": [
+        "docs/system/architecture.md:51",
+        "docs/system/configuration.md:170",
+        "docs/system/directory-structure.md:85",
+        ".agents/skills/comfyui-iterate-generation/references/records.md:25"
+      ]
+    },
+    {
+      "contract": "tests.officialDesktop / originalFailure / causalControl / neighbors / gates",
+      "status": "pending-external-acceptance",
+      "result": "本次未启动官方应用、Provider 或真实模型，未执行 pnpm quality。后续仍需两个预设的前台读取、capability 撤销后保留、跨 Tool 文件复用、原失败及同机制消费者验收；自动保存是否减少重复查询尚未证明。",
+      "sources": [
+        "docs/plans/skills-mcp-migration-20261013.md#573-受管-cli-的结果文件与复用"
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "command": "pnpm exec vitest run tests/integration/cli-command.test.ts tests/unit/cli-result-file.test.mjs tests/unit/cli-help-schema.test.mjs tests/production/plugin-package.test.mjs",
+      "executedBy": "independent-reviewer",
+      "result": "passed",
+      "files": 4,
+      "tests": 95,
+      "durationSeconds": 7.99,
+      "startedAtLocal": "2026-10-14 21:33:42 +08:00"
+    }
+  ],
+  "boundaries": [
+    "仅写本报告，未修改实现或测试。",
+    "定向测试使用本地受控 HTTP 服务和图片读取替身；未启动官方应用、外部 Provider 或真实模型。",
+    "独立文字审计由另一队员执行，本报告只核对文档与实现的行为一致性。",
+    "最终 quality 和 git diff --check 由根线程在最终候选树执行。",
+    "Git HEAD 包含本轮结果文件实现之前的迁移改动；审查按指定合同和 changedFiles 的当前实现界定，未把全部 HEAD 差异认定为本次新增。"
+  ],
+  "followUpReviews": [
+    {
+      "recordedAt": "2026-10-14T13:54:03.307930+00:00",
+      "scope": "上一轮审查通过后的请求超限、响应超限和 API 环境错误模板变更。",
+      "status": "passed-no-material-findings",
+      "codeFindings": [],
+      "specFindings": [],
+      "standardsFindings": [],
+      "checks": [
+        {
+          "subject": "模板字段与插值",
+          "result": "requestTooLarge 和 responseTooLarge 的 max_bytes 分别来自实际比较使用的 CLI_MAX_BODY_BYTES 和 MAX_RESPONSE_BYTES。invalidApiUrl、nonLoopbackApi 的 name 来自 CLI_ENVIRONMENT_NAMES.api；action 复用 environmentRecovery。message 使用替换回调，动态值中的替换元字符不会被二次解释。",
+          "sources": [
+            "scripts/cli/harness-comfyui.mjs:38",
+            "scripts/cli/harness-comfyui.mjs:47",
+            "scripts/cli/harness-comfyui.mjs:60",
+            "scripts/cli/harness-comfyui.mjs:69",
+            "scripts/cli/harness-comfyui.mjs:97",
+            "config/managed-cli-help.json:140"
+          ]
+        },
+        {
+          "subject": "必填字段和单一来源",
+          "result": "5 个新增消息键都纳入 parseManagedHelpDefinition 的非空字符串检查；单测覆盖缺失和非字符串。恢复动作在 environmentRecovery 唯一定义，2 个调用点复用。字节数未复制进模板，既有上限未变。",
+          "sources": [
+            "scripts/cli/help-schema.mjs:18",
+            "tests/unit/cli-help-schema.test.mjs:37",
+            "scripts/cli/harness-comfyui.mjs:18",
+            "src/cli/contract.ts:9"
+          ]
+        },
+        {
+          "subject": "成功与失败传输",
+          "result": "帮助渲染、NEXT 渲染、业务数据写入和路径发布保持上一轮实现。stdin 超限仍退出 2；API 校验失败在分配文件前退出 2；响应超限清理未发布目录并退出 1。新增错误模板未增加自动请求。",
+          "sources": [
+            "scripts/cli/harness-comfyui.mjs:145",
+            "scripts/cli/harness-comfyui.mjs:158",
+            "scripts/cli/harness-comfyui.mjs:193",
+            "scripts/cli/help.mjs:46"
+          ]
+        },
+        {
+          "subject": "响应超限恢复条件",
+          "result": "模板提示 Host 可能已完成，并要求按原命令重试条件决定后续动作；没有要求 submit、Seed 或图片读取无条件重做。",
+          "sources": [
+            "config/managed-cli-help.json:141"
+          ]
+        }
+      ],
+      "nonBlockingObservations": [
+        {
+          "severity": "low",
+          "subject": "响应超限诊断中出现连续句点",
+          "sources": [
+            "config/managed-cli-help.json:141",
+            "scripts/cli/harness-comfyui.mjs:194"
+          ],
+          "observed": "实际进程 stderr 包含 stop dependent work.. Next:。",
+          "reason": "模板末尾与 main 请求失败分支分别添加句点。",
+          "suggestedAction": "由诊断拼接方统一负责模板末尾与帮助提示之间的标点。",
+          "impact": "不影响错误码、插值、文件清理或退出码。"
+        }
+      ],
+      "validation": [
+        {
+          "command": "pnpm exec vitest run tests/integration/cli-command.test.ts tests/unit/cli-result-file.test.mjs tests/unit/cli-help-schema.test.mjs",
+          "result": "passed",
+          "files": 3,
+          "tests": 80,
+          "durationSeconds": 7.95,
+          "startedAtLocal": "2026-10-14 21:53:01 +08:00"
+        },
+        {
+          "method": "使用 materializeManagedCliModule 从当前源码构建临时入口，通过本地 HTTP 替身执行 3 个真实 CLI 子进程。",
+          "result": "passed",
+          "cases": [
+            {
+              "name": "invalid-url",
+              "exitCode": 2,
+              "hostRequests": 0
+            },
+            {
+              "name": "non-loopback",
+              "exitCode": 2,
+              "hostRequests": 0
+            },
+            {
+              "name": "response-over-32-MiB",
+              "exitCode": 1,
+              "hostRequests": 1
+            }
+          ],
+          "assertions": [
+            "stdout 均为空。",
+            "诊断中没有遗留 max_bytes、name 或 action 占位符。",
+            "超限诊断显示 33554432 字节及既有重试条件。",
+            "3 个调用的临时结果目录均为空。"
+          ],
+          "cleanup": "临时构建目录和本地 HTTP 替身均已清理。"
+        }
+      ],
+      "boundaries": [
+        "上一轮报告内容保留。",
+        "本次只追加本报告；未修改产品或测试。",
+        "未启动官方应用、Provider 或真实模型。"
+      ]
+    },
+    {
+      "recordedAt": "2026-10-14T14:01:29.445121+00:00",
+      "scope": "请求失败诊断与帮助提示之间的最小标点修复。",
+      "status": "passed-no-material-findings",
+      "findings": [],
+      "resolvedObservation": "上一轮 responseTooLarge 诊断中的连续句点已消除。",
+      "checks": [
+        {
+          "sources": [
+            "scripts/cli/harness-comfyui.mjs:194"
+          ],
+          "result": "仅在原始诊断末尾缺少英文或中文句末标点时添加句点。错误码选择、原始错误正文、helpHint、discardResult 和 reportFailure 调用保持不变。成功响应路径不经过该分支。"
+        },
+        {
+          "sources": [
+            "tests/integration/cli-command.test.ts:252",
+            "tests/integration/cli-command.test.ts:273"
+          ],
+          "result": "8 个注入用例覆盖有无句点、已有错误码、URL 冒号及中英文句末标点；均断言退出 1、stdout 为空和未发布目录已清理。真实 HTTP 超限用例另断言单次请求及连续句点消失。"
+        },
+        {
+          "sources": [
+            "tests/support/managed-cli-result-file-fault.mjs:4",
+            "tests/integration/cli-command.test.ts:66"
+          ],
+          "result": "fetch 故障注入仅由测试子进程的 --import 启用，错误文本通过测试环境变量传入；产品入口没有新增故障开关或请求重试。"
+        }
+      ],
+      "validation": [
+        {
+          "command": "pnpm exec vitest run tests/integration/cli-command.test.ts -t 'separates request diagnostics|oversized|maximum response|response limit'",
+          "result": "passed",
+          "tests": 10,
+          "skipped": 53
+        },
+        {
+          "command": "pnpm exec vitest run tests/integration/cli-command.test.ts -t 'reports the configured response byte limit'",
+          "result": "passed",
+          "tests": 1,
+          "skipped": 62
+        }
+      ],
+      "boundaries": [
+        "本次仅追加审查报告。",
+        "本次未重复执行完整 63 项 CLI 回归或 typecheck；二者由实施者报告通过。",
+        "未启动官方应用或模型。"
+      ]
+    }
+  ]
+}

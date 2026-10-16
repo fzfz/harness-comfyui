@@ -44,6 +44,10 @@ function visibilityContext(hostNames) {
     tools: {
       restrict: vi.fn(({ deny }) => {
         const name = deny[0]
+        const known = ctx.root.tools.schemas().map(tool => tool.name)
+        if (!known.includes(name)) {
+          throw new Error(`tools.restrict() names unknown global tool "${name}"; known global tools: ${known.sort().join(', ') || '(none)'}`)
+        }
         denied.add(name)
         const dispose = vi.fn(() => denied.delete(name))
         restrictions.push(dispose)
@@ -118,13 +122,19 @@ describe('project Agent Preset resources', () => {
       ['messageId'],
     ])
     expect(composition.map(row => row.name)).toContain('../project-subagent-workspace.mjs')
-    expect(composition.map(row => row.name)).toContain('@deepseek-ai/dsh-tool-subagent-control')
+    expect(composition.map(row => row.name)).toContain('../project-subagent-control.mjs')
   })
 
   it('keeps four independent iteration role contracts and their child restrictions', async () => {
     const { metadata, composition } = await readProjectAgentPresetResources(repositoryRoot, ITERATION_PRESET_ID)
-    const roles = composition.filter(row => row.name === '../project-iteration-dispatch.mjs')
+    const roles = composition.filter(row => ['../project-iteration-dispatch.mjs', '../project-observation-dispatch.mjs'].includes(row.name))
     const names = roles.map(row => row.config.toolName)
+    expect(roles.map(row => row.name)).toEqual([
+      '../project-iteration-dispatch.mjs', '../project-iteration-dispatch.mjs',
+      '../project-observation-dispatch.mjs', '../project-iteration-dispatch.mjs',
+    ])
+    expect(roles[2].config.parameters.properties.images.items.required).toEqual(['media_id', 'run_id'])
+    expect(roles[2].config.parameters.properties.images.items.properties).not.toHaveProperty('path')
 
     expect(metadata).toMatchObject({ name: 'ComfyUI迭代预设', order: 92 })
     expect(names).toEqual([
@@ -151,7 +161,7 @@ describe('project Agent Preset resources', () => {
     expect(composition.map(row => row.name)).toContain('../project-subagent-workspace.mjs')
     expect(composition.map(row => row.name)).toContain('@deepseek-ai/dsh-command-goal')
     expect(composition.map(row => row.name)).toContain('@deepseek-ai/dsh-tool-goal')
-    expect(composition.map(row => row.name)).toContain('@deepseek-ai/dsh-tool-subagent-control')
+    expect(composition.map(row => row.name)).toContain('../project-subagent-control.mjs')
   })
 })
 
@@ -214,38 +224,53 @@ describe('project Tool visibility modes', () => {
 })
 
 describe('project system prompt visibility', () => {
-  it('removes only configured Harness sections while preserving other assembled data', async () => {
-    const { composition } = await readProjectAgentPresetResources(repositoryRoot, PRODUCT_PRESET_ID)
-    const row = composition.find(entry => entry.name === '../project-system-prompt-visibility.mjs')
-    const listener = await loadListener(
-      'project-system-prompt-visibility.mjs', 'system-prompt/assemble', {}, row.config,
-    )
-    const contexts = [{ name: 'runtime:permissions', text: 'Current permission state.' }]
-    const tools = [{ name: 'bash', description: 'Run a foreground shell command.' }]
-    const variables = { cwd: '/workspace' }
-    const assembly = {
-      sections: [
-        { name: 'harness:identity', text: 'Harness identity.' },
-        { name: 'harness:source', text: 'Harness source checkout.' },
-        { name: 'app:web-surface', text: 'Harness Web instructions.' },
-        { name: 'deployment:persona', text: 'Project persona.' },
-        { name: 'tool:bash', text: 'Bash guidance.' },
-      ],
-      contexts,
-      tools,
-      variables,
-    }
+  it.each([PRODUCT_PRESET_ID, ITERATION_PRESET_ID])(
+    'removes configured sections including unavailable presentation guidance from %s',
+    async presetId => {
+      const { composition } = await readProjectAgentPresetResources(repositoryRoot, presetId)
+      const row = composition.find(entry => entry.name === '../project-system-prompt-visibility.mjs')
+      const listener = await loadListener(
+        'project-system-prompt-visibility.mjs', 'system-prompt/assemble', {}, row.config,
+      )
+      const contexts = [{ name: 'runtime:permissions', text: 'Current permission state.' }]
+      const tools = [{ name: 'bash', description: 'Run a foreground shell command.' }]
+      const variables = { cwd: '/workspace' }
+      const assembly = {
+        sections: [
+          { name: 'harness:identity', text: 'Harness identity.' },
+          { name: 'harness:source', text: 'Harness source checkout.' },
+          { name: 'app:web-surface', text: 'Harness Web instructions.' },
+          { name: 'ui:deliverable-file-references', text: 'Use present to open the deliverable.' },
+          { name: 'deployment:persona', text: 'Project persona.' },
+          { name: 'tool:bash', text: 'Bash guidance.' },
+          { name: 'ui:deliverable-file-references:custom', text: 'Custom delivery guidance.' },
+        ],
+        contexts,
+        tools,
+        variables,
+      }
 
-    await expect(listener.invoke(assembly, {}, async () => assembly)).resolves.toEqual({
-      sections: [
-        { name: 'deployment:persona', text: 'Project persona.' },
-        { name: 'tool:bash', text: 'Bash guidance.' },
-      ],
-      contexts,
-      tools,
-      variables,
-    })
-  })
+      const result = await listener.invoke(assembly, {}, async () => assembly)
+
+      expect(result).toEqual({
+        sections: [
+          { name: 'deployment:persona', text: 'Project persona.' },
+          { name: 'tool:bash', text: 'Bash guidance.' },
+          { name: 'ui:deliverable-file-references:custom', text: 'Custom delivery guidance.' },
+        ],
+        contexts,
+        tools,
+        variables,
+      })
+      expect(result.contexts).toBe(contexts)
+      expect(result.tools).toBe(tools)
+      expect(result.variables).toBe(variables)
+      expect(assembly.sections).toHaveLength(7)
+      expect(assembly.sections).toContainEqual({
+        name: 'ui:deliverable-file-references', text: 'Use present to open the deliverable.',
+      })
+    },
+  )
 
   it('passes an assembly error through unchanged', async () => {
     const listener = await loadListener(

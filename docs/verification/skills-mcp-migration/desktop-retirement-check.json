@@ -1,0 +1,9 @@
+{
+  "command": "pnpm test:desktop",
+  "files": 13,
+  "tests": 269,
+  "status": "passed",
+  "log": ".local/skills-mcp-migration-live/desktop-retirement-check.log",
+  "scope": "Controlled official Desktop E2E; real model acceptance pending",
+  "candidate": ".local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.45.0.tgz"
+}

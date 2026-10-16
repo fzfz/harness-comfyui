@@ -1,3 +1,19 @@
+---
+文档用途: 说明各发行版本的功能与验收范围。
+读取时机: 选择插件版本或核对更新内容时。
+---
+# Harness ComfyUI v0.46.0
+
+## 目录查询与生成
+
+1. 两个 ComfyUI 预设通过 NoobAI MCP 查询目录，项目 Skills 使用查询结果中的资源 ID。
+2. 已提交的生成任务遇到目录连接重置或请求超时时，Host 在恢复期限内继续查询原任务，成功后保存图片。
+3. 受管 CLI 将业务结果保存为文件并返回路径，观察角色通过媒体 ID 读取本地图片。
+
+## 验收范围
+
+1. 真实模型验收已覆盖目录查询、生成与媒体保存。其余 Skill 用例和迭代生成流程的验收状态见[迁移验收记录](verification/skills-mcp-migration/)。
+
 # Harness ComfyUI v0.45.0
 
 v0.45.0 将 Harness ComfyUI 交付方式升级为官方 DeepSeek Harness Desktop `0.2.0-rc.2` 插件。发行 tarball 包含 Host、Client、managed CLI、Workflow worker、两个 ComfyUI 预设和八个项目 Skill。用户通过官方插件管理器安装发行包，在插件详情页配置数据源、图片读取与浏览器。

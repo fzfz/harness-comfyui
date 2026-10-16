@@ -1,0 +1,108 @@
+{
+  "purpose": "独立核对 neutral-runtime 驱动的准备、配置、环境、生命周期和采集路径接口。",
+  "verdict": "PASS：本轮功能审查与定向结构测试未发现实质阻塞；具备进入官方 Desktop 无模型烟测的条件。",
+  "scope": [
+    ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+    ".local/skills-mcp-migration-live/neutral-runtime.test.mjs",
+    ".local/skills-mcp-migration-live/desktop-driver.mjs 的可选第五个 probeRoot 参数"
+  ],
+  "basis": [
+    "docs/plans/skills-mcp-migration-20261013.md 第 5.13.1 节",
+    "docs/verification/skills-mcp-migration/acceptance-read-boundary-review.json 的 followupAssessment"
+  ],
+  "findings": [],
+  "verified": [
+    {
+      "subject": "配置与兼容状态",
+      "path": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+      "lines": [
+        38,
+        70
+      ],
+      "result": "prepareRuntime 使用官方配置与 prepareNeutralLayout；仅将 probe 根调整为 R/runtime，并推导 environmentRootRelativePath。原 layout 配置保留，neutral 配置指向相同环境。状态保留 configureScenario/startScenario/statusScenario/stopScenario 所需字段，来源 Profile、模型选择和图片读取配置留在 C。"
+    },
+    {
+      "subject": "运行材料与 Profile",
+      "path": ".local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/state.json",
+      "result": "只读核对实现报告所指真实准备产物：R 内共四个文件，即候选归档、两份 observer 文件及 Profile patch；无符号链接。Workspace、user-data 和 llm-calls 为空。候选与来源归档逐字节一致；Profile 未包含控制根或来源 checkout 字符串，observer 真实路径位于 R 内。"
+    },
+    {
+      "subject": "环境处理",
+      "path": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+      "lines": [
+        74,
+        128
+      ],
+      "result": "包装器保留 executable、argv、detached、stdio，并在同步 spawn 前更新 cwd/PWD；移除 OLDPWD、INIT_CWD、NODE_OPTIONS。PATH/NODE_PATH 根据实际路径和符号链接解析结果过滤控制根；其他字符串变量按控制路径检查处理。审计保存变量名及动作，未公开普通变量值。结构测试覆盖业务 endpoint 与凭据保留、控制路径和别名剔除。"
+    },
+    {
+      "subject": "生命周期复用",
+      "path": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+      "lines": [
+        131,
+        164
+      ],
+      "result": "start/status/configure 经既有 isolated-profile 入口；其 loadScenario 核对状态与配置指向相同 Profile，其 assertStopped 核对进程和端口。安装前 configure 被拒绝；安装后的包 realpath 必须位于 R。start 仅为官方 probe 注入环境包装器，未添加外层 Seatbelt 或关闭内层沙箱。"
+    },
+    {
+      "subject": "官方安装器路径合同",
+      "path": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+      "lines": [
+        166,
+        185
+      ],
+      "result": "install 从相同外部 probeRoot 取得进程状态及 Renderer 连接，调用既有官方 UI 安装器，tarball 位于 R。对照 official-plugin-install.mjs 第 312-369 行，其 run/evidence/record 身份核对使用传入的 repositoryRoot 与原配置 runRootRelativePath，当前 neutral 路径保持匹配。实际 UI 安装尚待烟测。"
+    },
+    {
+      "subject": "停止与归档",
+      "path": ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+      "lines": [
+        187,
+        197
+      ],
+      "result": "stop 委托原停止与进程/端口核对；之后把该次 probe 记录及 observer 目录归档到 C，并保留 R。结构测试覆盖应用身份验证提前拒绝后的状态、预留端口释放与归档文件一致性。"
+    },
+    {
+      "subject": "外部 probe 的采集兼容",
+      "path": ".local/skills-mcp-migration-live/desktop-driver.mjs",
+      "lines": [
+        7,
+        12
+      ],
+      "result": "第五位置参数仅改变 run.json 查找与 Renderer 连接所用的 probeRoot；省略时继续使用原 checkout。输出仍写在控制侧 desktop/runId 下，未把输入控制文件复制入 R。两个参数模式均通过缺失 run 的确定性路径测试；成功连接及实际分页采集尚待烟测。"
+    }
+  ],
+  "independentValidation": {
+    "command": "node --test .local/skills-mcp-migration-live/neutral-runtime.test.mjs",
+    "exitCode": 0,
+    "tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "preparedState": ".local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/state.json",
+    "actualDirectoryChecks": {
+      "bothConfigsResolveSameEnvironment": true,
+      "candidateBytesEqual": true,
+      "emptyWorkspace": true,
+      "emptyUserData": true,
+      "emptyObserverLogs": true,
+      "profileContainsControlRoot": false,
+      "profileContainsSourceCheckout": false,
+      "observerRealpathInsideRuntime": true
+    },
+    "processBoundary": "结构测试的应用身份回调在 spawn 前拒绝启动；未运行官方 Desktop 或模型。"
+  },
+  "requiredSmokeChecks": [
+    "使用官方流程完成 start、install、stop、configure、start、status、stop，核对真实应用身份、PID/进程组、Host/Renderer 就绪、插件已安装启用与所有端口释放。",
+    "核对真实 spawn 审计及实际 shell 环境；确认官方 DSH 目录、必需凭据和业务端点有效，控制路径没有经未覆盖的变量格式或运行时注入重新出现。当前环境过滤属于已识别路径的处理，不是全部编码形式的权限边界。",
+    "安装和 configure 后核对包真实路径、Profile include/patch、observer 依赖、预设角色模型及图片读取设置。检查实际安装记录、active-probe、run.json 和诊断日志是否引入未授权资料。",
+    "通过外部 probeRoot 成功执行 capture 与必要 Remote 读取，核对结果仍归档到 C；无模型烟测不代替真实主子 Session 的完整分页和模型请求取证。",
+    "模型验收每个场景重新 prepare，禁止把该 preparation-smoke 环境当作已经完成业务验收的证据；首请求与后续主子轨迹继续接受独立来源审查。"
+  ],
+  "limitations": [
+    "本轮未独立验证 UI 安装成功、安装后 configure 的真实生效和真实进程的退出行为。四项结构测试主要验证准备、环境、失败清理及路径分派。",
+    "新目录只降低就近发现控制资料的机会；同用户读取其他目录的能力仍存在。任何验收资料摄入或关键来源记录缺失继续按计划标为污染或证据不足。",
+    "observer 日志按本轮场景累计，安装启动和业务启动的归档可含相同已有记录；实际业务取证须以 callId/sessionId/run 身份关联，不以归档目录数量计算请求次数。",
+    "未复审已通过的 layout 路径机制，未修改任何程序、配置或输入资料。"
+  ],
+  "writeOwnership": "docs/verification/skills-mcp-migration/neutral-runtime-review.json"
+}

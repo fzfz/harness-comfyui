@@ -1,0 +1,308 @@
+{
+  "purpose": "记录剩余交接验收驱动的独立代码复核结论。",
+  "readWhen": "启动官方零远程模型探针前，以及核对真实验收证据时。",
+  "verdict": "首轮 2 项判定缺陷和本轮 Profile 插入修复均已复核。当前未发现阻断项，可继续官方零远程模型探针。",
+  "officialProbeReadiness": {
+    "ready": true,
+    "reason": "Profile 插入语义已通过保存配置重放和本地测试。插件真实激活及运行行为由官方探针验收。"
+  },
+  "scope": {
+    "directory": ".local/skills-mcp-migration-live/remaining-handoff-runtime/",
+    "implementationChanged": false,
+    "applicationStarts": 0,
+    "providerStarts": 0,
+    "modelCalls": 0,
+    "reportOnly": "docs/verification/skills-mcp-migration/remaining-handoff-driver-code-review.json"
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P2",
+      "location": {
+        "path": ".local/skills-mcp-migration-live/remaining-handoff-runtime/request-journal.mjs",
+        "lines": [
+          32,
+          36
+        ]
+      },
+      "title": "接纳结果重复统计同一消息，且未限定父 Session。",
+      "behavior": "promptAcceptance 同时收集入队与消费事件。返回值未标明事件类型，也未按 Session 和 messageId 合并。",
+      "cause": "SDK followup 先写 agent/inbox/spliced。AgentLoop 随后把同一个消息写成 user/message。两条记录均携带同一个 rpcId。",
+      "reproduction": {
+        "input": "同一父 Session 的 2 条记录：seq=1 为入队，seq=2 为消费；messageId 均为 one-message，rpcId 均为 r。",
+        "observed": "返回 2 个接纳匹配项，messageId 均为 one-message。",
+        "executed": true
+      },
+      "impact": "P-request 要求核对单次接纳。直接按 matches 数量判定会误报重复接纳。混合父子记录还会纳入其他 Session 的同 ID 消息。",
+      "requiredChange": "保留原始事件类型和 Session 身份。按目标父 Session 过滤，并以消息 ID 统计独立接纳。分别输出入队、消费和重复消息证据。",
+      "acceptance": "同一消息入队后消费计为 1 次接纳；同 rpcId 的 2 个消息 ID 计为重复；其他 Session 的消息不计入。",
+      "sdkEvidence": [
+        {
+          "path": ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js",
+          "lines": [
+            851,
+            885
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-agent-loop__lib__index.js",
+          "lines": [
+            802,
+            813,
+            1064
+          ]
+        }
+      ],
+      "status": "resolved",
+      "observationRound": 1,
+      "resolution": {
+        "locations": [
+          ".local/skills-mcp-migration-live/remaining-handoff-runtime/request-journal.mjs:32",
+          ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:116"
+        ],
+        "result": "按父 Session 和 requestId 过滤，以 messageId 合并接纳。原始事件保留 Session、事件类型和序号；CLI 保留采集对象的 Session 身份。"
+      }
+    },
+    {
+      "id": "R2",
+      "priority": "P2",
+      "location": {
+        "path": ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs",
+        "lines": [
+          59,
+          67
+        ]
+      },
+      "title": "错误终态被标为自然完成，confirmed 仍为 true。",
+      "behavior": "naturalCompletion 仅检查终态存在和未发中断请求。error、max-tokens 或已有 aborted 都满足该表达式。",
+      "cause": "terminal 只证明结束事件齐全。自然完成分类没有检查结束原因。",
+      "reproduction": {
+        "input": "子当前 activation 同时具有 turn/end.reason.kind=error 和 subagent/end.stopReason=error；父为空闲且 inbox 为空。",
+        "observed": {
+          "confirmed": true,
+          "interrupted": false,
+          "naturalCompletion": true
+        },
+        "executed": true
+      },
+      "impact": "输入合同要求其他终态按真实事件报告。当前自然完成字段会掩盖失败。host 命令也会以退出码 0 返回该结果。",
+      "requiredChange": "自然完成必须检查实际完成原因。分别报告已结束、自然完成、中断确认和失败终态；保留原始原因。明确 confirmed 仅表示收尾完成，或增加独立取消验收状态。",
+      "acceptance": "completed、error、max-tokens、aborted 分别验证；错误终态不得返回 naturalCompletion=true。运行中目标的取消验收必须同时核对两类 aborted 事件。",
+      "sdkEvidence": [
+        {
+          "path": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-agent-loop__lib__index.js",
+          "lines": [
+            1009,
+            1030
+          ]
+        },
+        {
+          "path": ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-subagent__lib__index.js",
+          "lines": [
+            307,
+            323
+          ]
+        }
+      ],
+      "status": "resolved",
+      "observationRound": 1,
+      "resolution": {
+        "locations": [
+          ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:70",
+          ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:80",
+          ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:123"
+        ],
+        "result": "自然完成要求两类结束事件均为 completed，且未发中断请求。中断确认要求 Registry 成功和两类 aborted 事件。terminationConfirmed 表示收尾完成，cancellationPassed 表示取消验收通过；CLI 按后者返回失败退出码。"
+      }
+    }
+  ],
+  "checked": [
+    {
+      "area": "SDK 身份",
+      "result": "当前官方应用版本为 0.2.0-rc.2。只读解析 app.asar，核对 5 个 SDK 模块与审查副本字节相同。",
+      "packages": [
+        "dsh-agent",
+        "dsh-agent-loop",
+        "dsh-tools",
+        "dsh-subagent",
+        "dsh-tool-subagent-control"
+      ],
+      "application": "/Applications/DeepSeek Harness.app"
+    },
+    {
+      "area": "ToolRegistry 与取消授权",
+      "result": "executeRegisteredTool 从 ctx.agents 获取真实父 Agent，再调用 withInitiator 和 tools.execute。interrupt_agent 支持祖先中断后代。结果保留 additionalContexts。",
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:11",
+        ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__lib__index.js:83",
+        ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tools__lib__index.js:3116"
+      ]
+    },
+    {
+      "area": "请求归档与重试",
+      "result": "发送前保存请求及 Remote 包装对象。重试读取原对象并比较包装内容。缺陷见 R1。",
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/request-journal.mjs:14"
+      ]
+    },
+    {
+      "area": "候选安装身份",
+      "result": "复用完整安装驱动。prepare 冻结候选；install 验证候选字节并通过官方生命周期安装；configure 和 attach 再核对安装资源。",
+      "locations": [
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:189",
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:210",
+        ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:242",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:49"
+      ]
+    },
+    {
+      "area": "Profile 模型路由",
+      "result": "从安装目录重建两个预设的角色。受控父使用本地模型；go 模式只把目标工作台子与生成角色切到指定模型。实际路由仍须启动后捕获。",
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs:19",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs:25",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs:32",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs:41"
+      ]
+    },
+    {
+      "area": "延迟窗口",
+      "result": "实际 turn-stopping 时计算窗口，保留任务绝对期限。覆盖判定要求 released、至少 30000 毫秒及两项期限均未越过。",
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/relative-delay.mjs:41",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/relative-delay.mjs:52"
+      ]
+    },
+    {
+      "area": "取消与资源收尾",
+      "result": "持续枚举后代，限定当前 activation，观察父唤醒，并保存 3 次 Run 与媒体快照。停止应用复用已有官方生命周期；控制服务单独停止。缺陷见 R2。",
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:39",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:97",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/controlled-parent.mjs:47"
+      ]
+    }
+  ],
+  "validation": {
+    "command": "node --test .local/skills-mcp-migration-live/remaining-handoff-runtime/*.test.mjs",
+    "tests": 22,
+    "passed": 22,
+    "failed": 0,
+    "exitCode": 0,
+    "independentAdjacentChecks": 6,
+    "adjacentChecks": [
+      "重复分页记录按同 messageId 只计 1 次接纳。",
+      "行内 Session 身份优先于采集对象身份，排除其他 Session。",
+      "匹配 rpcId 却缺消息 ID 时抛出明确错误。",
+      "blocked/refusal 终态不通过取消验收。",
+      "completed/aborted 不一致终态不通过取消验收。",
+      "aborted/completed 不一致终态不通过取消验收。"
+    ],
+    "fullSuiteRun": false
+  },
+  "unprovedBoundaries": [
+    "最终候选在本轮官方运行目录的实际安装身份。",
+    "真实 SDK 同 requestId 重试去重与唯一子接纳。",
+    "真实父子取消、结算通知和父唤醒后的终态。",
+    "控制插件在官方进程的加载和真实 30 秒窗口。",
+    "实际 Profile 路由、H3 单变量输入与真实子模型行为。",
+    "最终进程、端口和控制服务释放；Run 与媒体归属。"
+  ],
+  "reviewLimit": "本次只读审查和本地测试未启动官方应用或 Provider。SDK 源码核对证明接口形状，运行行为仍由官方探针验收。",
+  "firstReview": {
+    "verdict": "需要修改 2 项验收判定；本次未通过驱动复核门禁。",
+    "officialProbeReadiness": {
+      "ready": false,
+      "reason": "先修正接纳统计与终态分类，再复核判定测试。"
+    },
+    "validation": {
+      "command": "node --test .local/skills-mcp-migration-live/remaining-handoff-runtime/*.test.mjs",
+      "tests": 13,
+      "passed": 13,
+      "failed": 0,
+      "exitCode": 0,
+      "additionalReproductions": 2,
+      "fullSuiteRun": false
+    }
+  },
+  "secondReview": {
+    "newFindings": [],
+    "validation": {
+      "command": "node --test .local/skills-mcp-migration-live/remaining-handoff-runtime/*.test.mjs",
+      "tests": 22,
+      "passed": 22,
+      "failed": 0,
+      "exitCode": 0,
+      "independentAdjacentChecks": 6,
+      "adjacentChecks": [
+        "重复分页记录按同 messageId 只计 1 次接纳。",
+        "行内 Session 身份优先于采集对象身份，排除其他 Session。",
+        "匹配 rpcId 却缺消息 ID 时抛出明确错误。",
+        "blocked/refusal 终态不通过取消验收。",
+        "completed/aborted 不一致终态不通过取消验收。",
+        "aborted/completed 不一致终态不通过取消验收。"
+      ],
+      "fullSuiteRun": false
+    },
+    "sdkCheck": "复核 SDK epochStopReason 对 completed、aborted、error、max-tokens 和 blocked 的映射。首轮已确认 5 个 SDK 模块与当前安装应用字节一致。",
+    "reviewedConsumers": [
+      "desktop-driver collect 返回 sessionId 和 records，acceptance CLI 完整传递该对象。",
+      "host CLI 对 cancellationPassed=false 返回非零退出码。"
+    ],
+    "limits": "本轮没有启动应用、Provider 或模型。74 项测试通过为实施报告记录；本审查员独立运行了 22 项驱动测试和 6 项相邻边界验证。"
+  },
+  "thirdReview": {
+    "scope": [
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs",
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.test.mjs"
+    ],
+    "verdict": "Profile 插入修复通过复核，未发现新增阻断项。可继续官方零远程模型探针。",
+    "trigger": "官方探针未激活两个控制插件。保存的补丁重放记录显示，普通 ID 补丁找不到目标条目。",
+    "causeEvidence": [
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/activation-reproduction.json",
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/activation-replay-after-fix.json"
+    ],
+    "sourceLocations": [
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs:12",
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs:21",
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/profile.mjs:49",
+      "node_modules/@deepseek-ai/cordis-plugin-include/lib/index.js:56"
+    ],
+    "verifiedBehavior": [
+      "createControlAttachment 为缺失插件生成 insert 条目，并把顶层普通控制条目改为 insert。",
+      "已存在的 insert 控制条目原位更新，重复 ID 拒绝处理。",
+      "createHandoffProfile 的 controlled 和 go 路径均复用 createControlAttachment。",
+      "业务 attach 保留原父子路由；共享 insert 中的其他插件条目保持。"
+    ],
+    "validation": {
+      "command": "node --test .local/skills-mcp-migration-live/remaining-handoff-runtime/profile.test.mjs",
+      "tests": 6,
+      "passed": 6,
+      "failed": 0,
+      "exitCode": 0,
+      "independentReplay": {
+        "profilePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-rd5vgv/runtime/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+        "parser": "@deepseek-ai/cordis-plugin-include.applyEntryPatches",
+        "mountedControlCount": 1,
+        "mountedDelayCount": 1,
+        "targetWarnings": [],
+        "inputUnchanged": true,
+        "retryIdempotent": true,
+        "nonControlEffectiveEntriesEqual": true,
+        "duplicateControlRejected": true,
+        "duplicateDelayRejected": true,
+        "sharedInsertSiblingPreserved": true
+      },
+      "reportedSuite": "实施者报告 78 项定向测试通过。本审查员本轮独立运行 6 项 Profile 测试和补丁重放。"
+    },
+    "newFindings": [],
+    "limits": [
+      "补丁重放使用空基线，验证两个控制插件的插入语义。Host 默认插件集合由启动验收核对。",
+      "插件 apply、观察事件、Inspector 地址及官方进程归属仍须启动后核对。"
+    ],
+    "applicationStarts": 0,
+    "providerStarts": 0,
+    "modelCalls": 0,
+    "implementationChanged": false
+  }
+}

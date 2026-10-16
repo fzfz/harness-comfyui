@@ -1,0 +1,182 @@
+{
+  "purpose": "独立审查来源连接恢复修复后的四角色真实模型复验。",
+  "readWhen": "核对本轮候选、真实业务结果、轨迹与清理时。",
+  "repositoryRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "evidenceRoot": ".local/skills-mcp-migration-live/source-recovery-four-role",
+  "status": "review-complete",
+  "scope": {
+    "pagination": "分页由模型自主决定，未读取全部分页不作为失败条件。",
+    "finalJudgment": "业务闭环未完成；Host 生成与媒体保存、实际视觉读取通过，观察文本存在语义缺陷，比较与主交付因执行者限额未完成。"
+  },
+  "preliminaryIdentity": {
+    "source": "candidate-source-identity.json；installed-candidate-comparison.json；pre-submit-candidate-comparison.json",
+    "packageVersion": "0.45.0",
+    "sourceCommit": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+    "dirty": true,
+    "installedFiles": 200,
+    "allMatchCandidate": true,
+    "service": "mcp-initialize.json 返回 noobai-catalog 0.90.2",
+    "repairEvidence": {
+      "source": "候选 tarball 的 package/.local/source-host/generation-runtime-DWCGKwqr.js；src/host/generation/generation-runtime.ts:1064；src/host/generation/source-client.ts:141",
+      "observed": "候选运行时代码已将 SOURCE_CONNECTION_FAILED 与 SOURCE_REQUEST_TIMEOUT 纳入远端观察阶段的 recordObservationGap 分支；当前 source-client 显式映射对应来源连接与超时错误。",
+      "boundary": "本轮真实 Run 成功完成；现有记录未展示一次来源连接故障及其恢复，成功链路本身不构成该异常分支的故障注入验收。"
+    },
+    "postExecution": "post-execution-candidate-comparison.json：200 个安装文件全部匹配候选。"
+  },
+  "input": {
+    "source": "business-input.json",
+    "sessionId": "session-b09bbc74-c77b-4d39-aaae-40fcaaafe8d6",
+    "requirement": "读取人物与故事材料，构图、生成、观察、比较并交付图片和结论；最多一轮一张。"
+  },
+  "observationStage": {
+    "status": "complete-with-semantic-findings",
+    "evidence": [
+      "observation-evidence/dispatch-event.json",
+      "observation-evidence/initial-observer-request.json",
+      "observation-evidence/observation-session-events-live.json",
+      "observation-evidence/visual-model-call.jsonl",
+      "observation-evidence/image-reader-cli-result.json",
+      "observation-evidence/actual-openrouter-call-classification.json"
+    ],
+    "mediaResolution": {
+      "runId": "run_a7c8262e-5f03-4d56-b526-f779daa20b9b",
+      "mediaId": "media_9a5fb4fa-1fd0-4926-ab89-6646b6da1203",
+      "result": "派发使用 media_id；观察模型请求已包含 Host 解析出的本地路径；该文件存在，大小 1080601 字节。"
+    },
+    "visualCall": {
+      "callId": "8b9df875-270b-4551-b388-85e2f60c7d07",
+      "model": "openrouter/thinkingmachines/inkling:free",
+      "imageParts": 1,
+      "complete": true,
+      "otherListedOpenrouterCalls": "独立读取 15 份原始调用，其中 14 份 image part=0，仅 1 份携带图片。",
+      "requestPrompt": "描述图片中可以直接观察到的人物、构图、姿态、服装、背景与光线。"
+    },
+    "findings": [
+      {
+        "id": "OBSERVATION-QUESTIONS-NOT-FORWARDED",
+        "source": "观察 seq16 已读 Skill 第3节第1项；seq50 CLI 调用；视觉 request；派发 seq82",
+        "finding": "任务传入11个具体观察问题，但 image inspect 仅传 file_path，视觉模型只收到默认通用提示词。",
+        "contractQuote": "用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。"
+      },
+      {
+        "id": "OBSERVATION-RAW-TEXT-AND-INFERENCE",
+        "source": "observation-evidence/image-reader-cli-result.json 对照 workspace-artifacts/image-task/rounds/001/observation-001.md",
+        "finding": "当前观察文件未保留 CLI observation 完整原文；逐题整理增加原文未支持的背景清晰度、受光区域、饱和度和笔触判断，并把物件未被提及推为不占显著面积。",
+        "examples": [
+          "背景清晰度中等",
+          "面部、白衬衫、桌面受光区域",
+          "饱和倾向中等偏高",
+          "笔触细腻",
+          "这些元素在当前观察中不可见或未被识别，不占据显著面积"
+        ],
+        "boundary": "最终复制文件仍包含上述扩写且未保留完整原文；比较 Agent 在已记录分析和未执行草稿中引用该文件，同时取得第二份视觉回答。没有比较文件或主交付可证明其最终取舍。"
+      },
+      {
+        "id": "OBSERVATION-BASH-ARGUMENT-RECOVERED",
+        "source": "观察 seq20/21、25/26、30/31、55/56；seq35/36、60/61",
+        "finding": "四次 Bash 调用缺少必填 description，工具均拒绝执行；后续补齐参数并成功读取合同与结果。",
+        "status": "recovered"
+      }
+    ],
+    "finalArtifact": "workspace-artifacts/image-task/rounds/001/observation-001.md"
+  },
+  "comparisonStage": {
+    "status": "incomplete-executor-limit",
+    "source": "limit-partial/265c45a8-fb4e-4d90-beb6-0ab33ba7a2f3.jsonl；limit-partial/session-events.jsonl；limit-trigger.json",
+    "supplementaryVision": {
+      "callId": "d09deb01-c633-4649-847a-1952156906a5",
+      "model": "openrouter/thinkingmachines/inkling:free",
+      "imageParts": 1,
+      "complete": true,
+      "events": "比较 seq51–57",
+      "assessment": "比较 Agent 自主传入 12 条具体问题，取得第二份视觉回答，并完成亮度和饱和度像素统计。",
+      "rawSource": "trace/model-calls/d09deb01-c633-4649-847a-1952156906a5.jsonl；trace/session-events.jsonl 比较会话 seq51–57",
+      "propagation": "原文返回12项事实，包括嘴唇微张、双臂平放台面、窗外天空与模糊绿意、未出现花朵及低饱和淡雅；比较分析及未执行写入草稿已引用。Workspace 没有补充观察独立文件或 comparison-001.md，不能认定已交付。"
+    },
+    "longCall": {
+      "requestAt": "2026-10-15T08:00:36.453Z",
+      "limitCheckAt": "2026-10-15T08:15:36.830Z",
+      "executorLimitMs": 900000,
+      "snapshotLastChunkAt": "2026-10-15T08:15:36.237Z",
+      "snapshotChunks": 5364,
+      "reasoningChunks": 1560,
+      "toolArgumentChunks": 3793,
+      "textChunks": 8,
+      "blockStarts": 3,
+      "reasoningCharacters": 8006,
+      "toolArgumentCharacters": 6361,
+      "toolArgumentStartAt": "2026-10-15T08:02:07.424Z",
+      "nativeCompletion": false,
+      "assessment": "限额快照的流式 Bash 参数拟写 comparison-001.md，末尾停在未闭合字符串；没有完整工具调用或执行结果。已记录分析围绕观察差异和画面目标推进。",
+      "finalLastChunkAt": "2026-10-15T08:15:41.794Z",
+      "finalChunks": 5380,
+      "finalToolArgumentChunks": 3809,
+      "finalToolArgumentCharacters": 6385
+    },
+    "artifactAtReview": "Workspace 存在图片、构图、生成和首观察文件，尚无 comparison-001.md；主交付未完成。",
+    "boundary": "最终原始流截至应用停止仍无 complete；流式参数无闭合，Host 比较事件止于 seq74 step/start，未产生该 Bash tool/call 或 result。"
+  },
+  "pathConvention": "evidenceRoot 下的相对路径指向本轮原始证据；源码位置相对于 repositoryRoot。",
+  "generationResult": {
+    "source": "generation-database.json；artifact-copies.json；generation-files；media；workspace-artifacts/image-task/rounds/001",
+    "status": "passed-generation-and-media-path",
+    "runCount": 1,
+    "runId": "run_a7c8262e-5f03-4d56-b526-f779daa20b9b",
+    "runStatus": "succeeded",
+    "outputCount": 1,
+    "mediaCount": 1,
+    "imageBytes": 1080601,
+    "workspaceImageEqualsHostCopy": true,
+    "oneRoundOneImage": true,
+    "assessment": "已保存真实 Run、Actual/API Workflow 和一张图片；主交付所需比较结论未完成。"
+  },
+  "traceCompleteness": {
+    "source": "trace/trace-index.json；trace/session-events.jsonl；trace/model-calls",
+    "status": "partial-with-explicit-gaps",
+    "modelRequests": 87,
+    "modelCompletes": 86,
+    "models": {
+      "opencode-go/deepseek-v4.1-flash": 71,
+      "openrouter/thinkingmachines/inkling:free": 16
+    },
+    "actualImageCalls": 2,
+    "textOnlyOpenrouterCalls": 14,
+    "hostEvents": [
+      "主会话0–94，15调用/14返回，无turn/end。",
+      "构图3–62，11调用/11返回，seq62 completed。",
+      "生成3–249，61调用/61返回，seq249 completed。",
+      "观察3–81，13调用/13返回，seq81 completed。",
+      "比较3–74，14调用/14返回，无turn/end；下一步仍流式输出工具参数。"
+    ],
+    "gaps": [
+      "5个API固定快照 unavailable。",
+      "子会话0–2未保留在Host事件文件中。",
+      "比较长调用无complete；主会话和比较会话未捕获取消终态。"
+    ],
+    "boundary": "原始 Host 事件记录了构图、生成和观察三个角色的自然完成状态。"
+  },
+  "termination": {
+    "source": "limit-trigger.json；ending.json；cancel-rpc-result.json",
+    "classification": "executor-model-call-limit",
+    "callLimitMs": 900000,
+    "triggerAt": "2026-10-15T08:15:36.830Z",
+    "cancelRequestedAt": "2026-10-15T08:15:36.893Z",
+    "stopRequestedAt": "2026-10-15T08:15:36.894Z",
+    "stopCompletedAt": "2026-10-15T08:15:42.622Z",
+    "nativeModelTimeout": false,
+    "cancelOutcome": "取消 RPC 于 08:15:42.355Z 返回 CDP WebSocket error，未取得取消接纳或完成确认；执行者已通过 official stop 停止应用。",
+    "causalBoundary": "限额时仍有工具参数片段，现有证据未证明模型自然超时、无限循环或 Skill 导致响应缓慢。"
+  },
+  "cleanup": {
+    "source": "cleanup.json；post-stop-status.json；profile-restoration.json",
+    "state": "stopped",
+    "processGroup": null,
+    "releasedPorts": [
+      56757,
+      56758,
+      56759
+    ],
+    "profileRestored": true,
+    "profileWorkspaceRunMediaRetained": true
+  }
+}

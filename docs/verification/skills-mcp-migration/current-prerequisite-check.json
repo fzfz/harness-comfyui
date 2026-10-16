@@ -1,0 +1,326 @@
+{
+  "purpose": "核对验收项5.4-3、5.5-5、5.6-5的当前真实数据前提及只读MCP查询可补齐的范围。",
+  "checkedAt": "2026-10-14T17:08:40.394308+00:00",
+  "server": {
+    "name": "noobai-catalog",
+    "version": "0.90.2"
+  },
+  "scope": {
+    "endpoint": "http://127.0.0.1:18943/mcp",
+    "credentialSource": "config/desktop-e2e.json声明的main checkout .env中的NOOBAI_MCP_TOKEN",
+    "operations": [
+      "initialize",
+      "只读tools/call"
+    ],
+    "catalogMutations": 0,
+    "applicationsStarted": 0,
+    "agentOrImageModelInvocations": 0,
+    "newScripts": 0,
+    "testedAgentContextWrites": 0,
+    "acceptanceMatrixModified": false
+  },
+  "priorSources": [
+    "docs/verification/skills-mcp-migration/acceptance-matrix.json",
+    "docs/verification/skills-mcp-migration/input-preflight-current.json",
+    "docs/verification/skills-mcp-migration/input-preflight-review.json",
+    "docs/verification/skills-mcp-migration/multiple-lora-input-review.json",
+    "docs/verification/skills-mcp-migration/multiple-lora-compile-review.json",
+    "docs/verification/skills-mcp-migration/multiple-lora-alternative-review.json"
+  ],
+  "cases": [
+    {
+      "case": "5.4-3",
+      "status": "blocked",
+      "required": "krea2底模至少两个真实画师候选，Prompt非空且画风说明符合透明水彩、淡雅蓝绿配色与细线稿请求。",
+      "currentFacts": {
+        "styles": {
+          "results": [],
+          "next": null,
+          "message": "当前查询没有符合条件的资源。"
+        },
+        "artistPromptStrings": {
+          "results": [],
+          "next": null,
+          "message": "当前查询没有符合条件的资源。"
+        }
+      },
+      "coverage": "两个查询均按krea2底模无query浏览，limit=20，next=null，覆盖当前筛选范围。",
+      "canCompletePrerequisiteWithCurrentReadOnlyQueries": false,
+      "remaining": [
+        "当前目录查询缺少可采用的两个真实候选。后续须发现满足条件的既有资源，再独立核对Prompt及画风说明。"
+      ],
+      "evidence": [
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/styles-krea2.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/artists-krea2.json"
+      ]
+    },
+    {
+      "case": "5.5-5",
+      "status": "blocked",
+      "required": "两个不同ID在固定请求语境中确实同义，具有使用数量，并由输入触发词条查询与排序。",
+      "currentFacts": {
+        "blueEyeQuery": {
+          "count": 20,
+          "page": 1,
+          "pageSize": 100,
+          "matchingRecord": {
+            "id": 12,
+            "canonical_tag": "blue_eyes",
+            "post_count": 1752918
+          },
+          "otherCandidateMeanings": [
+            "246 aqua_eyes：分类依据为青绿色眼睛。",
+            "3990 blue_pupils：蓝色瞳孔。",
+            "4991 blue_sclera：蓝色巩膜。"
+          ]
+        },
+        "swirl": {
+          "id": 9089,
+          "canonical_tag": "swirl",
+          "aliases_json": [
+            "漩涡"
+          ],
+          "category": 0,
+          "post_count": 669,
+          "classification": {
+            "dataset_version": "retrieval-v4-navigation-v1",
+            "source_id": 9089,
+            "status": "classified",
+            "reason": "",
+            "review": {
+              "status": "not_sampled",
+              "reason": "",
+              "correct_category_ids": []
+            },
+            "senses": [
+              {
+                "sense_id": "fixed",
+                "condition": "固定词义",
+                "category_ids": [
+                  "graphic_symbols"
+                ]
+              }
+            ],
+            "category_ids": [
+              "graphic_symbols"
+            ],
+            "root_ids": [
+              "nav_23"
+            ]
+          },
+          "matched_sense_ids": []
+        },
+        "vortex": {
+          "id": 17067,
+          "canonical_tag": "vortex",
+          "aliases_json": [
+            "漩涡"
+          ],
+          "category": 0,
+          "post_count": 136,
+          "classification": {
+            "dataset_version": "retrieval-v4-navigation-v1",
+            "source_id": 17067,
+            "status": "evidence_gap",
+            "reason": "漩涡需来源区分水体、能量或图形语境。",
+            "review": {
+              "status": "unresolved",
+              "reason": "当前为 evidence_gap；漩涡的水体、能量或图形载体尚未确定，不能作为 classified 通过。",
+              "correct_category_ids": []
+            },
+            "senses": [
+              {
+                "sense_id": "fixed",
+                "condition": "词义或类别证据待补充",
+                "category_ids": []
+              }
+            ],
+            "category_ids": [],
+            "root_ids": []
+          },
+          "matched_sense_ids": []
+        }
+      },
+      "semanticAssessment": [
+        "原蓝眼请求的返回记录中，blue_eyes表达目标含义；aqua_eyes颜色不同，blue_pupils与blue_sclera指定不同部位。当前证据未形成两个不同ID的同义候选。",
+        "swirl被归入graphic_symbols。vortex的当前分类为evidence_gap，审阅为unresolved，原因明确指出水体、能量或图形载体尚未确定。共享中文别名不足以证明两者均适用于衣服上的漩涡装饰。",
+        "原人物上下文已经包含blue eyes，原输入可能直接复用上下文，仍缺少能触发目标查询与排序的固定输入。"
+      ],
+      "canCompletePrerequisiteWithCurrentReadOnlyQueries": false,
+      "coverage": "复查原蓝眼请求及既有漩涡变体；蓝眼语义查询当前候选20项已全部返回。未穷举整个词条目录，结论限定于已调查输入。",
+      "remaining": [
+        "取得同一具体语境下的两个真实同义记录及其使用数量，并独立核对词义。",
+        "主线程固定能触发目录查询的输入后，再执行被测Skill。"
+      ],
+      "evidence": [
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/blue-eyes.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/swirl.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/vortex.json"
+      ]
+    },
+    {
+      "case": "5.6-5",
+      "status": "blocked",
+      "required": "完整有效Builder、兼容模型路线、实例可用的两项LoRA，以及能承载两项LoRA并通过官方完整编译的模板。",
+      "currentFacts": {
+        "originalInput": {
+          "templateId": "37",
+          "instanceId": "2",
+          "modelId": "1",
+          "loraIds": [
+            "102",
+            "89"
+          ]
+        },
+        "loraResources": [
+          {
+            "id": "69",
+            "fileName": "GTHAN-EQ.safetensors",
+            "weight": 0.8,
+            "triggerWords": [
+              "gthan"
+            ]
+          },
+          {
+            "id": "89",
+            "fileName": "GBF_Illustrious.safetensors",
+            "weight": 1,
+            "triggerWords": [
+              "gbf_style"
+            ]
+          },
+          {
+            "id": "102",
+            "fileName": "rimixxO2.safetensors",
+            "weight": 1,
+            "triggerWords": []
+          }
+        ],
+        "instanceEnumeration": {
+          "checkedAt": "2026-10-14T17:06:45.987Z",
+          "className": "LoraLoader",
+          "enumeratedCount": 100,
+          "present": [
+            "wai\\GTHAN-EQ.safetensors",
+            "wai\\GBF_Illustrious.safetensors"
+          ],
+          "original102Listed": false
+        },
+        "workflowInventory": {
+          "count": 20,
+          "next": null,
+          "waiTemplateIds": [
+            "40",
+            "37",
+            "29",
+            "28"
+          ]
+        },
+        "workflow37": "完整图只有一个mode=0的LoraLoader节点2。",
+        "workflow28And29": "完整图均无LoRA加载节点。",
+        "workflow40": {
+          "multipleLoraNode": {
+            "id": 27,
+            "type": "Power Lora Loader (rgthree)",
+            "mode": 0
+          },
+          "structurallyEqualToPriorCompileInput": true,
+          "priorCompileFailure": {
+            "code": "COMFYUI_API_WORKFLOW_OVERLAY_FAILED",
+            "node": "3",
+            "input": "wildcard_text",
+            "officialValue": [
+              "40",
+              0
+            ],
+            "runtimeValueKind": "string"
+          },
+          "currentCompileRerun": false
+        },
+        "workflow42": "完整图有两个mode=0的LoraLoaderModelOnly节点27、29，默认模型11。",
+        "krea2Models": [
+          {
+            "id": "13",
+            "skill_name": null
+          },
+          {
+            "id": "12",
+            "skill_name": null
+          },
+          {
+            "id": "11",
+            "skill_name": null
+          },
+          {
+            "id": "10",
+            "skill_name": null
+          },
+          {
+            "id": "6",
+            "skill_name": null
+          }
+        ],
+        "krea2ModelsNext": null,
+        "waiModelSkillName": "wai-sdxl-prompt-builder",
+        "previouslyReviewedWaiBuilder": {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+          "exists": true,
+          "review": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/wai-remaining-builder-review.json",
+          "revalidatedInThisInvestigation": false
+        }
+      },
+      "priorEvidenceCorrections": [
+        "multiple-lora-input-review.json已经解除单值weight的CLIP字段阻塞；矩阵仍要求用户明确strength_clip的文字与该报告不一致。",
+        "同一报告已认可5.5-2保存的WAI Builder，当前文件仍存在。其对当前候选的适用性须按当前验收流程核对，不能继续笼统记为完全没有Builder。",
+        "原列表102、89的位置替换为69、89；矩阵记录89、69会额外改变顺序。既有模板40编译记录使用69、89。"
+      ],
+      "canCompletePrerequisiteWithCurrentReadOnlyQueries": false,
+      "remaining": [
+        "原模板37的单槽容量仍阻止两项LoRA；仅替换102无法补齐。",
+        "模板40尚缺完整官方编译成功证据。此次确认目录图与旧失败输入一致；当前应用、节点运行版本及编译行为未重跑，旧失败保留为尚未解除的前提，不能当作本轮复现。",
+        "Krea2模板42路线的五个可见模型skill_name仍全部为空，且既有替代路线报告未提供可直接采用的有效Krea2 Builder。",
+        "通过适用Builder、模板参数与完整编译验收后，再验证实际请求和Actual Workflow中的两项LoRA。"
+      ],
+      "coverage": "当前查询核对原WAI输入、既有WAI模板40替代及Krea2模板42替代。未调查其他底模的新路线；目录查询无法替代官方完整编译或真实Builder执行。",
+      "evidence": [
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflows.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-37.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-40.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-42.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-28.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-29.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/model-1.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/models-krea2.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-69.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-89.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-102.json",
+        ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-loader.json",
+        "docs/verification/skills-mcp-migration/multiple-lora-input-review.json",
+        "docs/verification/skills-mcp-migration/multiple-lora-compile-review.json",
+        "docs/verification/skills-mcp-migration/multiple-lora-alternative-review.json"
+      ]
+    }
+  ],
+  "rawResponses": [
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/artists-krea2.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/blue-eyes.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/initialize-detail.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/initialize.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-102.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-69.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-89.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/lora-loader.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/model-1.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/models-krea2.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/styles-krea2.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/swirl.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/vortex.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-28.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-29.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-37.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-40.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflow-42.json",
+    ".local/mcp-investigation/2026-10-15-implementation/prerequisites/workflows.json"
+  ],
+  "conclusion": "三个已调查验收项继续受前提阻塞。当前0.90.2只读查询补充了资源和分类证据，尚未补齐任一项的完整执行前提。主线程可据此更新阻塞说明，并保持输入和被测Agent上下文的隔离。"
+}

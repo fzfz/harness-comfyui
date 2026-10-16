@@ -1,0 +1,70 @@
+{
+  "purpose": "记录观察媒体解析增量的独立 Standards 与简化审查。",
+  "readWhen": "主线程判断候选实现是否需要修改时。",
+  "verdict": "未发现硬性违反或值得实施的简化项。",
+  "hardViolations": [],
+  "suggestions": [],
+  "scope": {
+    "head": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+    "baseline": ".local/skills-mcp-migration-live/source-diagnostic-candidate.tgz",
+    "reviewedFiles": [
+      "src/host/generation/observation-media.ts",
+      "src/host/core/schema.ts",
+      "src/host/core/plugin.ts",
+      "agent-presets/project-iteration-dispatch.mjs",
+      "agent-presets/project-observation-dispatch.mjs",
+      "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "config/plugin-runtime-resources.json",
+      ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "tests/unit/observation-media.test.ts",
+      "tests/unit/fixtures/observation-media-runtime.ts",
+      "tests/integration/host-plugin.test.ts",
+      "tests/production/native-iteration-roles.test.mjs",
+      "tests/production/official-mcp-acceptance.test.mjs",
+      "tests/production/source-agent-preset.test.mjs",
+      "tests/production/fixtures/project-subagent-control-runtime.mjs",
+      "docs/verification/skills-mcp-migration/observation-media-implementation.json"
+    ]
+  },
+  "evidence": [
+    {
+      "location": "src/host/generation/observation-media.ts:18",
+      "result": "解析函数复用身份核验、Runtime 媒体查询和查询上限。函数保留引用顺序及重复项，仅输出媒体身份和路径。"
+    },
+    {
+      "location": "src/host/core/plugin.ts:151",
+      "result": "Core 绑定当前 Runtime 与 WorkspaceRegistry。适配器通过服务接口访问媒体。"
+    },
+    {
+      "location": "agent-presets/project-observation-dispatch.mjs:6",
+      "result": "适配器仅替换 images。共享派发在创建完成监听器前准备参数并检查取消。"
+    },
+    {
+      "location": "agent-presets/project-iteration-dispatch.mjs:102",
+      "result": "准备失败时尚未创建监听器或派发子会话。创建、续派、接纳身份和清理继续复用原生命周期。"
+    },
+    {
+      "location": ".agents/skills/comfyui-iterate-generation/SKILL.md:39",
+      "result": "Skill、交接记录与角色配置一致采用 run_id 和 media_id。资源清单包含观察适配器。"
+    }
+  ],
+  "verification": {
+    "method": "只读审查包内资源差异、当前源码、测试和已有日志。",
+    "existingResults": [
+      "targeted-tests.log：13 个测试文件、241 项测试通过。",
+      "final-changed-tests.log：3 个测试文件、81 项测试通过。"
+    ],
+    "evidenceDirectory": ".local/skills-mcp-migration-live/observation-media-targets/",
+    "testsRunByReviewer": 0,
+    "applicationStarts": 0,
+    "modelCalls": 0
+  },
+  "limits": [
+    "基准包不含 src 和 tests，无法直接比较这两类文件与该包的源码差异。源码审查结合当前实现、HEAD 差异与调用合同。",
+    "本次未验证官方 ToolRuntime 和真实模型；已有日志来自定向测试。"
+  ],
+  "changedFiles": [
+    "docs/verification/skills-mcp-migration/observation-media-standards-review.json"
+  ]
+}

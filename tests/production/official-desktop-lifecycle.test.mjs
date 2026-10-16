@@ -214,7 +214,6 @@ describe('official Desktop lifecycle fixture configuration', () => {
         revisionQueryPrefix: '&rev=',
         revisionPattern: '^[a-f0-9]{12}$',
         moduleRoutePattern: '^(?:@deepseek-ai/[a-z0-9][a-z0-9-]*|harness-comfyui)/client\\.js$',
-        candidateModuleMustBeLast: true,
         moduleMapSuffix: '.map',
         sourceUrlDirectivePrefix: '//# sourceURL=',
         sourceUrlDirectiveValuePattern: '+',

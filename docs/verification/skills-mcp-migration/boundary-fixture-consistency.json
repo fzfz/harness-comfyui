@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-14",
+  "scenario": "no-default-model",
+  "change": "同一Workflow搜索结果和详情model均为空，其他Workflow及节点原文保持原值",
+  "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture.mjs",
+  "test": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+  "red": "搜索结果model仍为{id:1,name:default}，预期null",
+  "green": {
+    "tests": 9,
+    "passed": 9
+  },
+  "liveAcceptance": "pending"
+}

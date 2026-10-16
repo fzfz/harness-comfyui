@@ -1,4 +1,9 @@
 # Configure each image role and its task message template.
+- id: noobai-mcp
+  name: cordis:include
+  config:
+    path: ../noobai-mcp.cordis.yml
+
 - id: project-tool-visibility
   name: ../project-tool-visibility.mjs
   config:
@@ -11,12 +16,13 @@
       - harness:identity
       - harness:source
       - app:web-surface
+      - ui:deliverable-file-references
 
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
     prefix: >-
-      You are the main Agent for the user's image task. Use comfyui-iterate-generation to dispatch composition, generation, independent observation and comparison. Assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Ask the user only for consequential decisions the material cannot reasonably resolve. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. In this preset, use Goal tools only for a Goal the user has started with /goal. Use get_goal to read that Goal and update_goal to mark it complete once its objective is achieved; leave Goal creation, editing, pausing and resuming to the user. Reply in the user's language.
+      You are the main Agent for the user's ComfyUI task. Select and read the project Skill whose description matches the user's request, and follow that Skill's task scope and deliverable requirements. When the request matches the description of comfyui-iterate-generation, use that Skill to dispatch composition, generation, independent observation and comparison. For that iteration task, assign the concrete input and output file paths using the Skill's records reference, read completed results and pass the relevant files to the next task. Keep the image goal and essential elements throughout prompt revisions. Handle missing inputs and user choices according to the handoff rules in comfyui-iterate-generation. Deliver the image and supporting comparison findings when the comparison confirms that the same image satisfies the image goal, essential elements and user requirements. In this preset, use Goal tools only for a Goal the user has started with /goal. Use get_goal to read that Goal and update_goal to mark it complete once its objective is achieved; leave Goal creation, editing, pausing and resuming to the user. Reply in the user's language.
 
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'
@@ -60,7 +66,7 @@
   config:
     provider: spawn
     toolName: subagent_composition
-    description: "向构图 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    description: "向构图 Agent 派发任务。工具等待本次子任务结束后返回：首次返回子会话 ID，后续返回消息 ID。原生通知提供状态和最终答复；中断后可用 list_agents 找回已有子会话。"
     parameters:
       type: object
       properties:
@@ -95,7 +101,7 @@
           type: array
           items:
             type: string
-          description: 对应角色参考文档的完整路径。
+          description: 构图 Agent 参考文档的完整路径。
         output_files:
           type: array
           items:
@@ -182,7 +188,7 @@
   config:
     provider: spawn
     toolName: subagent_generation
-    description: "向生成 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    description: "向生成 Agent 派发任务。工具等待本次子任务结束后返回：首次返回子会话 ID，后续返回消息 ID。原生通知提供状态和最终答复；中断后可用 list_agents 找回已有子会话。"
     parameters:
       type: object
       properties:
@@ -217,7 +223,7 @@
           type: array
           items:
             type: string
-          description: 对应角色参考文档的完整路径。
+          description: 生成 Agent 参考文档的完整路径。
         output_files:
           type: array
           items:
@@ -304,14 +310,14 @@
       2. Use comfyui-generate to inspect the selected Workflow, actual model and LoRA configuration. Read the actual model's Prompt Builder and construct the complete Builder JSON. Use its test image size and an aspect ratio suited to the composition. For a revision, make small prompt changes addressing the observed failures while preserving the image goal, essential elements and user requirements.
       3. Save the complete Builder JSON to the file specified in the task. Use comfyui-generate to submit the image with that JSON according to its input instructions. If comfyui-generate requires the saved Builder JSON as input in a new task message, report its file path and request that JSON content from the parent Agent; use the received JSON for submission.
       4. Use the returned Run IDs to query the actual generation parameters and image paths with the supplied Run query reference. Run IDs identify actual image-generation records.
-      5. Write the actual prompt, generation parameters or saved record paths, Run IDs, actual image paths and changes made to the result file specified in the task. Return only the specified Builder JSON and result file paths. If generation or querying fails, report the actual error.
+      5. Write the actual prompt, generation parameters or saved record paths, Run IDs, media IDs, actual image paths and changes made to the result file specified in the task. After generation and querying succeed, return only the specified Builder JSON and result file paths. If generation or querying fails, report the actual error.
 
 - id: observation-agent
-  name: ../project-iteration-dispatch.mjs
+  name: ../project-observation-dispatch.mjs
   config:
     provider: spawn
     toolName: subagent_observation
-    description: "向观察 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    description: "向观察 Agent 派发任务。工具等待本次子任务结束后返回：首次返回子会话 ID，后续返回消息 ID。原生通知提供状态和最终答复；中断后可用 list_agents 找回已有子会话。"
     parameters:
       type: object
       properties:
@@ -342,14 +348,14 @@
           items:
             type: object
             properties:
-              path:
+              media_id:
                 type: string
-                description: 实际图片的完整路径。
+                description: 该生成记录中需要观察的媒体 ID。
               run_id:
                 type: string
                 description: 该图片所属生成记录的 Run ID。
             required:
-              - path
+              - media_id
               - run_id
             additionalProperties: false
           description: 需要独立观察的实际图片。
@@ -412,7 +418,7 @@
         - create_goal
         - update_goal
     persona: |-
-      You are the observation Agent. Use the Skills named below and the references supplied with the task.
+      You are the observation Agent. Use the Skills named below.
 
       1. Read the supplied image paths, their Run ID correspondence and neutral observation questions. Run IDs associate images with their generation records.
       2. Use local-image-reader to observe the supplied images. Phrase questions about visible content without suggesting expected answers.
@@ -423,7 +429,7 @@
   config:
     provider: spawn
     toolName: subagent_comparison
-    description: "向比较 Agent 派发任务。首次省略 agent_id，后续填写原 subagentId。首次返回子会话 ID，后续返回消息 ID；任务结束后由原生通知返回状态和最终答复。"
+    description: "向比较 Agent 派发任务。工具等待本次子任务结束后返回：首次返回子会话 ID，后续返回消息 ID。原生通知提供状态和最终答复；中断后可用 list_agents 找回已有子会话。"
     parameters:
       type: object
       properties:
@@ -458,7 +464,7 @@
           type: array
           items:
             type: string
-          description: 对应角色参考文档的完整路径。
+          description: 比较 Agent 参考文档的完整路径。
         output_files:
           type: array
           items:
@@ -541,7 +547,10 @@
       4. Write the per-image findings, supporting observations, remaining uncertainties and correction recommendations to the file specified in the task. Return only that file path.
 
 - id: tool-subagent-control
-  name: '@deepseek-ai/dsh-tool-subagent-control'
+  name: ../project-subagent-control.mjs
+
+- id: tool-subagent-list
+  name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
 
 - id: compaction
   name: cordis:group

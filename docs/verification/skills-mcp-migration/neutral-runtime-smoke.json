@@ -1,0 +1,265 @@
+{
+  "purpose": "记录 Couejk 官方 Desktop 无模型烟测的安装、配置、Remote 读取、候选文件一致性与清理结果。",
+  "recordedAt": "2026-10-14T06:51:15.686Z",
+  "verdict": "PASS",
+  "authorization": "父任务在独立 neutral-runtime-review.json 通过后派发官方无模型烟测。",
+  "independentReview": "docs/verification/skills-mcp-migration/neutral-runtime-review.json",
+  "scenario": "preparation-smoke",
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/state.json",
+  "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk",
+  "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime",
+  "controlRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk",
+  "candidateSourcePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/presentation-visibility-candidate.tgz",
+  "candidateRuntimePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/harness-comfyui-candidate.tgz",
+  "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+  "sequence": [
+    "start",
+    "install",
+    "stop",
+    "configure",
+    "start",
+    "status",
+    "capture",
+    "sourceAddress",
+    "imageReaderConfiguration",
+    "imageReaderModels",
+    "candidateByteComparison",
+    "stop",
+    "cleanupVerification"
+  ],
+  "checks": {
+    "independentReviewPassed": true,
+    "officialPluginInstalledAndEnabled": true,
+    "officialInstallEvidenceComplete": true,
+    "twoOfficialApplicationStarts": true,
+    "externalProbeCaptureSucceeded": true,
+    "twoProjectPresetsDiscovered": true,
+    "liveModelConfigurationMatchesSelection": true,
+    "profileRoleOptionsMatchSelection": true,
+    "all198InstalledFilesEqualCandidate": true,
+    "zeroObservedModelRequests": true,
+    "allOwnProcessGroupsAbsent": true,
+    "allAssignedPortsReleased": true,
+    "singletonSocketHasNoOwner": true,
+    "probeArchivesIdentical": true,
+    "runtimeModuleSymlinksRemainApproved": true,
+    "effectiveLaunchCwdAndDshDirectoriesMatchRuntime": true,
+    "requiredCredentialNamesPresent": true
+  },
+  "officialApplicationRuns": [
+    {
+      "runId": "92b7fd50-47ac-4538-82fa-0dc7da423c28",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "ports": [
+        {
+          "port": 63889,
+          "pids": []
+        },
+        {
+          "port": 63893,
+          "pids": []
+        },
+        {
+          "port": 63894,
+          "pids": []
+        }
+      ],
+      "portsReleased": true,
+      "application": {
+        "bundlePath": "/Applications/DeepSeek Harness.app",
+        "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+        "version": "0.2.0-rc.2",
+        "bundleId": "com.deepseek.dsh"
+      },
+      "pid": 70177,
+      "processGroupId": 70177,
+      "archivedProbeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/probe-runs/92b7fd50-47ac-4538-82fa-0dc7da423c28",
+      "archivedObserverDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/observer-calls/92b7fd50-47ac-4538-82fa-0dc7da423c28",
+      "archivedRecordBytesEqual": true
+    },
+    {
+      "runId": "bb6a6321-3f82-446e-8ab7-f23aec614aa7",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "ports": [
+        {
+          "port": 64686,
+          "pids": []
+        },
+        {
+          "port": 64687,
+          "pids": []
+        },
+        {
+          "port": 64688,
+          "pids": []
+        }
+      ],
+      "portsReleased": true,
+      "application": {
+        "bundlePath": "/Applications/DeepSeek Harness.app",
+        "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+        "version": "0.2.0-rc.2",
+        "bundleId": "com.deepseek.dsh"
+      },
+      "pid": 76330,
+      "processGroupId": 76330,
+      "archivedProbeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/probe-runs/bb6a6321-3f82-446e-8ab7-f23aec614aa7",
+      "archivedObserverDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/observer-calls/bb6a6321-3f82-446e-8ab7-f23aec614aa7",
+      "archivedRecordBytesEqual": true
+    }
+  ],
+  "plugin": {
+    "status": "installed",
+    "enabled": true,
+    "evidenceComplete": true,
+    "resultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/install-result-92b7fd50-47ac-4538-82fa-0dc7da423c28.json"
+  },
+  "effectiveConfiguration": {
+    "textModel": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    "textMaxTokens": 32768,
+    "imageReader": {
+      "id": "skills-migration-inkling",
+      "provider": "openrouter",
+      "model": "thinkingmachines/inkling:free",
+      "connectionType": "runtime",
+      "maxTokens": 8192
+    },
+    "sourceAddress": {
+      "url": "http://127.0.0.1",
+      "port": 18093
+    },
+    "projectPresetIds": [
+      "harness-comfyui-cli-candidate",
+      "harness-comfyui-iteration"
+    ],
+    "profileRoles": [
+      {
+        "id": "composition-agent",
+        "agentOptions": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        }
+      },
+      {
+        "id": "generation-agent",
+        "agentOptions": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        }
+      },
+      {
+        "id": "observation-agent",
+        "agentOptions": {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      },
+      {
+        "id": "comparison-agent",
+        "agentOptions": {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        }
+      }
+    ]
+  },
+  "actualLaunchEnvironment": [
+    {
+      "auditPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/launch-environment-95a5c410-fc79-4fd4-b73b-06584df575bd.json",
+      "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/workspace",
+      "effectiveCredentialNames": [
+        "OPENROUTER_API_KEY",
+        "OPENCODE_GO_API_KEY",
+        "NOOBAI_MCP_TOKEN"
+      ],
+      "removedNames": [
+        "OLDPWD"
+      ],
+      "pwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/workspace",
+      "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/dsh-home",
+      "userData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/user-data"
+    },
+    {
+      "auditPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/launch-environment-cedec08e-11c8-46af-8389-39768c631cca.json",
+      "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/workspace",
+      "effectiveCredentialNames": [
+        "OPENROUTER_API_KEY",
+        "OPENCODE_GO_API_KEY",
+        "NOOBAI_MCP_TOKEN"
+      ],
+      "removedNames": [
+        "OLDPWD"
+      ],
+      "pwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/workspace",
+      "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/dsh-home",
+      "userData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Couejk/runtime/environment/user-data"
+    }
+  ],
+  "modelActivity": {
+    "observerFiles": [],
+    "modelRequests": 0,
+    "generationSubmits": 0,
+    "driverCommands": [
+      "capture",
+      "remote"
+    ],
+    "evidenceBasis": "本轮只读取预设、设置、数据源和模型目录；observer 在两次启动期间均保留原始空日志目录。"
+  },
+  "candidateVerification": {
+    "fileCount": 198,
+    "allByteEqual": true,
+    "method": "tar 成员逐项读取，与安装后文件执行 Buffer.equals；198 个安装文件的 realpath 均位于 R。",
+    "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/installed-candidate-comparison.json"
+  },
+  "evidence": {
+    "captureIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/desktop-capture-index.json",
+    "effectiveConfigurationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/smoke-effective-configuration.json",
+    "actualLaunchAuditsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/actual-launch-audits.json",
+    "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/smoke-cleanup-verification.json",
+    "commandLogs": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/smoke-start-1.log",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/smoke-install.log",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/smoke-stop-1.log",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/smoke-configure.log",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/smoke-start-2.log",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/smoke-status.log",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/smoke-stop-2.log"
+    ],
+    "archives": [
+      {
+        "runId": "92b7fd50-47ac-4538-82fa-0dc7da423c28",
+        "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/probe-runs/92b7fd50-47ac-4538-82fa-0dc7da423c28",
+        "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/observer-calls/92b7fd50-47ac-4538-82fa-0dc7da423c28",
+        "archivedAt": "2026-10-14T06:42:10.497Z"
+      },
+      {
+        "runId": "bb6a6321-3f82-446e-8ab7-f23aec614aa7",
+        "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/probe-runs/bb6a6321-3f82-446e-8ab7-f23aec614aa7",
+        "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/observer-calls/bb6a6321-3f82-446e-8ab7-f23aec614aa7",
+        "archivedAt": "2026-10-14T06:47:05.568Z"
+      }
+    ]
+  },
+  "evidenceCollectionObservation": {
+    "firstSymlinkInventoryPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-Couejk/symlink-inventory-first-attempt.json",
+    "observation": "停止后，官方 user-data 保留悬空 SingletonCookie、SingletonLock，以及没有持有进程的 SingletonSocket 路径。清单已记录这些官方生命周期链接；运行模块的 semver 链接解析到 R。",
+    "officialStartupOrInstallFailures": 0
+  },
+  "finalState": {
+    "status": "stopped",
+    "processGroupsPresent": false,
+    "assignedPortsReleased": true,
+    "runtimePreserved": true,
+    "controlEvidencePreserved": true
+  },
+  "scope": "本轮验证官方安装与运行资料驱动。真实主子 Agent 的请求、工具返回、shell 访问路径和业务结果由后续全新场景完整取证。",
+  "nextConsumer": "H4 和 Builder 各场景重新 prepare；主线程分别派发安装，不复用 Couejk 的运行历史。",
+  "productSourceChanges": 0,
+  "officialSdkChanges": 0,
+  "driverRepairsDuringSmoke": 0
+}

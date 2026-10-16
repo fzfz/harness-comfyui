@@ -1,0 +1,62 @@
+{
+  "purpose": "记录两个预设的官方受控请求及宿主控制验收结果。",
+  "readWhen": "复核交接驱动的官方运行或准备真实模型验收时。",
+  "attempts": [
+    {
+      "runtimeState": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-1-state.json",
+      "officialRunId": "0a3f7adb-cd98-4fc5-b69c-90e4668fa4e9",
+      "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/observation-media-candidate.tgz",
+      "remoteModelCalls": 0,
+      "cases": [
+        {
+          "id": "zero-workbench",
+          "sessionId": "session-ddea8f4a-8eab-4793-b9e3-f66e3e153870",
+          "requestId": "d3ef7c9a-bba2-43cd-b918-cc75214d7859",
+          "promptJournal": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/zero-workbench-prompt.json",
+          "acceptanceEvidence": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/zero-workbench-acceptance.json",
+          "uniqueAcceptanceCount": 1,
+          "historyEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/0a3f7adb-cd98-4fc5-b69c-90e4668fa4e9/1791986078945-88d08b36-a31c-45d5-a6c2-c11559287604-collect.json"
+        },
+        {
+          "id": "zero-iteration",
+          "sessionId": "session-634848d7-9a7e-496c-8bfc-a19a4374664f",
+          "requestId": "50ba9aae-140e-4dbc-819b-377d9d569d81",
+          "promptJournal": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/zero-iteration-prompt.json",
+          "acceptanceEvidence": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/zero-iteration-acceptance.json",
+          "uniqueAcceptanceCount": 1,
+          "historyEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/0a3f7adb-cd98-4fc5-b69c-90e4668fa4e9/1791986079537-104736be-7a36-4c99-b2ae-37c15c00857f-collect.json"
+        }
+      ],
+      "observedFailure": {
+        "command": "remaining-handoff-runtime/run.mjs host --state <state.json> --input <zero-*-snapshot-input.json>",
+        "message": "HOST_IDENTITY_UNVERIFIED",
+        "eventFilePresent": false,
+        "inspectorListening": false,
+        "causeStatus": "reproduced-with-official-patch-parser",
+        "cause": "驱动将新增 runtime-control 与 relative-delay 模块写为普通顶层 patch，官方 applyEntryPatches 返回 entry not found，两模块没有进入有效配置。",
+        "causeEvidence": ".local/skills-mcp-migration-live/remaining-handoff-runtime/activation-reproduction.json"
+      },
+      "acceptance": {
+        "requestIdentity": "observed-one-message-per-parent-independent-review-pending",
+        "taskTreeCancellation": "not-executed",
+        "notificationDelay": "not-executed"
+      },
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "cleanupMethod": "remote.session.cancel for both parents, then owned official Desktop stop",
+      "limitations": [
+        "子任务随应用停止中断；本轮没有验证 interrupt_agent 的取消终态。"
+      ],
+      "providerCleanup": {
+        "pid": 49392,
+        "port": 55179,
+        "termination": "SIGTERM after command identity check",
+        "listenerPresent": false
+      },
+      "profileSnapshot": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-1-profile.patch.yml"
+    }
+  ],
+  "status": "runtime-control-blocked"
+}

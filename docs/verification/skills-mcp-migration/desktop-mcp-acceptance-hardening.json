@@ -1,0 +1,56 @@
+{
+  "scope": "Independent Spec review findings SPEC-CODE-1 and SPEC-CODE-2",
+  "review": "docs/verification/skills-mcp-migration/code-spec-review.json",
+  "implementation": {
+    "same_host_recovery": [
+      "Require one successful reactivation result for each project Preset after unreachable service recovery.",
+      "Require each recovered project Session to complete the two controlled MCP calls and receive the Workflow result.",
+      "Persist same-Host reactivation results before assertions so failures remain visible.",
+      "Distinguish same-Host Preset reactivation from application restart after environment updates."
+    ],
+    "project_scope": [
+      "Assert both project main Sessions declare controlled MCP tools and omit the four Host-global Catalog tools.",
+      "Create five native child cases: workbench task child plus composition, generation, observation and comparison role children.",
+      "Require exactly the selected parent dispatch tool, inherited controlled model, child MCP declarations, absence of Host-global Catalog and recursive dispatch tools, and two successful MCP calls per child.",
+      "Persist child model tool declarations, parent tool results, model identity and per-child MCP calls."
+    ],
+    "ordinary_presets": {
+      "mcp_isolation": "Existing controlled MCP absence assertion is preserved.",
+      "native_presentation": "Require all four Host-global Catalog tool declarations when ordinary Preset model tools do not contain run_code.",
+      "ptc_presentation": "Preserve actual tools and system messages for follow-up verification; positive Host-global Catalog visibility is NOT considered verified by this branch."
+    }
+  },
+  "changed_files": [
+    "tests/desktop/official-desktop-live.test.mjs",
+    "tests/desktop/fixtures/official-business-services.mjs",
+    "tests/desktop/fixtures/official-mcp-acceptance.mjs",
+    "tests/production/official-mcp-acceptance.test.mjs"
+  ],
+  "tdd": [
+    {
+      "boundary": "Recovery activation result and native model Tool declaration assertions",
+      "red": "New acceptance assertions were absent; production test failed to import the fixture module.",
+      "green": "Two tests passed, including both project reactivations failing, one failing, missing/duplicate results, missing MCP declarations and four individual Host tool leaks."
+    },
+    {
+      "boundary": "Controlled Provider response using actual iteration role Tool schemas",
+      "red": "Controlled Provider emitted no dispatch call for iteration role scope prompts; test expected one call and received zero.",
+      "green": "All four role dispatches emitted the selected Tool with inputs accepted by its actual product JSON schema."
+    }
+  ],
+  "validation": {
+    "command": "pnpm exec vitest run tests/production/official-mcp-acceptance.test.mjs tests/production/official-mcp-services.test.mjs tests/production/native-iteration-roles.test.mjs tests/production/native-workbench-subagent.test.mjs tests/desktop/fixtures/official-business-fixture.test.mjs --maxWorkers=1 --no-file-parallelism",
+    "completed_at_local": "2026-10-14 11:03:51 Asia/Shanghai",
+    "exitCode": 0,
+    "testFilesPassed": 5,
+    "testsPassed": 42,
+    "syntax_checks": "node --check passed for the live test, controlled business service and MCP acceptance fixture.",
+    "diff_check": "git diff --check passed.",
+    "desktop_started": false,
+    "desktop_acceptance_claim": false
+  },
+  "remaining": [
+    "Run official Desktop recovery and five child-scope cases against the final installed candidate.",
+    "Observe ordinary Preset actual model inputs; if PTC is used, verify the real PTC Tool declaration structure for all four Host-global Catalog tools before marking positive visibility acceptance complete."
+  ]
+}

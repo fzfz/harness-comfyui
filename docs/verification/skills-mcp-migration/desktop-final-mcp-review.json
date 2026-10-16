@@ -1,0 +1,397 @@
+{
+  "purpose": "独立复审官方 Desktop MCP 自动回归的恢复行为、工具作用域、模型身份及资源释放。",
+  "reviewedAt": "2026-10-14",
+  "verdict": "在本报告限定的官方 Desktop 受控自动回归范围内通过，未发现阻断该范围验收的实质问题。",
+  "materialFindings": [],
+  "applicationStartedByReviewer": false,
+  "codeModified": false,
+  "specSources": [
+    "docs/plans/skills-mcp-migration-20261013.md:123",
+    "docs/plans/skills-mcp-migration-20261013.md:157",
+    "docs/system/configuration.md:63"
+  ],
+  "implementationSources": [
+    "tests/desktop/official-desktop-live.test.mjs:814-903",
+    "tests/desktop/official-desktop-live.test.mjs:905-1011",
+    "tests/desktop/fixtures/official-mcp-acceptance.mjs:3-36",
+    "tests/desktop/official-desktop-live.test.mjs:179-204"
+  ],
+  "log": {
+    "file": ".local/skills-mcp-migration-live/desktop-final-scope-check.log",
+    "testFilesPassed": 13,
+    "testsPassed": 269,
+    "executionByReviewer": false
+  },
+  "recovery": {
+    "conclusion": "三类故障均完成 failed/recovered 两阶段。失败阶段两个项目预设返回 agent-preset/invalid，三个普通预设可创建。恢复阶段使用不同应用 PID，两项目各执行 search_workflows、get_catalog_resource，HTTP 与 MCP 结果成功且结果进入模型请求。",
+    "contractJudgment": "应用重启恢复符合当前第 5.2 节第 1 项；用户原始要求没有同进程限制。实现保留两个项目预设完整覆盖、成功及实际查询断言。",
+    "cases": [
+      {
+        "failure": "invalid-credential",
+        "phase": "failed",
+        "runId": "d68b8c67-dde0-4efd-a56d-f8256e6354b7",
+        "pid": 87186,
+        "file": ".local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79/d68b8c67-dde0-4efd-a56d-f8256e6354b7/official-business-mcp-activation.json",
+        "projectResults": [
+          {
+            "presetId": "harness-comfyui-cli-candidate",
+            "ok": false,
+            "errorCode": "agent-preset/invalid"
+          },
+          {
+            "presetId": "harness-comfyui-iteration",
+            "ok": false,
+            "errorCode": "agent-preset/invalid"
+          }
+        ],
+        "ordinaryPresetsSucceeded": true,
+        "workflowCount": 0,
+        "models": [],
+        "allQueriesSuccessful": true,
+        "allWorkflowResultsReceived": true
+      },
+      {
+        "failure": "invalid-credential",
+        "phase": "recovered",
+        "runId": "84539495-3878-4a9e-9ffd-c48230561232",
+        "pid": 94127,
+        "file": ".local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79/84539495-3878-4a9e-9ffd-c48230561232/official-business-mcp-activation.json",
+        "projectResults": [
+          {
+            "presetId": "harness-comfyui-cli-candidate",
+            "ok": true,
+            "errorCode": null
+          },
+          {
+            "presetId": "harness-comfyui-iteration",
+            "ok": true,
+            "errorCode": null
+          }
+        ],
+        "ordinaryPresetsSucceeded": true,
+        "workflowCount": 2,
+        "models": [
+          "desktop-prompt-capture-model"
+        ],
+        "allQueriesSuccessful": true,
+        "allWorkflowResultsReceived": true
+      },
+      {
+        "failure": "missing-credential",
+        "phase": "failed",
+        "runId": "97017742-fece-4a94-b1f4-a93f7b109656",
+        "pid": 73357,
+        "file": ".local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79/97017742-fece-4a94-b1f4-a93f7b109656/official-business-mcp-activation.json",
+        "projectResults": [
+          {
+            "presetId": "harness-comfyui-cli-candidate",
+            "ok": false,
+            "errorCode": "agent-preset/invalid"
+          },
+          {
+            "presetId": "harness-comfyui-iteration",
+            "ok": false,
+            "errorCode": "agent-preset/invalid"
+          }
+        ],
+        "ordinaryPresetsSucceeded": true,
+        "workflowCount": 0,
+        "models": [],
+        "allQueriesSuccessful": true,
+        "allWorkflowResultsReceived": true
+      },
+      {
+        "failure": "missing-credential",
+        "phase": "recovered",
+        "runId": "fed33e26-a006-4cc9-81e3-307b63bba0fa",
+        "pid": 80359,
+        "file": ".local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79/fed33e26-a006-4cc9-81e3-307b63bba0fa/official-business-mcp-activation.json",
+        "projectResults": [
+          {
+            "presetId": "harness-comfyui-cli-candidate",
+            "ok": true,
+            "errorCode": null
+          },
+          {
+            "presetId": "harness-comfyui-iteration",
+            "ok": true,
+            "errorCode": null
+          }
+        ],
+        "ordinaryPresetsSucceeded": true,
+        "workflowCount": 2,
+        "models": [
+          "desktop-prompt-capture-model"
+        ],
+        "allQueriesSuccessful": true,
+        "allWorkflowResultsReceived": true
+      },
+      {
+        "failure": "unreachable",
+        "phase": "failed",
+        "runId": "3799857f-f2a6-40f5-99e2-61942af8ad54",
+        "pid": 1404,
+        "file": ".local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79/3799857f-f2a6-40f5-99e2-61942af8ad54/official-business-mcp-activation.json",
+        "projectResults": [
+          {
+            "presetId": "harness-comfyui-cli-candidate",
+            "ok": false,
+            "errorCode": "agent-preset/invalid"
+          },
+          {
+            "presetId": "harness-comfyui-iteration",
+            "ok": false,
+            "errorCode": "agent-preset/invalid"
+          }
+        ],
+        "ordinaryPresetsSucceeded": true,
+        "workflowCount": 0,
+        "models": [],
+        "allQueriesSuccessful": true,
+        "allWorkflowResultsReceived": true
+      },
+      {
+        "failure": "unreachable",
+        "phase": "recovered",
+        "runId": "a741d713-ab6b-4b39-acc3-aa237aa32d7a",
+        "pid": 8400,
+        "file": ".local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79/a741d713-ab6b-4b39-acc3-aa237aa32d7a/official-business-mcp-activation.json",
+        "projectResults": [
+          {
+            "presetId": "harness-comfyui-cli-candidate",
+            "ok": true,
+            "errorCode": null
+          },
+          {
+            "presetId": "harness-comfyui-iteration",
+            "ok": true,
+            "errorCode": null
+          }
+        ],
+        "ordinaryPresetsSucceeded": true,
+        "workflowCount": 2,
+        "models": [
+          "desktop-prompt-capture-model"
+        ],
+        "allQueriesSuccessful": true,
+        "allWorkflowResultsReceived": true
+      }
+    ]
+  },
+  "scope": {
+    "file": ".local/desktop-e2e/official-business-audit/5d4cf7b8-5e35-461d-9452-6f86d07d7b79/3228ac88-8bf3-443a-83fa-b3b05522f809/official-business-mcp-scope.json",
+    "projectParents": "两个项目主会话具有两个 NoobAI MCP 工具，均无四个 Host 目录工具，实际查询成功。",
+    "ordinaryPresets": [
+      {
+        "presetId": "standard",
+        "hostCatalogTools": [
+          "query_semantic_comfyui_instances",
+          "query_semantic_comfyui_templates",
+          "query_semantic_generation_models",
+          "query_semantic_loras"
+        ],
+        "mcpTools": []
+      },
+      {
+        "presetId": "minimal",
+        "hostCatalogTools": [
+          "query_semantic_comfyui_instances",
+          "query_semantic_comfyui_templates",
+          "query_semantic_generation_models",
+          "query_semantic_loras"
+        ],
+        "mcpTools": []
+      },
+      {
+        "presetId": "cordis",
+        "hostCatalogTools": [
+          "query_semantic_comfyui_instances",
+          "query_semantic_comfyui_templates",
+          "query_semantic_generation_models",
+          "query_semantic_loras"
+        ],
+        "mcpTools": []
+      }
+    ],
+    "children": [
+      {
+        "dispatchTool": "subagent_task",
+        "presetId": "harness-comfyui-cli-candidate",
+        "parentSessionId": "session-1939960f-7a1b-46c6-b011-17aca4a23c7f",
+        "subagentId": "5647a1f1-c4cf-4d35-ae58-2a1c38729b47",
+        "model": "desktop-prompt-capture-model",
+        "declaredTools": [
+          "bash",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "send_message",
+          "skill"
+        ],
+        "queries": [
+          "search_workflows",
+          "get_catalog_resource"
+        ],
+        "resultReceivedByModel": true
+      },
+      {
+        "dispatchTool": "subagent_composition",
+        "presetId": "harness-comfyui-iteration",
+        "parentSessionId": "session-2b00986f-e189-43d5-a11c-d222fc443aed",
+        "subagentId": "c3b87fcf-c7fd-4e68-acb5-6b0a10d489c2",
+        "model": "desktop-prompt-capture-model",
+        "declaredTools": [
+          "bash",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "send_message",
+          "skill"
+        ],
+        "queries": [
+          "search_workflows",
+          "get_catalog_resource"
+        ],
+        "resultReceivedByModel": true
+      },
+      {
+        "dispatchTool": "subagent_generation",
+        "presetId": "harness-comfyui-iteration",
+        "parentSessionId": "session-b2860734-07b7-4c76-a99e-a100b4c005b9",
+        "subagentId": "d6519040-563f-44d0-a664-b09e80ad293f",
+        "model": "desktop-prompt-capture-model",
+        "declaredTools": [
+          "bash",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "send_message",
+          "skill"
+        ],
+        "queries": [
+          "search_workflows",
+          "get_catalog_resource"
+        ],
+        "resultReceivedByModel": true
+      },
+      {
+        "dispatchTool": "subagent_observation",
+        "presetId": "harness-comfyui-iteration",
+        "parentSessionId": "session-1910ba88-dc6e-4b86-b449-a9ee97d6ca5c",
+        "subagentId": "697ea028-e585-4d07-8d48-87f69f899f07",
+        "model": "desktop-prompt-capture-model",
+        "declaredTools": [
+          "bash",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "send_message",
+          "skill"
+        ],
+        "queries": [
+          "search_workflows",
+          "get_catalog_resource"
+        ],
+        "resultReceivedByModel": true
+      },
+      {
+        "dispatchTool": "subagent_comparison",
+        "presetId": "harness-comfyui-iteration",
+        "parentSessionId": "session-5217e302-8444-4a30-9527-1b8fd19a5cda",
+        "subagentId": "0c0fea9f-641a-4d8f-bbbe-f338ec23c70a",
+        "model": "desktop-prompt-capture-model",
+        "declaredTools": [
+          "bash",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "send_message",
+          "skill"
+        ],
+        "queries": [
+          "search_workflows",
+          "get_catalog_resource"
+        ],
+        "resultReceivedByModel": true
+      }
+    ],
+    "conclusion": "五个派发角色均有独立 subagentId、父派发工具结果、实际子模型工具声明及两次成功 MCP 调用。子会话无四个 Host 目录工具及五个再次派发工具。"
+  },
+  "cleanup": {
+    "runs": [
+      {
+        "runId": "a741d713-ab6b-4b39-acc3-aa237aa32d7a",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "fed33e26-a006-4cc9-81e3-307b63bba0fa",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "3799857f-f2a6-40f5-99e2-61942af8ad54",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "9c135f4b-2275-4988-99f4-5ae6b12c2e21",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "84539495-3878-4a9e-9ffd-c48230561232",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "d68b8c67-dde0-4efd-a56d-f8256e6354b7",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "3228ac88-8bf3-443a-83fa-b3b05522f809",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "97017742-fece-4a94-b1f4-a93f7b109656",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      },
+      {
+        "runId": "0294ff0b-68d2-47ea-b39d-71c7f378d2d3",
+        "state": "stopped",
+        "portsReleased": true,
+        "allRecordedPortsUnowned": true
+      }
+    ],
+    "conclusion": "该业务证据目录记录的 9 个应用运行均 stopped，stop-result 均为 portsReleased=true，27 个记录端口的占用 PID 列表均为空。afterEach 等待夹具 close，清理错误会使测试失败；日志最终通过。",
+    "limit": "本次只核对清理记录与控制流程，未再次启动应用或进行当前端口扫描；MCP/模型夹具的关闭没有单独端口快照。"
+  },
+  "acceptanceLimits": [
+    "模型身份为 desktop-prompt-capture-model，MCP 数据来自本地受控服务；本次证明真实官方宿主的派发、工具声明、HTTP 调用及响应回传链。真实目录服务与获准外部模型的业务验收仍按主计划另行完成。",
+    "普通预设的四个 Host 目录工具已证实实际声明可见；本测试未要求执行这四个工具。",
+    "同宿主直接创建会话恢复仍不受本次通过结论覆盖；当前合同采用应用退出后重新打开。",
+    "每个子角色的自然任务规划、语义质量和实际图片业务不属于本次受控 MCP 协议回归。"
+  ],
+  "remainingBlockingGapsWithinReviewedScope": []
+}

@@ -1,0 +1,68 @@
+{
+  "caseId": "5.5-2",
+  "preset": "harness-comfyui-cli-candidate",
+  "runId": "64ca19cf-15fa-421e-8400-de2c4aef89f6",
+  "sessionId": "session-83d9f8dd-f880-427f-abc5-aaaca8202d50",
+  "model": "poolside/laguna-s-2.1:free",
+  "provider": "openrouter",
+  "status": "证据不足",
+  "cause": "Poolside上游共享池限流，宿主重试耗尽后结束任务。",
+  "evidence": ".local/skills-mcp-migration-live/desktop/64ca19cf-15fa-421e-8400-de2c4aef89f6/1791888971075-collect.json",
+  "end": {
+    "type": "turn/end",
+    "seq": 105,
+    "time": 1791888848459,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "error",
+        "error": {
+          "message": "429: {\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":false,\"limit_source\":\"upstream_provider_shared_pool\",\"remedy_hint\":\"Retry shortly, add your own provider key (https://openrouter.ai/settings/integrations), or route to another provider with provider routing: https://openrouter.ai/docs/features/provider-routing\"}}",
+          "code": "RATE_LIMIT"
+        }
+      }
+    }
+  },
+  "toolCalls": [
+    {
+      "seq": 30,
+      "name": "skill"
+    },
+    {
+      "seq": 32,
+      "name": "bash"
+    },
+    {
+      "seq": 43,
+      "name": "bash"
+    },
+    {
+      "seq": 45,
+      "name": "bash"
+    },
+    {
+      "seq": 62,
+      "name": "bash"
+    },
+    {
+      "seq": 64,
+      "name": "bash"
+    },
+    {
+      "seq": 66,
+      "name": "bash"
+    },
+    {
+      "seq": 68,
+      "name": "bash"
+    },
+    {
+      "seq": 82,
+      "name": "bash"
+    },
+    {
+      "seq": 84,
+      "name": "bash"
+    }
+  ]
+}

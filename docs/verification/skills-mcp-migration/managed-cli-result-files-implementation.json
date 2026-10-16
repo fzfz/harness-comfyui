@@ -1,0 +1,447 @@
+{
+  "purpose": "记录受管 CLI 结果文件实现、定向验证和后续验收边界。",
+  "readWhen": "根线程接收冻结候选、派发独立审查或准备最终验收时。",
+  "recordedAt": "2026-10-14T13:29:06Z",
+  "planSection": "docs/plans/skills-mcp-migration-20261013.md#573-受管-cli-的结果文件与复用",
+  "contract": "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+  "status": "punctuation-fix-frozen-candidate-rebuild-required",
+  "changedFiles": [
+    "scripts/cli/result-file.mjs",
+    "scripts/cli/harness-comfyui.mjs",
+    "scripts/cli/help.mjs",
+    "scripts/cli/help.d.mts",
+    "scripts/cli/help-schema.mjs",
+    "config/managed-cli-help.json",
+    "tests/unit/cli-result-file.test.mjs",
+    "tests/unit/cli-help-schema.test.mjs",
+    "tests/integration/cli-command.test.ts",
+    "tests/support/managed-cli-result-file-fault.mjs",
+    "tests/production/plugin-package.test.mjs",
+    ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+    ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md",
+    ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+    ".agents/skills/comfyui-image-review/references/cli.md",
+    ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+    ".agents/skills/comfyui-image-review/SKILL.md",
+    ".agents/skills/local-image-reader/SKILL.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+    "docs/system/architecture.md",
+    "docs/system/configuration.md",
+    "docs/system/directory-structure.md",
+    "docs/system/testing.md",
+    "docs/verification/skills-mcp-migration/managed-cli-result-files-implementation.json"
+  ],
+  "codeFiles": [
+    "scripts/cli/result-file.mjs",
+    "scripts/cli/harness-comfyui.mjs",
+    "scripts/cli/help.mjs",
+    "scripts/cli/help.d.mts",
+    "scripts/cli/help-schema.mjs",
+    "config/managed-cli-help.json"
+  ],
+  "testFiles": [
+    "tests/unit/cli-result-file.test.mjs",
+    "tests/unit/cli-help-schema.test.mjs",
+    "tests/integration/cli-command.test.ts",
+    "tests/support/managed-cli-result-file-fault.mjs",
+    "tests/production/plugin-package.test.mjs"
+  ],
+  "textFiles": [
+    ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+    ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+    ".agents/skills/comfyui-generate/references/generation-cli.md",
+    ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+    ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+    ".agents/skills/comfyui-image-review/references/cli.md",
+    ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+    ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+    ".agents/skills/comfyui-image-review/SKILL.md",
+    ".agents/skills/local-image-reader/SKILL.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+    "docs/system/architecture.md",
+    "docs/system/configuration.md",
+    "docs/system/directory-structure.md",
+    "docs/system/testing.md"
+  ],
+  "decisions": [
+    "prepareResultFile、writeResultFile 和 discardUnpublishedResult 统一管理每次调用的文件生命周期。CLI 在 HTTP 请求前分配文件，写入并关闭后发布路径。",
+    "使用 os.tmpdir、独立 mkdtemp、0700 目录和 wx/0600 文件；无缓存、扫描清理、锁或新增产品参数。文件写入原业务 JSON 加换行。",
+    "stdout 和 stderr 写入均等待回调，并消费 error 事件。NEXT 失败保留结果文件，返回非零；请求阶段不会重新执行。",
+    "help.mjs 的 nextSteps 没有调用者，已替换为纯 renderNextSteps；help.d.mts 同步导出。公共文件协议集中在 managed-cli-help.json。",
+    "CLI_RESULT_PATH_WRITE_FAILED 模板使用 {stream} 区分 stdout 与 stderr（NEXT）。错误给出已保存路径。",
+    "成功 envelope 的 data 必须是非 null 的 JSON 对象；submit 的 run_id 必须是非空字符串。协议拒绝在文件保存前完成。",
+    "9 份 CLI 参考只定义业务 JSON 和业务处理；公共传输与文件错误转交首次读取的 --help。原业务复用、刷新和输入重试条件保留。",
+    "Python 示例读取 stdout 路径中的 UTF-8 JSON。交接记录使用 CLI 已保存文件的副本路径。",
+    "新增结果模块通过现有 CLI bundle 导入，无需修改 build 入口或资源清单。"
+  ],
+  "tdd": [
+    {
+      "seam": "文件生命周期",
+      "redEvidence": ".local/managed-cli-result-files/unit-red-1.txt",
+      "redResult": "failed: result-file.mjs 尚不存在",
+      "greenEvidence": ".local/managed-cli-result-files/unit-green-1.txt",
+      "greenResult": "1 passed"
+    },
+    {
+      "seam": "实际 CLI 进程路径协议",
+      "redEvidence": ".local/managed-cli-result-files/cli-red-1.txt",
+      "redResult": "1 failed: stdout 仍为 JSON",
+      "greenEvidence": ".local/managed-cli-result-files/cli-green-1.txt",
+      "greenResult": "1 passed"
+    },
+    {
+      "seam": "必填文件错误帮助模板",
+      "redEvidence": ".local/managed-cli-result-files/help-red.txt",
+      "redResult": "3 failed: 缺失模板未被 schema 拒绝",
+      "greenEvidence": ".local/managed-cli-result-files/unit-and-help-green.txt",
+      "greenResult": "20 passed"
+    },
+    {
+      "seam": "成功 envelope 的协议与清理",
+      "redEvidence": ".local/managed-cli-result-files/envelope-red.txt",
+      "redResult": "5 failed: 缺失、null、数组或缺少有效 run_id 的 submit 结果未在协议阶段拒绝",
+      "greenEvidence": ".local/managed-cli-result-files/focused-green.txt",
+      "greenResult": "最终定向验证 95 passed"
+    }
+  ],
+  "validation": [
+    {
+      "command": "pnpm exec vitest run tests/integration/cli-command.test.ts tests/unit/cli-result-file.test.mjs tests/unit/cli-help-schema.test.mjs tests/production/plugin-package.test.mjs",
+      "result": "passed",
+      "files": 4,
+      "tests": 95,
+      "evidence": ".local/managed-cli-result-files/focused-green.txt"
+    },
+    {
+      "command": "pnpm exec vitest run tests/unit/cli-contract.test.ts tests/unit/cli-shell-capability.test.ts tests/integration/cli-route.test.ts tests/contract/prompt-builder-generation-output-references.test.mjs tests/contract/runtime-git-isolation.test.ts tests/contract/engineering-baseline.test.ts",
+      "result": "passed",
+      "files": 6,
+      "tests": 47,
+      "evidence": ".local/managed-cli-result-files/neighbor-green.txt"
+    },
+    {
+      "command": "pnpm typecheck",
+      "result": "passed",
+      "evidence": ".local/managed-cli-result-files/typecheck.txt"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed",
+      "evidence": ".local/managed-cli-result-files/diff-check.txt"
+    },
+    {
+      "command": "STC check --anti-echo: 18 份帮助、Skill 参考和系统文档",
+      "result": "passed",
+      "errors": 0,
+      "antiEchoPending": 0,
+      "evidence": ".local/managed-cli-result-files/stc-summary.json"
+    }
+  ],
+  "verifiedBehavior": [
+    "6 条命令的普通和 quiet 调用返回不同路径，结果字节与原业务 JSON 一致。Unicode、空格、重复项、顺序、逐项错误和完整 Workflow 均保留。",
+    "并发相同 run_ids 的 3 次实际 CLI 调用产生 3 个可读取文件，无请求复用。",
+    "准备失败发出 0 次 Host 请求；help 在无效临时目录下仍直接输出文本。",
+    "提交的 write/close 失败只发出 1 次 Host 请求，报告已接纳 run_id，并清理本次未发布目录。",
+    "图片保存失败只调用 1 次测试图片读取服务的 inspect；stdout EPIPE 保留完整文件且报告路径。NEXT EPIPE 保留文件并返回非零。",
+    "错误诊断无法写入 stderr 时返回非零，Host 请求次数不增加。Host 与协议错误清理本次未发布文件。",
+    "缺失 data、null、数组、空对象和 run_id:null 的 submit envelope 均返回 CLI_PROTOCOL_ERROR；stdout 为空、只调用 1 次 Host 且目录清空。",
+    "文档中的 Python 示例通过已构建安装入口执行，输出观察文本，Host 请求只有 1 次。",
+    "从实际 tarball 解包到独立、只读且含空格的安装目录后，CLI 成功提交并返回系统临时目录中的可读结果文件。"
+  ],
+  "consumerAudit": {
+    "trackedBoundary": [
+      "scripts",
+      "src",
+      "tests",
+      "config",
+      "agent-presets",
+      ".agents"
+    ],
+    "desktop": "未找到 test:desktop 中解析受管 CLI 业务 stdout 的消费者。official-desktop-live.test.mjs 的 cliCall 为 none；lifecycle 的 JSON.parse(stdout) 属于 tarball manifest 读取。",
+    "privateCurrentBoundary": [
+      ".local/skills-mcp-migration-live/remaining-generation-runtime/*.mjs",
+      ".local/skills-mcp-migration-live/history-current-runtime/*.mjs"
+    ],
+    "privateCurrentEvidence": ".local/managed-cli-result-files/active-evidence-consumers.txt",
+    "privateCurrent": "当前脚本的 stdout 来自采集器、tar、ps 或 Builder 校验；历史轨迹和冻结包保持原样。新采集器须同时保存 CLI 返回路径和文件字节。",
+    "unchangedBusinessInterfaces": "Host/native Tool/Builder schema 与 Skill-owned 脚本未修改。"
+  },
+  "textReview": {
+    "stcSummary": ".local/managed-cli-result-files/stc-summary.json",
+    "manual": "核对本次新增句子的主体、对象、文件引用和错误阶段。长业务合同和现有术语保留。修正两个已修改文档中的 STC 错误措辞。",
+    "independent": "T01 至 T13 已经第二轮独立文字审计通过；结果由根线程确认。"
+  },
+  "openItems": [
+    "根线程复核本轮标点修复，并从当前冻结树重新构建插件候选包。",
+    "官方 Desktop 中两个预设的真实前台 shell：返回路径、后续 Tool 读取、capability 撤销后文件保留和任务复制。",
+    "原 5.6-2 条件下的真实模型复验，以及其他消费者与合法刷新。自动保存是否足以消除重复查询仍待验证。",
+    "最终候选运行 pnpm quality 和 git diff --check。"
+  ],
+  "authorizationBoundary": {
+    "performed": "代码、测试、帮助、CLI 参考和系统文档的本地实现与定向验证。",
+    "notPerformed": [
+      "提交",
+      "依赖安装",
+      "Skill-owned 脚本修改",
+      "真实模型调用",
+      "官方应用启动",
+      "生产安装",
+      "pnpm quality"
+    ],
+    "freeze": "代码与测试已通知根线程冻结；主计划和合同由根线程管理。"
+  },
+  "textAuditResolution": {
+    "source": "docs/verification/skills-mcp-migration/managed-cli-result-files-text-review.json",
+    "status": "T01-T13-applied-frozen",
+    "scope": "13 项独立文字发现的最小修订；保留业务 schema、输入来源、prompt 选择、Seed 条件、取消与既有重试边界。",
+    "findings": [
+      {
+        "id": "T01",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+          ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+          ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+          ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md"
+        ],
+        "resolution": "将“其他命令返回非零退出码时”改为“发生其他命令级错误时”。"
+      },
+      {
+        "id": "T02",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+          ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md"
+        ],
+        "resolution": "ANIMA 和 Krea2 的文件结构验证引用唯一的“结果文件中的 JSON”定义；去掉重复条件与多余空格。"
+      },
+      {
+        "id": "T03",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+          ".agents/skills/comfyui-iterate-generation/references/records.md"
+        ],
+        "resolution": "run-query-cli 的调用入口引用 records.md“确定任务目录和文件写入者”第 3 项；错误节只保留取消与诊断处理。records.md 保留交付定义。"
+      },
+      {
+        "id": "T04",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          "docs/system/testing.md"
+        ],
+        "resolution": "删除 testing.md 的“历史验证记录”整节。"
+      },
+      {
+        "id": "T05",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          "docs/system/architecture.md",
+          "docs/system/configuration.md"
+        ],
+        "resolution": "架构文档直接定义 Runtime 当前职责，删除数据合同变更对照；配置文档只描述当前临时目录来源。"
+      },
+      {
+        "id": "T06",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          "docs/system/directory-structure.md"
+        ],
+        "resolution": "directory-structure.md 的 scripts/cli 条目改为“结果文件管理模块”。"
+      },
+      {
+        "id": "T07",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+          ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+          ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md"
+        ],
+        "resolution": "3 份 Builder CLI 参考的字段定义均改为引导项下的有序子列表，字段内容与顺序保留。"
+      },
+      {
+        "id": "T08",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          ".agents/skills/comfyui-image-review/SKILL.md",
+          ".agents/skills/local-image-reader/SKILL.md",
+          ".agents/skills/comfyui-generate/references/generation-cli.md",
+          "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+          "docs/system/testing.md"
+        ],
+        "resolution": "对 locations 中明确列出的 5 个 Markdown 逐节使用有序列表；字段与分类使用子列表。编号和缩进之外的文本逐字保留。"
+      },
+      {
+        "id": "T09",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          "scripts/cli/harness-comfyui.mjs"
+        ],
+        "resolution": "请求与响应超限错误使用公共配置模板，并从 CLI_MAX_BODY_BYTES 与 MAX_RESPONSE_BYTES 传入字节上限。响应错误保留已执行业务的可能性，并引用命令既有重试条件。"
+      },
+      {
+        "id": "T10",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          "scripts/cli/harness-comfyui.mjs"
+        ],
+        "resolution": "两个 API 环境错误分别保留原因，并引用唯一的 environmentRecovery 行动指引。"
+      },
+      {
+        "id": "T11",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          ".agents/skills/comfyui-generate/references/generation-cli.md",
+          ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md"
+        ],
+        "resolution": "生成请求保留 positive_prompt、seed、batch_size 与 negative_mode 的字段映射；唯一项与 batch_size 取值要求引用模板检查参考。历史 Seed 的原数量条件引用同一所属节。"
+      },
+      {
+        "id": "T12",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+          "docs/system/architecture.md"
+        ],
+        "resolution": "architecture.md 明确每个项目 Preset 注册项目 Skill provider，并提供 8 个项目 Skill。"
+      },
+      {
+        "id": "T13",
+        "status": "closed-by-second-independent-text-review",
+        "files": [
+          ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+          ".agents/skills/local-image-reader/SKILL.md",
+          ".agents/skills/comfyui-image-review/references/cli.md",
+          ".agents/skills/comfyui-image-review/SKILL.md"
+        ],
+        "resolution": "2 个 Skill 入口保留用户要求对应的 prompt 构造、传递和省略条件；默认值与覆盖行为引用各自 CLI 参考的唯一字段定义。"
+      }
+    ],
+    "changedFilesThisRevision": [
+      "config/managed-cli-help.json",
+      "scripts/cli/harness-comfyui.mjs",
+      "scripts/cli/help-schema.mjs",
+      "tests/integration/cli-command.test.ts",
+      "tests/unit/cli-help-schema.test.mjs",
+      ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+      ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+      ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+      ".agents/skills/comfyui-generate/references/generation-cli.md",
+      ".agents/skills/comfyui-image-review/SKILL.md",
+      ".agents/skills/local-image-reader/SKILL.md",
+      "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "docs/system/testing.md",
+      "docs/system/architecture.md",
+      "docs/system/configuration.md",
+      "docs/system/directory-structure.md",
+      "docs/verification/skills-mcp-migration/managed-cli-result-files-implementation.json"
+    ],
+    "sharedErrorTemplates": [
+      "requestTooLarge",
+      "responseTooLarge",
+      "invalidApiUrl",
+      "nonLoopbackApi",
+      "environmentRecovery"
+    ],
+    "codeFormatting": "message() 统一替换公共消息模板的参数；fileMessage() 继续追加相应命令帮助。",
+    "formattingScopeNote": "T08 报告称 6 份，locations 实际列出 5 个唯一文件；本轮只处理这 5 个明确文件。",
+    "formattingEvidence": ".local/managed-cli-result-files/text-review-format-preservation.json",
+    "tdd": {
+      "red": ".local/managed-cli-result-files/text-templates-red.txt",
+      "redResult": "8 failed: 字节上限和新消息键尚未实现",
+      "green": ".local/managed-cli-result-files/text-templates-green.txt",
+      "greenResult": "14 passed"
+    },
+    "validation": [
+      {
+        "command": "pnpm exec vitest run tests/integration/cli-command.test.ts tests/unit/cli-help-schema.test.mjs tests/production/plugin-package.test.mjs",
+        "exitCode": 0,
+        "files": 3,
+        "tests": 93,
+        "evidence": ".local/managed-cli-result-files/text-review-regression.txt"
+      },
+      {
+        "command": "pnpm typecheck",
+        "exitCode": 0,
+        "evidence": ".local/managed-cli-result-files/text-review-typecheck.txt"
+      },
+      {
+        "command": "git diff --check",
+        "exitCode": 0
+      }
+    ],
+    "manualReview": "逐项核对 T01 至 T13 的修订位置与相邻文字。T08 的列表编号和缩进调整保留原文本；T11 与 T13 的选择条件保留，重复语义改为所属节引用。",
+    "stc": "本轮按最新用户 AGENTS 和根线程要求未运行 STC；原 STC 记录只对应此前候选。",
+    "remaining": [
+      "根线程重新构建候选包，并执行后续验收。"
+    ],
+    "freeze": "代码、产品文字和本报告均已冻结，未启动应用或模型。",
+    "independentRescan": "根线程已确认第二轮独立文字审计 19 文件全通过。"
+  },
+  "punctuationFix": {
+    "trigger": "根线程确认 responseTooLarge 与 request catch 拼接产生重复句点。",
+    "status": "implemented-tested-frozen",
+    "changedFiles": [
+      "scripts/cli/harness-comfyui.mjs",
+      "tests/integration/cli-command.test.ts",
+      "tests/support/managed-cli-result-file-fault.mjs",
+      "docs/verification/skills-mcp-migration/managed-cli-result-files-implementation.json"
+    ],
+    "implementation": "request catch 仅在错误消息未以中英文句末标点结束时追加句点，再拼接已有命令帮助。",
+    "scope": "保留原错误消息、错误分类、请求次数和清理路径；错误模板正文没有改写。",
+    "cases": [
+      "无句点的普通请求错误",
+      "已有句点的普通请求错误",
+      "无句点的协议错误",
+      "已有句点的协议错误",
+      "URL 结尾的请求错误",
+      "URL 后已有句点的请求错误",
+      "中文句号",
+      "英文感叹号",
+      "responseTooLarge 模板结尾与帮助拼接"
+    ],
+    "tdd": {
+      "red": ".local/managed-cli-result-files/punctuation-red.txt",
+      "redExitCode": 1,
+      "redResult": "6 failed, 3 passed",
+      "green": ".local/managed-cli-result-files/punctuation-green.txt",
+      "greenExitCode": 0,
+      "greenResult": "9 passed"
+    },
+    "validation": [
+      {
+        "command": "pnpm exec vitest run tests/integration/cli-command.test.ts",
+        "exitCode": 0,
+        "tests": 63,
+        "evidence": ".local/managed-cli-result-files/punctuation-regression.txt"
+      },
+      {
+        "command": "pnpm typecheck",
+        "exitCode": 0,
+        "evidence": ".local/managed-cli-result-files/punctuation-typecheck.txt"
+      },
+      {
+        "command": "git diff --check",
+        "exitCode": 0
+      }
+    ],
+    "reviewBasis": "根线程确认标点修复前的独立代码复审无实质缺陷，第二轮独立文字审计 19 文件通过。",
+    "candidateRebuildRequired": true,
+    "candidateStatus": "本轮源码发生标点修复，根线程须从当前冻结树重新构建插件候选包。",
+    "notRun": [
+      "官方应用",
+      "真实模型",
+      "STC",
+      "pnpm quality"
+    ]
+  }
+}

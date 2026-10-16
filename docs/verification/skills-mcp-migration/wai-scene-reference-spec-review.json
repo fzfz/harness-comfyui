@@ -1,0 +1,56 @@
+{
+  "reviewedAt": "2026-10-14T04:42:50.635346+00:00",
+  "reviewType": "窄范围实施符合性复核",
+  "status": "通过",
+  "scope": "第 5.5.2 节要求的 WAI SKILL 第 2 节首段及相邻内容、引用目标和候选包范围。未启动模型或修改产品。",
+  "findings": [],
+  "evidence": {
+    "plan": "docs/plans/skills-mcp-migration-20261013.md:951",
+    "implementation": ".agents/skills/wai-sdxl-prompt-builder/SKILL.md:31",
+    "replacement": "Skill 执行者完整读取[场景分支矩阵](references/composition-scenario-branches.md)，并按该文件的“主场景选择”确定本轮主场景。",
+    "matchesPlanExactly": true,
+    "candidateMatchesWorkspace": true,
+    "oldPackage": ".local/skills-mcp-migration-live/retirement-candidate.tgz",
+    "candidatePackage": ".local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+    "byteComparison": {
+      "beforeFileCount": 198,
+      "afterFileCount": 198,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "package/.agents/skills/wai-sdxl-prompt-builder/SKILL.md"
+      ],
+      "skillChange": "仅第 31 行整段替换；其余字节一致。"
+    },
+    "semanticReviews": [
+      "docs/verification/skills-mcp-migration/wai-scene-reference-semantic-review.json",
+      "docs/verification/skills-mcp-migration/wai-scene-plan-semantic-review.json"
+    ]
+  },
+  "assessment": {
+    "responsibility": "入口完整读取矩阵并按其主场景选择执行；原自行选择最能容纳及直接指定分镜的重复决策已移除。",
+    "adjacentContent": "第 1 节输入要求、第 2 节标题、主题规则读取表、候选 A/B/C 条件均未修改，段落仍处于输入处理之后、候选构图之前。",
+    "preservedRules": "矩阵文件逐字节保留：主次冲突、多个指定主场景、单个指定主场景条件验证、未指定主场景候选匹配、等待和用户选择、次要约束登记，以及分镜内容匹配仍由原矩阵定义。",
+    "runtimeStatus": "本次仅确认实施范围和引用符合计划；运行效果须独立实际模型证据。"
+  },
+  "subsequentAcceptance": {
+    "controls": "保留原输入、模型、32768 输出限额、360000 observer 超时和目录数据，使用干净会话；保存候选包身份及实际安装 Skill 正文。",
+    "waitingStage": [
+      "保存首次实际模型请求、Skill 工具结果及下一次模型请求，确认替换段和完整矩阵实际送达。",
+      "原输入匹配单主体肖像、遮挡与深度、环境叙事；执行者须列出实际候选并提出真实用户可见选择问题，回复前停止候选构图。",
+      "仅在真实等待条件成立后按计划第 5.13 节预定义回复选择单主体肖像，保存实际用户回复和随后模型请求；不得在等待前注入选择。"
+    ],
+    "artistStage": [
+      "完整记录 NoobAI MCP 调用、响应和首次收到响应的实际模型请求。获取 Style 12344 前须查询并确认名称精确为 wai 的唯一底模。",
+      "核对 Style 实际底模、style_description 及用户现有 say_hana Prompt 的来源保留、风格说明采用；说明缺失、底模缺失或重名时按实际返回及合同判断等待或停止。",
+      "将查询顺序独立判分；主场景等待通过不得抵消 Style 前置顺序偏离。"
+    ],
+    "outputStage": [
+      "记录原 Prompt 格式校验器和生成结果校验器的实际命令、输入、退出码与完整输出，确认输出到达后续模型请求。",
+      "核对实际保存 generation-result.json 的 positive_prompt 来自成功格式结果，包含合同全部必填字段、原尺寸用途和负面策略；另行进行画面要求、位置归属及风格语义验收。",
+      "核对最终用户可见结构化对象与已校验对象一致；若再次缺 positive_prompt，即便保存文件完整，也应独立记录最终交付失败。",
+      "保留可直接复用的准确产物绝对路径；逐项检查工具日志，确认未触发用户未要求的生图。"
+    ],
+    "boundary": "结构校验通过与业务语义通过分别报告；原 WAI 限额失败及复验三项偏离保留，逐项记录本轮状态。"
+  }
+}

@@ -1,0 +1,512 @@
+{
+  "reviewedAt": "2026-10-14T05:42:03.322552+00:00",
+  "scope": "Alice已有角色变体第二轮选择恢复；只写本报告，未调模型或改产品。",
+  "identitySourceTarget": "通过",
+  "wholeBuilderContract": "未通过：成功回答格式及权重报告有偏离。",
+  "savedJsonStructure": "通过",
+  "finalJsonBlock": "十字段对象与实际校验结果、保存结果完全一致；回答整体格式未通过纯结构化要求。",
+  "firstRoundIndex": ".local/skills-mcp-migration-live/alice-identity-control-execution.json",
+  "secondRoundIndex": ".local/skills-mcp-migration-live/alice-identity-choice-execution.json",
+  "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791955871095-b8b06b87-1b31-4190-9b4a-949e590a1171-collect.json",
+  "inputEvidence": {
+    "originalVariantInput": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/alice-identity-control-existing-character-input.json",
+    "exactPrompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/anima-prompt-builder/SKILL.md\n任务参数：{\"request\":\"为所属作品尚待确认的已有角色 Alice 构建单人半身像 Prompt。 本幅人物外观明确采用金色长双马尾、蓝色眼睛、白色翻领衬衫与黑色蝴蝶结发饰；本次构建测试用 Prompt，画幅为 2:3。 图片尺寸明确为宽 1024 像素、高 1536 像素。 总像素数为 1.572864 百万像素。\"}\n将本任务产物保存到工作目录中的 5.3-3 目录。\n",
+    "reply": "选择角色记录 ID 3334。",
+    "replySource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/alice-identity-choice-remote-input.json",
+    "sessionId": "session-2268e1ee-f593-4f5c-ad81-66c24b4f00bf",
+    "sameSession": true,
+    "firstRoundCandidate": {
+      "id": 3334,
+      "work_id": 408,
+      "works.name": "Sinoalice",
+      "name": "爱丽丝",
+      "aliases_json": [],
+      "prompt_text": "alice \\(sinoalice\\), sinoalice, 1girl, red eyes, short hair, blue hair, dark blue hair, black hair, medium breasts, elbow gloves",
+      "cover_url": "http://127.0.0.1:18943/media/images/24/2456331f-c033-4976-a1f6-42ed12fe6b66-16531.jpg",
+      "sample_image_urls": []
+    },
+    "candidateInFirstContinuationRequest": [
+      33
+    ],
+    "predefinedChoice": "input-preflight-current.json 5.3-3 预存ID3334；首轮seq87和最终候选均列出3334，首轮seq135提问后自然结束seq137。",
+    "selectionAdopted": "续轮seq143按3334识别alice (sinoalice)/sinoalice；保存character_series保持两个身份标签。"
+  },
+  "semanticReview": {
+    "identity": "来源使用已有真实候选，不转为原创，不采用同名23363。",
+    "userAppearance": "金色长发、双马尾、蓝眼保留；与目录红眼、短发和蓝/黑发冲突的内容删除；medium breasts为未冲突目录外观。白色翻领衬衫、黑色发饰均表达。",
+    "gloves": "ANIMA角色采用规则将身份和外观拆槽，不等同WAI整体保留合同；此处未加入目录elbow gloves不单列失败。",
+    "artist": "续轮按已确认anima底模1查询。候选84圆润简洁线条、柔和均匀上色、明亮甜美配色及轻快萌系描述，与确定画风相符；其artist_string三项显式权重均原样保留。其他候选具有厚涂、冷色或强明暗等区别，未发现足够证据认定多个候选完整满足同一组条件。",
+    "dimensions": {
+      "generation_purpose": "test",
+      "aspect_ratio": "2:3",
+      "width": 1024,
+      "height": 1536,
+      "megapixels": 1.572864
+    },
+    "savedSemanticUsability": "身份与本幅明确画面要求满足，保存结构化结果可作为后续生成候选；纯输出和报告偏离独立记录。"
+  },
+  "findings": [
+    {
+      "id": "AIC-1",
+      "severity": "medium",
+      "firstObservedFinalSeq": 189,
+      "request": ".local/skills-mcp-migration-live/llm-calls/88ab4862-08eb-4837-b7a4-952190a56e10.jsonl:1",
+      "finding": "成功回答在合法JSON外增加说明、Markdown代码围栏、十二槽表与文件链接。",
+      "contract": "references/02-role.md:3，只返回通过校验的结构化结果，不另加解释或Markdown。",
+      "retention": "实际最终请求messages[10]包含02-role全文，非规则被裁剪。",
+      "causeBoundary": "格式偏离已证实；宿主展示偏好可能影响但本轮未做单变量对照。"
+    },
+    {
+      "id": "AIC-2",
+      "severity": "low",
+      "firstArtifactSeq": 185,
+      "finalSeq": 189,
+      "finding": "build-notes及最终解释声称强调(twintails:1.5)，实际prompt-slots和生成结果均为未加权twintails，高于1强调数量为0。",
+      "contract": "prompt-weighting.md 的完成检查要求权重来源、形式与统计准确。",
+      "impact": "原用户未要求数值权重，保存Prompt没有因此丢失双马尾语义；自检及说明不能据此声称实际使用1.5。"
+    }
+  ],
+  "validation": [
+    {
+      "callSeq": 170,
+      "resultSeq": 171,
+      "mode": "prompt-format",
+      "exitCode": 0
+    },
+    {
+      "callSeq": 175,
+      "resultSeq": 176,
+      "mode": "generation-result",
+      "exitCode": 0
+    }
+  ],
+  "equality": {
+    "savedEqualsValidator": true,
+    "inlineJsonEqualsSaved": true,
+    "selectedIdentitySlots": [
+      "alice \\(sinoalice\\)",
+      "sinoalice"
+    ],
+    "actualTwintailsElements": [
+      "twintails"
+    ]
+  },
+  "rawModelAndRetentionIndex": [
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/89655f45-f2e3-4ec0-8800-af77fc975b91.jsonl:1",
+      "at": "2026-10-14T05:26:34.255Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/f8393ee8-0585-4a68-8b07-42cd7bb3e3ef.jsonl:1",
+      "at": "2026-10-14T05:27:50.729Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/a3a2e7b8-6bd0-47e3-b944-2a6eb07b8f89.jsonl:1",
+      "at": "2026-10-14T05:29:01.499Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/85125b98-f8a5-420e-ab83-14c364c21d81.jsonl:1",
+      "at": "2026-10-14T05:29:52.352Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/5a5030b9-5eb0-4690-92eb-9bbe7c84c6a4.jsonl:1",
+      "at": "2026-10-14T05:30:12.616Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/7055edd4-5088-47c1-a26f-3cff95e48dc1.jsonl:1",
+      "at": "2026-10-14T05:30:19.349Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/c74cbdc8-122f-41be-bdc9-8e8a8f8bcbc3.jsonl:1",
+      "at": "2026-10-14T05:30:27.378Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/da4dd072-df54-440f-9153-63b8333189bb.jsonl:1",
+      "at": "2026-10-14T05:30:42.572Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    },
+    {
+      "request": ".local/skills-mcp-migration-live/llm-calls/88ab4862-08eb-4837-b7a4-952190a56e10.jsonl:1",
+      "at": "2026-10-14T05:30:57.784Z",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "maxTokens": 32768,
+      "selectionMessageIndices": [
+        54
+      ],
+      "fullSources": [
+        {
+          "source": "references/02-role.md",
+          "messagesWithFullSource": [
+            10
+          ]
+        },
+        {
+          "source": "references/08-count-identity.md",
+          "messagesWithFullSource": [
+            16
+          ]
+        },
+        {
+          "source": "references/prompt-weighting.md",
+          "messagesWithFullSource": [
+            13
+          ]
+        },
+        {
+          "source": "references/generation-output-contract.md",
+          "messagesWithFullSource": [
+            23
+          ]
+        }
+      ]
+    }
+  ],
+  "responseDelivery": [
+    {
+      "seq": 87,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/89655f45-f2e3-4ec0-8800-af77fc975b91.jsonl:1",
+      "messageIndex": 33
+    },
+    {
+      "seq": 145,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/f8393ee8-0585-4a68-8b07-42cd7bb3e3ef.jsonl:1",
+      "messageIndex": 56
+    },
+    {
+      "seq": 147,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/f8393ee8-0585-4a68-8b07-42cd7bb3e3ef.jsonl:1",
+      "messageIndex": 57
+    },
+    {
+      "seq": 152,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/a3a2e7b8-6bd0-47e3-b944-2a6eb07b8f89.jsonl:1",
+      "messageIndex": 59
+    },
+    {
+      "seq": 154,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/a3a2e7b8-6bd0-47e3-b944-2a6eb07b8f89.jsonl:1",
+      "messageIndex": 60
+    },
+    {
+      "seq": 159,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/85125b98-f8a5-420e-ab83-14c364c21d81.jsonl:1",
+      "messageIndex": 62
+    },
+    {
+      "seq": 161,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/85125b98-f8a5-420e-ab83-14c364c21d81.jsonl:1",
+      "messageIndex": 63
+    },
+    {
+      "seq": 166,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/5a5030b9-5eb0-4690-92eb-9bbe7c84c6a4.jsonl:1",
+      "messageIndex": 65
+    },
+    {
+      "seq": 171,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/7055edd4-5088-47c1-a26f-3cff95e48dc1.jsonl:1",
+      "messageIndex": 67
+    },
+    {
+      "seq": 176,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/c74cbdc8-122f-41be-bdc9-8e8a8f8bcbc3.jsonl:1",
+      "messageIndex": 69
+    },
+    {
+      "seq": 181,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/da4dd072-df54-440f-9153-63b8333189bb.jsonl:1",
+      "messageIndex": 71
+    },
+    {
+      "seq": 186,
+      "fullIdenticalResultInRequest": ".local/skills-mcp-migration-live/llm-calls/88ab4862-08eb-4837-b7a4-952190a56e10.jsonl:1",
+      "messageIndex": 73
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe/5.3-3/alice-candidates.json",
+      "bytes": 6608
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe/5.3-3/alice-work-confirmation.md",
+      "bytes": 7616
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe/5.3-3/build-notes.md",
+      "bytes": 4455
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe/5.3-3/generation-result.json",
+      "bytes": 784
+    },
+    {
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-o8n7wyfe/5.3-3/prompt-slots.json",
+      "bytes": 1207
+    }
+  ],
+  "formalInputAssessment": {
+    "suitableFor53_3IdentityBranch": true,
+    "recommendation": "已有角色且作品待确认的变体可作为5.3-3身份歧义分支的正式输入候选；保留原外观尺寸与test用途及预存选择3334。它明确了既有角色语义，已实证触发正确等待并在选择后恢复身份采用。",
+    "acceptanceLimit": "输入适合验收不等于整轮Builder通过；该变体最终格式偏离仍须保留。正式采用由主线程按计划登记，本报告未修改任务矩阵。",
+    "causalLimit": "单组一次等待及续轮不能证明稳定性或唯一根因，原输入与此语义变体分开统计。"
+  },
+  "originalFailuresPreserved": "原输入跳过身份等待与其他失败继续引用alice-identity-control-review.json，不回溯改判。",
+  "generationObserved": false
+}

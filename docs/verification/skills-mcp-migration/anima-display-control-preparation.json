@@ -1,0 +1,254 @@
+{
+  "purpose": "准备ANIMA最终回答形式与宿主展示段之间的独立Profile对照，并提供模型提交前的审查证据。",
+  "status": "两组已完成共同候选的官方UI安装、配置保存和清理；每组保留一份5.3-1输入，待独立复核与主线程启动。",
+  "preparedAt": "2026-10-14T05:14:15.066Z",
+  "preparationIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/index.json",
+  "sourceEvidence": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/host-deliverable-section-source.json",
+      "fact": "官方Client以ui:deliverable-file-references注册展示偏好段。"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/builder-success-review.json",
+      "caseId": "5.3-1",
+      "fact": "原会话已收到ANIMA纯结构化结果规则，最终回答含说明和Markdown；保存的JSON有效。"
+    }
+  ],
+  "hypothesis": "两种输出要求在原会话输入中共同存在。本对照通过宿主既有展示控制配置改变展示段可见性，因果结论由后续两组轨迹与最终回答决定。",
+  "commonConfiguration": {
+    "scenario": "run",
+    "presetId": "harness-comfyui-cli-candidate",
+    "candidatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+    "candidateIdentityPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-candidate-identity.json",
+    "packageName": "harness-comfyui",
+    "packageVersion": "0.45.0",
+    "modelSelectionSnapshot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/models.json",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "textMaxOutputTokens": 32768,
+    "modelCallTimeoutMs": 360000,
+    "taskTimeoutMs": 600000,
+    "maxCalls": 3000,
+    "semanticInputSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/builder-6761885f-c5dc-4a50-a75f-f77af6eef86f-5.3-1.json"
+  },
+  "control": {
+    "targetPresetId": "harness-comfyui-cli-candidate",
+    "profileEntryId": "harness-comfyui-presets",
+    "includeEntryId": "composition",
+    "componentId": "project-system-prompt-visibility",
+    "componentConfigField": "hiddenSectionNames",
+    "sectionName": "ui:deliverable-file-references",
+    "baselineHiddenSectionNames": [
+      "harness:identity",
+      "harness:source",
+      "app:web-surface"
+    ],
+    "experimentalHiddenSectionNames": [
+      "harness:identity",
+      "harness:source",
+      "app:web-surface",
+      "ui:deliverable-file-references"
+    ],
+    "scope": "两组均通过官方Include的既有patches入口覆盖被测工作台预设中的展示控制条目。迭代预设沿用共同候选配置。",
+    "exactPatchPaths": {
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/visibility-patch.json",
+      "experimental": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/visibility-patch.json"
+    }
+  },
+  "groups": {
+    "baseline": {
+      "variant": "baseline",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/state.json",
+      "profileId": "7040f70b-2a8e-4eee-8297-c579c738ad47",
+      "installationRunId": "6cf85191-c6e0-4d89-b49e-9df2dfcfcd95",
+      "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/6cf85191-c6e0-4d89-b49e-9df2dfcfcd95/run.json",
+      "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/desktop-e2e.json",
+      "profilePatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "dshHome": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/environment/dsh-home",
+      "userData": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-7040f70b-2a8e-4eee-8297-c579c738ad47/environment/user-data",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-DkpM8Y",
+      "ports": {
+        "host": 61534,
+        "rendererCdp": 61535,
+        "hostInspector": 61536
+      },
+      "officialRecordState": "stopped",
+      "processGroupPresent": false,
+      "portsReleased": true,
+      "workspaceEmpty": true,
+      "textMaxOutputTokens": 32768,
+      "modelCallTimeoutMs": 360000,
+      "maxCalls": 3000,
+      "allowedModels": [
+        {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      ],
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/input.json",
+      "exactPatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/visibility-patch.json",
+      "installedMatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/installed-match.json",
+      "installResultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/install-result.json",
+      "compositionsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/baseline/effective-compositions.json",
+      "modelSubmitted": false,
+      "hiddenSectionNames": [
+        "harness:identity",
+        "harness:source",
+        "app:web-surface"
+      ],
+      "installationStatus": "installed",
+      "installationEnabled": true,
+      "runtimeFilesMatchingCandidate": 197,
+      "packageJsonMatchesCandidate": true,
+      "plannedCases": 1,
+      "plannedCaseId": "5.3-1",
+      "status": "已安装、已配置、已停止，待独立复核"
+    },
+    "experimental": {
+      "variant": "experimental",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/state.json",
+      "profileId": "74a04801-a560-4c8e-b207-18bf51a129e7",
+      "installationRunId": "3358f88c-b5e3-4419-a9d4-b71de2e169bb",
+      "recordPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/3358f88c-b5e3-4419-a9d4-b71de2e169bb/run.json",
+      "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/desktop-e2e.json",
+      "profilePatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "dshHome": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/environment/dsh-home",
+      "userData": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-74a04801-a560-4c8e-b207-18bf51a129e7/environment/user-data",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-AgqW3u",
+      "ports": {
+        "host": 62973,
+        "rendererCdp": 62974,
+        "hostInspector": 62975
+      },
+      "officialRecordState": "stopped",
+      "processGroupPresent": false,
+      "portsReleased": true,
+      "workspaceEmpty": true,
+      "textMaxOutputTokens": 32768,
+      "modelCallTimeoutMs": 360000,
+      "maxCalls": 3000,
+      "allowedModels": [
+        {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      ],
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/input.json",
+      "exactPatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/visibility-patch.json",
+      "installedMatchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/installed-match.json",
+      "installResultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/install-result.json",
+      "compositionsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/experimental/effective-compositions.json",
+      "modelSubmitted": false,
+      "hiddenSectionNames": [
+        "harness:identity",
+        "harness:source",
+        "app:web-surface",
+        "ui:deliverable-file-references"
+      ],
+      "installationStatus": "installed",
+      "installationEnabled": true,
+      "runtimeFilesMatchingCandidate": 197,
+      "packageJsonMatchesCandidate": true,
+      "plannedCases": 1,
+      "plannedCaseId": "5.3-1",
+      "status": "已安装、已配置、已停止，待独立复核"
+    }
+  },
+  "comparison": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-display-control/comparison.json",
+    "normalization": [
+      "当前Workspace绝对路径",
+      "当前Profile/DSH_HOME/user-data绝对路径",
+      "本轮Host端口"
+    ],
+    "normalizedProfileDifferences": [
+      {
+        "path": [
+          "5",
+          "config",
+          "patches",
+          "0",
+          "config",
+          "plugins",
+          "0",
+          "config",
+          "1",
+          "config",
+          "patches",
+          "0",
+          "config",
+          "hiddenSectionNames",
+          "3"
+        ],
+        "b": "ui:deliverable-file-references"
+      }
+    ],
+    "normalizedCompositionDifferences": [
+      {
+        "path": [
+          "harness-comfyui-cli-candidate",
+          "2",
+          "config",
+          "hiddenSectionNames",
+          "3"
+        ],
+        "b": "ui:deliverable-file-references"
+      }
+    ],
+    "normalizedInputDifferences": [],
+    "iterationCompositionIdentical": true,
+    "modelsIdentical": true,
+    "observersIdentical": true,
+    "imageReaderIdentical": true,
+    "resourceIdentity": "两组各197个runtime文件及package.json均与同一候选逐字节一致。"
+  },
+  "isolationMetadata": {
+    "fields": [
+      "Profile UUID",
+      "官方安装runId",
+      "DSH_HOME路径",
+      "Electron user-data路径",
+      "Profile安装路径",
+      "Workspace绝对路径",
+      "Host/Renderer CDP/Inspector端口",
+      "运行时间与PID"
+    ],
+    "location": "groups记录各组实际值；模型输入中的Workspace与Skill绝对路径按各组安装位置派生。",
+    "interpretation": "这是独立状态基线上的配置对照，实际模型请求包含各组必需的身份、路径和时间元数据。"
+  },
+  "verification": {
+    "focusedTests": {
+      "command": "node --test .local/skills-mcp-migration-live/anima-display-control.test.mjs",
+      "passed": 2
+    },
+    "methods": [
+      "官方applyEntryPatches分别计算两组生效composition；完整结构比较确认只有目标hiddenSectionNames多出一项。",
+      "现有project-system-prompt-visibility组件的结构测试确认contexts、tools和variables对象保留，其他section保留。",
+      "两组Profile与输入的完整结构比较记录规范化字段及唯一配置差异。",
+      "候选runtime与package.json逐字节比较确认Skill、persona、Tool配置、MCP声明和角色组件来自共同候选。"
+    ],
+    "runtimeVerification": "主线程后续保存两组首个实际模型请求，逐项核对实际工具声明、展示段可见性，以及ANIMA Skill和02-role规则的实际送达。"
+  },
+  "futureExecution": {
+    "samplesPerGroup": 1,
+    "start": "node .local/skills-mcp-migration-live/isolated-profile.mjs start --state <对应组stateFile>",
+    "capture": "node .local/skills-mcp-migration-live/desktop-driver.mjs capture <新runId> .local/skills-mcp-migration-live/isolated-profile-source-address-readback.json <对应组configPath>",
+    "submit": "独立复核通过且主线程启动该轮后，使用对应inputPath提交该组首例；按taskTimeoutMs=600000等待并采集完整轨迹。",
+    "profileReuse": "直接start已准备的state；重新执行通用configure后，先重新应用对应variant补丁并复核配置。",
+    "patch": "node .local/skills-mcp-migration-live/anima-display-control.mjs <baseline|experimental> <对应组stateFile> .local/skills-mcp-migration-live/anima-display-control/plan.json",
+    "judgment": "独立审查员分别检查纯JSON最终回答、保存JSON及校验结果、实际规则读取和工具使用；保留全部失败记录。"
+  },
+  "modelSubmissions": 0,
+  "remaining": [
+    "独立审查两组精确patch、有效配置和路径派生。",
+    "主线程决定启动首轮两组模型对照，并保存运行时可见信息和结果。"
+  ]
+}

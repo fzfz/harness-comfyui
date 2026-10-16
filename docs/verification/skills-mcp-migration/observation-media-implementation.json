@@ -1,0 +1,234 @@
+{
+  "purpose": "记录观察媒体引用实现与定向验证结果。",
+  "readWhen": "主线程审查候选文件和安排官方验收时。",
+  "status": "产品实现已完成，负责文件已冻结。",
+  "readyForIndependentReview": true,
+  "workspace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "basis": {
+    "plan": "docs/plans/skills-mcp-migration-20261013.md#5.12.4",
+    "contract": "docs/verification/skills-mcp-migration/observation-media-handoff-contract.json",
+    "review": "docs/verification/skills-mcp-migration/observation-media-handoff-contract-review.json"
+  },
+  "ownedFiles": [
+    "src/host/generation/observation-media.ts",
+    "src/host/core/schema.ts",
+    "src/host/core/plugin.ts",
+    "agent-presets/project-iteration-dispatch.mjs",
+    "agent-presets/project-observation-dispatch.mjs",
+    "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+    "config/plugin-runtime-resources.json",
+    ".agents/skills/comfyui-iterate-generation/SKILL.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md",
+    "tests/unit/observation-media.test.ts",
+    "tests/unit/fixtures/observation-media-runtime.ts",
+    "tests/integration/host-plugin.test.ts",
+    "tests/production/native-iteration-roles.test.mjs",
+    "tests/production/official-mcp-acceptance.test.mjs",
+    "tests/production/source-agent-preset.test.mjs",
+    "tests/production/fixtures/project-subagent-control-runtime.mjs",
+    "docs/verification/skills-mcp-migration/observation-media-implementation.json"
+  ],
+  "changes": [
+    {
+      "files": [
+        "src/host/generation/observation-media.ts"
+      ],
+      "result": "解析函数复用 Tool 身份与 Workspace 归属核验。函数查询已保存媒体，并按输入顺序返回 run_id、media_id、path。"
+    },
+    {
+      "files": [
+        "src/host/core/schema.ts",
+        "src/host/core/plugin.ts"
+      ],
+      "result": "CoreServices 暴露绑定当前 Runtime 与 WorkspaceRegistry 的媒体解析闭包。"
+    },
+    {
+      "files": [
+        "agent-presets/project-iteration-dispatch.mjs",
+        "agent-presets/project-observation-dispatch.mjs"
+      ],
+      "result": "共享派发在创建完成观察器前准备参数。观察适配器仅替换 images。"
+    },
+    {
+      "files": [
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+      ],
+      "result": "观察角色使用专用适配器。观察输入使用 run_id 与 media_id。生成角色记录查询所得媒体 ID。"
+    },
+    {
+      "files": [
+        "config/plugin-runtime-resources.json"
+      ],
+      "result": "运行资源清单包含观察适配器。"
+    },
+    {
+      "files": [
+        ".agents/skills/comfyui-iterate-generation/SKILL.md",
+        ".agents/skills/comfyui-iterate-generation/references/records.md"
+      ],
+      "result": "交接说明采用合同指定的目标文字。文字复核后已同步全部 textTargets。"
+    }
+  ],
+  "implementationChoices": [
+    "解析函数按输入顺序查询去重后的 Run 引用。",
+    "每批查询最多包含 MAX_RUN_INPUT_QUERY_IDS 个 Run 引用。",
+    "查询结果按请求位置关联原始引用，支持唯一 Run 前缀。",
+    "媒体映射保留选定子集的顺序和重复项。",
+    "解析输出仅采用 Runtime 返回的 run_id、media_id、file_path。",
+    "questions、output_files 和 description 保留调用方原值。",
+    "参数准备失败或取消时，派发组件不创建或续派子会话。",
+    "接纳后取消保留已接纳身份，续派继续使用原子会话。",
+    "逐 Run 查询错误保留 Runtime 的错误码与消息。",
+    "所属 Run 没有所选图片时，解析函数返回 GENERATION_MEDIA_NOT_FOUND。"
+  ],
+  "consumerChanges": [
+    {
+      "file": "tests/production/native-iteration-roles.test.mjs",
+      "result": "角色测试实际加载观察适配器，并通过真实 Runtime 解析已保存媒体。"
+    },
+    {
+      "file": "tests/production/official-mcp-acceptance.test.mjs",
+      "result": "角色发现包含共享派发与观察适配器。"
+    },
+    {
+      "file": "tests/production/source-agent-preset.test.mjs",
+      "result": "资源测试核对专用观察入口和 run_id、media_id 参数合同。"
+    },
+    {
+      "file": "tests/production/fixtures/project-subagent-control-runtime.mjs",
+      "result": "子角色范围枚举包含观察角色。"
+    },
+    {
+      "file": "tests/integration/host-plugin.test.ts",
+      "result": "Core 插件测试使用持久媒体记录，验证实际服务闭包的路径与身份约束。"
+    }
+  ],
+  "redGreen": [
+    {
+      "case": "媒体解析入口",
+      "red": "新增测试因 observation-media.ts 尚不存在而失败。",
+      "green": "真实 Runtime 的指定子集、重复项和唯一 Run 前缀解析通过。"
+    },
+    {
+      "case": "无效引用",
+      "red": "12 类无效结构未按合同报告参数错误。",
+      "green": "12 类输入均在 Workspace 查询前报告 GENERATION_PARAMETER_INVALID。"
+    },
+    {
+      "case": "多批查询",
+      "red": "41 个 Run 的单次查询触发 Runtime 的 20 项上限。",
+      "green": "41 个 Run 分为 3 批，42 项选定媒体引用保留原顺序。"
+    },
+    {
+      "case": "观察适配器",
+      "red": "真实角色测试因观察适配器尚不存在而失败。",
+      "green": "观察角色通过专用入口创建和续派子任务。"
+    },
+    {
+      "case": "角色发现消费者",
+      "red": "3 个测试消费者遗漏观察角色，分别发现 3 个角色或 8 个范围结果。",
+      "green": "角色枚举恢复为 4 个角色，迭代范围结果恢复为 10 项。"
+    }
+  ],
+  "coverage": [
+    "已保存图片的正常解析。",
+    "多图子集、重复项和唯一 Run 前缀。",
+    "超过 2 批的查询与多批子任务派发。",
+    "后续批次失败时零派发。",
+    "空引用、空白 ID、错误结构和已移除的 path 输入。",
+    "无效 Run、缺失 Run、错误 media_id 和尚无媒体记录。",
+    "伪造 callId、工具名不符、缺少 Workspace 和会话归属不符。",
+    "跨 Workspace 的 Run 拒绝。",
+    "参数准备失败与派发前取消。",
+    "解析期间取消与接纳后取消。",
+    "取消后的身份保留和原子会话恢复。",
+    "子任务消息排除 Runtime 返回的 title 与 Prompt 参数。",
+    "构图、生成、比较和工作台共享派发回归。"
+  ],
+  "checks": [
+    {
+      "name": "媒体解析与派发定向回归",
+      "command": "pnpm exec vitest run tests/unit/observation-media.test.ts tests/unit/image-reader-tool.test.ts tests/unit/generation-run-input-tool.test.ts tests/unit/plugin-resources.test.ts tests/unit/generation-worker.test.ts tests/production/native-iteration-roles.test.mjs tests/production/native-workbench-subagent.test.mjs tests/production/native-subagent-completion.test.mjs tests/production/source-agent-preset.test.mjs tests/production/official-mcp-acceptance.test.mjs tests/production/project-subagent-control.test.mjs tests/production/plugin-package.test.mjs tests/integration/host-plugin.test.ts --maxWorkers=1 --no-file-parallelism",
+      "exitCode": 0,
+      "files": 13,
+      "tests": 241,
+      "evidence": ".local/skills-mcp-migration-live/observation-media-targets/targeted-tests.log"
+    },
+    {
+      "name": "最终测试辅助文件复验",
+      "command": "pnpm exec vitest run tests/unit/observation-media.test.ts tests/production/native-iteration-roles.test.mjs tests/integration/host-plugin.test.ts --maxWorkers=1 --no-file-parallelism",
+      "exitCode": 0,
+      "files": 3,
+      "tests": 81,
+      "evidence": ".local/skills-mcp-migration-live/observation-media-targets/final-changed-tests.log"
+    },
+    {
+      "name": "类型检查",
+      "command": "pnpm typecheck",
+      "exitCode": 0,
+      "evidence": ".local/skills-mcp-migration-live/observation-media-targets/typecheck.log"
+    },
+    {
+      "name": "差异格式检查",
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "textChangesAfterApprovedTargets": [
+    "修改方向替代表示输出内容的修改建议。",
+    "必须保留替代应保留。",
+    "output_files 的 purpose 说明结果文件的内容。",
+    "不得替代禁止。",
+    "修改后生图的输入明确为比较所依据的观察文件。",
+    "补充比较的输入明确为首次与补充观察对应的生成记录。"
+  ],
+  "stc": {
+    "profile": "for-instruction-writing",
+    "reportProfile": "for-document",
+    "reportExitCode": 0,
+    "reportAntiEchoPending": 0,
+    "reportManualReview": [
+      "G17 warnings refer to required JSON string delimiters.",
+      "G4 warnings use the noun implementation to identify code and completion status."
+    ],
+    "productExitCode": 0,
+    "errors": 0,
+    "warnings": 17,
+    "antiEchoPending": 0,
+    "evidence": ".local/skills-mcp-migration-live/observation-media-targets/stc-products.json",
+    "manualReview": [
+      {
+        "rule": "G12",
+        "count": 13,
+        "result": "已逐处核对执行主体、输入对象和业务条件。内容保留既定任务触发条件、交接字段与任务顺序。"
+      },
+      {
+        "rule": "G17",
+        "count": 4,
+        "result": "4 处直引号属于 YAML 字符串语法。解析后的工具说明不包含引号。"
+      }
+    ]
+  },
+  "scope": {
+    "identitySource": "src/host/generation/tool-execution-identity.ts 保持现有实现，媒体解析函数直接调用该入口。",
+    "runtimeSource": "GenerationRuntime.readGenerationRunMedia 保持现有实现。",
+    "sharedLifecycle": "全部角色继续使用共享派发的接纳、等待、身份保存与清理流程。",
+    "outputContract": "派发输出 schema 保持现有合同。",
+    "dependencyChanges": [],
+    "skillScriptChanges": [],
+    "externalDataChanges": [],
+    "fullTestRuns": 0,
+    "realApplicationStarts": 0,
+    "realModelCalls": 0
+  },
+  "remaining": [
+    "主线程派发独立代码审查与全文件文字审查。",
+    "主线程构建最终候选包并执行官方 ToolRuntime 探针。",
+    "主线程按授权复验原模型和原四角色业务场景。"
+  ],
+  "limits": [
+    "Runtime 的媒体查询读取已保存媒体记录。文件读取失败由 local-image-reader 报告。",
+    "本轮自动化使用合成 ToolRunContext 与真实持久媒体。官方 ToolRuntime 身份仍待探针验收。",
+    "Builder 当前消息交接与整体超时继续按各自合同验收。"
+  ]
+}

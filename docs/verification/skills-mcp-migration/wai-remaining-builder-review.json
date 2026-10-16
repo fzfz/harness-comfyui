@@ -1,0 +1,1160 @@
+{
+  "reviewedAt": "2026-10-14T05:18:26.688169+00:00",
+  "scope": "5.5-1、5.5-2、5.5-4 独立 Spec 与保存 JSON 语义可用性审查；只写此文件。",
+  "status": "三例整轮均未通过；5.5-2 的保存 JSON 单独具备真实生成输入条件。",
+  "executionIndex": ".local/skills-mcp-migration-live/batch-ready-builder-dac474b8-7b88-4bfc-8c3f-0dfc66b27bba-execution.json",
+  "installedSkill": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+  "method": "逐事件审查、人工语义判断；实际请求正文按完整源文匹配。Host 工具结果全文通过 request.messages 等值定位首次送达。脚本仅用于结构解析与比较。",
+  "cases": [
+    {
+      "caseId": "5.5-1",
+      "status": "未通过",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/batch-ready-builder-dac474b8-7b88-4bfc-8c3f-0dfc66b27bba-5.5-1-input.json",
+      "inputExact": {
+        "caseId": "5.5-1",
+        "preset": "harness-comfyui-cli-candidate",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-wHnR0O",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-wHnR0O\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md\n任务参数：{\"request\":\"为 Fate 中的角色构建 Prompt。\"}\n将本任务产物保存到工作目录中的 5.5-1 目录。\n"
+      },
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791954840343-fba65aea-2cf5-437c-a9db-bf3f49af43bd-collect.json",
+      "sessionId": "session-7bd61ec6-66a0-4970-a97e-bd0ea8cc2624",
+      "end": {
+        "type": "turn/end",
+        "seq": 83,
+        "time": 1791954839610,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "sourceDelivery": [
+        {
+          "resultSeq": 57,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/d2953277-f0cc-4cf1-8158-9dccc74ffdf4.jsonl:1",
+          "messageIndex": 19
+        },
+        {
+          "resultSeq": 64,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/bf38b247-5096-4835-bb07-1b0f5d631fdc.jsonl:1",
+          "messageIndex": 22
+        },
+        {
+          "resultSeq": 66,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/bf38b247-5096-4835-bb07-1b0f5d631fdc.jsonl:1",
+          "messageIndex": 23
+        },
+        {
+          "resultSeq": 71,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/edc61526-4e0e-415b-8f94-957aa4e3d8b1.jsonl:1",
+          "messageIndex": 25
+        }
+      ],
+      "artifacts": [
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-wHnR0O/5.5-1/status.md",
+          "bytes": 3458,
+          "modifiedAt": "2026-10-14T05:13:50.416Z"
+        }
+      ],
+      "unrequestedGenerationObserved": false,
+      "toolLedger": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "arguments": {
+            "description": null
+          },
+          "resultSeq": 18
+        },
+        {
+          "seq": 25,
+          "name": "bash",
+          "arguments": {
+            "description": "List skill reference files"
+          },
+          "resultSeq": 26
+        },
+        {
+          "seq": 27,
+          "name": "bash",
+          "arguments": {
+            "description": "Inspect workspace and DSH env"
+          },
+          "resultSeq": 28
+        },
+        {
+          "seq": 32,
+          "name": "bash",
+          "arguments": {
+            "description": "Read input contract"
+          },
+          "resultSeq": 33
+        },
+        {
+          "seq": 34,
+          "name": "bash",
+          "arguments": {
+            "description": "Read generation output contract"
+          },
+          "resultSeq": 35
+        },
+        {
+          "seq": 39,
+          "name": "bash",
+          "arguments": {
+            "description": "Read prompt position order"
+          },
+          "resultSeq": 40
+        },
+        {
+          "seq": 41,
+          "name": "bash",
+          "arguments": {
+            "description": "Read generation profiles and schema"
+          },
+          "resultSeq": 42
+        },
+        {
+          "seq": 49,
+          "name": "bash",
+          "arguments": {
+            "description": "Read composition scenario branches"
+          },
+          "resultSeq": 50
+        },
+        {
+          "seq": 51,
+          "name": "bash",
+          "arguments": {
+            "description": "Read character and subject rules"
+          },
+          "resultSeq": 52
+        },
+        {
+          "seq": 56,
+          "name": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "search",
+            "query": "Fate",
+            "page_size": 10
+          },
+          "resultSeq": 57
+        },
+        {
+          "seq": 58,
+          "name": "bash",
+          "arguments": {
+            "description": "Read artist adoption and WAI artist syntax"
+          },
+          "resultSeq": 59
+        },
+        {
+          "seq": 63,
+          "name": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "resolve",
+            "id": "65"
+          },
+          "resultSeq": 64
+        },
+        {
+          "seq": 65,
+          "name": "mcp__noobai__query_semantic_works",
+          "arguments": {
+            "mode": "resolve",
+            "id": "3241"
+          },
+          "resultSeq": 66
+        },
+        {
+          "seq": 70,
+          "name": "mcp__noobai__query_semantic_characters",
+          "arguments": {
+            "mode": "search",
+            "work_id": "65",
+            "query": "阿尔托莉雅",
+            "page_size": 3
+          },
+          "resultSeq": 71
+        },
+        {
+          "seq": 72,
+          "name": "bash",
+          "arguments": {
+            "description": "Create output directory 5.5-1"
+          },
+          "resultSeq": 73
+        },
+        {
+          "seq": 77,
+          "name": "bash",
+          "arguments": {
+            "description": "Write pending-input status report"
+          },
+          "resultSeq": 78
+        }
+      ],
+      "targetBranch": "实际报告了 Fate 同名作品 65、3241 并等待，目标候选识别及可见提问成立；等待前越界查询，完整分支未通过。",
+      "findings": [
+        {
+          "id": "FATE-1",
+          "severity": "high",
+          "firstDeviationSeq": 69,
+          "actualToolSeq": 70,
+          "request": ".local/skills-mcp-migration-live/llm-calls/bf38b247-5096-4835-bb07-1b0f5d631fdc.jsonl:1",
+          "observed": "尚未由用户选定作品或提供角色名称，执行者自行以 work_id=65、阿尔托莉雅查询角色。seq81 同时宣称未指定角色禁止查询，并把实际查询解释为可行性试查。",
+          "contract": "references/prompt-position-rules/character.md 用户只提供作品时：唯一作品及用户角色名称确定后才查询角色。",
+          "cause": "对应请求完整保留该规则；主动试查是行为偏离，尚无证据证明需要查询才能完成作品消歧。"
+        }
+      ],
+      "retention": [
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/bf38b247-5096-4835-bb07-1b0f5d631fdc.jsonl:1",
+          "at": "2026-10-14T05:13:30.541Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/character.md",
+              "messageIndicesContainingFullSource": [
+                17
+              ]
+            }
+          ]
+        }
+      ],
+      "waiting": {
+        "visibleQuestionSeq": 81,
+        "actualCandidates": [
+          {
+            "id": "65",
+            "name": "Fate",
+            "aliases": [],
+            "category": "Fate"
+          },
+          {
+            "id": "3241",
+            "name": "Fate",
+            "aliases": [],
+            "category": "Fate"
+          }
+        ],
+        "predefinedRule": "input-preflight-current.json:1306–1314 选择实际候选 work_id65。",
+        "selectionIsActualCandidate": true,
+        "strictPhaseOnePassed": false,
+        "automaticContinuationEligible": false,
+        "condition": "作品 ID65 属于真实候选，若只讨论选择内容，该回复有效；计划第5.13节要求先验证第一轮正确等待，本轮在等待前已违规查询角色，因此不能记作正确等待通过后自动续跑。即使另获继续授权，现有预定义回复只覆盖作品 ID65，仍须用户指定角色名称，不能沿用执行者自行挑选的阿尔托莉雅。"
+      },
+      "savedJsonSemanticUsability": {
+        "status": "无 Builder JSON",
+        "readyForRealGeneration": false,
+        "reason": "仅 status.md，缺少用户选定角色与最终结果。"
+      },
+      "directReturnContract": "等待分支无需返回生成 JSON；应只报告真实待选信息。没有完成态生成结果。",
+      "validators": "未运行 Prompt 或生成结果校验器。"
+    },
+    {
+      "caseId": "5.5-2",
+      "status": "未通过",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/batch-ready-builder-dac474b8-7b88-4bfc-8c3f-0dfc66b27bba-5.5-2-input.json",
+      "inputExact": {
+        "caseId": "5.5-2",
+        "preset": "harness-comfyui-cli-candidate",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md\n任务参数：{\"request\":\"单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。\"}\n将本任务产物保存到工作目录中的 5.5-2 目录。\n{\"type\":\"comfyui-context\",\"data\":{\"kind\":\"character\",\"id\":\"39934\",\"work_name\":\"其它\",\"character_name\":\"Ani (Grok Companion)\",\"prompt_text\":\"\"}}"
+      },
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791954723944-8046da59-8064-4029-96ab-6ef40ac33fa3-collect.json",
+      "sessionId": "session-859f3ac7-80bd-4cd4-9cd6-b468958fc4ef",
+      "end": {
+        "type": "turn/end",
+        "seq": 126,
+        "time": 1791954722876,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "sourceDelivery": [
+        {
+          "resultSeq": 59,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/be3c3583-1c62-4699-a321-f3fe88e3333d.jsonl:1",
+          "messageIndex": 22
+        },
+        {
+          "resultSeq": 101,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/b601ef42-a250-4833-89c4-b42a0dea31cb.jsonl:1",
+          "messageIndex": 40
+        },
+        {
+          "resultSeq": 106,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/d51f12d6-f15e-4e00-a310-4d6db2279680.jsonl:1",
+          "messageIndex": 42
+        },
+        {
+          "resultSeq": 111,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/bef603c1-54af-4ba0-8112-4ae1e128df15.jsonl:1",
+          "messageIndex": 44
+        },
+        {
+          "resultSeq": 116,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/72af0d7d-9b91-4428-937d-c485b04192a7.jsonl:1",
+          "messageIndex": 46
+        }
+      ],
+      "artifacts": [
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+          "bytes": 720,
+          "modifiedAt": "2026-10-14T05:11:44.291Z"
+        },
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/prompt-positions.json",
+          "bytes": 811,
+          "modifiedAt": "2026-10-14T05:11:47.125Z"
+        }
+      ],
+      "unrequestedGenerationObserved": false,
+      "toolLedger": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "arguments": {
+            "description": null
+          },
+          "resultSeq": 18
+        },
+        {
+          "seq": 23,
+          "name": "bash",
+          "arguments": {
+            "description": "List skill reference files"
+          },
+          "resultSeq": 24
+        },
+        {
+          "seq": 25,
+          "name": "bash",
+          "arguments": {
+            "description": "Inspect workspace and DSH env"
+          },
+          "resultSeq": 26
+        },
+        {
+          "seq": 30,
+          "name": "bash",
+          "arguments": {
+            "description": "Read input contract and slot orders"
+          },
+          "resultSeq": 31
+        },
+        {
+          "seq": 32,
+          "name": "bash",
+          "arguments": {
+            "description": "Read composition references"
+          },
+          "resultSeq": 33
+        },
+        {
+          "seq": 37,
+          "name": "bash",
+          "arguments": {
+            "description": "Read output contract and validator"
+          },
+          "resultSeq": 38
+        },
+        {
+          "seq": 39,
+          "name": "bash",
+          "arguments": {
+            "description": "Read schema and profiles"
+          },
+          "resultSeq": 40
+        },
+        {
+          "seq": 44,
+          "name": "bash",
+          "arguments": {
+            "description": "Read weighting, self-check, conflict rules"
+          },
+          "resultSeq": 45
+        },
+        {
+          "seq": 46,
+          "name": "bash",
+          "arguments": {
+            "description": "Read position rules"
+          },
+          "resultSeq": 47
+        },
+        {
+          "seq": 51,
+          "name": "bash",
+          "arguments": {
+            "description": "Read artist adoption and examples"
+          },
+          "resultSeq": 52
+        },
+        {
+          "seq": 53,
+          "name": "bash",
+          "arguments": {
+            "description": "Read agent config and validator help"
+          },
+          "resultSeq": 54
+        },
+        {
+          "seq": 58,
+          "name": "mcp__noobai__query_semantic_characters",
+          "arguments": {
+            "mode": "resolve",
+            "id": "39934"
+          },
+          "resultSeq": 59
+        },
+        {
+          "seq": 60,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "query": "white shirt",
+            "page_size": 10
+          },
+          "resultSeq": 61
+        },
+        {
+          "seq": 65,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "standing posture"
+          },
+          "resultSeq": 66
+        },
+        {
+          "seq": 67,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "upper body half body shot framing"
+          },
+          "resultSeq": 68
+        },
+        {
+          "seq": 72,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "soft light from window"
+          },
+          "resultSeq": 73
+        },
+        {
+          "seq": 74,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "window indoors room interior"
+          },
+          "resultSeq": 75
+        },
+        {
+          "seq": 79,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "soft lighting gentle shadows bright room"
+          },
+          "resultSeq": 80
+        },
+        {
+          "seq": 81,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 10,
+            "query": "looking at viewer gaze at camera"
+          },
+          "resultSeq": 82
+        },
+        {
+          "seq": 86,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "gentle smile calm expression"
+          },
+          "resultSeq": 87
+        },
+        {
+          "seq": 88,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 8,
+            "query": "eye level camera angle straight on"
+          },
+          "resultSeq": 89
+        },
+        {
+          "seq": 93,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "daytime bright day"
+          },
+          "resultSeq": 94
+        },
+        {
+          "seq": 95,
+          "name": "mcp__noobai__query_semantic_prompt_terms",
+          "arguments": {
+            "mode": "search",
+            "page_size": 6,
+            "query": "calm peaceful atmosphere mood"
+          },
+          "resultSeq": 96
+        },
+        {
+          "seq": 100,
+          "name": "bash",
+          "arguments": {
+            "description": "Run prompt format validator on raw positions"
+          },
+          "resultSeq": 101
+        },
+        {
+          "seq": 105,
+          "name": "bash",
+          "arguments": {
+            "description": "Rerun prompt format validator with escaped parens"
+          },
+          "resultSeq": 106
+        },
+        {
+          "seq": 110,
+          "name": "bash",
+          "arguments": {
+            "description": "Build generation output JSON from validated prompt"
+          },
+          "resultSeq": 111
+        },
+        {
+          "seq": 115,
+          "name": "bash",
+          "arguments": {
+            "description": "Validate generation output and save artifacts"
+          },
+          "resultSeq": 116
+        },
+        {
+          "seq": 120,
+          "name": "bash",
+          "arguments": {
+            "description": "Confirm saved artifacts"
+          },
+          "resultSeq": 121
+        }
+      ],
+      "targetBranch": "通过：seq58 按真实角色 ID39934 resolve，seq59 获唯一非空 Prompt；保存结果保留 Ani、金发、双马尾、长发、蓝眼，并添加用户白衬衫。",
+      "findings": [
+        {
+          "id": "ANI-1",
+          "severity": "medium",
+          "firstDeviationSeq": 36,
+          "request": ".local/skills-mcp-migration-live/llm-calls/af379d77-ef23-4489-a0b8-0175dfec27b6.jsonl:1",
+          "observed": "直接将单主体肖像设为主场景；窗边地点也匹配矩阵环境叙事，未报告多候选等待。最终把窗边仅归为光源支持环境，自行缩窄匹配含义。",
+          "contract": "references/composition-scenario-branches.md:16、30，内容匹配地点即可，不要求环境占据画面主导。"
+        },
+        {
+          "id": "ANI-2",
+          "severity": "medium",
+          "observed": "最终 seq124 返回 Prompt、属性表和链接，没有直接返回原校验 stdout 的十属性生成结果。保存 builder.json 完整。",
+          "contract": "SKILL 第7节及 generation-output-contract.md 校验结果。"
+        },
+        {
+          "id": "ANI-3",
+          "severity": "medium",
+          "observed": "最终声称候选A全部清晰、第三人称外部视点，但 camera_composition 只保留 upper_body、straight-on、centered composition；这些自行保留的候选属性未完整映射。",
+          "contract": "camera-composition.md 使用选定候选构图；区别于用户未明确指定这些属性，因此不把该映射偏离直接当成原用户画面要求丢失。"
+        }
+      ],
+      "retention": [
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/af379d77-ef23-4489-a0b8-0175dfec27b6.jsonl:1",
+          "at": "2026-10-14T05:09:10.617Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+              "messageIndicesContainingFullSource": [
+                11
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/ea0ef60b-ea88-4d66-8827-45ee99666254.jsonl:1",
+          "at": "2026-10-14T05:11:14.292Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/character.md",
+              "messageIndicesContainingFullSource": [
+                17
+              ]
+            },
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/camera-composition.md",
+              "messageIndicesContainingFullSource": [
+                17
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/e5d23faa-52a5-46aa-bb96-183ff3f84c33.jsonl:1",
+          "at": "2026-10-14T05:11:52.697Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+              "messageIndicesContainingFullSource": [
+                13
+              ]
+            }
+          ]
+        }
+      ],
+      "savedJsonSemanticUsability": {
+        "status": "满足本次用户画面要求，可作为真实生成的候选输入",
+        "readyForRealGeneration": true,
+        "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+        "reason": "角色来源已实际补齐；单女性、standing、upper_body、白衬衫、室内窗、左侧柔光与向右柔影相容，未见相互排斥的主体/服装/光线要求。生成目的 final 对应新画面无测试要求；原校验器确认尺寸与十字段有效。",
+        "limits": "此结论只评保存 JSON 的原用户语义与结构可用性；整轮主场景及候选映射、直接返回仍未通过。当前任务仅构建，不构成生图授权。",
+        "workName": "“其它”是来源记录分组，没有证据表明为角色必须写入的真实 IP 名称，未把未输出该词判错。",
+        "escaping": "保存字符串圆括号前各一条反斜杠；正常语法转义，角色身份保留。"
+      },
+      "validation": [
+        {
+          "callSeq": 100,
+          "resultSeq": 101,
+          "exitCode": 2,
+          "reason": "未转义括号"
+        },
+        {
+          "callSeq": 105,
+          "resultSeq": 106,
+          "exitCode": 0,
+          "mode": "prompt-format"
+        },
+        {
+          "callSeq": 110,
+          "resultSeq": 111,
+          "exitCode": 0,
+          "mode": "prompt-format and construct file"
+        },
+        {
+          "callSeq": 115,
+          "resultSeq": 116,
+          "exitCode": 0,
+          "mode": "generation-result; round-trip identical"
+        }
+      ],
+      "waiting": {
+        "visibleSceneQuestion": false,
+        "replyApplicable": false
+      },
+      "directReturnContract": "未通过；完整文件已保存，最终未直接返回完整 JSON。"
+    },
+    {
+      "caseId": "5.5-4",
+      "status": "未通过",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/batch-ready-builder-dac474b8-7b88-4bfc-8c3f-0dfc66b27bba-5.5-4-input.json",
+      "inputExact": {
+        "caseId": "5.5-4",
+        "preset": "harness-comfyui-cli-candidate",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-eZjl6M",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-eZjl6M\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md\n任务参数：{\"request\":\"单人站立半身像，白衬衫，窗边柔光；只构建并保存 Builder JSON。 水彩淡雅与硬边赛璐璐两个画风方向均保留作为候选。\"}\n将本任务产物保存到工作目录中的 5.5-4 目录。\n{\"type\":\"comfyui-context\",\"data\":{\"kind\":\"character\",\"id\":\"39934\",\"work_name\":\"其它\",\"character_name\":\"Ani (Grok Companion)\",\"prompt_text\":\"Ani_(Grok), blonde hair, twintails, long hair, blue eyes\"}}"
+      },
+      "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791954826975-4cd24be0-e3df-4142-8e7a-64753d1caa64-collect.json",
+      "sessionId": "session-3aba09b2-aa8c-4ca4-8443-107300fa9bc6",
+      "end": {
+        "type": "turn/end",
+        "seq": 139,
+        "time": 1791954826263,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "sourceDelivery": [
+        {
+          "resultSeq": 78,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/b501f5ef-1ee5-4415-a091-ad436d60340e.jsonl:1",
+          "messageIndex": 29
+        },
+        {
+          "resultSeq": 80,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/b501f5ef-1ee5-4415-a091-ad436d60340e.jsonl:1",
+          "messageIndex": 30
+        },
+        {
+          "resultSeq": 85,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/dd056020-9182-4afd-a774-f04b45e33e4f.jsonl:1",
+          "messageIndex": 32
+        },
+        {
+          "resultSeq": 87,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/dd056020-9182-4afd-a774-f04b45e33e4f.jsonl:1",
+          "messageIndex": 33
+        },
+        {
+          "resultSeq": 94,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/2eba03ee-9720-42de-94bb-59cca20fcd6e.jsonl:1",
+          "messageIndex": 36
+        },
+        {
+          "resultSeq": 104,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/a6b04908-7420-4c29-b29c-1fbaac8396a1.jsonl:1",
+          "messageIndex": 40
+        },
+        {
+          "resultSeq": 114,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/21b87e66-d94b-4527-82c6-91169f8bf6a3.jsonl:1",
+          "messageIndex": 44
+        },
+        {
+          "resultSeq": 124,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/1c699657-8a57-4bc4-8a4f-341ecf1f90f6.jsonl:1",
+          "messageIndex": 48
+        },
+        {
+          "resultSeq": 134,
+          "firstRequestWithIdenticalFullToolText": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/llm-calls/35c0993f-2b77-40e2-830a-95536156514a.jsonl:1",
+          "messageIndex": 52
+        }
+      ],
+      "artifacts": [
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-eZjl6M/5.5-4/builder-cel.json",
+          "bytes": 1446,
+          "modifiedAt": "2026-10-14T05:13:31.278Z"
+        },
+        {
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-eZjl6M/5.5-4/builder-watercolor.json",
+          "bytes": 1347,
+          "modifiedAt": "2026-10-14T05:13:31.277Z"
+        }
+      ],
+      "unrequestedGenerationObserved": false,
+      "toolLedger": [
+        {
+          "seq": 17,
+          "name": "skill",
+          "arguments": {
+            "description": null
+          },
+          "resultSeq": 18
+        },
+        {
+          "seq": 22,
+          "name": "bash",
+          "arguments": {
+            "description": "List skill directory contents"
+          },
+          "resultSeq": 23
+        },
+        {
+          "seq": 24,
+          "name": "bash",
+          "arguments": {
+            "description": "Inspect working directory"
+          },
+          "resultSeq": 25
+        },
+        {
+          "seq": 29,
+          "name": "bash",
+          "arguments": {
+            "description": "Read input contract and position order"
+          },
+          "resultSeq": 30
+        },
+        {
+          "seq": 31,
+          "name": "bash",
+          "arguments": {
+            "description": "Read composition references"
+          },
+          "resultSeq": 32
+        },
+        {
+          "seq": 36,
+          "name": "bash",
+          "arguments": {
+            "description": "Read generation output contract and profiles"
+          },
+          "resultSeq": 37
+        },
+        {
+          "seq": 38,
+          "name": "bash",
+          "arguments": {
+            "description": "List scripts and read validator"
+          },
+          "resultSeq": 39
+        },
+        {
+          "seq": 43,
+          "name": "bash",
+          "arguments": {
+            "description": "Read all position rules"
+          },
+          "resultSeq": 44
+        },
+        {
+          "seq": 48,
+          "name": "bash",
+          "arguments": {
+            "description": "Read weighting, conflict, self-check, artist rules"
+          },
+          "resultSeq": 49
+        },
+        {
+          "seq": 53,
+          "name": "bash",
+          "arguments": {
+            "description": "Read weight policy JSON"
+          },
+          "resultSeq": 54
+        },
+        {
+          "seq": 55,
+          "name": "bash",
+          "arguments": {
+            "description": "Read prompt-weighting doc"
+          },
+          "resultSeq": 56
+        },
+        {
+          "seq": 60,
+          "name": "bash",
+          "arguments": {
+            "description": "Read spatial rules and occlusion example"
+          },
+          "resultSeq": 61
+        },
+        {
+          "seq": 62,
+          "name": "bash",
+          "arguments": {
+            "description": "Read artist query vocabulary and CLI doc"
+          },
+          "resultSeq": 63
+        },
+        {
+          "seq": 70,
+          "name": "bash",
+          "arguments": {
+            "description": "Inspect DSH environment variables"
+          },
+          "resultSeq": 71
+        },
+        {
+          "seq": 72,
+          "name": "mcp__noobai__search_instances",
+          "arguments": {
+            "query": ""
+          },
+          "resultSeq": 73
+        },
+        {
+          "seq": 77,
+          "name": "mcp__noobai__search_base_models",
+          "arguments": {
+            "query": "wai",
+            "limit": 20
+          },
+          "resultSeq": 78
+        },
+        {
+          "seq": 79,
+          "name": "mcp__noobai__search_styles",
+          "arguments": {
+            "query": "半厚涂水彩，青蓝樱粉对比，柔和光晕，手工颗粒感，治愈梦幻",
+            "limit": 10
+          },
+          "resultSeq": 80
+        },
+        {
+          "seq": 84,
+          "name": "mcp__noobai__search_styles",
+          "arguments": {
+            "query": "商业赛璐璐，纤细平面化线条，平滑无笔触，高明度高纯度，漫反射",
+            "base_model": {
+              "id": "2"
+            },
+            "limit": 10
+          },
+          "resultSeq": 85
+        },
+        {
+          "seq": 86,
+          "name": "mcp__noobai__search_styles",
+          "arguments": {
+            "query": "半厚涂水彩，无轮廓色块，低饱和度，柔和光晕，透明材质，大量留白，治愈清新",
+            "base_model": {
+              "id": "2"
+            },
+            "limit": 10
+          },
+          "resultSeq": 87
+        },
+        {
+          "seq": 91,
+          "name": "bash",
+          "arguments": {
+            "description": "Check validator CLI help"
+          },
+          "resultSeq": 92
+        },
+        {
+          "seq": 93,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": {
+            "ref": {
+              "kind": "style",
+              "id": "12298"
+            }
+          },
+          "resultSeq": 94
+        },
+        {
+          "seq": 98,
+          "name": "bash",
+          "arguments": {
+            "description": "Write two position input files"
+          },
+          "resultSeq": 99
+        },
+        {
+          "seq": 103,
+          "name": "bash",
+          "arguments": {
+            "description": "Validate both prompt position sets"
+          },
+          "resultSeq": 104
+        },
+        {
+          "seq": 108,
+          "name": "bash",
+          "arguments": {
+            "description": "Escape parentheses in character tag"
+          },
+          "resultSeq": 109
+        },
+        {
+          "seq": 113,
+          "name": "bash",
+          "arguments": {
+            "description": "Re-validate both prompt position sets"
+          },
+          "resultSeq": 114
+        },
+        {
+          "seq": 118,
+          "name": "bash",
+          "arguments": {
+            "description": "Build two Builder JSON files"
+          },
+          "resultSeq": 119
+        },
+        {
+          "seq": 123,
+          "name": "bash",
+          "arguments": {
+            "description": "Validate both Builder JSON results"
+          },
+          "resultSeq": 124
+        },
+        {
+          "seq": 128,
+          "name": "bash",
+          "arguments": {
+            "description": "Finalize JSON files and clean temp files"
+          },
+          "resultSeq": 129
+        },
+        {
+          "seq": 133,
+          "name": "bash",
+          "arguments": {
+            "description": "Show final Builder JSON files"
+          },
+          "resultSeq": 134
+        }
+      ],
+      "targetBranch": "部分完成：按水彩与赛璐璐分组查询，但选中画师并未按每组全部特点严格匹配；无真实选择等待。",
+      "findings": [
+        {
+          "id": "STYLE-1",
+          "severity": "high",
+          "firstDeviationSeq": 90,
+          "request": ".local/skills-mcp-migration-live/llm-calls/dd056020-9182-4afd-a774-f04b45e33e4f.jsonl:1",
+          "observed": "按最强匹配自行采用 fly 与 sky cappuccino；fly 说明含高反差自然光、青春忧郁，不明确支持查询所列低饱和、大量留白、治愈清新等全部特点；sky cappuccino 说明含轻厚涂、纤细线稿、后期柔焦，没有明确硬边、平涂无笔触等全部特点。",
+          "contract": "artist-adoption.md 用户未指定画师第4项逐项特点匹配，以及画师与其他视觉内容冲突处理。",
+          "impact": "最终 watercolor 同时保留 fly 与 low contrast；cel 同时保留 soft shadow gradients 与 hard-edged shadows/minimal gradients，且画师纤细线稿与 bold clean outlines 的冲突未处理。不能据搜索排序认定唯一完整匹配，也不能据有多条返回直接认定应让用户选择全部返回。"
+        },
+        {
+          "id": "STYLE-2",
+          "severity": "high",
+          "firstDeviationSeq": 90,
+          "observed": "把未要求的纱帘遮肩和层级补充当作遮挡与深度的主场景依据，自行选主场景。",
+          "contract": "矩阵根据冲突处理后保留用户要求匹配；单主体肖像及环境叙事至少同时成立，未指定主场景应等待。"
+        },
+        {
+          "id": "STYLE-3",
+          "severity": "medium",
+          "observed": "seq76 同一响应发出底模查询77和画风查询79；画风查询决定产生时尚未收到唯一 wai 结果。后续84/86确实按已知 wai id2过滤。",
+          "contract": "artist-adoption.md 查询前先确定精确 wai 唯一底模。"
+        },
+        {
+          "id": "STYLE-4",
+          "severity": "high",
+          "firstArtifactSeq": 98,
+          "observed": "两份文件均有 upper body 与 close-up portrait shot，主景别互相竞争；cel 有 soft shadow gradients 与 hard-edged shadows/minimal gradients，既要求柔和连续阴影又要求硬边最小渐变。",
+          "impact": "保存 JSON 自身的构图/表现存在冲突，需先修正后再供真实生成。"
+        },
+        {
+          "id": "STYLE-5",
+          "severity": "medium",
+          "firstDecisionSeq": 90,
+          "observed": "两方向作为候选以供对比，却选 generation_purpose=final；合同将比较方案归为 test。",
+          "contract": "generation-output-contract.md 选择生成目的。"
+        },
+        {
+          "id": "STYLE-6",
+          "severity": "medium",
+          "observed": "最终 seq137 返回候选链接和说明，未直接返回校验后的 JSON。两份文件各十字段完整。",
+          "contract": "SKILL 第7节及生成合同校验结果。"
+        }
+      ],
+      "retention": [
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/0a45386b-0b3c-42bc-95ca-f29d023eb6a7.jsonl:1",
+          "at": "2026-10-14T05:11:44.818Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+              "messageIndicesContainingFullSource": [
+                18
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/dd056020-9182-4afd-a774-f04b45e33e4f.jsonl:1",
+          "at": "2026-10-14T05:12:08.876Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+              "messageIndicesContainingFullSource": [
+                18
+              ]
+            },
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+              "messageIndicesContainingFullSource": [
+                11
+              ]
+            },
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+              "messageIndicesContainingFullSource": [
+                13
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/2eba03ee-9720-42de-94bb-59cca20fcd6e.jsonl:1",
+          "at": "2026-10-14T05:12:41.711Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/prompt-conflict-rules.md",
+              "messageIndicesContainingFullSource": [
+                18
+              ]
+            }
+          ]
+        },
+        {
+          "request": ".local/skills-mcp-migration-live/llm-calls/35c0993f-2b77-40e2-830a-95536156514a.jsonl:1",
+          "at": "2026-10-14T05:13:36.786Z",
+          "documents": [
+            {
+              "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+              "messageIndicesContainingFullSource": [
+                13
+              ]
+            }
+          ]
+        }
+      ],
+      "savedJsonSemanticUsability": {
+        "status": "两份均不通过",
+        "readyForRealGeneration": false,
+        "paths": [
+          "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-eZjl6M/5.5-4/builder-cel.json",
+          "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-eZjl6M/5.5-4/builder-watercolor.json"
+        ],
+        "reasons": "共同景别竞争、候选用途错误及画师匹配依据不足；赛璐璐文件另含阴影边缘冲突。结构通过不能代替这些语义判断。",
+        "contextPreserved": "已提供 Ani Character Prompt 保留，无重新查询角色；括号正常转义。"
+      },
+      "validation": [
+        {
+          "callSeq": 103,
+          "resultSeq": 104,
+          "exitCode": 2,
+          "scope": "两方向括号未转义"
+        },
+        {
+          "callSeq": 113,
+          "resultSeq": 114,
+          "exitCode": 0,
+          "scope": "两方向格式重试"
+        },
+        {
+          "callSeq": 123,
+          "resultSeq": 124,
+          "exitCode": 0,
+          "scope": "两方向生成结果；此工具文本只展示 stdout head，完整对象随后 seq134 读取送达"
+        }
+      ],
+      "waiting": {
+        "visibleChoiceQuestion": false,
+        "replyApplicable": false,
+        "condition": "未来只有执行者真实报告经过逐项匹配的候选，或具体未描述特点/冲突并等待，才核对相应预定义选择；本轮不能补发画师选择追认已选结果。"
+      },
+      "directReturnContract": "未通过；保存文件完整，最终只给链接/说明。",
+      "ambiguity": "用户要求保留两个风格候选与合同一次一个生成结果之间有范围解释问题；本报告不单凭两份文件判违规，独立列出已证实的语义冲突。"
+    }
+  ],
+  "causalLimits": "已证实规则与数据可见时的具体决策偏离；尚未证明文档负载、模型默认习惯或宿主指引是根因。未增加禁令、未运行模型、未改产品。",
+  "generationBoundary": "可作为生成输入只表示文件满足本次用户明确画面要求并具有有效结构；当前构建任务未授权真实生图，后续由主线程根据既有授权和生成 Skill 决定。"
+}

@@ -1,0 +1,262 @@
+{
+  "purpose": "记录观察媒体驱动的独立代码与功能审查结果。",
+  "readWhen": "主线程决定是否执行观察媒体官方探针前读取。",
+  "readyForExecution": true,
+  "status": "execution-preflight-approved",
+  "contract": "docs/verification/skills-mcp-migration/observation-media-runtime-contract.json",
+  "scope": {
+    "modules": [
+      ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs",
+      ".local/skills-mcp-migration-live/observation-media-runtime/official-control.mjs",
+      ".local/skills-mcp-migration-live/observation-media-runtime/runtime-observer.mjs",
+      ".local/skills-mcp-migration-live/observation-media-runtime/local-provider.mjs"
+    ],
+    "tests": [
+      ".local/skills-mcp-migration-live/observation-media-runtime/runner.test.mjs",
+      ".local/skills-mcp-migration-live/observation-media-runtime/cleanup.test.mjs",
+      ".local/skills-mcp-migration-live/observation-media-runtime/local-provider.test.mjs",
+      ".local/skills-mcp-migration-live/observation-media-runtime/cli.test.mjs"
+    ]
+  },
+  "findings": [
+    {
+      "id": "B1",
+      "severity": "P1",
+      "blocking": true,
+      "title": "案例构建读取了错误的契约层级。",
+      "locations": [
+        {
+          "path": ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs",
+          "lines": [
+            190,
+            192,
+            199,
+            297
+          ]
+        }
+      ],
+      "evidence": "契约参数位于 solution.neutralArguments；buildCases 读取 contract.neutralArguments。直接将当前契约传给 buildCases 时，在 duplicate-reference 读取 args.images 处抛出 TypeError。",
+      "impact": "驱动在完成候选安装和第二次启动后构建案例，全部原媒体案例均无法执行。",
+      "acceptance": "用当前契约直接构建全部九项案例并校验实际参数；在首次 Profile 修改前完成案例构建。"
+    },
+    {
+      "id": "B2",
+      "severity": "P1",
+      "blocking": true,
+      "title": "Profile 快照改写符号链接，回退恢复无法保持原 Profile。",
+      "locations": [
+        {
+          "path": ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs",
+          "lines": [
+            71,
+            118,
+            110,
+            170
+          ]
+        }
+      ],
+      "evidence": "prepareControl 和 restoreProfile 使用 cp(...,{recursive:true,dereference:false})，没有保留符号链接原文。当前原 Profile 的 node_modules/.bin/semver 目标为 ../semver/bin/semver.js；prepared/before/profile 中的目标已变成指向原 Profile 的绝对路径。profileManifest 保留的是原相对目标。",
+      "impact": "官方回装失败后的快照恢复将写入改写后的链接；compareTree 的符号链接目标比较失败，原 Profile 无法按契约完整恢复。当前快照已包含这一差异。",
+      "acceptance": "快照和恢复均保持链接原文；重新准备受影响快照，并以包含相对符号链接的 Profile 夹具验证官方回装失败后的完整恢复。"
+    },
+    {
+      "id": "B3",
+      "severity": "P1",
+      "blocking": true,
+      "title": "运行入口未核对当前原环境与恢复快照的一致性。",
+      "locations": [
+        {
+          "path": ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs",
+          "lines": [
+            274,
+            278,
+            287,
+            117,
+            118
+          ]
+        }
+      ],
+      "evidence": "runControl 启动前检查审查布尔值、control 状态、候选包和进程状态；inspectControl 只检查停机、端口、租约及候选清单。该路径未遍历验证 Profile 快照可读取，也未比较当前原 Profile、Workspace、Run、媒体、会话与已准备基线。",
+      "impact": "prepare 后至 run 前的 Profile 更新会在清理时被备份覆盖；备份缺失或损坏时仍可修改 Profile 并启动应用。fallback 随后先删除 Profile 再复制备份，恢复失败可能留下不完整 Profile。",
+      "acceptance": "在首次 Profile 修改前确认完整恢复快照可读取且与登记清单一致，并确认受保护原数据仍符合准备基线；漂移或快照缺失时保持原环境不变并拒绝启动。"
+    }
+  ],
+  "verification": {
+    "localTests": {
+      "command": "node --test .local/skills-mcp-migration-live/observation-media-runtime/runner.test.mjs .local/skills-mcp-migration-live/observation-media-runtime/cleanup.test.mjs .local/skills-mcp-migration-live/observation-media-runtime/cli.test.mjs",
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    "contractReproduction": {
+      "operation": "读取当前契约并直接调用导出的 buildCases(contract)。",
+      "result": "TypeError: Cannot read properties of undefined (reading images)",
+      "location": ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:192"
+    },
+    "snapshotLinkInspection": {
+      "operation": "只读比较 prepared/control.json 中登记链接、原 Profile 链接与 prepared/before/profile 对应链接。",
+      "result": "原链接与登记清单一致；快照链接已改成绝对路径。"
+    },
+    "providerTest": "已阅读 local-provider.test.mjs；本任务禁止启动 Provider，因此未运行该项测试。",
+    "applicationStarts": 0,
+    "providerStarts": 0,
+    "remoteModelCalls": 0,
+    "reviewedFilesModified": false
+  },
+  "coverageAssessment": [
+    {
+      "area": "冻结候选与安装",
+      "status": "static-path-reviewed-runtime-pending",
+      "detail": "驱动比较冻结 tgz 字节并检查 201 项清单，复用官方安装与逐资源字节比较；本次未执行官方安装。"
+    },
+    {
+      "area": "旧 Profile 参数与本地路由",
+      "status": "static-path-reviewed-runtime-pending",
+      "detail": "createControlledProfile 从候选预设生成 patch，替换角色参数和模型配置；LLM observer 在 stream 入口执行本地 provider/model 白名单，启动封装过滤其他凭据。实际生效配置与请求仍待官方探针。"
+    },
+    {
+      "area": "真实 Core、工具与 Workspace",
+      "status": "static-path-reviewed-runtime-pending",
+      "detail": "控制侧检查进程、Host inspector、Core 服务、Agent/Session/cwd 和 images schema，通过 withInitiator 与 tools.execute 调用工具。实际绑定尚未运行验证。"
+    },
+    {
+      "area": "原数据与会话保护",
+      "status": "blocked",
+      "detail": "驱动保留 state 副本、只读数据库与原会话记录，并在停止后比较行、媒体字节、会话前缀和 Workspace；启动前基线核对受 B3 阻断。"
+    },
+    {
+      "area": "取消与续派",
+      "status": "not-executed",
+      "detail": "代码保存接纳身份，调用 interruptByParent 后取消工具 signal，等待子终态后用 agent_id 续派；当前契约构建错误阻断全部案例，实际行为未验证。"
+    },
+    {
+      "area": "Profile 恢复与进程清理",
+      "status": "blocked",
+      "detail": "停止检查与恢复失败夹具通过；实际 Profile 符号链接恢复受 B2 阻断，启动前恢复能力核对受 B3 阻断。"
+    },
+    {
+      "area": "映射夹具",
+      "status": "not-implemented-not-executed",
+      "detail": "多图子集、21 个独立 Run 和无媒体 Run 未实现；原媒体阶段不能代替这三项覆盖。"
+    },
+    {
+      "area": "观察语义",
+      "status": "not-assessed",
+      "detail": "固定文本 Provider 的结构测试不提供图片理解结论。"
+    }
+  ],
+  "decision": "B1、B2、B3 和共享 helper 的 E1 门禁均已解除。允许对 prepared-after-code-review 执行入口开展执行前核对。",
+  "reviewRounds": [
+    {
+      "round": 2,
+      "status": "driver-code-review-passed-external-launch-gate-pending",
+      "codeReviewPassed": true,
+      "readyForExecution": false,
+      "scope": "复核 driver-test-report.json 所列四个模块、四个测试文件及 B1、B2、B3 修复。",
+      "findingDispositions": [
+        {
+          "id": "B1",
+          "status": "resolved",
+          "locations": [
+            ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:255",
+            ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:348"
+          ],
+          "evidence": "buildCases 从 solution.neutralArguments 读取参数。runControl 在基线核对、服务启动和 Profile 修改前构建全部案例。当前契约的九项案例与参数测试通过。"
+        },
+        {
+          "id": "B2",
+          "status": "resolved",
+          "locations": [
+            ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:72",
+            ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:175"
+          ],
+          "evidence": "快照与恢复复制均使用 verbatimSymlinks:true。包含相对符号链接的恢复测试通过；只读核对 prepared-after-code-review 的 334 个 Profile 文件和 1 个链接，全部与原 Profile 一致。"
+        },
+        {
+          "id": "B3",
+          "status": "resolved",
+          "locations": [
+            ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:134",
+            ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:168",
+            ".local/skills-mcp-migration-live/observation-media-runtime/runner.mjs:349"
+          ],
+          "evidence": "validatePreparedControl 在修改前验证快照可读性、原 Profile、Workspace、数据库行、媒体、会话集合与原会话字节。恢复先核对快照并复制到暂存目录，核对字节、权限与链接后换入 Profile。缺失快照、同长度损坏和六类基线变化的测试通过；恢复依赖缺失时保留当前 Profile。"
+        }
+      ],
+      "newMaterialFindingsInFourModules": [],
+      "externalLaunchGates": [
+        {
+          "id": "E1",
+          "status": "pending-owner-fix-and-verification",
+          "path": ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:134",
+          "observation": "复审读取时，createControlledProfile 的图片读取 profiles 条目仍缺少 hasApiKey。主线程已指定 managed_cli_result_files 队员修复该共享 helper。",
+          "releaseCondition": "共享 helper 修复完成，并由对应责任队员提供官方配置校验结果后，主线程重新评估实际启动门禁。",
+          "scopeBoundary": "本轮四模块复审未验收该共享 helper 的并行修改。"
+        }
+      ],
+      "verification": {
+        "command": "node --test .local/skills-mcp-migration-live/observation-media-runtime/runner.test.mjs .local/skills-mcp-migration-live/observation-media-runtime/cleanup.test.mjs .local/skills-mcp-migration-live/observation-media-runtime/cli.test.mjs",
+        "tests": 20,
+        "passed": 20,
+        "failed": 0,
+        "actualPreparedControl": ".local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/control.json",
+        "actualProfileFilesCompared": 334,
+        "actualProfileLinksCompared": 1,
+        "actualProfileDifferences": [],
+        "sourceStateBytesPreserved": true,
+        "originalMediaBytesPreserved": true,
+        "actualControlPhase": "prepared",
+        "profileMutated": false,
+        "applicationStarts": 0,
+        "providerStarts": 0,
+        "remoteModelCalls": 0,
+        "providerTest": "已阅读；按任务边界未运行 local-provider.test.mjs。"
+      },
+      "pendingRuntimeEvidence": [
+        "官方安装与全部 201 项资源核对。",
+        "真实 Core、ToolRegistry、Workspace 绑定与本地 Provider 请求。",
+        "接纳后取消、子终态及同一子会话续派。",
+        "实际运行后的原数据保护、Profile 恢复、PID 与端口释放。"
+      ],
+      "mappedFixtureStatus": "尚未实现、尚未执行；多图子集、21 个独立 Run 和无媒体 Run 均未计为通过。",
+      "semanticVerdict": "未评价。",
+      "decision": "四模块代码复审通过。外部启动门禁尚未解除，readyForExecution 保持 false。"
+    },
+    {
+      "round": 3,
+      "scope": "仅复核共享图片读取 Profile 的 E1 启动门禁。",
+      "status": "execution-preflight-approved",
+      "codeReviewPassed": true,
+      "readyForExecution": true,
+      "externalLaunchGates": [
+        {
+          "id": "E1",
+          "status": "resolved",
+          "independentReview": ".local/skills-mcp-migration-live/completion-lifecycle/controlled-image-profile-review.json",
+          "evidence": "共享 helper 当前生成 hasApiKey:false；独立报告 status=passed、canUseForOfficialRestart=true。测试直接调用当前 src/image-reader/plugin-schema.ts 的 Config，在 native、ptc 两种模式验证生成配置通过，并验证删除 hasApiKey 后被拒绝。"
+        }
+      ],
+      "newMaterialFindings": [],
+      "verification": {
+        "reviewedSources": [
+          ".local/skills-mcp-migration-live/completion-lifecycle/run.mjs:134",
+          ".local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs:116",
+          "src/image-reader/plugin-schema.ts:19",
+          "src/image-reader/settings.ts:142"
+        ],
+        "schemaTestExecution": "采用独立复审报告的已执行结果；本轮核对测试代码与当前字段，未重复运行。",
+        "applicationStarts": 0,
+        "providerStarts": 0,
+        "remoteModelCalls": 0
+      },
+      "decision": "B1、B2、B3 和共享 helper 的 E1 门禁均已解除。允许对 prepared-after-code-review 执行入口开展执行前核对。",
+      "executionBoundary": "实际插件激活、201 项安装资源、真实 Core 与工具绑定、原媒体案例、取消续派、原数据保护及恢复清理仍须在运行时逐项验证。",
+      "mappedFixtureStatus": "尚未实现、尚未执行。",
+      "semanticVerdict": "未评价。"
+    }
+  ],
+  "firstRoundDecision": "修复 B1、B2、B3 并完成独立复核前，运行入口不得使用 readyForExecution:true。",
+  "findingsStage": "首轮发现；当前处理结果见 reviewRounds 最新项。",
+  "codeReviewPassed": true,
+  "approvedControlPath": ".local/skills-mcp-migration-live/observation-media-runtime/prepared-after-code-review/control.json"
+}

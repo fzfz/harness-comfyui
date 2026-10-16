@@ -1,0 +1,209 @@
+{
+  "purpose": "独立核对 neutral-runtime 启动边界与六项回归测试，并记录 mock spawn 边界复现结果。",
+  "status": "reviewed-no-open-material-findings",
+  "scope": [
+    ".local/skills-mcp-migration-live/neutral-runtime.mjs",
+    ".local/skills-mcp-migration-live/neutral-runtime.test.mjs"
+  ],
+  "execution": {
+    "command": "node --test .local/skills-mcp-migration-live/neutral-runtime.test.mjs",
+    "passed": 6,
+    "failed": 0,
+    "applicationStarts": 0,
+    "modelCalls": 0,
+    "implementationChanges": 0,
+    "temporaryFixturesRemoved": true
+  },
+  "findings": [
+    {
+      "id": "RLG-1",
+      "priority": "P1",
+      "title": "路径规范化先折叠 ..，使符号链接越界路径通过启动校验。",
+      "locations": [
+        ".local/skills-mcp-migration-live/neutral-runtime.mjs:75",
+        ".local/skills-mcp-migration-live/neutral-runtime.mjs:129",
+        ".local/skills-mcp-migration-live/neutral-runtime.mjs:142"
+      ],
+      "input": "临时目录中创建 R/alias -> external/child，并创建 external/home；CUSTOM_HOME 使用原始字符串 R/alias/../home，另外两项隔离路径位于 R 内。control 为独立兄弟目录。",
+      "expected": "操作系统解析 CUSTOM_HOME 得到 external/home，包装器应保存拒绝审计并保持 spawn 次数为 0。",
+      "observed": {
+        "spawnCalls": 1,
+        "auditStatus": "accepted",
+        "nativeRealpath": "external/home",
+        "readFileThroughOriginalPath": "读取到了 external/home/marker 的 external-marker 内容"
+      },
+      "cause": "canonicalPath 在解析符号链接前使用 resolve 折叠 alias/..，得到 R/home；通过校验后，spawn 仍收到含 alias/.. 的原始环境值。",
+      "impact": "隔离路径判定与操作系统使用原始路径的结果不同，包装器会放行指向本轮 R 外的 home、user-data 或诊断路径。",
+      "acceptance": "增加符号链接后接 .. 的回归，并使用操作系统实际路径解析结果核对边界；保证诊断文件尚不存在时也遵守同一规则。"
+    },
+    {
+      "id": "RLG-2",
+      "priority": "P2",
+      "title": "路径解析异常绕过拒绝审计。",
+      "locations": [
+        ".local/skills-mcp-migration-live/neutral-runtime.mjs:77",
+        ".local/skills-mcp-migration-live/neutral-runtime.mjs:97",
+        ".local/skills-mcp-migration-live/neutral-runtime.mjs:125"
+      ],
+      "input": "在 R 下创建 loop -> loop，将 CUSTOM_HOME 设置为 R/loop，其他路径保持有效。",
+      "expected": "保存脱敏拒绝审计，记录失败变量与路径解析错误，并保持 spawn 次数为 0。",
+      "observed": {
+        "errorCode": "ELOOP",
+        "additionalSpawnCalls": 0,
+        "additionalAuditFiles": 0
+      },
+      "cause": "containsControlPath 调用 canonicalPath 时抛出的 ELOOP 没有进入 refuse；canonicalPath 对其他不可恢复的文件系统异常同样直接抛出。",
+      "impact": "启动虽然被阻止，但本轮缺少合同要求的启动拒绝审计；官方 probe 的通用失败记录无法替代该审计。",
+      "acceptance": "增加路径解析失败回归，验证异常进入统一拒绝记录，并保留原始错误码及脱敏变量标识。"
+    }
+  ],
+  "additionalChecks": [
+    {
+      "case": "配置变量名替换为 CUSTOM_HOME、CUSTOM_DATA、CUSTOM_LOG，诊断文件及父目录尚不存在，控制目录名称为 R-control。",
+      "result": "spawn 为 1 次，审计为 accepted，凭据字符串未出现在审计中。"
+    },
+    {
+      "case": "控制根为指向 R 的符号链接，或该链接下尚不存在的子目录。",
+      "result": "两种输入分别保存一份 rejected 审计，spawn 均为 0 次。"
+    },
+    {
+      "case": "现有环境过滤回归使用 main.env 父目录作为控制根。",
+      "result": "业务 endpoint 和凭据值保留，控制路径被移除，凭据在审计中脱敏。"
+    }
+  ],
+  "lifecycleReview": {
+    "source": "tests/desktop/fixtures/official-desktop-probe.mjs:391",
+    "result": "spawnProcess 调用位于 startProbe 的 try 内；同步拒绝会进入 catch，关闭日志、释放端口预留和 development 环境，并保存失败记录。",
+    "coverageLimit": "现有六项测试中的生命周期测试在 verifyApplication 阶段拒绝，尚未通过 startRuntime 集成复现包装器拒绝后的清理。"
+  },
+  "auditContractGap": {
+    "source": ".local/skills-mcp-migration-live/neutral-runtime.mjs:110",
+    "observation": "显式拒绝记录当前只有 recordedAt、runtimeRoot、status、reason；runtime-launch-boundary-review.json 要求的阶段、错误码、冲突控制根和处理动作尚未结构化保存。"
+  },
+  "limitations": [
+    "未启动真实 Desktop，未调用模型，未验证真实应用对反例路径的具体消费方式。",
+    "审查只修改本报告文件；复现材料位于系统临时目录并已删除。"
+  ],
+  "revisions": [
+    {
+      "revision": 1,
+      "status": "changes-requested",
+      "execution": {
+        "command": "node --test .local/skills-mcp-migration-live/neutral-runtime.test.mjs",
+        "passed": 8,
+        "failed": 0,
+        "applicationStarts": 0,
+        "modelCalls": 0,
+        "temporaryFixturesRemoved": true
+      },
+      "resolvedFindings": [
+        {
+          "id": "RLG-1",
+          "result": "独立重放符号链接后接 .. 的原始路径，spawn 为 0 次，保存 1 份 rejected 审计。"
+        },
+        {
+          "id": "RLG-2",
+          "result": "独立重放自循环符号链接，spawn 为 0 次，保存 1 份 rejected 审计，reason 包含 ELOOP 和 CUSTOM_HOME。"
+        }
+      ],
+      "normalLaunch": {
+        "input": "配置使用 CUSTOM_HOME、CUSTOM_DATA、CUSTOM_LOG；controlRoots 包含合法 main.env 父目录；诊断文件和直接父目录尚不存在。",
+        "spawnCalls": 1,
+        "auditStatus": "accepted",
+        "credentialLeaked": false
+      },
+      "findings": [
+        {
+          "id": "RLG-3",
+          "priority": "P1",
+          "title": "悬空符号链接被当作不存在的普通尾段，允许诊断文件写入 R 外。",
+          "locations": [
+            ".local/skills-mcp-migration-live/neutral-runtime.mjs:76",
+            ".local/skills-mcp-migration-live/neutral-runtime.mjs:78"
+          ],
+          "input": "在临时 R 下创建 dangling-log -> external/new.log；external 为 R 外兄弟目录且已存在，new.log 尚不存在；CUSTOM_LOG 指向 R/dangling-log。",
+          "expected": "解析已存在的符号链接目标，识别 external/new.log 位于 R 外，保存拒绝审计并保持 spawn 为 0 次。",
+          "observed": {
+            "spawnCalls": 1,
+            "auditStatus": "accepted",
+            "writeFileThroughSuppliedPath": "writeFileSync(R/dangling-log, fixture-marker) 创建 external/new.log；从 external/new.log 读取到 fixture-marker。"
+          },
+          "cause": "realpathSync.native 对悬空符号链接返回 ENOENT；catch 直接递归父目录并拼回 basename，丢失已存在符号链接的目标信息。",
+          "impact": "合同允许诊断文件尚不存在，但当前算法把指向 R 外尚不存在目标的符号链接认作 R 内路径。",
+          "acceptance": "对悬空符号链接解析其 readlink 目标后继续规范化，并保留普通缺失诊断文件的合法路径；用实际临时文件写入验证返回路径与文件系统结果一致。"
+        }
+      ]
+    },
+    {
+      "revision": 2,
+      "status": "contract-reviewed-implementation-pending",
+      "contract": "native realpath 仅在 ENOENT 时检查 lstat；已存在的悬空符号链接直接拒绝，普通缺失尾段递归原始父路径；ENOTDIR 和其他错误直接拒绝。",
+      "judgment": "该合同覆盖已知路径反例，保留本机合法启动需要的普通缺失诊断文件与已存在且可解析的符号链接。",
+      "independentTemporaryFixtureResults": [
+        {
+          "case": "普通缺失父目录及诊断文件",
+          "result": "解析为 R 内路径。"
+        },
+        {
+          "case": "R 内有效链接及其下缺失诊断文件",
+          "result": "解析为 R 内目标路径。"
+        },
+        {
+          "case": "R 外悬空末级链接、R 内悬空末级链接、悬空父目录链接",
+          "result": "三类分别拒绝。"
+        },
+        {
+          "case": "符号链接后接 ../new.log",
+          "result": "解析为 external/new.log，由 R 包含关系校验拒绝。"
+        },
+        {
+          "case": "循环符号链接",
+          "result": "ELOOP 拒绝。"
+        }
+      ],
+      "implementationCondition": "lstat 异常只对 ENOENT 继续递归；其他错误必须进入包装器的拒绝审计。",
+      "applicationStarts": 0,
+      "modelCalls": 0,
+      "temporaryFixturesRemoved": true
+    },
+    {
+      "revision": 3,
+      "status": "reviewed-no-open-material-findings",
+      "execution": {
+        "command": "node --test .local/skills-mcp-migration-live/neutral-runtime.test.mjs",
+        "passed": 9,
+        "failed": 0,
+        "applicationStarts": 0,
+        "modelCalls": 0,
+        "temporaryFixturesRemoved": true
+      },
+      "resolvedFindingIds": [
+        "RLG-1",
+        "RLG-2",
+        "RLG-3"
+      ],
+      "implementationReview": {
+        "source": ".local/skills-mcp-migration-live/neutral-runtime.mjs:74",
+        "result": "native realpath 保留原始路径语义；ENOENT 后用 lstat 区分已存在条目与普通缺失尾段；仅普通缺失尾段递归父路径；ENOTDIR 与其他异常由启动包装器保存拒绝审计。"
+      },
+      "independentReplay": {
+        "rejectedCases": [
+          "符号链接后接 .. 指向 R 外",
+          "自循环符号链接",
+          "指向 R 外缺失目标的悬空末级链接",
+          "悬空父目录",
+          "普通文件用作父目录"
+        ],
+        "rejectedResults": "每个场景 spawn 为 0 次，各保存 1 份 rejected 审计，凭据值未泄漏。",
+        "acceptedCases": [
+          "合法 main.env 控制来源、自定义变量名、普通未创建诊断文件",
+          "已存在 R 内链接下的未创建诊断文件"
+        ],
+        "acceptedResults": "每个场景 mock spawn 为 1 次，各保存 1 份 accepted 审计，凭据值未泄漏。",
+        "externalDirectoryResult": "R 外临时目录保持 child、home 两项原有子目录，未创建诊断文件。"
+      },
+      "findings": [],
+      "acceptanceBoundary": "结论覆盖启动参数校验和 mock spawn；官方 probe 拒绝后的清理由源码链路与已有准备失败测试支撑，真实应用启动不属于本次复审。"
+    }
+  ]
+}

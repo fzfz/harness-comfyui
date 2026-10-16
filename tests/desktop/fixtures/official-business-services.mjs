@@ -1,6 +1,8 @@
 import { createServer } from 'node:http'
 
 const MAX_MODEL_REQUEST_BYTES = 1024 * 1024
+import { OFFICIAL_MCP_FIXTURE } from './official-mcp-services.mjs'
+
 const CONTROLLED_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL+nwAAAABJRU5ErkJggg==',
   'base64',
@@ -14,7 +16,9 @@ export async function startOfficialBusinessServices(fixture) {
   const skillToolCalls = []
   const jobPollCounts = new Map()
   let submittedPrompt = null
+  let mcpObservationImages = []
   const waiters = []
+  const responsePauses = []
   const server = createServer((request, response) => {
     const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
     if (request.method === 'GET' && pathname === '/internal/comfyui-source') {
@@ -168,7 +172,7 @@ export async function startOfficialBusinessServices(fixture) {
     if (request.method === 'POST' && pathname === '/v1/chat/completions') {
       void readBytes(request).then(bytes => {
         const body = JSON.parse(bytes.toString('utf8'))
-        const captured = { path: request.url, headers: { ...request.headers }, body }
+        const captured = { sequence: requestLog.length, path: request.url, headers: { ...request.headers }, body }
         requestLog.push(captured)
         const waiterIndex = waiters.findIndex(waiter => waiter.predicate(captured))
         if (waiterIndex < 0) requests.push(captured)
@@ -195,7 +199,33 @@ export async function startOfficialBusinessServices(fixture) {
         const generationToolAvailable = (body.tools ?? []).some(tool =>
           (tool.function?.name ?? tool.name) === 'generate_with_comfyui')
         const generationCall = generationRequested && !toolResultPresent && generationToolAvailable
-        const delta = generationCall
+        const mcpWorkflowRequested = promptText.includes(OFFICIAL_MCP_FIXTURE.workflowPrompt)
+        const mcpToolNames = (body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
+        const toolMessages = (body.messages ?? []).filter(message => message.role === 'tool')
+        const mcpSearchDone = toolMessages.some(message => JSON.stringify(message.content).includes('Controlled MCP Workflow'))
+        const mcpDetailDone = toolMessages.some(message => JSON.stringify(message.content).includes('workflow_json'))
+        const nextMcpTool = mcpWorkflowRequested && !mcpDetailDone
+          ? mcpToolNames.find(name => name?.endsWith(mcpSearchDone ? 'get_catalog_resource' : 'search_workflows'))
+          : null
+        const requestedChildTool = mcpToolNames.find(name => typeof name === 'string'
+          && name.startsWith('subagent_') && promptText.includes(`${OFFICIAL_MCP_FIXTURE.childPrompt} ${name}`))
+          ?? (mcpToolNames.includes('subagent_task') ? 'subagent_task' : null)
+        const childCall = promptText.includes(OFFICIAL_MCP_FIXTURE.childPrompt)
+          && !mcpWorkflowRequested && !toolResultPresent && requestedChildTool !== null
+        const mcpCall = nextMcpTool ? {
+          name: nextMcpTool,
+          arguments: mcpSearchDone ? { ref: OFFICIAL_MCP_FIXTURE.responses.get_catalog_resource.item.ref } : { query: '', limit: 5, page: 1 },
+        } : childCall ? {
+          name: requestedChildTool,
+          arguments: controlledMcpChildArguments(requestedChildTool, mcpObservationImages),
+        } : null
+        const delta = mcpCall ? {
+          role: 'assistant',
+          tool_calls: [{ index: 0, id: `official_desktop_mcp_${requestLog.length}`, type: 'function',
+            function: { name: mcpCall.name, arguments: JSON.stringify(mcpCall.arguments) } }],
+        } : mcpWorkflowRequested ? {
+          role: 'assistant', content: OFFICIAL_MCP_FIXTURE.workflowCompleted,
+        } : generationCall
           ? {
               role: 'assistant',
               tool_calls: [{
@@ -240,10 +270,23 @@ export async function startOfficialBusinessServices(fixture) {
             }
         const chunks = [
           { id: 'official-desktop-controlled-response', object: 'chat.completion.chunk', created: 1, model, choices: [{ index: 0, delta, finish_reason: null }] },
-          { id: 'official-desktop-controlled-response', object: 'chat.completion.chunk', created: 1, model, choices: [{ index: 0, delta: {}, finish_reason: generationCall || skillToolCall ? 'tool_calls' : 'stop' }] },
+          { id: 'official-desktop-controlled-response', object: 'chat.completion.chunk', created: 1, model, choices: [{ index: 0, delta: {}, finish_reason: mcpCall || generationCall || skillToolCall ? 'tool_calls' : 'stop' }] },
         ]
         response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' })
-        response.end(`${chunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`)
+        const pauseIndex = responsePauses.findIndex(pause => pause.predicate(captured))
+        if (pauseIndex < 0) {
+          response.end(`${chunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`)
+        } else {
+          const pause = responsePauses.splice(pauseIndex, 1)[0]
+          response.once('close', () => pause.onClosed({ request: captured, finished: response.writableFinished }))
+          pause.finish = () => {
+            if (!response.destroyed && !response.writableEnded) {
+              response.end(`${chunks.slice(1).map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`)
+            }
+          }
+          response.write(`data: ${JSON.stringify(chunks[0])}\n\n`)
+          pause.onStarted(captured)
+        }
       }).catch(error => writeFailure(response, error))
       return
     }
@@ -266,6 +309,23 @@ export async function startOfficialBusinessServices(fixture) {
   return {
     origin,
     baseURL: `${origin}/v1`,
+    setMcpObservationImages(images) { mcpObservationImages = structuredClone(images) },
+    pauseNextModelResponse(predicate) {
+      let onStarted
+      let onClosed
+      const started = new Promise(resolve => { onStarted = resolve })
+      const closed = new Promise(resolve => { onClosed = resolve })
+      const pause = { predicate, onStarted, onClosed, finish: undefined }
+      responsePauses.push(pause)
+      return {
+        started, closed,
+        release() {
+          const pendingIndex = responsePauses.indexOf(pause)
+          if (pendingIndex >= 0) responsePauses.splice(pendingIndex, 1)
+          pause.finish?.()
+        },
+      }
+    },
     get requests() { return [...requests] },
     get requestLog() { return structuredClone(requestLog) },
     get comfyRequests() { return [...comfyRequests] },
@@ -432,6 +492,20 @@ function controlledOutputDescriptor(fixture) {
     filename: fixture.generation.filename,
     subfolder: fixture.generation.subfolder,
     type: 'output',
+  }
+}
+
+function controlledMcpChildArguments(toolName, observationImages) {
+  const description = `${OFFICIAL_MCP_FIXTURE.childPrompt} ${toolName}`
+  if (toolName === 'subagent_task') return {
+    description, task: `${OFFICIAL_MCP_FIXTURE.workflowPrompt}\n${description}`,
+  }
+  const shared = { description, output_files: [] }
+  if (toolName === 'subagent_observation') return {
+    ...shared, images: observationImages, questions: [OFFICIAL_MCP_FIXTURE.workflowPrompt],
+  }
+  return {
+    ...shared, requirements: [OFFICIAL_MCP_FIXTURE.workflowPrompt], input_files: [], reference_files: [],
   }
 }
 

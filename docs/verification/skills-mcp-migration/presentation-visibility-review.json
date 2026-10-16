@@ -1,0 +1,64 @@
+{
+  "purpose": "记录两个产品预设展示段过滤配置与确定性回归的独立功能审查。",
+  "reviewedAt": "2026-10-14T06:16:00Z",
+  "verdict": "PASS",
+  "scope": [
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:12-19 的展示段过滤配置",
+    "agent-presets/harness-comfyui-iteration/agent.cordis.yml:12-19 的展示段过滤配置",
+    "tests/production/source-agent-preset.test.mjs:216-292 的确定性回归"
+  ],
+  "findings": [],
+  "verified": [
+    {
+      "result": "两个实际 YAML 都在既有 hiddenSectionNames 中加入 ui:deliverable-file-references，保留原有三个段名。",
+      "sources": [
+        "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:15-19",
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:15-19"
+      ]
+    },
+    {
+      "result": "既有组件等待 next() 完成后按完整 section.name 过滤，返回新的 sections 数组并保留其他 assembly 字段。本次组件 diff 为空。",
+      "sources": ["agent-presets/project-system-prompt-visibility.mjs:30-39"]
+    },
+    {
+      "result": "参数化回归读取两个实际 composition，经组件公开 apply 注册并调用 listener。断言覆盖目标段及既有三段移除、persona 与 bash 指引保留、相似段名保留、contexts/tools/variables 对象引用保留及输入 sections 未修改；既有错误透传和非法配置回归继续通过。",
+      "sources": [
+        "tests/production/source-agent-preset.test.mjs:21-35",
+        "tests/production/source-agent-preset.test.mjs:216-292"
+      ]
+    },
+    {
+      "result": "静态调用范围仍为两个产品 composition。presets.cordis.yml 分别在对应 preset 的 plugins 中 include composition；cordis.patch.yml 与 presets.cordis.yml 的 diff 为空。普通预设没有新增过滤组件加载位置。",
+      "sources": [
+        "agent-presets/presets.cordis.yml:1-40",
+        "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml:12-13",
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:12-13"
+      ]
+    },
+    {
+      "result": "子 Agent 由 project-iteration-dispatch 将 parent、persona、agentOptions 与 toolFilter 交给 subagents.startContinuable；展示段配置没有改动该调用或引入新的子 Agent 组合。",
+      "sources": ["agent-presets/project-iteration-dispatch.mjs:38-50"]
+    }
+  ],
+  "validation": {
+    "command": "pnpm exec vitest run tests/production/source-agent-preset.test.mjs tests/production/official-agent-preset-resources.test.mjs tests/unit/installed-presets.test.mjs --maxWorkers=1 --no-file-parallelism",
+    "exitCode": 0,
+    "filesPassed": 3,
+    "testsPassed": 67,
+    "diffCheck": {
+      "command": "git diff --check -- agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml agent-presets/harness-comfyui-iteration/agent.cordis.yml tests/production/source-agent-preset.test.mjs",
+      "exitCode": 0
+    }
+  },
+  "acceptanceBoundary": {
+    "configurationAndListenerBehavior": "已通过本轮独立审查与定向测试。",
+    "ordinaryPresetScope": "已核对静态加载范围。installed-presets 的真实 Loader 测试覆盖注册和 Skill 服务隔离；该测试未装载完整提示词组合，普通预设实际 assembly 仍需候选应用请求验证。",
+    "mainAndChildRequests": "本轮没有调用模型。两个主预设及子 Agent 最终模型请求中的段落和工具声明仍按计划第 5.2.1 节验收。",
+    "fileAndImageDelivery": "过滤整段同时移除图片 Markdown、文件链接及文件卡片通用指引。已有文件和图片的最终引用及官方 UI 打开结果仍需真实交付验收。",
+    "animaPureJson": "本轮结论限于配置及过滤行为；ANIMA 输出格式继续按其合同独立验收。"
+  },
+  "workUnderReviewModified": false,
+  "fullTestsRun": false,
+  "modelCallsMade": false,
+  "commitCreated": false
+}

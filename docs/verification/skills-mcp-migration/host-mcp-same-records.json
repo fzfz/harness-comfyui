@@ -1,0 +1,135 @@
+{
+  "hostEvidence": ".local/skills-mcp-migration-live/host-adapter-same-records.json",
+  "method": "直接调用当前 Host CatalogCli 实现，读取真实 HTTP 数据源；与真实 MCP 响应中同一组记录的 Host 可见字段比较。",
+  "sameRecords": [
+    {
+      "kind": "workflow",
+      "mcp": ".local/skills-mcp-migration-live/catalog/1791885570445-get_catalog_resource.json",
+      "fields": {
+        "id": {
+          "host": "29",
+          "mcp": "29",
+          "equal": true
+        },
+        "base_model_id": {
+          "host": "2",
+          "mcp": "2",
+          "equal": true
+        },
+        "title": {
+          "host": "wai_basic_txt2img",
+          "mcp": "wai_basic_txt2img",
+          "equal": true
+        },
+        "model_id": {
+          "host": "1",
+          "mcp": "1",
+          "equal": true
+        }
+      },
+      "equal": true
+    },
+    {
+      "kind": "model",
+      "mcp": ".local/skills-mcp-migration-live/catalog/1791886923577-get_catalog_resource.json",
+      "fields": {
+        "id": {
+          "host": "1",
+          "mcp": "1",
+          "equal": true
+        },
+        "base_model_id": {
+          "host": "2",
+          "mcp": "2",
+          "equal": true
+        },
+        "file_name": {
+          "host": "waiIllustriousSDXL_v170.safetensors",
+          "mcp": "waiIllustriousSDXL_v170.safetensors",
+          "equal": true
+        },
+        "description": {
+          "host": "wai-sdxl-prompt-builder",
+          "mcp": "wai-sdxl-prompt-builder",
+          "equal": true
+        },
+        "usage": {
+          "host": "wai-sdxl-prompt-builder",
+          "mcp": "wai-sdxl-prompt-builder",
+          "equal": true
+        },
+        "skill_name": {
+          "host": "wai-sdxl-prompt-builder",
+          "mcp": "wai-sdxl-prompt-builder",
+          "equal": true
+        }
+      },
+      "equal": true
+    },
+    {
+      "kind": "lora",
+      "mcp": ".local/skills-mcp-migration-live/catalog/1791886924290-get_catalog_resource.json",
+      "fields": {
+        "id": {
+          "host": "102",
+          "mcp": "102",
+          "equal": true
+        },
+        "base_model_id": {
+          "host": "2",
+          "mcp": "2",
+          "equal": true
+        },
+        "file_name": {
+          "host": "rimixxO2.safetensors",
+          "mcp": "rimixxO2.safetensors",
+          "equal": true
+        },
+        "description": {
+          "host": "该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。",
+          "mcp": "该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。",
+          "equal": true
+        },
+        "usage": {
+          "host": "使用 <lora:rimixxO2:1.0> 调用 Ri-mix 风格的柔和体积渐变、清晰发丝和局部材质高光，不添加额外触发词。",
+          "mcp": "使用 <lora:rimixxO2:1.0> 调用 Ri-mix 风格的柔和体积渐变、清晰发丝和局部材质高光，不添加额外触发词。",
+          "equal": true
+        },
+        "model_id": {
+          "host": "1",
+          "mcp": "1",
+          "equal": true
+        },
+        "trigger_words": {
+          "host": [],
+          "mcp": [],
+          "equal": true
+        },
+        "weight": {
+          "host": 1,
+          "mcp": 1,
+          "equal": true
+        }
+      },
+      "equal": true
+    },
+    {
+      "kind": "instances",
+      "mcp": ".local/skills-mcp-migration-live/catalog/1791887955948-search_instances.json",
+      "fields": {
+        "ids": {
+          "host": [
+            "2"
+          ],
+          "mcp": [
+            "2"
+          ],
+          "equal": true
+        }
+      },
+      "equal": true
+    }
+  ],
+  "allEqual": true,
+  "scope": "目录身份与 Host 可见字段一致；生成、媒体及角色交接另行验收。"
+}

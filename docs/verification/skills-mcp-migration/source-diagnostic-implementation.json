@@ -1,0 +1,100 @@
+{
+  "purpose": "记录 GenerationSourceClient HTTP 错误诊断修复的源码范围、TDD 证据和定向验收结果。",
+  "readWhen": "独立审查诊断修复、构建诊断候选或复验实际参数检查消息时。",
+  "status": "源码实施与定向验收已完成，独立审查待执行。",
+  "scope": {
+    "worktree": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "plan": "docs/plans/skills-mcp-migration-20261013.md#5.7.2",
+    "contract": "docs/verification/skills-mcp-migration/current-boundary-causal-design.json#diagnosticInformationLoss",
+    "contractReview": "docs/verification/skills-mcp-migration/source-diagnostic-contract-review.json",
+    "planSemanticReview": "docs/verification/skills-mcp-migration/source-diagnostic-plan-semantic-review.json",
+    "completed": "实施者仅修改诊断合同指定的源码、配置、测试与本记录。实施者使用临时目录中的受管 CLI 模块运行既有命令测试。"
+  },
+  "implementation": [
+    {
+      "file": "src/host/generation/source-client.ts",
+      "result": "诊断转换入口：GenerationSourceClient.run。"
+    },
+    {
+      "file": "config/error-catalog.json",
+      "result": "生产诊断文案见 config/error-catalog.json 的 SOURCE_QUERY_FAILED.diagnostic_template。"
+    },
+    {
+      "file": "config/error-catalog-schema.ts",
+      "result": "诊断模板约束入口：parseErrorCatalog。"
+    }
+  ],
+  "testFilesChanged": [
+    "tests/unit/generation-source-client.test.ts",
+    "tests/unit/error-catalog-schema.test.ts",
+    "tests/integration/cli-route.test.ts",
+    "tests/integration/cli-command.test.ts",
+    "tests/unit/generation-runtime.test.ts"
+  ],
+  "tdd": [
+    {
+      "seam": "GenerationSourceClient.readInstance 与 readTemplate",
+      "redCommand": "pnpm exec vitest run tests/unit/generation-source-client.test.ts --testNamePattern 'reports the operation'",
+      "red": "4 个用例失败：相同原始 message 下，instance/2 和 template-bundle/29 分别返回 404、503 时，最终消息均缺少操作、ID 和 HTTP 状态。",
+      "redLog": ".local/source-diagnostic-tdd/source-client-red.log",
+      "green": "转换入口使用配置模板后，同一命令的 4 个用例全部通过。",
+      "greenLog": ".local/source-diagnostic-tdd/source-client-green.log"
+    },
+    {
+      "seam": "parseErrorCatalog",
+      "redCommand": "pnpm exec vitest run tests/unit/error-catalog-schema.test.ts --testNamePattern 'Source'",
+      "red": "4 个用例失败：分别移除 operation、id、status 占位符或移除整个模板时，原解析器均接受配置。",
+      "redLog": ".local/source-diagnostic-tdd/error-catalog-red.log",
+      "green": "解析器增加必需占位符约束后，同一命令的 4 个用例全部通过。",
+      "greenLog": ".local/source-diagnostic-tdd/error-catalog-green.log"
+    }
+  ],
+  "verifiedBehavior": [
+    {
+      "subject": "HTTP 状态与资源身份",
+      "result": "单元用例覆盖 instance/2、template-bundle/29 与 404、503 的四种组合；最终错误码均为 SOURCE_QUERY_FAILED，消息分别包含对应操作、ID、状态和核对建议。"
+    },
+    {
+      "subject": "响应正文与原错误分支",
+      "result": "HTTP 用例的完整消息断言排除了响应正文中的任意 message 和额外字段。缺失 status 保留原消息；取消、既有 GenerationRuntimeError、协议错误、过大响应、连接失败、总超时和 discovery HTTP 错误保留原错误或分类。两操作均在读取前拒绝无效 ID。"
+    },
+    {
+      "subject": "参数检查与 CLI 路由",
+      "result": "GenerationSourceClient 经 SourceGenerationPreparer、GenerationRuntime 和 createCliHandler 传递实例 404；路由返回 HTTP 409、SOURCE_QUERY_FAILED 和完整诊断，参数检查保持零 Run。"
+    },
+    {
+      "subject": "受管 CLI stderr",
+      "result": "临时目录中的受管 CLI 通过实际 Host 路由完成实例 404 和模板 503 参数检查；两次命令均退出 1，stdout 为空，stderr 保留 SOURCE_QUERY_FAILED 和完整诊断。源客户端生成消息，测试未手工构造 Host 最终错误响应。"
+    },
+    {
+      "subject": "失败 Run 持久化",
+      "result": "生成准备经真实源客户端读取模板后，在实例 404 处失败。Runtime 重建后，queryRuns 返回相同错误码和消息；同一请求重放相同错误，源读取次数保持两次。"
+    },
+    {
+      "subject": "内部客户端与结果抽屉回归",
+      "result": "internal-source-client、catalog-client 和 results-drawer 既有测试全部通过。"
+    }
+  ],
+  "validation": {
+    "targetedCommand": "pnpm exec vitest run tests/unit/generation-source-client.test.ts tests/unit/error-catalog-schema.test.ts tests/integration/cli-route.test.ts tests/integration/cli-command.test.ts tests/unit/generation-runtime.test.ts tests/unit/internal-source-client.test.ts tests/unit/catalog-client.test.ts tests/unit/results-drawer.test.tsx --reporter=default --reporter=json --outputFile=.local/source-diagnostic-tdd/targeted-green.json",
+    "targetedResult": { "exitCode": 0, "filesPassed": 8, "testsPassed": 177 },
+    "targetedLog": ".local/source-diagnostic-tdd/targeted-green.log",
+    "targetedJson": ".local/source-diagnostic-tdd/targeted-green.json",
+    "typecheckCommand": "pnpm typecheck",
+    "typecheckResult": { "exitCode": 0 },
+    "typecheckLog": ".local/source-diagnostic-tdd/typecheck.log",
+    "diffCheckCommand": "git diff --check",
+    "diffCheckResult": { "exitCode": 0 },
+    "diffCheckLog": ".local/source-diagnostic-tdd/diff-check.log"
+  },
+  "acceptanceBoundary": {
+    "deterministicInput": "HTTP 失败在已约定的 SourceRead 边界注入 SourceClientError。CLI 测试使用实际参数检查、Host HTTP 路由和 CLI 子进程；内部 HTTP 客户端使用既有回归用例。",
+    "causalLimit": "本轮确认诊断状态信息可到达 CLI 和 Run。Agent 首次继续检索、重复参数检查和停止行为的原因及改善效果仍待独立复验。",
+    "remaining": [
+      "独立审查员核对源码、配置文案、本记录和定向测试证据。",
+      "主线程按已授权计划另建诊断候选，在官方 Desktop 中验证实际参数检查 stderr。",
+      "主线程按主计划 5.11 记录同场景复验中模型的停止行为和参数检查次数。"
+    ],
+    "execution": "实施者本轮运行定向测试和类型检查；全量测试、官方应用启动、模型调用、插件打包及提交均未执行。"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "purpose": "固定四角色超时后的原会话恢复输入与验证范围。",
+  "readWhen": "独立审查或执行原会话恢复验收时。",
+  "status": "准备完成，待独立审查；未恢复应用或提交模型",
+  "sourceExecution": "four-role-current-execution.json",
+  "sourceReview": "four-role-current-runtime-review.json",
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/state.json",
+  "parentSessionId": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+  "prompt": "继续完成原任务，保留原来的一轮一图限制。",
+  "fixed": [
+    "保持原Profile、Workspace、安装候选和模型配置。",
+    "原输入、已生成图片、Run、主子历史及产物保留原值，执行者不代写身份、观察或比较文件。",
+    "保留已接纳的三个子会话身份，观察者只采集行为，不向被测Agent提供轨迹结论或路径纠正。"
+  ],
+  "budget": {
+    "userPromptSubmissions": 1,
+    "taskTimeoutMs": 1200000,
+    "modelCallTimeoutMs": 360000
+  },
+  "verification": [
+    "启动后先核对安装200文件与原候选、原主子会话身份、现有1个成功Run及其媒体。",
+    "通过官方session.prompt向原父会话提交唯一续办消息，记录新turn与所有后继请求。",
+    "核对执行者是否从已持久化身份恢复原观察子会话，是否补齐观察、比较、task.md与最终交付。",
+    "Run总数应保持1，既有图片字节保持原值；任务文件来源和模型身份由独立审查员判定。",
+    "到期取消后核对所有已接纳Run状态，采集最终模型请求与主子持久化历史，清理本轮进程及端口。"
+  ],
+  "limits": [
+    "该轮验收超时恢复；原第一轮的Builder交接、身份记录和路径错误继续保留。",
+    "恢复完成不能补成首次执行完整通过。"
+  ],
+  "modelCalls": 0
+}

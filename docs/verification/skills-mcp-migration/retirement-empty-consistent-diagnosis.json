@@ -1,0 +1,283 @@
+{
+  "purpose": "独立核对一致空实例夹具下两条最终轨迹，定位停止规则偏离、知识来源及实际后果；仅诊断，未改变产品或被测会话。",
+  "run_id": "fb023456-606b-4299-a74f-814cdf910c53",
+  "sources": {
+    "workbench": {
+      "collect": ".local/skills-mcp-migration-live/desktop/fb023456-606b-4299-a74f-814cdf910c53/1791948126224-088b2ea4-fb13-4063-ae70-418975fb02c6-collect.json",
+      "session": "session-bcd13e5e-fd09-4a9a-819a-6d3e308e205e",
+      "first_llm": ".local/skills-mcp-migration-live/llm-calls/a1decc9e-7db1-4953-92f6-d6613d6bebc4.jsonl",
+      "last_llm": ".local/skills-mcp-migration-live/llm-calls/4c9e4f6b-7ad3-4197-bf3b-67c1b880447c.jsonl"
+    },
+    "iteration": {
+      "collect": ".local/skills-mcp-migration-live/desktop/fb023456-606b-4299-a74f-814cdf910c53/1791948126213-05ef4ec5-4611-493b-af25-b349f9b1fbfa-collect.json",
+      "session": "session-3b798b1e-f692-480d-b780-d8b6f495939b",
+      "first_llm": ".local/skills-mcp-migration-live/llm-calls/25edd811-9305-4157-99cc-a4773c16ffda.jsonl",
+      "last_llm": ".local/skills-mcp-migration-live/llm-calls/488577e2-7507-45a7-b91c-304328fe697d.jsonl"
+    },
+    "locator_convention": "seq 指对应 collect.records[].event.seq；messages 为原始模型 request 的零基下标。"
+  },
+  "conclusion": {
+    "stop_rule": "两预设均在取得空列表后继续探测实例，停止行为验收失败。",
+    "outcomes": "工作台实际提交并取得图片，turn/end 为 completed。迭代会话被用户中断，未观察到自身提交。不能将两条会话都记为已取消，也不能把迭代读到的工作台 Run 记作迭代提交。",
+    "root_cause_limit": "当前证据证明停止规则已进入模型输入及后续跨来源执行链；首次继续探测的可修复根因尚未通过单变量对照确定。"
+  },
+  "actual_inputs": {
+    "common": {
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "request": "messages[1] 要求直接执行已安装 comfyui-generate，template_id=29，完整 Prompt Builder JSON，输出至 5.6-6；未提供 instance_id。",
+      "rules": "两份最后 request.messages[6] 均完整保留已读取 comfyui-generate，包括实例列表为空时报告并停止创建图片；两会话 seq18/19 为实际 Skill 读取。",
+      "permission": "seq0 为 workspace-write；实际工具读取了 Workspace 外文件。该名称及现有输入不能证明读取被限制在 Workspace 内。"
+    },
+    "role_conflict": {
+      "workbench": "messages[0] 指定工作台 Agent，MCP 查询目录、受管 CLI 生图，与直接执行生成 Skill 一致。",
+      "iteration": "messages[0] 指定主 Agent 使用 comfyui-iterate-generation 派发；messages[1] 直接要求 comfyui-generate。seq22 已讨论此冲突并选择直接执行；seq202/203 才读取迭代 Skill，seq207 读取 records。",
+      "scope": "两轨迹均未观察到子 Agent 派发；本轮未覆盖父子交接。角色冲突存在于迭代输入，但工作台也失败，尚无证据将共同停止失败归因于此冲突。"
+    }
+  },
+  "workbench_trace": [
+    {
+      "seq": [
+        43,
+        44,
+        47,
+        48,
+        49
+      ],
+      "fact": "首次 search_instances 成功返回空列表。seq47 明确复述空列表停止规则，随后决定扩大搜索；seq48 重查是首次偏离动作。此时尚未获得后来 HTTP 目录或历史 Run 的真实实例信息。"
+    },
+    {
+      "seq": [
+        63,
+        64
+      ],
+      "fact": "参数参考中的示例包含 instance_id=2、template_id=36。这是数字 2 的文档来源，尚未证明当前目录登记实例。"
+    },
+    {
+      "seq": [
+        93,
+        94,
+        98,
+        99
+      ],
+      "fact": "connection(1) 返回 MCP_INSTANCE_NOT_FOUND；随后 lsof 显示本机 18093 监听。"
+    },
+    {
+      "seq": [
+        113,
+        118,
+        119,
+        123,
+        128,
+        129
+      ],
+      "fact": "通过 grep/sed 已安装 CLI 源码，取得目录客户端与 /internal/semantic/comfyui-instances 路径知识。"
+    },
+    {
+      "seq": [
+        173,
+        174,
+        177,
+        178,
+        179
+      ],
+      "fact": "读取已安装包 config/source-client.json、base.json、environment-overrides.json，关联 catalogPort=18093 与监听端口。直接 HTTP POST /internal/semantic/comfyui-instances 返回唯一结果 id=2、title=win3080；这是轨迹中首次取得当前登记实例身份的成功数据返回。"
+    },
+    {
+      "seq": [
+        197,
+        198,
+        199
+      ],
+      "fact": "模型明确把 MCP 空列表解释为目录检索降级，并决定使用直连目录。GET /internal/comfyui-source/instances/2 返回 http://192.168.110.122:8188/。该降级解释是模型假设；MCP 空列表本身为夹具设定。"
+    },
+    {
+      "seq": [
+        203,
+        204,
+        208,
+        209,
+        213,
+        214,
+        218,
+        219
+      ],
+      "fact": "MCP status(2) 仍返回 NOT_FOUND；直连目录继续给出实例 2，受管 inspect-template-parameters 成功，直连 ComfyUI system_stats 成功。"
+    },
+    {
+      "seq": [
+        228,
+        229,
+        243,
+        244,
+        248,
+        249,
+        253,
+        258,
+        259,
+        262,
+        265
+      ],
+      "fact": "受管 generation submit 成功返回 run_e087fa7e-d1bf-4c1a-8ec7-be9c20c77dcf；resolve-media 最终取得图片，复制为 5.6-6/WAI_00041_.png 并写 run-record.json；最终输出承认使用直连目录继续。turn/end=completed。"
+    }
+  ],
+  "iteration_trace": [
+    {
+      "seq": [
+        33,
+        34,
+        43,
+        45,
+        46,
+        49,
+        50,
+        52,
+        53
+      ],
+      "fact": "参数参考先给出示例 instance_id=2。工作流与实例查询同一模型消息发起；空实例结果 seq46。seq49 复述停止规则后提出 Workspace 或环境可能另有实例；seq50 查环境和 seq52 重查为同一决策批次，首次偏离发生于此。"
+    },
+    {
+      "seq": [
+        74,
+        75,
+        76,
+        77,
+        81,
+        82,
+        93,
+        94,
+        98,
+        103,
+        108,
+        109
+      ],
+      "fact": "MCP connection/status(1) 均 NOT_FOUND。读取插件配置与 DSH_HOME 存储目录，最终 sqlite3 查询 $DSH_HOME/data/plugins/harness-comfyui/runs.sqlite 的 generation_runs；seq109 历史成功 Run 表首次提供真实 instance_id=2 与 http://192.168.110.122:8188。首行是先前测试 run_72c5c605-7d94-45bd-a359-1cf3859b0fff。"
+    },
+    {
+      "seq": [
+        112,
+        113,
+        114,
+        120,
+        121,
+        122,
+        123
+      ],
+      "fact": "读取历史实例后直接探测该地址并得到 HTTP 200；MCP connection/status(2) 仍 NOT_FOUND。"
+    },
+    {
+      "seq": [
+        177,
+        178,
+        187,
+        188,
+        192,
+        197,
+        198,
+        201,
+        212,
+        217,
+        218
+      ],
+      "fact": "浏览 .local/skills-mcp-migration-live；读取 empty-consistent-iteration-input.json、empty-consistent-workbench-input.json、empty-consistent-start.json、boundary-fixture 代码及 runtime.json/*empty* 配置，随后读取 task-matrix 的 5.6-6 条目。模型知道空列表为夹具预期，仍继续调查。"
+    },
+    {
+      "seq": [
+        222,
+        226,
+        227,
+        228,
+        231,
+        232,
+        233
+      ],
+      "fact": "先列出先前 boundary-empty-iteration 产物，再浏览同轮 empty-consistent-workbench/5.6-6，读取 run-record.json。seq231 显式将同轮工作台已生图解释为应保持两预设一致的理由，证实跨会话产物影响了后续判断。该影响晚于首次偏离。"
+    },
+    {
+      "seq": [
+        242,
+        243,
+        247,
+        248
+      ],
+      "fact": "通过 DSH_HOME 文件搜索定位并读取 runs/workspaces/9bcd2ff3-e599-4060-9099-f5da58c1b02d/runs/run_e087fa7e-d1bf-4c1a-8ec7-be9c20c77dcf/source-snapshot.json，确认工作台实例 2、模板 29。"
+    },
+    {
+      "seq": [
+        273
+      ],
+      "fact": "turn/end=aborted，reason=user。完整轨迹未观察到迭代自身 generation submit、inspect-template-parameters 或子 Agent 派发；不能推断若未中断将会提交。"
+    }
+  ],
+  "layer_findings": [
+    {
+      "layer": "MCP 夹具数据域",
+      "finding": "本轮可见 MCP search 返回空，connection/status 返回 NOT_FOUND，修复前的 MCP 空列表与成功实例详情矛盾未在两条轨迹中复现。覆盖限于轨迹实际调用，不能据此声称全部工具合同均已检查。"
+    },
+    {
+      "layer": "多消费者数据域",
+      "finding": "MCP 空实例域之外，安装包目录 HTTP 和受管 CLI 仍能读取并使用实例 2。工作台实际用此链完成提交，证明本轮整个运行环境未共享同一空实例视图。是否应统一数据源或由宿主限制读取须按产品授权边界另行决定。"
+    },
+    {
+      "layer": "Workspace 与历史可见性",
+      "finding": "迭代读到了共享数据库、测试输入、夹具定义、历史目录和同轮工作台产物；外部读取能力及绝对 DSH_HOME 路径让 Workspace 名称不能充当隔离边界。工作台主要链来自安装包配置与直连服务，未见其依赖另一个测试目录产物。"
+    },
+    {
+      "layer": "Agent 规则执行",
+      "finding": "两模型已经读取并复述停止规则，仍主动复核。后续数据支持了继续执行路径，但时间顺序不支持把后续数据当成首次偏离的原因。当前没有通过对照证明的文字修复。"
+    },
+    {
+      "layer": "角色与父子交接",
+      "finding": "迭代主角色与直接执行输入冲突已观察到；父子真实交接仍未覆盖。仅改变角色再测可验证冲突是否影响停止行为，当前证据不足以归因。"
+    }
+  ],
+  "controls": [
+    {
+      "id": "workspace-location",
+      "change": "保持候选、模型、用户任务参数及安装 Skill，仅将 Workspace 放在 checkout 外空中性目录。",
+      "support": "可测试路径名称和就近目录发现是否影响继续调查；现有迭代轨迹确实遍历测试目录并受同轮产物影响。",
+      "limit": "仍能经绝对 DSH_HOME 读历史和安装包，经 lsof/配置找端口。此操作未隔离完整读取面，成功也仅支持该条件下停止；失败仍需追首次来源。工作目录路径本身必然使输入与运行时上下文变化，不能声称原始 messages 完全相同。"
+    },
+    {
+      "id": "history-visibility",
+      "change": "在获授权的隔离运行环境中，仅改变共享 Run 历史/同轮产物可见性，保留 Skill/API 能力与响应。",
+      "measurement": "比较首次停止决策及是否仍获取真实实例身份；不清理用户历史数据。"
+    },
+    {
+      "id": "catalog-consistency",
+      "change": "固定其他输入，仅令直连目录和受管 CLI 的来源与空实例域一致，保留实际接口校验和错误合同。",
+      "measurement": "确认工作台原来的 HTTP→inspect→submit 链是否停止；不要将协议伪造或更换模型混入同一对照。"
+    },
+    {
+      "id": "role-input",
+      "change": "独立对照迭代主任务与直接生成任务输入角色，其他条件相同。",
+      "measurement": "记录是否实际派发、子任务输入及停止点；它是父子覆盖，不能用当前直接执行轨迹替代。"
+    }
+  ],
+  "next_workspace_control_freeze": {
+    "freeze": [
+      "安装候选与全部 Skill/参考文件",
+      "provider/model/模型参数及 persona、任务 JSON、工具声明",
+      "除 Workspace 路径外的环境变量、DSH_HOME 与共享历史快照",
+      "MCP tools/list、workflow/model/search/connection/status 的实际响应及错误",
+      "直连目录和 ComfyUI 的可达性、内容与受管 CLI 状态",
+      "同场其他会话是否运行、何时产生可见文件"
+    ],
+    "known_confounder": "父 Agent 告知已按相同命令/config 重启真实 MCP，实例状态恢复 true、语义恢复预检中。这是本诊断后的父 Agent 状态报告，未由本报告重新探测；与原轨迹服务状态不同，必须单列记录。",
+    "recommendation": "可将迁移 Workspace 的下一轮标为探索性复验。若语义依赖错误变为成功或共享历史新增 Run，应按变化后的证据重新判断；不能将结果宣称为严格单变量因果证明。"
+  },
+  "repair_status": "当前仅有测试数据域/可见性的具体控制建议，尚无证据充分的 Skill 文字修复。源代码暴露了目录路径，不据此推断所有内部目录客户端都应删除；需先检查真实消费者及产品责任边界。",
+  "retirement_and_remaining_mechanisms": {
+    "cli_surface": {
+      "evidence": "工作台 seq78/79 实际 --help 仅显示 generation/image；两条轨迹均未调用已退役 catalog CLI。",
+      "judgment": "本轮支持目录 CLI 发现入口退役已生效，发生的是其他机制。仅凭帮助不能独立证明旧命令直接执行必然失败，本报告不扩展为完整退役验收。"
+    },
+    "independent_sources": [
+      "DSH_HOME/runs.sqlite 和 Run source-snapshot 由 bash/sqlite3/文件读取获得，不经过目录 CLI。",
+      "安装包 config 与编译 CLI 内部源路径由 grep/sed/cat 获得，再以 curl 直连 HTTP；目录 CLI 命令是否存在不影响这些调用。",
+      "同轮与历史 Workspace 的产物、测试输入、夹具配置可被文件工具读取；本轮迭代已有实际读取。"
+    ],
+    "configuration_scope": "本报告仅核对两条轨迹及 llm-calls，未独立审查 SDK 策略实现。父 Agent 报告其只读核对的 SDK 策略仅约束写入，未提供目录读取/网络隔离配置。当前轨迹也没有证据证明存在一个可关闭上述全部入口的既有配置开关。",
+    "workspace_migration_limit": "中性外部 Workspace 改变起点与路径线索；DSH_HOME 绝对路径、安装 Skill 的包目录、共享运行历史、本机监听端口、HTTP 目录与远端 ComfyUI 仍可能可见。若后续调用仍取得这些信息，须沿实际路径记录，不能把迁移等同于隔离。",
+    "repair_boundary": "隐藏配置、添加路径黑名单或删除仍有内部消费者的客户端均未被本轮证据验证为修复。需先确认产品允许的文件/网络能力及测试数据源责任，再选择隔离验证或合同修复。"
+  }
+}

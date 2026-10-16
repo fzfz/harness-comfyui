@@ -1,0 +1,24 @@
+{
+  "status": "read-only inspection; runtime control not tested",
+  "officialApplication": "0.2.0-rc.2",
+  "sources": [
+    {
+      "path": ".local/skills-mcp-migration-live/dsh-sandbox-policy-index.js",
+      "lines": [
+        85,
+        104
+      ],
+      "fact": "公开模式为read-only、workspace-write、danger-full-access，配置仅mode与workspaceRoot。"
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/dsh-sandbox-local-index.js",
+      "lines": [
+        42,
+        73
+      ],
+      "fact": "Linux读取范围为根目录；macOS策略允许默认操作，仅限制文件写入。"
+    }
+  ],
+  "implication": "移动Workspace改变就近发现路径，现有沙箱仍允许读取DSH_HOME历史和安装资源，也未限制HTTP直连。",
+  "pending": "结合完整实际调用轨迹确认每条路径的首次知识来源、作用与可用官方配置；不据此预设产品修复。"
+}

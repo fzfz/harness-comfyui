@@ -1,0 +1,74 @@
+{
+  "scope": "WAI 5.5-2 与 Krea2 5.4-2 的 Dots 真实模型执行；只读独立诊断",
+  "agent": "live_failure_diagnosis",
+  "confirmed": [
+    {
+      "finding": "已安装 Skill 正文与当前 checkout 一致",
+      "effect": "没有入口版本不一致的证据"
+    },
+    {
+      "finding": "MCP 资源读取工具的实际声明要求已发布 URI；执行者却传入本地 file URI",
+      "waiSeq": [
+        24,
+        34,
+        39,
+        44
+      ],
+      "kreaSeq": [
+        24,
+        26
+      ],
+      "classification": "未遵守已有工具合同"
+    },
+    {
+      "finding": "Krea 在宣布使用 bash 后结束，没有调用 bash",
+      "kreaSeq": [
+        30,
+        32
+      ],
+      "classification": "流程未完成，非服务不可用"
+    },
+    {
+      "finding": "WAI 角色详情查询使用不支持的 character 资源枚举，未调用已声明的角色 resolve",
+      "waiSeq": [
+        107,
+        112,
+        113
+      ],
+      "classification": "未遵守已有工具合同"
+    },
+    {
+      "finding": "WAI 改写角色标识、重复外貌、包装最终结果",
+      "waiSeq": [
+        137,
+        142,
+        148,
+        152,
+        161
+      ],
+      "classification": "未遵守已有来源与交付规则"
+    }
+  ],
+  "descriptionGap": {
+    "file": ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+    "section": "查询 WAI 画师素材",
+    "finding": "查询素材未明确资源类别，后续消费按逐名 Style Prompt 与画风说明进行。实际选择 artist_prompt_string/461 后拆成五人，而该组合记录 styles=[]。",
+    "waiSeq": [
+      122,
+      128
+    ],
+    "causality": "类别描述缺口已确认，但尚未证明其导致错误选择。",
+    "proposedInsertion": "本文件的画师素材指 Style 记录。",
+    "status": "待批准，未修改 Skill"
+  },
+  "noChangesRecommended": [
+    "角色 ID 查询规则",
+    "原文保留规则",
+    "重复标签规则",
+    "最终结果返回规则",
+    "MCP URI 可读范围"
+  ],
+  "counterfactual": "固定模型、输入、工具与目录数据，只增加 Style 类别定义，以干净会话比较所选资源类型和逐名画师说明。",
+  "localReadingExperiment": "入口补充本地文件读取提示仅为可选实验；工具合同已经清楚，当前不建议直接当作根因修复。",
+  "sourceLegality": "WAI 原始角色来源含未转义括号；现行权重规则要求等待合法来源，不能要求执行者静默改写以取得成功结果。"
+}

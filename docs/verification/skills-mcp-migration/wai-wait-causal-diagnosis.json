@@ -1,0 +1,220 @@
+{
+  "purpose": "按主计划5.11独立诊断WAI场景多候选等待失效；限定两次SSOT引用修订复验的实际模型请求和完整宿主轨迹。",
+  "reviewedAt": "2026-10-14T06:58:45.488440+00:00",
+  "verdict": {
+    "originalWaiting": "failed",
+    "explicitPrimarySelection": "passed",
+    "provenMechanism": "主Session在完整收到主场景矩阵后直接采用单主体肖像，未完成多匹配场景等待；还存在较早的下游参考提前读取。",
+    "causalRoot": "尚未证明造成该语义执行偏差的单一原因。",
+    "newProductFixSupported": false,
+    "currentBusinessRuleConflictFound": false
+  },
+  "scope": "只写本报告，未改产品、Skill、计划或台账，未运行模型；Style顺序与最终JSON偏离沿用各自独立审查，不作为场景等待的原因。",
+  "evidence": {
+    "executionIndex": ".local/skills-mcp-migration-live/wai-scene-reference-execution.json",
+    "priorReview": "docs/verification/skills-mcp-migration/wai-scene-reference-rerun-review.json",
+    "inputReview": "docs/verification/skills-mcp-migration/wai-scene-input-review.json",
+    "implementationReview": "docs/verification/skills-mcp-migration/wai-scene-reference-spec-review.json",
+    "candidate": ".local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+    "collects": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791953846063-128bf7c3-9798-4d30-bae2-660822e7e7b2-collect.json",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791953550333-439157f3-a49d-48f2-bd05-ed931fca9c95-collect.json"
+    ],
+    "requests": [
+      {
+        "variant": "original",
+        "request": ".local/skills-mcp-migration-live/llm-calls/483990a7-f234-4f4a-b1e6-51e5c3a7d34d.jsonl:1",
+        "sessionId": "session-1c46e032-68f7-42ce-9f36-3d213e876b6a",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "maxTokens": 32768,
+        "skillBodyExactMatchIndices": [
+          5
+        ],
+        "documents": {
+          "references/composition-scenario-branches.md": [
+            {
+              "messageIndex": 10,
+              "role": "tool",
+              "characters": 23872
+            }
+          ],
+          "references/composition-decision-tree.md": [
+            {
+              "messageIndex": 10,
+              "role": "tool",
+              "characters": 23872
+            }
+          ]
+        },
+        "systemMessageIndex": 0,
+        "userTaskIndex": 1
+      },
+      {
+        "variant": "explicit-primary",
+        "request": ".local/skills-mcp-migration-live/llm-calls/80f4cab9-2a4f-4bd6-af7d-f2717f288e05.jsonl:1",
+        "sessionId": "session-55593e45-6171-4eb3-995a-973aa58103da",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "maxTokens": 32768,
+        "skillBodyExactMatchIndices": [
+          5
+        ],
+        "documents": {
+          "references/composition-scenario-branches.md": [
+            {
+              "messageIndex": 10,
+              "role": "tool",
+              "characters": 8041
+            }
+          ],
+          "references/composition-decision-tree.md": [
+            {
+              "messageIndex": 11,
+              "role": "tool",
+              "characters": 22934
+            }
+          ]
+        },
+        "systemMessageIndex": 0,
+        "userTaskIndex": 1
+      }
+    ],
+    "candidateCurrentComparison": "本轮直接比较候选包与当前SKILL.md、composition-scenario-branches.md、composition-decision-tree.md，三份逐字一致。SKILL工具省略YAML前言，实际Skill正文逐字比较见requests。"
+  },
+  "expectedBehavior": {
+    "contract": ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md:9-18",
+    "originalInput": "未指定主要场景；单幅一人匹配单主体肖像，前中后景/可见范围/腰部裁剪匹配遮挡与深度，窗边地点匹配环境叙事。至少三项同时成立。静态站立不自动构成动作展示所需运动过程。",
+    "expected": "列出全部实际匹配场景并等待用户选择，收到选择前停止生成候选构图。",
+    "explicitControl": "同一画面增加“本轮主要场景明确选择单主体肖像。”，条件成立时直接选定，再登记其他匹配场景为次要约束。",
+    "importantDistinction": "完整镜头和空间属性可以免除构图候选B/C，不能替代主场景的用户选择；描述单人半身像仅满足矩阵条件，并未把其他匹配场景指定为次要场景。"
+  },
+  "trace": [
+    {
+      "seq": 17,
+      "event": "skill调用",
+      "meaning": "两例均在主Session加载wai-sdxl-prompt-builder。"
+    },
+    {
+      "seq": 18,
+      "event": "skill结果",
+      "meaning": "Skill第2节已经是矩阵SSOT引用；宿主Skill包装要求按需读取参考。首段提供规则入口，不再自行定义“最能容纳”选择。",
+      "actualInput": "两例首决策请求messages[5]。"
+    },
+    {
+      "seq": 28,
+      "event": "批量读取决定",
+      "meaning": "original决定批量读取input-contract、场景矩阵、构图决策树，并同时读取位置顺序；尚未作出主场景选择。",
+      "causalBoundary": "较早的读取时序偏离：composition-decision-tree用途要求主场景选定后读取；这不是已经证实的等待失败原因。"
+    },
+    {
+      "seq": 29,
+      "event": "bash调用",
+      "meaning": "original同一次cat循环读取输入合同、矩阵和决策树。"
+    },
+    {
+      "seq": 30,
+      "event": "bash结果",
+      "meaning": "矩阵和决策树全文送达；在首次自主选场景请求messages[10]中逐字存在。"
+    },
+    {
+      "seq": 31,
+      "event": "bash调用",
+      "meaning": "original读取下游位置顺序；explicit-primary在同一响应中也提前读取决策树和位置顺序，返回seq32。"
+    },
+    {
+      "seq": 35,
+      "event": "首次场景选择偏离",
+      "variant": "original",
+      "request": ".local/skills-mcp-migration-live/llm-calls/483990a7-f234-4f4a-b1e6-51e5c3a7d34d.jsonl:1",
+      "analysisSummary": "可取得分析确认用户镜头/空间属性已完整，因而不构造B/C；同时把画面直接定为单主体肖像并进入位置映射，没有记录另两项匹配及等待。",
+      "responseId": "64e181a372f616ea0bef1900420f089f",
+      "nextToolSeq": 36
+    },
+    {
+      "seq": 35,
+      "event": "相邻直接选择",
+      "variant": "explicit-primary",
+      "request": ".local/skills-mcp-migration-live/llm-calls/80f4cab9-2a4f-4bd6-af7d-f2717f288e05.jsonl:1",
+      "analysisSummary": "按已指定的单主体肖像继续，镜头空间完整故只构造候选A；这一选择分支合法，但后续次要约束遗漏仍失败。"
+    },
+    {
+      "seq": 177,
+      "event": "original写产物及格式校验",
+      "meaning": "未发生真实选择提问或用户选择，已进入构造和保存。"
+    },
+    {
+      "seq": 204,
+      "event": "original最终回复",
+      "meaning": "已经交付结果与说明，整轮没有场景等待；模型完成状态不是等待通过。"
+    }
+  ],
+  "firstDeviationClarification": "上一复验报告seq35正确定位首次自主选定；若审查读取顺序，较早seq28决定/seq29调用已提前读取构图决策树。应分别记录，不能用提前读取直接推断之后不等待的因果。",
+  "hostAndResponsibility": {
+    "actualSystem": "两例messages[0]是相同workbench persona：遵循选定Skill、目录用NoobAI MCP、生成/读图用CLI、使用用户语言；另有bash退出码、MCP资源入口及UI文件交付段。",
+    "systemConflict": "实际系统提示未出现不许询问、无条件自主选择、必须在一轮完成或跳过等待的指令。UI段处理最终展示，与主场景优先级选择没有直接矛盾；其未注册present问题另案处理。",
+    "runtimeContext": "messages[2]仅workspace-write与approval ask文件/操作权限；不会把用户业务选择补成已给定。",
+    "skillCatalog": "messages[3]要求先加载命名Skill并遵循全文；没有替代主场景匹配规则。",
+    "tools": "实际声明包含bash、skill、MCP、subagent_task等；原执行均未派发子Agent，场景决定由主Session执行。场景选择可直接用普通回复询问，不需要额外ask工具。",
+    "whyRuntimeAllowed": "宿主执行通用bash读取和写入，未实现WAI场景语义状态机；多候选判断属于Skill执行者责任。现有通用文件工具可继续执行并不构成宿主违约，也不支持把语义匹配硬编码成关键词拦截。",
+    "dataBoundary": "首次偏离发生在场景参考读取之后、任何本轮目录素材查询之前；不能归因于MCP资源返回、触发词、Style说明或后续校验器。"
+  },
+  "contractConsistency": {
+    "sceneSSOT": "矩阵明确分别规定用户指定和未指定分支，多个匹配等待；当前Skill第2节引用它，未保留旧自主择优段。",
+    "downstreamComposition": "决策树明确以已选定主场景为前提。Skill中候选A/B/C构造、淘汰后选首个的规则，其对象为构图候选，不是主场景候选。两层决策可依次执行，无已证实业务矛盾。",
+    "overlappingRows": "单主体、遮挡与深度、环境叙事会同时匹配，是当前合同明确要求等待的输入条件。若希望普通单人窗边图默认不询问，须改变业务选择规则并重新授权，不能称为等价措辞修复。",
+    "readOrder": "同轮批量加载下游参考未遵循决策树读取时机，可能使两个“候选选择”任务一起进入上下文；模型是否因此混淆尚无对照证明。"
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "hypothesis": "旧Skill自行择优段导致当前失败",
+      "assessment": "当前复验中已排除其必要性",
+      "support": "先前版本存在重复决策来源。",
+      "counterevidence": "当前实际输入中旧段已移除，矩阵全文保留仍不等待。",
+      "remaining": "不能否定旧段对早先失败的影响，只能说明移除不足以解决当前样本。"
+    },
+    {
+      "id": "H2",
+      "hypothesis": "矩阵被pruner截断或没有送达",
+      "assessment": "本次已排除",
+      "counterevidence": "两例首次决定请求逐字包含完整矩阵，包括多场景等待段；不是仅Host结果或callId匹配。"
+    },
+    {
+      "id": "H3",
+      "hypothesis": "完整构图免除B/C被模型误泛化为无需选择主场景",
+      "assessment": "有轨迹线索，未证实因果",
+      "support": "seq35在同一决策中认定镜头属性完整并直接定主场景；未列出全部场景。",
+      "counterevidence": "分析未明确说免除B/C意味着豁免场景等待；可能只是两个独立判断。",
+      "minimumTest": "固定用户输入、模型、Skill、系统、数据，仅对首次主场景判断阶段的参考可见性做受控对照：矩阵先独立送达并完成其分支，再开放决策树和位置文档；保持矩阵原文和业务候选不变。该对照必须作为诊断，不冒充原执行通过。"
+    },
+    {
+      "id": "H4",
+      "hypothesis": "多文档批量读取造成语义任务混淆或注意力分配偏差",
+      "assessment": "未证实",
+      "support": "original首决定已有23872字符合并工具结果及8250字符位置结果；下游规则提前到达。",
+      "counterevidence": "explicit-primary也提前读取大量规则而直接选择分支合法；没有等待分支的受控成功样本。",
+      "minimumTest": "可与H3共用仅改变阶段可见性的对照；结果改善仅支持阶段安排影响，不能细分长度效应与内容干扰。"
+    },
+    {
+      "id": "H5",
+      "hypothesis": "执行者把单人描述直接理解为用户已经指定主要肖像",
+      "assessment": "可成立但未证实",
+      "support": "seq35直接采用单主体肖像，未显示进行完整场景匹配。",
+      "counterevidence": "用户原文没有主要场景指定，模型分析未明确宣称用户已指定主场景。显式变体只能证明该邻接输入可直接选择。",
+      "minimumTest": "若需单独检验，保持原输入与全部文档，仅在独立诊断提问中要求判断用户是否明确指定主要场景及有哪些匹配项；这能定位理解能力，不构成原完整Skill流程验收。"
+    }
+  ],
+  "counterexamplesAndLimits": [
+    "explicit-primary成功选择不证明自动多候选等待机制正常，因为它进入矩阵第3项而非第4项。",
+    "旧SSOT替换后original仍失败，说明再加强同义禁止文字缺少已证实依据。",
+    "规则全文送达、分析记录可取得，允许判定当前执行违约；仍无法由单次分析推导注意力、默认偏好或内部推理根因。",
+    "两例的后续读取、工具调用和产物不同，不能把它们当成除一句输入外完全相同的模型请求实验。"
+  ],
+  "recommendation": {
+    "now": "保留等待失败状态，暂不修改产品规则。当前可确定的是执行者未落实已送达的语义分支及参考读取时序。",
+    "repairLocationIfProven": "若阶段可见性对照重复支持读取组织影响，应在WAI Skill现有流程与引用职责范围内评估渐进读取安排；保持矩阵唯一业务来源，不复制等待规则、不新增语义程序。当前尚无可保证改善的具体文字修复。",
+    "validationBoundary": "任何后续对照需独立保存输入/模型/安装包/首决定实际请求；先验原失败，再验显式主场景、唯一匹配、明确次要场景排除候选等相邻分支；同时核对未被当前诊断覆盖的Style顺序与完整输出。",
+    "avoidBlindRepeats": "按5.11第10项，已有同机制失败且无新证据时不继续原样重复运行；先明确所检验假设与唯一变量。"
+  }
+}

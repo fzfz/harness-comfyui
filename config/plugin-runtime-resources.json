@@ -1,15 +1,5 @@
 {
   "schemaVersion": 1,
-  "sourceClients": {
-    "semanticQueryClient": {
-      "label": "数据源语义查询客户端",
-      "relativePath": "scripts/source-client/imagegen-semantic-query.mjs"
-    },
-    "sourceReadClient": {
-      "label": "数据源读取客户端",
-      "relativePath": "scripts/source-client/imagegen-comfyui-source-read.mjs"
-    }
-  },
   "runtimeArtifacts": {
     "frontendCompilerWorker": {
       "label": "Workflow 编译 Worker",
@@ -22,10 +12,14 @@
   },
   "requiredFiles": [
     "agent-presets/presets.cordis.yml",
+    "agent-presets/noobai-mcp.cordis.yml",
     "agent-presets/project-installed-presets.mjs",
     "agent-presets/project-installed-skills.mjs",
     "agent-presets/project-iteration-dispatch.mjs",
+    "agent-presets/project-observation-dispatch.mjs",
     "agent-presets/project-subagent-workspace.mjs",
+    "agent-presets/project-subagent-control.mjs",
+    "agent-presets/project-subagent-control.json",
     "agent-presets/project-system-prompt-visibility.mjs",
     "agent-presets/project-tool-visibility.mjs",
     "agent-presets/harness-comfyui-cli-candidate/preset.yml",
@@ -57,7 +51,6 @@
     ".agents/skills/anima-prompt-builder/references/generation-profiles.json",
     ".agents/skills/anima-prompt-builder/references/prompt-weight-policy.json",
     ".agents/skills/anima-prompt-builder/references/prompt-weighting.md",
-    ".agents/skills/anima-prompt-builder/references/semantic-query-interfaces.md",
     ".agents/skills/anima-prompt-builder/scripts/cli-help-schema.mjs",
     ".agents/skills/anima-prompt-builder/scripts/cli-help.json",
     ".agents/skills/anima-prompt-builder/scripts/cli-help.mjs",
@@ -67,7 +60,6 @@
     ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
     ".agents/skills/character-portrait-prompt-designer/references/prompt-structure.md",
     ".agents/skills/comfyui-generate/SKILL.md",
-    ".agents/skills/comfyui-generate/references/catalog-cli.md",
     ".agents/skills/comfyui-generate/references/generation-cli.md",
     ".agents/skills/comfyui-generate/references/prompt-builder-model-routes.json",
     ".agents/skills/comfyui-generate/references/prompt-result-contract.md",
@@ -89,7 +81,6 @@
     ".agents/skills/krea2-anime-prompt-builder/references/input-contract.md",
     ".agents/skills/krea2-anime-prompt-builder/references/krea2-prompt-rules.md",
     ".agents/skills/krea2-anime-prompt-builder/references/motion-migration-constraints.md",
-    ".agents/skills/krea2-anime-prompt-builder/references/semantic-query-cli.md",
     ".agents/skills/krea2-anime-prompt-builder/references/游戏服装多样性库.md",
     ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help-schema.mjs",
     ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.json",
@@ -162,7 +153,6 @@
     ".agents/skills/wai-sdxl-prompt-builder/references/prompt-self-check.md",
     ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weight-policy.json",
     ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weighting.md",
-    ".agents/skills/wai-sdxl-prompt-builder/references/semantic-tool-orchestration.md",
     ".agents/skills/wai-sdxl-prompt-builder/references/spatial-relation-rules.md",
     ".agents/skills/wai-sdxl-prompt-builder/references/storyboard-panel-rules.md",
     ".agents/skills/wai-sdxl-prompt-builder/references/visual-design-slot-order.md",

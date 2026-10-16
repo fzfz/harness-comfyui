@@ -111,8 +111,8 @@ async function readSourceManifest(repositoryRoot, packageName) {
   if (typeof manifest.version !== 'string' || manifest.version.length === 0) {
     throw new Error('Plugin package.json must declare a version')
   }
-  if (!manifest.dependencies?.sharp || manifest.dependencies.sharp !== '0.35.4') {
-    throw new Error('Plugin package.json must retain the approved sharp 0.35.4 runtime dependency')
+  if (!manifest.dependencies?.sharp || manifest.dependencies.sharp !== '0.35.5') {
+    throw new Error('Plugin package.json must retain the approved sharp 0.35.5 runtime dependency')
   }
 
   const packaged = {

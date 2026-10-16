@@ -1,0 +1,135 @@
+{
+  "purpose": "记录官方 Desktop MCP 启动失败后的恢复合同、实际调用、失败机制与修复边界。",
+  "reviewedAt": "2026-10-14",
+  "status": "恢复验收未通过；仅完成只读诊断。",
+  "scope": {
+    "application": "DeepSeek Harness 0.2.0-rc.2",
+    "runId": "6e14d03a-f1c8-4048-a61e-0d13dcbec3dc",
+    "applicationStartedByReviewer": false,
+    "codeModified": false
+  },
+  "contract": {
+    "source": "docs/plans/skills-mcp-migration-20261013.md:1288",
+    "required": "凭据缺失、无效或服务不可达时，两个项目预设激活失败，其他预设可用；条件修正后，用户重新激活预设并完成目录查询。",
+    "interpretation": "用户确认恢复后重新激活，未要求保持同一宿主进程。docs/system/configuration.md:63 明确要求 bundle 或 Profile 加载配置变更后完全退出并重新打开官方应用；:84 明确凭据来自应用进程环境。同宿主恢复是当前测试增加的实施条件。",
+    "hostContract": "当前宿主将预设挂载失败视为终态；session.create 与 agentPresets.select 均不负责重新初始化失败定义。将 session.create 命名为重新激活不会赋予其重载能力。",
+    "decision": "独立判断：完整退出并重新打开官方应用，再重新激活两个项目预设并各完成一次目录查询，符合已确认业务合同，不构成降低用户要求。服务恢复没有加载配置变化时，文档没有强制重启，但用户合同也未排除重启；可以将其明确为当前官方宿主支持的恢复步骤。当前同宿主失败应保留为能力事实，不应作为额外业务阻断。"
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "severity": "high",
+      "title": "失败预设的注册记录保留初始化错误，后续会话创建无法恢复。",
+      "evidence": [
+        ".local/desktop-e2e/official-business-audit/ada2c9d6-dbbd-4f10-8904-bf3ce62179e5/6e14d03a-f1c8-4048-a61e-0d13dcbec3dc/official-business-mcp-activation.json:96-127",
+        ".local/skills-mcp-migration-live/dsh-agent-preset-registry-index.js:500-544",
+        ".local/skills-mcp-migration-live/dsh-agent-preset-registry-index.js:557-567",
+        ".local/skills-mcp-migration-live/dsh-agent-preset-registry-index.js:639-658",
+        ".local/skills-mcp-migration-live/dsh-agent-preset-registry-index.js:693-700"
+      ],
+      "observed": "两个项目预设首次失败及同宿主再次创建都返回 agent-preset/invalid，reason 均为 initial connection or tool synchronization failed。standard、minimal、cordis 创建成功。",
+      "mechanism": "register 仅执行一次 activate；mountPreset 检出失败后抛错；activate 保存 record.broken 并释放 scope；后续 diagnostic 返回该错误，retain 拒绝请求。",
+      "causalConfidence": "高：原始恢复记录与当前安装应用中的同一路径代码一致；本次没有运行修复后的单变量复验。"
+    },
+    {
+      "id": "R2",
+      "severity": "medium",
+      "title": "恢复测试调用创建会话接口，没有调用预设生命周期重载入口。",
+      "evidence": [
+        "tests/desktop/official-desktop-live.test.mjs:882-900",
+        ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:358-369",
+        ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js:686-700",
+        ".local/skills-mcp-migration-live/dsh-agent-preset-registry-index.js:739-762"
+      ],
+      "observed": "测试恢复 MCP 监听后对两个 presetId 再次调用 remote.session.create。该接口负责会话创建与组合，最终调用 mount/retain。select 同样走 mount/retain。",
+      "impact": "重复调用、增加等待或仅改用 select 均没有代码依据能重建失败定义。当前断言保留了真实缺口，不能过滤失败项。"
+    },
+    {
+      "id": "R3",
+      "severity": "medium",
+      "title": "严格启动失败会终止 MCP 连接生命周期，不能靠重连配置补偿预设恢复。",
+      "evidence": [
+        "agent-presets/noobai-mcp.cordis.yml:10",
+        "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/dsh-mcp-client/lib/index.js:809-832",
+        "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/dsh-mcp-client/lib/index.js:700-715",
+        ".local/skills-mcp-migration-live/dsh-agent-preset-registry-index.js:540-543"
+      ],
+      "mechanism": "failOnStartupError=true 时 apply 将首轮错误抛给 Cordis；作用域释放会 dispose 连接并清除 reconnectTimer。",
+      "impact": "改为 failOnStartupError=false 会改变用户确认的启动失败行为；增加重连次数不会恢复已释放的作用域。"
+    }
+  ],
+  "evidenceChecks": {
+    "failureLog": ".local/skills-mcp-migration-live/desktop-hardened-check.log:21-47",
+    "fixture": "tests/desktop/fixtures/official-mcp-services.mjs:53-69：pause 关闭监听，resume 等待同端口重新监听成功。",
+    "requestCounter": {
+      "previousRecoveredFile": ".local/desktop-e2e/official-business-audit/ada2c9d6-dbbd-4f10-8904-bf3ce62179e5/bbf562ed-aa59-4e62-a755-84aa8f917d2a/official-business-mcp-activation.json",
+      "previousCount": 32,
+      "failedAndSameHostRecoveryCount": 32,
+      "conclusion": "不可达场景及恢复重试未给夹具增加任何 HTTP 请求。"
+    },
+    "installedSource": "直接只读读取当前 /Applications/DeepSeek Harness.app/Contents/Resources/app.asar 中的 registry 和 MCP client；registry 内容与已留存 dsh-agent-preset-registry-index.js 完全一致。",
+    "rawErrorLimit": "留存 JSON 提供宿主 RemoteError；本次未取得底层 socket 错误，不能声称已观测 ECONNREFUSED。",
+    "cleanup": ".local/desktop-e2e/official-business-audit/ada2c9d6-dbbd-4f10-8904-bf3ce62179e5/6e14d03a-f1c8-4048-a61e-0d13dcbec3dc/run.json：state=stopped，portsReleased=true。"
+  },
+  "minimumEffectiveRepair": {
+    "owner": "本仓库恢复验收步骤；现有官方插件管理与应用生命周期。",
+    "requiredBehavior": "保留三类初始失败及其他预设可用的断言；条件修正后，完整退出应用并重新启动，再验证两个项目预设全部成功且各完成目录查询。",
+    "implementationBoundary": "无需修改 SDK。测试已有 failed/recovered 两阶段和重启路径，应让不可达场景同样完成该路径；同进程失败记录独立保存为宿主能力诊断。",
+    "alternative": "可额外实测停用/启用 harness-comfyui-presets 的官方插件管理路径，实现同宿主恢复；该附加能力不应自动升级为用户合同。",
+    "acceptanceBoundary": "不能丢弃初始失败隔离断言、过滤失败预设、免除恢复后查询，或把配置准备与 manager 返回 applied 当作完整通过。",
+    "authorization": "计划第 5.14 节允许在当前范围内澄清调用顺序和修复测试；本次仅给出只读审查结论，没有执行修改或应用操作。"
+  },
+  "pendingVerification": [
+    "复验完整退出后恢复：三类初始失败均保留，两个预设在对应 recovered 阶段全部成功且各完成查询，最终记录端口释放。",
+    "若实施附加的同宿主恢复能力，读取真实 listPlugins 行、两次 setPluginEnabled 返回值、roster 消失与重建、MCP 新请求和最终查询；保存宿主 PID 证明没有重启。",
+    "凭据缺失与无效场景继续通过重新启动进程读取修正后的环境变量；不要将只改磁盘环境文件视为当前进程凭据已更新。",
+    "继续保留当前同宿主直接 session.create 的失败事实，明确它测量的是会话创建接口对失败定义的恢复能力。"
+  ],
+  "officialRecoveryPaths": {
+    "sources": [
+      "cordis.patch.yml:10-11：harness-comfyui-presets 顶层 Include。",
+      "agent-presets/project-installed-presets.mjs:9-23：Include 加载插件包 presets.cordis.yml。",
+      "agent-presets/presets.cordis.yml:1-40：两个 dsh-agent-preset 注册者。",
+      ".local/skills-mcp-migration-live/dsh-agent-preset-index.js:24-26：Service.init yield register 返回的 disposer。",
+      ".local/skills-mcp-migration-live/dsh-agent-preset-registry-index.js:500-523：unregister 删除定义，register 初始化新的记录。",
+      "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/dsh-plugin-manager/lib/index.js:1431-1448,1651-1678,2031-2043",
+      "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js:3468-3495",
+      "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/cordis-plugin-loader/lib/index.js:365-386",
+      "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar!/dsh/node_modules/@deepseek-ai/dsh-base/cordis.patch.yml:27-32"
+    ],
+    "supportedApplicationRestart": {
+      "steps": [
+        "保存失败证据和普通预设可用结果。",
+        "修正凭据或恢复 MCP 服务。",
+        "stopProbe 结束本轮应用并确认端口释放；startOfficialBusinessDesktop 使用相同持久 Profile 与修正后的进程环境启动。",
+        "调用 remote.session.create 分别创建两个项目预设会话；assertSuccessfulProjectActivations 要求完整覆盖与全部成功。",
+        "分别执行 exerciseOfficialMcpWorkflow，要求真实 MCP 查询结果进入模型消息。"
+      ],
+      "impact": "整个官方应用生命周期重建；用户 Profile 与业务数据按已有 stop/start 合同保留。"
+    },
+    "sameHostPresetRegistrarToggle": {
+      "status": "源码支持，尚未实测。",
+      "discovery": "const manager = window.__runPanelTestContext.get(\"remote.pluginManager\"); const listed = await manager.listPlugins(); 要求 listed.ok；从 listed.value 中选 patchId === \"harness-comfyui-presets\" 的唯一行，确认没有 readOnlyReason，并保存其 entryId。",
+      "calls": [
+        "await manager.setPluginEnabled(entryId, false)",
+        "等待调用 ok 且 value.application === \"applied\"；读取 remote.agentPresets.list 确认两个预设声明消失。",
+        "await manager.setPluginEnabled(entryId, true)",
+        "要求 ok 且 value.application === \"applied\"；读取预设 roster 及诊断，再创建两个项目会话并完成实际查询。"
+      ],
+      "guards": "setPluginEnabled 的参数是 listPlugins 返回的 entryId。若返回 restart-required，则完成官方应用重启；若 failed、overridden 或 readOnlyReason 存在，记录实际结果，不将该路径算作成功。",
+      "lifecycle": "停用 Include 会释放嵌套 dsh-agent-preset 注册者，register 的 disposer 删除失败定义；启用 Include 会建立新的注册者、记录和作用域，再执行 MCP 初始连接。对已启用入口重复传 true 可能没有配置差异，不能替代 false→true。",
+      "impact": "同时移除并重建两个项目预设声明；Core、Image Reader、CLI、Web 顶层入口不在该停用目标内。已有健康预设 generation 使用引用计数延迟回收；对进行中的项目会话影响仍须实测。普通预设注册者保持原有入口。",
+      "scopeLimit": "嵌套的 preset-harness-comfyui-* 行可能因非 Profile 顶层入口被标记 unaddressable，优先使用顶层 harness-comfyui-presets。"
+    },
+    "sameHostWholeBundleToggle": {
+      "calls": [
+        "await manager.setBundleEnabled(\"harness-comfyui\", false)",
+        "await manager.setBundleEnabled(\"harness-comfyui\", true)"
+      ],
+      "status": "官方公开 API；需要检查每次 application 结果并实测查询。",
+      "impact": "移除并重新加入整个 bundle patch，包括 Core、Image Reader、CLI、Web、两个预设。影响比仅重载预设 Include 更大。保留已安装依赖，不执行安装。"
+    },
+    "hostReloadMechanism": "setPluginEnabled 写入 Profile patch 并调用 reload；HMR 存在时 reconcileProfilePatches 更新根 Include 并等待生命周期。没有 HMR 时 change 返回 restart-required。官方 base 在 profileContext 存在时默认启用 HMR，但本次未对失败实例读取其运行时 HMR 状态。",
+    "sdkBlocker": "本次恢复业务合同没有 SDK 受阻项。只有在未来明确要求单个预设专用重试 API、且现有顶层 Include 重载不能满足其影响范围时，才需另行评估宿主能力。"
+  }
+}

@@ -31,6 +31,21 @@ describe('error catalog diagnostics', () => {
     expect(() => parseErrorCatalog(value)).toThrow(TypeError)
   })
 
+  it.each(['{operation}', '{id}', '{status}'])('rejects a Source diagnostic template missing %s', token => {
+    expect(() => parseErrorCatalog({
+      SOURCE_QUERY_FAILED: {
+        ...input.SOURCE_QUERY_FAILED,
+        diagnostic_template: input.SOURCE_QUERY_FAILED.diagnostic_template.replace(token, ''),
+      },
+    })).toThrow(TypeError)
+  })
+
+  it('rejects a Source error entry without its diagnostic template', () => {
+    expect(() => parseErrorCatalog({
+      SOURCE_QUERY_FAILED: { ...input.SOURCE_QUERY_FAILED, diagnostic_template: undefined },
+    })).toThrow(TypeError)
+  })
+
   it('keeps an unknown frontend failure on the existing remote-failure guidance', () => {
     expect(catalogFailureText(null)).toContain(input.CATALOG_REMOTE_FAILED.next_step)
   })

@@ -1,5 +1,6 @@
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -59,7 +60,41 @@ describe('project Agent Preset resource reader', () => {
     })
     expect(resources.composition.length).toBeGreaterThan(0)
     expect(resources.composition.every(row => typeof row.name === 'string')).toBe(true)
+    expect(resources.composition.filter(row => row.name === '../project-subagent-control.mjs')).toHaveLength(1)
+    expect(resources.composition.filter(row => row.name === '@deepseek-ai/dsh-tool-subagent-control/list-agents')).toHaveLength(1)
+    expect(resources.composition.some(row => row.name === '@deepseek-ai/dsh-tool-subagent-control')).toBe(false)
+    expect(resources.composition.find(row => row.name === '../project-tool-visibility.mjs').config)
+      .toEqual({ mode: 'local-only' })
+    const runtimeResources = JSON.parse(await readFile(resolve(repositoryRoot, 'config/plugin-runtime-resources.json'), 'utf8'))
+    expect(runtimeResources.requiredFiles).toEqual(expect.arrayContaining([
+      'agent-presets/project-subagent-control.mjs', 'agent-presets/project-subagent-control.json',
+    ]))
   })
+
+  it.each(['harness-comfyui-cli-candidate', 'harness-comfyui-iteration'])(
+    'resolves the shared NoobAI include for %s without embedding credentials',
+    async (presetId) => {
+      const { composition } = await readProjectAgentPresetResources(repositoryRoot, presetId)
+      const includes = composition.filter(row => row.name === 'cordis:include'
+        && row.config?.path === '../noobai-mcp.cordis.yml')
+      expect(includes).toHaveLength(1)
+      const require = createRequire(import.meta.url)
+      const yaml = require('js-yaml')
+      const { entryListSchema } = await import('@deepseek-ai/cordis-plugin-include')
+      const source = await readFile(resolve(repositoryRoot, 'agent-presets', presetId, includes[0].config.path), 'utf8')
+      const [client] = yaml.load(source, { schema: entryListSchema })
+      expect(client.name).toBe('@deepseek-ai/dsh-mcp-client')
+      expect(client.config).toMatchObject({
+        serverName: 'noobai',
+        transport: 'streamable-http',
+        url: 'http://127.0.0.1:18943/mcp',
+        toolCallTimeoutMs: 60000,
+        failOnStartupError: true,
+      })
+      expect(source.match(/Authorization:.*/)?.[0]).toBe("Authorization: !!js '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`'")
+      expect(composition.find(row => row.name === '../project-tool-visibility.mjs').config.mode).toBe('local-only')
+    },
+  )
 
   it('rejects an id outside the configured project Presets before reading files', async () => {
     await expect(readProjectAgentPresetResources(repositoryRoot, '../outside'))

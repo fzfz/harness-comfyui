@@ -9,8 +9,6 @@ import { repositoryResource } from './resource-path.ts'
 const configuration = parsePluginRuntimeResources(pluginRuntimeResources)
 
 export interface PluginRuntimeResourcePaths {
-  readonly semanticQueryClient: string
-  readonly sourceReadClient: string
   readonly frontendCompilerWorker: string
   readonly managedCli: string
 }
@@ -33,16 +31,12 @@ export interface PluginRuntimeResourceValidationOptions {
 }
 
 export const PLUGIN_RUNTIME_RESOURCE_PATHS = Object.freeze({
-  semanticQueryClient: configuration.sourceClients.semanticQueryClient.relativePath,
-  sourceReadClient: configuration.sourceClients.sourceReadClient.relativePath,
   frontendCompilerWorker: runtimeArtifacts[configuration.runtimeArtifacts.frontendCompilerWorker.artifactKey]
     .outputEntryRelativePath,
   managedCli: runtimeArtifacts[configuration.runtimeArtifacts.managedCli.artifactKey].outputEntryRelativePath,
 })
 
 const resourceLabels = Object.freeze({
-  semanticQueryClient: configuration.sourceClients.semanticQueryClient.label,
-  sourceReadClient: configuration.sourceClients.sourceReadClient.label,
   frontendCompilerWorker: configuration.runtimeArtifacts.frontendCompilerWorker.label,
   managedCli: configuration.runtimeArtifacts.managedCli.label,
 })

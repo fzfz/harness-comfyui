@@ -1,0 +1,507 @@
+{
+  "schemaVersion": 1,
+  "purpose": "独立核对首轮真实 Builder 的模型身份、调用来源、读取边界、作品歧义停止与采集证据。",
+  "reviewedCase": "5.5-1",
+  "runId": "7901c32c-9091-411a-b04f-233d2634f4c8",
+  "sessionId": "session-0c905a60-1216-42ae-a39c-1a9992054031",
+  "verdict": {
+    "overall": "passed-scoped-with-nonblocking-observation",
+    "workAmbiguityStop": "passed",
+    "traceCaptureForThisTask": "passed",
+    "observedAcceptanceMaterialIsolation": "passed",
+    "inputContractExecution": "no-violation-observed",
+    "fullMigrationAcceptance": "not-established"
+  },
+  "contractReferences": [
+    "docs/plans/skills-mcp-migration-20261013.md#5.5 第23项第1个场景及角色规则",
+    "docs/plans/skills-mcp-migration-20261013.md#5.13.1",
+    "docs/plans/skills-mcp-migration-20261013.md#5.13.3.3"
+  ],
+  "evidence": {
+    "input": ".local/mcp-investigation/2026-10-15-implementation/first-live-input.json",
+    "run": ".local/mcp-investigation/2026-10-15-implementation/first-live-run.json",
+    "prepare": ".local/mcp-investigation/2026-10-15-implementation/first-live-prepare/trace-index.json",
+    "traceIndex": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/trace-index.json",
+    "events": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/session-events.jsonl",
+    "cleanup": ".local/mcp-investigation/2026-10-15-implementation/first-live-cleanup.json",
+    "serverIdentity": ".local/mcp-investigation/2026-10-15-implementation/initialize.json",
+    "serverTools": ".local/mcp-investigation/2026-10-15-implementation/tools-list.json"
+  },
+  "identity": {
+    "preset": "harness-comfyui-iteration",
+    "actualPresetEvidence": "session.json projection.values.agentPreset",
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "server": {
+      "name": "noobai-catalog",
+      "version": "0.90.2",
+      "protocolVersion": "2025-03-26"
+    },
+    "serviceIdentityLimit": "服务身份来自同目录初始化记录；业务工具响应没有部署提交字段，当前材料未提供部署提交与每次响应的逐请求绑定。",
+    "candidate": {
+      "packageName": "harness-comfyui",
+      "packageVersion": "0.45.0",
+      "sourceCommit": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+      "dirty": true,
+      "loadedClientMatchesCandidate": true
+    },
+    "installedSkill": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+    "skillLoadEvidence": "seq17调用skill，seq18返回本轮安装目录中的完整Skill正文。"
+  },
+  "modelCalls": [
+    {
+      "callId": "968f1162-c464-4f28-b9c0-2c829538d8a5",
+      "path": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/968f1162-c464-4f28-b9c0-2c829538d8a5.jsonl",
+      "startedAt": "2026-10-14T17:24:48.241Z",
+      "endedAt": "2026-10-14T17:24:51.686Z",
+      "purpose": "agent-task",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "captureStatus": "complete",
+      "modelFinishReason": "tool-calls",
+      "chunkCount": 28,
+      "countMatchesTerminal": true,
+      "visibleReasoningDeltaCount": 0,
+      "textDeltaCount": 4,
+      "toolCalls": [
+        {
+          "id": "call_00_lx6yahibbpz4itk4uohg20b4",
+          "name": "skill",
+          "arguments": "{\"name\":\"wai-sdxl-prompt-builder\"}"
+        }
+      ]
+    },
+    {
+      "callId": "c1f952ec-6f23-4d3a-84d5-ab03d5da01cc",
+      "path": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/c1f952ec-6f23-4d3a-84d5-ab03d5da01cc.jsonl",
+      "startedAt": "2026-10-14T17:24:48.282Z",
+      "endedAt": "2026-10-14T17:24:50.917Z",
+      "purpose": "session-title",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "captureStatus": "complete",
+      "modelFinishReason": "max-tokens",
+      "chunkCount": 29,
+      "countMatchesTerminal": true,
+      "visibleReasoningDeltaCount": 25,
+      "textDeltaCount": 0,
+      "toolCalls": []
+    },
+    {
+      "callId": "a6e039fe-cfdf-41a9-af24-4f56101d78de",
+      "path": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/a6e039fe-cfdf-41a9-af24-4f56101d78de.jsonl",
+      "startedAt": "2026-10-14T17:24:51.792Z",
+      "endedAt": "2026-10-14T17:25:01.268Z",
+      "purpose": "agent-task",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "captureStatus": "complete",
+      "modelFinishReason": "tool-calls",
+      "chunkCount": 239,
+      "countMatchesTerminal": true,
+      "visibleReasoningDeltaCount": 17,
+      "textDeltaCount": 0,
+      "toolCalls": [
+        {
+          "id": "call_00_cmppl8d8gpfwm90nec2tj8e3",
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && cat references/input-contract.md\",\"description\":\"Read the input contract reference\"}"
+        },
+        {
+          "id": "call_01_ed99l02btnzyvsbv679mlhuz",
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && ls -R references | head -80\",\"description\":\"List skill reference files\"}"
+        }
+      ]
+    },
+    {
+      "callId": "2710eedf-0141-4b51-90d8-fdb09eac70a5",
+      "path": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/2710eedf-0141-4b51-90d8-fdb09eac70a5.jsonl",
+      "startedAt": "2026-10-14T17:25:01.482Z",
+      "endedAt": "2026-10-14T17:25:09.339Z",
+      "purpose": "agent-task",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "captureStatus": "complete",
+      "modelFinishReason": "tool-calls",
+      "chunkCount": 239,
+      "countMatchesTerminal": true,
+      "visibleReasoningDeltaCount": 14,
+      "textDeltaCount": 0,
+      "toolCalls": [
+        {
+          "id": "call_00_mf7nuewbs64osjmjg6w9knzl",
+          "name": "bash",
+          "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/workspace 2>/dev/null; echo \\\"---ENV---\\\"; env | grep -i -E \\\"dsh|comfyui|context\\\" | head -40\",\"description\":\"Inspect workspace and environment\"}"
+        },
+        {
+          "id": "call_01_gegnbxpaomo9kiqfqop0r0b1",
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && cat references/prompt-position-rules/character.md\",\"description\":\"Read character position rules\"}"
+        }
+      ]
+    },
+    {
+      "callId": "6bdfb6b0-e34c-43fd-8589-dfea289be62e",
+      "path": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/6bdfb6b0-e34c-43fd-8589-dfea289be62e.jsonl",
+      "startedAt": "2026-10-14T17:25:09.714Z",
+      "endedAt": "2026-10-14T17:25:16.862Z",
+      "purpose": "agent-task",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "captureStatus": "complete",
+      "modelFinishReason": "tool-calls",
+      "chunkCount": 202,
+      "countMatchesTerminal": true,
+      "visibleReasoningDeltaCount": 48,
+      "textDeltaCount": 9,
+      "toolCalls": [
+        {
+          "id": "call_00_tlbgl6hei19l4lt4y3euqtpf",
+          "name": "bash",
+          "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && cat references/wai-prompt-position-order.md\",\"description\":\"Read prompt position order reference\"}"
+        },
+        {
+          "id": "call_01_90pykm8kgopglakxxcm9kl72",
+          "name": "mcp__noobai__query_semantic_works",
+          "arguments": "{\"mode\":\"search\",\"query\":\"Fate\",\"page_size\":20}"
+        }
+      ]
+    },
+    {
+      "callId": "3d4206c6-d647-495d-b50f-231305411069",
+      "path": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/3d4206c6-d647-495d-b50f-231305411069.jsonl",
+      "startedAt": "2026-10-14T17:25:18.963Z",
+      "endedAt": "2026-10-14T17:25:25.509Z",
+      "purpose": "agent-task",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "captureStatus": "complete",
+      "modelFinishReason": "tool-calls",
+      "chunkCount": 83,
+      "countMatchesTerminal": true,
+      "visibleReasoningDeltaCount": 38,
+      "textDeltaCount": 0,
+      "toolCalls": [
+        {
+          "id": "call_00_e4zhagbqpy2bbiyrduiq9dos",
+          "name": "mcp__noobai__query_semantic_works",
+          "arguments": "{\"mode\":\"resolve\",\"id\":\"65\"}"
+        },
+        {
+          "id": "call_01_tkwe9nhkunrz6d7wk022d1h2",
+          "name": "mcp__noobai__query_semantic_works",
+          "arguments": "{\"mode\":\"resolve\",\"id\":\"3241\"}"
+        }
+      ]
+    },
+    {
+      "callId": "6960e60a-8138-48bb-8792-36c9d98ae5b1",
+      "path": ".local/mcp-investigation/2026-10-15-implementation/first-live-trace/model-calls/6960e60a-8138-48bb-8792-36c9d98ae5b1.jsonl",
+      "startedAt": "2026-10-14T17:25:25.961Z",
+      "endedAt": "2026-10-14T17:25:39.903Z",
+      "purpose": "agent-task",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "captureStatus": "complete",
+      "modelFinishReason": "stop",
+      "chunkCount": 210,
+      "countMatchesTerminal": true,
+      "visibleReasoningDeltaCount": 23,
+      "textDeltaCount": 181,
+      "toolCalls": []
+    }
+  ],
+  "coverage": {
+    "eventSeqStart": 0,
+    "eventSeqEnd": 51,
+    "eventCount": 52,
+    "eventSeqContiguous": true,
+    "fixedSnapshotSeq": 51,
+    "pageCount": 1,
+    "exportedRecordsEqualSessionEventFile": true,
+    "modelCallCount": 7,
+    "taskModelCallCount": 6,
+    "titleModelCallCount": 1,
+    "toolCallCount": 9,
+    "toolResultCount": 9,
+    "toolCallBlocksMatchEvents": true,
+    "toolErrors": 0,
+    "childSessions": 0,
+    "subagentEventFileBytes": 0,
+    "modelInputToolDeclarationsMatchSavedMcpTools": 17,
+    "collectorMissing": [],
+    "scope": "本轮只有主会话和一页事件；本轮证据覆盖该主会话，父子任务、多页翻页和取消前缀由其他验收材料证明。"
+  },
+  "knowledgeEntryPath": [
+    {
+      "eventSeq": 9,
+      "source": "用户任务",
+      "content": "只提供本轮Workspace、安装后Skill路径和Fate作品名。"
+    },
+    {
+      "eventSeq": 11,
+      "source": "宿主Skill目录",
+      "content": "宿主列出Skill名称和摘要，并要求通过skill工具加载。"
+    },
+    {
+      "eventSeq": 12,
+      "source": "宿主request/header及首次任务模型请求",
+      "content": "首次调用前已提供bash、skill和17个NoobAI工具的完整声明。query_semantic_works声明给出search、resolve、分页与十进制ID规则；无需通过已退役CLI学习目录操作。"
+    },
+    {
+      "eventSeq": 18,
+      "source": "已安装WAI Skill",
+      "content": "输入读取指向input-contract.md；作品和角色选择指向character.md；缺少素材时使用NoobAI MCP。"
+    },
+    {
+      "eventSeq": 23,
+      "source": "input-contract.md完整读取",
+      "content": "上下文记录允许为零；没有Character或Style上下文时只根据普通文字构建。返回正文与当前安装文件相同。"
+    },
+    {
+      "eventSeq": 30,
+      "source": "bash环境查询返回",
+      "content": "模型主动查询环境后接收到本轮DSH运行路径和受管CLI能力变量；能力值在导出副本中显示为脱敏标记。该路径只被读取，后续未调用CLI。"
+    },
+    {
+      "eventSeq": 32,
+      "source": "character.md完整读取",
+      "content": "多个作品候选符合时等待用户选择；未指定角色时不得查询角色或创建character内容。返回正文与当前安装文件相同。"
+    },
+    {
+      "eventSeq": 37,
+      "source": "wai-prompt-position-order.md完整读取",
+      "content": "读取位置职责与来源规则；返回正文与当前安装文件相同。"
+    },
+    {
+      "eventSeq": 39,
+      "source": "NoobAI作品search实际返回",
+      "content": "65与3241均为Fate，别名为空，类别为Fate，分别有743个角色名称。总数2，一页完整。"
+    },
+    {
+      "eventSeq": [
+        44,
+        46
+      ],
+      "source": "NoobAI作品resolve实际返回",
+      "content": "模型将搜索结果的整数ID转成字符串，分别读取65和3241；返回内容除ID外相同。"
+    }
+  ],
+  "toolTimeline": [
+    {
+      "seq": 17,
+      "name": "skill",
+      "callId": "call_00_lx6yahibbpz4itk4uohg20b4",
+      "arguments": "{\"name\":\"wai-sdxl-prompt-builder\"}"
+    },
+    {
+      "seq": 22,
+      "name": "bash",
+      "callId": "call_00_cmppl8d8gpfwm90nec2tj8e3",
+      "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && cat references/input-contract.md\",\"description\":\"Read the input contract reference\"}"
+    },
+    {
+      "seq": 24,
+      "name": "bash",
+      "callId": "call_01_ed99l02btnzyvsbv679mlhuz",
+      "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && ls -R references | head -80\",\"description\":\"List skill reference files\"}"
+    },
+    {
+      "seq": 29,
+      "name": "bash",
+      "callId": "call_00_mf7nuewbs64osjmjg6w9knzl",
+      "arguments": "{\"command\":\"ls -la /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/workspace 2>/dev/null; echo \\\"---ENV---\\\"; env | grep -i -E \\\"dsh|comfyui|context\\\" | head -40\",\"description\":\"Inspect workspace and environment\"}"
+    },
+    {
+      "seq": 31,
+      "name": "bash",
+      "callId": "call_01_gegnbxpaomo9kiqfqop0r0b1",
+      "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && cat references/prompt-position-rules/character.md\",\"description\":\"Read character position rules\"}"
+    },
+    {
+      "seq": 36,
+      "name": "bash",
+      "callId": "call_00_tlbgl6hei19l4lt4y3euqtpf",
+      "arguments": "{\"command\":\"cd /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder && cat references/wai-prompt-position-order.md\",\"description\":\"Read prompt position order reference\"}"
+    },
+    {
+      "seq": 38,
+      "name": "mcp__noobai__query_semantic_works",
+      "callId": "call_01_90pykm8kgopglakxxcm9kl72",
+      "arguments": "{\"mode\":\"search\",\"query\":\"Fate\",\"page_size\":20}"
+    },
+    {
+      "seq": 43,
+      "name": "mcp__noobai__query_semantic_works",
+      "callId": "call_00_e4zhagbqpy2bbiyrduiq9dos",
+      "arguments": "{\"mode\":\"resolve\",\"id\":\"65\"}"
+    },
+    {
+      "seq": 45,
+      "name": "mcp__noobai__query_semantic_works",
+      "callId": "call_01_tkwe9nhkunrz6d7wk022d1h2",
+      "arguments": "{\"mode\":\"resolve\",\"id\":\"3241\"}"
+    }
+  ],
+  "readBoundary": {
+    "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg",
+    "outsideRepository": true,
+    "workspaceListing": "seq30显示Workspace为空；seq25只列出安装Skill的references目录。",
+    "observedReadTargets": [
+      "已安装WAI Skill正文",
+      "已安装Skill的input-contract.md",
+      "已安装Skill的references文件名列表",
+      "本轮Workspace目录项",
+      "本轮进程中名称匹配dsh/comfyui/context的环境变量",
+      "已安装Skill的character.md",
+      "已安装Skill的wai-prompt-position-order.md",
+      "NoobAI作品记录65和3241"
+    ],
+    "acceptanceMaterialReadObserved": false,
+    "basis": "全部工具调用、返回和实际模型请求中未出现仓库验收目录、first-live输入文件、其他场景材料或原worktree读取路径。判断依据本轮可见轨迹，未据此推断文件沙箱禁止跨目录读取。",
+    "collectorRuntimeFiles": [
+      "tests/desktop/fixtures/official-session-trace.mjs",
+      "tests/desktop/fixtures/official-trace-evidence.mjs",
+      "config/desktop-e2e-schema.mjs"
+    ],
+    "collectorCopiesMatchCurrentSourceBytes": true,
+    "profileCollectorPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QrmiBg/.local/desktop-e2e/7901c32c-9091-411a-b04f-233d2634f4c8/evidence/session-trace/tests/desktop/fixtures/official-session-trace.mjs",
+    "profilePathEvidence": "本轮profiles/desktop/cordis.patch.yml:687",
+    "activationBeforeTask": true,
+    "preparedActivationEqualsExport": true
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "informational",
+      "status": "nonblocking-observation",
+      "title": "模型在允许零条上下文的任务中额外检查Workspace和环境。",
+      "firstVisibleDeviationSeq": 21,
+      "actionSeq": 29,
+      "resultSeq": 30,
+      "evidence": [
+        "seq23完整输入合同规定零条上下文记录有效，并明确没有记录时只根据普通文字构建。",
+        "seq28可见reasoning提出到Workspace或会话寻找缺失上下文；seq29随后执行Workspace列表和环境变量查询。",
+        "seq30返回了受管CLI能力变量，后续任务模型请求携带该返回。导出副本已脱敏。",
+        "seq35可见reasoning仍将comfyui-context描述为本应随请求提供的metadata。"
+      ],
+      "effect": "模型发生了多余调查并持有上下文必要性的错误前提；实际没有采用环境中的Character或Style输入，也没有把上下文记录缺失作为最终阻塞项。现有合同未禁止本次读取，故本项不构成已证明的输入合同失败。",
+      "causalAssessment": "最早可见偏离是模型对上下文必要性的理解；工具能力知识已在首次模型请求的bash声明中出现。当前样本能证明理解和动作的先后链，未执行控制变量复验，不能确定是哪一句提示造成该理解。",
+      "contaminationAssessment": "实际返回只有本轮运行信息；未发现未授权验收资料进入模型。本项不判为验收资料污染。",
+      "contractAssessment": "输入采用规则、角色查询停止边界和验收资料隔离分别核对，均未发现本轮违反；保留额外调查观察，供非阻断诊断使用。"
+    }
+  ],
+  "ambiguityOutcome": {
+    "status": "passed",
+    "candidateIds": [
+      "65",
+      "3241"
+    ],
+    "searchSeq": 38,
+    "searchResultSeq": 39,
+    "detailCallSeqs": [
+      43,
+      45
+    ],
+    "finalAnswerSeq": 49,
+    "naturalTurnEndSeq": 51,
+    "naturalTurnEndReason": "completed",
+    "taskFinishReason": "stop",
+    "semanticOutcome": "模型报告两条候选的标识、名称、别名和类别，请用户选择作品并给出角色名，停止Prompt构造。",
+    "characterQueryCount": 0,
+    "promptConstructionObserved": false,
+    "generationSubmissionCount": 0,
+    "extraDetailReads": "模型在seq42已经识别歧义，随后仍读取两条作品详情；这些读取没有选择作品或进入角色查询。"
+  },
+  "visibleReasoning": {
+    "available": "五次任务调用及标题调用包含宿主导出的reasoning分片；首次任务调用没有reasoning分片。",
+    "method": "只核对已导出的reasoning及对应动作，未推断未提供的思考内容。",
+    "taskSummaries": [
+      {
+        "seq": 21,
+        "summary": "检查输入合同，同时怀疑本应有comfyui-context。"
+      },
+      {
+        "seq": 28,
+        "summary": "拟从Workspace或会话寻找上下文。"
+      },
+      {
+        "seq": 35,
+        "summary": "转入作品唯一性查询，确认缺少角色名。"
+      },
+      {
+        "seq": 42,
+        "summary": "识别两条同名作品均符合，计划询问用户，并追加详情核对。"
+      },
+      {
+        "seq": 49,
+        "summary": "确认详情一致，等待作品选择和角色名。"
+      }
+    ]
+  },
+  "termination": {
+    "task": "seq51自然completed，早于应用停止。",
+    "title": "c1f952ec-6f23-4d3a-84d5-ab03d5da01cc以max-tokens结束，只有reasoning分片，没有标题文本；session标题为用户任务路径前缀。采集complete只证明流收集结束。",
+    "cleanup": "first-live-cleanup.json和本轮run.json均为stopped，portsReleased=true，error=null。",
+    "cancellation": "本轮没有任务取消，不能由本轮证明取消路径。"
+  },
+  "notEstablished": [
+    "第5.13.3.3第4项要求的本地受控父子任务、多页分页和中断记录验收，未包含在本次输入证据中。",
+    "首次任务调用未提供可见reasoning；隐藏思考不在审查范围。",
+    "目录初始化记录提供0.90.2版本，未提供部署提交与本轮业务响应的逐请求绑定。",
+    "本轮只覆盖迭代预设中的作品同名停止场景；未覆盖另一预设、用户选择后的继续执行、十五位置Prompt交付或生成任务。",
+    "输入准备记录位于.local/mcp-investigation/2026-10-15-implementation；计划5.13.1指定.local/skills-mcp-migration-live。资料保存路径存在差异，未在本次模型输入中暴露。"
+  ],
+  "reviewActions": {
+    "startedApplication": false,
+    "calledModel": false,
+    "modifiedProductFiles": false,
+    "recordWritten": "docs/verification/skills-mcp-migration/mcp-0902-first-live-review.json"
+  },
+  "corrections": [
+    {
+      "id": "C1",
+      "previous": {
+        "overall": "partial-pass-with-execution-deviation",
+        "inputContractExecution": "failed",
+        "findingId": "F1",
+        "findingStatus": "failed-input-contract"
+      },
+      "revised": {
+        "overall": "passed-scoped-with-nonblocking-observation",
+        "inputContractExecution": "no-violation-observed",
+        "findingStatus": "nonblocking-observation"
+      },
+      "basis": {
+        "reason": "进一步区分输入来源采用与允许读取范围后，现有证据不足以把额外调查判为输入合同失败。",
+        "contractQuotes": [
+          {
+            "source": "seq23 input-contract.md 当前用户消息",
+            "text": "当前用户消息由普通文字和零个或多个 `comfyui-context` 上下文记录 JSON 行组成。",
+            "meaning": "规定业务输入的结构与可省略性。"
+          },
+          {
+            "source": "seq23 input-contract.md 处理顺序和采用位置 第4项",
+            "text": "当前用户消息既没有 Character 上下文记录，也没有 Style 上下文记录时，Skill 执行者只根据普通文字构建最终 Prompt。",
+            "meaning": "约束最终Prompt的输入采用。该句没有单独禁止Workspace目录或环境读取。"
+          },
+          {
+            "source": "seq32 character.md 用户只提供作品时",
+            "text": "用户尚未指定角色名称时，Skill Agent 不得查询角色或创建 `character` 内容。",
+            "meaning": "本轮必须遵守的停止边界；实际未查询角色或创建character。"
+          },
+          {
+            "source": "计划5.13.1第3项",
+            "text": "被测主 Agent 或子 Agent 读取或接收未获本任务授权的验收资料时，该轮判为资料污染。",
+            "meaning": "需要证明收到的是未授权验收资料；本次环境返回为本轮运行信息，未发现该类资料。"
+          }
+        ],
+        "actualAdoption": "seq30环境返回没有Character或Style记录，后续没有将环境值作为角色或画师Prompt来源，也没有构造Prompt。",
+        "actualBlockingReason": "seq49要求用户选择作品65或3241并提供角色名；没有把缺少comfyui-context列为必须补齐的阻塞项。该回答把画面和风格列为可选补充。",
+        "remainingObservation": "seq21、28、35可见reasoning对上下文必要性存在错误前提，seq29执行多余目录与环境查询。该观察可用于改善和对照调查，当前合同与结果不支持将其设为验收失败。",
+        "gatingConclusion": "5.5-1作品同名目标分支通过。本轮已核对的输入采用与资料隔离合同未发现违反；F1不作为验收阻断项。全矩阵验收仍须分别核对其他场景和预设。"
+      }
+    }
+  ]
+}

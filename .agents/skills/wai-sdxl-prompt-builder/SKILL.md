@@ -28,9 +28,9 @@ Skill 执行者从本轮输入中记录用户已经明确提供的以下内容�
 
 ## 2. 选择主场景和构图
 
-Skill 执行者读取 [场景分支矩阵](references/composition-scenario-branches.md)，并从该文件列出的场景类型中选择最能容纳全部主体和主要动作的一种主场景。用户要求多个画格、前后变化、过程或状态对比时，Skill 执行者选择该文件中的分镜与状态变化场景。
+Skill 执行者完整读取[场景分支矩阵](references/composition-scenario-branches.md)，并按该文件的“主场景选择”确定本轮主场景。
 
-用户要求下表左栏中的内容时，Skill 执行者读取右栏文件。一个请求符合多行条件时，Skill 执行者完整读取每个对应文件。Skill 执行者把每个文件规定的 Prompt 位置和应写入的画面内容列入本轮画面设计，并在第 3 节按照对应位置规则填写这些位置。
+用户要求下表左栏中的内容时，Skill 执行者读取右栏文件。一个请求符合多行条件时，Skill 执行者完整读取每个对应文件。Skill 执行者把每个文件规定的 Prompt 位置和规定写入的画面内容列入本轮画面设计，并在第 3 节按照对应位置规则填写这些位置。
 
 | 用户要求的内容 | 读取文件 |
 |---|---|
@@ -68,7 +68,13 @@ Skill 执行者读取 [WAI Prompt 位置顺序与职责](references/wai-prompt-p
 
 ## 4. 查询缺少的角色、画师与风格效果 Prompt 内容
 
-本轮需要查询角色 Prompt、画师 Prompt，或者普通画风、媒介效果、摄影效果或数字效果的 Prompt 词条时，Skill 执行者在第一次查询前完整读取 [Prompt 内容查询 CLI](references/semantic-tool-orchestration.md)，并按照该文件取得查询结果。Skill 执行者把采用的查询结果写入对应的 Prompt 位置。
+本轮缺少角色 Prompt、画师 Prompt 或视觉概念的规范标签时，Skill 执行者通过 NoobAI MCP 获取素材。角色与作品的候选选择按 `references/prompt-position-rules/character.md`，画师选择按 `references/artist-adoption.md`，词条采用按本节“词条采用”执行。
+
+### 词条采用
+
+1. Skill 执行者按目标概念比较词条的规范标签与别名。只有一项符合时采用该项；多个候选表达相同含义时，按使用数量从大到小、ID 从小到大采用第一项；候选含义不同且 Skill 执行者无法根据用户要求确定唯一候选时，Skill 执行者报告候选标识、规范标签和别名，并等待用户选择。
+2. 没有可采用词条时，Skill 执行者把用户描述该概念的文字改写为一个不含逗号的英文小写短语。
+3. Skill 执行者按 `references/wai-prompt-position-order.md` 的“固定顺序和唯一职责”表，将选中的规范标签或英文短语写入唯一职责包含该概念的位置。
 
 ## 5. 处理冲突、设计权重并自检
 
@@ -76,7 +82,7 @@ Skill 执行者读取 [Prompt 冲突规则](references/prompt-conflict-rules.md)
 
 Skill 执行者完整读取 [权重结构化策略](references/prompt-weight-policy.json) 和 [Prompt 权重方法](references/prompt-weighting.md)，再为前十四个标签位置中的每项内容选择未加权、默认权重或显式权重形式。Skill 执行者只在此步骤添加一次权重外层。
 
-Skill 执行者读取 [Prompt 自检](references/prompt-self-check.md)，并依次完成该文件规定的检查。第一次自检发现的问题需要用户在互斥要求之间作出选择时，Skill 执行者立即列出这些要求并请求用户选择，在收到选择前停止本次执行。其他问题由 Skill 执行者按照第 1 节的来源优先级修改可调整的内容和对应 Prompt 位置，并保持当前用户消息中的明确要求不变；修改后，Skill 执行者按照冲突处理、权重设计和自检的顺序重新执行本节一次。第二次自检仍发现问题时，Skill 执行者逐项报告未解决的问题及其对应的 Prompt 位置，然后停止本次执行。
+Skill 执行者读取 [Prompt 自检](references/prompt-self-check.md)，并依次完成该文件规定的检查。第一次自检发现的问题需要用户在互斥要求之间选择时，Skill 执行者立即列出这些要求并请求用户选择，在收到选择前停止本次执行。其他问题由 Skill 执行者按照第 1 节的来源优先级修改可调整的内容和对应 Prompt 位置，并保持当前用户消息中的明确要求不变；修改后，Skill 执行者按照冲突处理、权重设计和自检的顺序重新执行本节一次。第二次自检仍发现问题时，Skill 执行者逐项报告未解决的问题及其对应的 Prompt 位置，然后停止本次执行。
 
 ## 6. 校验 Prompt 格式
 

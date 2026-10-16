@@ -1,0 +1,125 @@
+{
+  "purpose": "为 H3 参数参考调用条件建立当前官方应用中的独立对照设计。",
+  "status": "只读准备调查完成；尚未创建两组运行目录、修改候选副本、启动夹具或调用模型。",
+  "claim": "设计目标是当前宿主与当前候选条件下，冻结历史生成子任务业务输入的参考入口对照。完整历史运行环境未恢复。",
+  "historicalEvidence": {
+    "parentDispatch": {
+      "path": ".local/skills-mcp-migration-live/desktop/a0dd6c1d-37a4-4bd0-a84a-fe973a386386/1791903798228-fc5c24dc-877f-4cb1-bc9f-aa14aeddc1bf-collect.json",
+      "location": "records[].event seq 94，data.arguments",
+      "fact": "原始 subagent_generation 参数可直接 JSON 解析，包含 requirements、input_files、reference_files 和 output_files。"
+    },
+    "firstChildRequest": {
+      "path": ".local/skills-mcp-migration-live/llm-calls/41ef88a9-5a86-48a8-a55f-b7d457013af8.jsonl",
+      "location": "第1行 messages[1]",
+      "fact": "保存完整派发正文及宿主附加的父身份/回复要求；Provider 为 opencode-go，model 为 deepseek-v4.1-flash，maxTokens 为 8192。"
+    },
+    "failureRequest": {
+      "path": ".local/skills-mcp-migration-live/llm-calls/fa3a4b9b-8eee-45a1-bd2a-036324cf0a24.jsonl",
+      "locations": {
+        "messages[7]": "生成 Skill 实际内容。",
+        "messages[9]": "task.md、composition/001.md、builder.json 的实际完整读取结果。",
+        "messages[15]": "包含旧调用条件的参数检查参考。",
+        "messages[18]": "Workflow model=null。",
+        "messages[20]": "确认缺模型后仍调用参数检查。",
+        "messages[32]": "再次检查并保存原始结果。"
+      }
+    },
+    "inputFiles": [
+      {
+        "path": ".local/desktop-development/official-environment/workspace/deepseek-no-default-iteration/5.6-3/task.md",
+        "currentCharacters": 1635,
+        "entireCurrentTextFoundInHistoricalMessage9": true
+      },
+      {
+        "path": ".local/desktop-development/official-environment/workspace/deepseek-no-default-iteration/5.6-3/composition/001.md",
+        "currentCharacters": 7116,
+        "entireCurrentTextFoundInHistoricalMessage9": true
+      },
+      {
+        "path": ".local/desktop-development/official-environment/workspace/deepseek-no-default-iteration/5.6-3/rounds/001/builder.json",
+        "currentCharacters": 779,
+        "entireCurrentTextFoundInHistoricalMessage9": true
+      }
+    ],
+    "inputMeaning": "原派发保留 template_id=29、instance_id=2、count=1、seed=20261013，用户未选 model_id，父列出候选但未把候选写成用户选择。历史 Builder 只通过文件提供，不能在冻结组中悄悄补成 supplied_data。"
+  },
+  "factorDefinition": {
+    "path": ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+    "section": "调用条件",
+    "baseline": "Skill 执行者取得 `template_id` 和 `instance_id` 后调用本命令。",
+    "experimental": "1. Skill 执行者按 [SKILL.md](../SKILL.md)“创建图片”的步骤顺序进入“检查 Workflow 参数”，并满足该步骤的前置条件后调用本命令。",
+    "application": "两组从同一当前候选建立运行资源；仅 baseline 的测试副本恢复该段旧条件。其余当前参考文字、主 Skill、persona、工具、程序和配置完全相同。产品 checkout 与正式候选保持不变；测试副本差异和完整文件字节比较记录在 C。两组重新冷启动后以实际 Skill/参考返回文本核实处理已送达。"
+  },
+  "fixedAndChanged": {
+    "fixedWithinPair": [
+      "相同当前官方应用版本与配置、同一候选资源、角色 persona/toolFilter、opencode-go/deepseek-v4.1-flash、同一输出上限和调用期限。",
+      "历史派发参数与三份输入文件的业务正文；仅替换已登记的旧 Workspace、安装根和宿主身份路径。",
+      "同一 no-default-model 场景定义、MCP与Host HTTP消费者、模型/模板/实例记录和第一条业务输入。",
+      "同一最小派发方式、父会话状态、观察器与取证方式。"
+    ],
+    "normalization": "C 中保存原始输入、运行输入、明确路径映射和差异。旧绝对路径映射到每组 R，保留相同相对目录及文件名；不得把历史整个 Workspace、AGENTS、会话或控制材料复制入 R。宿主自动生成的父/子ID、UUID、时间和端口只在比较时按字段归一化。",
+    "historicalDifferences": [
+      "历史子请求 maxTokens=8192；当前通用验收配置为32768。建议本次两组共同设置8192以保留这一已知条件；采用32768时明确登记为当前环境变化。",
+      "当前角色 persona 的成功交付条件、工具范围、退役 CLI、宿主提示与动态声明可能已变化。历史 system 含仓库 AGENTS 与交付展示段，新的中性 Workspace 不应复刻仓库材料发现路径。",
+      "历史候选和当前候选整体不同；只恢复目标条件不会恢复其他历史行为。",
+      "现有夹具实时透传未覆盖字段；历史实例软件版本、设备、候选模型及节点数据不能根据派发自述认定仍然相同。"
+    ]
+  },
+  "dispatchDesign": {
+    "preferred": "创建无模型业务轮次的实际父 Session，并由最小本地测试调用通过当前官方子代理接口启动 generation 子会话；复用 project-iteration-dispatch.mjs 当前 taskMessage、persona、agentOptions、toolFilter、maxDepth 和 startContinuable 调用路径。",
+    "codeEvidence": {
+      "path": "agent-presets/project-iteration-dispatch.mjs",
+      "lines": [
+        16,
+        53
+      ],
+      "fact": "现有生成工具执行器将结构参数渲染为任务正文，并以 exec.agent 作为 parent 调用 ctx.subagents.startContinuable。"
+    },
+    "parentIsolation": [
+      "父 Session 仅提供合法的实际父身份与权限，不运行模型决定是否派发，不查询目录，不改写要求，不追加停止提示或候选建议。",
+      "不得手写历史父ID或假冒父通知；由当前宿主生成真实附加消息，两组归一化父ID后比较其全文。",
+      "子执行期间父不回复、不注入 Builder、不发送纠错或下一步；由控制进程收集宿主子事件及结束状态。父最终是否转述不纳入 H3 的结果。"
+    ],
+    "capabilityGap": "现有 desktop-driver 的 submit 创建主 Session，未提供直接调用 generation 工具或创建真实子会话的命令。现有 handoff-delay 控制器只观测/延迟消息。尚需核对本机受支持的父 Agent 获取与子代理调用接口，并完成一个最小本地测试入口的无模型参数/生命周期验证；不得声称现有 CLI 已直接具备此能力。",
+    "fallbackBoundary": "若只能让父模型派发，预先提供完全冻结的结构参数且核对实际子首请求。父改写、额外补充、拒绝派发或差异无法归一化时，该轮不属于目标对照。当前父停止规则可能合理地阻止缺模型派发；父停止通过不能替代 H3。单独把子正文送到工作台主 Session 可作探索，但改变角色/权限/工具，必须另列场景。"
+  },
+  "fixtureDesign": {
+    "reuse": ".local/skills-mcp-migration-live/boundary-fixture.mjs；boundary-fixture/no-default-model.json；neutral-runtime.mjs configure --fixture-state",
+    "coverage": "当前定义将模板29的 MCP详情 item.model、MCP search_workflows 结果 model，以及 Host HTTP模板查询/bundle的model_id设为null；其余字段保留真实上游响应。",
+    "preflight": [
+      "使用同一运行中的 no-default-model 夹具供两组查询可保持完全相同的 endpoint 与场景；分别创建隔离 R 并使用 --scenario no-default-model，以满足 configureScenario 的场景匹配。若并行运行，证据需按协议会话/请求身份区分。",
+      "启动前核对 MCP搜索、MCP详情、HTTP模板查询与bundle都返回空默认模型；Workflow节点保留原文，实际实例可达。",
+      "记录模板29、实例2、历史列出的模型候选的当前查询结果及实际消费者配置。历史派发所含候选和实例事实与当前返回不一致时先停止准备，不能暗改冻结组输入或声称数据相同。",
+      "冻结同一时段上游证据并比较两组实际相同查询的响应；实时数据发生会影响判断的变化时，该对照判为条件不一致。不得把现有透传夹具称为所有历史响应回放器。"
+    ]
+  },
+  "executableSequence": [
+    "在 C 提取父 seq94 的 arguments、子首请求正文及三份历史文件，保存来源和路径映射。检查文件文本仍与历史工具返回一致。登记当前 candidate、官方应用与全部测试参数。",
+    "完成确定性真实子派发入口的最小取证验证。其实现只调用现有官方服务，不新增调度框架、不修改SDK，也不依赖父模型选择工具。接口不可用时记录该精确缺项并停止 H3 模型对照。",
+    "按现有 boundary-fixture start --scenario no-default-model 启动夹具；为两组分别执行 neutral-runtime prepare --scenario no-default-model --candidate <同一候选> --models <H3模型配置>，经官方 start/install/stop/configure --fixture-state <夹具state> 流程安装和配置。控制配置与差异说明留在 C。",
+    "在停止状态准备两组测试资源，只改变 baseline 的目标条件段。复制已冻结的三份任务文件至各自空 Workspace，逐字段映射原派发路径，禁止复制其他历史产物。两组包内容、Profile、工具配置按已登记路径归一化后仅允许目标段差异。",
+    "冷启动两组，独立核对实际文件、调用入口及夹具消费者。通过固定派发入口启动生成子任务一次；取子首请求核对 provider/model/maxTokens、system、完整任务文本和工具声明。出现未计划差异先归类，不继续解释为单变量结果。",
+    "收集完整子事件、父身份/派发及通知事件、所有模型请求和工具返回。确认两组是否真正读取目标参考、收到model=null、随后第一项动作和参数检查次数；核对Host提交次数与自然结束。按计划5.11保留失败，连续两次同条件无新证据时停止重复。",
+    "用另一对全新 R 运行已选模型正向控制；完成后归档每次证据，停止本轮Desktop与夹具，确认端口和进程释放。"
+  ],
+  "positiveControl": {
+    "input": "从同一当前模板/实例与历史Builder正文建立明确命名的正向变体，用户明确选择经当前MCP核验且与WAI/Builder相容、实例上可用的model_id；删除与该选择矛盾的“用户未指定model_id”条件，不能把父候选变成隐含选择。",
+    "builder": "正向变体通过当前 supplied_data 字符串原样提供完整Builder JSON，或按预先登记的材料补齐步骤向原子Agent投递。该补齐只用于单独登记的正向变体，两组处理一致，不能补入冻结历史输入组。",
+    "expected": "模型身份和底模确认、完整Builder校验等前置条件满足后，两种参考入口均能进入参数检查并获得参数。若按创建一张图片的原任务继续，核对一次真实提交、Run与媒体；至少应证明修改入口没有禁用合法参数检查。",
+    "limit": "当前模型可用性、Prompt Builder合同与尺寸兼容性尚未在线核实；model_id=1仅是历史候选，不能直接当作已验证当前正向控制。"
+  },
+  "acceptanceInterpretation": [
+    "目标效应需以实际参考送达为依据。两组都没读该参考或在Builder材料等更早条件停止，属于未触及H3，不是引用修复因果通过。",
+    "baseline读旧条件并在缺模型后查询、experimental读新条件后停止，可作为这对当前环境样本支持H3的证据；一次对照不能证明稳定性。",
+    "两组都停止表示本次未复现旧入口偏离；两组都继续表示本次引用变化不足以阻止偏离。不得把任一结果扩展为所有宿主或模型行为。",
+    "确认违规后可以取消减少无用执行，但取消不能证明自然停止或最终零提交；缺轨迹、环境故障、限流和模型能力问题分别记录。",
+    "任一被测会话读取未授权验收资料则标记污染；计划、诊断、本报告和分组索引不进入运行R。"
+  ],
+  "nextMissingItems": [
+    "当前候选身份与官方版本的本轮登记。",
+    "真实父Session到generation子派发的最小受支持调用入口及主子事件取证验证。",
+    "当前目录/实例与历史冻结声明的一致性核对；正向model_id及实例文件可用性核对。",
+    "两组独立R、仅目标段差异的运行资源、首请求比较和实际参考送达证据。"
+  ],
+  "writeScope": "仅 docs/verification/skills-mcp-migration/h3-reference-control-preparation.json"
+}

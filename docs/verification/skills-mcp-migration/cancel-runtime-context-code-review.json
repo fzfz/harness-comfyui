@@ -1,0 +1,112 @@
+{
+  "purpose": "记录取消执行上下文修复的独立代码审查与定向复验结果。",
+  "readWhen": "决定是否启动第三轮官方零远程模型验收，以及评估取消证据时。",
+  "verdict": "当前审查范围内未发现实质缺陷。取消驱动具备进入第三轮官方零远程模型验收的条件。",
+  "findings": [],
+  "scope": {
+    "files": [
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs",
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs",
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/inspector-cancel.test.mjs",
+      ".local/skills-mcp-migration-live/remaining-handoff-runtime/cancellation.test.mjs"
+    ],
+    "implementationChanged": false,
+    "officialApplicationStarts": 0,
+    "providerStarts": 0,
+    "modelCalls": 0,
+    "reportOnly": "docs/verification/skills-mcp-migration/cancel-runtime-context-code-review.json"
+  },
+  "causeEvidence": [
+    {
+      "source": "docs/verification/skills-mcp-migration/remaining-handoff-zero-runtime-round-2.json#/workbench/pCancel",
+      "result": "官方第二轮的 Runtime.evaluate 返回动态导入回调缺失错误；该取消入口尚未取得 Run 快照。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/remaining-handoff-runtime/official-zero-probe/harness-run-rd5vgv/attempt-2-inspector-environment.json",
+      "result": "官方 Host 的 Node 为 v24.18.1，控制 API 已挂载。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/remaining-handoff-runtime/inspector-cancel-red.txt",
+      "result": "保存的修复前 VM 测试出现 ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING。"
+    },
+    {
+      "source": "独立审查进程 node:inspector/promises Session.post(Runtime.evaluate)",
+      "result": "本机 Node v25.8.2 执行 import(node:sqlite) 重现相同回调缺失错误；普通 ESM 静态导入 SQLite 成功。"
+    }
+  ],
+  "checked": [
+    {
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:92",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:87",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:116"
+      ],
+      "result": "hostExpression(cancel) 只调用已挂载的 control.cancel(input)。取消包装函数使用模块静态导入的文件和 SQLite API。execute 与 snapshot 表达式也通过控制 API 执行。"
+    },
+    {
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:81",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:120"
+      ],
+      "result": "inspector 保留导出；host 命令仍核对运行进程组、端口归属与 Node target，并在 finally 关闭连接。"
+    },
+    {
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:13",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:89",
+        ".local/skills-mcp-migration-live/handoff-completion-boundary/__dsh__node_modules__@deepseek-ai__dsh-tool-subagent-control__lib__index.js:83"
+      ],
+      "result": "生产调用路径从 ctx.agents 获取父 Agent、校验 Session 身份和工具可见性、以 withInitiator 调用 ToolRegistry。普通父使用 SDK cancel；SDK interrupt_agent 将调用者传给 ancestor 中断边界。"
+    },
+    {
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:44",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:98",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/inspector-cancel.test.mjs:31"
+      ],
+      "result": "正常取消流程保存 before、after-requests、final 三次快照。每次以 readOnly 打开数据库，查询 generation_runs 与 generation_media，并在 finally 关闭。释放信号通过独占创建写入，已有文件可重试。"
+    },
+    {
+      "locations": [
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/runtime-control.mjs:71",
+        ".local/skills-mcp-migration-live/remaining-handoff-runtime/run.mjs:123"
+      ],
+      "result": "自然完成要求同一 activation 的两类终态均为 completed 且未请求中断；中断通过要求 Registry 成功及两类 aborted 终态。错误、缺失终态、Registry 失败和不一致终态均不能通过取消判定。CLI 保存结果后以非零退出码报告 cancellationPassed=false。"
+    }
+  ],
+  "validation": {
+    "command": "node --test .local/skills-mcp-migration-live/remaining-handoff-runtime/*.test.mjs .local/skills-mcp-migration-live/handoff-delay.test.mjs .local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+    "tests": 79,
+    "passed": 79,
+    "failed": 0,
+    "exitCode": 0,
+    "fullSuiteRun": false,
+    "independentInspectorReplay": {
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "exitCode": 0,
+      "method": "在内存中将 inspector-cancel.test.mjs 的 VM 执行器替换为 node:inspector/promises Session.post(Runtime.evaluate)，保持控制模块、SQLite 文件、释放信号及原断言不变。",
+      "result": "真实 Inspector 协议返回取消成功；父 Agent 对象与调用参数断言通过，三次 SQLite 快照和释放文件断言通过。",
+      "sourceFilesModified": false
+    }
+  },
+  "evidenceLimits": [
+    "原回归通过 VM 调用控制 API；独立复验补充了本机 Inspector 协议调用。本机 Node v25.8.2 与官方 Host v24.18.1 的版本不同。",
+    "本轮 Agent、ToolRegistry 和结束事件由确定性夹具提供。源码已核对真实 SDK 调用边界；官方第三轮仍须取得真实 Registry 请求、调用者身份和同一 activation 的双终态。",
+    "三次快照证明采集代码执行并保留数据库行。cancellationPassed 判定 Agent 收尾，不比较 Run/media 差异；验收者须按原 Run ID 核对状态、媒体和新增行。",
+    "第二轮取消在快照前失败，清理后的零行数据库只能证明清理时的状态。它不能补足取消前后连续三次快照。",
+    "共享观察模块的 agents 注入修复由其他审查负责；本报告未验证其官方部署结果。",
+    "P-delay、两个预设在官方第三轮的取消行为及真实模型业务结果仍待相应验收。"
+  ],
+  "officialRound3": {
+    "cancelDriverReady": true,
+    "recommendation": "共享观察模块与 Profile 门禁完成后，可以执行第三轮官方零远程模型验收。",
+    "requiredEvidence": [
+      "启动后核对实际部署 runtime-control 模块、控制 API、Inspector 与官方运行身份。",
+      "两个预设分别记录真实父 Agent、ToolRegistry 中断结果、原 activation 双终态和父 inbox 收尾状态。",
+      "保留取消前、发出中断后、最终收尾后的 Run/media 快照，并按原 Run ID 核对差异。",
+      "任何取消失败按原错误记录，并保留该轮清理与端口释放证据。"
+    ]
+  }
+}

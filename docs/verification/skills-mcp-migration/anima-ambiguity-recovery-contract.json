@@ -1,0 +1,40 @@
+{
+  "purpose": "固定重名角色等待后的测试用户选择与恢复范围。",
+  "readWhen": "执行或独立复核5.3-3的第二轮前。",
+  "status": "待独立输入核对，尚未恢复",
+  "authorization": "主计划5.13第4项的预先定义测试用户回复；第一轮独立判断已确认等待成立。",
+  "firstExecution": "pending-anima-runtime-execution.json",
+  "firstReview": "pending-anima-runtime-review.json",
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/harness-run-Bgj7zX/state.json",
+  "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+  "reply": "选择角色 ID 3334。",
+  "candidateEvidence": {
+    "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/harness-run-Bgj7zX/collection-1791974616935/all-session-records.json",
+    "seq": 65,
+    "selectedRecord": {
+      "id": 3334,
+      "work_id": 408,
+      "works.name": "Sinoalice",
+      "name": "爱丽丝",
+      "aliases_json": [],
+      "prompt_text": "alice \\(sinoalice\\), sinoalice, 1girl, red eyes, short hair, blue hair, dark blue hair, black hair, medium breasts, elbow gloves"
+    }
+  },
+  "scope": "恢复原Session和Workspace，仅发送一次选择回复；原业务请求、候选和初始材料保留。",
+  "limits": {
+    "taskTimeoutMs": 600000,
+    "modelCallTimeoutMs": 360000,
+    "replySubmissions": 1,
+    "additionalInstructions": 0,
+    "minimumTurn": 2
+  },
+  "candidate": "沿用原安装候选，核对Skill与当前候选字节及差异；不改原Session历史或产物。",
+  "expected": "按原用户要求完成Builder，保留原有外观覆盖；执行范围仍是构建Prompt。",
+  "capture": [
+    "原Profile/原始Session前后与当前安装身份",
+    "所选真实候选来源、唯一回复及下一模型实际输入",
+    "完整主子事件、模型请求、可用分析记录、产物与Run数据库前后",
+    "原模型配置、期限与自有进程端口清理"
+  ],
+  "resultRule": "第二轮独立判断恢复选择与构造；第一轮候选来源和分页错误继续保留。"
+}

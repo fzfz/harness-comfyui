@@ -1,0 +1,23 @@
+{
+  "previousPid": 26752,
+  "pid": 8686,
+  "command": "/opt/homebrew/bin/node --env-file=.env mcp/main.mjs runtime/credentials/mcp.json",
+  "cwd": "/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ-PROD-ENV",
+  "action": "restart existing service with same executable and configuration",
+  "at": "2026-10-14T11:23:54+0800",
+  "directDependencyProbes": {
+    "embedding": {
+      "status": 200,
+      "entries": 1,
+      "dimensions": 1024
+    },
+    "comfyuiSystemStats": {
+      "status": 200
+    }
+  },
+  "afterRestartStatusEvidence": ".local/skills-mcp-migration-live/catalog/1791948240955-9a77e309-bb73-4521-a085-c44b0dd5a344-get_instance_status.json",
+  "afterRestartReachable": true,
+  "causalLimit": "同命令和配置重启恢复实例请求；此前进程内网络失败的具体异常未被服务日志保存，根因尚不能进一步归属。",
+  "realCatalogWrites": 0,
+  "externalSourceChanges": 0
+}

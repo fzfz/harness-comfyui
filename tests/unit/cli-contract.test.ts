@@ -8,29 +8,22 @@ import {
 } from '../../src/cli/contract.ts'
 
 describe('Harness ComfyUI CLI contract', () => {
-  it('parses every Catalog command from the documented argv grammar', () => {
+  it('rejects retired Catalog commands at argv and JSON request boundaries', () => {
     expect(CLI_ROUTE_PATH).toBe('/api/harness-comfyui/cli/v1')
-    expect(parseCliArguments(['catalog', 'template', 'resolve', '--id', '39'], '')).toEqual({
-      command: 'catalog.template.resolve', id: '39',
-    })
-    expect(parseCliArguments(['catalog', 'generation-model', 'resolve', '--id', '3'], '')).toEqual({
-      command: 'catalog.generation-model.resolve', id: '3',
-    })
-    expect(parseCliArguments(['catalog', 'lora', 'resolve', '--id', '91'], '')).toEqual({
-      command: 'catalog.lora.resolve', id: '91',
-    })
-    expect(parseCliArguments(['catalog', 'instance', 'list'], '')).toEqual({
-      command: 'catalog.instance.list',
-    })
-    expect(parseCliArguments([
-      'catalog', 'search', '--kind', 'model', '--query', 'portrait', '--page', '2', '--base-model-id', '1',
-    ], '')).toEqual({
-      command: 'catalog.search',
-      kind: 'model',
-      query: 'portrait',
-      page: 2,
-      base_model_id: '1',
-    })
+    const commands = [
+      { argv: ['catalog', 'template', 'resolve', '--id', '39'], request: { command: 'catalog.template.resolve', id: '39' } },
+      { argv: ['catalog', 'generation-model', 'resolve', '--id', '3'], request: { command: 'catalog.generation-model.resolve', id: '3' } },
+      { argv: ['catalog', 'lora', 'resolve', '--id', '91'], request: { command: 'catalog.lora.resolve', id: '91' } },
+      { argv: ['catalog', 'instance', 'list'], request: { command: 'catalog.instance.list' } },
+      {
+        argv: ['catalog', 'search', '--kind', 'model', '--query', 'portrait', '--page', '2'],
+        request: { command: 'catalog.search', kind: 'model', query: 'portrait', page: 2, base_model_id: null },
+      },
+    ]
+    for (const { argv, request } of commands) {
+      expect(() => parseCliArguments(argv, '')).toThrow('CLI command')
+      expect(() => parseCliRequest(request)).toThrow('CLI request command')
+    }
   })
 
   it('parses stdin Generation JSON and maps it to the existing runtime request', () => {
@@ -189,8 +182,8 @@ describe('Harness ComfyUI CLI contract', () => {
     expect(() => parseCliArguments(['image', 'run-media', '--stdin'], JSON.stringify({ run_ids: ['run_1'] })))
       .toThrow('CLI command')
     expect(() => parseCliArguments(['catalog', 'model', 'guess'], '')).toThrow('CLI command')
-    expect(() => parseCliArguments(['catalog', 'template', 'resolve', '--id', '0'], '')).toThrow('id')
-    expect(() => parseCliRequest({ command: 'catalog.instance.list', extra: true })).toThrow('properties')
+    expect(() => parseCliArguments(['catalog', 'template', 'resolve', '--id', '0'], '')).toThrow('CLI command')
+    expect(() => parseCliRequest({ command: 'catalog.instance.list', extra: true })).toThrow('CLI request command')
     expect(() => parseCliArguments(['generation', 'submit', '--stdin'], '{')).toThrow('Generation stdin')
     expect(() => parseCliRequest({
       command: 'generation.submit',

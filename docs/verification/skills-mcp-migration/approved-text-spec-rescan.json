@@ -1,0 +1,22 @@
+{
+  "reviewer": "approved_text_spec_rescan",
+  "verdict": "通过",
+  "before": ".local/skills-mcp-migration-approved-text-before/",
+  "scope": "八文件完整内容与修改前内容加获批精确替换逐字节一致",
+  "approvedItems": [
+    "2.1",
+    "2.2",
+    "2.3",
+    "2.4",
+    "3.8",
+    "3.10",
+    "3.13",
+    "3.14",
+    "3.15",
+    "3.20",
+    "WAI Style资源类别定义"
+  ],
+  "preserved": "其余内容含空白、标点及既有业务规则逐字保留",
+  "links": "五处相对链接均解析到现有comfyui-generate/SKILL.md",
+  "baseCommit": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33"
+}

@@ -1,0 +1,276 @@
+{
+  "purpose": "记录 remaining-handoff-driver-implementation.json 的独立逐行文字审计结果。",
+  "readWhen": "修改该执行报告的文字并准备再次复核时。",
+  "target": "docs/verification/skills-mcp-migration/remaining-handoff-driver-implementation.json",
+  "status": "通过",
+  "scope": {
+    "reviewedLines": [
+      1,
+      592
+    ],
+    "readOnlyTarget": true,
+    "otherReportsPlansOrCodeRead": false,
+    "stcUsed": false,
+    "technicalBehaviorVerification": "本次仅审阅报告文字，未核实代码行为或测试结论。"
+  },
+  "preserve": [
+    "tests 中的执行命令、数量、退出码和证据位置。",
+    "review.resolutions 中可定位的复现及验证证据。",
+    "pendingOfficialProof 和尚未执行的官方探针状态。",
+    "startup 中供执行者使用的命令及必要参数。"
+  ],
+  "findings": [],
+  "findingCount": 0,
+  "rounds": [
+    {
+      "round": 1,
+      "status": "需修改",
+      "scope": {
+        "reviewedLines": [
+          1,
+          592
+        ],
+        "readOnlyTarget": true,
+        "otherReportsPlansOrCodeRead": false,
+        "stcUsed": false,
+        "technicalBehaviorVerification": "本次仅审阅报告文字，未核实代码行为或测试结论。"
+      },
+      "findings": [
+        {
+          "id": "S1",
+          "line": 20,
+          "jsonPath": "$.authorization",
+          "original": "主计划第 5.11、5.14 节；父任务限定本地驱动。",
+          "problem": "“主计划”和“父任务”缺少可定位引用，独立阅读者无法查明授权范围。",
+          "minimalChange": "补充实际计划路径及授权记录位置；保留原节号和本地驱动范围，不推定额外授权。"
+        },
+        {
+          "id": "S2",
+          "line": 39,
+          "jsonPath": "$.modules[1].behavior",
+          "original": "从 ctx.agents.get 取真实父 Agent。中断经过 withInitiator 和 ToolRegistry。持续枚举后代并核对当前 activation 的结束事件。子通知唤醒父时再次取消父。",
+          "problem": "“当前 activation”未明确属于哪个 Agent；末句“子”“父”省略对象名称。",
+          "minimalChange": "改为“runtime-control.mjs 从 ctx.agents.get 获取父 Agent，通过 withInitiator 和 ToolRegistry 请求中断后代 Agent，并核对各后代 Agent 当前 activation 的结束事件。子 Agent 的通知唤醒父 Agent 后，驱动再次取消父 Agent。”"
+        },
+        {
+          "id": "S3",
+          "line": 50,
+          "jsonPath": "$.modules[2].behavior",
+          "original": "在目标钩子命中时生成固定绝对控制对象。旧 handoff-delay 负责等待、释放和通知采集。",
+          "problem": "“固定绝对控制对象”含义不明；“旧”没有版本或文件指代。",
+          "minimalChange": "改为“relative-delay.mjs 在 delayContract.start 指定的钩子触发时生成包含 deadlineAt 的控制对象。handoff-delay.mjs 负责等待、释放和通知采集。”"
+        },
+        {
+          "id": "S4",
+          "line": 105,
+          "jsonPath": "$.reuse[3].purpose",
+          "original": "原模块保持原样，专用适配器在钩子前提供 deadlineAt。",
+          "problem": "字段用于解释复用用途，前半句只是修改过程；“专用适配器”没有明确名称。",
+          "minimalChange": "改为“relative-delay.mjs 为 handoff-delay.mjs 提供 deadlineAt。”"
+        },
+        {
+          "id": "S5",
+          "line": 174,
+          "jsonPath": "$.cancellationContract.definitions.confirmed",
+          "original": "只表示收尾观察完成，与 terminationConfirmed 相同。",
+          "problem": "confirmed 重复解释 terminationConfirmed，后者已承担该判定的唯一定义。",
+          "minimalChange": "改为“terminationConfirmed 的别名。”"
+        },
+        {
+          "id": "S6",
+          "line": 175,
+          "jsonPath": "$.cancellationContract.definitions.terminationConfirmed",
+          "original": "全部已知子具有当前结束事件；父 idle 且 inbox 为空，连续 250 毫秒无新事件。",
+          "problem": "“当前结束事件”和“新事件”缺少对象或范围，读者无法准确理解判定要求。",
+          "minimalChange": "写明已知子 Agent 的当前 activation 需要哪些结束事件，并明确 250 毫秒内观察哪组 Agent 的哪些事件；保留实际判定要求，不能由本次文字审计补造范围。"
+        },
+        {
+          "id": "S7",
+          "line": 192,
+          "jsonPath": "$.delayContract.acceptance",
+          "original": "同 controlId 的 delay_finished.reason=released；单调时间差至少 30000 毫秒；结束时间未越过两项绝对期限。",
+          "problem": "“单调时间差”未指明起止事件，“两项绝对期限”未引用对应字段。",
+          "minimalChange": "明确时间差的起止事件，并用已有字段或公式引用两项期限；将重复出现的 30000 毫秒要求统一引用 holdDurationSource。"
+        },
+        {
+          "id": "S8",
+          "line": 225,
+          "jsonPath": "$.startup.commands",
+          "original": "步骤 3 使用 <controlRoot>；步骤 7 使用 <archive-input.json>。",
+          "problem": "命令序列没有定义 controlRoot 的来源，也未在 archive 前指向创建 Workspace、父 Session 和准备归档输入的已有步骤。",
+          "minimalChange": "在 commands 前集中定义占位符来源；在步骤 7 前引用 requestContract.order 与 requestContract.archiveInput，说明实施者先取得真实身份并保存归档输入。已有规则采用引用，避免再写一遍。"
+        },
+        {
+          "id": "S9",
+          "line": 255,
+          "jsonPath": "$.startup.commands[1].result",
+          "original": "现有官方生命周期完成安装、比较和停止。",
+          "problem": "“官方生命周期”无法充当明确的动作主体，“比较”和“停止”未写明对象；所在序列为待执行步骤，时态也不够明确。",
+          "minimalChange": "改为“执行后，安装驱动完成候选包安装、安装文件比较和应用停止。”"
+        },
+        {
+          "id": "S10",
+          "line": 419,
+          "jsonPath": "$.officialZeroRemoteProbePlan[1].steps[2]",
+          "original": "snapshot 记录原子仍在运行。",
+          "problem": "“原子”容易理解为原子性概念，未明确指代原子 Agent。该句也将待观察结果写成必然结果。",
+          "minimalChange": "改为“控制器通过 snapshot 记录原子 Agent 的运行状态。”若必须验证其仍在运行，将该条件写入本探针的 pass。"
+        },
+        {
+          "id": "S11",
+          "line": 448,
+          "jsonPath": "$.officialZeroRemoteProbePlan[3].fixedChildInput",
+          "original": "从 controlledDispatchArgs 物化专用完成样本。将 INIT 标记改为 COMPLETE；保存新的固定计划。COMPLETE 分支直接返回完成文字，避免保持等待。",
+          "problem": "“物化专用完成样本”不够直观；“新的”未说明保存对象；末尾含可删除的反向说明。",
+          "minimalChange": "改为“控制器根据 controlledDispatchArgs 生成完成样本，将 INIT 标记改为 COMPLETE，并保存固定派发计划。COMPLETE 分支返回完成文字。”"
+        },
+        {
+          "id": "S12",
+          "line": 463,
+          "jsonPath": "$.tdd",
+          "original": "首次请求恢复至 R2 错误终态的 red/green 条目。",
+          "problem": "多项“文件不存在，测试退出 1”只记录文件创建顺序，删除后不影响行为、结果、证据或未完成状态；R1、R2 的结果又在 review.resolutions 中重复。",
+          "minimalChange": "删除仅记录文件不存在的 red 字段。将有行为价值的失败现象与对应验证结果各保留一次；R1、R2 条目引用 review.resolutions 中的证据与结果。"
+        },
+        {
+          "id": "S13",
+          "line": 520,
+          "jsonPath": "$.provedLocally",
+          "original": "完整请求先归档；接纳观察与唯一消息计数分开。等 7 项。",
+          "problem": "该段与合同、tdd.green、review.resolutions.coverage 多处重复描述相同规则或结果，容易形成独立更新点。",
+          "minimalChange": "保留本地验证范围索引，并引用 tests 和对应验证结果条目；规则定义只保留在对应 Contract 中。保留 pendingOfficialProof 的未完成范围。"
+        },
+        {
+          "id": "S14",
+          "line": 539,
+          "jsonPath": "$.review.independentSemantic",
+          "original": "待父任务按文字标准逐行复核。",
+          "problem": "“父任务”不能明确表示实际审阅主体；读者无法区分主 Agent 与独立审计 Agent。",
+          "minimalChange": "改为“待独立审计 Agent 按文字标准逐行复核。”完成后在此记录真实审计结果和报告路径。"
+        },
+        {
+          "id": "S15",
+          "line": 582,
+          "jsonPath": "$.memoryUse",
+          "original": "source: MEMORY.md:49-60；use: 区分本地结构证明和真实消费者验收。",
+          "problem": "该段记录作者获取方法的过程，没有提供本次执行结果或证据；删除不影响报告消费者理解当前验证边界。",
+          "minimalChange": "删除 memoryUse；保留 provedLocally 与 pendingOfficialProof 承载的验证状态。"
+        },
+        {
+          "id": "S16",
+          "line": 588,
+          "jsonPath": "$.textReview.machine / $.textReview.warningHandling",
+          "original": "首版 STC 检查记录已保留；本轮按当前文字要求人工复核。 / JSON 边界引号按语法保留。“全部分页”指完整分页记录。",
+          "problem": "machine 混合历史工具过程和当前人工状态；warningHandling 对 JSON 引号及“全部分页”的解释没有提供执行信息。",
+          "minimalChange": "删除 machine 和 warningHandling；保留本次人工审阅结果，并在审阅完成后引用实际审计报告。"
+        },
+        {
+          "id": "S17",
+          "line": 598,
+          "jsonPath": "$.candidateSelection.businessGate",
+          "original": "结果文件候选经独立代码和文字复核后，父任务选择本轮正式候选。",
+          "problem": "“父任务”未明确动作主体，“正式”没有定义；候选选择规则还出现在 startup.prerequisites，与本段职责重复。",
+          "minimalChange": "改为“结果文件候选通过独立代码和文字复核后，主 Agent 选择并冻结本轮业务候选。”startup.prerequisites 中的候选选择要求改为引用 candidateSelection。"
+        }
+      ],
+      "findingCount": 17
+    },
+    {
+      "round": 2,
+      "status": "通过",
+      "reviewedLines": [
+        1,
+        592
+      ],
+      "priorFindingResults": [
+        {
+          "id": "S1",
+          "status": "已解决",
+          "result": "授权已补充计划路径、节号和 scope 引用。"
+        },
+        {
+          "id": "S2",
+          "status": "已解决",
+          "result": "父 Agent、后代 Agent 和 activation 的所属对象已明确。"
+        },
+        {
+          "id": "S3",
+          "status": "已解决",
+          "result": "控制对象已明确包含 deadlineAt，模块名称已具体化。"
+        },
+        {
+          "id": "S4",
+          "status": "已解决",
+          "result": "复用说明已删除修改过程，并明确提供 deadlineAt 的模块。"
+        },
+        {
+          "id": "S5",
+          "status": "已解决",
+          "result": "confirmed 已改为 terminationConfirmed 的别名。"
+        },
+        {
+          "id": "S6",
+          "status": "已解决",
+          "result": "结束事件、Agent 状态及连续观察的事件范围已明确。"
+        },
+        {
+          "id": "S7",
+          "status": "已解决",
+          "result": "时间差的起止字段及两项期限已明确。"
+        },
+        {
+          "id": "S8",
+          "status": "已解决",
+          "result": "占位符来源已集中列于 startup.placeholders，归档步骤已引用请求准备要求。"
+        },
+        {
+          "id": "S9",
+          "status": "已解决",
+          "result": "安装步骤已明确执行后的动作主体、对象和结果。"
+        },
+        {
+          "id": "S10",
+          "status": "已解决",
+          "result": "snapshot 步骤已明确记录子 Agent 状态，预期仍在运行的条件已列入 pass。"
+        },
+        {
+          "id": "S11",
+          "status": "已解决",
+          "result": "完成样本的生成主体、参数变更和保存对象已明确。"
+        },
+        {
+          "id": "S12",
+          "status": "已解决",
+          "result": "仅描述文件不存在的记录已删除，R1、R2 已引用修复证据。"
+        },
+        {
+          "id": "S13",
+          "status": "已解决",
+          "result": "本地验证范围已改为结果与证据索引。"
+        },
+        {
+          "id": "S14",
+          "status": "已解决",
+          "result": "待复核主体已明确为独立审计 Agent。"
+        },
+        {
+          "id": "S15",
+          "status": "已解决",
+          "result": "memoryUse 已删除，验证状态与证据仍保留。"
+        },
+        {
+          "id": "S16",
+          "status": "已解决",
+          "result": "历史工具过程和无用途的引号解释已删除。"
+        },
+        {
+          "id": "S17",
+          "status": "已解决",
+          "result": "业务候选选择主体已明确，启动前提已引用候选选择规则。"
+        }
+      ],
+      "newFindings": [],
+      "conclusion": "已复核当前报告全文和首轮 S1–S17。首轮问题均已处理，本轮未发现新增文字问题。执行结果、证据位置及待官方验证状态均已保留。"
+    }
+  ]
+}

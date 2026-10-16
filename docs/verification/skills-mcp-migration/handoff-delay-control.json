@@ -1,0 +1,265 @@
+{
+  "purpose": "记录迁移计划第 5.12 节 H4 完成通知延迟控制工具的接口依据、加载参数、调用方法与验收范围。",
+  "status": {
+    "implementation": "已完成",
+    "localRegression": "30 项通过",
+    "officialDesktopLoading": "待执行",
+    "realModelH4": "待执行",
+    "independentCodeAndContractReview": "原 29 项及 H4-R1 至 H4-R3 已通过；原始 start 元数据取证完善待独立复核"
+  },
+  "files": {
+    "plugin": ".local/skills-mcp-migration-live/handoff-delay.mjs",
+    "tests": ".local/skills-mcp-migration-live/handoff-delay.test.mjs",
+    "record": "docs/verification/skills-mcp-migration/handoff-delay-control.json"
+  },
+  "scope": {
+    "desktopStarted": false,
+    "modelCalled": false,
+    "productCodeChanged": false,
+    "externalSdkChanged": false,
+    "dependencyInstalled": false,
+    "temporaryTestDirectoriesRemoved": true
+  },
+  "officialInterfaces": [
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-agent-index.js",
+      "lines": [
+        242,
+        276
+      ],
+      "fact": "agentEvents() 将当前 agent 注入事件载荷，并将 serial() 的 Promise 返回给调用方。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js",
+      "lines": [
+        999,
+        1027
+      ],
+      "fact": "AgentLoop 在 agent/turn-stopping 等待监听器返回，随后在 finally 中追加 turn/end；载荷包含 turn 与本轮 AbortSignal。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js",
+      "lines": [
+        470,
+        481
+      ],
+      "fact": "childSessionMeta() 将直接父会话 ID 保存为子会话 header.parentSession。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js",
+      "lines": [
+        633,
+        654
+      ],
+      "fact": "完成通知采用 source.kind=subagent-settled、form=notice 与 senderSessionId=childId。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js",
+      "lines": [
+        1246,
+        1265
+      ],
+      "fact": "continuable 子任务完成卸载与状态采集后调用 notifySettlement()，随后发布 subagent/end。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-api-session-controller-index.js",
+      "lines": [
+        1096,
+        1105
+      ],
+      "fact": "agent/inbox/spliced 的 data.inserted 保存进入收件箱的消息。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-subagent-index.js",
+      "lines": [
+        293,
+        306
+      ],
+      "fact": "createActivationObserver() 为一个 activation 创建 runId，并通过 subagent/start 发布该身份。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-llm-index.js",
+      "lines": [
+        37,
+        64
+      ],
+      "fact": "createMessage() 生成稳定的消息 id；createUserMessage() 通过该入口创建用户消息。"
+    },
+    {
+      "source": ".local/skills-mcp-migration-live/dsh-agent-loop-index.js",
+      "lines": [
+        1055,
+        1061
+      ],
+      "fact": "AgentLoop 通过 user/message 追加实际进入本轮的消息。"
+    }
+  ],
+  "loading": {
+    "profilePatchEntry": {
+      "id": "skills-migration-handoff-delay",
+      "name": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-delay.mjs",
+      "config": {
+        "controlPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-delay/control.json",
+        "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-delay/evidence",
+        "pollIntervalMs": 25
+      }
+    },
+    "apply": "主线程通过当前官方 Profile patch adapter 将该 entry 加入隔离 Profile 的 insert，并按 docs/agents/worktree-development.md 重启本轮官方 Desktop。主线程在目标子任务创建前核对实际插件加载，使控制工具能够捕获该子任务的 subagent/start。",
+    "configuration": "controlPath 与 evidenceDirectory 必须使用绝对路径。pollIntervalMs 允许 1 至 1000 的整数，默认值为 25 毫秒。字段校验入口为 handoff-delay.mjs 的 apply()。",
+    "defaultBehavior": "控制文件尚未创建时，事件回调直接返回；本地回归已验证会话行为和文件目录保持原状。",
+    "activationIdentity": "runId 来自 subagent/start；控制工具在该身份缺失时输出 ACTIVATION_IDENTITY_UNAVAILABLE 固定诊断并返回。主线程通过本轮记录确认 delay_started 后再判定延迟控制已命中目标。"
+  },
+  "control": {
+    "example": {
+      "childSessionId": "<官方派发返回的精确 subagentId>",
+      "artifactPath": "<子任务约定产物的绝对路径>",
+      "deadlineAt": "<本轮 ISO 8601 UTC 毫秒期限>",
+      "releaseSignalPath": "<本轮尚未使用的释放信号绝对路径>"
+    },
+    "creation": "主线程在目标子任务运行期间取得精确 subagentId，再执行 arm。deadlineAt 由本轮操作者计算，例如 new Date(Date.now() + 60000).toISOString()。同一份控制重试保留原期限。",
+    "admission": "控制文件只包含示例中的四个非空字符串字段。artifactPath、releaseSignalPath 与控制文件使用三个不同的绝对路径。deadlineAt 的 UTC 毫秒格式和定时器范围由 validateControl() 校验。",
+    "artifactObservation": "控制工具在目标 agent/turn-stopping 事件中读取普通文件的 stat，保存 size 与 mtimeMs。主线程通过业务验收核对产物内容及提交结果。",
+    "readFailure": "控制文件读取失败或 JSON 格式损坏时，结束钩子输出固定诊断并返回。CLI 的对应错误由 controlError() 创建；本地回归核对其 cause 为空、错误消息与 stderr 均不含原始输入片段。"
+  },
+  "cli": [
+    {
+      "command": "node .local/skills-mcp-migration-live/handoff-delay.mjs help",
+      "result": "列出命令、必填参数、类型与当前可用期限的示例。"
+    },
+    {
+      "command": "node .local/skills-mcp-migration-live/handoff-delay.mjs arm --control-file <controlPath> --child-session-id <subagentId> --artifact <artifactPath> --deadline-at <deadlineAt> --release-file <releaseSignalPath>",
+      "result": "原子保存控制文件，stdout 返回 controlPath。"
+    },
+    {
+      "command": "node .local/skills-mcp-migration-live/handoff-delay.mjs status --control-file <controlPath>",
+      "result": "stdout 返回目标 ID、期限与释放信号状态。"
+    },
+    {
+      "command": "node .local/skills-mcp-migration-live/handoff-delay.mjs release --control-file <controlPath>",
+      "result": "创建释放信号，stdout 返回 releaseSignalPath；重复调用保留同一信号。"
+    }
+  ],
+  "evidence": {
+    "location": "加载配置中的 evidenceDirectory；每个命中的 child turn 写入一个 UUID 命名的 JSONL 文件。",
+    "ordering": "index 保存记录顺序；at 保存 UTC 时间；monotonicMs 保存当前应用进程的单调时间；eventSeq 对应官方会话事件。",
+    "kinds": [
+      "subagent_start",
+      "artifact_observed",
+      "delay_started",
+      "parent_tool_call",
+      "delay_finished",
+      "child_turn_end",
+      "parent_notice_enqueued",
+      "subagent_end",
+      "trace_closed",
+      "parent_notice_consumed"
+    ],
+    "parentCallMetadata": [
+      "turn",
+      "step",
+      "callId",
+      "name"
+    ],
+    "notificationMetadata": [
+      "messageId",
+      "source.kind",
+      "source.form",
+      "source.senderSessionId"
+    ],
+    "controlErrorMetadata": [
+      "errorType",
+      "errorCode"
+    ],
+    "retainedData": "证据仅保存控制身份、产物 stat、事件与工具调用元数据。主线程通过 eventSeq 和 callId 对照官方调用轨迹，判定父任务是否在完成通知前读取目标产物。",
+    "delayedWindow": "delay_started 到 delay_finished 的记录描述本次等待窗口；真实验收同时核对子任务 turn/end、父通知入队与消费、Generation Run 和父任务交付。",
+    "identity": "controlId 对应 JSONL 文件名；runId 对应官方 activation；turn 对应该 activation 内被延迟的轮次。每次控制命中创建独立 controlId。",
+    "closedBoundary": "后续 child turn、activation 替换、对应 subagent/end 或插件卸载会关闭 trace。关闭后的 trace 只接受已经捕获的入队通知所对应的首次 message.id 消费事件；该通知消费后释放追踪记录。",
+    "traceClosureReasons": [
+      "child_turn_advanced",
+      "activation_replaced",
+      "subagent_ended",
+      "unloaded"
+    ],
+    "startMetadata": "subagent_start 的 at 与 monotonicMs 取自该官方事件监听器首次接收同一 runId 时保存的内存记录，控制命中后写入 trace。其他记录使用各自观察时刻。",
+    "startIdentityMetadata": [
+      "childSessionId",
+      "runId",
+      "provider",
+      "local"
+    ]
+  },
+  "termination": {
+    "reasons": [
+      "released",
+      "timed_out",
+      "aborted",
+      "unloaded",
+      "control_removed",
+      "control_replaced",
+      "control_error",
+      "tracking_closed"
+    ],
+    "resources": "finish() 清除轮询 timer、期限 timer 与 AbortSignal listener。插件卸载注销全部事件监听器，结束活动等待并清空本轮追踪集合。",
+    "cleanup": "主线程在目标任务完成后卸载隔离 Profile 中的控制插件，删除本轮 controlPath 与 releaseSignalPath，保留 evidenceDirectory。活动等待可先通过 release 结束；插件卸载会立即结束仍在等待的轮次。"
+  },
+  "localValidation": {
+    "checkedAt": "2026-10-14T04:57:24.496Z",
+    "runtime": "Node.js v25.8.2",
+    "command": "node --test .local/skills-mcp-migration-live/handoff-delay.test.mjs",
+    "passed": 30,
+    "failed": 0,
+    "syntaxCommands": [
+      "node --check .local/skills-mcp-migration-live/handoff-delay.mjs",
+      "node --check .local/skills-mcp-migration-live/handoff-delay.test.mjs"
+    ],
+    "testBoundary": "通过 Cordis 事件边界夹具调用 apply()，使用真实临时文件、timer、AbortSignal 与 CLI 子进程。资源回归核对释放、期限、取消与卸载后的 timer 和 AbortSignal listener 数量均为零。",
+    "coverage": [
+      "精确 childSessionId 过滤与未 arm 行为",
+      "普通文件存在条件与每 child turn 一次",
+      "释放、期限、取消、卸载与控制文件变动",
+      "时序记录与正文、凭据输入的排除",
+      "CLI 设置、状态、幂等释放与参数错误",
+      "损坏 JSON 与不可读取控制路径对目标、无关会话的影响",
+      "CLI 非零退出、空 stdout 与输入片段排除",
+      "同 child 多轮、重新激活、重复终态与消息 ID 归属",
+      "缺失 activation 身份及提前期限回调",
+      "缺失控制文件、已有释放路径与路径冲突的 CLI 输出",
+      "原始 subagent/start 时间与同 runId、controlId 归属；同 runId 重复事件保留首个时刻"
+    ]
+  },
+  "remainingAcceptance": [
+    "主线程安排独立代码与合同复核，并核对本文字记录。",
+    "主线程在隔离官方 Desktop 核对插件加载、事件可达性与卸载行为。",
+    "主线程分别在两个项目预设执行 H4，保存原始父子轨迹并核对读取时间、完成通知、提交次数、Run 对应关系与最终交付。",
+    "主线程通过正式 Desktop 记录核对本轮进程、端口与控制插件的清理结果。",
+    "主线程核对上述 SDK 抽取文件与本轮已安装官方应用的对应关系；本轮没有重新抽取 app.asar，也没有核对两者文件内容一致性。"
+  ],
+  "reviewFindingCoverage": {
+    "source": "docs/verification/skills-mcp-migration/handoff-delay-review.json",
+    "results": [
+      {
+        "id": "H4-R1",
+        "result": "本地回归通过，待独立复核",
+        "tests": [
+          "damaged or unreadable control files leave unrelated and target turns unchanged"
+        ]
+      },
+      {
+        "id": "H4-R2",
+        "result": "本地回归通过，待独立复核",
+        "tests": [
+          "CLI control read failures exit without input fragments in stdout or stderr"
+        ]
+      },
+      {
+        "id": "H4-R3",
+        "result": "本地回归通过，待独立复核",
+        "tests": [
+          "a later turn closes the previous trace before its settlement events arrive",
+          "reactivation binds a new run and each consumed notice to its captured message ID",
+          "notice consumption requires the exact message captured at enqueue"
+        ]
+      }
+    ]
+  }
+}

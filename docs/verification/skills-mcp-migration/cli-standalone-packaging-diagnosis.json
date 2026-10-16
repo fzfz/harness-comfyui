@@ -1,0 +1,231 @@
+{
+  "reviewer": "acceptance_read_boundary",
+  "status": "ROOT_CAUSE_CONFIRMED_MINIMAL_REPAIR_PROTOTYPED",
+  "scope": "独立只读诊断；仅保存本报告；临时构建和启动副本已清理。产品源码、依赖、真实目录与运行中的 Desktop 均保持原状。",
+  "planBasis": [
+    "docs/plans/skills-mcp-migration-20261013.md:1135（5.7）",
+    "docs/plans/skills-mcp-migration-20261013.md:1301（5.14）"
+  ],
+  "finding": {
+    "priority": "P1",
+    "title": "独立 CLI 把必需的 Schema 运行时留作 optional Host peer，官方安装环境无法启动 CLI",
+    "source": "scripts/build/cli-module.mjs:16",
+    "cause": "CLI 构建未覆盖 tsdown 的默认依赖策略。tsdown 0.22.2 将 package.json 的 peerDependencies 包含在生产依赖集合中并默认 external，忽略 optional peer 是否实际安装。产物保留 schemastery 静态 import，而官方安装 Profile 没有该包。模块链接先于 main()，根帮助和全部命令均受影响。",
+    "introductionBoundary": "cli-module.mjs 本轮无 diff；HEAD 的 integration 测试已存在 schemastery symlink。当前证据确认既有构建与测试假设在仓库外安装环境暴露；没有证据证明由 MCP 迁移引入。"
+  },
+  "rawEvidence": {
+    "index": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-MzU1lT/final-collection-index.json",
+    "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/18bc033e-8e63-4f34-9bf4-323d0ffed37b/1791961563932-d6cf34f7-9a89-4044-b5e4-a7847fecd00a-collect.json",
+    "firstCall": {
+      "type": "tool/call",
+      "seq": 53,
+      "time": 1791961341613,
+      "data": {
+        "turn": 1,
+        "step": 6,
+        "callId": "call_00_aa130z4jvoclakrhbwci6ku0",
+        "name": "bash",
+        "arguments": "{\"command\":\"ELECTRON_RUN_AS_NODE=1 \\\"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\\\" --expose-internals \\\"$DSH_HARNESS_COMFYUI_CLI\\\" --quiet generation inspect-template-parameters --stdin <<'JSON'\\n{\\\"template_id\\\":\\\"29\\\",\\\"instance_id\\\":\\\"2\\\"}\\nJSON\\necho \\\"[exit code: $?]\\\"\",\"description\":\"Inspect workflow template parameters\"}"
+      }
+    },
+    "firstError": {
+      "type": "tool/result",
+      "seq": 54,
+      "time": 1791961341752,
+      "data": {
+        "turn": 1,
+        "step": 6,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_00_aa130z4jvoclakrhbwci6ku0"
+          },
+          "toolCallId": "call_00_aa130z4jvoclakrhbwci6ku0",
+          "content": [
+            {
+              "type": "text",
+              "text": "[exit code: 1]\n[stderr]\nnode:internal/modules/package_json_reader:301\n  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);\n        ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find package '@deepseek-ai/schemastery' imported from /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-MzU1lT/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.local/source-cli/harness-comfyui.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)\n    at packageResolve (node:internal/modules/esm/resolve:780:81)\n    at moduleResolve (node:internal/modules/esm/resolve:871:18)\n    at defaultResolve (node:internal/modules/esm/resolve:1004:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)\n    at #resolve (node:internal/modules/esm/loader:683:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33) {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\n\nNode.js v24.18.1\n"
+            }
+          ],
+          "isError": false,
+          "id": "83b65dd1-1ea1-4e9d-87cc-41959a876de4"
+        }
+      },
+      "sourceEventSeqs": [
+        53
+      ],
+      "surfaceOp": "append"
+    },
+    "laterTrace": [
+      {
+        "seq": 58,
+        "fact": "Agent 开始检查安装目录。"
+      },
+      {
+        "seq": 68,
+        "fact": "Agent 读取 CLI schemastery import。"
+      },
+      {
+        "seq": 82,
+        "fact": "Agent 搜索全机 schemastery。"
+      },
+      {
+        "seq": 87,
+        "fact": "Agent 枚举全局 npm 缓存版本。"
+      },
+      {
+        "seq": 111,
+        "fact": "Agent 读取选中缓存包及其依赖。"
+      },
+      {
+        "seq": 141,
+        "fact": "Agent 复制当前 CLI 到 Workspace/.comfyui-cli-shim，并把该目录 node_modules 链接至全局 npm 缓存。"
+      },
+      {
+        "seq": 142,
+        "fact": "通过 shim 的 inspect 返回参数，退出码 0。"
+      },
+      {
+        "seq": 146,
+        "fact": "Agent 通过同一 shim 执行 generation submit。"
+      },
+      {
+        "seq": 147,
+        "fact": "工具返回 aborted。"
+      },
+      {
+        "seq": 149,
+        "fact": "用户取消结束 turn。"
+      }
+    ],
+    "sideEffectBoundary": "seq 146 是复制后的 CLI 提交，不是手写 HTTP。调用被取消不保证 Host 未接纳请求；主线程报告 run_69fdd546 已 succeeded/media1。本诊断未另行查询 Host 或更改 Run。该缓存 shim 不能作为原始安装包通过证据。"
+  },
+  "dependencyContract": {
+    "importChain": [
+      "scripts/cli/harness-comfyui.mjs:9 -> src/cli/contract.ts",
+      "src/cli/contract.ts:3 -> config/managed-cli-environment-schema.ts",
+      "config/managed-cli-environment-schema.ts:1 -> @deepseek-ai/schemastery",
+      "src/cli/contract.ts:10 在模块初始化调用 parseManagedCliEnvironment"
+    ],
+    "buildPolicySources": [
+      "node_modules/tsdown/dist/format-DMceewlS.mjs:146 externalStrategy",
+      "node_modules/tsdown/dist/format-DMceewlS.mjs:219 getProductionDeps",
+      "node_modules/tsdown/dist/types-F1pJie3k.d.mts:56 DepsConfig"
+    ],
+    "manifest": {
+      "dependencies": {
+        "sharp": "0.35.4"
+      },
+      "schemasteryPeer": "3.18.4",
+      "schemasteryPeerOptional": true,
+      "tarContainsSchemastery": false,
+      "installedProfileHasSchemastery": false
+    },
+    "packageManifestConsumer": "scripts/build/package-plugin.mjs:105 readSourceManifest 复制 dependencies、peerDependencies 和 peerDependenciesMeta。",
+    "hostConsumer": "scripts/build/host-module.mjs:16 hostImportPolicy 单独保留 Host package import external。",
+    "cliRuntimeConsumer": "src/host/cli/shell-capability.ts:105 注入 CLI 路径和 Host Electron executable；独立 Electron RunAsNode 进程按入口祖先解析 ESM，不能依赖 Host 模块装载上下文。"
+  },
+  "deterministicReproduction": {
+    "identity": {
+      "candidateCliBytes": 92583,
+      "archiveEqualsInstalled": true,
+      "archiveEqualsCheckout": true,
+      "externalStaticImports": [
+        "@deepseek-ai/schemastery"
+      ]
+    },
+    "method": "将候选 tarball 中 CLI 原始字节复制到 /private/tmp 独立临时目录；所有调用 cwd 均为该外部目录。清除 DSH_*、NODE_PATH、NODE_OPTIONS、ELECTRON_RUN_AS_NODE；Electron 仅补 ELECTRON_RUN_AS_NODE=1 和 --expose-internals。对 checkout、实际安装、临时单文件分别启动。",
+    "runtimes": [
+      "Node 25.8.2",
+      "官方 Electron RunAsNode / Node 24.18.1"
+    ],
+    "cases": [
+      {
+        "args": [
+          "--help"
+        ],
+        "stdin": "",
+        "checkout": {
+          "exit": 0,
+          "result": "帮助输出"
+        },
+        "installedAndExternalCopy": {
+          "exit": 1,
+          "result": "ERR_MODULE_NOT_FOUND @deepseek-ai/schemastery"
+        }
+      },
+      {
+        "args": [
+          "generation",
+          "inspect-template-parameters",
+          "--stdin"
+        ],
+        "stdin": "{}",
+        "checkout": {
+          "exit": 2,
+          "result": "CLI_REQUEST_INVALID"
+        },
+        "installedAndExternalCopy": {
+          "exit": 1,
+          "result": "ERR_MODULE_NOT_FOUND @deepseek-ai/schemastery"
+        }
+      },
+      {
+        "args": [
+          "generation",
+          "inspect-template-parameters",
+          "--stdin"
+        ],
+        "stdin": "{\"template_id\":\"29\",\"instance_id\":\"2\"}",
+        "checkout": {
+          "exit": 2,
+          "result": "CLI_ENVIRONMENT_INVALID"
+        },
+        "installedAndExternalCopy": {
+          "exit": 1,
+          "result": "ERR_MODULE_NOT_FOUND @deepseek-ai/schemastery"
+        }
+      }
+    ],
+    "executions": 18,
+    "checkoutResolution": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/official-desktop-development-dependencies/node_modules/.pnpm/@deepseek-ai+schemastery@3.18.4/node_modules/@deepseek-ai/schemastery/lib/index.cjs",
+    "causalInference": "同一字节、同一外部 cwd、同一已清理环境下，入口目录决定成败；仓库祖先 node_modules 提供依赖并掩盖缺陷。两个运行时复现一致，失败发生于请求解析和网络调用之前。",
+    "sideEffects": "帮助直接返回，非法请求在解析阶段返回；合法请求因未提供 API 环境在 scripts/cli/harness-comfyui.mjs:120 返回，fetch 位于其后第 130 行。未发起网络请求、生成任务或模型调用。"
+  },
+  "testGap": {
+    "integration": "tests/integration/cli-command.test.ts:36 主动为外部临时安装目录 symlink schemastery，测试验证的是补齐 peer 后的行为；该做法在 HEAD 已存在。",
+    "package": "tests/production/plugin-package.test.mjs:202 的 tarball 仓库外只读路径测试核对文件可读、manifest 和资源存在，未启动实际 CLI。",
+    "help": "tests/integration/cli-help.test.ts 主要覆盖 Skill validator，无法证明受管 CLI 安装依赖闭合。"
+  },
+  "minimalRepair": {
+    "layer": "CLI 构建与安装验收",
+    "files": [
+      "scripts/build/cli-module.mjs",
+      "tests/integration/cli-command.test.ts",
+      "tests/production/plugin-package.test.mjs"
+    ],
+    "completeCodeContract": {
+      "cliBuild": "在 materializeManagedCliModule 的既有 build options 增加 deps: { alwaysBundle: [\"@deepseek-ai/schemastery\"] }。当前依赖图的 cosmokit 随该依赖自动打入；Node builtin 继续 external。原入口、路径、模块格式、target、clean、帮助、请求和错误合同全部保持。",
+      "integration": "删除 beforeAll 对 schemastery 的 node_modules 创建和 symlink；保留现有外置 CLI 构建与真实子进程调用。测试失败必须暴露产物缺失依赖。",
+      "package": "扩展现有真实 tarball 的仓库外只读路径测试，直接启动解包后的 managedCli 输出；清理 DSH_*、NODE_PATH、NODE_OPTIONS，以根帮助、非法 inspect JSON、合法 inspect JSON 缺环境分别断言 exit 0、exit 2 CLI_REQUEST_INVALID、exit 2 CLI_ENVIRONMENT_INVALID。从 config/runtime-artifacts.json 派生入口。执行前确认包所在目录及祖先不存在可解析 schemastery，避免环境再次补齐依赖。",
+      "hostBoundary": "package.json 的 Host peers、peerDependenciesMeta 与 host-module.mjs 的 hostImportPolicy 保持原合同。无需安装新依赖、复制缓存 node_modules、设置 NODE_PATH、改变 SDK 或剥离共享 schema。"
+    },
+    "prototype": {
+      "scope": "仅临时 outDir，构建现有入口，不修改仓库构建器。",
+      "firstOption": "deps: { alwaysBundle: [/^@deepseek-ai\\//] }",
+      "firstResult": "外部目录中两种运行时全部三项启动断言通过；最终静态 import 仅 node:process。",
+      "minimalOption": "deps: { alwaysBundle: [\"@deepseek-ai/schemastery\"] }",
+      "minimalResult": "进一步缩小配置后，产物仍仅 node:process 静态 import；官方 Electron --help exit 0、stderr 为空。",
+      "minimalOutputBytes": 126846,
+      "limitation": "原型确认链接与帮助可运行；修复后仍需对精确生产实现重跑完整三项与业务测试。"
+    }
+  },
+  "acceptanceSteps": [
+    "先新增真实外置 tar CLI 启动回归，并移除 integration 补 peer，确认当前代码出现原始模块缺失失败。",
+    "实施 CLI deps 策略后重跑 cli-command 与 plugin-package 定向测试，覆盖现有保留业务、目录命令拒绝和相邻错误路径。",
+    "独立复核最终产物、manifest 与 Host peer 合同；官方 Desktop 安装最终候选，在干净 Workspace 通过注入的原始 CLI 路径执行根帮助与只读 inspect。",
+    "既有本次失败留为安装失败；后续使用 npm 缓存 shim 的结果单列。需要业务模型复验时创建新的干净场景，记录未使用 shim 与环境补依赖。"
+  ],
+  "statusBoundary": "诊断和临时构建原型已完成；产品修复、定向正式回归、最终安装 smoke 及业务重新验收由主线程继续。"
+}

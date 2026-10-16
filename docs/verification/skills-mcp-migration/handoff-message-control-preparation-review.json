@@ -1,0 +1,214 @@
+{
+  "reviewedAt": "2026-10-14T05:57:43.106809+00:00",
+  "scope": "隔离 H4 消息工具单变量对照的提交前配置审查",
+  "verdict": "pass_for_one_controlled_submission",
+  "canSubmitOneControlledModelTask": true,
+  "findings": [],
+  "reviewBasis": "审查员直接读取实际 Profile、基线快照、Input、模型快照、tarball、安装目录、控制器源码、会话投影及进程端口；比较文件仅用于定位原始证据。",
+  "checks": {
+    "profile": {
+      "actual": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/environment/dsh-home/profiles/desktop/cordis.patch.yml",
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/profile-at-stop.yml",
+      "preparedSnapshotByteEqualActual": true,
+      "roleChecks": [
+        {
+          "role": "composition-agent",
+          "baselineDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal"
+          ],
+          "preparedDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal",
+            "send_message"
+          ],
+          "exactAppend": true
+        },
+        {
+          "role": "generation-agent",
+          "baselineDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal"
+          ],
+          "preparedDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal",
+            "send_message"
+          ],
+          "exactAppend": true
+        },
+        {
+          "role": "observation-agent",
+          "baselineDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal"
+          ],
+          "preparedDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal",
+            "send_message"
+          ],
+          "exactAppend": true
+        },
+        {
+          "role": "comparison-agent",
+          "baselineDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal"
+          ],
+          "preparedDeny": [
+            "subagent_composition",
+            "subagent_generation",
+            "subagent_observation",
+            "subagent_comparison",
+            "interrupt_agent",
+            "get_goal",
+            "create_goal",
+            "update_goal",
+            "send_message"
+          ],
+          "exactAppend": true
+        }
+      ],
+      "otherDifferences": [
+        "webserver.port：64669 → 60861。",
+        "startupWorkspacePath 改为本轮空 Workspace。",
+        "控制器加载路径、controlPath 和 evidenceDirectory 改为本轮路径。"
+      ],
+      "otherSemanticChanges": false
+    },
+    "input": {
+      "actual": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-message-control/input.json",
+      "baseline": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/input.json",
+      "equalAfterWorkspaceAndInstalledSkillPathReplacement": true,
+      "caseId": "5.12-H4-composition-only",
+      "task": "单主体女性白衬衫窗边肖像，仅完成构图阶段并交付文件。",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "timeoutMs": 600000
+    },
+    "candidate": {
+      "tarball": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/wai-scene-reference-candidate.tgz",
+      "baselineInstalledPackage": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+      "controlInstalledPackage": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+      "fileCounts": [
+        198,
+        198,
+        198
+      ],
+      "comparison": "相同相对路径的原始文件字节",
+      "allEqual": true
+    },
+    "models": {
+      "snapshot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/models.json",
+      "snapshotByteEqualBaseline": true,
+      "profileModelAndLimitFieldsEqualBaseline": true,
+      "textMaxOutputTokens": 32768,
+      "modelCallTimeoutMs": 360000,
+      "observerMaxCalls": 3000,
+      "observerAllowed": [
+        {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        },
+        {
+          "provider": "openrouter",
+          "model": "thinkingmachines/inkling:free"
+        }
+      ]
+    },
+    "controller": {
+      "currentSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/handoff-delay.mjs",
+      "preparedCopy": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/runtime-events/controller.mjs",
+      "baselineCopy": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/runtime-events/controller.mjs",
+      "allByteEqual": true,
+      "pollIntervalMs": 25,
+      "plannedHoldMs": 90000,
+      "baselineReleaseEvidence": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-626f19d3-1467-4303-a79d-994b0a2d9f33/release-operator.json",
+      "controlFileExists": false,
+      "executionRequirement": "子任务与产物路径确定后装载控制文件；捕获 delay_started，并按基线从该事件起计 90000 毫秒释放，同时保留运行时期限与释放证据。"
+    },
+    "probe": {
+      "config": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/desktop-e2e.json",
+      "configOnlyDifference": "modes.development.environmentRootRelativePath",
+      "runId": "60faa129-f997-498f-bb51-b080c98bee24",
+      "installResult": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/install-result-60faa129-f997-498f-bb51-b080c98bee24.json",
+      "installationStatus": "installed",
+      "installedBundleEnabled": true,
+      "recordState": "stopped",
+      "liveProcessGroupId": 14221,
+      "liveProcessGroupMembers": [],
+      "liveListeningPorts": [],
+      "checkedPorts": [
+        60861,
+        60862,
+        60863
+      ]
+    },
+    "submission": {
+      "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-Wdwsj5",
+      "workspaceEntries": [],
+      "sessionProjectionRoot": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/run-a519b93b-47d9-4ee2-955a-b6e8affcb5ff/environment/dsh-home/storages/session_projcache/sessions",
+      "observedSessionCount": 1,
+      "observedSessionId": "session-7abd2ee6-e9b6-44a2-9af0-c049f337afaf",
+      "observedPreset": "standard",
+      "observedBlank": true,
+      "observedTurns": 0,
+      "observedTokens": 0,
+      "modelTaskSubmittedEvidence": false
+    }
+  },
+  "limitations": [
+    "隔离 Profile 和空 Workspace 仍共用本机文件系统；当前配置未提供文件系统完全隔离，Agent 的文件读取能力可能接触基线和审查材料。",
+    "本次确认配置中排除 send_message；实际模型可见工具表和消息行为需由本轮真实调用轨迹确认。",
+    "90000 毫秒目前是执行计划；实际 delay_started、释放时刻与结束原因需由运行记录验收。",
+    "一次对照运行可记录本轮行为差异；行为修复和稳定因果结论仍需相应证据。"
+  ],
+  "reviewActions": {
+    "modelCalls": 0,
+    "productFilesChanged": false,
+    "installedDependencies": false
+  }
+}

@@ -6,7 +6,7 @@
 | Host 运行时 | Electron Node | Host 通过 `process.execPath` 提供 Electron 可执行文件。managed CLI 以该路径和 `ELECTRON_RUN_AS_NODE=1` 启动，不要求用户另装系统 Node 或 pnpm。官方应用所用 Electron Node 版本以该 Desktop 构建为准；本仓库不声明未经验收的 Node 版本号。 |
 | 官方 SDK peers | `package.json` 的 `peerDependencies` | 每个 `@deepseek-ai/dsh-*` SDK peer 固定为 `0.2.0-rc.2`；Cordis 为 `4.0.4`，Schemastery 为 `3.18.4`，`cordis-plugin-include` 为 `1.0.9`，React 与 React DOM 均为 `18.3.1`。包清单是精确 peer 名称和版本的唯一来源。 |
 | SDK 类型与导出 | DeepSeek Harness 公共包导出 | Host、Client、Preset 和 Shell 集成从 `package.json` 所列 peer 的公开导出导入。仓库依赖审计见 `docs/verification/official-desktop-plugin/dependency-audit.json`、`dependency-peer-supplement.json` 和 `dependency-installation.json`；审计记录固定了 SDK 版本、公开 peer 闭包和零缺失 peer 检查。 |
-| 插件运行依赖 | Sharp | `0.35.4`。插件包声明运行时依赖；官方插件安装过程安装该依赖。 |
+| 插件运行依赖 | Sharp | `0.35.5`。插件包声明运行时依赖；官方插件安装过程安装该依赖。 |
 | 持久索引 | Node SQLite | 使用 Host Electron Node 提供的 `node:sqlite`，保存 Generation Run、远端输出和 Media 索引。 |
 | UI | React / React DOM | `18.3.1`；Client 从官方 Desktop 的公开 Client 扩展包接入。 |
 | 官方前端 Workflow 导出 | 本机 Chrome 或 Chromium / Chrome DevTools Protocol | 缓存未命中时，Host 以 Electron Node 启动临时浏览器进程，调用目标 ComfyUI 前端的 `loadGraphData()` 与 `graphToPrompt()`。浏览器由用户预先准备。 |

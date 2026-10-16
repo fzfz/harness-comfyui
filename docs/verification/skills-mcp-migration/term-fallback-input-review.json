@@ -1,0 +1,98 @@
+{
+  "purpose": "独立复核5.3-5与5.5-6的非目标输入前置，准备保持复合装饰概念的执行候选。",
+  "reviewedAt": "2026-10-14T06:37:37.153414+00:00",
+  "scope": "只读实际Skill、来源返回、task-matrix、input-preflight-current、execution-input-variants与materialize-task；只写本报告及term-fallback-preparation。未调用模型或生成，未修改台账。",
+  "verdict": {
+    "originalInputs": "存在非目标前置，建议采用本报告候选输入。",
+    "candidateInputs": "语义前置已具备，可在绑定真实隔离Workspace与已安装Skill后提交正式执行。",
+    "actualFallbackAcceptance": "待真实轨迹",
+    "allSubconceptsUnadoptableRequired": false,
+    "runtimeSubmitted": false
+  },
+  "sources": {
+    "matrix": ".local/skills-mcp-migration-live/task-matrix.json",
+    "preflight": "docs/verification/skills-mcp-migration/input-preflight-current.json",
+    "variants": "docs/verification/skills-mcp-migration/execution-input-variants.json",
+    "criterion": "docs/verification/skills-mcp-migration/term-zero-result-criteria-review.json",
+    "materializer": ".local/skills-mcp-migration-live/materialize-task.mjs:26-40",
+    "character3334": ".local/skills-mcp-migration-live/catalog/1791956587270-9a3f0e64-a999-4f96-b6f3-c32daf6084ad-query_semantic_characters.json",
+    "waiStyle12344": ".local/skills-mcp-migration-live/catalog/1791888831405-search_styles.json"
+  },
+  "materialization": {
+    "actualInputSource": "materialize-task CLI读取task-matrix；不会自动合并input-preflight-current或execution-input-variants。",
+    "sizeDrift": "5.3-5的preflight快照仍只有2:3，task-matrix已经包含1024、1536、1.572864，且与execution-input-variants.after一致。本候选使用task-matrix完整参数。",
+    "statusGate": "两项task-matrix当前status均为blocked，直接调用CLI会拒绝。本报告没有把台账改为ready。执行协调者应明确采用已审候选参数并完成自身状态/执行索引准备；不得误以为此报告已执行CLI。",
+    "serialization": "request作为任务参数JSON字符串；contexts分别成为独立comfyui-context JSON行。已保存等价task-content片段；未写入审查结论、目标分支提示或预期标签。",
+    "runtimeBinding": "待执行协调者绑定真实干净Workspace、实际安装SKILL.md路径、预设与本轮授权模型。materializeTask返回的默认provider=openrouter、model=thinkingmachines/inkling:free，不代表本轮已批准的模型配置；必须沿用已批准的官方执行配置核对最终提交值。",
+    "outputs": "执行提示仍应要求将本任务产物保存至Workspace的5.3-5或5.5-6目录。Builder JSON须由执行者实际构造和校验。"
+  },
+  "cases": [
+    {
+      "case": "5.3-5",
+      "originalAssessment": {
+        "size": "完整四项合法：2:3、1024×1536、1.572864MP，误差0；用途test已明确。",
+        "identity": "39934的prompt_text只有Ani_(Grok)身份及外观，work_name为目录分组“其它”，无法据此确认独立作品英文标签；ANIMA 08-count-identity.md §6.2要求角色标签与作品标签。原输入可能进入非目标补充来源或等待。",
+        "appearance": "明确发型、发色、瞳色、白色翻领衬衫、黑色蝴蝶结发饰，覆盖五类外观。",
+        "artist": "12415 say_hana提供非空Prompt，可直接采用；ANIMA合同没有WAI逐画师说明的同一前置。",
+        "scene": "单人站立半身像和窗边柔光已足以构建；ANIMA没有WAI主场景多候选等待规则。"
+      },
+      "changes": [
+        "仅把Character上下文替换为真实resolve返回的3334（爱丽丝/Sinoalice）及完整原Prompt；request、Style上下文、尺寸全部保持。"
+      ],
+      "candidateAssessment": "身份来源明确，来源Prompt含alice与sinoalice标签。当前明确的金色长双马尾、蓝眼覆盖来源中直接冲突的短发、蓝/深蓝/黑发、红眼；medium breasts与elbow gloves等非冲突内容按原来源规则处理。替换身份改变了非目标人物，必须作为显式输入变体登记，不能称为原输入无改动复验。",
+      "parameters": ".local/skills-mcp-migration-live/term-fallback-preparation/5.3-5-parameters.json",
+      "taskContent": ".local/skills-mcp-migration-live/term-fallback-preparation/5.3-5-task-content.txt",
+      "targetConcept": "衣服上有三重旋涡形水滴折光装饰。",
+      "readyForRuntimeBinding": true
+    },
+    {
+      "case": "5.5-6",
+      "originalAssessment": {
+        "identity": "39934有非空完整Character Prompt；WAI可采用此来源，不需要为了ANIMA的作品标签要求替换WAI角色；work_name“其它”仅辅助来源，不应直接写为作品标签。",
+        "scene": "单主体肖像与窗边环境等匹配可能并存，原输入未指定主场景，矩阵要求多候选等待。",
+        "size": "原输入未指定画幅；半身像可以对应中心角色或常规竖图，不能宣称1:1是无条件默认。若多项匹配必须等待。用途按新画面规则为final。",
+        "artist": "原输入没有Style、指定画师或明确画风方向。缺少Prompt会进入素材处理；实际能否取得唯一候选取决于执行者查询，不能预认定必然缺项或必然完成。"
+      },
+      "changes": [
+        "在request追加明确主场景“单主体肖像”。",
+        "只追加aspect_ratio=1:1，避免尺寸档位选择；不改变用途。",
+        "追加真实WAI Style 12344 say_hana上下文，并在普通文字提供其完整真实画风说明及采用要求。"
+      ],
+      "candidateAssessment": "单主体肖像满足矩阵条件；窗边和半身裁剪保留为相关约束。1:1唯一档位对应final 1536×1536、2.25MP。单个已指定画师无需多画师顺序/作用选择；非空Prompt和完整说明已提供，来源为真实wai底模2。说明中的淡雅、诗意、细腻柔美与白衬衫窗边柔光没有明确互斥。身份来源和目标装饰原句保持。",
+      "parameters": ".local/skills-mcp-migration-live/term-fallback-preparation/5.5-6-parameters.json",
+      "taskContent": ".local/skills-mcp-migration-live/term-fallback-preparation/5.5-6-task-content.txt",
+      "targetConcept": "三重旋涡形水滴折光装饰。",
+      "readyForRuntimeBinding": true
+    }
+  ],
+  "contracts": [
+    ".agents/skills/anima-prompt-builder/references/08-count-identity.md §6.2",
+    ".agents/skills/anima-prompt-builder/SKILL.md §读取当前消息、选择作品角色画师与词条、构造Prompt",
+    ".agents/skills/anima-prompt-builder/references/generation-output-contract.md §选择目标尺寸",
+    ".agents/skills/wai-sdxl-prompt-builder/references/input-contract.md §Character与Style上下文记录",
+    ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md §主场景选择、次要约束",
+    ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md §Style上下文记录中的画师、取得画师说明、多个画师",
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md §选择生成目的、选择目标尺寸",
+    ".agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json size_profiles[0]"
+  ],
+  "replyRules": {
+    "candidateUnexpectedWait": "若候选执行仍请求已明确的身份、主场景、尺寸或画师，先保留等待事件及实际模型可见输入；只能重述候选中已有材料，不新增规则提示。",
+    "originalWaiSceneFallback": {
+      "condition": "若仍选择执行原WAI输入，实际等待列出的候选包含单主体肖像且原画面仍满足该行条件。",
+      "reply": "本轮主要场景选择单主体肖像；画幅为1:1。"
+    },
+    "artistFallback": {
+      "condition": "原WAI执行实际等待画师选择，候选中真实包含12344、say_hana、底模wai且Prompt与完整说明可用，并满足它实际提出的视觉特点。",
+      "reply": "选择画师12344（say_hana）。",
+      "otherwise": "不根据预存ID盲选；先独立核对真实候选与等待原因。"
+    },
+    "termAmbiguity": "词条含义存在真实选择需求时先审实际候选。没有预授权回复指定swirl、宣布其他候选不可采用或要求写自然语言；这些判断属于被测Skill任务。",
+    "decorationPlacement": "WAI原句未指定载体；本候选保持这一点。Skill可按构图补充兼容位置；若它实际请求用户确定位置，可固定回复“装饰位于白衬衫上。”，只补位置，完整复合概念保持。"
+  },
+  "acceptanceBoundary": [
+    "现有七项词条返回仅提供目标分支材料基础；真实运行可能采用不同查询，须检查完整返回送达和实际采用。",
+    "允许采用swirl等适用子概念，并核对未覆盖关系是否按两Skill各自合同写入最终Prompt；不增加所有子概念均无可采用结果条件。",
+    "逐项核对三重、旋涡形、水滴、折光及装饰关系；ANIMA还必须保留衣服载体。",
+    "分别判定目标分支、保存JSON语义、结构校验与整轮最终交付，不能预先判通过。"
+  ]
+}

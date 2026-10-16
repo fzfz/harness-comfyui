@@ -1,0 +1,121 @@
+{
+  "purpose": "记录运行合同和结果文件合同的独立文字审计。",
+  "readWhen": "主线程处理文字审计发现时。",
+  "summary": "发现 6 项需修改内容；无需用户补充事实。",
+  "status": "changes-requested",
+  "scope": [
+    "docs/verification/skills-mcp-migration/observation-media-runtime-contract.json",
+    "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+    ".local/skills-mcp-migration-live/stc-review/result-file-plan-section.md"
+  ],
+  "findings": [
+    {
+      "id": "T1",
+      "file": "docs/verification/skills-mcp-migration/observation-media-runtime-contract.json",
+      "lines": [
+        185,
+        313,
+        314
+      ],
+      "original": "每项请求可关联到唯一父工具调用；失败项没有新增子任务。",
+      "reason": "“失败项”没有限定失败阶段。接纳后取消用例已有子会话，不能使用零新增子任务作为统一完成条件。条件不清会使执行者误判该用例。",
+      "minimalChange": "改为“每项请求可关联到唯一父工具调用。参数失败和派发前取消项没有新增子任务；接纳后取消项保留子会话身份。”",
+      "rules": [
+        "G10",
+        "G14",
+        "I4"
+      ]
+    },
+    {
+      "id": "T2",
+      "file": "docs/verification/skills-mcp-migration/observation-media-runtime-contract.json",
+      "lines": [
+        197,
+        199,
+        348,
+        349
+      ],
+      "original": "停止服务和本轮进程。应用停止后恢复原 Profile 全目录，并核对原资源和模型配置。 / 停止探针后通过官方界面回装原包；核对旧资源，再停止恢复原 patch。",
+      "reason": "步骤 9 要求恢复全目录，restoreStrategy 却只在官方回装失败时恢复全目录。两处分别定义恢复动作，执行者无法判断成功回装后是否仍须覆盖完整快照。",
+      "minimalChange": "步骤 9 改为“运行队员按 solution.restoreStrategy 恢复原 Profile，再核对原资源和模型配置。”恢复策略只在 restoreStrategy 定义，完成条件保留。",
+      "rules": [
+        "I7",
+        "G1"
+      ]
+    },
+    {
+      "id": "T3",
+      "file": "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+      "lines": [
+        232,
+        322
+      ],
+      "original": "退出码 0 表示结果文件已写入并关闭。",
+      "reason": "同一合同规定 --help 退出 0 且不分配文件。公共帮助缺少业务命令条件，会使使用者把帮助成功解释为已保存结果文件。",
+      "minimalChange": "改为“业务命令退出码为 0 时，结果文件已写入并关闭。”",
+      "rules": [
+        "G10",
+        "G14",
+        "I4"
+      ]
+    },
+    {
+      "id": "T4",
+      "file": "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+      "lines": [
+        3,
+        405
+      ],
+      "relatedFile": ".local/skills-mcp-migration-live/stc-review/result-file-plan-section.md",
+      "relatedLines": [
+        6
+      ],
+      "original": "主 Agent 更新计划第 5.11 节诊断与范围内修复步骤时。 / 计划 5.14 覆盖受管 CLI、直接消费者、帮助、构建、测试及保留 CLI 参考",
+      "reason": "同一合同分别指向第 5.11 节和第 5.14 节，审查对象的结果文件章节编号又是 5.7.3。正文没有说明三者的层级或版本关系，执行入口不明确。",
+      "minimalChange": "readWhen 改为“主 Agent 更新‘受管 CLI 的结果文件与复用’章节时。”allowed 中删除“计划 5.14”，改用该章节名称。若需保留编号，编写者统一核对后填写。",
+      "rules": [
+        "G1",
+        "I6"
+      ]
+    },
+    {
+      "id": "T5",
+      "file": "docs/verification/skills-mcp-migration/observation-media-runtime-contract.json",
+      "lines": [
+        384
+      ],
+      "original": "合法但不存在的 Run、格式无效的 Run 分成 2 项，按实际错误码记录。",
+      "reason": "casesOriginal 的 unknown-run 和 invalid-run-id 已分别定义输入、预期结果与错误码记录要求。此句完整重复已有规则，删除后不会改变执行。",
+      "minimalChange": "删除 solution.caseCountLimitNote。",
+      "rules": [
+        "G20",
+        "I7"
+      ]
+    },
+    {
+      "id": "T6",
+      "file": "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+      "lines": [
+        284,
+        294,
+        331,
+        344
+      ],
+      "original": "implementationContract 的 files 与 consumerInventory.skillReferences、consumerInventory.skillEntrypoints 重复列出相同路径。",
+      "reason": "9 份 CLI 参考和 2 个 Skill 入口各有两份清单，后续增删需要同步修改。引用现有清单即可保留实施对象与消费者范围。",
+      "minimalChange": "保留 consumerInventory 中的两份清单；implementationContract 对应条目改为引用 consumerInventory.skillReferences 和 consumerInventory.skillEntrypoints，保留各条 action。",
+      "rules": [
+        "I7",
+        "G20"
+      ]
+    }
+  ],
+  "factsToSupply": [],
+  "reviewNotes": [
+    "逐行审阅指定的 3 份对象；未读取背景、源码或其他报告。",
+    "JSON 对象按结构保留；Markdown 片段已有用途、读取时机、标题和有序列表。",
+    "STC 只读检查完成，退出码为 0；报告 0 处需修改、336 处待确认。JSON 语法引号保留，机器警告不直接视为缺陷。",
+    "保留现状证据、候选方案、未执行状态、失败处理和验收条件；这些内容影响执行或结论范围。",
+    "审计对象未修改。"
+  ]
+}

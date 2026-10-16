@@ -1,0 +1,80 @@
+{
+  "review": "code-review Standards and team-mode Simplify",
+  "base": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+  "workdir": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "scope": {
+    "tracked": "git diff BASE -- src scripts config agent-presets tests",
+    "untracked": "git ls-files --others --exclude-standard src scripts config agent-presets tests",
+    "excluded": "Skill 语义审计、计划符合性与真实模型行为由其他审查负责。"
+  },
+  "standards_sources": [
+    "用户提供的 AGENTS.md 程序开发规范",
+    "AGENTS.md",
+    "CONTEXT.md",
+    "docs/agents/domain.md",
+    "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+    "docs/system/architecture.md",
+    "docs/system/directory-structure.md",
+    "docs/system/configuration.md",
+    "docs/system/testing.md",
+    "docs/system/startup.md",
+    "docs/adr/0015-independent-data-source-service.md"
+  ],
+  "conclusion": "未发现需要阻断提交的代码规范违反。发现一项低优先级、保持行为的简化机会。",
+  "hard_standard_findings": [],
+  "simplification_findings": [
+    {
+      "id": "S1",
+      "priority": "P3",
+      "classification": "heuristic",
+      "heuristics": [
+        "Duplicated Code",
+        "Middle Man"
+      ],
+      "location": {
+        "path": "src/host/source-client/catalog-protocol.mjs",
+        "start_line": 555,
+        "end_line": 559
+      },
+      "related_locations": [
+        {
+          "path": "src/host/source-client/catalog-protocol.mjs",
+          "start_line": 238,
+          "end_line": 239
+        },
+        {
+          "path": "src/host/source-client/catalog-protocol.mjs",
+          "start_line": 35,
+          "end_line": 37
+        },
+        {
+          "path": "src/host/source-client/catalog-protocol.mjs",
+          "start_line": 488,
+          "end_line": 490
+        }
+      ],
+      "title": "复用已完成协议校验的 selected.details",
+      "evidence": "collectCatalogOperations() 已对每个 operation 调用 catalogRequestDetails() 并保存 details。prepareCatalogRequest() 选出 operation 后，通过 operationParameters() 再调用同一解析函数；collectOperations() 和 operationParameters() 均只转发调用。",
+      "rule": "用户程序开发规范要求遵循 KISS、优先复用现有代码；Fowler 重复代码与中间转发层属于判断性启发式。",
+      "recommendation": "prepareCatalogRequest() 直接调用 collectCatalogOperations()，再调用 requestDetailsForMode(selected.details, input.mode)，删除两个仅在此处使用的转发函数。",
+      "behavior_preservation": "所有 discovery operation 的首轮结构校验及错误顺序仍然保留。HTTP JSON 解析产生普通数据对象；当前 catalogRequestDetails() 及其辅助函数无网络副作用，修改 schema 时先复制。复用同次调用已计算的 details 保持字段校验、错误消息与返回值。",
+      "acceptance": "保留非法 discovery、非法请求字段、分支条件、请求取消与超时的定向测试；实施后重跑 tests/unit/source-data-clients.test.mjs。",
+      "blocking": false
+    }
+  ],
+  "verified_boundaries": [
+    "Host Catalog 和 Generation 适配器共用内部 HTTP 生命周期实现，各自保留领域投影及错误映射。",
+    "managed CLI 的 catalog 分支、帮助声明、环境注入和脚本资源随迁移删除；Host 内部客户端继续按请求读取 Settings 地址。",
+    "共享 MCP 声明位于 agent-presets/noobai-mcp.cordis.yml，两个项目 Preset 通过 include 加载。",
+    "Preset 测试覆盖安装资源定位、Profile 覆盖、惰性表达式和卸载；MCP 测试覆盖认证、恢复、并发调用及作用域。"
+  ],
+  "validation": {
+    "command": "pnpm exec vitest run tests/unit/catalog-client.test.ts tests/unit/generation-source-client.test.ts tests/unit/internal-source-client.test.ts tests/unit/source-data-clients.test.mjs tests/production/official-mcp-acceptance.test.mjs tests/production/official-mcp-services.test.mjs tests/production/official-preset-overrides.test.mjs --maxWorkers=1 --no-file-parallelism",
+    "exit_code": 0,
+    "test_files_passed": 7,
+    "tests_passed": 98,
+    "duration_seconds": 1.81,
+    "limits": "本轮未运行完整 quality、Desktop 实例或真实模型验收。"
+  },
+  "source_files_changed_by_reviewer": false
+}

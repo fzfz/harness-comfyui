@@ -1,0 +1,692 @@
+{
+  "reviewedAt": "2026-10-14T05:39:33.993464+00:00",
+  "scope": "5.6-1 显式模型真实生成独立验收；只写本报告，未操作 Desktop 或模型。",
+  "targetBranchStatus": "通过",
+  "completeContractStatus": "生成、参数检查、Run/Workflow及媒体交付通过；最终说明有一处非阻断证据表述偏差。",
+  "materialGenerationFindings": [],
+  "reportingFindings": [
+    {
+      "id": "EXPLICIT-R1",
+      "severity": "low",
+      "seq": 114,
+      "observed": "最终说明称实例队列确认任务执行完毕后返回图片；实际最后一次队列查询 seq86 是 running_count=1，完成交付证据来自后续 resolve-media seq91。",
+      "correction": "应表述为队列确认正在运行，随后媒体查询取得1张图片。",
+      "impact": "Run及媒体身份、模型及图片交付未受影响。"
+    }
+  ],
+  "executionIndex": ".local/skills-mcp-migration-live/generation-explicit-execution.json",
+  "collect": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791956005582-e5ff11f3-db3d-4a59-a4b4-8f8bc7a85763-collect.json",
+  "inputEvidence": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/generation-input-preparation/5.6-1-input.json",
+    "exactInput": {
+      "caseId": "5.6-1",
+      "preset": "harness-comfyui-cli-candidate",
+      "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-4qscJP",
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-4qscJP\n执行 Skill：/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md\n任务参数：{\"template_id\":\"29\",\"instance_id\":\"2\",\"count\":1,\"seed\":20261013,\"request\":\"使用随本消息提供的完整 Prompt Builder 结果 JSON 创建一张图片，随后查询实际 Run 和媒体。\",\"model_id\":\"14\"}\n将本任务产物保存到工作目录中的 5.6-1 目录。\n\n用于创建图片的完整 Prompt Builder 结果 JSON：\n```json\n{\n  \"model_route\": \"wai-illustrious-sdxl\",\n  \"positive_prompt\": \"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\(Grok\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\",\n  \"negative_mode\": \"native_negative\",\n  \"negative_prompt\": \"bad quality, worst quality, worst detail, sketch, censor\",\n  \"positive_avoidance\": null,\n  \"generation_purpose\": \"final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 1536,\n  \"height\": 1536,\n  \"megapixels\": 2.25\n}\n\n```",
+      "builderValidation": {
+        "validator": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/scripts/validate-output.mjs",
+        "exitCode": 0,
+        "stdout": "{\"model_route\":\"wai-illustrious-sdxl\",\"positive_prompt\":\"masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\\\(Grok\\\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast\",\"negative_mode\":\"native_negative\",\"negative_prompt\":\"bad quality, worst quality, worst detail, sketch, censor\",\"positive_avoidance\":null,\"generation_purpose\":\"final\",\"aspect_ratio\":\"1:1\",\"width\":1536,\"height\":1536,\"megapixels\":2.25}\n",
+        "stderr": ""
+      }
+    },
+    "sourceBuilder": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-VM1lsi/5.5-2/builder.json",
+    "inlineEqualsOriginalBuilder": true,
+    "sourceBuilderReview": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/wai-remaining-builder-review.json"
+  },
+  "modelSelection": {
+    "userModelId": "14",
+    "templateId": "29",
+    "templateDefault": {
+      "id": "1",
+      "name": "waiIllustriousSDXL_v170.safetensors"
+    },
+    "actualQueriedModel": {
+      "ref": {
+        "kind": "model",
+        "id": "14"
+      },
+      "name": "hassakuXLIllustrious_v13StyleA.safetensors",
+      "file_name": "hassakuXLIllustrious_v13StyleA.safetensors",
+      "base_model": {
+        "id": "2",
+        "name": "wai"
+      },
+      "skill_name": "wai-sdxl-prompt-builder"
+    },
+    "sourceEvents": {
+      "templateQuery": 42,
+      "templateResult": 43,
+      "explicitModelQuery": 44,
+      "modelResult": 45
+    },
+    "requestModel": {
+      "id": "14",
+      "file_name": "hassakuXLIllustrious_v13StyleA.safetensors"
+    },
+    "actualCheckpoint": "hassakuXLIllustrious_v13StyleA.safetensors",
+    "baseModelsEqual": true,
+    "routeSkillMatches": true,
+    "conclusion": "显式14来自当前用户输入及MCP模型查询；提交model对象包含14与其file_name，Actual Workflow使用hassaku，覆盖模板默认1。"
+  },
+  "contractExecution": {
+    "referencesReadBeforeSubmit": [
+      {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md",
+        "fullSourceInMessages": [
+          11
+        ]
+      },
+      {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md",
+        "fullSourceInMessages": [
+          10
+        ]
+      },
+      {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json",
+        "fullSourceInMessages": [
+          10
+        ]
+      },
+      {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-builder-model-routes.json",
+        "fullSourceInMessages": [
+          10
+        ]
+      },
+      {
+        "source": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+        "fullSourceInMessages": [
+          13
+        ]
+      }
+    ],
+    "submitDecisionRequest": ".local/skills-mcp-migration-live/llm-calls/6f4d9969-5d56-4695-a610-a9be3e5f1478.jsonl:1",
+    "validationSeq": 50,
+    "parameterInspectionCall": 51,
+    "parameterResult": 52,
+    "parameterDecisionSeq": 55,
+    "submitCall": 56,
+    "submitResult": 57,
+    "submitCount": 1,
+    "requestedCount": 1,
+    "seed": 20261013,
+    "randomSeedCalls": 0,
+    "instance": "列表首项2与用户输入一致",
+    "negativeMode": "native_negative 对应原非空negative_prompt与null positive_avoidance",
+    "dimensions": "1536×1536，比例1:1，与2.25MP的相对误差0.048576，小于0.05；参数范围内直接匹配。",
+    "request": {
+      "title": "图片 1",
+      "instance_id": "2",
+      "template_id": "29",
+      "model": {
+        "id": "14",
+        "file_name": "hassakuXLIllustrious_v13StyleA.safetensors"
+      },
+      "parameters": {
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, 1girl, Ani_\\(Grok\\), blonde hair, twintails, long hair, blue eyes, fair skin, white_shirt, standing, facing_viewer, light_smile, looking_at_viewer, upper_body, straight-on, centered composition, indoors, window, window on the left side, day, serene atmosphere, soft window light from the left, soft shadows to the right, low contrast",
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor",
+        "seed": 20261013,
+        "width": 1536,
+        "height": 1536,
+        "batch_size": 1
+      },
+      "loras": []
+    },
+    "validationOrderNote": "seq50 先在资源兼容性说明中比较路线，随后核对结构、负向及尺寸；资料当时均已取得。本轮未发现依赖缺失时提前提交或错误校验结论。",
+    "retry": "一次submit；只重复resolve-media等待图片，没有重复生图。"
+  },
+  "actualRun": {
+    "runId": "run_7156f47b-b06d-4377-93e5-429bb188f207",
+    "lookupStatus": "available",
+    "workflowStatus": "available",
+    "savedArgumentsEqualSubmitted": true,
+    "parameterEquality": true,
+    "promptEquality": true,
+    "negativeEquality": true,
+    "latent": [
+      1536,
+      1536,
+      1
+    ],
+    "sampler": [
+      20261013,
+      "fixed",
+      25,
+      7,
+      "euler_ancestral",
+      "normal",
+      1
+    ],
+    "mediaRunMatches": true,
+    "mediaCount": 1,
+    "media": {
+      "media_id": "media_c2658dc6-7157-44ea-8820-b7ab8ddb4537",
+      "node_id": "7",
+      "output_index": 0,
+      "filename": "WAI_00043_.png",
+      "media_type": "image/png",
+      "file_path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-5a3b25fe-28fe-4d91-9fec-3bda13d844c8/environment/dsh-home/data/plugins/harness-comfyui/media/c2/65/media_c2658dc6-7157-44ea-8820-b7ab8ddb4537.png"
+    },
+    "sourceAndSavedImageIdenticalBytes": true,
+    "pngDimensions": [
+      1536,
+      1536
+    ],
+    "hostStatusLimitation": "已补核对主线程采集的只读 Host RunList：session与run_id一致，succeeded、1媒体、无活动Run。",
+    "hostStatus": "succeeded"
+  },
+  "delivery": {
+    "status": "通过",
+    "finalSeq": 114,
+    "savedArtifacts": [
+      {
+        "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-4qscJP/5.6-1/5.6-1_run_7156f47b_WAI_00043_.png",
+        "bytes": 2999598
+      },
+      {
+        "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-4qscJP/5.6-1/media_7156f47b.json",
+        "bytes": 1115
+      },
+      {
+        "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-4qscJP/5.6-1/run_7156f47b.json",
+        "bytes": 3775
+      },
+      {
+        "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-4qscJP/5.6-1/summary.md",
+        "bytes": 588
+      }
+    ],
+    "completeRequestSource": "宿主 seq56 原始 stdin 与保存 run_7156f47b.json.arguments 均保留完整Generation Request；未把 /tmp 文件作为唯一归档来源。",
+    "final": "展示run_id、显式模型、实际Workflow参数、媒体ID及图片/JSON/摘要链接。"
+  },
+  "responseDelivery": [
+    {
+      "resultSeq": 19,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/a28e7c65-db0f-4d9d-8fc9-5aad3e911f13.jsonl:1",
+      "messageIndex": 5
+    },
+    {
+      "resultSeq": 31,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/2314191e-2e94-48c6-90ce-e3e82f394278.jsonl:1",
+      "messageIndex": 10
+    },
+    {
+      "resultSeq": 33,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/2314191e-2e94-48c6-90ce-e3e82f394278.jsonl:1",
+      "messageIndex": 11
+    },
+    {
+      "resultSeq": 38,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/e0222e8d-e290-47d2-849a-c5c3b09f6f1d.jsonl:1",
+      "messageIndex": 13
+    },
+    {
+      "resultSeq": 43,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/ed552080-6e0f-41c8-b06d-abe54e525ab8.jsonl:1",
+      "messageIndex": 15
+    },
+    {
+      "resultSeq": 45,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/ed552080-6e0f-41c8-b06d-abe54e525ab8.jsonl:1",
+      "messageIndex": 16
+    },
+    {
+      "resultSeq": 47,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/ed552080-6e0f-41c8-b06d-abe54e525ab8.jsonl:1",
+      "messageIndex": 17
+    },
+    {
+      "resultSeq": 52,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/6f4d9969-5d56-4695-a610-a9be3e5f1478.jsonl:1",
+      "messageIndex": 19
+    },
+    {
+      "resultSeq": 57,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/7c7ca2ea-68b9-427d-a8fc-64e3547ecdf7.jsonl:1",
+      "messageIndex": 21
+    },
+    {
+      "resultSeq": 62,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/6ad721ee-3b95-48a8-8c7c-4e224f82a8da.jsonl:1",
+      "messageIndex": 23
+    },
+    {
+      "resultSeq": 79,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/106aa9f7-b058-40c1-a6ec-7388e88629ef.jsonl:1",
+      "messageIndex": 30
+    },
+    {
+      "resultSeq": 84,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/e3f77360-3bf9-4746-a536-794f56a8344e.jsonl:1",
+      "messageIndex": 32
+    },
+    {
+      "resultSeq": 86,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/e3f77360-3bf9-4746-a536-794f56a8344e.jsonl:1",
+      "messageIndex": 33
+    },
+    {
+      "resultSeq": 91,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/43dfd3a9-2c00-40fa-949a-60000feee4df.jsonl:1",
+      "messageIndex": 35
+    },
+    {
+      "resultSeq": 96,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/48bf5516-417f-426b-80f9-b4052670d277.jsonl:1",
+      "messageIndex": 37
+    },
+    {
+      "resultSeq": 101,
+      "fullResultFirstRequest": ".local/skills-mcp-migration-live/llm-calls/00d28f8d-34c4-42c2-a7c3-9364bc3faa53.jsonl:1",
+      "messageIndex": 39
+    }
+  ],
+  "rawModelIndex": [
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/6f7b3786-be5e-424a-b38b-6f182aeb94bb.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:30:56.182Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        17
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/214a1b93-6bc5-4ebc-91ea-f6dbf7da41a3.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:30:56.184Z",
+      "purpose": "session-title",
+      "maxTokens": 64,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": []
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/a28e7c65-db0f-4d9d-8fc9-5aad3e911f13.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:30:58.546Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        22
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/5ca1da84-7d7b-4684-85f3-ff6518d25246.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:03.369Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        29
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/2314191e-2e94-48c6-90ce-e3e82f394278.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:06.904Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        36
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/e0222e8d-e290-47d2-849a-c5c3b09f6f1d.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:10.956Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        41
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/ed552080-6e0f-41c8-b06d-abe54e525ab8.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:14.924Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        50
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/6f4d9969-5d56-4695-a610-a9be3e5f1478.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:20.080Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        55
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/7c7ca2ea-68b9-427d-a8fc-64e3547ecdf7.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:26.050Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        60
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/6ad721ee-3b95-48a8-8c7c-4e224f82a8da.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:30.552Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        67
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/cf9c2096-84c9-4fea-b88b-f29e334e35b8.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:32.927Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        72
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/62970f42-9947-409f-a7fb-2bbf6189c938.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:31:35.337Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        77
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/106aa9f7-b058-40c1-a6ec-7388e88629ef.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:32:40.132Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        82
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/e3f77360-3bf9-4746-a536-794f56a8344e.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:32:42.967Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        89
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/43dfd3a9-2c00-40fa-949a-60000feee4df.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:33:02.030Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        94
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/48bf5516-417f-426b-80f9-b4052670d277.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:33:06.406Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        99
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/00d28f8d-34c4-42c2-a7c3-9364bc3faa53.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:33:09.207Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        104
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/be0acbb2-3565-4f79-bf0d-1f78ed3c617e.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:33:13.327Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        109
+      ]
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/llm-calls/146543ff-06c7-44fe-b6f1-91d17c23f766.jsonl",
+      "requestLine": 1,
+      "at": "2026-10-14T05:33:15.473Z",
+      "purpose": null,
+      "maxTokens": 32768,
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "hostResponseSeq": [
+        114
+      ]
+    }
+  ],
+  "toolLedger": [
+    {
+      "seq": 18,
+      "name": "skill",
+      "description": null,
+      "resultSeq": 19
+    },
+    {
+      "seq": 23,
+      "name": "bash",
+      "description": "List skill directory contents",
+      "resultSeq": 24
+    },
+    {
+      "seq": 25,
+      "name": "bash",
+      "description": "Inspect workspace and environment",
+      "resultSeq": 26
+    },
+    {
+      "seq": 30,
+      "name": "bash",
+      "description": "Read prompt result contract and schema",
+      "resultSeq": 31
+    },
+    {
+      "seq": 32,
+      "name": "bash",
+      "description": "Read generation CLI reference",
+      "resultSeq": 33
+    },
+    {
+      "seq": 37,
+      "name": "bash",
+      "description": "Read template parameter inspection reference",
+      "resultSeq": 38
+    },
+    {
+      "seq": 42,
+      "name": "mcp__noobai__get_catalog_resource",
+      "description": null,
+      "resultSeq": 43
+    },
+    {
+      "seq": 44,
+      "name": "mcp__noobai__get_catalog_resource",
+      "description": null,
+      "resultSeq": 45
+    },
+    {
+      "seq": 46,
+      "name": "mcp__noobai__search_instances",
+      "description": null,
+      "resultSeq": 47
+    },
+    {
+      "seq": 51,
+      "name": "bash",
+      "description": "Inspect workflow template parameters",
+      "resultSeq": 52
+    },
+    {
+      "seq": 56,
+      "name": "bash",
+      "description": "Submit generation request",
+      "resultSeq": 57
+    },
+    {
+      "seq": 61,
+      "name": "bash",
+      "description": "Query generation run inputs",
+      "resultSeq": 62
+    },
+    {
+      "seq": 63,
+      "name": "bash",
+      "description": "Show CLI help",
+      "resultSeq": 64
+    },
+    {
+      "seq": 68,
+      "name": "bash",
+      "description": "Show generation subcommand help",
+      "resultSeq": 69
+    },
+    {
+      "seq": 73,
+      "name": "bash",
+      "description": "Show resolve-media help",
+      "resultSeq": 74
+    },
+    {
+      "seq": 78,
+      "name": "bash",
+      "description": "Resolve run media paths with polling",
+      "resultSeq": 79
+    },
+    {
+      "seq": 83,
+      "name": "mcp__noobai__get_instance_status",
+      "description": null,
+      "resultSeq": 84
+    },
+    {
+      "seq": 85,
+      "name": "mcp__noobai__get_instance_queue",
+      "description": null,
+      "resultSeq": 86
+    },
+    {
+      "seq": 90,
+      "name": "bash",
+      "description": "Poll for generated media files",
+      "resultSeq": 91
+    },
+    {
+      "seq": 95,
+      "name": "bash",
+      "description": "Copy generated image into workspace",
+      "resultSeq": 96
+    },
+    {
+      "seq": 100,
+      "name": "bash",
+      "description": "Verify actual workflow node values",
+      "resultSeq": 101
+    },
+    {
+      "seq": 105,
+      "name": "bash",
+      "description": "Write summary record file",
+      "resultSeq": 106
+    },
+    {
+      "seq": 110,
+      "name": "bash",
+      "description": "No-op check",
+      "resultSeq": 111
+    }
+  ],
+  "visualBoundary": "未观察图像内容、未调用视觉模型。人物、风格和画面达成度留待后续四角色环节。",
+  "hostFinalSnapshot": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/346fd665-717f-4b12-ba52-b07f88d30581/1791956405412-e7f7eeca-6d5c-42ea-9cc9-10004b43b532-remote.json",
+    "observed": {
+      "sessionId": "session-f68351fd-2ca8-4b0e-b95f-10642cd8a176",
+      "runs": [
+        {
+          "runId": "run_7156f47b-b06d-4377-93e5-429bb188f207",
+          "turn": 1,
+          "title": "图片 1",
+          "instanceTitle": "win3080",
+          "templateTitle": "wai_basic_txt2img",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1791955886023,
+          "updatedAt": 1791955974447
+        }
+      ],
+      "media": [
+        {
+          "mediaId": "media_c2658dc6-7157-44ea-8820-b7ab8ddb4537",
+          "runId": "run_7156f47b-b06d-4377-93e5-429bb188f207",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "WAI_00043_.png",
+          "mediaType": "image/png",
+          "byteSize": 2999598,
+          "createdAt": 1791955974445
+        }
+      ],
+      "hasActiveRuns": false,
+      "refreshAfterMs": 1000
+    }
+  }
+}

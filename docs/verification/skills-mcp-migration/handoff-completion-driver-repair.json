@@ -1,0 +1,248 @@
+{
+  "purpose": "记录C1驱动结果断言修复、反例测试与既有34请求证据的离线回放。",
+  "status": "修复已完成，等待独立复审。",
+  "finding": "C1 P2",
+  "reviewSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/handoff-completion-controlled-review.json",
+  "recordedAt": "2026-10-14T10:44:24.813342+00:00",
+  "changedFiles": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs"
+  ],
+  "structureSourceOfTruth": {
+    "module": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs",
+    "api": "assessControlledLifecycle({execution,events,requests})",
+    "sharedProtocolExports": [
+      "controlledCaseSpecs",
+      "controlledCallId",
+      "controlledDeniedTool",
+      "controlledPtcArguments"
+    ],
+    "consumers": [
+      "run()结束采集后保存独立断言文件并设置process.exitCode。",
+      "replayControlledEvidence()读取历史证据，另存离线结果并返回相同退出状态。"
+    ]
+  },
+  "assertionEvidence": {
+    "listAgents": "实际list_agents调用、成功tool/result及下一HTTP请求均包含原child。",
+    "continuation": "CONTINUE成功结果中的messageId对应原child的inbox，childId保持一致，新Activation与不同Host启动记录相连。",
+    "completionOrder": "成功派发对应的Activation结束记录位于父tool/result之前。",
+    "denial": "native/PTC实际DENY调用返回isError=true；原child事件与最终历史中均无旁路消息。",
+    "consistency": "主子最终历史与事件相符，工具结果与实际HTTP请求相符。"
+  },
+  "tests": {
+    "command": "node --test .local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+    "passed": 18,
+    "failed": 0,
+    "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/final-tests.log",
+    "counterexamples": [
+      "空roster。",
+      "CONTINUE报错但turn/end正常结束。",
+      "相同child复用Activation ID。",
+      "父工具结果先于子Activation结束。",
+      "native/PTC旁路调用意外成功。",
+      "DENY报错后仍向child投递旁路消息。",
+      "主子历史缺失或工具结果与实际请求不一致。",
+      "首次RESUME请求缺少accepted身份。"
+    ],
+    "redGreenLogs": [
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/continue-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/continue-green.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/completion-order-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/completion-order-green.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/denial-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/denial-green.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/evidence-consistency-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/evidence-consistency-green.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/identity-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/identity-green.log"
+      },
+      {
+        "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/exit-gate-red.log",
+        "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/exit-gate-green.log"
+      }
+    ],
+    "initialRosterTestSetup": "首次测试编辑因Serena未激活失败；setup-existing-tests.log仅运行原8项测试。空roster检查随后在roster-green.log中通过回归。",
+    "replayPreservation": {
+      "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/replay-preservation-red.log",
+      "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/final-tests.log",
+      "existingOutputNotOverwritten": true
+    },
+    "rosterSensitivity": {
+      "method": "定向暂时移除roster断言，复现空roster退出0；恢复断言后回归通过。",
+      "red": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/roster-mutation-red.log",
+      "green": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/final-tests.log",
+      "originalImplementationRedAvailable": false
+    }
+  },
+  "offlineReplay": {
+    "command": "node .local/skills-mcp-migration-live/completion-lifecycle/run.mjs replay --evidence-index .local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/evidence-index.json --output .local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-assertions.json",
+    "resultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-assertions.json",
+    "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-replay.log",
+    "evaluationMode": "offline-replay",
+    "capturedRequestCount": 34,
+    "status": "pass",
+    "exitCode": 0,
+    "failedChecks": 0,
+    "globalChecks": 4,
+    "caseChecks": {
+      "native-workbench": 12,
+      "native-iteration": 12,
+      "ptc-workbench": 8,
+      "ptc-iteration": 8
+    },
+    "applicationStartedByReplay": false,
+    "modelRequestsByReplay": 0,
+    "historicalExecutionUnchanged": true
+  },
+  "verificationScope": "本轮验证结构判定与离线退出状态；实际官方运行证据仍为6Xztjj既有采集。",
+  "pending": [
+    "独立复审新增结构判定与驱动退出状态接入。"
+  ],
+  "followupR1": {
+    "purpose": "记录R1续派任务送达断言修复与原34请求的离线复验。",
+    "finding": "R1 P2",
+    "status": "修复已完成，等待独立复审。",
+    "recordedAt": "2026-10-14T11:09:45.342Z",
+    "reviewSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/handoff-completion-driver-repair-review.json",
+    "changedFiles": [
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.mjs",
+      "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs"
+    ],
+    "structureSourceOfTruth": {
+      "module": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/lifecycle-assertions.mjs",
+      "assessmentApi": "assessControlledLifecycle({execution,events,requests})",
+      "controlledInputApi": "controlledDispatchArgs(case,continuation)",
+      "assertion": "continuation-task-in-child-request",
+      "consumers": [
+        "run()采集结束后设置process.exitCode。",
+        "replayControlledEvidence()另存离线结果，CLI采用相同assessment.exitCode。"
+      ],
+      "evidence": "断言关联固定CONTINUE参数、accepted messageId、原child inbox、已提交user/message、新Activation内request/header与实际HTTP请求；HTTP中的完整转发文本须与inbox一致，并包含该受控任务的精确JSON。",
+      "wireShape": "user/message事件的data直接承载消息；共享读取函数同时用于子历史一致性与旁路投递断言。"
+    },
+    "tests": {
+      "command": "node --test .local/skills-mcp-migration-live/completion-lifecycle/run.test.mjs",
+      "red": {
+        "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/continuation-request-red.log",
+        "exitCode": 1,
+        "newCounterexamplesFailed": 4
+      },
+      "green": {
+        "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/continuation-request-green.log",
+        "exitCode": 0,
+        "passed": 22,
+        "failed": 0
+      },
+      "counterexamples": [
+        "清空请求13的body.messages。",
+        "保留messageId，将子inbox与已提交历史中的任务改为WRONG_TASK，HTTP维持原输入。",
+        "保留迭代description标记，将inbox、子历史与HTTP中的requirements改为WRONG_TASK。",
+        "在实际user/message数据结构中提交旁路消息，缺少inbox事件时仍须判为已投递。"
+      ]
+    },
+    "offlineReplay": {
+      "command": "node .local/skills-mcp-migration-live/completion-lifecycle/run.mjs replay --evidence-index .local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/evidence-index.json --output .local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-assertions-r1.json",
+      "resultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-assertions-r1.json",
+      "log": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-replay-r1.log",
+      "evaluationMode": "offline-replay",
+      "capturedRequestCount": 34,
+      "status": "pass",
+      "exitCode": 0,
+      "totalChecks": 46,
+      "failedChecks": 0,
+      "delivery": [
+        {
+          "case": "native-workbench",
+          "pass": true,
+          "childId": "fe6e0fdf-9bfb-4863-8936-68f9af8caa20",
+          "messageId": "96938455-2776-4a2a-9f00-8413932a5a4a",
+          "activationId": "e210025d-5f57-4e1c-9ac8-017560ca143c",
+          "callIndex": 139,
+          "inboxIndex": 141,
+          "committedIndex": 145,
+          "headerIndex": 146,
+          "expectedArguments": {
+            "description": "CONTROLLED_CHILD_CONTINUE:native-workbench",
+            "task": "CONTROLLED_CHILD_CONTINUE:native-workbench",
+            "agent_id": "fe6e0fdf-9bfb-4863-8936-68f9af8caa20"
+          },
+          "requestSequences": [
+            13
+          ]
+        },
+        {
+          "case": "native-iteration",
+          "pass": true,
+          "childId": "30a0345a-6c6b-4d76-851e-a90809afed4a",
+          "messageId": "1211815c-0db0-4174-b483-d94793def1a1",
+          "activationId": "911d6d6d-c6d6-491e-8615-b3dea84cd32c",
+          "callIndex": 182,
+          "inboxIndex": 184,
+          "committedIndex": 188,
+          "headerIndex": 189,
+          "expectedArguments": {
+            "description": "CONTROLLED_CHILD_CONTINUE:native-iteration",
+            "requirements": [
+              "CONTROLLED_CHILD_CONTINUE:native-iteration"
+            ],
+            "input_files": [],
+            "reference_files": [],
+            "output_files": [],
+            "agent_id": "30a0345a-6c6b-4d76-851e-a90809afed4a"
+          },
+          "requestSequences": [
+            18
+          ]
+        }
+      ],
+      "applicationStartedByReplay": false,
+      "modelRequestsByReplay": 0,
+      "originalEvidenceReadOnly": true
+    },
+    "negativeCliReplay": {
+      "evaluationMode": "offline-counterexample",
+      "sourceEvidenceIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/evidence-index.json",
+      "alteredIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/r1-empty-child-request-fixture/evidence-index.json",
+      "alteredRequest": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/r1-empty-child-request-fixture/request-13.json",
+      "output": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-empty-child-request-r1.json",
+      "processExitCode": 1,
+      "assessmentExitCode": 1,
+      "failedChecks": [
+        {
+          "case": "native-workbench",
+          "id": "continuation-task-in-child-request"
+        }
+      ],
+      "originalRequestUnchanged": true,
+      "applicationStarted": false,
+      "modelRequests": 0
+    },
+    "retainedRecords": {
+      "priorC1ReportFieldsUnchanged": true,
+      "priorReplayResult": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/captured-34-assertions.json",
+      "priorTestLog": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/driver-repair/final-tests.log",
+      "historicalExecution": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/execution.json",
+      "historicalEvents": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/completion-lifecycle/full-official-install/harness-run-6Xztjj/runtime-events/events.jsonl"
+    },
+    "verificationScope": "本轮执行离线结构断言；实际官方运行记录仍为6Xztjj原采集。",
+    "limits": [
+      "实时结束阶段采用同一断言入口，本轮仅核对接入代码。",
+      "离线测试依赖原受控采集文件。",
+      "程序仅比较固定输入、消息身份和事件结构；业务语义由独立验收判断。"
+    ],
+    "pending": [
+      "独立复审R1断言、反例覆盖与离线退出状态。"
+    ]
+  }
+}

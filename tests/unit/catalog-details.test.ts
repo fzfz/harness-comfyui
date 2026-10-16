@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CatalogCli, type CatalogCliProcess } from '../../src/host/catalog/catalog-cli.ts'
+import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
+import type { CatalogQuery } from '../../src/host/source-client/catalog-client.ts'
+import { SourceClientError } from '../../src/host/source-client/http-client.ts'
 
 const work = { id: 1, name: '作品', aliases_json: ['别名'], category_name: '游戏', character_names: ['角色'], cover_url: null, sample_image_urls: [] }
 function cli(source: unknown) {
-  const process = vi.fn<CatalogCliProcess>(async () => ({ exitCode: 0, stderr: '', stdout: JSON.stringify({ status: 'ok', message: null, page: 1, page_size: 1, total_count: 1, results: [source] }) }))
-  return { process, api: new CatalogCli({ executable: '/source/catalog.mjs', settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) }, process }) }
+  const query = vi.fn<CatalogQuery>(async () => ({ status: 'ok', message: null, page: 1, page_size: 1, total_count: 1, results: [source] }))
+  return { process: query, api: new CatalogClient({ settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) }, query }) }
 }
 describe('Catalog details', () => {
   it('resolves a work by identity and projects its own readable fields', async () => {
@@ -15,8 +17,7 @@ describe('Catalog details', () => {
       { key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: ['别名'] },
       { key: 'category_name', value: '游戏' }, { key: 'character_names', value: ['角色'] },
     ] })
-    expect(process.mock.calls[0]?.[1]).toEqual(expect.arrayContaining(['--path', '/internal/semantic/works', '--mode', 'resolve', '--id', '1']))
-    expect(process.mock.calls[0]?.[2]).toBe(signal)
+    expect(process.mock.calls[0]?.[0]).toMatchObject({ path: '/internal/semantic/works', input: { mode: 'resolve', id: '1' }, signal })
   })
 })
 
@@ -79,9 +80,9 @@ it('validates the shared card and detail presentation configuration', () => {
 })
 
 it.each([
-  { exitCode: 0, stderr: '', stdout: JSON.stringify({ status: 'ok', message: null, results: [], page: 1, page_size: 1, total_count: 0 }), code: 'CATALOG_PROTOCOL_ERROR' },
-  { exitCode: 1, stderr: 'unavailable', stdout: '', code: 'CATALOG_QUERY_FAILED' },
-])('reports missing records and failed source queries %#', async ({ code, ...result }) => {
-  const api = new CatalogCli({ executable: '/source/catalog.mjs', settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) }, process: async () => result })
+  [{ status: 'ok', message: null, results: [], page: 1, page_size: 1, total_count: 0 }, 'CATALOG_PROTOCOL_ERROR'],
+  [new SourceClientError('SOURCE_CONNECTION_FAILED', 'unavailable'), 'CATALOG_QUERY_FAILED'],
+])('reports missing records and failed source queries %#', async (result, code) => {
+  const api = new CatalogClient({ settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) }, query: async () => { if (result instanceof Error) throw result; return result } })
   await expect(api.details({ kind: 'work', id: '1' }, new AbortController().signal)).rejects.toMatchObject({ code })
 })

@@ -1,0 +1,441 @@
+{
+  "purpose": "记录三项迭代 Builder 的真实模型执行与证据采集。",
+  "readWhen": "核对 5.3-5、5.4-4 与 5.5-3 的输入、实际轨迹、安装身份及清理证据时。",
+  "scope": "第一轮业务执行采集；语义及来源结论交由独立审查员。",
+  "authorization": {
+    "activeGoSubscription": true,
+    "useBalance": false,
+    "source": "User confirmation in current conversation"
+  },
+  "sourceCandidatePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-candidate.tgz",
+  "modelSelectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/model-selection.json",
+  "modelSubmitted": true,
+  "status": "collected-and-stopped",
+  "entries": [
+    {
+      "caseId": "5.3-5",
+      "preset": "harness-comfyui-iteration",
+      "skill": "anima-prompt-builder",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/state.json",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-NpP25Z",
+      "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-NpP25Z/runtime",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-NpP25Z/runtime/environment/workspace",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/materialized-input.json",
+      "inputDifferencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/input-materialization.json",
+      "sourceInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+      "status": "collected-and-stopped",
+      "userPromptSubmissions": 1,
+      "testUserRecoveryExecuted": false,
+      "phases": [
+        {
+          "phase": "start-install",
+          "runId": "8e5f936c-873c-45e3-9be5-1d791ca0ae8e"
+        },
+        {
+          "phase": "stop-install",
+          "cleanup": {
+            "portsReleased": true,
+            "processGroupPresent": false
+          }
+        },
+        {
+          "phase": "start-business",
+          "runId": "a899be4b-a618-4680-8de7-714d7cc2c59e"
+        }
+      ],
+      "candidateVerification": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/installed-candidate-comparison.json",
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true
+      },
+      "observerIdentityPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/observer-model-identity.json",
+      "runId": "a899be4b-a618-4680-8de7-714d7cc2c59e",
+      "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/a899be4b-a618-4680-8de7-714d7cc2c59e/1791976061198-d17fc4a9-36ba-4a27-a5ad-017ceae278b1-capture.json",
+      "effectiveConfigurationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/effective-configuration.json",
+      "submitPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/a899be4b-a618-4680-8de7-714d7cc2c59e/1791976062686-0f80108c-561f-46b1-86df-64bfe04b0898-submit.json",
+      "sessionId": "session-31d9a47c-d2a5-478e-8014-979782abc19d",
+      "workspaceId": "a630a0d2-5c35-4e9a-834d-f3ec0d84e682",
+      "submittedAt": "2026-10-14T11:07:42.693Z",
+      "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/a899be4b-a618-4680-8de7-714d7cc2c59e/1791976497829-a1a7e692-37e2-4aa6-ba3b-0f269db4360d-watch.json",
+      "finished": true,
+      "timeout": false,
+      "mainCollectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/a899be4b-a618-4680-8de7-714d7cc2c59e/1791976498347-1d118cca-23cd-40df-81df-c2fd008bbb43-collect.json",
+      "mainEventCount": 136,
+      "childCollections": [],
+      "modelRequestIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/collection-1791976499090/model-request-index.json",
+      "capturedAnalysisPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/collection-1791976499090/captured-model-analysis.json",
+      "modelRequestCount": 25,
+      "actualIdentities": [
+        {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "modelTerminalKinds": {
+        "complete": 25
+      },
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/collection-1791976499090/all-session-records.json",
+      "toolEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/collection-1791976499090/tool-events.json",
+      "sessionEventCounts": {
+        "permission/preset": 1,
+        "sandbox/mode": 1,
+        "approval/policy": 1,
+        "model/selection": 1,
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 23,
+        "system/message": 1,
+        "user/message": 3,
+        "request/header": 1,
+        "request/context": 1,
+        "session/title": 1,
+        "session/title-llm-request": 1,
+        "assistant/message": 23,
+        "tool/call": 24,
+        "tool/result": 24,
+        "step/end": 23,
+        "assistant/attempt": 1,
+        "llm/retry": 1,
+        "llm/retry-started": 1,
+        "turn/end": 1
+      },
+      "artifactIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/collection-1791976499090/artifact-index.json",
+      "artifactFileCount": 1,
+      "rawRuntimeRetained": true,
+      "semanticVerdict": "pending-independent-review",
+      "readSourceVerdict": "pending-independent-review",
+      "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/collection-1791976499090/final-cleanup.json",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "evidenceArchives": [
+        {
+          "runId": "8e5f936c-873c-45e3-9be5-1d791ca0ae8e",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/probe-runs/8e5f936c-873c-45e3-9be5-1d791ca0ae8e",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/observer-calls/8e5f936c-873c-45e3-9be5-1d791ca0ae8e",
+          "archivedAt": "2026-10-14T11:06:36.680Z"
+        },
+        {
+          "runId": "a899be4b-a618-4680-8de7-714d7cc2c59e",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/probe-runs/a899be4b-a618-4680-8de7-714d7cc2c59e",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/observer-calls/a899be4b-a618-4680-8de7-714d7cc2c59e",
+          "archivedAt": "2026-10-14T11:15:05.381Z"
+        }
+      ],
+      "completedAt": "2026-10-14T11:15:05.466Z",
+      "pagination": {
+        "throughSeq": 135,
+        "eventCount": 136,
+        "pageCount": 1,
+        "finalHasMore": false,
+        "allSequenceNumbersInteger": true,
+        "uniqueSequenceCount": 136,
+        "minimumSeq": 0,
+        "maximumSeq": 135
+      },
+      "requiredEvidencePathsExist": true,
+      "desktopEvidenceFileIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-NpP25Z/collection-1791976499090/desktop-evidence-file-index.json",
+      "requestControl": {
+        "timeoutMs": 600000,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000,
+        "userPromptSubmissions": 1,
+        "additionalInstructions": 0,
+        "testUserRecoveryExecuted": false
+      }
+    },
+    {
+      "caseId": "5.4-4",
+      "preset": "harness-comfyui-iteration",
+      "skill": "krea2-anime-prompt-builder",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/state.json",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QCupGz",
+      "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QCupGz/runtime",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-QCupGz/runtime/environment/workspace",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/materialized-input.json",
+      "inputDifferencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/input-materialization.json",
+      "sourceInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+      "status": "collected-and-stopped",
+      "userPromptSubmissions": 1,
+      "testUserRecoveryExecuted": false,
+      "phases": [
+        {
+          "phase": "start-install",
+          "runId": "984a1f2b-3d32-4ac5-a70c-96dfe6d85664"
+        },
+        {
+          "phase": "stop-install",
+          "cleanup": {
+            "portsReleased": true,
+            "processGroupPresent": false
+          }
+        },
+        {
+          "phase": "start-business",
+          "runId": "fa6422d4-4897-4fea-be5e-f13099a07db9"
+        }
+      ],
+      "candidateVerification": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/installed-candidate-comparison.json",
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true
+      },
+      "observerIdentityPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/observer-model-identity.json",
+      "runId": "fa6422d4-4897-4fea-be5e-f13099a07db9",
+      "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/fa6422d4-4897-4fea-be5e-f13099a07db9/1791976530981-03a9fbc2-be6c-4fc5-ac10-e6daa5be7a35-capture.json",
+      "effectiveConfigurationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/effective-configuration.json",
+      "submitPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/fa6422d4-4897-4fea-be5e-f13099a07db9/1791976532505-f1fdfb00-d83c-4f18-97a3-a42b3c032974-submit.json",
+      "sessionId": "session-5aeb0e30-fc31-49b1-849c-41e78b68c782",
+      "workspaceId": "9de40bb7-f800-4984-ae0a-232ea6c3fae3",
+      "submittedAt": "2026-10-14T11:15:32.512Z",
+      "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/fa6422d4-4897-4fea-be5e-f13099a07db9/1791976695492-c9d79276-325b-4ea1-8172-61a47a33ba56-watch.json",
+      "finished": true,
+      "timeout": false,
+      "mainCollectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/fa6422d4-4897-4fea-be5e-f13099a07db9/1791976696013-6276b79b-7c07-4612-804d-403400010e8e-collect.json",
+      "mainEventCount": 106,
+      "childCollections": [],
+      "modelRequestIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/collection-1791976696491/model-request-index.json",
+      "capturedAnalysisPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/collection-1791976696491/captured-model-analysis.json",
+      "modelRequestCount": 15,
+      "actualIdentities": [
+        {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "modelTerminalKinds": {
+        "complete": 15
+      },
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/collection-1791976696491/all-session-records.json",
+      "toolEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/collection-1791976696491/tool-events.json",
+      "sessionEventCounts": {
+        "permission/preset": 1,
+        "sandbox/mode": 1,
+        "approval/policy": 1,
+        "model/selection": 1,
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 14,
+        "system/message": 1,
+        "user/message": 3,
+        "request/header": 1,
+        "request/context": 1,
+        "session/title": 1,
+        "session/title-llm-request": 1,
+        "assistant/message": 14,
+        "tool/call": 24,
+        "tool/result": 24,
+        "step/end": 14,
+        "turn/end": 1
+      },
+      "artifactIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/collection-1791976696491/artifact-index.json",
+      "artifactFileCount": 1,
+      "rawRuntimeRetained": true,
+      "semanticVerdict": "pending-independent-review",
+      "readSourceVerdict": "pending-independent-review",
+      "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/collection-1791976696491/final-cleanup.json",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "evidenceArchives": [
+        {
+          "runId": "984a1f2b-3d32-4ac5-a70c-96dfe6d85664",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/probe-runs/984a1f2b-3d32-4ac5-a70c-96dfe6d85664",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/observer-calls/984a1f2b-3d32-4ac5-a70c-96dfe6d85664",
+          "archivedAt": "2026-10-14T11:06:49.774Z"
+        },
+        {
+          "runId": "fa6422d4-4897-4fea-be5e-f13099a07db9",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/probe-runs/fa6422d4-4897-4fea-be5e-f13099a07db9",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/observer-calls/fa6422d4-4897-4fea-be5e-f13099a07db9",
+          "archivedAt": "2026-10-14T11:18:22.522Z"
+        }
+      ],
+      "completedAt": "2026-10-14T11:18:22.607Z",
+      "pagination": {
+        "throughSeq": 105,
+        "eventCount": 106,
+        "pageCount": 1,
+        "finalHasMore": false,
+        "allSequenceNumbersInteger": true,
+        "uniqueSequenceCount": 106,
+        "minimumSeq": 0,
+        "maximumSeq": 105
+      },
+      "requiredEvidencePathsExist": true,
+      "desktopEvidenceFileIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-QCupGz/collection-1791976696491/desktop-evidence-file-index.json",
+      "requestControl": {
+        "timeoutMs": 600000,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000,
+        "userPromptSubmissions": 1,
+        "additionalInstructions": 0,
+        "testUserRecoveryExecuted": false
+      }
+    },
+    {
+      "caseId": "5.5-3",
+      "preset": "harness-comfyui-iteration",
+      "skill": "wai-sdxl-prompt-builder",
+      "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/state.json",
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Hvl8ei",
+      "probeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Hvl8ei/runtime",
+      "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Hvl8ei/runtime/environment/workspace",
+      "inputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/materialized-input.json",
+      "inputDifferencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/input-materialization.json",
+      "sourceInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+      "status": "collected-and-stopped",
+      "userPromptSubmissions": 1,
+      "testUserRecoveryExecuted": false,
+      "phases": [
+        {
+          "phase": "start-install",
+          "runId": "c5309f83-a3df-4b9e-8075-4e9e79eaa202"
+        },
+        {
+          "phase": "stop-install",
+          "cleanup": {
+            "portsReleased": true,
+            "processGroupPresent": false
+          }
+        },
+        {
+          "phase": "start-business",
+          "runId": "c2bea9ab-c690-48e5-95f4-30566be38b25"
+        }
+      ],
+      "candidateVerification": {
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/installed-candidate-comparison.json",
+        "fileCount": 200,
+        "allByteEqual": true,
+        "allInsideRuntime": true
+      },
+      "observerIdentityPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/observer-model-identity.json",
+      "runId": "c2bea9ab-c690-48e5-95f4-30566be38b25",
+      "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/c2bea9ab-c690-48e5-95f4-30566be38b25/1791976719166-7731bf66-6ac8-4b43-92dc-7ff3dec13bc3-capture.json",
+      "effectiveConfigurationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/effective-configuration.json",
+      "submitPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/c2bea9ab-c690-48e5-95f4-30566be38b25/1791976720613-522c53ee-1297-422f-a437-cb824edfb5e8-submit.json",
+      "sessionId": "session-b5e2468d-b0ef-4621-9f08-323428e03142",
+      "workspaceId": "72fd38f5-efdf-42f8-a901-f392af74b91f",
+      "submittedAt": "2026-10-14T11:18:40.620Z",
+      "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/c2bea9ab-c690-48e5-95f4-30566be38b25/1791977298782-6f0f1080-eb60-42ba-ac72-743540cc6552-watch.json",
+      "finished": true,
+      "timeout": false,
+      "mainCollectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/c2bea9ab-c690-48e5-95f4-30566be38b25/1791977299296-da77e9c9-cd93-464a-818f-317f056d7b8e-collect.json",
+      "mainEventCount": 247,
+      "childCollections": [],
+      "modelRequestIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/collection-1791977300668/model-request-index.json",
+      "capturedAnalysisPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/collection-1791977300668/captured-model-analysis.json",
+      "modelRequestCount": 36,
+      "actualIdentities": [
+        {
+          "provider": "opencode-go",
+          "model": "deepseek-v4.1-flash"
+        }
+      ],
+      "modelTerminalKinds": {
+        "complete": 36
+      },
+      "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/collection-1791977300668/all-session-records.json",
+      "toolEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/collection-1791977300668/tool-events.json",
+      "sessionEventCounts": {
+        "permission/preset": 1,
+        "sandbox/mode": 1,
+        "approval/policy": 1,
+        "model/selection": 1,
+        "agent/inbox/spliced": 2,
+        "turn/start": 1,
+        "step/start": 34,
+        "system/message": 1,
+        "user/message": 3,
+        "request/header": 1,
+        "request/context": 1,
+        "session/title": 1,
+        "session/title-llm-request": 1,
+        "assistant/message": 34,
+        "tool/call": 63,
+        "tool/result": 63,
+        "step/end": 34,
+        "assistant/attempt": 1,
+        "llm/retry": 1,
+        "llm/retry-started": 1,
+        "turn/end": 1
+      },
+      "artifactIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/collection-1791977300668/artifact-index.json",
+      "artifactFileCount": 3,
+      "rawRuntimeRetained": true,
+      "semanticVerdict": "pending-independent-review",
+      "readSourceVerdict": "pending-independent-review",
+      "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/collection-1791977300668/final-cleanup.json",
+      "cleanup": {
+        "portsReleased": true,
+        "processGroupPresent": false
+      },
+      "evidenceArchives": [
+        {
+          "runId": "c5309f83-a3df-4b9e-8075-4e9e79eaa202",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/probe-runs/c5309f83-a3df-4b9e-8075-4e9e79eaa202",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/observer-calls/c5309f83-a3df-4b9e-8075-4e9e79eaa202",
+          "archivedAt": "2026-10-14T11:07:03.119Z"
+        },
+        {
+          "runId": "c2bea9ab-c690-48e5-95f4-30566be38b25",
+          "probeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/probe-runs/c2bea9ab-c690-48e5-95f4-30566be38b25",
+          "observerDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/observer-calls/c2bea9ab-c690-48e5-95f4-30566be38b25",
+          "archivedAt": "2026-10-14T11:28:27.595Z"
+        }
+      ],
+      "completedAt": "2026-10-14T11:28:27.714Z",
+      "pagination": {
+        "throughSeq": 246,
+        "eventCount": 247,
+        "pageCount": 1,
+        "finalHasMore": false,
+        "allSequenceNumbersInteger": true,
+        "uniqueSequenceCount": 247,
+        "minimumSeq": 0,
+        "maximumSeq": 246
+      },
+      "requiredEvidencePathsExist": true,
+      "desktopEvidenceFileIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/harness-run-Hvl8ei/collection-1791977300668/desktop-evidence-file-index.json",
+      "requestControl": {
+        "timeoutMs": 600000,
+        "modelCallTimeoutMs": 360000,
+        "maxCalls": 3000,
+        "userPromptSubmissions": 1,
+        "additionalInstructions": 0,
+        "testUserRecoveryExecuted": false
+      }
+    }
+  ],
+  "sources": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/task-matrix.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/acceptance-matrix.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/input-preflight-current.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/input-preflight-review.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/execution-input-variants.json"
+  ],
+  "testUserRecoveryExecuted": false,
+  "updatedAt": "2026-10-14T11:29:01.355Z",
+  "candidateDifferencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-candidate-difference.json",
+  "structuralEvidenceValidationPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/remaining-builder-runtime/structural-evidence-validation.json",
+  "runtimeProcessEnvironment": {
+    "pnpm_config_store_dir": "/Users/fzfz/Library/pnpm/store"
+  },
+  "sharedEvidenceWriteAuthorization": {
+    "driverPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop-driver.mjs",
+    "runIds": [
+      "a899be4b-a618-4680-8de7-714d7cc2c59e",
+      "fa6422d4-4897-4fea-be5e-f13099a07db9",
+      "c2bea9ab-c690-48e5-95f4-30566be38b25"
+    ]
+  },
+  "remainingWork": [
+    "独立语义审查",
+    "独立资料来源审查"
+  ]
+}

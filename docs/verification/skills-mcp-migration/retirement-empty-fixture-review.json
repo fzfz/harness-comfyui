@@ -1,0 +1,109 @@
+{
+  "status": "代码、11项回归及真实六查询不存在合同通过；其他真实参数探针与模型停止复验 pending",
+  "scope": [
+    ".local/skills-mcp-migration-live/boundary-fixture.mjs",
+    ".local/skills-mcp-migration-live/boundary-fixture/empty-instances.json",
+    ".local/skills-mcp-migration-live/boundary-fixture.test.mjs"
+  ],
+  "materialFindings": [],
+  "checks": [
+    {
+      "name": "启动验证不存在目标",
+      "status": "通过",
+      "source": ".local/skills-mcp-migration-live/boundary-fixture.mjs:84",
+      "evidence": "服务监听前分别调用 get_catalog_resource(instance,1) 与 get_instance_status(1)，核对 result.isError 与配置的 MCP_QUERY_RESOURCE_NOT_FOUND、MCP_INSTANCE_NOT_FOUND；不满足时抛错，拒绝启动。"
+    },
+    {
+      "name": "只读作用域及声明",
+      "status": "通过",
+      "source": ".local/skills-mcp-migration-live/boundary-fixture.mjs:82",
+      "evidence": "tools/list 原样返回；仅 readOnlyHint=true 的 tools/call 进入转发与映射分支。"
+    },
+    {
+      "name": "合法 ID 映射及完整参数转发",
+      "status": "通过",
+      "source": ".local/skills-mcp-migration-live/boundary-fixture.mjs:127",
+      "evidence": "从实际 tools/list 读取 instance_id 或实例资源 ref.id 的 pattern，字符串匹配后仅替换 ID；其余参数 structuredClone 后保留。非法或缺失 ID 不映射，由真实上游返回参数错误。没有引入 schema 依赖或完整自制校验器。"
+    },
+    {
+      "name": "真实错误与成功结构保留",
+      "status": "通过",
+      "source": ".local/skills-mcp-migration-live/boundary-fixture.mjs:137",
+      "evidence": "映射调用直接使用真实上游响应。错误响应不进入 boundary-fields 修改分支；返回原 result，仅用调用方 JSON-RPC id 包装。没有给不存在错误新增 structuredContent。"
+    },
+    {
+      "name": "搜索依赖错误保留",
+      "status": "通过",
+      "source": ".local/skills-mcp-migration-live/boundary-fixture.mjs:141",
+      "evidence": "search_instances 仅覆写成功结果的 results 与 next；上游 isError 响应不改写。"
+    },
+    {
+      "name": "完整映射证据",
+      "status": "通过",
+      "source": ".local/skills-mcp-migration-live/boundary-fixture.mjs:135",
+      "evidence": "exchange 保存原请求、request.instance_id 或 request.ref.id 的 before/after、上游响应；upstream 文件保存实际映射请求。以 exchange.upstreamResponse.id 关联同一运行目录内的 upstream.request.id。敏感内容按原证据脱敏处理。"
+    },
+    {
+      "name": "诊断事实补全",
+      "status": "通过",
+      "source": "docs/verification/skills-mcp-migration/retirement-empty-diagnosis.json",
+      "evidence": "已补迭代 seq126/127 接受 Run，classification 为 product-stop-failed；保留首次探测早于后续数据矛盾的因果限制。"
+    }
+  ],
+  "regression": {
+    "command": "node --test .local/skills-mcp-migration-live/boundary-fixture.test.mjs",
+    "exitCode": 0,
+    "passed": 11,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 1041.614125,
+    "coverage": [
+      "五类实例操作与实例详情均把合法 ID2 映射到 ID1。",
+      "缺失 ID、非法 ID、额外字段、非法 queue.state、缺失 node.class_name 由模拟上游返回参数错误。",
+      "实例操作与实例详情返回两类错误，无成功 structuredContent。",
+      "上游请求中没有传入已存在实例 ID2；已有目标使启动拒绝。",
+      "只读作用域、搜索成功覆写、上游错误保留、证据脱敏、停止清理及并发取消。"
+    ],
+    "limitation": "测试上游为本机模拟服务，其参数错误行为仅验证转发路径；不能代替真实 MCP 对五类操作的完整校验合同。"
+  },
+  "evidenceSpotCheck": {
+    "exchange": ".local/skills-mcp-migration-live/boundary-fixture-evidence/selftest/9babd849-ac18-477c-9c5b-7661cf867837/exchange-8facb1b2-b991-46e7-bc33-634e54e956e1.json",
+    "upstream": ".local/skills-mcp-migration-live/boundary-fixture-evidence/selftest/9babd849-ac18-477c-9c5b-7661cf867837/upstream-9eaffb35-8e01-408d-b6d0-986415ff5987.json",
+    "observed": "原 get_instance_status(instance_id=2) 与上游 instance_id=1 对应；映射字段完整；exchange.response.result 与 upstreamResponse.result 相同。"
+  },
+  "pending": [
+    {
+      "item": "真实五操作探针",
+      "status": "通过",
+      "evidence": "docs/verification/skills-mcp-migration/empty-domain-live-probes.json",
+      "verified": "五类操作均返回真实MCP_INSTANCE_NOT_FOUND；核对原请求ID2、映射ID1、上游原始响应与返回result一致。"
+    },
+    {
+      "item": "真实详情与参数错误合同",
+      "status": "部分通过",
+      "verified": "实例详情真实查询MCP_QUERY_RESOURCE_NOT_FOUND已通过；错误保留isError=true且无structuredContent。",
+      "remaining": "真实非法ID、其他非法字段及搜索依赖错误的本轮专项探针仍pending。"
+    },
+    {
+      "item": "真实模型停止复验",
+      "status": "pending",
+      "required": "同模型同输入仅改变夹具，分别核对首次空列表后的动作、实例探测、参数检查、提交次数与自然结束。夹具仍不控制 Generation CLI 或真实网络，不用最终无法取得实例替代停止规则验收。"
+    }
+  ],
+  "conclusion": "代码、针对性回归和真实六查询的不存在合同均通过；真实非法参数/搜索错误专项探针与产品停止复验分别保留pending。",
+  "changes": "仅新增本审查 JSON；执行测试产生其约定的 selftest 证据文件，未改被审查文件。",
+  "liveProbeEvidence": {
+    "directory": ".local/skills-mcp-migration-live/boundary-fixture-evidence/e7bd47d3-4ba1-41b5-acad-4b81f977fd73",
+    "exchanges": [
+      "exchange-5d164022-5869-4718-8aa8-5ad90d3cc8f6.json",
+      "exchange-026c5400-3a32-4431-87e5-f1c3a5c79763.json",
+      "exchange-9c9e7483-9fe3-4d30-9107-b5d4a3062e5e.json",
+      "exchange-ded3c9cd-9d93-402e-913b-92c9739a6d92.json",
+      "exchange-4bca049d-d901-40eb-806f-810b7248bd19.json",
+      "exchange-729cd540-433c-49ca-8a28-da5f914f27aa.json"
+    ],
+    "count": 6,
+    "allResponseResultsEqualUpstream": true
+  }
+}

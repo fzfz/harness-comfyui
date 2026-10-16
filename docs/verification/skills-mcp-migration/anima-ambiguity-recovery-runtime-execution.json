@@ -1,0 +1,1612 @@
+{
+  "purpose": "记录 ANIMA 重名角色选择后的会话恢复。",
+  "readWhen": "独立审查员核对选择、调用、产物与清理时。",
+  "caseId": "5.3-3",
+  "status": "collected-and-stopped",
+  "contractPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/anima-ambiguity-recovery-contract.json",
+  "reviewPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/anima-ambiguity-recovery-input-review.json",
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/state.json",
+  "sourceStateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/harness-run-Bgj7zX/state.json",
+  "immutableBeforeDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before",
+  "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+  "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/workspace",
+  "requestId": "b643d90e-e8f4-41af-b9ec-b70ccc43113c",
+  "reply": "选择角色 ID 3334。",
+  "userPromptSubmissions": 1,
+  "budget": {
+    "taskTimeoutMs": 600000,
+    "modelCallTimeoutMs": 360000,
+    "userPromptSubmissions": 1,
+    "minimumTurn": 2
+  },
+  "materializedInputPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/selection-input.json",
+  "preexistingSessions": [
+    {
+      "sessionId": "session-58485d73-3430-4fd2-842c-ecfb15d0382e",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/sessions/session-58485d73-3430-4fd2-842c-ecfb15d0382e-persisted.json",
+      "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/sessions/session-58485d73-3430-4fd2-842c-ecfb15d0382e.jsonl.zstd",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/dsh-home/sessions/--Users-fzfz-Documents-deepseek-harness-default-workspace--/session-58485d73-3430-4fd2-842c-ecfb15d0382e/session.v4.jsonl.zstd",
+      "recordCount": 5,
+      "frameCount": 3,
+      "inputBytes": 424,
+      "consumedBytes": 424,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "session-58485d73-3430-4fd2-842c-ecfb15d0382e",
+        "createdAt": 1791974386981,
+        "cwd": "/Users/fzfz/Documents/deepseek-harness/default-workspace",
+        "isSeeded": false,
+        "delegationDepth": 0,
+        "agentPreset": "standard"
+      },
+      "maxSeq": 3,
+      "maxTurn": 0,
+      "lastTurnEnd": null
+    },
+    {
+      "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/sessions/session-c680da5b-74e1-4bfe-80ab-ba627557a9bf-persisted.json",
+      "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/sessions/session-c680da5b-74e1-4bfe-80ab-ba627557a9bf.jsonl.zstd",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-Bgj7zX-runtime-environment-workspace--/session-c680da5b-74e1-4bfe-80ab-ba627557a9bf/session.v4.jsonl.zstd",
+      "recordCount": 98,
+      "frameCount": 52,
+      "inputBytes": 136810,
+      "consumedBytes": 136810,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "createdAt": 1791974443748,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/workspace",
+        "isSeeded": false,
+        "delegationDepth": 0,
+        "agentPreset": "harness-comfyui-iteration"
+      },
+      "maxSeq": 96,
+      "maxTurn": 1,
+      "lastTurnEnd": {
+        "type": "turn/end",
+        "seq": 96,
+        "time": 1791974589264,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    }
+  ],
+  "preexistingRequests": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/model-request-index.json",
+    "analysisPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/captured-model-analysis.json",
+    "count": 16,
+    "calls": [
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/16d66544-fac4-4ae8-9fe3-c075a48d87f0.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/16d66544-fac4-4ae8-9fe3-c075a48d87f0.jsonl",
+        "callId": "16d66544-fac4-4ae8-9fe3-c075a48d87f0",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:41:04.434Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:41:09.470Z",
+        "recordCount": 120,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 8,
+          "tool-call-delta": 104,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/1f2f4282-361a-4f44-8705-8eef20d76e0f.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/1f2f4282-361a-4f44-8705-8eef20d76e0f.jsonl",
+        "callId": "1f2f4282-361a-4f44-8705-8eef20d76e0f",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:41:17.021Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:41:24.518Z",
+        "recordCount": 188,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 41,
+          "tool-call-delta": 139,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/2abcbfa7-8054-480c-9188-35f0f2d922cd.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/2abcbfa7-8054-480c-9188-35f0f2d922cd.jsonl",
+        "callId": "2abcbfa7-8054-480c-9188-35f0f2d922cd",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:41:50.580Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:42:00.854Z",
+        "recordCount": 213,
+        "chunkKinds": {
+          "block-start": 3,
+          "reasoning-delta": 140,
+          "tool-call-delta": 63,
+          "block-end": 3,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/87bdb50c-637b-4a47-9428-318753e34e8c.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/87bdb50c-637b-4a47-9428-318753e34e8c.jsonl",
+        "callId": "87bdb50c-637b-4a47-9428-318753e34e8c",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:41:09.532Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:41:16.941Z",
+        "recordCount": 197,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 52,
+          "tool-call-delta": 137,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/93113170-bff3-4407-9e7f-44258d55113a.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/93113170-bff3-4407-9e7f-44258d55113a.jsonl",
+        "callId": "93113170-bff3-4407-9e7f-44258d55113a",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:42:05.193Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:42:15.953Z",
+        "recordCount": 238,
+        "chunkKinds": {
+          "block-start": 3,
+          "reasoning-delta": 116,
+          "tool-call-delta": 112,
+          "block-end": 3,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/9625a034-7d69-4812-840d-2209854d6822.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/9625a034-7d69-4812-840d-2209854d6822.jsonl",
+        "callId": "9625a034-7d69-4812-840d-2209854d6822",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:41:24.590Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:41:34.252Z",
+        "recordCount": 211,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 76,
+          "tool-call-delta": 127,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/99ed83d8-4118-46ff-a6a4-8ccd558922f1.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/99ed83d8-4118-46ff-a6a4-8ccd558922f1.jsonl",
+        "callId": "99ed83d8-4118-46ff-a6a4-8ccd558922f1",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:40:59.285Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:41:04.361Z",
+        "recordCount": 163,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 12,
+          "tool-call-delta": 143,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/bbd60b5a-06e3-4e0d-a5c5-abf698a92af5.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/bbd60b5a-06e3-4e0d-a5c5-abf698a92af5.jsonl",
+        "callId": "bbd60b5a-06e3-4e0d-a5c5-abf698a92af5",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:40:43.871Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:40:46.512Z",
+        "recordCount": 29,
+        "chunkKinds": {
+          "block-start": 1,
+          "reasoning-delta": 23,
+          "block-end": 1,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [],
+        "maxTokens": 64,
+        "purpose": "session-title",
+        "hasSystem": true,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/c22ba954-91e1-45dc-8487-90bc59840c90.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/c22ba954-91e1-45dc-8487-90bc59840c90.jsonl",
+        "callId": "c22ba954-91e1-45dc-8487-90bc59840c90",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:40:53.600Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:40:59.207Z",
+        "recordCount": 170,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 15,
+          "tool-call-delta": 147,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/de8aabc9-572e-4870-bd19-9691bc54d44f.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/de8aabc9-572e-4870-bd19-9691bc54d44f.jsonl",
+        "callId": "de8aabc9-572e-4870-bd19-9691bc54d44f",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:41:40.479Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:41:47.304Z",
+        "recordCount": 193,
+        "chunkKinds": {
+          "block-start": 3,
+          "reasoning-delta": 17,
+          "tool-call-delta": 166,
+          "block-end": 3,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/e0958a7c-89da-40a2-a4b2-405fe2fa0b5f.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/e0958a7c-89da-40a2-a4b2-405fe2fa0b5f.jsonl",
+        "callId": "e0958a7c-89da-40a2-a4b2-405fe2fa0b5f",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:42:16.437Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:42:32.723Z",
+        "recordCount": 466,
+        "chunkKinds": {
+          "block-start": 3,
+          "reasoning-delta": 288,
+          "tool-call-delta": 168,
+          "block-end": 3,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 1,
+          "truncatedMasks": 0,
+          "positions": [
+            {
+              "path": [
+                0,
+                "messages",
+                29,
+                "content",
+                0,
+                "text"
+              ],
+              "start": 791,
+              "end": 834,
+              "reason": "environment"
+            }
+          ]
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/e7cbf4dc-8dce-4ebf-b5f3-c2f4c56f5161.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/e7cbf4dc-8dce-4ebf-b5f3-c2f4c56f5161.jsonl",
+        "callId": "e7cbf4dc-8dce-4ebf-b5f3-c2f4c56f5161",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:40:48.266Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:40:53.543Z",
+        "recordCount": 153,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 40,
+          "tool-call-delta": 105,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/f041510d-c5aa-4d0f-a711-2351a2b0db7e.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/f041510d-c5aa-4d0f-a711-2351a2b0db7e.jsonl",
+        "callId": "f041510d-c5aa-4d0f-a711-2351a2b0db7e",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:40:43.867Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:40:48.216Z",
+        "recordCount": 26,
+        "chunkKinds": {
+          "block-start": 2,
+          "text-delta": 3,
+          "tool-call-delta": 15,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/f4c1a4db-a886-4b61-b83d-fa5ed5da461a.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/f4c1a4db-a886-4b61-b83d-fa5ed5da461a.jsonl",
+        "callId": "f4c1a4db-a886-4b61-b83d-fa5ed5da461a",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:42:56.184Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:43:09.222Z",
+        "recordCount": 320,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 39,
+          "text-delta": 273,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 1,
+          "truncatedMasks": 0,
+          "positions": [
+            {
+              "path": [
+                0,
+                "messages",
+                29,
+                "content",
+                0,
+                "text"
+              ],
+              "start": 791,
+              "end": 834,
+              "reason": "environment"
+            }
+          ]
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/fdd90890-9bda-49f1-aea8-da865435ee6e.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/fdd90890-9bda-49f1-aea8-da865435ee6e.jsonl",
+        "callId": "fdd90890-9bda-49f1-aea8-da865435ee6e",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:42:35.009Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:42:56.086Z",
+        "recordCount": 1549,
+        "chunkKinds": {
+          "block-start": 3,
+          "reasoning-delta": 253,
+          "text-delta": 10,
+          "tool-call-delta": 1276,
+          "block-end": 3,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 1,
+          "truncatedMasks": 0,
+          "positions": [
+            {
+              "path": [
+                0,
+                "messages",
+                29,
+                "content",
+                0,
+                "text"
+              ],
+              "start": 791,
+              "end": 834,
+              "reason": "environment"
+            }
+          ]
+        }
+      },
+      {
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer/llm-calls/fe1e649b-fbc7-4d73-af0d-56c3ef2220f6.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/model-calls/fe1e649b-fbc7-4d73-af0d-56c3ef2220f6.jsonl",
+        "callId": "fe1e649b-fbc7-4d73-af0d-56c3ef2220f6",
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash",
+        "requestAt": "2026-10-14T10:41:34.326Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T10:41:40.409Z",
+        "recordCount": 128,
+        "chunkKinds": {
+          "block-start": 2,
+          "reasoning-delta": 18,
+          "tool-call-delta": 102,
+          "block-end": 2,
+          "usage": 1,
+          "finish": 1
+        },
+        "toolNames": [
+          "bash",
+          "create_goal",
+          "get_goal",
+          "interrupt_agent",
+          "list_agents",
+          "list_mcp_resource_templates",
+          "list_mcp_resources",
+          "mcp__noobai__get_catalog_resource",
+          "mcp__noobai__get_instance_connection",
+          "mcp__noobai__get_instance_node",
+          "mcp__noobai__get_instance_queue",
+          "mcp__noobai__get_instance_status",
+          "mcp__noobai__list_prompt_term_categories",
+          "mcp__noobai__query_semantic_characters",
+          "mcp__noobai__query_semantic_prompt_terms",
+          "mcp__noobai__query_semantic_works",
+          "mcp__noobai__search_artist_prompt_strings",
+          "mcp__noobai__search_base_models",
+          "mcp__noobai__search_instance_nodes",
+          "mcp__noobai__search_instances",
+          "mcp__noobai__search_loras",
+          "mcp__noobai__search_models",
+          "mcp__noobai__search_styles",
+          "mcp__noobai__search_workflows",
+          "read_mcp_resource",
+          "skill",
+          "subagent_comparison",
+          "subagent_composition",
+          "subagent_generation",
+          "subagent_observation",
+          "update_goal"
+        ],
+        "maxTokens": 32768,
+        "purpose": null,
+        "hasSystem": false,
+        "evidenceRedaction": {
+          "marker": "[redacted]",
+          "replacements": 0,
+          "truncatedMasks": 0,
+          "positions": []
+        }
+      }
+    ]
+  },
+  "preflight": {
+    "profileId": "38ecc8fd-6a2d-4909-b543-99cf5113ba7b",
+    "packageEvidence": {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/package/installed-candidate-comparison.json",
+      "count": 200,
+      "allEqual": true
+    },
+    "skillComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/current-anima-comparison.json",
+    "animaFilesCompared": 30,
+    "defaultModel": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    "roleAgentOptions": {
+      "composition-agent": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      },
+      "generation-agent": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      },
+      "observation-agent": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free"
+      },
+      "comparison-agent": {
+        "provider": "opencode-go",
+        "model": "deepseek-v4.1-flash"
+      }
+    },
+    "goAuthorization": {
+      "activeGoSubscription": true,
+      "useBalance": false,
+      "source": "User confirmation in current conversation"
+    },
+    "freeVisionModel": {
+      "id": "thinkingmachines/inkling:free",
+      "pricing": {
+        "prompt": "0",
+        "completion": "0"
+      },
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/openrouter-models.json"
+    },
+    "priorProcessGroupAbsent": true,
+    "priorPortsReleased": true,
+    "leaseAbsent": true,
+    "runCount": 0,
+    "mediaCopies": []
+  },
+  "semanticVerdict": "pending-independent-review",
+  "firstRoundReviewPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/pending-anima-runtime-review.json",
+  "updatedAt": "2026-10-14T12:29:54.806Z",
+  "runId": "0bc399da-36e5-4f19-9608-4a0dc49100d0",
+  "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/.local/desktop-e2e/0bc399da-36e5-4f19-9608-4a0dc49100d0/run.json",
+  "ports": {
+    "host": 57009,
+    "rendererCdp": 57010,
+    "hostInspector": 57011
+  },
+  "startedAt": "2026-10-14T12:14:37.307Z",
+  "capturePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver-results/0bc399da-36e5-4f19-9608-4a0dc49100d0/1791980078092-3cf5a5ea-7941-4e1a-a53b-8116c1c81a45-capture.json",
+  "afterStartPackageEvidence": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/after-start-package/installed-candidate-comparison.json",
+    "count": 200,
+    "allEqual": true
+  },
+  "submissionIntentAt": "2026-10-14T12:15:09.783Z",
+  "acknowledgementPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver-results/0bc399da-36e5-4f19-9608-4a0dc49100d0/1791980110285-438f4da7-c68e-4310-848b-7f412f354ae8-remote.json",
+  "acknowledgement": {
+    "ok": true,
+    "value": {
+      "accepted": true
+    }
+  },
+  "watchStartedAt": "2026-10-14T12:15:10.292Z",
+  "collectionControl": {
+    "kind": "scope-stop",
+    "source": "Parent instruction in current task",
+    "originalRequestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/before/sessions/session-c680da5b-74e1-4bfe-80ab-ba627557a9bf-persisted.json",
+    "preCancelParentHistoryPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver-results/0bc399da-36e5-4f19-9608-4a0dc49100d0/1791980710892-3bf5c120-a033-441a-a9a3-137c3e56ad0a-collect.json",
+    "preCancelDatabasePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/pre-cancel-generation-database.json",
+    "acceptedChildIds": [
+      "559563d3-4ea3-483c-ba1c-35706a4a3096",
+      "32e22c24-9d16-4de7-94e4-49c8660ea07b"
+    ],
+    "cancelRequests": [
+      {
+        "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver-results/0bc399da-36e5-4f19-9608-4a0dc49100d0/1791980712002-9a49f391-c8d8-4e69-874e-c34992b1fd4f-remote.json",
+        "result": {
+          "ok": true,
+          "value": {
+            "accepted": true
+          }
+        }
+      },
+      {
+        "sessionId": "559563d3-4ea3-483c-ba1c-35706a4a3096",
+        "error": "Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs remote 0bc399da-36e5-4f19-9608-4a0dc49100d0 /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver/1791980712009-d122b468-6287-4771-ba43-766bf2d093cd-remote-input.json /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/harness-run-Bgj7zX/neutral-desktop-e2e.json /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime\nfile:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:26\n if(value?.ok===false) throw new Error(createEvidenceRedactor().encode(value));return value;\n                             ^\n\nError: {\"ok\":false,\"error\":{\"code\":\"session/not-found\",\"details\":{\"sessionId\":\"559563d3-4ea3-483c-ba1c-35706a4a3096\"},\"isDSHRemoteError\":true,\"name\":\"RemoteError\"}}\n    at remote (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:26:30)\n    at async main (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:37:37)\n    at async file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:78:84\n\nNode.js v25.8.2\n"
+      },
+      {
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "error": "Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs remote 0bc399da-36e5-4f19-9608-4a0dc49100d0 /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver/1791980712477-ac105051-aa12-458e-a710-e48ea1555279-remote-input.json /Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/pending-anima-runtime/harness-run-Bgj7zX/neutral-desktop-e2e.json /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime\nfile:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:26\n if(value?.ok===false) throw new Error(createEvidenceRedactor().encode(value));return value;\n                             ^\n\nError: {\"ok\":false,\"error\":{\"code\":\"session/agent-busy\",\"details\":{\"reason\":\"use subagent delivery for this child session\"},\"isDSHRemoteError\":true,\"name\":\"RemoteError\"}}\n    at remote (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:26:30)\n    at async main (file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:37:37)\n    at async file:///Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/desktop-driver.mjs:78:84\n\nNode.js v25.8.2\n"
+      }
+    ],
+    "startedAt": "2026-10-14T12:25:11.567Z",
+    "postCancelDatabasePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-cancel-generation-database.json",
+    "completedAt": "2026-10-14T12:25:12.915Z",
+    "applicationStopRequestedAt": "2026-10-14T12:28:10.027Z"
+  },
+  "watchPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver-results/0bc399da-36e5-4f19-9608-4a0dc49100d0/1791980711634-fc3b5455-e0c1-4ac7-ad57-ee78be830cdd-watch.json",
+  "watchResult": {
+    "finished": false,
+    "timeout": true,
+    "cancelled": {
+      "ok": true,
+      "value": {
+        "accepted": true
+      }
+    }
+  },
+  "minimalPreStopParentPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver-results/0bc399da-36e5-4f19-9608-4a0dc49100d0/1791980889318-4957467b-a97d-4c06-8be0-58e0aacdd719-collect.json",
+  "finalPreStopDatabasePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/final-pre-stop-generation-database.json",
+  "cleanupPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/final-cleanup.json",
+  "cleanup": {
+    "portsReleased": true,
+    "processGroupPresent": false
+  },
+  "stoppedAt": "2026-10-14T12:28:15.877Z",
+  "artifactCopyDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/offline-workspace/workspace-artifacts",
+  "parentCollectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/driver-results/0bc399da-36e5-4f19-9608-4a0dc49100d0/1791980889318-4957467b-a97d-4c06-8be0-58e0aacdd719-collect.json",
+  "newTurnEnd": {
+    "type": "turn/end",
+    "seq": 194,
+    "time": 1791980711634,
+    "data": {
+      "turn": 2,
+      "reason": {
+        "kind": "aborted",
+        "reason": {
+          "kind": "user"
+        }
+      }
+    }
+  },
+  "beforeStopRequests": {
+    "count": null,
+    "path": null,
+    "collectionTiming": "no complete request snapshot before application stop"
+  },
+  "beforeStopDatabasePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/final-pre-stop-generation-database.json",
+  "finalDatabasePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/generation-database.json",
+  "finalPluginDataCopy": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/plugin-data",
+  "originalRunRecordsPreserved": false,
+  "finalRunCount": 2,
+  "finalMediaCount": 0,
+  "mediaComparisons": [],
+  "finalPersistedSessions": [
+    {
+      "sessionId": "session-58485d73-3430-4fd2-842c-ecfb15d0382e",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/session-58485d73-3430-4fd2-842c-ecfb15d0382e-persisted.json",
+      "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/session-58485d73-3430-4fd2-842c-ecfb15d0382e.jsonl.zstd",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/dsh-home/sessions/--Users-fzfz-Documents-deepseek-harness-default-workspace--/session-58485d73-3430-4fd2-842c-ecfb15d0382e/session.v4.jsonl.zstd",
+      "recordCount": 5,
+      "frameCount": 3,
+      "inputBytes": 424,
+      "consumedBytes": 424,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "session-58485d73-3430-4fd2-842c-ecfb15d0382e",
+        "createdAt": 1791974386981,
+        "cwd": "/Users/fzfz/Documents/deepseek-harness/default-workspace",
+        "isSeeded": false,
+        "delegationDepth": 0,
+        "agentPreset": "standard"
+      },
+      "maxSeq": 3,
+      "maxTurn": 0,
+      "lastTurnEnd": null
+    },
+    {
+      "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/32e22c24-9d16-4de7-94e4-49c8660ea07b-persisted.json",
+      "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/32e22c24-9d16-4de7-94e4-49c8660ea07b.jsonl.zstd",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-Bgj7zX-runtime-environment-workspace--/32e22c24-9d16-4de7-94e4-49c8660ea07b/session.v4.jsonl.zstd",
+      "recordCount": 137,
+      "frameCount": 76,
+      "inputBytes": 161859,
+      "consumedBytes": 161859,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "createdAt": 1791980552167,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/workspace",
+        "parentSession": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "isSeeded": false,
+        "origin": "subagent",
+        "delegationDepth": 1,
+        "agentPreset": "harness-comfyui-iteration"
+      },
+      "maxSeq": 135,
+      "maxTurn": 1,
+      "lastTurnEnd": null
+    },
+    {
+      "sessionId": "559563d3-4ea3-483c-ba1c-35706a4a3096",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/559563d3-4ea3-483c-ba1c-35706a4a3096-persisted.json",
+      "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/559563d3-4ea3-483c-ba1c-35706a4a3096.jsonl.zstd",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-Bgj7zX-runtime-environment-workspace--/559563d3-4ea3-483c-ba1c-35706a4a3096/session.v4.jsonl.zstd",
+      "recordCount": 56,
+      "frameCount": 28,
+      "inputBytes": 72137,
+      "consumedBytes": 72137,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "559563d3-4ea3-483c-ba1c-35706a4a3096",
+        "createdAt": 1791980332110,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/workspace",
+        "parentSession": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "isSeeded": false,
+        "origin": "subagent",
+        "delegationDepth": 1,
+        "agentPreset": "harness-comfyui-iteration"
+      },
+      "maxSeq": 54,
+      "maxTurn": 1,
+      "lastTurnEnd": {
+        "type": "turn/end",
+        "seq": 54,
+        "time": 1791980455475,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    },
+    {
+      "sessionId": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/session-c680da5b-74e1-4bfe-80ab-ba627557a9bf-persisted.json",
+      "rawPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/session-c680da5b-74e1-4bfe-80ab-ba627557a9bf.jsonl.zstd",
+      "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-Bgj7zX-runtime-environment-workspace--/session-c680da5b-74e1-4bfe-80ab-ba627557a9bf/session.v4.jsonl.zstd",
+      "recordCount": 197,
+      "frameCount": 106,
+      "inputBytes": 253376,
+      "consumedBytes": 253376,
+      "header": {
+        "type": "session",
+        "version": 4,
+        "id": "session-c680da5b-74e1-4bfe-80ab-ba627557a9bf",
+        "createdAt": 1791974443748,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/environment/workspace",
+        "isSeeded": false,
+        "delegationDepth": 0,
+        "agentPreset": "harness-comfyui-iteration"
+      },
+      "maxSeq": 195,
+      "maxTurn": 2,
+      "lastTurnEnd": {
+        "type": "turn/end",
+        "seq": 194,
+        "time": 1791980711634,
+        "data": {
+          "turn": 2,
+          "reason": {
+            "kind": "aborted",
+            "reason": {
+              "kind": "user"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "childCollections": [
+    {
+      "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/32e22c24-9d16-4de7-94e4-49c8660ea07b-persisted.json",
+      "recordCount": 137,
+      "throughSeq": 135,
+      "lastTurnEnd": null
+    },
+    {
+      "sessionId": "559563d3-4ea3-483c-ba1c-35706a4a3096",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/sessions/559563d3-4ea3-483c-ba1c-35706a4a3096-persisted.json",
+      "recordCount": 56,
+      "throughSeq": 54,
+      "lastTurnEnd": {
+        "type": "turn/end",
+        "seq": 54,
+        "time": 1791980455475,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      }
+    }
+  ],
+  "eventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/all-persisted-session-events.json",
+  "toolEventsPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/all-persisted-tool-events.json",
+  "finalModelRequestIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/model-calls/model-request-index.json",
+  "capturedAnalysisPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/model-calls/captured-model-analysis.json",
+  "modelCallCount": 43,
+  "actualModels": [
+    {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    }
+  ],
+  "modelTerminalKinds": {
+    "complete": 42,
+    "aborted": 1
+  },
+  "requestsBeforeAndAfterStop": {
+    "before": null,
+    "after": 43
+  },
+  "eventBoundaryPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/event-boundaries.json",
+  "allOldSessionPrefixesPreserved": true,
+  "artifactComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/workspace-file-comparison.json",
+  "oldWorkspaceFilesPreserved": true,
+  "finalPackageEvidence": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/package/installed-candidate-comparison.json",
+    "count": 200,
+    "allEqual": true
+  },
+  "candidateBytesPreserved": true,
+  "oldSourceStateBytesPreserved": true,
+  "oldRequestComparisonPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/old-model-request-comparison.json",
+  "oldModelRequestsPreserved": true,
+  "originalObserverRestored": true,
+  "profilePreservedExceptHostPort": true,
+  "modelParameterCapture": {
+    "collectorSource": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-Bgj7zX/runtime/observer-anima-ambiguity-recovery/llm-observer.mjs",
+    "requestFields": [
+      "provider",
+      "model",
+      "sessionId",
+      "purpose",
+      "messages",
+      "tools",
+      "toolHistory",
+      "system",
+      "toolChoice",
+      "maxTokens"
+    ],
+    "callTimeoutMs": 360000,
+    "unavailableRequestFields": [
+      "temperature",
+      "topP",
+      "topK"
+    ]
+  },
+  "elapsedMs": 601851,
+  "independentReviewIndexPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/independent-review-index.json",
+  "completedAt": "2026-10-14T12:29:54.806Z",
+  "observedTermination": {
+    "watch": {
+      "finished": false,
+      "timeout": true,
+      "cancelled": {
+        "ok": true,
+        "value": {
+          "accepted": true
+        }
+      }
+    },
+    "parentEnd": {
+      "type": "turn/end",
+      "seq": 194,
+      "time": 1791980711634,
+      "data": {
+        "turn": 2,
+        "reason": {
+          "kind": "aborted",
+          "reason": {
+            "kind": "user"
+          }
+        }
+      }
+    },
+    "childEnds": [
+      {
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "lastTurnEnd": null
+      },
+      {
+        "sessionId": "559563d3-4ea3-483c-ba1c-35706a4a3096",
+        "lastTurnEnd": {
+          "type": "turn/end",
+          "seq": 54,
+          "time": 1791980455475,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      }
+    ],
+    "requestsStartedAfterParentEnd": [
+      {
+        "callId": "02a9fa22-eab6-493c-97ed-f022e4acee9c",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:27:16.109Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:27:24.983Z"
+      },
+      {
+        "callId": "29ad45d5-b7b6-4cbc-886b-3e20719eece2",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:27:47.022Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:28:03.293Z"
+      },
+      {
+        "callId": "42c633e4-e9f5-4626-b768-8c6a9db09811",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:26:47.730Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:27:16.024Z"
+      },
+      {
+        "callId": "4b5ba791-059e-4b62-84f6-2bb6f6c4e9c1",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:26:37.344Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:26:47.650Z"
+      },
+      {
+        "callId": "852340cc-ba00-4de4-8914-f90b4b15904f",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:27:25.050Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:27:46.936Z"
+      },
+      {
+        "callId": "a1c68719-4c8f-4925-ba1b-1633005fbd1f",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:28:03.462Z",
+        "terminalKind": "aborted",
+        "terminalAt": "2026-10-14T12:28:10.248Z"
+      },
+      {
+        "callId": "d2602baf-8c57-41be-9a22-092d2041ec45",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:25:38.383Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:26:01.736Z"
+      },
+      {
+        "callId": "df216984-b4d7-4823-81d9-d47676c87742",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:26:01.947Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:26:14.786Z"
+      },
+      {
+        "callId": "f8f3eb5a-a215-40be-bf9a-58a1cd07e940",
+        "sessionId": "32e22c24-9d16-4de7-94e4-49c8660ea07b",
+        "requestAt": "2026-10-14T12:26:14.872Z",
+        "terminalKind": "complete",
+        "terminalAt": "2026-10-14T12:26:37.291Z"
+      }
+    ],
+    "applicationStopRequestedAt": "2026-10-14T12:28:10.027Z",
+    "applicationStoppedAt": "2026-10-14T12:28:15.877Z"
+  },
+  "finalRunStatuses": [
+    {
+      "runId": "run_2c670669-e1a7-4d03-a579-c1a25352de44",
+      "status": "failed",
+      "errorCode": "COMFYUI_API_WORKFLOW_OVERLAY_FAILED"
+    },
+    {
+      "runId": "run_a494cc44-16bd-4ff8-bc8b-a59264e9a626",
+      "status": "failed",
+      "errorCode": "COMFYUI_API_WORKFLOW_OVERLAY_FAILED"
+    }
+  ],
+  "observedFrameSummary": {
+    "sessionCount": 4,
+    "frameCount": 213,
+    "totalBytes": 487796,
+    "allBytesConsumed": true
+  },
+  "reportLanguageReview": {
+    "skillPath": "/Users/fzfz/.codex/skills/stc/SKILL.md",
+    "profile": "for-document",
+    "antiEcho": true,
+    "checkPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/stc-report-check.json",
+    "manualReview": "Manually reviewed report wording, quoted reply, names, counts, source references, cancellation reasons and timing.",
+    "manualReviewPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/stc-manual-review.json"
+  },
+  "independentReviewStatus": "pending",
+  "collectionLimits": {
+    "parentWatchTimeoutMs": 600000,
+    "parentWatchTimedOut": true,
+    "parentTerminatedByUserCancellation": true,
+    "childSessionCancelRejected": true,
+    "activeChildEndedWithApplicationStop": true,
+    "childTurnEndAbsent": true,
+    "modelRequestsStartedAfterParentEnd": 9,
+    "modelRequestPreStopSnapshotAvailable": false
+  },
+  "memoryUse": {
+    "path": "/Users/fzfz/.codex/memories/MEMORY.md",
+    "lines": "47-50",
+    "use": "Preserved invocation sources and separated observed facts from independent business judgment."
+  },
+  "firstActualModelRequestPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime/post-stop/model-calls/374a3573-4c81-4d0a-bf28-f919e7eec62d.jsonl",
+  "firstActualModelRequestContainsSelection": true,
+  "frozenAt": "2026-10-14T12:33:44.745Z",
+  "frozenEvidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/anima-ambiguity-recovery-runtime"
+}

@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -14,6 +15,10 @@ import {
   type GenerationRuntimeOptions,
   type GenerationTransport,
 } from '../../src/host/generation/generation-runtime.ts'
+
+import { ComfyHttpTransport } from '../../src/host/generation/comfy-http-transport.ts'
+import { GenerationSourceClient } from '../../src/host/generation/source-client.ts'
+import { readSourceRecord } from '../../src/host/source-client/source-client.ts'
 
 const temporaryDirectories: string[] = []
 
@@ -500,15 +505,148 @@ describe('GenerationRuntime worker lifecycle', () => {
     recovered.close()
   })
 
-  it('keeps transient observation failures recoverable until the missing-observation deadline', async () => {
+  it.each(['connection reset', 'request timeout'] as const)('recovers the same submitted Run and saves media after a Source %s', async fault => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-worker-source-recovery-'))
+    temporaryDirectories.push(root)
+    let disconnected = false
+    const server = createServer((incoming, response) => {
+      if (disconnected) {
+        if (fault === 'connection reset') incoming.socket.destroy()
+        return
+      }
+      response.setHeader('content-type', 'application/json')
+      response.end(JSON.stringify(incoming.url === '/internal/comfyui-source'
+        ? { openapi: '3.1.0', paths: {} }
+        : { status: 'ok', message: null, page: 1, page_size: 1, total_count: 1, results: [{ id: 2, title: 'ComfyUI', url: 'http://127.0.0.1:8188', credential_type: 'none' }] }))
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('Test source server has no TCP port.')
+    const source = new GenerationSourceClient({
+      settings: { get: () => ({ url: 'http://127.0.0.1', port: address.port }) },
+      read: input => readSourceRecord({ ...input, timeoutMs: 100 }),
+    })
+    const promptId = '0193f85c-86fb-4ad9-8d2b-28cf39e8b042'
+    const fetchImplementation = vi.fn<typeof fetch>(async input => {
+      const path = new URL(String(input)).pathname
+      if (path === '/prompt') return Response.json({ prompt_id: promptId })
+      if (path === `/api/jobs/${promptId}`) return Response.json({
+        id: promptId,
+        status: 'completed',
+        outputs: { '3': { images: [{ filename: 'recovered.png', subfolder: '', type: 'output' }] } },
+      })
+      if (path === '/view') return new Response(Buffer.from(pngBytes), { headers: { 'content-type': 'image/png' } })
+      throw new Error(`Unexpected ComfyUI request: ${path}`)
+    })
+    const generation = runtime(root, new ComfyHttpTransport({ source, fetchImplementation }))
+    try {
+      const accepted = await generation.acceptGeneration(
+        { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source_recovery' }, request,
+      )
+      await generation.advance()
+      disconnected = true
+      await generation.advance()
+      expect(generation.queryRunsForSession('session_1')[0]).toMatchObject({
+        runId: accepted.runId, status: 'remote_pending', promptId, errorCode: null,
+      })
+      disconnected = false
+      await generation.advance()
+      await generation.advance()
+
+      expect(generation.queryRunsForSession('session_1')[0]).toMatchObject({
+        runId: accepted.runId, status: 'succeeded', promptId, errorCode: null,
+      })
+      const media = generation.queryMediaForSession('session_1')
+      expect(media).toHaveLength(1)
+      expect(media[0]).toMatchObject({ runId: accepted.runId, mediaKind: 'image' })
+      expect(readFileSync(generation.mediaContentPath(media[0]!.mediaId))).toEqual(Buffer.from(pngBytes))
+      expect(fetchImplementation.mock.calls.filter(([input]) => new URL(String(input)).pathname === '/prompt')).toHaveLength(1)
+    } finally {
+      generation.close()
+      server.closeAllConnections()
+      await new Promise<void>(resolve => server.close(() => resolve()))
+    }
+  })
+
+  it.each(['SOURCE_CONNECTION_FAILED', 'SOURCE_REQUEST_TIMEOUT'])('fails persistent %s observation failures at the configured deadline', async code => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-worker-source-deadline-'))
+    temporaryDirectories.push(root)
+    let now = 1_000
+    const observe = vi.fn<GenerationTransport['observe']>(async () => {
+      throw new GenerationRuntimeError(code, 'Data source is unavailable.')
+    })
+    const transport: GenerationTransport = {
+      submit: vi.fn(async input => acceptSubmission(input)), observe, download: vi.fn(),
+    }
+    const generation = runtime(root, transport, { now: () => now, missingObservationMs: 50 })
+    try {
+      const accepted = await generation.acceptGeneration(
+        { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source_deadline' }, request,
+      )
+      await generation.advance()
+      await generation.advance()
+      now = 1_049
+      await generation.advance()
+      expect(generation.queryRunsForSession('session_1')[0]).toMatchObject({
+        runId: accepted.runId, status: 'remote_pending', errorCode: null,
+      })
+      now = 1_050
+      await generation.advance()
+      expect(generation.queryRunsForSession('session_1')[0]).toMatchObject({
+        runId: accepted.runId, status: 'failed', promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042',
+        errorCode: code, errorMessage: 'Data source is unavailable.',
+      })
+      await generation.advance()
+      expect(observe).toHaveBeenCalledTimes(3)
+      expect(transport.submit).toHaveBeenCalledOnce()
+      expect(transport.download).not.toHaveBeenCalled()
+    } finally {
+      generation.close()
+    }
+  })
+
+  it.each([
+    'SOURCE_PROTOCOL_ERROR', 'SOURCE_QUERY_FAILED', 'SOURCE_RESPONSE_TOO_LARGE',
+    'COMFYUI_INSTANCE_SOURCE_CHANGED', 'COMFYUI_PROTOCOL_ERROR', 'COMFYUI_REMOTE_ERROR',
+  ])('fails a deterministic %s observation error without retrying', async code => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-worker-source-terminal-'))
+    temporaryDirectories.push(root)
+    const transport: GenerationTransport = {
+      submit: vi.fn(async input => acceptSubmission(input)),
+      observe: vi.fn(async () => { throw new GenerationRuntimeError(code, 'Source observation cannot continue.') }),
+      download: vi.fn(),
+    }
+    const generation = runtime(root, transport)
+    try {
+      const accepted = await generation.acceptGeneration(
+        { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source_terminal' }, request,
+      )
+      await generation.advance()
+      await generation.advance()
+      await generation.advance()
+      expect(generation.queryRunsForSession('session_1')[0]).toMatchObject({
+        runId: accepted.runId, status: 'failed', promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042', errorCode: code,
+      })
+      expect(transport.observe).toHaveBeenCalledOnce()
+      expect(transport.submit).toHaveBeenCalledOnce()
+      expect(transport.download).not.toHaveBeenCalled()
+    } finally {
+      generation.close()
+    }
+  })
+
+  it.each([
+    ['COMFYUI_CONNECTION_FAILED', 'COMFYUI_REQUEST_TIMEOUT'],
+    ['SOURCE_CONNECTION_FAILED', 'SOURCE_REQUEST_TIMEOUT'],
+  ])('keeps transient %s observation failures recoverable until the missing-observation deadline', async (connectionCode, timeoutCode) => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-worker-observation-gap-'))
     temporaryDirectories.push(root)
     let now = 1_000
     const observe = vi.fn<GenerationTransport['observe']>()
-      .mockRejectedValueOnce(new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'offline'))
+      .mockRejectedValueOnce(new GenerationRuntimeError(connectionCode, 'offline'))
       .mockResolvedValueOnce({ status: 'running', outputs: [] })
-      .mockRejectedValueOnce(new GenerationRuntimeError('COMFYUI_REQUEST_TIMEOUT', 'timeout'))
-      .mockRejectedValueOnce(new GenerationRuntimeError('COMFYUI_REQUEST_TIMEOUT', 'timeout'))
+      .mockRejectedValueOnce(new GenerationRuntimeError(timeoutCode, 'timeout'))
+      .mockRejectedValueOnce(new GenerationRuntimeError(timeoutCode, 'timeout'))
     const transport: GenerationTransport = {
       submit: vi.fn(async input => acceptSubmission(input)), observe, download: vi.fn(),
     }
@@ -531,7 +669,7 @@ describe('GenerationRuntime worker lifecycle', () => {
     now = 1_081
     await generation.advance()
     expect(generation.queryRunsForSession('session_1')[0]).toMatchObject({
-      status: 'failed', promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042', errorCode: 'COMFYUI_REQUEST_TIMEOUT',
+      status: 'failed', promptId: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042', errorCode: timeoutCode,
     })
     expect(transport.submit).toHaveBeenCalledOnce()
     generation.close()

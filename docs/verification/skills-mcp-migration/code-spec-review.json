@@ -1,0 +1,50 @@
+{
+  "axis": "Spec",
+  "base": "57bd76d522a3a88c7b153bd78b5be4691dc8bd33",
+  "comparison": "git diff BASE -- src config scripts agent-presets tests, including untracked source files in those directories",
+  "scope": "产品与测试代码；不审查其他队员正在修改的系统文档",
+  "findings": [
+    {
+      "id": "SPEC-CODE-1",
+      "priority": "P2",
+      "classification": "验收断言缺失",
+      "location": "tests/desktop/official-desktop-live.test.mjs:893-896",
+      "title": "服务恢复后的失败会话被过滤，测试仍可通过",
+      "evidence": "unreachable 场景恢复服务后调用 remote.session.create，但 sameHostRecovery.filter(session => session.result.ok) 跳过全部失败结果，后续没有恢复成功或成功查询数量断言。两个项目预设均无法恢复时，此分支仍正常结束；recovered 阶段则重新启动整个应用。",
+      "spec": [
+        "docs/plans/skills-mcp-migration-20261013.md:1288，第 6.2 节：服务恢复后，用户重新激活对应预设并执行一次目录查询。",
+        "docs/plans/skills-mcp-e2e-injection-20261013.md:105，第 5.4.6 节：不可达场景须验证恢复后重新激活成功。"
+      ],
+      "required": "恢复服务后，逐项断言两个项目预设重新激活成功，并分别完成目录查询；应用重启恢复单独记录。",
+      "limit": "静态代码已证明测试允许恢复失败，未在本次审查中运行 Desktop 来认定实际恢复行为。"
+    },
+    {
+      "id": "SPEC-CODE-2",
+      "priority": "P2",
+      "classification": "验收覆盖不完整",
+      "location": "tests/desktop/official-desktop-live.test.mjs:944-960",
+      "title": "子会话作用域测试未覆盖迭代角色及全局目录 Tool 隔离",
+      "evidence": "verifyOfficialMcpScope 只通过 PRODUCT_PRESET_ID 创建工作台父会话，核对一个子会话的两个 MCP 工具存在以及 subagent_task 不存在。迭代预设只创建主会话；代码没有核对其角色子会话，也没有断言 query_semantic_comfyui_templates、query_semantic_loras、query_semantic_generation_models、query_semantic_comfyui_instances 在项目主子会话中的实际可见性。",
+      "spec": [
+        "docs/plans/skills-mcp-migration-20261013.md:1128，第 5.7.8 节：两个预设及其子会话继续采用 local-only，须分别验证 Host 全局目录 Tool 的实际可见性。",
+        "docs/plans/skills-mcp-e2e-injection-20261013.md:105，第 5.4.6 节：live 测试须加入两个项目预设的子会话继承及普通预设作用域断言。"
+      ],
+      "required": "在官方 Desktop 中核对两个项目预设及对应子角色的实际模型工具声明，分别断言应有的 MCP 工具和应隔离的 Host 全局目录 Tool；普通预设核对原有工具行为。",
+      "limit": "这是代码内验收覆盖缺口；磁盘预设保留 local-only，尚无据认定运行时发生工具泄漏。真实模型角色验收应另行核对完整执行记录。"
+    }
+  ],
+  "verified": [
+    "目录 CLI 的 argv、Host 请求分发、帮助及 shell 专用注入已移除；原 source-client 可执行脚本已删除。",
+    "Catalog 与 GenerationSource 的消费者改用直接 HTTP 客户端，普通预设的全局目录 Tool 保留。",
+    "共享 MCP include、环境凭据、Include 子类以及从安装资源派生的嵌套 patches 已实现。",
+    "10 个定向测试文件、134 项测试通过。"
+  ],
+  "validation": {
+    "command": "pnpm exec vitest run tests/unit/internal-source-client.test.ts tests/unit/source-data-clients.test.mjs tests/unit/catalog-client.test.ts tests/unit/generation-source-client.test.ts tests/unit/installed-presets.test.mjs tests/production/official-preset-overrides.test.mjs tests/production/official-mcp-services.test.mjs tests/integration/cli-route.test.ts tests/unit/cli-contract.test.ts tests/unit/cli-shell-capability.test.ts --maxWorkers=1 --no-file-parallelism",
+    "exitCode": 0,
+    "testFilesPassed": 10,
+    "testsPassed": 134,
+    "desktopRunByReviewer": false,
+    "productFilesModifiedByReviewer": false
+  }
+}

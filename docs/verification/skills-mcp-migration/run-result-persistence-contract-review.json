@@ -1,0 +1,308 @@
+{
+  "purpose": "复核 CLI 统一结果文件方案，并保留首轮审查记录。",
+  "readWhen": "实施结果文件协议及安排最终候选验收前。",
+  "verdict": "修订方案通过设计复核。未发现新增阻断性缺陷；程序与官方应用验收仍待执行。",
+  "reviewRound": 2,
+  "reviewObject": "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+  "priorObject": ".local/run-result-persistence/contract-before-cli-design.json",
+  "scope": {
+    "productChanged": false,
+    "reviewObjectChanged": false,
+    "applicationsStarted": 0,
+    "modelCalls": 0,
+    "runtimeTestsExecuted": 0
+  },
+  "firstRoundDisposition": [
+    {
+      "id": "PERSIST-R1",
+      "status": "在设计中解决，待代码验收",
+      "evidence": "architecture.responsibilities、singleSources、interfaceBreak；commandCoverage；exitAndErrorContract",
+      "reason": "6 条业务命令共用 CLI 文件输出层。公共帮助改为返回文件路径，Host 和原生 Tool 的业务结构保持。"
+    },
+    {
+      "id": "PERSIST-R2",
+      "status": "在设计中解决，待代码验收",
+      "evidence": "architecture.singleSources；implementationContract；exactSharedHelpText",
+      "reason": "文件行为归 result-file.mjs，公共协议归 managed-cli-help.json。Skill 仅保留业务判断和公共入口引用。"
+    }
+  ],
+  "newMaterialFindings": [],
+  "consumerReview": {
+    "searchScope": "核对 scripts、src、tests、config、agent-presets、.agents 及本轮活动采集脚本。历史安装副本和旧轨迹不作为待迁移消费者。",
+    "commands": [
+      "generation submit --stdin",
+      "generation inspect-template-parameters --stdin",
+      "generation random-seeds --stdin",
+      "generation run-inputs --stdin",
+      "generation resolve-media --stdin",
+      "image inspect --stdin"
+    ],
+    "judgment": "合同已覆盖现有受管业务命令和检索到的直接消费者。",
+    "automatedConsumer": {
+      "source": "tests/integration/cli-command.test.ts:46,149-150,239",
+      "assessment": "runCli 与成功 stdout 断言需要读取文件。普通与 quiet 调用比较文件内容，不比较随机路径。合同已安排。"
+    },
+    "pythonExample": {
+      "source": ".agents/skills/local-image-reader/references/image-inspection-cli.md:131-158",
+      "assessment": "该文件已纳入迁移清单。实施时还必须修改代码示例中的 json.loads(result.stdout)，仅改成功输出说明不足。",
+      "requiredResult": "确认退出码后读取 stdout 指向的文件，再解析 observation。路径只移除协议末尾换行，不能使用会删去合法路径空白的 strip。"
+    },
+    "skillReaders": {
+      "sources": [
+        ".agents/skills/comfyui-image-review/SKILL.md:16-22",
+        ".agents/skills/local-image-reader/SKILL.md:26",
+        ".agents/skills/anima-prompt-builder/references/generation-cli.md:112-118",
+        ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md:112-118",
+        ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md:118"
+      ],
+      "assessment": "入口与成功判据均须从 stdout JSON 转为文件 JSON。合同已覆盖这些文件和错误处理。"
+    },
+    "nativeConsumers": {
+      "sources": [
+        "src/host/generation/generation-run-input-tool.ts:147-170",
+        "src/host/generation/generation-media-tool.ts:91-117"
+      ],
+      "assessment": "原生 Tool 保持结构化结果，符合本次边界。CLI 展示层无需改变 Runtime 或 Tool schema。"
+    },
+    "exclusions": "Builder 校验器、采集器、tar 和 ps 的 stdout 均有独立用途。本次路径协议不自动扩展到这些程序。"
+  },
+  "lifecycleReview": {
+    "judgment": "文件所有权和状态转换已明确，未引入缓存、锁或业务状态副本。",
+    "prepare": "参数和环境检查后、Host 请求前分配目录并独占打开文件。失败时无 Host 请求。",
+    "save": "序列化、写入和关闭完成后才发布路径。未完成文件不能作为成功结果。",
+    "retain": "成功文件跨 CLI 退出和 capability 撤销保留。长期产物由 Agent 复制到任务目录。",
+    "cleanup": "只处理本次未发布目录。成功文件、其他调用文件和业务 Run 均不受失败清理影响。",
+    "publish": "stdout 部分写入或 EPIPE 返回非零并保留完整文件。消费者不能只凭收到路径判成功。",
+    "limits": "系统清理、SIGKILL 和掉电限制已明示。官方后续 Tool Call 能否读取临时目录仍须实测。"
+  },
+  "failureStageReview": [
+    {
+      "stage": "参数、环境或文件准备失败",
+      "assessment": "请求尚未发送；修正后重试不会重执行业务。"
+    },
+    {
+      "stage": "Host、Provider 或响应协议失败",
+      "assessment": "保持既有错误和业务重试规则。文件层不得将该阶段误报为未发送。"
+    },
+    {
+      "stage": "Host 成功后的序列化、写入或关闭失败",
+      "assessment": "标明业务已成功；submit 报告已接纳 run_id。Seed 与视觉调用不自动重复。"
+    },
+    {
+      "stage": "文件已保存后的 stdout 失败",
+      "assessment": "保留文件并通过可用诊断给出路径，不重复 Host 请求。"
+    },
+    {
+      "stage": "NEXT 或错误诊断写入失败",
+      "assessment": "合同已声明非零和保留结果。实现必须捕获异步 stderr error，不能回落成 CLI_REQUEST_FAILED。",
+      "source": "scripts/cli/help.mjs:46-53 的 nextSteps 当前直接 process.stderr.write。",
+      "requiredTest": "加入非 quiet 的 stderr 写失败探针。核对请求仅 1 次、文件保留、退出非零及无未捕获异常。"
+    }
+  ],
+  "helpAndBuildReview": {
+    "help": "renderHelp 将 commonDetails 加入每级帮助。该机制支持公共协议唯一来源。",
+    "helpSource": "scripts/cli/help.mjs:23-33",
+    "errorPriority": "新增保存错误优先按公共规则处理。Skill 的 CLI_REQUEST_FAILED 等业务分支不能吞掉保存错误。",
+    "build": "cli-module.mjs 使用 tsdown 从入口打包内部依赖。新增 result-file.mjs 可以随入口导入，不要求独立运行资源副本。",
+    "buildSource": "scripts/build/cli-module.mjs:9-34",
+    "packageGate": "当前 production 测试只覆盖帮助和环境错误。合同已要求增加打包入口的成功文件验证。",
+    "packageSource": "tests/production/plugin-package.test.mjs:277-303",
+    "officialGate": "两个项目预设均须通过真实前台 shell 调用已安装包，并由后续 Tool Call 读取和复制结果。旧 Desktop 结果不能替代这项验证。"
+  },
+  "authorizationReview": {
+    "judgment": "当前用户规则明确要求程序返回结果文件路径。该修订属于 CLI 传输职责调整，合同没有改变业务 JSON 或 Skill 输出 schema。",
+    "allowedFlow": "主 Agent 按本次指派与第 5.14 节更新计划后实施，并完成独立审查。",
+    "unchangedBoundary": "Skill-owned 脚本、外部服务、依赖和宿主升级仍在本次设计之外。",
+    "noFurtherPermissionNeededForReview": "本次只读复核和指定报告更新均在现有授权内。"
+  },
+  "acceptanceReview": {
+    "judgment": "确定性、打包、官方消费和真实语义复验四层均已列出。不能将设计复核结果记作其中任一层通过。",
+    "implementationCheckpoints": [
+      "实际 Python 示例读取结果文件。",
+      "stdout 与 stderr 异步失败分阶段处理。",
+      "准备失败的 Host 请求数为 0；成功后保存失败为 1。",
+      "写入、关闭和发布失败都保留正确业务状态。",
+      "submit 的 run_id 和 image inspect 的 Provider 调用次数可追溯。",
+      "新结果文件不覆盖旧结果；并发路径互异。",
+      "文件字节及原始请求同时归档，不能只记录临时路径。"
+    ],
+    "causalLimit": "原失败的保存动机仍是因果线索。修订符合独立的 CLI 要求，但不能据此证明模型不会重复查询。",
+    "regressionBoundary": "同条件复验只改变结果保存与读取传输的必要合同。若还改业务规则，另记整体验收。",
+    "finalGates": "TDD、独立代码和文字审查、pnpm quality、git diff --check 及官方验收均待实施者执行。"
+  },
+  "completion": "本轮仅更新本审查报告。首轮完整发现保存在 reviewHistory。",
+  "reviewHistory": [
+    {
+      "round": 1,
+      "report": {
+        "purpose": "独立审查 Run 查询首调保存方案的职责、授权和验收。",
+        "readWhen": "将首调保存候选纳入迁移计划或修改产品前。",
+        "verdict": "有 2 项关键合同冲突。可保留为诊断实验，尚不能作为最终修复合同。",
+        "scope": {
+          "reviewObject": "docs/verification/skills-mcp-migration/run-result-persistence-contract.json",
+          "productChanged": false,
+          "objectChanged": false,
+          "applicationsStarted": 0,
+          "modelCalls": 0,
+          "runtimeTestsExecuted": 0
+        },
+        "findings": [
+          {
+            "id": "PERSIST-R1",
+            "severity": "high",
+            "location": "run-result-persistence-contract.json:203-206,234-235,269-276",
+            "original": "首次调用直接保存 stdout 可作为范围内的受控候选。",
+            "problem": "候选仍让 Agent 每次拼接保存流程。CLI 本身继续向 Agent 输出 JSON，帮助也继续推荐这条入口。用户规则第 6.4.2 项要求程序保存文件并返回路径。候选已承认该差异，却尚未解决职责与交付边界。",
+            "evidence": [
+              "用户 AGENTS.md 第 6.4.2 项",
+              "scripts/cli/harness-comfyui.mjs:154-157",
+              "config/managed-cli-help.json:86-110",
+              "实际轨迹 seq78、83、88、89：执行者在首次查询前读取程序帮助",
+              "docs/plans/skills-mcp-migration-20261013.md:1348-1350"
+            ],
+            "impact": "只更新 Skill 示例后，程序帮助仍提供另一种合法调用形态。结果保存继续依赖模型选择入口。即使原失败复验成功，也不能据此关闭统一 CLI 保存要求或同机制路径。",
+            "minimumCorrection": [
+              "将当前方案明确限定为隔离诊断实验。",
+              "先确定 Agent 可调用入口中唯一的结果保存责任方。",
+              "程序处理文件分配、写入、失败和并发；Agent 判断业务复用与刷新条件。",
+              "区分 CLI 展示协议、Host 响应结构与原生 Tool schema，逐项列出实际变化。",
+              "按第 5.14 节核对改动授权；超范围的接口变更集中列入待决策项。",
+              "最终合同统一正常帮助、NEXT、错误帮助和 Skill 的入口说明。"
+            ],
+            "boundary": "当前证据没有证明自动文件方案能消除重复查询。第 6.4.2 项构成独立的程序合同要求。"
+          },
+          {
+            "id": "PERSIST-R2",
+            "severity": "medium",
+            "location": "run-result-persistence-contract.json:208-232",
+            "original": "exactCommonText 规定 6 条共同规则，并计划替换各参考中的查询示例。",
+            "problem": "同一保存规则将分布在 7 个 Skill 参考中，未指定唯一归属。目录分配、退出码和文件失败处理也由各示例重新实现。",
+            "evidence": [
+              "用户 AGENTS.md 第 6.2.1 项：共享规则与模板各有唯一来源",
+              "用户 AGENTS.md 第 5.3 项：同一规则只有一处定义",
+              "docs/plans/skills-mcp-migration-20261013.md:1349-1350",
+              "run-result-persistence-contract.json#/recommendedRepair/files",
+              "run-result-persistence-contract.json#/recommendedRepair/exactCommonText"
+            ],
+            "impact": "消费者数量增加时，保存规则和失败分支可能分叉。重复解释确定性行为会增加维护负担。",
+            "minimumCorrection": [
+              "为通用保存行为指定一个共享实现和合同入口。",
+              "各 Skill 只保留业务输入来源、复用、刷新与交付要求。",
+              "安装资源检查覆盖共享入口及全部引用。",
+              "诊断实验只改目标消费者；实验完成后再决定共享实现。"
+            ],
+            "boundary": "shell 重定向适合作为隔离实验工具。现有证据不足以把分散的示例确定为长期产品结构。"
+          }
+        ],
+        "verifiedFacts": [
+          {
+            "fact": "原任务要求查询实际 Run 与媒体，并保存任务产物。",
+            "source": "all-session-records.json seq4"
+          },
+          {
+            "fact": "首次 run-inputs 输出完整可见。工具文本为 3698 字节，包含 exit=0。",
+            "source": "all-session-records.json seq90-91"
+          },
+          {
+            "fact": "seq105 再次查询同一 run_ids，并把输出写入文件。",
+            "source": "all-session-records.json seq105"
+          },
+          {
+            "fact": "seq104 的可见分析明确说重新运行命令以保存文件。",
+            "source": "all-session-records.json seq104"
+          },
+          {
+            "fact": "CLI 在共用 main 中直接序列化 envelope.data 到 stdout。",
+            "source": "scripts/cli/harness-comfyui.mjs:154"
+          },
+          {
+            "fact": "原生参数与媒体 Tool 均调用 Runtime，随后渲染 JSON。",
+            "source": "src/host/generation/generation-run-input-tool.ts:147-170; src/host/generation/generation-media-tool.ts:91-117"
+          },
+          {
+            "fact": "原生 Tool 与 CLI 共用业务读取能力，但展示边界不同。",
+            "source": "docs/system/architecture.md 的 Generation Run 生命周期与历史查询；上述两个 Tool 实现"
+          }
+        ],
+        "causalAssessment": {
+          "supported": "重复查询违反当时实际读取的复用合同。保存需求和重新保存的可见决策均有记录。",
+          "notEstablished": [
+            "首次未保存是重复查询的充分原因或唯一原因。",
+            "CLI 自动保存比首次 shell 重定向更能减少重复查询。",
+            "文件生命周期缺陷导致了本次失败。"
+          ],
+          "judgment": "原合同把分析记录限定为假设线索，这一点正确。不得为了选定修复层次把该线索升级为已验证根因。",
+          "minimumExperiment": [
+            "以原失败候选为共同基线，保存完整输入与安装清单。",
+            "仅改变首次结果保存机制，其他指令和业务输入保持一致。",
+            "核对保存文件何时进入模型可见输入。",
+            "若首次文件已可见但仍重查，保留反例并重审假设。",
+            "复验成功只支持该条件下的结果；多因素变化单独归为业务验收。"
+          ]
+        },
+        "responsibilityAssessment": {
+          "runtime": "保留 Workspace 归属、Run 查询与业务结果结构。没有证据要求 Runtime 管理任务交付目录。",
+          "presentationBoundary": "自动文件分配、字节写入、退出状态与并发属于确定性能力。可在 CLI 展示边界实现，不必因此新增业务状态。",
+          "agent": "负责选择业务资源、判断可用项、遵守允许的刷新条件，并将结果引用交给使用者。",
+          "nativeTools": "本次补查了两个原生 Tool 的完整入口。两者均直接返回结构化业务值。第 6.4 节针对命令行，不能据此自动要求修改原生 Tool schema。",
+          "debtJudgment": "把统一程序能力分散成多份 Agent 操作配方会增加维护负担。统一 CLI 文件输出本身不必增加 Runtime 技术债；必须先确定文件生命周期和授权边界。"
+        },
+        "authorizationAssessment": {
+          "alreadyAllowed": "第 5.14 节允许范围内调查、验证记录、采集脚本和 Skill 职责澄清。无需逐项申请诊断或实验准备权限。",
+          "notAutomaticallyAllowed": "Skill 脚本和输出 schema 未因第 5.14 节获得额外修改权限。",
+          "neededDecision": "明确路径输出改变的是哪一层接口。不得把全部 CLI 文件保存都归为业务 schema 变更，也不得以文字澄清名义修改输出协议。",
+          "workflow": "主 Agent 更新对应计划后处理独立审查结果。范围外决定集中报告；其余已授权准备继续。"
+        },
+        "acceptanceAssessment": {
+          "adequate": [
+            "原失败与 6 个 run-inputs 消费者均被列入。",
+            "数组顺序、重复项、单项错误和允许刷新均被保留。",
+            "文件失败、复制失败及并发已列出确定性检查。"
+          ],
+          "needed": [
+            "保存机制实验必须区分对照臂与修复臂，记录唯一差异。",
+            "首次结果文件逐字节对应当次 CLI 输出；禁止模型复述重建 Workflow。",
+            "最终候选覆盖两个项目预设和实际安装路径。",
+            "正常帮助、NEXT 与错误帮助各自提供的入口均纳入发现链复验。",
+            "逐项判定 seq105 的媒体刷新与参数重查，避免把允许刷新计为违规。",
+            "原生 Tool 保存路径单列结论；没有证据时保持未验证。",
+            "保存失败后不得将旧文件误登记为本次成功；状态文件写入失败也必须失败。",
+            "保留原业务幂等与重复提交规则，不新增按 run_ids 自动缓存或并发锁。"
+          ],
+          "releaseBoundary": "局部确定性测试与模型对照均未执行。最终交付仍须满足全量门禁。"
+        },
+        "sourceIndex": {
+          "events": ".local/skills-mcp-migration-live/remaining-generation-runtime/harness-run-4dz3WV/collection-1791979002308/all-session-records.json",
+          "plan": "docs/plans/skills-mcp-migration-20261013.md:1273-1285,1345-1351",
+          "skill": ".agents/skills/comfyui-generate/references/generation-cli.md:111-114",
+          "mediaContract": ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md:47-49"
+        },
+        "completion": "审查与报告已完成。被审对象和产品均未修改。",
+        "textReview": {
+          "profile": "for-document",
+          "machine": "已执行 STC for-document 与 anti-echo 检查。",
+          "manual": "已逐句核对事实、假设和授权。保留未验证边界，避免将方案判断写为根因结论。",
+          "errors": 0,
+          "antiEchoPending": 0,
+          "warningHandling": "已人工复核全部警告。G17 指 JSON 语法引号；G4 的 5 处用词均指程序代码及职责归属，保留技术含义。"
+        },
+        "memoryUse": {
+          "source": "MEMORY.md:47-50",
+          "use": "按职责与完整发现链审查，并区分诊断、方案与验收。"
+        }
+      }
+    }
+  ],
+  "memoryUse": {
+    "source": "MEMORY.md:47-50",
+    "use": "按职责和消费者核对修订，并保留因果与验收边界。"
+  },
+  "currentTextReview": {
+    "profile": "for-document",
+    "machine": "已执行 STC for-document 与 anti-echo 检查。",
+    "manual": "已人工核对设计通过与实现待验的区别。首轮记录作为历史保留，不代表当前缺陷状态。",
+    "errors": 0,
+    "antiEchoPending": 0,
+    "warningHandling": "已人工核对警告。G17 为 JSON 语法引号；G4 为程序代码与职责术语；G5 描述管道未写完即失败的状态。首轮历史文字保留原貌。"
+  }
+}

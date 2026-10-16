@@ -1,0 +1,246 @@
+{
+  "purpose": "诊断四角色任务中的 Builder 当前消息、接纳身份与观察图片路径交接责任。",
+  "readWhen": "决定四角色交接修复范围与因果复验方法时。",
+  "createdAt": "2026-10-14T11:16:53.431384+00:00",
+  "verdict": "存在可减少模型转抄的派发输入边界；尚无证据支持用 Host 提交门禁修复 Builder 的语义执行偏离。",
+  "scope": {
+    "workspace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+    "mode": "只读代码和本地轨迹；运行无模型、无应用的派发函数桩验证；仅写本报告。",
+    "planSections": [
+      "5.11",
+      "5.12",
+      "5.14"
+    ],
+    "executionIndex": "docs/verification/skills-mcp-migration/four-role-current-execution.json",
+    "reviewIndex": "docs/verification/skills-mcp-migration/four-role-current-runtime-review.json",
+    "persistedSessions": [
+      {
+        "sessionId": "session-4a6e5451-fe9e-43ca-bb02-764e75da4dae",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/post-stop-1791975239331/session-4a6e5451-fe9e-43ca-bb02-764e75da4dae-persisted.json",
+        "recordCount": 77,
+        "frameCount": 34,
+        "inputBytes": 66898,
+        "consumedBytes": 66898
+      },
+      {
+        "sessionId": "626ce758-0768-4c57-b7ca-be19a4fbbf9d",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/post-stop-1791975239331/626ce758-0768-4c57-b7ca-be19a4fbbf9d-persisted.json",
+        "recordCount": 70,
+        "frameCount": 36,
+        "inputBytes": 66133,
+        "consumedBytes": 66133
+      },
+      {
+        "sessionId": "2b99eed8-5355-49e7-9d30-26360393951a",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/post-stop-1791975239331/2b99eed8-5355-49e7-9d30-26360393951a-persisted.json",
+        "recordCount": 230,
+        "frameCount": 127,
+        "inputBytes": 298618,
+        "consumedBytes": 298618
+      },
+      {
+        "sessionId": "2854ee4e-5a01-4d60-b83a-b131f3100069",
+        "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/post-stop-1791975239331/2854ee4e-5a01-4d60-b83a-b131f3100069-persisted.json",
+        "recordCount": 70,
+        "frameCount": 38,
+        "inputBytes": 39327,
+        "consumedBytes": 39327
+      }
+    ],
+    "modelRequestIndex": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-current/harness-run-TpyZol/post-stop-1791975239331/model-request-index.json",
+    "rawRequestFilesParsed": 62,
+    "coverage": "四份最终持久化 JSON 全部读取并检查工具与消息事件；62 份请求 JSONL 均解析，重点复核首次偏离前的请求及输入。没有重新解压源压缩会话。"
+  },
+  "conclusions": [
+    {
+      "id": "C1",
+      "status": "verified",
+      "statement": "父 Agent 在观察派发参数中漏写媒体文件名中的字符 3，派发函数和观察 Agent 随后保留了这个错误值。",
+      "evidence": [
+        "parent seq63 正确路径 media_a4123ccd-cbfc-42ff-8daf-f5fbdfd1c323.png",
+        "parent seq67 images.path 为 media_a412ccd-cbfc-42ff-8daf-f5fbdfd1c323.png",
+        "observer seq8 收到相同错误路径；seq40 使用该路径；seq41 FILE_INVALID",
+        "observer seq65 改用正确路径；seq66 返回观察结果"
+      ],
+      "causalLimit": "同会话改正路径后读取成功，足以定位首次读图失败；不能据此解释全部超时。"
+    },
+    {
+      "id": "C2",
+      "status": "verified",
+      "statement": "接纳身份由宿主子会话 API 产生，派发插件已经把 subagentId 和 messageId 一起送入父会话并持久化；task.md 是模型未更新的第二份记录。",
+      "evidence": [
+        "project-iteration-dispatch.mjs:106-139",
+        "parent seq39、55、70 的 harness-subagent-accepted",
+        "parent seq30 写入 task.md；后续依赖派发前没有更新该文件"
+      ],
+      "causalLimit": "当前任务文件不满足 Skill 合同；宿主身份供给与最终会话持久化没有缺失证据。取消前刚接纳但尚未持久化的崩溃窗口需要单独验证。"
+    },
+    {
+      "id": "C3",
+      "status": "verified-boundary-unverified-behavior-cause",
+      "statement": "生成 Agent 在同一任务中自行构建 Builder JSON 后直接提交；本轮没有发生请求父任务回传和原子会话续派。",
+      "evidence": [
+        "parent seq51 只含资源说明、构图和要求",
+        "generation seq16 已收到当前消息合同",
+        "generation seq184 校验结果，seq188 保存 Builder 文件，seq190 检查参数，seq195 提交",
+        "generation 仅一轮任务；父任务仅一次 subagent_generation 调用",
+        "模型请求 2b6d4f53-7738-4e4c-a0dd-e62375564caa 同时包含 persona 条件式回传条款与 Skill 当前消息条款"
+      ],
+      "causalLimit": "可见分析记录与随后动作一致，显示执行继续进入参数检查；它不能单独证明模型为何跳过输入来源要求。文件读取丢失、派发 JSON 丢失、超时均不能解释这里的首次偏离。"
+    },
+    {
+      "id": "C4",
+      "status": "verified",
+      "statement": "当前派发参数把资源说明和原始 Builder JSON 放在同一个可选 supplied_data 字符串中；接口没有表示本次任务属于构建还是消费，也没有专门的文件原文转交入口。",
+      "evidence": [
+        "agent-presets/harness-comfyui-iteration/agent.cordis.yml:185-315",
+        "agent-presets/project-iteration-dispatch.mjs:6-16"
+      ],
+      "causalLimit": "这是职责和结构表达的弱点；本轮没有进入回传分支，不能声称补充文件入口就会阻止本轮直接提交。"
+    }
+  ],
+  "responsibilityMap": [
+    {
+      "owner": "主 Agent",
+      "currentContract": "保留用户选择及查询来源；分配输出路径；请求原生成 Agent 继续；记录接纳身份；提供观察图片与中性问题。",
+      "repeatedCopy": "子会话身份写 task.md、Builder 文件内容写 supplied_data、generation.md 中图片路径写 images.path。"
+    },
+    {
+      "owner": "生成 Agent 与 comfyui-generate",
+      "currentContract": "构建并保存 Builder；按当前任务消息提供的完整结果做结构、模型路线、负向模式、尺寸校验；构造 Generation Request。",
+      "repeatedCopy": "Builder 字段投影为 Generation Request，Run 媒体查询结果写 generation.md。"
+    },
+    {
+      "owner": "project-iteration-dispatch",
+      "currentContract": "按配置字段序列化父任务参数，创建或续派原子会话，提供真实接纳身份，等待该消息对应任务结束。",
+      "doesNotOwn": "当前实现不读取输入文件，不解析 generation.md，不解释 Skill 合同，不修改 task.md。"
+    },
+    {
+      "owner": "官方 Session 与 subagents API",
+      "currentContract": "产生子会话及消息身份，接纳任务，保存会话事件、父子关系与消息内容。",
+      "reuse": "startContinuable、sendMessage、exec.deferContext、Session.snapshotEvents；list_agents 可找回子会话。"
+    },
+    {
+      "owner": "CLI capability 与 GenerationRuntime",
+      "currentContract": "从真实 shell Tool Call 确认 Session、turn、callId、cwd；按 Workspace 处理 Generation Request、Run、媒体查询及幂等提交。",
+      "doesNotOwn": "接口没有 Builder 消息来源、父任务认可或 Skill 语义状态。"
+    },
+    {
+      "owner": "ImageReaderService",
+      "currentContract": "校验并读取给定单图路径，调用视觉模型返回观察。",
+      "reuse": "媒体路径的来源解析属于已有 GenerationRuntime.readGenerationRunMedia；读图服务继续消费解析后的路径。"
+    }
+  ],
+  "currentMessageMeaning": {
+    "source": "comfyui-generate/SKILL.md 创建图片第1节；comfyui-iterate-generation/references/records.md 最后一段；计划5.12.5。",
+    "meaning": "生成消费步骤的当前任务消息必须携带完整 Builder JSON。迭代合同明确允许父 Agent 从已保存文件读取后原样交给原生成 Agent，这属于材料交接。",
+    "nonEquivalentSources": "工具读取结果、生成 Agent 同轮自行写出的文件及历史上下文中的 JSON，不满足该合同规定的当前任务消息来源。",
+    "notHumanReapproval": "合同允许父 Agent 原样转交，不能据此增加人工批准步骤或把转交解释为用户重新选择了资源。",
+    "transport": "taskMessage 用 JSON.stringify 包装 supplied_data 字符串；解析外层后字符串内容保持不变，当前代码不进行改写。",
+    "enforcementLimit": "CLI 仅收到 Generation Request 与可信执行身份，缺乏判断该 Prompt 的当前消息来源所需的结构化合同。对 shell 字符串或 Session 文本作关键词判断将把语义判断放进代码。"
+  },
+  "localCounterfactual": {
+    "method": "用 Node 导入当前 project-iteration-dispatch.mjs 的真实 apply；以本地桩产生消息接纳及结束事件，捕获子任务 prompt 和 deferContext。未启动应用或模型。",
+    "cases": [
+      {
+        "input": "images=[{path:/missing/media_a412ccd.png,run_id:run_test}]",
+        "result": "子任务收到同值；不存在的路径没有在派发前校验；接纳身份正确。"
+      },
+      {
+        "input": "含缩进、换行、反斜线的 supplied_data JSON 字符串",
+        "result": "解析任务消息外层 JSON 后与原字符串逐字符一致；接纳身份正确。"
+      }
+    ],
+    "conclusion": "现有序列化没有导致转抄错误；派发接受任意结构合法路径。单独改变序列化实现无法消除模型写错参数或跳过回传。"
+  },
+  "repairCandidates": [
+    {
+      "id": "R1",
+      "priority": "推荐先做边界合同验证",
+      "target": "观察派发的媒体引用解析",
+      "basis": "C1 已有同会话修正反例；Runtime 已提供 Workspace 内 Run 到实际图片路径的查询。",
+      "contract": [
+        "父 Agent 选择 Run 与具体媒体身份；派发适配器用当前执行 Workspace 调用 readGenerationRunMedia，按 media_id 精确取得图片。选择全部图片须使用明确的全部选择值，不能静默扩大观察范围。",
+        "适配器仅把规范 run_id、实际 file_path 和父任务中性问题交给观察 Agent；不得将返回的 parameters、Prompt、标题或目标一起注入观察任务。",
+        "查询失败、媒体未就绪或选择不匹配时，派发前返回明确错误，保留原任务并等待；不能自动搜索相邻文件或重做生成。",
+        "最终任务消息仍提供 local-image-reader 所需的本地绝对路径，Skill 输出 schema 与读图服务保持原有职责。"
+      ],
+      "reuse": [
+        "src/host/core/plugin.ts:43-45 的 harnessComfyuiCore.services.runtime",
+        "src/host/generation/generation-runtime.ts:812-871 readGenerationRunMedia",
+        "src/host/generation/generation-media-tool.ts:76-144 的 Workspace 身份派生和查询组合",
+        "agent-presets/project-subagent-workspace.mjs:31-86 的父子 Workspace 关联"
+      ],
+      "scope": [
+        "agent-presets/project-iteration-dispatch.mjs 或其同层专用输入适配器",
+        "两个预设的观察工具参数、任务模板与对应引用",
+        "确定性派发与媒体选择测试"
+      ],
+      "preImplementationEvidence": "当前 dispatch 仅注入 tools/subagents。需先验证两个预设都可注入已有 core/workspaceRegistry 服务，复用真实执行身份派生；不能绕过 Workspace 归属。",
+      "acceptance": [
+        "用原 Run 媒体结果复放，派发消息中的 path 与 Runtime 原字段逐字符一致。",
+        "覆盖多图指定子集、无媒体、无效 Run、跨 Workspace、取消；失败场景子会话创建次数为零。",
+        "观察消息仅含允许的中性材料。",
+        "相同模型、输入和目录的一轮一图复验，独立检查实际观察与比较。"
+      ],
+      "limit": "可消除媒体路径转抄；父 Agent 仍需正确选择 Run 和图片。尚未实现或官方复验。"
+    },
+    {
+      "id": "R2",
+      "priority": "保留为转交能力候选，不能据此关闭 C3",
+      "target": "生成续派的文件原文输入",
+      "contract": [
+        "在角色派发输入层接受显式 Builder 文件引用，由父任务显式选择原 agent_id 后读取文本并装入当前任务消息；保留现有 supplied_data 中资源来源。",
+        "复用宿主文件访问约束，读取失败时不发送消息；不从 Markdown 解析 JSON，不重新序列化 Builder 对象，不改变 Skill 输出 schema。"
+      ],
+      "effect": "减少父 Agent 抄写整段 Builder JSON 的机会。",
+      "limit": "本轮未请求续派，此能力不是已证实的直接修复；文件沙箱 API 与完整读取界限仍需核对。"
+    },
+    {
+      "id": "R3",
+      "priority": "暂不增加持久化机制",
+      "target": "接纳身份与 task.md 的关系",
+      "decision": "真实身份已在 Session 保存。先维持唯一身份来源并检验恢复查询，避免再建角色状态库或让派发插件解析、修改自然语言 task.md。",
+      "minimumVerification": [
+        "从最终 Session 事件按 callId 取出两个接纳 ID，与子会话 header 及消息 ID 比较。",
+        "模拟续派等待取消后从原会话恢复，确认没有创建替代子会话。",
+        "单独确定 task.md 是否仍须包含完整重复身份；如果该合同保持，则本轮文件遗漏仍判失败，不以宿主持久化替代验收。"
+      ],
+      "limit": "若要求无模型地保证任务文件包含身份，需要明确新增结构化投影的写入所有者和文件合同，不能假称现有接口已经完成。"
+    }
+  ],
+  "builderCausalWork": {
+    "hypotheses": [
+      {
+        "hypothesis": "同一生成角色同时承担构建和提交，persona 把父回传写成条件分支，使模型把自身产物视为可直接使用。",
+        "support": "同一任务承载两个阶段；persona 第3项条件句；轨迹保存后继续参数检查。",
+        "missing": "没有单变量复验，不能从这些事实确定心理原因。"
+      },
+      {
+        "hypothesis": "可选、混合用途 supplied_data 没有清晰区分准备输入与提交输入，增加流程歧义。",
+        "support": "参数只有 string，首派已经用于资源说明。",
+        "missing": "本轮不存在续派输入，尚无 JSON 转交损坏样本。"
+      }
+    ],
+    "minimumTests": [
+      "固定模型、资源和材料，先以只完成 Builder 文件并返回的任务范围运行原生成角色，检查零提交；保持 Skill 合同不变。该验证属于父任务划分变量，不能冒称消息接口修复。",
+      "在同一生成 Session 续派原样 Builder 文本及原资源来源，检查当前消息内容、一次提交和原 Run 关联。",
+      "独立缺失与无效 JSON 场景检查零提交；同条件重复失败且没有新增证据时停止试跑，回到职责划分调查。"
+    ],
+    "rejectedShortcuts": [
+      "不能把文件引用交接自动视为当前消息原文；必须真正装入本次消息。",
+      "不能用新增 CLI token、命令字符串匹配或读取 Session 后做语义猜测来证明遵循 Skill。",
+      "不能把新的构建阶段工具过滤声称为强制禁止提交；shell 仍可调用当前能力，须完整检查实际入口。",
+      "不能改变 current-message 业务合同以把本轮成功 Run 追认为通过。"
+    ]
+  },
+  "uncertainty": [
+    "本报告未修改产品、计划或 Skill；修复候选尚待独立方案审查。",
+    "未启动官方应用，服务注入与文件访问适配仍需小范围无模型官方探针验证。",
+    "无证据将整体20分钟超时归因于任一单项；Builder 制作耗时、观察路径重试和最终停止分别影响进度。"
+  ],
+  "memoryUse": {
+    "source": "/Users/fzfz/.codex/memories/MEMORY.md:19-43",
+    "use": "只采用事实、假设与因果验证分离的方法；全部项目事实重新读取本轮代码和轨迹。"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "review_type": "独立计划符合性回扫",
+  "scope": "核对补充方案第 5.2 节两处替换、目标文件其余字节保留及主迁移计划引用。",
+  "plan": "docs/plans/skills-mcp-model-selection-clarification-20261013.md",
+  "result": "pass",
+  "checks": [
+    {
+      "file": ".agents/skills/comfyui-generate/SKILL.md",
+      "before_file": ".local/skills-mcp-model-selection-before/.agents/skills/comfyui-generate/SKILL.md",
+      "plan_section": "5.2.1",
+      "source_line": 28,
+      "replacement_matches_plan": true,
+      "remaining_bytes_unchanged": true,
+      "before_bytes": 8450,
+      "after_bytes": 8732,
+      "diff": "--- .local/skills-mcp-model-selection-before/.agents/skills/comfyui-generate/SKILL.md\n+++ .agents/skills/comfyui-generate/SKILL.md\n@@ -25,7 +25,7 @@\n \n 创建图片或核对兼容性时，Skill 执行者必须确定一个 `template_id`，接受用户指定零个或一个 `model_id`，并可以确定零个至 100 个 LoRA ID。缺少 `template_id` 时，Skill 执行者报告当前请求缺少 Workflow 模板选择，并等待用户指定一个 `template_id`。存在多个候选 `template_id` 或多个候选 `model_id`，且用户没有指定唯一选择时，Skill 执行者列出对应的候选 ID，并等待用户指定最终选择。LoRA ID 超过 100 个时，Skill 执行者报告当前数量，并等待用户将 LoRA ID 减少到 100 个以内。\n \n-Skill 执行者通过 NoobAI MCP 获取已选模板、模型和 LoRA。用户指定模型时采用该模型；用户未指定模型时采用模板关联的默认模型；模板也没有默认模型时，请求用户指定模型后继续。本节完成时必须存在一个已经采用的生成模型查询结果。\n+模板默认模型指 NoobAI MCP 返回的 Workflow 记录的 `item.model`。Skill 执行者通过 NoobAI MCP 获取已选模板、模型和 LoRA。用户指定模型时，Skill 执行者采用该模型；用户未指定模型且模板默认模型非 `null` 时，Skill 执行者采用模板默认模型。用户未指定模型且模板默认模型为 `null` 时，Skill 执行者请求用户提供 `model_id`，并停止创建图片；禁止从 Workflow 节点或模型路线推选生成模型。进入创建图片步骤前，Skill 执行者必须已取得所采用生成模型的查询结果。\n \n 用户选择的资源须核对返回标识与用户提供的标识一致；模板默认模型须核对返回标识与模板关联的默认模型标识一致。存在不一致时，Skill 执行者列出预期标识和返回标识，并等待用户重新指定该资源。\n \n",
+      "plan_source_line": 40
+    },
+    {
+      "file": ".agents/skills/comfyui-generate/references/generation-cli.md",
+      "before_file": ".local/skills-mcp-model-selection-before/.agents/skills/comfyui-generate/references/generation-cli.md",
+      "plan_section": "5.2.2",
+      "source_line": 36,
+      "replacement_matches_plan": true,
+      "remaining_bytes_unchanged": true,
+      "before_bytes": 13742,
+      "after_bytes": 13755,
+      "diff": "--- .local/skills-mcp-model-selection-before/.agents/skills/comfyui-generate/references/generation-cli.md\n+++ .agents/skills/comfyui-generate/references/generation-cli.md\n@@ -33,7 +33,7 @@\n - `title` 必须是包含 1 至 500 个字符且不含控制字符的运行标题。\n - `instance_id` 保存 ComfyUI 实例 ID。\n - `template_id` 保存 Workflow 模板 ID。\n-- `model` 必须是包含所选生成模型 `id` 和 `file_name` 的 JSON 对象；没有选择生成模型时，`model` 必须是 `null`。\n+- `model` 必须是包含生成模型 `id` 和 `file_name` 的 JSON 对象，或者为 `null`；取值按本文件“输入值的来源”一节确定。\n - `parameters` 必须是以 Workflow 参数检查结果中的 `parameter_id` 为属性名的 JSON 对象。\n - `loras` 必须是按用户指定顺序排列的 LoRA 数组，并且最多包含 100 项；没有选择 LoRA 时，`loras` 必须是空数组。每项 LoRA 必须包含 `id`、`file_name`、有限数字 `weight` 和不重复的 `trigger_words` 字符串数组；`trigger_words` 最多包含 100 项，每个字符串必须包含 1 至 500 个字符且不含控制字符。\n \n",
+      "plan_source_line": 44
+    },
+    {
+      "file": "docs/plans/skills-mcp-migration-20261013.md",
+      "supplement_section_reference_present": true,
+      "references": [
+        {
+          "line": 947,
+          "text": "    将该原文完整替换为[模型选择表述修订方案第 5.2 节第 1 项](skills-mcp-model-selection-clarification-20261013.md#52-两处文字替换)规定的目标文字。"
+        },
+        {
+          "line": 1069,
+          "text": "    实施者按[模型选择表述修订方案第 5.2 节第 2 项](skills-mcp-model-selection-clarification-20261013.md#52-两处文字替换)替换 `references/generation-cli.md` 的 `model` 参数项正文。"
+        }
+      ],
+      "reviewed_section": "5.6",
+      "reference_locations": [
+        "5.6 第 2 项",
+        "5.6 第 9 项"
+      ],
+      "references_consistent_with_supplement": true,
+      "target_prose_defined_in_supplement_only": true,
+      "superseded_target_prose_removed": true,
+      "assessment": "第 5.6 节第 2 项的替换目标引用补充方案第 5.2 节第 1 项；第 9 项的 model 参数正文引用补充方案第 5.2 节第 2 项。第 9 项保留的输入来源规则与两处目标文字一致。"
+    }
+  ],
+  "findings": []
+}

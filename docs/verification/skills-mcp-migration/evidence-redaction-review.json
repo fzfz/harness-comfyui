@@ -1,0 +1,168 @@
+{
+  "purpose": "独立核对证据脱敏方案的原因、修改范围与验收条件。",
+  "verdict": "changes-required",
+  "reviewedScope": {
+    "diagnosis": "docs/verification/skills-mcp-migration/evidence-redaction-diagnosis.json",
+    "codeModified": false,
+    "applicationsStarted": 0,
+    "modelCallsStarted": 0,
+    "credentialValuesPrinted": false
+  },
+  "confirmedFacts": [
+    {
+      "statement": "WAI seq57为tool/call，seq58为tool/result；seq58含1个能力凭据值，31个请求文件中共有21行仍包含该值。",
+      "source": ".local/skills-mcp-migration-live/desktop/44d339ea-241a-41d2-8f5a-db534f230c9d/1791962225976-e250e9ae-4e23-4956-a6a7-54e4162c6008-collect.json:records[event.seq=58]"
+    },
+    {
+      "statement": "能力凭据由工具执行生命周期生成并注入；observer启动时的KEY/TOKEN/SECRET/PASSWORD筛选无法取得此值。",
+      "sources": [
+        "src/host/cli/shell-capability.ts:80-84",
+        "src/host/cli/shell-capability.ts:103-108",
+        ".local/skills-mcp-migration-live/llm-observer.mjs:9"
+      ]
+    },
+    {
+      "statement": "desktop-driver直接序列化output；observer使用未识别capability/env赋值的encodeEvidence。两者是需要统一的写盘入口。",
+      "sources": [
+        ".local/skills-mcp-migration-live/desktop-driver.mjs:65",
+        ".local/skills-mcp-migration-live/redact-evidence.mjs:1",
+        ".local/skills-mcp-migration-live/llm-observer.mjs:15"
+      ]
+    },
+    {
+      "statement": "当前WAI请求中的toolHistory为null或含tools、updates的对象；已检查记录的updates均为空。完整工具声明应保留，但这些记录不足以验证非空updates的实际内容。",
+      "source": "term-fallback-workbench-review.json:cases[case=5.5-6].evidence.requestFiles"
+    }
+  ],
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P1",
+      "title": "完整记录内收集仍需扩展为采集生命周期内保留敏感值",
+      "source": "docs/verification/skills-mcp-migration/evidence-redaction-diagnosis.json:34",
+      "evidence": [
+        "llm-observer.mjs:15逐条调用encodeEvidence，request、chunk、error分别序列化。",
+        "llm-observer.mjs:34将每个流式chunk独立写盘；之后的文本可以只有凭据值，没有env变量名。",
+        "合成测试确认当前实现即使在同一输入中先出现token字段，后出现普通文本重复值，后者仍保留。"
+      ],
+      "action": "明确由统一脱敏器维护本次采集的已发现值集合，并由observer跨request/chunk/error复用。补充同记录任意顺序、跨记录重复和流式分片重复的测试；跨chunk拆分的已知值需在保存侧缓冲或完成后逐片替换，同时保留事件顺序及非凭据文本。",
+      "acceptance": "请求首次出现env或JSON凭据后，后续独立文本、错误文本及分片组合均无可恢复的已知值；传给next及yield的原始对象和内容保持不变。"
+    },
+    {
+      "id": "R2",
+      "priority": "P1",
+      "title": "修复范围缺少已配置Profile加载的观察器副本",
+      "source": ".local/skills-mcp-migration-live/read-boundary/prepare-layout.mjs:42-43",
+      "evidence": [
+        "中性布局复制observer及redactor到runtime/observer，Profile引用该目录，而非worktree源文件。",
+        "WAI布局的两个运行副本当前存在且与待修复源文件相同；Profile确实引用运行副本。"
+      ],
+      "action": "在方案中列出使用中的layout、Profile引用路径和观察器副本更新步骤。对仍运行的进程按已授权生命周期停止或重载后再启动采集；验证实际加载实现，不能仅验证工作树源文件。",
+      "acceptance": "从Profile解析出的实际观察器与脱敏器均采用修复实现，新一轮证据明确关联该Profile与进程生命周期。"
+    },
+    {
+      "id": "R3",
+      "priority": "P1",
+      "title": "归档扫描遗漏中性运行目录中的原始采集文件",
+      "source": "docs/verification/skills-mcp-migration/evidence-redaction-diagnosis.json:47",
+      "evidence": [
+        "WAI layout.observerEvidenceDirectory位于checkout外临时目录/runtime/observer/llm-calls，当前仍有31个JSONL文件。",
+        "本次审查读取的observer-calls归档位于worktree/.local/skills-mcp-migration-live/neutral-runtime；两处为不同保存路径。"
+      ],
+      "action": "先建立本轮全部采集文件清单，覆盖layout.observerEvidenceDirectory原始JSONL、observer-calls归档及desktop输出。对仍追加的文件先完成采集生命周期协调，再从全部文件收集敏感值，按同一规则清理每份副本；报告仅记录路径、替换计数和解析/结构比对结果。",
+      "acceptance": "清单中每份原始及归档采集证据均通过残留扫描，events/messages/chunks顺序和非凭据字段保持原值，失败事件仍保留。"
+    },
+    {
+      "id": "R4",
+      "priority": "P1",
+      "title": "顶层工具声明豁免无法保全会话事件内嵌声明",
+      "source": ".local/skills-mcp-migration-live/redact-evidence.mjs:34-39",
+      "evidence": [
+        "encodeEvidence仅取出根对象tools/toolHistory；desktop输出的声明可以位于records或pages内的request/header。",
+        "合成测试分别把含token参数定义的声明嵌入records.event.data及JSON文本，当前实现均把schema定义改成脱敏标记。"
+      ],
+      "action": "统一脱敏器需按已确认的事件结构区分声明与实际返回值，保留声明属性定义。声明保留规则必须覆盖嵌套对象、request/header与序列化JSON字符串；替换已发现凭据值的逻辑仍应作用于所有文本。",
+      "acceptance": "collect.records与pages的完整声明以及序列化声明与原文一致，敏感值实参和重复值被替换；加入这些真实包装结构的回归测试。"
+    }
+  ],
+  "additionalAcceptance": [
+    "使用伪造ctx与next迭代器验证observer实际写盘入口以及模型输入、yield输出的原值与对象身份；无需启动模型即可检验该合同。",
+    "验证desktop的统一输出路径也覆盖watch/remote返回值中的敏感文本；保留collect.records及pages的事件数量和seq。",
+    "补充非空toolHistory.updates的真实结构样本；schema中的token/capability属性定义必须完整保留，已发现实际凭据若出现在声明字符串中仍需替换其值。",
+    "跨文件和跨记录收集应在替换前完成，以覆盖独立保存文件中只有重复值、缺少原始字段的情况。",
+    "历史清理清单仅包含采集证据，排除运行Profile、应用配置与用户业务材料；这些文件仅用于识别采集位置和启用修复后的观察器。"
+  ],
+  "minimumScopeJudgment": "四个脚本文件构成合理的代码修改范围；交付还需要包含运行副本启用、全部证据副本清理与实际写盘路径验收。Host能力注入和传给模型的数据保持当前行为。",
+  "limitations": [
+    "本审查未启动或停止应用，未确认运行中进程的当前状态。",
+    "本审查只执行合成输入与只读证据分析；修复实现和修复后的真实采集尚未验收。"
+  ],
+  "supplementalContract": {
+    "purpose": "供主线程修订诊断方案并开展TDD实施的最小合同。",
+    "actualChunkEvidence": {
+      "case": "5.5-6",
+      "requestFiles": 31,
+      "chunkCounts": {
+        "block-start": 73,
+        "reasoning-delta": 6235,
+        "tool-call-delta": 4095,
+        "block-end": 73,
+        "usage": 31,
+        "finish": 31,
+        "text-delta": 251
+      },
+      "textLanes": [
+        "reasoning-delta.text",
+        "text-delta.text",
+        "tool-call-delta.argumentsDelta"
+      ],
+      "laneIdentity": "每个callId内按chunk.index与delta类型区分；tool-call-delta同时核对id。",
+      "completeCopies": [
+        "block-end.block.text",
+        "block-end.block.arguments",
+        "finish.replayState中的实际文本字段"
+      ],
+      "source": "term-fallback-workbench-review.json:cases[case=5.5-6].evidence.requestFiles"
+    },
+    "collectorBoundary": [
+      "仅将采集副本交给统一脱敏器；observer传给next的options和yield的chunk必须维持原对象与原值。",
+      "敏感值集合属于当前observer采集生命周期，并在记录新request、chunk或error时累积。desktop每次导出从完整output先发现全部值，再替换。",
+      "收集器保留原始at、callId、kind、事件序号、消息顺序和字段结构；另行记录脱敏标记与位置。"
+    ],
+    "minimumStreamingImplementation": [
+      "保留现有async generator；在每次调用内使用一个records数组保存已收到chunk的结构化副本，request可先脱敏写入。此方案不引入通用流处理框架。",
+      "正常完成、iterator抛错、超时和外层消费者return均必须执行finally。finally对已收到的records及终止状态统一脱敏并写出；成功记录complete，异常保留原error，消费者提前return记录明确的采集中止状态。",
+      "在统一脱敏前，按callId、index、delta类型拼接各文本通道；对完整拼接文本发现env/JSON敏感值，并将已有敏感值的匹配区间映射回原chunk字段。匹配首个片段写入脱敏标记，其余重叠片段删除对应字符；保留所有chunk记录及原顺序。",
+      "对block-end完整block和finish中的完整副本使用同一已发现值集合再次替换，避免只处理delta。",
+      "失败或中止时也处理已收到的拼接前缀；env敏感赋值已开始但未换行时，当前已收到的值应被遮蔽。已知敏感值的未完成尾部匹配须遮蔽该匹配前缀，报告记录发生了截断遮蔽。",
+      "finally必须先保存已收到记录，再调用可能阻塞的iterator.return；记录的写盘错误必须显式报告，不能返回成功。",
+      "该最小实现将chunk写盘时机延后到调用结束，适用于本轮离线验收。宿主进程被强制杀死时，内存中的chunk不会落盘；不得把这种情况报告为已保留完整前缀。若验收要求强制杀进程后仍保留每个已收到chunk，需要另行明确持久化合同。"
+    ],
+    "schemaPreservation": [
+      "声明识别依据对象实际结构和事件上下文，不能依赖仅有根级tools/toolHistory的豁免。至少覆盖observer tools、toolHistory.tools、实际非空updates中的声明、desktop records/pages中request/header声明，以及这些结构的JSON字符串表达。",
+      "进入JSON Schema声明后保留properties下名为token、capability、credential等的属性定义及description、required等内容；实际已发现凭据在任意声明字符串中重复时仅替换该值。",
+      "解析嵌套JSON字符串只为定位敏感值，输出应保留未改动文本、空白与转义。清理实际值与保全声明使用同一实现。",
+      "非空toolHistory.updates需取得本地类型定义或实际样本后测试，当前WAI证据中updates为空；不得把空数组测试描述为完整updates验收。"
+    ],
+    "runtimeActivation": [
+      "从本轮layout和Profile引用解析observer目录与两个脚本副本，记录路径。",
+      "仅在对应应用进程已停止且端口已释放后更新运行副本。更新完成后按已授权流程重新启动，再核对Profile实际加载路径和副本内容。",
+      "本次审查不授权修改应用Profile、凭据配置或业务数据；这些文件只用于定位和运行验收。"
+    ],
+    "historicalCleanup": [
+      "由本轮执行索引与layout建立采集证据白名单：desktop目录下本轮collect及相关采集输出、layout.observerEvidenceDirectory原始JSONL、observer-calls归档JSONL。递归搜索只用于识别上述范围内的文件。",
+      "排除Profile、应用配置、输入业务材料、生成参数和用户业务输出；仅处理采集证据副本。",
+      "停止追加写入后，先从白名单全部文件发现敏感值，再按完整记录及跨chunk文本通道清理每个副本；缺少发现上下文但包含重复值的归档也使用同一集合。",
+      "逐文件记录路径、记录数、脱敏位置与替换数量、JSON/JSONL解析结果、残留数量及非凭据差异。报告禁止记录敏感原值。"
+    ],
+    "acceptanceTests": [
+      "先用合成env和嵌套JSON验证同记录任意顺序重复、跨请求/错误重复、序列化嵌套字段及普通文本保持。",
+      "使用伪ctx和伪next流验证三类delta的跨片段值、block-end副本与finish副本；验证complete、抛错、超时、消费者return四条结束路径均保存已收到前缀和真实结束状态。",
+      "每条流式测试同时断言options保持原值、yield得到原chunk对象与内容、保存记录顺序不变。",
+      "使用真实request/header外壳、pages/records重复包装、序列化JSON及非空updates样本验证完整schema保持。",
+      "实际WAI副本清理后验证既知值残留为0、事件数和序号不变、非凭据字段完全一致。",
+      "修复后的实际采集必须关联已停止更新再启动的运行副本；不得仅以源文件单元测试宣布生效。"
+    ]
+  },
+  "supplementalVerdict": "补充合同可作为主线程方案修订依据；代码实施、运行副本启用及最终采集证据仍待独立验收。"
+}

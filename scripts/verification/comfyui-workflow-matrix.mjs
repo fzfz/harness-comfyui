@@ -3,14 +3,14 @@ import { dirname, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
-import { CatalogCli } from '../../src/host/catalog/catalog-cli.ts'
+import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { ChromeComfyFrontend } from '../../src/host/generation/comfy-frontend-browser.ts'
 import { OfficialApiWorkflowCompiler } from '../../src/host/generation/official-api-workflow.ts'
 import {
   RUNTIME_PARAMETER_INPUT_ALIASES,
   STANDARD_RUNTIME_PARAMETER_KINDS,
 } from '../../src/host/generation/runtime-parameters.ts'
-import { GenerationSourceCli } from '../../src/host/generation/source-cli.ts'
+import { GenerationSourceClient } from '../../src/host/generation/source-client.ts'
 import { ComfyWorkflowCompiler } from '../../src/host/generation/workflow-compiler.ts'
 import { loadProfile } from '../../src/config/load-profile.ts'
 
@@ -363,20 +363,12 @@ export async function runMatrix(options) {
   const signal = new AbortController().signal
   const settings = {
     get: () => ({
-      configuration: {
-        url: options.sourceUrl ?? 'http://127.0.0.1',
-        port: options.sourcePort ?? profile.source.catalogPort,
-      },
+      url: options.sourceUrl ?? 'http://127.0.0.1',
+      port: options.sourcePort ?? profile.source.catalogPort,
     }),
   }
-  const source = new GenerationSourceCli({
-    executable: resolve(REPOSITORY_ROOT, 'scripts/source-client/imagegen-comfyui-source-read.mjs'),
-    settings,
-  })
-  const catalog = new CatalogCli({
-    executable: resolve(REPOSITORY_ROOT, 'scripts/source-client/imagegen-semantic-query.mjs'),
-    settings,
-  })
+  const source = new GenerationSourceClient({ settings })
+  const catalog = new CatalogClient({ settings })
   const [instance, templates] = await Promise.all([
     source.readInstance(options.instanceId, signal),
     discoverTemplates(catalog, signal),
@@ -412,7 +404,7 @@ export async function runMatrix(options) {
       const exportCountBefore = frontendExportCount
       const officialCompiler = new OfficialApiWorkflowCompiler({
         cacheDirectory: resolve(cacheDirectory, template.id),
-        instanceCacheEpoch: context.runtime.comfyui.frontendCompiler.instanceCacheEpoch,
+        instanceCacheEpoch: profile.comfyui.frontendCompiler.instanceCacheEpoch,
         frontend: {
           exportWorkflow: async input => {
             frontendExportCount += 1

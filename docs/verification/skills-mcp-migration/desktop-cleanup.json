@@ -1,0 +1,508 @@
+{
+  "checkedAt": "2026-10-13T07:19:01.629666+00:00",
+  "invocationId": "a8b3685d-8e38-4d5f-96a4-106d46ec8a40",
+  "runs": [
+    {
+      "runId": "71103eea-fa3f-4dad-9508-88ba565d43d1",
+      "outcome": "failed",
+      "process": {
+        "pid": 58590,
+        "processGroupId": 58590,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/71103eea-fa3f-4dad-9508-88ba565d43d1/user-data --remote-debugging-port=59323 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/71103eea-fa3f-4dad-9508-88ba565d43d1/workspace",
+        "listeningPorts": [],
+        "observedAt": "2026-10-13T07:14:45.059Z"
+      },
+      "recordState": "failed",
+      "stopResult": {
+        "runId": "71103eea-fa3f-4dad-9508-88ba565d43d1",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 59322,
+            "pids": []
+          },
+          {
+            "port": 59323,
+            "pids": []
+          },
+          {
+            "port": 59324,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:14:52.584Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59322,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59323,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59324,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "b69072bd-2da4-4477-9972-0f7d24a91246",
+      "outcome": "started",
+      "process": {
+        "pid": 87751,
+        "processGroupId": 87751,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-YksJcz/.local/desktop-e2e/1130607c-50ab-463d-9307-5365e007979b/official-environment/user-data --remote-debugging-port=59526 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-YksJcz/.local/desktop-e2e/1130607c-50ab-463d-9307-5365e007979b/official-environment/workspace",
+        "listeningPorts": [
+          59525,
+          59526
+        ],
+        "observedAt": "2026-10-13T07:15:29.046Z"
+      },
+      "recordState": "stopped",
+      "stopResult": {
+        "runId": "b69072bd-2da4-4477-9972-0f7d24a91246",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 59525,
+            "pids": []
+          },
+          {
+            "port": 59526,
+            "pids": []
+          },
+          {
+            "port": 59527,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:15:44.100Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59525,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59526,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59527,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "32297374-aec0-40c0-a896-cb5a2b4bd3a0",
+      "outcome": "started",
+      "process": {
+        "pid": 26075,
+        "processGroupId": 26075,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/32297374-aec0-40c0-a896-cb5a2b4bd3a0/user-data --remote-debugging-port=58434 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/32297374-aec0-40c0-a896-cb5a2b4bd3a0/workspace",
+        "listeningPorts": [
+          58432,
+          58434
+        ],
+        "observedAt": "2026-10-13T07:14:00.471Z"
+      },
+      "recordState": "stopped",
+      "stopResult": {
+        "runId": "32297374-aec0-40c0-a896-cb5a2b4bd3a0",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 58432,
+            "pids": []
+          },
+          {
+            "port": 58434,
+            "pids": []
+          },
+          {
+            "port": 58436,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:14:34.475Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 58432,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 58434,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 58436,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "dea54c08-2fc7-4c4d-bc30-830e7eb7eeaa",
+      "outcome": "started",
+      "process": {
+        "pid": 97147,
+        "processGroupId": 97147,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-YksJcz/.local/desktop-e2e/1130607c-50ab-463d-9307-5365e007979b/official-environment/user-data --remote-debugging-port=59677 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-YksJcz/.local/desktop-e2e/1130607c-50ab-463d-9307-5365e007979b/official-environment/workspace",
+        "listeningPorts": [
+          59676,
+          59677,
+          59696
+        ],
+        "observedAt": "2026-10-13T07:15:46.671Z"
+      },
+      "recordState": "stopped",
+      "stopResult": {
+        "runId": "dea54c08-2fc7-4c4d-bc30-830e7eb7eeaa",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 59676,
+            "pids": []
+          },
+          {
+            "port": 59677,
+            "pids": []
+          },
+          {
+            "port": 59678,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:15:55.732Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59676,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59677,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59678,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "266c5a4c-3b7f-4abb-8a82-3fe28acdc0b1",
+      "outcome": "cancelled",
+      "process": {
+        "pid": 63922,
+        "processGroupId": 63922,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/266c5a4c-3b7f-4abb-8a82-3fe28acdc0b1/user-data --remote-debugging-port=59386 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/266c5a4c-3b7f-4abb-8a82-3fe28acdc0b1/workspace",
+        "listeningPorts": [],
+        "observedAt": "2026-10-13T07:14:52.958Z"
+      },
+      "recordState": "cancelled",
+      "stopResult": {
+        "runId": "266c5a4c-3b7f-4abb-8a82-3fe28acdc0b1",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 59385,
+            "pids": []
+          },
+          {
+            "port": 59386,
+            "pids": []
+          },
+          {
+            "port": 59387,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:15:00.056Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59385,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59386,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59387,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "a61bebfb-6295-4422-9c75-a70e116d3ea1",
+      "outcome": "started",
+      "process": {
+        "pid": 51153,
+        "processGroupId": 51153,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/a61bebfb-6295-4422-9c75-a70e116d3ea1/user-data --remote-debugging-port=59083 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/a61bebfb-6295-4422-9c75-a70e116d3ea1/workspace",
+        "listeningPorts": [
+          59082,
+          59083
+        ],
+        "observedAt": "2026-10-13T07:14:37.921Z"
+      },
+      "recordState": "stopped",
+      "stopResult": {
+        "runId": "a61bebfb-6295-4422-9c75-a70e116d3ea1",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 59082,
+            "pids": []
+          },
+          {
+            "port": 59083,
+            "pids": []
+          },
+          {
+            "port": 59084,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:14:44.879Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59082,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59083,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59084,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "503abddd-a30a-4c52-91cd-b427c44320d4",
+      "outcome": "failed",
+      "process": {
+        "pid": 69075,
+        "processGroupId": 69075,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/503abddd-a30a-4c52-91cd-b427c44320d4/user-data --remote-debugging-port=59413 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/503abddd-a30a-4c52-91cd-b427c44320d4/workspace",
+        "listeningPorts": [],
+        "observedAt": "2026-10-13T07:15:00.389Z"
+      },
+      "recordState": "failed",
+      "stopResult": {
+        "runId": "503abddd-a30a-4c52-91cd-b427c44320d4",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 59412,
+            "pids": []
+          },
+          {
+            "port": 59413,
+            "pids": []
+          },
+          {
+            "port": 59414,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:15:16.184Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59412,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59413,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59414,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "f80627be-06d0-467a-83a9-d8ad68a456ff",
+      "outcome": "started",
+      "process": {
+        "pid": 26076,
+        "processGroupId": 26076,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/f80627be-06d0-467a-83a9-d8ad68a456ff/user-data --remote-debugging-port=58435 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/f80627be-06d0-467a-83a9-d8ad68a456ff/workspace",
+        "listeningPorts": [
+          58433,
+          58435
+        ],
+        "observedAt": "2026-10-13T07:14:00.441Z"
+      },
+      "recordState": "stopped",
+      "stopResult": {
+        "runId": "f80627be-06d0-467a-83a9-d8ad68a456ff",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 58433,
+            "pids": []
+          },
+          {
+            "port": 58435,
+            "pids": []
+          },
+          {
+            "port": 58437,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:14:28.344Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 58433,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 58435,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 58437,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "fb56f896-96fc-4b34-86a8-85b61dbed471",
+      "outcome": "failed",
+      "process": null,
+      "recordState": "failed",
+      "stopResult": null,
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59473,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59474,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59475,
+          "listening": false
+        }
+      ]
+    },
+    {
+      "runId": "d1953119-bed4-4189-9641-bc3a8e136d15",
+      "outcome": "started",
+      "process": {
+        "pid": 80992,
+        "processGroupId": 80992,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/d1953119-bed4-4189-9641-bc3a8e136d15/user-data --remote-debugging-port=59480 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/desktop-e2e/lifecycle-environments/90b805ff-3cef-4362-abbb-09a0638d184a/d1953119-bed4-4189-9641-bc3a8e136d15/workspace",
+        "listeningPorts": [
+          59479,
+          59480
+        ],
+        "observedAt": "2026-10-13T07:15:19.142Z"
+      },
+      "recordState": "stopped",
+      "stopResult": {
+        "runId": "d1953119-bed4-4189-9641-bc3a8e136d15",
+        "state": "stopped",
+        "error": null,
+        "portsReleased": true,
+        "portOwners": [
+          {
+            "port": 59479,
+            "pids": []
+          },
+          {
+            "port": 59480,
+            "pids": []
+          },
+          {
+            "port": 59481,
+            "pids": []
+          }
+        ],
+        "recordedAt": "2026-10-13T07:15:25.869Z"
+      },
+      "livePortChecks": [
+        {
+          "role": "host",
+          "port": 59479,
+          "listening": false
+        },
+        {
+          "role": "rendererCdp",
+          "port": 59480,
+          "listening": false
+        },
+        {
+          "role": "hostInspector",
+          "port": 59481,
+          "listening": false
+        }
+      ]
+    }
+  ]
+}

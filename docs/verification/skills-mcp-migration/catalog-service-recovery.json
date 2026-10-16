@@ -1,0 +1,41 @@
+{
+  "service_root": "/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ-PROD-ENV",
+  "config": "runtime/credentials/mcp.json",
+  "previous_pid": 33560,
+  "restored_pid": 26752,
+  "endpoint": "http://127.0.0.1:18943/mcp",
+  "checks": [
+    {
+      "name": "current-models",
+      "isError": false,
+      "elapsedMs": 29
+    },
+    {
+      "name": "current-workflows",
+      "isError": false,
+      "elapsedMs": 23
+    },
+    {
+      "name": "current-instances",
+      "isError": false,
+      "elapsedMs": 6
+    },
+    {
+      "name": "current-instance-status",
+      "isError": false,
+      "elapsedMs": 30
+    }
+  ],
+  "instance_reachable": true,
+  "httpSourceRecovery": {
+    "previousPid": 33558,
+    "previousProcessExists": false,
+    "pid": 78722,
+    "command": "node scripts/prod-start.mjs",
+    "cwd": "/Volumes/4Tdisk/work/AI2/NoobAI-XL-FZ-PROD-ENV",
+    "publicPort": 18092,
+    "internalPort": 18093,
+    "hostVerification": ".local/skills-mcp-migration-live/desktop/dbe25b8b-552c-4d72-a698-d9e0119be27f/1791886751257-remote.json",
+    "retainedRunning": true
+  }
+}

@@ -1,3 +1,7 @@
+---
+文档用途: 说明测试入口、覆盖范围与通过条件。
+读取时机: 选择测试、执行验收或准备交付时。
+---
 # 测试规范
 
 ## 测试入口
@@ -14,31 +18,41 @@
 | `pnpm quality` | 依赖、类型、覆盖率、合同、安全、production 回归、原型与官方 Desktop E2E 完整门禁。 |
 | `pnpm verify:comfyui-workflows -- --source-url <数据源服务URL> --source-port <端口> --instance-id <数据源服务实例ID> --output <结果JSON路径>` | 已部署数据源服务中的 Workflow 模板、精确参数支持基线、目标实例实时 `/object_info`、组合参数编译、官方页面导出与缓存 miss→hit 一致性；省略 URL 或端口时使用程序配置的本机默认值。 |
 
-`package.json` 是命令名称与 quality 顺序的唯一来源。`test:desktop` 先运行插件构建和打包，再串行运行配置的 live Desktop、生命周期和相关 production fixtures；构建包写入 `.local/desktop-e2e/desktop-test-runner/artifacts/`。完整测试使用 `config/desktop-e2e.json` 校验官方应用身份、按 `fresh` 模式隔离每轮 Harness home 与 user-data，并经官方插件管理界面安装候选包。
+1. `package.json` 是命令名称与 quality 顺序的唯一来源。`test:desktop` 先运行插件构建和打包，再串行运行配置的 live Desktop、生命周期和相关 production fixtures；构建包写入 `.local/desktop-e2e/desktop-test-runner/artifacts/`。完整测试使用 `config/desktop-e2e.json` 校验官方应用身份、按 `fresh` 模式隔离每轮 Harness home 与 user-data，并经官方插件管理界面安装候选包。
 
 ## 官方 Desktop E2E 通过条件
 
-`tests/desktop/fixtures/` 定义每轮应用目录、进程、端口、Profile patch、插件安装与证据结构。`config/desktop-e2e.json` 定义应用路径与版本、fresh/development 模式、目录名称、回环端口角色、启动期限、Renderer 目标、运行记录和证据文件名。
+1. `tests/desktop/fixtures/` 定义每轮应用目录、进程、端口、Profile patch、插件安装与证据结构。`config/desktop-e2e.json` 定义应用路径与版本、fresh/development 模式、目录名称、回环端口角色、启动期限、Renderer 目标、运行记录和证据文件名。
 
-E2E 通过条件包括：
+2. E2E 通过条件包括：
 
-- 当前官方应用版本和 bundle identity 与配置一致；
-- 当前 probe PID 与进程组归属本轮运行记录，Host 与 Renderer CDP 端口由该进程组持有；
-- Renderer 页面属于官方应用，URL 使用 `dsh-app://`，文档加载完成并包含可见内容；
-- 官方插件管理器安装并启用本轮打包的 `harness-comfyui` 版本，Profile 中的插件记录和实际安装路径对应当前候选包；
-- Live 测试通过真实 UI 安装、启用、配置和会话操作，核对 managed CLI 返回值、Controlled Generation 结果以及应用重启后的持久化数据；
-- 测试结束后本轮应用进程和端口全部释放，运行记录保留清理结果；失败、取消、超时及端口冲突提供相应证据。
+   1. 当前官方应用版本和 bundle identity 与配置一致；
+   2. 当前 probe PID 与进程组归属本轮运行记录，Host 与 Renderer CDP 端口由该进程组持有；
+   3. Renderer 页面属于官方应用，URL 使用 `dsh-app://`，文档加载完成并包含可见内容；
+   4. 官方插件管理器安装并启用本轮打包的 `harness-comfyui` 版本，Profile 中的插件记录和实际安装路径与当前候选包一致；
+   5. Live 测试通过真实 UI 安装、启用、配置和会话操作，核对 managed CLI 返回值、Controlled Generation 结果以及应用重启后的持久化数据；
+   6. 测试结束后本轮应用进程和端口全部释放，运行记录保留清理结果；失败、取消、超时及端口冲突提供相应证据。
 
-业务 E2E 使用测试夹具启动受控服务并核对请求、响应和业务持久化结果。真实模型和正式 ComfyUI Run 验收按当前 release/acceptance 任务规定独立执行；`test:desktop` 的成功不表示真实模型已完成验收。
+3. 业务 E2E 使用测试夹具启动受控服务并核对请求、响应和业务持久化结果。真实模型和正式 ComfyUI Run 验收按当前 release/acceptance 任务规定独立执行；`test:desktop` 的成功不表示真实模型已完成验收。
+
+## Agent 调用轨迹验收
+
+1. 开发调用方法见 [worktree 开发文档的“Agent 调用轨迹”](../agents/worktree-development.md#agent-调用轨迹)。开发者在任务结束后导出官方已有会话记录，并按索引核对覆盖范围与缺失项。
+2. `tests/production/collect-session-trace.test.mjs` 验证结束状态、父子关系、官方导出包读取及缺失记录。[official-trace-evidence.test.mjs](../../tests/production/official-trace-evidence.test.mjs) 验证离线脱敏及文件写入；[official-desktop-probe.test.mjs](../../tests/production/official-desktop-probe.test.mjs) 验证启动流程保持原有 Profile 配置；[plugin-package.test.mjs](../../tests/production/plugin-package.test.mjs) 验证发行文件排除测试设施。
+3. `tests/desktop/official-desktop-live.test.mjs` 复用受控父子任务，验证正常结束及取消后的会话导出、工具调用与返回和已持久化的中断消息；该测试由 `pnpm test:desktop` 执行。
+4. 调查者分别记录应用清理结果与会话结束状态。官方记录未保存的信息必须标为缺失，受影响的验收结论保持证据不足。
+
+## 目录边界测试
+
+1. [official-catalog-boundary.test.mjs](../../tests/production/official-catalog-boundary.test.mjs) 验证 MCP 与内部 HTTP 对同一目录场景的响应一致性，覆盖无默认模型、空实例、请求校验、鉴权、取消、证据和端口释放。
+2. 夹具调用方法见 [worktree 开发文档的“目录边界夹具”](../agents/worktree-development.md#目录边界夹具)。真实模型的停止行为由对应任务的调用轨迹单独验收。
 
 ## 其他业务验证
 
-新功能和缺陷修复的测试覆盖成功、拒绝、清理、错误和边界分支。语义文档由独立 Reviewer 阅读并按内容写作规则验收；脚本只处理具有确定性规则的数据结构。
+1. 目录 MCP 迁移的真实模型验收按 [迁移计划第 5.9 节](../plans/skills-mcp-migration-20261013.md#59-步骤八使用获准模型逐项执行与验收) 执行。
 
-数据源设置与图片读取配置由 Host settings 和 Remote 回归覆盖。Repository Skills 可见性测试在 checkout 外的 Workspace 验证两个项目 Preset 的包内 Skill 资源与其他 Preset、Workspace Skills 的隔离。managed CLI 测试通过官方 Desktop 的前台 Bash Tool Call 验证 capability 生成、请求身份和成功响应。
+2. 新功能和缺陷修复的测试覆盖成功、拒绝、清理、错误和边界分支。语义文档由独立 Reviewer 阅读并按内容写作规则验收；脚本只处理具有确定性规则的数据结构。
 
-Workflow verification 使用已经部署的数据源服务和目标 ComfyUI 实例。验收记录包含服务地址、端口、实例 ID、结果 JSON 路径、参数支持结果、官方前端导出和缓存 miss/hit 比较结果。
+3. 数据源设置与图片读取配置由 Host settings 和 Remote 回归覆盖。Repository Skills 可见性测试在 checkout 外的 Workspace 验证两个项目 Preset 的包内 Skill 资源与其他 Preset、Workspace Skills 的隔离。managed CLI 的进程测试验证 6 条业务命令的结果文件与错误阶段；独立包测试验证安装入口的路径发布与文件内容。官方 Desktop 的前台 Bash Tool Call 验证 capability 生成、请求身份、返回路径与后续文件读取。
 
-## 历史验证记录
-
-以下数据描述插件化迁移前的 v0.44.3 候选，不构成本版的应用基线或测试步骤。该候选的 `pnpm quality` 有 1207 项 unit/integration/Skills、58 项 contract/security、346 项 production、32 项 prototype 和 4 项真实 Desktop 测试通过；覆盖率为 statements 94.07%、branches 87.52%、functions 100%、lines 96.5%，完整依赖与生产依赖审计均报告 critical、high、moderate、low 为 0。相关旧 Desktop 实例验收、开发运行目录和第三方基线属于历史记录。
+4. Workflow verification 使用已经部署的数据源服务和目标 ComfyUI 实例。验收记录包含服务地址、端口、实例 ID、结果 JSON 路径、参数支持结果、官方前端导出和缓存 miss/hit 比较结果。

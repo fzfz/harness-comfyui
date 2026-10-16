@@ -1,0 +1,11 @@
+{
+  "purpose": "记录指定错误文案与诊断实施记录的逐行文字语义审计结果。",
+  "readWhen": "核对指定目标是否满足文字标准时。",
+  "scope": [
+    "config/error-catalog.json#SOURCE_QUERY_FAILED",
+    "docs/verification/skills-mcp-migration/source-diagnostic-implementation.json"
+  ],
+  "method": "审计员仅依据指定目标文本和给定文字标准判断语义、指代及重复信息。",
+  "findings": [],
+  "result": "当前目标文本未发现需要修改的文字语义问题。错误条目说明了失败原因、核对对象和重试动作；实施记录以符号引用定位生产逻辑和文案，并分别记录测试证据、验收结果及待执行事项。"
+}

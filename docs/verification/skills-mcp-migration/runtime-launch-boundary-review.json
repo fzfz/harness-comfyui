@@ -1,0 +1,88 @@
+{
+  "purpose": "独立核对中性运行目录启动包装器的拒绝条件与凭据来源兼容性。",
+  "createdAt": "2026-10-14T08:39:47.898325+00:00",
+  "status": "合同审查通过；实现与测试结果待复核。",
+  "productChanges": 0,
+  "applicationStarts": 0,
+  "modelCalls": 0,
+  "verdict": {
+    "accepted": "控制目录与运行目录重叠时拒绝，以及过滤后核对三项隔离路径，能够在实际spawn边界阻断本次默认home回退链。",
+    "basis": "官方probe先把environmentOverrides与record.launch.environment写入childEnvironment，再交给createRuntimeSpawn；该包装器是最后修改启动env的消费者，必须对修改后的隔离条件负责。",
+    "conditions": [
+      "必需环境键名从config.invocation.environmentNames的dshHome、electronUserData和diagnosticFile取得，并传入包装器；配置继续是唯一来源。",
+      "拒绝分支先写入脱敏审计，再抛出错误；spawnProcess调用数必须为0。",
+      "只要求路径值有效及解析后位于R内；诊断文件允许尚未创建。"
+    ]
+  },
+  "evidence": [
+    {
+      "path": ".local/skills-mcp-migration-live/neutral-runtime.mjs:100",
+      "finding": "createRuntimeSpawn删除任意值命中controlRoots的环境变量，原实现直接将结果交给spawnProcess。"
+    },
+    {
+      "path": ".local/skills-mcp-migration-live/neutral-runtime.mjs:138",
+      "finding": "startRuntime把environmentFilePath的父目录加入controlRoots。"
+    },
+    {
+      "path": "tests/desktop/fixtures/official-desktop-probe.mjs:380",
+      "finding": "probe读取声明凭据，合并record.launch.environment后调用可注入的spawnProcess；同步拒绝由startProbe catch处理准备记录、日志和端口释放。"
+    },
+    {
+      "path": "config/desktop-e2e.json:106",
+      "finding": "invocation.environmentNames定义三个路径变量名；modes.development.environmentFilePath指向main checkout的.env。"
+    },
+    {
+      "path": "docs/agents/worktree-development.md:27",
+      "finding": "main .env只提供配置声明的凭据值，其文件位置保留在控制侧。"
+    },
+    {
+      "path": "docs/verification/skills-mcp-migration/runtime-launch-boundary-diagnosis.json",
+      "finding": "该诊断关联原始launch审计、默认home评估和两项红测试；本审查独立核对源码机制，未再次启动官方应用。"
+    }
+  ],
+  "requiredContract": {
+    "overlap": "在包装器实际调用时，用路径组件包含关系比较R与每个控制根；原路径及canonicalPath任一存在相等、父或子关系即拒绝。检查必须覆盖符号链接别名；字符串前缀相似的兄弟目录可通过。",
+    "environment": "完成过滤后，三个配置指定的路径值分别为非空字符串、绝对路径；canonicalPath指向R内，且不指向控制根。缺失、空、相对、外部或符号链接越界均拒绝。",
+    "filesystem": "DSH_HOME和user-data目录由官方probe准备；diagnosticFile可能尚不存在，沿现有父目录解析符号链接即可。使用现有canonicalPath能力，不增加全路径存在性要求。",
+    "audit": "失败审计至少记录阶段、错误码、变量名、运行根、冲突控制根和对应处理动作；凭据值继续脱敏。写审计失败时仍拒绝spawn。",
+    "lifecycle": "在返回的spawn包装器内执行拒绝，使官方probe的catch能够登记本轮失败并释放准备阶段资源；若提前在createRuntimeSpawn构造时拒绝，则必须另行记录且确认尚未创建官方probe资源。",
+    "normalLaunch": "通过全部检查后，保留官方probe传入的其他spawn参数、业务endpoint和已声明凭据；使用过滤后的env和已验证cwd调用spawnProcess一次。"
+  },
+  "compatibility": {
+    "mainEnv": "合法main.env位于R外，与随机临时R没有父子重叠；过滤的是应用env中指向控制材料的路径值，probe读取main.env后传入的令牌字符串保持可用。无需复制main.env至R。",
+    "controlledSeed": "受控seed应写在独立控制目录，environmentFilePath仍可由测试fixture指定；放入R属于运行材料与控制输入混放，此合同会明确拒绝。",
+    "symlinks": "R内链接到R内可保留；R内链接到R外应拒绝；/var与/private/var这类别名通过canonicalPath归一。",
+    "limit": "R内路径值若指向错误的本轮子目录，仅靠containment无法识别；本次风险是删除后回退R外，当前修复足以阻断该链。probe的record.launch.environment继续负责具体目录值。"
+  },
+  "tests": [
+    {
+      "case": "原错误配置，environmentFilePath位于R/runtime",
+      "expected": "冲突错误与审计存在；spawnProcess为0次。"
+    },
+    {
+      "case": "控制根等于R、是R祖先或后代，包括符号链接别名",
+      "expected": "每类均拒绝；相似前缀兄弟目录正常。"
+    },
+    {
+      "case": "逐项缺失、空值、相对路径、R外路径、R内链接到外部",
+      "expected": "指出具体变量名；spawnProcess为0次。"
+    },
+    {
+      "case": "过滤动作移除原先有效的隔离变量",
+      "expected": "在过滤后拒绝，审计保留removed动作。"
+    },
+    {
+      "case": "合法main.env路径及声明凭据、R内home/user-data、尚未创建的diagnostic文件",
+      "expected": "mock spawn恰好1次，三项路径与凭据值保留，审计凭据脱敏。"
+    },
+    {
+      "case": "官方probe集成，包装器拒绝",
+      "expected": "失败记录引用本轮runId，无进程PID，端口与development环境预留释放。"
+    }
+  ],
+  "acceptanceBoundary": "上述测试使用mock spawn和受控文件结构，不启动应用、不读取真实凭据。通过后，既有授权中的正常官方启动烟测验证真实启动与清理；原错误条件仅运行拒绝路径。",
+  "uncertainty": [
+    "本轮尚未复核修复后的源码和绿测试。",
+    "本轮未独立读取默认home写入取证，相关影响范围仍由执行队员的原始证据确定。"
+  ]
+}

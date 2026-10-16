@@ -1,0 +1,112 @@
+{
+  "purpose": "记录主计划第 5.13 节第 3 项所需的场景独立官方 Profile 驱动、调用方法和本地验证结果。",
+  "status": "本地驱动与配置传递回归已完成；真实应用中的有效来源和模型调用由主线程继续验收。",
+  "workspace": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui",
+  "files": [
+    ".local/skills-mcp-migration-live/isolated-profile.mjs",
+    ".local/skills-mcp-migration-live/isolated-profile.test.mjs",
+    ".local/skills-mcp-migration-live/isolated-profile-cli.test.mjs",
+    ".local/skills-mcp-migration-live/model-switch.json",
+    ".local/skills-mcp-migration-live/isolated-profile-source-address-readback.json",
+    ".local/skills-mcp-migration-live/install.mjs",
+    ".local/skills-mcp-migration-live/desktop-driver.mjs"
+  ],
+  "configuration": {
+    "base": "config/desktop-e2e.json",
+    "override": "prepare 仅将 development.environmentRootRelativePath 改为本轮场景的唯一目录；官方 schema 校验生成的配置。",
+    "credentials": "start 沿用官方 probe 从原 main checkout .env 读取声明的凭据，再传入本轮应用进程。",
+    "profileSeed": "prepare 抽取已批准 Profile patch 中的 agent-default-model、llm-pi-ai、webserver、ui-settings-account 和观察器；观察器允许模型列表、timeoutMs、maxCalls 保持原值。",
+    "imageReader": "prepare 保存已批准图片读取配置的快照；configure 在候选包安装后将该配置写入本轮 Profile。",
+    "workspace": "prepare 在 checkout 外创建空中性目录，将绝对路径写入 state.workspacePath；configure 将 Core startupWorkspacePath 设为该路径。官方 probe 的启动工作目录仍由原目录规则管理。",
+    "history": "prepare 读取源 Profile patch，逐项生成本轮 patch；本轮初始 Profile 目录仅有 cordis.patch.yml。",
+    "fixture": "configure 从同轮夹具 state.json 读取 mcpUrl、sourceAddress 和 runId，核对场景名称、running 状态及两个协议的 listener 身份。两预设覆盖由现有 createOfficialPresetProfilePatch 生成。",
+    "core": "configure 合并 Core config 和 config.configuration，经 Core 官方 schema 校验后由官方 Profile adapter 保存。",
+    "models": "configure 使用本轮 state.modelSelection 设置主模型、四角色及可选文本预算、单次调用期限；显式 --models 指定批准的模型选择文件时，同步该文件到本轮快照。Go 文本预算只写入实际匹配的 models 条目，视觉配置保持原值。",
+    "normalSource": "configure 省略 --fixture-state 时使用安装预设的 MCP 声明并保留 Core 数据源配置；同一 state 从夹具恢复时，驱动删除 MCP 覆盖，并恢复首次配置前的 Core configuration 值或缺省状态。",
+    "lifecycle": "start、status、stop、安装身份校验与 Renderer CDP 连接均使用本轮 state.configPath。configure 在本轮应用停止后保存 Profile。",
+    "optionalLimits": {
+      "source": ".local/skills-mcp-migration-live/model-switch.json",
+      "textMaxOutputTokens": 32768,
+      "modelCallTimeoutMs": 360000,
+      "taskTimeoutMs": 600000,
+      "snapshotSynchronization": "configure 显式 --models 时保存 state.modelSelection；省略时保留本轮快照。",
+      "classification": "联合限额修复复验",
+      "diagnosis": "docs/verification/skills-mcp-migration/deepseek-output-limit-diagnosis.json"
+    }
+  },
+  "commands": {
+    "prepare": "node .local/skills-mcp-migration-live/isolated-profile.mjs prepare --scenario <场景名称>",
+    "prepareInputs": "prepare 可选 --source-profile <已批准cordis.patch.yml路径> 和 --models <已批准model-switch.json路径>。",
+    "start": "node .local/skills-mcp-migration-live/isolated-profile.mjs start --state <prepare返回的state.json路径>",
+    "install": "node .local/skills-mcp-migration-live/install.mjs <state.runId> <候选tarball路径> <state.configPath>",
+    "stop": "node .local/skills-mcp-migration-live/isolated-profile.mjs stop --state <state.json路径>",
+    "configureNormal": "node .local/skills-mcp-migration-live/isolated-profile.mjs configure --state <state.json路径> --models .local/skills-mcp-migration-live/model-switch.json",
+    "configureFixture": "node .local/skills-mcp-migration-live/isolated-profile.mjs configure --state <state.json路径> --models .local/skills-mcp-migration-live/model-switch.json --fixture-state <同轮夹具state.json路径>",
+    "status": "node .local/skills-mcp-migration-live/isolated-profile.mjs status --state <state.json路径>",
+    "capture": "node .local/skills-mcp-migration-live/desktop-driver.mjs capture <state.runId> .local/skills-mcp-migration-live/isolated-profile-source-address-readback.json <state.configPath>",
+    "readEffectiveSource": "node .local/skills-mcp-migration-live/desktop-driver.mjs remote <state.runId> .local/skills-mcp-migration-live/isolated-profile-source-address-readback.json <state.configPath>",
+    "sequence": [
+      "prepare 返回 state.json 路径。",
+      "start 将 runId 和官方 run.json 路径写入 state.json。",
+      "install 使用该 runId、已批准候选包和同一 configPath 安装插件。",
+      "stop 确认本轮进程和端口均已释放。",
+      "configure 按正常来源或同轮边界夹具保存 Profile。",
+      "start 重新加载本轮 Profile；任务输入使用 state.workspacePath。",
+      "capture 初始化已有本地会话驱动的 Client Context；readEffectiveSource 读取当前 Host 的有效地址。",
+      "验收结束后 stop 保存清理结果。"
+    ]
+  },
+  "effectiveSourceReadback": {
+    "namespace": "harnessComfyuiCatalog",
+    "method": "sourceAddress",
+    "resultField": "value",
+    "implementation": "src/host/catalog/catalog-service.ts 的 CatalogRemoteService.sourceAddress() 返回 Core 的当前 sourceAddress；Core 将同一 sourceSettings 传给 CatalogClient 和 GenerationSourceClient。",
+    "comparison": "边界验收将返回的 value 与同轮夹具 state.sourceAddress 逐字段比较；正常验收将返回值与本轮安装配置及官方 Configuration Profile 的有效地址核对。",
+    "currentVerification": "本次准备确认了源码入口；本次准备未连接应用执行该 Remote。"
+  },
+  "preparedNormalBuilder": {
+    "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/state.json",
+    "configPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/isolated-profiles/normal-builder-6761885f-c5dc-4a50-a75f-f77af6eef86f/desktop-e2e.json",
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/workspace-dGNB8l",
+    "profileId": "6761885f-c5dc-4a50-a75f-f77af6eef86f",
+    "maxCalls": 3000,
+    "startedByThisPreparation": false,
+    "initialModelCallTimeoutMs": 180000
+  },
+  "validation": [
+    {
+      "command": "node --test .local/skills-mcp-migration-live/isolated-profile.test.mjs",
+      "passed": 6,
+      "coverage": [
+        "同名场景的唯一官方环境、空外部 Workspace、原配置结构和凭据声明。",
+        "初始 Profile 仅写入批准的配置项，源历史和兄弟产物保留在源目录。",
+        "两预设和四角色配置、同轮 MCP/HTTP 地址、Core 字段保留及正常来源恢复。",
+        "官方运行记录的场景身份、错误配置拒绝、已退出进程记录的停止和端口清理。",
+        "应用校验失败时，start 在启动进程前保存失败身份并完成官方清理。",
+        "批准的模型选择文件同步、Go输出预算与观察器期限覆盖、非法可选字段拒绝。"
+      ]
+    },
+    {
+      "command": "node --experimental-vm-modules --test .local/skills-mcp-migration-live/isolated-profile-cli.test.mjs",
+      "passed": 2,
+      "coverage": [
+        "安装 CLI 将相同场景配置传给 getProbeStatus 与 Renderer CDP；省略配置时沿用默认行为。",
+        "会话驱动将第四位置配置参数传给 Renderer CDP；原输入参数和默认行为保持有效。"
+      ],
+      "method": "测试在 CDP 连接入口终止，使用 Node 内置 VM 模块替代应用边界。"
+    },
+    {
+      "commands": [
+        "node --check .local/skills-mcp-migration-live/install.mjs",
+        "node --check .local/skills-mcp-migration-live/isolated-profile.mjs",
+        "node --check .local/skills-mcp-migration-live/desktop-driver.mjs"
+      ],
+      "status": "通过"
+    }
+  ],
+  "remainingAcceptance": [
+    "主线程完成独立代码和文字审查。",
+    "主线程在应用重启后读取有效 sourceAddress，执行正式客户端负向探针与获准模型验收，并保存来源、会话和产物证据。",
+    "本轮 Workspace 是空目录的状态基线；文件读取与网络访问能力由宿主管理。"
+  ]
+}

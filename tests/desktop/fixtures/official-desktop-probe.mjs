@@ -30,8 +30,8 @@ const PORT_RESERVATIONS = new Map()
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 const execFileAsync = promisify(execFile)
 
-export async function loadDesktopE2EConfig() {
-  const value = JSON.parse(await readFile(CONFIG_URL, 'utf8'))
+export async function loadDesktopE2EConfig(configPath = CONFIG_URL) {
+  const value = JSON.parse(await readFile(configPath, 'utf8'))
   return parseDesktopE2EConfig(value)
 }
 
@@ -272,7 +272,7 @@ export function processGroupMatchesRun(group, record) {
   return record.launch.arguments.every(argument => root.command.includes(argument))
 }
 
-async function writeProfilePortPatch(path, patchRows, { persistent, initialProfilePatches, profilePatchAdapter, signal }) {
+async function writeProfilePortPatch(path, patchRows, { persistent, initialProfilePatches, profilePatchAdapter: adapter, signal }) {
   const initialRows = persistent ? [...initialProfilePatches, ...patchRows] : patchRows
   const initialContent = `${JSON.stringify(initialRows, null, 2)}\n`
   if (!persistent) {
@@ -296,13 +296,13 @@ async function writeProfilePortPatch(path, patchRows, { persistent, initialProfi
     }
   }
 
-  if (profilePatchAdapter === undefined || profilePatchAdapter === null) {
+  if (adapter === undefined || adapter === null) {
     const unavailable = new Error(`DEVELOPMENT_PROFILE_PARSER_REQUIRED: profile patch exists at ${path}; provide an explicit YAML adapter that preserves other settings, then retry`)
     unavailable.code = 'DEVELOPMENT_PROFILE_PARSER_REQUIRED'
     throw unavailable
   }
   for (const method of ['parse', 'updateProfilePatch', 'serialize']) {
-    if (typeof profilePatchAdapter[method] !== 'function') {
+    if (typeof adapter[method] !== 'function') {
       const invalid = new Error(`DEVELOPMENT_PROFILE_PARSER_INVALID: profile patch at ${path} requires adapter method ${method}(); provide a complete YAML adapter, then retry`)
       invalid.code = 'DEVELOPMENT_PROFILE_PARSER_INVALID'
       throw invalid
@@ -311,12 +311,12 @@ async function writeProfilePortPatch(path, patchRows, { persistent, initialProfi
 
   let serialized
   try {
-    const document = await profilePatchAdapter.parse(source)
-    const updated = await profilePatchAdapter.updateProfilePatch(document, {
+    const document = await adapter.parse(source)
+    const updated = await adapter.updateProfilePatch(document, {
       entryId: patchRows[0].id,
       config: patchRows[0].config,
     })
-    serialized = await profilePatchAdapter.serialize(updated)
+    serialized = await adapter.serialize(updated)
     if (typeof serialized !== 'string') throw new TypeError('serialize() must return YAML text')
   } catch (error) {
     const invalid = new Error(`DEVELOPMENT_PROFILE_PATCH_INVALID: the YAML adapter failed for ${path}; correct the adapter and retry without logging profile contents`)
@@ -1425,7 +1425,7 @@ function closeServer(server) {
 
 export { parseDesktopE2EConfig }
 
-export function createStartCommandResult({ started, repositoryRoot } = {}) {
+export function createStartCommandResult({ started, repositoryRoot, configPath } = {}) {
   const record = started?.record
   if (record === null || typeof record !== 'object' || Array.isArray(record)
     || !UUID_PATTERN.test(record.runId ?? '') || typeof repositoryRoot !== 'string' || !isAbsolute(repositoryRoot)) {
@@ -1449,6 +1449,7 @@ export function createStartCommandResult({ started, repositoryRoot } = {}) {
       arguments: [
         fileURLToPath(import.meta.url),
         'stop', '--run-id', record.runId, '--repository-root', repositoryRoot,
+        ...(configPath === undefined ? [] : ['--config', resolve(configPath)]),
       ],
     },
   }
@@ -1462,11 +1463,13 @@ async function main(argv) {
       'repository-root': { type: 'string' },
       'run-id': { type: 'string' },
       mode: { type: 'string' },
+      config: { type: 'string' },
     },
     strict: true,
   })
   const command = positionals[0]
   const repositoryRoot = values['repository-root'] ?? process.cwd()
+  const config = await loadDesktopE2EConfig(values.config)
   if (command === 'start' && positionals.length === 1 && values['run-id'] === undefined) {
     const controller = new AbortController()
     const abort = signal => controller.abort(new Error(`received ${signal}`))
@@ -1475,11 +1478,10 @@ async function main(argv) {
     process.once('SIGINT', onInterrupt)
     process.once('SIGTERM', onTerminate)
     try {
-      const config = await loadDesktopE2EConfig()
       const mode = values.mode ?? config.modes.defaultMode
       const profilePatchAdapter = mode === 'development' ? await loadOfficialProfilePatchAdapter(config) : undefined
       const started = await startProbe({ repositoryRoot, mode, config, profilePatchAdapter, signal: controller.signal })
-      process.stdout.write(`${JSON.stringify(createStartCommandResult({ started, repositoryRoot }), null, 2)}\n`)
+      process.stdout.write(`${JSON.stringify(createStartCommandResult({ started, repositoryRoot, configPath: values.config }), null, 2)}\n`)
       return
     } finally {
       process.removeListener('SIGINT', onInterrupt)
@@ -1487,17 +1489,17 @@ async function main(argv) {
     }
   }
   if (command === 'status' && positionals.length === 1 && values['run-id'] !== undefined) {
-    const status = await getProbeStatus({ repositoryRoot, runId: values['run-id'] })
+    const status = await getProbeStatus({ repositoryRoot, runId: values['run-id'], config })
     process.stdout.write(`${JSON.stringify(status, null, 2)}\n`)
     if (!status.processGroupMatchesRun && status.record.state === 'running') process.exitCode = 1
     return
   }
   if (command === 'stop' && positionals.length === 1 && values['run-id'] !== undefined) {
-    const stopped = await stopProbe({ repositoryRoot, runId: values['run-id'] })
+    const stopped = await stopProbe({ repositoryRoot, runId: values['run-id'], config })
     process.stdout.write(`${JSON.stringify({ ok: true, ...stopped }, null, 2)}\n`)
     return
   }
-  throw new TypeError('usage: node tests/desktop/fixtures/official-desktop-probe.mjs start [--mode fresh|development] | status --run-id <uuid> | stop --run-id <uuid> [--repository-root <path>]')
+  throw new TypeError('usage: node tests/desktop/fixtures/official-desktop-probe.mjs start [--mode fresh|development] | status --run-id <uuid> | stop --run-id <uuid> [--repository-root <path>] [--config <JSON path>]')
 }
 
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

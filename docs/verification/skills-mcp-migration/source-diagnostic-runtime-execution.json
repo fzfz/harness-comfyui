@@ -1,0 +1,1007 @@
+{
+  "purpose": "记录诊断候选在官方Host中的零模型参数检查探针",
+  "readWhen": "核对诊断候选安装、调用合同、CLI stderr及同轮HTTP错误时",
+  "phase": "structural-probe-complete-model-not-submitted",
+  "modelSubmitted": false,
+  "stateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/state.json",
+  "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd",
+  "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+  "candidateSource": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-candidate.tgz",
+  "modelSelectionPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/model-selection.json",
+  "sourceReview": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/docs/verification/skills-mcp-migration/source-diagnostic-code-review.json",
+  "previousAttempts": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/preparation-attempt-1.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/preparation-attempt-2.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/preparation-attempt-3.json"
+  ],
+  "contract": {
+    "invocationSource": "control-side structural probe",
+    "registry": "official ToolRuntime.execute",
+    "caller": "real Session and Agent created through official Remote",
+    "tool": "bash",
+    "foreground": true,
+    "command": "generation inspect-template-parameters --stdin",
+    "input": {
+      "template_id": "29",
+      "instance_id": "2"
+    },
+    "capabilitySource": "installed Host shellEnv contributor",
+    "identitySource": "real Session tool/call event for the control invocation",
+    "modelCalls": 0,
+    "generationRequests": 0,
+    "observerMaxCalls": 0,
+    "inspectorBinding": "127.0.0.1",
+    "inspectorPortSource": "DSH_DESKTOP_HOST_INSPECT_PORT"
+  },
+  "candidateVerification": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/installed-candidate-comparison.json",
+    "fileCount": 200,
+    "allByteEqual": true,
+    "allInsideRuntime": true
+  },
+  "installation": {
+    "runId": "10358b26-0e08-489e-8009-b3413ac779a6",
+    "resultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/install-result-10358b26-0e08-489e-8009-b3413ac779a6.json",
+    "status": "installed",
+    "enabled": true,
+    "candidatePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/harness-comfyui-candidate.tgz"
+  },
+  "fixtureStateFile": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture/state.json",
+  "businessRunId": "e7ac59dc-832b-463f-bb9f-c41e0df214b3",
+  "businessProbeRecordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/run.json",
+  "capture": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/desktop/e7ac59dc-832b-463f-bb9f-c41e0df214b3/1791977179468-d629e0c8-449f-4a24-bfca-b91baf993654-capture.json",
+  "hostInspectorIdentity": {
+    "port": 55786,
+    "target": {
+      "description": "node.js instance",
+      "devtoolsFrontendUrl": "devtools://devtools/bundled/js_app.html?experiments=true&v8only=true&ws=127.0.0.1:55786/3345dbc6-ac6e-488a-b40a-3f74a7b1a979",
+      "devtoolsFrontendUrlCompat": "devtools://devtools/bundled/inspector.html?experiments=true&v8only=true&ws=127.0.0.1:55786/3345dbc6-ac6e-488a-b40a-3f74a7b1a979",
+      "faviconUrl": "https://nodejs.org/static/images/favicons/favicon.ico",
+      "id": "3345dbc6-ac6e-488a-b40a-3f74a7b1a979",
+      "title": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js",
+      "type": "node",
+      "url": "file://",
+      "webSocketDebuggerUrl": "ws://127.0.0.1:55786/3345dbc6-ac6e-488a-b40a-3f74a7b1a979"
+    },
+    "runId": "e7ac59dc-832b-463f-bb9f-c41e0df214b3",
+    "probeRecordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/run.json"
+  },
+  "workspaceId": "baeafd85-9788-45c3-9f20-e6950d46f750",
+  "sessionId": "session-7347d976-7150-43dd-8cb1-10d40bf1b353",
+  "callerIdentity": {
+    "hostPid": 17472,
+    "hostPpid": 16575,
+    "hostCwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home/profiles/desktop",
+    "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home",
+    "inspectorPort": 55786,
+    "agentId": "session-7347d976-7150-43dd-8cb1-10d40bf1b353",
+    "sessionId": "session-7347d976-7150-43dd-8cb1-10d40bf1b353",
+    "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+    "status": "idle",
+    "options": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash"
+    },
+    "shellEnvDeclarations": [
+      {
+        "contributor": "harness-comfyui-cli",
+        "description": "Managed Harness ComfyUI CLI executable.",
+        "key": "DSH_HARNESS_COMFYUI_CLI"
+      },
+      {
+        "contributor": "harness-comfyui-cli",
+        "description": "Current loopback Harness ComfyUI CLI endpoint.",
+        "key": "DSH_HARNESS_COMFYUI_CLI_API"
+      },
+      {
+        "contributor": "harness-comfyui-cli",
+        "description": "Current foreground shell-call capability.",
+        "key": "DSH_HARNESS_COMFYUI_CLI_CAPABILITY"
+      },
+      {
+        "contributor": "harness-comfyui-cli",
+        "description": "This variable contains the path to the Host Electron executable. Set ELECTRON_RUN_AS_NODE=1 when invoking the managed Harness ComfyUI CLI with this executable.",
+        "key": "DSH_HARNESS_COMFYUI_NODE_EXECUTABLE"
+      },
+      {
+        "contributor": "web-runtime",
+        "description": "Canonical local URL of the DeepSeek Harness Web GUI serving this session.",
+        "key": "DSH_WEB_URL"
+      }
+    ],
+    "bashSchema": {
+      "name": "bash",
+      "description": "Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell; pass `workdir` instead of using `cd`. Managed `$DSH_*` variables expose current harness environment facts. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Before any delete or move, verify that the resolved absolute target path is the intended one; never run it against a computed path you have not checked. An unset variable expands to an empty string, so guard variables in such paths with `${VAR:?}`. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]`, a policy denial: do not retry another way.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The bash command to execute."
+          },
+          "description": {
+            "type": "string",
+            "description": "Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: \"ls\" → \"List files in current directory\"; \"git status\" → \"Show working tree status\"; \"npm install\" → \"Install package dependencies\"."
+          },
+          "timeoutMs": {
+            "type": "number",
+            "description": "Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."
+          },
+          "sandbox_permissions": {
+            "type": "string",
+            "description": "The narrowest wider sandbox mode for a one-shot retry of the exact command the sandbox just denied; the retry asks the user for approval.",
+            "enum": [
+              "workspace-write",
+              "danger-full-access"
+            ]
+          },
+          "justification": {
+            "type": "string",
+            "description": "Required with sandbox_permissions: one sentence for the user explaining why this exact command needs the wider access. Use the language of the user’s current request."
+          }
+        },
+        "required": [
+          "command",
+          "description"
+        ]
+      }
+    }
+  },
+  "callerIdentityPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/caller-identity.json",
+  "liveSourceAddress": {
+    "url": "http://127.0.0.1",
+    "port": 55782
+  },
+  "runDatabaseBefore": {
+    "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+    "count": 0
+  },
+  "callId": "call_98d0eee1-0c35-41f5-a691-3e8c5f31e019",
+  "probeArguments": {
+    "command": "{ printf 'session_id=%s\\n' \"$DSH_SESSION_ID\"; printf 'cli=%s\\n' \"$DSH_HARNESS_COMFYUI_CLI\"; printf 'node=%s\\n' \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\"; printf 'api=%s\\n' \"$DSH_HARNESS_COMFYUI_CLI_API\"; if [ -n \"${DSH_HARNESS_COMFYUI_CLI_CAPABILITY:-}\" ]; then printf 'capability_present=true\\n'; else printf 'capability_present=false\\n'; fi; } > '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-shell-environment.txt'\nELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation inspect-template-parameters --stdin > '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stdout' 2> '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stderr' <<'JSON'\n{\"template_id\":\"29\",\"instance_id\":\"2\"}\nJSON\nprobe_exit=$?\nprintf '%s\\n' \"$probe_exit\" > '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.exit'\ncat '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stderr'\nexit \"$probe_exit\"",
+    "description": "读取模板 29 在实例 2 上的参数诊断"
+  },
+  "probeStartedAt": "2026-10-14T11:26:20.023Z",
+  "probeResultPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/actual-bash-tool-result.json",
+  "cli": {
+    "stdoutPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stdout",
+    "stderrPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stderr",
+    "exitPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.exit",
+    "environmentPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-shell-environment.txt",
+    "stdout": "",
+    "stderr": "SOURCE_QUERY_FAILED: 数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。 Next: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" generation inspect-template-parameters --help\n",
+    "exitCode": 1,
+    "environment": "session_id=session-7347d976-7150-43dd-8cb1-10d40bf1b353\ncli=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.local/source-cli/harness-comfyui.mjs\nnode=/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness\napi=http://127.0.0.1:55804/api/harness-comfyui/cli/v1\ncapability_present=true\n"
+  },
+  "expectedDiagnostic": {
+    "code": "SOURCE_QUERY_FAILED",
+    "operation": "instance",
+    "id": "2",
+    "httpStatus": 404,
+    "message": "数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。",
+    "hint": "Next: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" generation inspect-template-parameters --help",
+    "stderr": "SOURCE_QUERY_FAILED: 数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。 Next: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" generation inspect-template-parameters --help\n"
+  },
+  "fixtureCleanup": {
+    "runId": "89a85df6-258d-4a55-b848-6ffea16442d1",
+    "pid": 10227,
+    "scenario": "empty-instances",
+    "status": "stopped",
+    "url": "http://127.0.0.1:55782/mcp",
+    "mcpUrl": "http://127.0.0.1:55782/mcp",
+    "sourceAddress": {
+      "url": "http://127.0.0.1",
+      "port": 55782
+    },
+    "port": 55782,
+    "evidenceDirectory": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture",
+    "startedAt": "2026-10-14T11:26:15.108Z",
+    "stoppedAt": "2026-10-14T11:26:25.967Z",
+    "portReleased": true
+  },
+  "cleanup": {
+    "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/run.json",
+    "state": "stopped",
+    "processGroupMatchesRun": false,
+    "processGroupPresent": false,
+    "ports": [
+      {
+        "port": 55784,
+        "pids": []
+      },
+      {
+        "port": 55785,
+        "pids": []
+      },
+      {
+        "port": 55786,
+        "pids": []
+      }
+    ]
+  },
+  "originalAssertionFailure": {
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/preparation-attempt-3.json",
+    "message": "实际CLI退出、通道或诊断消息不符合合同",
+    "expectedStderr": "SOURCE_QUERY_FAILED: 数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。",
+    "actualStderr": "SOURCE_QUERY_FAILED: 数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。 Next: ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" generation inspect-template-parameters --help\n",
+    "classification": "control-side probe omitted required CLI error help suffix"
+  },
+  "sameCallHttp404": [
+    {
+      "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture/exchange-e8fadc2b-a619-490f-98df-fb4e6db6a0b4.json",
+      "at": "2026-10-14T11:26:20.189Z",
+      "protocol": "http",
+      "scenario": "empty-instances",
+      "httpMethod": "GET",
+      "path": "/internal/comfyui-source/instances/2",
+      "requestHeaders": {
+        "host": "127.0.0.1:55782",
+        "connection": "keep-alive"
+      },
+      "request": null,
+      "requestRaw": null,
+      "forwardedRequest": {
+        "method": "GET",
+        "path": "/internal/comfyui-source/instances/1",
+        "body": null
+      },
+      "httpStatus": 404,
+      "upstreamResponse": {
+        "status": 404,
+        "body": {
+          "status": "error",
+          "message": "ComfyUI instance was not found.",
+          "results": [],
+          "page": 1,
+          "page_size": 0,
+          "total_count": 0
+        }
+      },
+      "responseSource": "real-catalog+absent-instance",
+      "fields": {
+        "request.path": {
+          "before": "/internal/comfyui-source/instances/2",
+          "after": "/internal/comfyui-source/instances/1"
+        }
+      },
+      "response": {
+        "status": "error",
+        "message": "ComfyUI instance was not found.",
+        "results": [],
+        "page": 1,
+        "page_size": 0,
+        "total_count": 0
+      }
+    }
+  ],
+  "sameCallTemplateBundle200": [
+    {
+      "path": "/internal/comfyui-source/templates/29/bundle",
+      "at": "2026-10-14T11:26:20.181Z",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "responseSource": "real-catalog",
+      "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture/exchange-f6a675c3-9122-48fe-948f-2c0051a4ed56.json"
+    }
+  ],
+  "sameCallHttpEvidence": [
+    {
+      "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture/exchange-78a87cfb-92b2-4cb9-a5fe-166df12c4836.json",
+      "path": "/internal/comfyui-source",
+      "at": "2026-10-14T11:26:20.184Z",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "responseSource": "real-catalog"
+    },
+    {
+      "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture/exchange-9e40c4a1-4246-45a7-b610-b29a0578d306.json",
+      "path": "/internal/comfyui-source",
+      "at": "2026-10-14T11:26:20.176Z",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "responseSource": "real-catalog"
+    },
+    {
+      "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture/exchange-e8fadc2b-a619-490f-98df-fb4e6db6a0b4.json",
+      "path": "/internal/comfyui-source/instances/2",
+      "at": "2026-10-14T11:26:20.189Z",
+      "httpMethod": "GET",
+      "httpStatus": 404,
+      "responseSource": "real-catalog+absent-instance"
+    },
+    {
+      "evidencePath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/fixture/exchange-f6a675c3-9122-48fe-948f-2c0051a4ed56.json",
+      "path": "/internal/comfyui-source/templates/29/bundle",
+      "at": "2026-10-14T11:26:20.181Z",
+      "httpMethod": "GET",
+      "httpStatus": 200,
+      "responseSource": "real-catalog"
+    }
+  ],
+  "runDatabaseAfter": {
+    "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home/data/plugins/harness-comfyui/runs.sqlite",
+    "count": 0,
+    "rows": []
+  },
+  "observerRecords": [
+    {
+      "runId": "10358b26-0e08-489e-8009-b3413ac779a6",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/observer-calls/10358b26-0e08-489e-8009-b3413ac779a6",
+      "files": []
+    },
+    {
+      "runId": "e7ac59dc-832b-463f-bb9f-c41e0df214b3",
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/observer-calls/e7ac59dc-832b-463f-bb9f-c41e0df214b3",
+      "files": []
+    }
+  ],
+  "sessionArchive": {
+    "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-harness-run-ozkcyd-runtime-environment-workspace--/session-7347d976-7150-43dd-8cb1-10d40bf1b353/session.v4.jsonl.zstd",
+    "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/session.v4.jsonl.zstd",
+    "actualCallResultSnapshotPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/actual-bash-tool-result.json"
+  },
+  "publicApiContract": {
+    "sdk": "@deepseek-ai/dsh-tools",
+    "executeSignature": "execute(exec: ToolExecutionInput): Promise<ToolExecutionResult>",
+    "input": {
+      "callId": "call_98d0eee1-0c35-41f5-a691-3e8c5f31e019",
+      "name": "bash",
+      "arguments": {
+        "command": "{ printf 'session_id=%s\\n' \"$DSH_SESSION_ID\"; printf 'cli=%s\\n' \"$DSH_HARNESS_COMFYUI_CLI\"; printf 'node=%s\\n' \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\"; printf 'api=%s\\n' \"$DSH_HARNESS_COMFYUI_CLI_API\"; if [ -n \"${DSH_HARNESS_COMFYUI_CLI_CAPABILITY:-}\" ]; then printf 'capability_present=true\\n'; else printf 'capability_present=false\\n'; fi; } > '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-shell-environment.txt'\nELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation inspect-template-parameters --stdin > '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stdout' 2> '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stderr' <<'JSON'\n{\"template_id\":\"29\",\"instance_id\":\"2\"}\nJSON\nprobe_exit=$?\nprintf '%s\\n' \"$probe_exit\" > '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.exit'\ncat '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace/probe-cli.stderr'\nexit \"$probe_exit\"",
+        "description": "读取模板 29 在实例 2 上的参数诊断"
+      },
+      "agent": "session-7347d976-7150-43dd-8cb1-10d40bf1b353",
+      "signal": "AbortSignal.timeout(90000)"
+    },
+    "registryAssignedToken": true,
+    "initiator": "ctx.agents.withInitiator(realAgent, operation)",
+    "sessionEvent": {
+      "turn": 0,
+      "step": 0,
+      "name": "bash",
+      "callId": "call_98d0eee1-0c35-41f5-a691-3e8c5f31e019",
+      "callSeq": 4,
+      "resultSeq": 5
+    },
+    "sources": [
+      "node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts:212",
+      "node_modules/@deepseek-ai/dsh-tools/lib/types/index.d.ts:765",
+      "node_modules/@deepseek-ai/dsh-agent/lib/types/index.d.ts:241",
+      "src/host/cli/plugin.ts:28",
+      "src/host/cli/shell-capability.ts:42"
+    ]
+  },
+  "hostIdentityChain": {
+    "desktopPid": 16575,
+    "desktopProcessGroupId": 16575,
+    "hostPid": 17472,
+    "hostPpid": 16575,
+    "inspectorPort": 55786,
+    "inspectorTarget": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js",
+    "sessionId": "session-7347d976-7150-43dd-8cb1-10d40bf1b353",
+    "agentId": "session-7347d976-7150-43dd-8cb1-10d40bf1b353",
+    "callId": "call_98d0eee1-0c35-41f5-a691-3e8c5f31e019",
+    "shellSessionId": "session-7347d976-7150-43dd-8cb1-10d40bf1b353",
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+    "capabilityPresent": true,
+    "capabilityIssuedBy": "installed Host shellEnv contributor"
+  },
+  "cleanupChecks": [
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u",
+      "runId": "e3edf2da-4e34-47f5-a456-39468e36828c",
+      "record": {
+        "schemaVersion": 1,
+        "runId": "e3edf2da-4e34-47f5-a456-39468e36828c",
+        "mode": "development",
+        "state": "stopped",
+        "createdAt": "2026-10-14T11:14:21.424Z",
+        "updatedAt": "2026-10-14T11:14:34.909Z",
+        "application": {
+          "bundlePath": "/Applications/DeepSeek Harness.app",
+          "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+          "version": "0.2.0-rc.2",
+          "bundleId": "com.deepseek.dsh"
+        },
+        "directories": {
+          "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/e3edf2da-4e34-47f5-a456-39468e36828c",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/workspace",
+          "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/e3edf2da-4e34-47f5-a456-39468e36828c/logs",
+          "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/e3edf2da-4e34-47f5-a456-39468e36828c/evidence",
+          "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home/profiles/desktop",
+          "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/e3edf2da-4e34-47f5-a456-39468e36828c/logs/diagnostic.log"
+        },
+        "environment": {
+          "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment",
+          "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/active-probe.json"
+        },
+        "ports": {
+          "host": 50525,
+          "rendererCdp": 50526,
+          "hostInspector": 50527
+        },
+        "launch": {
+          "arguments": [
+            "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+            "--remote-debugging-port=50526",
+            "--remote-debugging-address=127.0.0.1"
+          ],
+          "environment": {
+            "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home",
+            "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+            "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/e3edf2da-4e34-47f5-a456-39468e36828c/logs/diagnostic.log",
+            "DSH_DESKTOP_HOST_INSPECT_PORT": "50527"
+          },
+          "unsetEnvironmentNames": [
+            "ELECTRON_RUN_AS_NODE"
+          ]
+        },
+        "process": {
+          "pid": 8542,
+          "processGroupId": 8542,
+          "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data --remote-debugging-port=50526 --remote-debugging-address=127.0.0.1",
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/workspace",
+          "listeningPorts": [
+            50525,
+            50526
+          ],
+          "observedAt": "2026-10-14T11:14:24.128Z"
+        },
+        "result": {
+          "exitCode": null,
+          "error": null,
+          "completedAt": "2026-10-14T11:14:34.909Z",
+          "portsReleased": true
+        }
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/e3edf2da-4e34-47f5-a456-39468e36828c/run.json",
+      "developmentEnvironment": {
+        "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment",
+        "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home",
+        "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+        "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/workspace",
+        "environmentExists": true,
+        "initializationStatus": "unverified"
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 50525,
+          "pids": []
+        },
+        {
+          "port": 50526,
+          "pids": []
+        },
+        {
+          "port": 50527,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u",
+      "runId": "4f17a7f9-0e02-440e-8106-d064cfb298ff",
+      "record": {
+        "schemaVersion": 1,
+        "runId": "4f17a7f9-0e02-440e-8106-d064cfb298ff",
+        "mode": "development",
+        "state": "stopped",
+        "createdAt": "2026-10-14T11:14:35.237Z",
+        "updatedAt": "2026-10-14T11:14:45.314Z",
+        "application": {
+          "bundlePath": "/Applications/DeepSeek Harness.app",
+          "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+          "version": "0.2.0-rc.2",
+          "bundleId": "com.deepseek.dsh"
+        },
+        "directories": {
+          "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/4f17a7f9-0e02-440e-8106-d064cfb298ff",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/workspace",
+          "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/4f17a7f9-0e02-440e-8106-d064cfb298ff/logs",
+          "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/4f17a7f9-0e02-440e-8106-d064cfb298ff/evidence",
+          "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home/profiles/desktop",
+          "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/4f17a7f9-0e02-440e-8106-d064cfb298ff/logs/diagnostic.log"
+        },
+        "environment": {
+          "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment",
+          "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/active-probe.json"
+        },
+        "ports": {
+          "host": 50595,
+          "rendererCdp": 50596,
+          "hostInspector": 50597
+        },
+        "launch": {
+          "arguments": [
+            "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+            "--remote-debugging-port=50596",
+            "--remote-debugging-address=127.0.0.1"
+          ],
+          "environment": {
+            "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home",
+            "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+            "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/4f17a7f9-0e02-440e-8106-d064cfb298ff/logs/diagnostic.log",
+            "DSH_DESKTOP_HOST_INSPECT_PORT": "50597"
+          },
+          "unsetEnvironmentNames": [
+            "ELECTRON_RUN_AS_NODE"
+          ]
+        },
+        "process": {
+          "pid": 14870,
+          "processGroupId": 14870,
+          "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data --remote-debugging-port=50596 --remote-debugging-address=127.0.0.1",
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/workspace",
+          "listeningPorts": [
+            50595,
+            50596,
+            50613
+          ],
+          "observedAt": "2026-10-14T11:14:37.934Z"
+        },
+        "result": {
+          "exitCode": null,
+          "error": null,
+          "completedAt": "2026-10-14T11:14:45.314Z",
+          "portsReleased": true
+        }
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/.local/desktop-e2e/4f17a7f9-0e02-440e-8106-d064cfb298ff/run.json",
+      "developmentEnvironment": {
+        "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment",
+        "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/dsh-home",
+        "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/user-data",
+        "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-WMhb9u/runtime/environment/workspace",
+        "environmentExists": true,
+        "initializationStatus": "unverified"
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 50595,
+          "pids": []
+        },
+        {
+          "port": 50596,
+          "pids": []
+        },
+        {
+          "port": 50597,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA",
+      "runId": "d5b65522-9b42-48b5-8b9e-1180b65748af",
+      "record": {
+        "schemaVersion": 1,
+        "runId": "d5b65522-9b42-48b5-8b9e-1180b65748af",
+        "mode": "development",
+        "state": "stopped",
+        "createdAt": "2026-10-14T11:23:09.660Z",
+        "updatedAt": "2026-10-14T11:23:24.736Z",
+        "application": {
+          "bundlePath": "/Applications/DeepSeek Harness.app",
+          "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+          "version": "0.2.0-rc.2",
+          "bundleId": "com.deepseek.dsh"
+        },
+        "directories": {
+          "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/d5b65522-9b42-48b5-8b9e-1180b65748af",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/workspace",
+          "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/d5b65522-9b42-48b5-8b9e-1180b65748af/logs",
+          "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/d5b65522-9b42-48b5-8b9e-1180b65748af/evidence",
+          "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home/profiles/desktop",
+          "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/d5b65522-9b42-48b5-8b9e-1180b65748af/logs/diagnostic.log"
+        },
+        "environment": {
+          "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment",
+          "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/active-probe.json"
+        },
+        "ports": {
+          "host": 53836,
+          "rendererCdp": 53837,
+          "hostInspector": 53838
+        },
+        "launch": {
+          "arguments": [
+            "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+            "--remote-debugging-port=53837",
+            "--remote-debugging-address=127.0.0.1"
+          ],
+          "environment": {
+            "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home",
+            "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+            "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/d5b65522-9b42-48b5-8b9e-1180b65748af/logs/diagnostic.log",
+            "DSH_DESKTOP_HOST_INSPECT_PORT": "53838"
+          },
+          "unsetEnvironmentNames": [
+            "ELECTRON_RUN_AS_NODE"
+          ]
+        },
+        "process": {
+          "pid": 17618,
+          "processGroupId": 17618,
+          "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data --remote-debugging-port=53837 --remote-debugging-address=127.0.0.1",
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/workspace",
+          "listeningPorts": [
+            53836,
+            53837,
+            53838
+          ],
+          "observedAt": "2026-10-14T11:23:12.901Z"
+        },
+        "result": {
+          "exitCode": null,
+          "error": null,
+          "completedAt": "2026-10-14T11:23:24.736Z",
+          "portsReleased": true
+        }
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/d5b65522-9b42-48b5-8b9e-1180b65748af/run.json",
+      "developmentEnvironment": {
+        "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment",
+        "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home",
+        "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+        "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/workspace",
+        "environmentExists": true,
+        "initializationStatus": "unverified"
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 53836,
+          "pids": []
+        },
+        {
+          "port": 53837,
+          "pids": []
+        },
+        {
+          "port": 53838,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA",
+      "runId": "23434ecb-3bc9-4386-bfa6-8193f16c3f44",
+      "record": {
+        "schemaVersion": 1,
+        "runId": "23434ecb-3bc9-4386-bfa6-8193f16c3f44",
+        "mode": "development",
+        "state": "stopped",
+        "createdAt": "2026-10-14T11:23:25.177Z",
+        "updatedAt": "2026-10-14T11:23:36.734Z",
+        "application": {
+          "bundlePath": "/Applications/DeepSeek Harness.app",
+          "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+          "version": "0.2.0-rc.2",
+          "bundleId": "com.deepseek.dsh"
+        },
+        "directories": {
+          "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/23434ecb-3bc9-4386-bfa6-8193f16c3f44",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/workspace",
+          "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/23434ecb-3bc9-4386-bfa6-8193f16c3f44/logs",
+          "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/23434ecb-3bc9-4386-bfa6-8193f16c3f44/evidence",
+          "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home/profiles/desktop",
+          "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/23434ecb-3bc9-4386-bfa6-8193f16c3f44/logs/diagnostic.log"
+        },
+        "environment": {
+          "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment",
+          "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/active-probe.json"
+        },
+        "ports": {
+          "host": 53981,
+          "rendererCdp": 53982,
+          "hostInspector": 53983
+        },
+        "launch": {
+          "arguments": [
+            "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+            "--remote-debugging-port=53982",
+            "--remote-debugging-address=127.0.0.1"
+          ],
+          "environment": {
+            "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home",
+            "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+            "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/23434ecb-3bc9-4386-bfa6-8193f16c3f44/logs/diagnostic.log",
+            "DSH_DESKTOP_HOST_INSPECT_PORT": "53983"
+          },
+          "unsetEnvironmentNames": [
+            "ELECTRON_RUN_AS_NODE"
+          ]
+        },
+        "process": {
+          "pid": 35553,
+          "processGroupId": 35553,
+          "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data --remote-debugging-port=53982 --remote-debugging-address=127.0.0.1",
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/workspace",
+          "listeningPorts": [
+            53981,
+            53982,
+            53983,
+            54081
+          ],
+          "observedAt": "2026-10-14T11:23:28.987Z"
+        },
+        "result": {
+          "exitCode": null,
+          "error": null,
+          "completedAt": "2026-10-14T11:23:36.734Z",
+          "portsReleased": true
+        }
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/.local/desktop-e2e/23434ecb-3bc9-4386-bfa6-8193f16c3f44/run.json",
+      "developmentEnvironment": {
+        "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment",
+        "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/dsh-home",
+        "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/user-data",
+        "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-iVTobA/runtime/environment/workspace",
+        "environmentExists": true,
+        "initializationStatus": "unverified"
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 53981,
+          "pids": []
+        },
+        {
+          "port": 53982,
+          "pids": []
+        },
+        {
+          "port": 53983,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd",
+      "runId": "10358b26-0e08-489e-8009-b3413ac779a6",
+      "record": {
+        "schemaVersion": 1,
+        "runId": "10358b26-0e08-489e-8009-b3413ac779a6",
+        "mode": "development",
+        "state": "stopped",
+        "createdAt": "2026-10-14T11:26:01.440Z",
+        "updatedAt": "2026-10-14T11:26:14.969Z",
+        "application": {
+          "bundlePath": "/Applications/DeepSeek Harness.app",
+          "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+          "version": "0.2.0-rc.2",
+          "bundleId": "com.deepseek.dsh"
+        },
+        "directories": {
+          "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/10358b26-0e08-489e-8009-b3413ac779a6",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+          "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/10358b26-0e08-489e-8009-b3413ac779a6/logs",
+          "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/10358b26-0e08-489e-8009-b3413ac779a6/evidence",
+          "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home/profiles/desktop",
+          "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/10358b26-0e08-489e-8009-b3413ac779a6/logs/diagnostic.log"
+        },
+        "environment": {
+          "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment",
+          "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/active-probe.json"
+        },
+        "ports": {
+          "host": 55692,
+          "rendererCdp": 55693,
+          "hostInspector": 55694
+        },
+        "launch": {
+          "arguments": [
+            "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+            "--remote-debugging-port=55693",
+            "--remote-debugging-address=127.0.0.1"
+          ],
+          "environment": {
+            "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home",
+            "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+            "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/10358b26-0e08-489e-8009-b3413ac779a6/logs/diagnostic.log",
+            "DSH_DESKTOP_HOST_INSPECT_PORT": "55694"
+          },
+          "unsetEnvironmentNames": [
+            "ELECTRON_RUN_AS_NODE"
+          ]
+        },
+        "process": {
+          "pid": 10263,
+          "processGroupId": 10263,
+          "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data --remote-debugging-port=55693 --remote-debugging-address=127.0.0.1",
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+          "listeningPorts": [
+            55692,
+            55693,
+            55694
+          ],
+          "observedAt": "2026-10-14T11:26:04.114Z"
+        },
+        "result": {
+          "exitCode": null,
+          "error": null,
+          "completedAt": "2026-10-14T11:26:14.969Z",
+          "portsReleased": true
+        }
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/10358b26-0e08-489e-8009-b3413ac779a6/run.json",
+      "developmentEnvironment": {
+        "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment",
+        "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home",
+        "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+        "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+        "environmentExists": true,
+        "initializationStatus": "unverified"
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 55692,
+          "pids": []
+        },
+        {
+          "port": 55693,
+          "pids": []
+        },
+        {
+          "port": 55694,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runtimeRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd",
+      "runId": "e7ac59dc-832b-463f-bb9f-c41e0df214b3",
+      "record": {
+        "schemaVersion": 1,
+        "runId": "e7ac59dc-832b-463f-bb9f-c41e0df214b3",
+        "mode": "development",
+        "state": "stopped",
+        "createdAt": "2026-10-14T11:26:15.310Z",
+        "updatedAt": "2026-10-14T11:26:25.872Z",
+        "application": {
+          "bundlePath": "/Applications/DeepSeek Harness.app",
+          "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+          "version": "0.2.0-rc.2",
+          "bundleId": "com.deepseek.dsh"
+        },
+        "directories": {
+          "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+          "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/logs",
+          "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/evidence",
+          "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home/profiles/desktop",
+          "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/logs/diagnostic.log"
+        },
+        "environment": {
+          "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment",
+          "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/active-probe.json"
+        },
+        "ports": {
+          "host": 55784,
+          "rendererCdp": 55785,
+          "hostInspector": 55786
+        },
+        "launch": {
+          "arguments": [
+            "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+            "--remote-debugging-port=55785",
+            "--remote-debugging-address=127.0.0.1"
+          ],
+          "environment": {
+            "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home",
+            "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+            "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/logs/diagnostic.log",
+            "DSH_DESKTOP_HOST_INSPECT_PORT": "55786"
+          },
+          "unsetEnvironmentNames": [
+            "ELECTRON_RUN_AS_NODE"
+          ]
+        },
+        "process": {
+          "pid": 16575,
+          "processGroupId": 16575,
+          "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data --remote-debugging-port=55785 --remote-debugging-address=127.0.0.1",
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+          "listeningPorts": [
+            55784,
+            55785,
+            55786,
+            55804
+          ],
+          "observedAt": "2026-10-14T11:26:18.216Z"
+        },
+        "result": {
+          "exitCode": null,
+          "error": null,
+          "completedAt": "2026-10-14T11:26:25.872Z",
+          "portsReleased": true
+        }
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/.local/desktop-e2e/e7ac59dc-832b-463f-bb9f-c41e0df214b3/run.json",
+      "developmentEnvironment": {
+        "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment",
+        "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/dsh-home",
+        "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/user-data",
+        "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-ozkcyd/runtime/environment/workspace",
+        "environmentExists": true,
+        "initializationStatus": "unverified"
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 55784,
+          "pids": []
+        },
+        {
+          "port": 55785,
+          "pids": []
+        },
+        {
+          "port": 55786,
+          "pids": []
+        }
+      ]
+    }
+  ],
+  "extraPortChecks": [
+    {
+      "port": 55784,
+      "pids": []
+    },
+    {
+      "port": 55785,
+      "pids": []
+    },
+    {
+      "port": 55786,
+      "pids": []
+    },
+    {
+      "port": 55804,
+      "pids": []
+    }
+  ],
+  "rejudgmentPath": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/harness-run-ozkcyd/offline-contract-rejudgment.json",
+  "completedAt": "2026-10-14T11:34:34.627Z",
+  "observerControlFailures": [
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/preparation-attempt-1.json",
+      "cause": "Host inspector was not opened by the first control observer",
+      "classification": "control observer preparation"
+    },
+    {
+      "path": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/source-diagnostic-runtime/preparation-attempt-2.json",
+      "cause": "Cordis explicit dependency injection was incomplete",
+      "classification": "control observer preparation"
+    }
+  ],
+  "modelCalls": 0,
+  "generationRunCount": 0,
+  "activeRunCount": 0
+}

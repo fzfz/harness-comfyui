@@ -1,0 +1,90 @@
+{
+  "purpose": "独立核对四角色一轮一图执行前的实际输入、来源与安装合同。",
+  "reviewedAt": "2026-10-14T08:03:56.332964+00:00",
+  "verdict": "ready-for-execution",
+  "businessAcceptance": "pending-real-execution",
+  "requiredCorrections": [],
+  "scope": {
+    "candidate": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/four-role-preparation/input-candidate.json",
+    "submittedInput": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-btrKEM/materialized-input.json",
+    "materials": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/workspace/image-task/materials.json",
+    "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+    "state": "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/neutral-runtime/harness-run-btrKEM/state.json"
+  },
+  "checks": [
+    {
+      "subject": "实际业务材料",
+      "result": "pass",
+      "evidence": "materials.json 与候选的 story、parameters 逐字段一致；人物、片段、情绪、单主体肖像、站立半身、正面平视、居中、白衬衫、窗边柔光、1:1、test、画师、一轮一张和比较后结束均明确。"
+    },
+    {
+      "subject": "模型与模板",
+      "result": "pass",
+      "evidence": "model14 与 workflow29 的真实 structuredContent.item.base_model.id 均为 2；model14.skill_name 为 wai-sdxl-prompt-builder，file_name 为 hassakuXLIllustrious_v13StyleA.safetensors。模板默认模型 1 被用户明确选择的 14 覆盖，符合 comfyui-generate 核对当前选择合同。"
+    },
+    {
+      "subject": "实例与 checkpoint",
+      "result": "pass-from-saved-evidence",
+      "evidence": "2026-10-14T03:15:11.209Z 的 search_instances 返回唯一实例 2；03:24:00.952Z 的状态返回 reachable=true；05:19:38.642Z 的 CheckpointLoaderSimple 返回包含模型 14 的文件名。comfyui-generate 在真实执行时仍须查询实例列表并采用首项。"
+    },
+    {
+      "subject": "尺寸与张数",
+      "result": "pass",
+      "evidence": "实际安装 Builder generation-profiles.json 的 size_profiles[0].test 为 1024×1024、1MP。count=1、seed=20261013、lora_ids=[] 均明确；无需由审查者预先提供 Builder JSON，生成角色负责构造，records.md 规定原生成角色请求后由主 Agent 原样回传。"
+    },
+    {
+      "subject": "人物与画师来源",
+      "result": "pass-with-normalization-note",
+      "evidence": "真实角色 39934 返回 Ani (Grok Companion)、其它及全部五个身份外观标签。候选 prompt_text 删除了来源末尾逗号，标签内容保持。真实画师 12344 的名称、Prompt、底模 2 及完整 style_description 与候选一致。"
+    },
+    {
+      "subject": "四角色合同",
+      "result": "pass",
+      "evidence": "已安装迭代 Skill、records.md、composition-design.md、run-query-cli.md、iteration-method.md 与四个角色定义齐全。原始故事支持构图推导；生成角色创建 Builder 和 Run；观察角色接收实际图片与中性问题；比较角色接收构图和原始观察；用户一轮限制触发完成本轮后的停止条件。"
+    },
+    {
+      "subject": "模型配置",
+      "result": "pass",
+      "evidence": "实际 cordis.patch.yml 中主模型及 composition-agent、generation-agent、comparison-agent 覆盖为 opencode-go/deepseek-v4.1-flash；observation-agent 与 activeProfileId=skills-migration-inkling 的图片读取配置为 openrouter/thinkingmachines/inkling:free。默认安装预设中的其他模型被这些 Profile patches 覆盖。"
+    },
+    {
+      "subject": "路径与控制材料隔离",
+      "result": "pass",
+      "evidence": "实际 prompt 仅引用已安装 Skill、Workspace/image-task/materials.json 与输出目录。Workspace 递归文件列表仅含 materials.json；候选 sourceEvidence、status、modelSubmitted、控制索引和报告均未进入该文件。"
+    },
+    {
+      "subject": "安装前置",
+      "result": "pass-from-installation-record",
+      "evidence": "state.installation.status=installed、enabled=true；state.status=configured；cleanup 记录端口释放且进程组已退出。实际安装的迭代预设包含 NoobAI MCP、原生 Skill 入口及四角色工具配置。"
+    }
+  ],
+  "sourceEvidence": [
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710214-10aff818-7e4e-449a-bffc-b036b9646f23-query_semantic_characters.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947710399-3110ed82-04bd-46c7-a209-df9b1d098368-get_catalog_resource.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791955178639-8b68d082-6e93-44e9-b22b-a236d39a558a-get_catalog_resource.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791955178638-e8ba3a31-b90e-43cd-ab3b-cbf491e2a6fe-get_catalog_resource.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791955178643-204ec3d2-4f60-4ea1-bbc5-98423883e199-get_instance_node.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791947711209-5c120140-09e8-4a55-aedb-d9aa684b50e8-search_instances.json",
+    "/Users/fzfz/.codex/worktrees/skills-mcp-migration/harness-comfyui/.local/skills-mcp-migration-live/catalog/1791948240955-9a77e309-bb73-4521-a085-c44b0dd5a344-get_instance_status.json"
+  ],
+  "contracts": [
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/SKILL.md",
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-iterate-generation/references/records.md",
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md",
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/input-contract.md",
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json",
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/local-image-reader/SKILL.md",
+    "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-run-btrKEM/runtime/environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+  ],
+  "executionVerificationRemaining": [
+    "真实启动后的 MCP 连接、凭据可用性及实例当前状态。",
+    "四角色实际调用、Builder 校验、单次生成、独立读图、比较和最终图片交付。"
+  ],
+  "actions": {
+    "modelCalls": 0,
+    "applicationStarts": 0,
+    "inputChanges": 0,
+    "implementationChanges": 0,
+    "reportOnly": true
+  }
+}

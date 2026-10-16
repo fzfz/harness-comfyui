@@ -1,0 +1,52 @@
+{
+  "diagnosis": "handoff-root-cause.json",
+  "scope": "主计划5.11至5.14",
+  "changes": [
+    {
+      "file": ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+      "section": "调用条件",
+      "before": "Skill 执行者取得 `template_id` 和 `instance_id` 后调用本命令。",
+      "after": "1. Skill 执行者按 [SKILL.md](../SKILL.md)“创建图片”的步骤顺序进入“检查 Workflow 参数”，并满足该步骤的前置条件后调用本命令。",
+      "reason": "H3实际消息引用此处作为独立充分条件；引用唯一流程消除重复定义。"
+    },
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "before": "子 Agent 报告错误或缺少输入时，主 Agent 根据具体问题处理；需要补充材料时，通过原角色工具向原 agent_id 发送补充后的任务参数。",
+      "after": "子 Agent 报告错误、缺少输入或需要用户选择时，主 Agent 保留报告中的缺项和候选来源，按该子任务所用 Skill 的条件转达问题；禁止把候选改写成用户选择或派发依赖已知缺项的任务。取得所需答复或材料后，主 Agent 通过原角色工具向原 agent_id 发送补充后的任务参数。",
+      "reason": "H1/H2收束父调度职责，具体资源规则仍由生成Skill唯一负责。"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "before": "Ask the user only for consequential decisions the material cannot reasonably resolve.",
+      "after": "Handle missing inputs and user choices according to the handoff rules in comfyui-iterate-generation.",
+      "reason": "H1/H2通用自主决策文字与具体来源规则需要确定引用关系；效果待复验。"
+    }
+  ],
+  "deferred": [
+    "H4现有完成通知规则已送达，先核对宿主等待机制与延迟场景，不重复增加等待措辞。"
+  ],
+  "verification": [
+    "相同DeepSeek模型和边界输入，检查父子首次动作及完整轨迹",
+    "已选模型成功流程",
+    "本轮结构修复与规则引用同时变化，不能宣称证明单一因素因果",
+    "独立H3：固定历史生成子任务输入、模型及夹具，仅改变参数参考入口，检查首次偏离；父会话停止不能替代此项。",
+    "父交接：缺模型时不派发依赖任务、不按路线或节点推荐、保留候选来源；用户选择后向原Agent恢复。"
+  ],
+  "status": "independent-plan-review-passed",
+  "reviewer": "/root/handoff_trace_diagnosis",
+  "semantic_consolidation": [
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "change": "参考路径定位置于角色派发之前；正文按有序列表组织。",
+      "reviewer": "/root/iteration_skill_semantics",
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "change": "reference_files 分别指明执行角色；生成成功后才限制返回路径；观察角色引用其明确列出的 Skill。",
+      "reviewer": "/root/iteration_persona_semantics",
+      "status": "passed"
+    }
+  ],
+  "diff": "handoff-repair-final.patch"
+}

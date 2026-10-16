@@ -20,10 +20,6 @@ const temporaryDirectories: string[] = []
 function validRuntimeResourcesConfiguration(): Record<string, unknown> {
   return {
     schemaVersion: 1,
-    sourceClients: {
-      semanticQueryClient: { label: 'Semantic query client', relativePath: 'scripts/source-client/query.mjs' },
-      sourceReadClient: { label: 'Source reader client', relativePath: 'scripts/source-client/read.mjs' },
-    },
     runtimeArtifacts: {
       frontendCompilerWorker: { label: 'Workflow worker', artifactKey: 'frontendCompilerWorker' },
       managedCli: { label: 'managed CLI', artifactKey: 'managedCli' },
@@ -73,24 +69,7 @@ describe('plugin runtime resources configuration parser', () => {
     ['root record', (value: Record<string, unknown>) => { delete value.failureDetailsTemplate }, 'missing failureDetailsTemplate'],
     ['root record', (value: Record<string, unknown>) => { delete value.requiredFiles }, 'missing requiredFiles'],
     ['root record', (value: Record<string, unknown>) => { value.unexpected = true }, 'unexpected unexpected'],
-    ['Source client map', (value: Record<string, unknown>) => {
-      delete asRecord(value.sourceClients).semanticQueryClient
-    }, 'missing semanticQueryClient'],
-    ['Source client map', (value: Record<string, unknown>) => {
-      asRecord(value.sourceClients).unexpected = true
-    }, 'unexpected unexpected'],
-    ['Source client record', (value: Record<string, unknown>) => {
-      delete asRecord(asRecord(value.sourceClients).semanticQueryClient).relativePath
-    }, 'missing relativePath'],
-    ['Source client record', (value: Record<string, unknown>) => {
-      asRecord(asRecord(value.sourceClients).semanticQueryClient).unexpected = true
-    }, 'unexpected unexpected'],
-    ['Source client record', (value: Record<string, unknown>) => {
-      delete asRecord(asRecord(value.sourceClients).sourceReadClient).label
-    }, 'missing label'],
-    ['Source client record', (value: Record<string, unknown>) => {
-      asRecord(asRecord(value.sourceClients).sourceReadClient).unexpected = true
-    }, 'unexpected unexpected'],
+    ['root record', (value: Record<string, unknown>) => { value.sourceClients = {} }, 'unexpected sourceClients'],
     ['runtime artifact map', (value: Record<string, unknown>) => {
       delete asRecord(value.runtimeArtifacts).managedCli
     }, 'missing managedCli'],
@@ -110,13 +89,6 @@ describe('plugin runtime resources configuration parser', () => {
   })
 
   it.each([
-    ['sourceClients', (value: Record<string, unknown>) => { value.sourceClients = null }],
-    ['semanticQueryClient', (value: Record<string, unknown>) => {
-      asRecord(value.sourceClients).semanticQueryClient = []
-    }],
-    ['sourceReadClient', (value: Record<string, unknown>) => {
-      asRecord(value.sourceClients).sourceReadClient = null
-    }],
     ['runtimeArtifacts', (value: Record<string, unknown>) => { value.runtimeArtifacts = [] }],
     ['frontendCompilerWorker', (value: Record<string, unknown>) => {
       asRecord(value.runtimeArtifacts).frontendCompilerWorker = []
@@ -142,25 +114,6 @@ describe('plugin runtime resources configuration parser', () => {
     expectInvalidRuntimeResourcesConfiguration(value, 'array length >= 1')
   })
 
-  it.each([
-    ['/scripts/source-client/query.mjs', 'Plugin runtime resources config validation failed'],
-    ['C:/scripts/source-client/query.mjs', 'relative POSIX path'],
-    ['scripts/source-client/../query.mjs', 'empty or traversing path segments'],
-    ['scripts\\source-client\\query.mjs', 'Plugin runtime resources config validation failed'],
-    ['scripts/source-client/\u0000query.mjs', 'Plugin runtime resources config validation failed'],
-  ])('rejects an unsafe Source client path %j', (relativePath, message) => {
-    const value = validRuntimeResourcesConfiguration()
-    asRecord(asRecord(value.sourceClients).semanticQueryClient).relativePath = relativePath
-    expectInvalidRuntimeResourcesConfiguration(value, message)
-  })
-
-  it('rejects duplicate Source client paths', () => {
-    const value = validRuntimeResourcesConfiguration()
-    const clients = asRecord(value.sourceClients)
-    asRecord(clients.sourceReadClient).relativePath = asRecord(clients.semanticQueryClient).relativePath
-    expectInvalidRuntimeResourcesConfiguration(value, 'Source client paths must be distinct')
-  })
-
   it('rejects duplicate required package resource paths', () => {
     const value = validRuntimeResourcesConfiguration()
     value.requiredFiles = [
@@ -181,28 +134,10 @@ describe('plugin runtime resources configuration parser', () => {
     expectInvalidRuntimeResourcesConfiguration(value, message)
   })
 
-  it('rejects a relative Source client path outside the packaged Source client directory', () => {
-    const value = validRuntimeResourcesConfiguration()
-    asRecord(asRecord(value.sourceClients).semanticQueryClient).relativePath = 'plugins/source-client/query.mjs'
-    expectInvalidRuntimeResourcesConfiguration(value, 'must be inside scripts/source-client/')
-  })
-
-  it('rejects a Source reader path outside the packaged Source client directory', () => {
-    const value = validRuntimeResourcesConfiguration()
-    asRecord(asRecord(value.sourceClients).sourceReadClient).relativePath = 'plugins/source-client/read.mjs'
-    expectInvalidRuntimeResourcesConfiguration(value, 'Source reader client must be inside scripts/source-client/')
-  })
-
   it('rejects a Configuration Profile schema version outside the supported version', () => {
     const value = validRuntimeResourcesConfiguration()
     value.schemaVersion = 2
     expectInvalidRuntimeResourcesConfiguration(value, 'expected 1 but got 2')
-  })
-
-  it('rejects an empty Source client label', () => {
-    const value = validRuntimeResourcesConfiguration()
-    asRecord(asRecord(value.sourceClients).semanticQueryClient).label = ''
-    expectInvalidRuntimeResourcesConfiguration(value, 'Plugin runtime resources config validation failed')
   })
 
   it('rejects runtime artifact references assigned to the wrong resource key', () => {
@@ -257,13 +192,11 @@ function createRuntimeResources(root: string): Record<keyof typeof PLUGIN_RUNTIM
 }
 
 describe('installed plugin runtime resource validation', () => {
-  it('checks both Source clients, the configured Workflow worker, and the managed CLI entrypoint', () => {
+  it('checks the configured Workflow worker and managed CLI entrypoint', () => {
     const root = temporaryPackageRoot()
     const paths = createRuntimeResources(root)
 
     expect(PLUGIN_RUNTIME_RESOURCE_PATHS).toMatchObject({
-      semanticQueryClient: 'scripts/source-client/imagegen-semantic-query.mjs',
-      sourceReadClient: 'scripts/source-client/imagegen-comfyui-source-read.mjs',
       frontendCompilerWorker: runtimeArtifacts.frontendCompilerWorker.outputEntryRelativePath,
       managedCli: runtimeArtifacts.managedCli.outputEntryRelativePath,
     })
@@ -274,14 +207,14 @@ describe('installed plugin runtime resource validation', () => {
   it('reports an absent resource with its absolute path and the system reason', () => {
     const root = temporaryPackageRoot()
     const paths = createRuntimeResources(root)
-    rmSync(paths.sourceReadClient)
+    rmSync(paths.frontendCompilerWorker)
 
     try {
       assertPluginRuntimeResourcesAvailable({ resolvePath: relativePath => resolve(root, relativePath) })
       throw new Error('expected runtime resource validation to fail')
     } catch (error) {
       expect(error).toMatchObject({ code: 'PLUGIN_PACKAGE_RESOURCES_UNAVAILABLE' })
-      expect(error).toMatchObject({ detail: expect.stringContaining(paths.sourceReadClient) })
+      expect(error).toMatchObject({ detail: expect.stringContaining(paths.frontendCompilerWorker) })
       expect(error).toMatchObject({ detail: expect.stringContaining('ENOENT') })
       expect(error).toMatchObject({ message: expect.stringContaining(errorCatalog.PLUGIN_PACKAGE_RESOURCES_UNAVAILABLE.reason) })
       expect(error).toMatchObject({ message: expect.stringContaining(errorCatalog.PLUGIN_PACKAGE_RESOURCES_UNAVAILABLE.next_step) })
