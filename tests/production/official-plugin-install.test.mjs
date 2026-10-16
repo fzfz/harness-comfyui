@@ -17,6 +17,7 @@ import {
   parseOfficialPluginInstallEvidence,
 } from '../desktop/fixtures/official-plugin-install-schema.mjs'
 import { parseDesktopE2ERunRecord } from '../../config/desktop-e2e-schema.mjs'
+import workbenchLocale from '../../locales/workbench/zh.json' with { type: 'json' }
 
 const temporaryRoots = new Set()
 const connectedPages = new Set()
@@ -152,7 +153,7 @@ describe('official Desktop candidate install adapter', () => {
       enabledObservation: {
         hasDialog: false,
         role: 'switch',
-        ariaLabel: '启用 harness-comfyui',
+        ariaLabel: `启用 ${workbenchLocale.meta.title}`,
         ariaChecked: 'true',
         disabled: false,
         inViewport: true,
@@ -201,6 +202,18 @@ describe('official Desktop candidate install adapter', () => {
     expect(stateFor(page).commands.filter(item => item.method === 'Runtime.evaluate').every(item => item.timeoutMs > 0)).toBe(true)
     expect(stateFor(page).commands.filter(item => item.method === 'Target.getTargetInfo').every(item => item.timeoutMs > 0)).toBe(true)
     expect(stateFor(page).commands.filter(item => item.method === 'Page.captureScreenshot').every(item => item.timeoutMs > 0)).toBe(true)
+  })
+
+  it('identifies the installed package when another package has the same localized title', async () => {
+    const fixture = await createInstallFixture()
+    const page = await createFakeOfficialPage('installed', { otherBundleSwitch: true })
+    const result = await installOfficialPluginCandidate({
+      page, tarballPath: fixture.tarballPath, probeStatus: fixture.probeStatus,
+      repositoryRoot: fixture.repositoryRoot, timeoutMs: 2_000, pollIntervalMs: 1,
+    })
+    expect(result).toMatchObject({ status: 'installed', enabled: true, evidenceComplete: true })
+    expect(result.enabledObservation.ariaLabel).toBe(`启用 ${workbenchLocale.meta.title}`)
+    expect(stateFor(page).scrollIntoViewCount).toBe(1)
   })
 
   it('scrolls an off-screen enabled switch into the viewport and verifies its bounds before capture', async () => {
@@ -858,6 +871,7 @@ class FakeOfficialPage {
     screenshotBehavior = null,
     screenshotFailure = null,
     ambiguousControl = null,
+    otherBundleSwitch = false,
     targetPort = 23002,
     runId = TEST_RUN_ID,
     targetBehavior = null,
@@ -874,6 +888,7 @@ class FakeOfficialPage {
     this.screenshotBehavior = screenshotBehavior
     this.screenshotFailure = screenshotFailure
     this.ambiguousControl = ambiguousControl
+    this.otherBundleSwitch = otherBundleSwitch
     this.switchInitiallyOffscreen = switchInitiallyOffscreen
     this.switchInViewport = !switchInitiallyOffscreen
     this.scrollIntoViewCount = 0
@@ -984,15 +999,20 @@ class FakeOfficialPage {
     if (this.state === 'enabled') {
       const switchControl = new FakeElement(this, {
         tagName: 'button',
-        attributes: { 'aria-label': '启用 harness-comfyui', role: 'switch', 'aria-checked': 'true' },
+        attributes: { 'aria-label': `启用 ${workbenchLocale.meta.title}`, role: 'switch', 'aria-checked': 'true' },
       })
       return [
         nav,
         add,
         switchControl,
+        ...(this.otherBundleSwitch ? [new FakeElement(this, {
+          tagName: 'button',
+          packageName: 'another-plugin',
+          attributes: { 'aria-label': `启用 ${workbenchLocale.meta.title}`, role: 'switch', 'aria-checked': 'true' },
+        })] : []),
         ...(this.ambiguousControl === 'enabled-switch' ? [new FakeElement(this, {
           tagName: 'button',
-          attributes: { 'aria-label': '启用 harness-comfyui', role: 'switch', 'aria-checked': 'true' },
+          attributes: { 'aria-label': `启用 ${workbenchLocale.meta.title}`, role: 'switch', 'aria-checked': 'true' },
         })] : []),
       ]
     }
@@ -1064,16 +1084,22 @@ class FakeEvent {
 }
 
 class FakeElement {
-  constructor(page, { tagName, textContent = '', attributes = {}, disabled = false, onClick = () => {} }) {
+  constructor(page, { tagName, textContent = '', attributes = {}, packageName = 'harness-comfyui', disabled = false, onClick = () => {} }) {
     this.page = page
     this.tagName = tagName.toUpperCase()
     this.textContent = textContent
     this.attributes = attributes
+    this.packageName = packageName
     this.disabled = disabled
     this.onClick = onClick
   }
 
   getAttribute(name) { return this.attributes[name] ?? null }
+  closest(selector) {
+    return selector === '[data-plugin-package]' && this.getAttribute('role') === 'switch'
+      ? new FakeElement(this.page, { tagName: 'li', attributes: { 'data-plugin-package': this.packageName } })
+      : null
+  }
   getClientRects() { return [1] }
   getBoundingClientRect() {
     const offscreen = this.getAttribute('role') === 'switch'

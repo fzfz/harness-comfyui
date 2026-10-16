@@ -55,6 +55,8 @@ export function validatePluginPackagePath(value, label = 'package path') {
   }
   const allowedPath = value === 'cordis.patch.yml'
     || value.startsWith('config/')
+    || value === 'locales'
+    || value.startsWith('locales/')
     || value === 'agent-presets'
     || value.startsWith('agent-presets/')
     || value === '.agents/skills'

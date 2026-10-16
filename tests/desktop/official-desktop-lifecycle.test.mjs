@@ -15,6 +15,7 @@ import providerFixture from '../fixtures/custom-provider-reasoning.json' with { 
 import browserSettings from '../../config/browser-settings.json' with { type: 'json' }
 import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 import productionProfile from '../../config/profiles/production.json' with { type: 'json' }
+import workbenchLocale from '../../locales/workbench/zh.json' with { type: 'json' }
 import { parseDesktopE2EConfig } from '../../config/desktop-e2e-schema.mjs'
 import {
   getProbeStatus,
@@ -687,6 +688,9 @@ function browserSettingsInputState(inputSelector) {
 }
 
 async function openWorkflowBrowserSettings(page, run, fixture) {
+  const packageSelector = `[data-plugin-package=${JSON.stringify(pluginPackageConfig.packageName)}]`
+  const detailSelector = `[data-plugin-detail=${JSON.stringify(pluginPackageConfig.packageName)}]`
+  const viewButtonSelector = `${packageSelector} button:not([role="switch"])`
   const pluginNavigation = await page.evaluate(`(() => {
     const matches=[...document.querySelectorAll('button[aria-label=${JSON.stringify(pluginInstallUi.ui.pluginNavigationAriaLabel)}]')]
     if(matches.length!==1||matches[0].disabled)return {ok:false,count:matches.length,disabled:matches[0]?.disabled??null}
@@ -695,22 +699,24 @@ async function openWorkflowBrowserSettings(page, run, fixture) {
   if (!pluginNavigation?.ok) throw new Error(`Could not open Plugins: ${JSON.stringify(pluginNavigation)}`)
   await waitForValue(page, `(() => {
     const addPlugin=[...document.querySelectorAll('button')].some(button=>button.textContent?.trim()===${JSON.stringify(pluginInstallUi.ui.addPluginButtonText)})
-    const bundleVisible=document.body?.innerText?.includes(${JSON.stringify(pluginPackageConfig.packageName)})===true
+    const bundleVisible=document.querySelector(${JSON.stringify(packageSelector)})!==null
     return addPlugin&&bundleVisible
   })()`, value => value === true, fixture.timeouts.operationTimeoutMs, 'installed plugin list readiness')
 
-  const viewBundleLabel = fixture.operations.viewBundleButtonAriaLabelTemplate.replace('{name}', pluginPackageConfig.packageName)
+  const viewBundleLabel = fixture.operations.viewBundleButtonAriaLabelTemplate.replace('{name}', workbenchLocale.meta.title)
   const bundleDetailsCount = await waitForValue(page,
-    `document.querySelectorAll('button[aria-label=${JSON.stringify(viewBundleLabel)}]').length`,
+    `document.querySelectorAll(${JSON.stringify(viewButtonSelector)}).length`,
     value => value === 1, fixture.timeouts.operationTimeoutMs, 'installed bundle detail button visibility')
   if (bundleDetailsCount !== 1) throw new Error(`Expected one installed bundle detail button, found ${bundleDetailsCount}.`)
   const bundleDetails = await page.evaluate(`(() => {
-    const matches=[...document.querySelectorAll('button[aria-label=${JSON.stringify(viewBundleLabel)}]')]
+    const matches=[...document.querySelectorAll(${JSON.stringify(viewButtonSelector)})]
     if(matches.length!==1||matches[0].disabled)return {ok:false,count:matches.length,disabled:matches[0]?.disabled??null}
-    matches[0].click();return {ok:true}
+    const ariaLabel=matches[0].getAttribute('aria-label')
+    matches[0].click();return {ok:true,ariaLabel}
   })()`)
   if (!bundleDetails?.ok) throw new Error(`Could not open the installed bundle details: ${JSON.stringify(bundleDetails)}`)
-  await waitForValue(page, `document.querySelectorAll('button[aria-label=${JSON.stringify(viewBundleLabel)}]').length===0`,
+  expect(bundleDetails.ariaLabel).toBe(viewBundleLabel)
+  await waitForValue(page, `document.querySelector(${JSON.stringify(detailSelector)})!==null`,
     value => value === true, fixture.timeouts.operationTimeoutMs, 'installed bundle detail page transition')
 
   const connectionIdentity = getDesktopPageConnectionIdentity(page)

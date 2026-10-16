@@ -28,7 +28,8 @@
     ".agents/skills",
     "scripts/cli/help.mjs",
     "scripts/cli/help-schema.mjs",
-    "config/source-client.json"
+    "config/source-client.json",
+    "locales"
   ],
   "artifacts": [
     ".local/source-host",

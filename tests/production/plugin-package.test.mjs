@@ -229,6 +229,15 @@ describe('plugin build and package entry points', () => {
     ].filter(value => typeof value === 'string')
 
     expect(manifest.name).toBe('harness-comfyui')
+    for (const entry of ['', '/core', '/image-reader', '/cli', '/presets', '/web', '/cli-workspace']) {
+      for (const language of ['en', 'zh']) {
+        const target = manifest.exports[`.${entry}/locale/${language}.json`]
+        expect(target, `${entry} exposes ${language} plugin metadata`).toBeTypeOf('string')
+        const metadata = JSON.parse(await readFile(resolve(packageRoot, target), 'utf8'))
+        expect(metadata.meta.title).toBeTypeOf('string')
+        expect(metadata.meta.title.length).toBeGreaterThan(0)
+      }
+    }
     expect(manifest.files).toContain('.agents/skills')
     expect(manifest.files).toContain('agent-presets')
     expect(manifest.files).not.toContain('scripts/build')

@@ -8,4 +8,4 @@
     - id: harness-comfyui
       name: harness-comfyui
     - id: harness-comfyui-presets
-      name: ./agent-presets/project-installed-presets.mjs
+      name: harness-comfyui/presets

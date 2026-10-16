@@ -1,6 +1,6 @@
 {
   "name": "harness-comfyui",
-  "version": "0.46.0",
+  "version": "0.46.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.11.0",
@@ -235,6 +235,21 @@
     "./cli-workspace": {
       "types": "./src/host/cli/workspace.ts",
       "default": "./.local/source-host/cli-workspace.js"
-    }
+    },
+    "./presets": "./agent-presets/project-installed-presets.mjs",
+    "./locale/en.json": "./locales/workbench/en.json",
+    "./locale/zh.json": "./locales/workbench/zh.json",
+    "./core/locale/en.json": "./locales/core/en.json",
+    "./core/locale/zh.json": "./locales/core/zh.json",
+    "./image-reader/locale/en.json": "./locales/image-reader/en.json",
+    "./image-reader/locale/zh.json": "./locales/image-reader/zh.json",
+    "./cli/locale/en.json": "./locales/cli/en.json",
+    "./cli/locale/zh.json": "./locales/cli/zh.json",
+    "./presets/locale/en.json": "./locales/presets/en.json",
+    "./presets/locale/zh.json": "./locales/presets/zh.json",
+    "./web/locale/en.json": "./locales/web/en.json",
+    "./web/locale/zh.json": "./locales/web/zh.json",
+    "./cli-workspace/locale/en.json": "./locales/cli-workspace/en.json",
+    "./cli-workspace/locale/zh.json": "./locales/cli-workspace/zh.json"
   }
 }

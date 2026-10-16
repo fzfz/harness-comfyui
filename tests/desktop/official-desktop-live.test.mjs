@@ -15,6 +15,12 @@ import settingsEntryIds from '../../config/settings-entry-ids.json' with { type:
 import browserSettings from '../../config/browser-settings.json' with { type: 'json' }
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import lifecycleFixtureJson from './fixtures/official-lifecycle-fixture.json' with { type: 'json' }
+import pluginPackageConfig from '../../config/plugin-package.json' with { type: 'json' }
+import coreLocale from '../../locales/core/zh.json' with { type: 'json' }
+import imageReaderLocale from '../../locales/image-reader/zh.json' with { type: 'json' }
+import cliLocale from '../../locales/cli/zh.json' with { type: 'json' }
+import workbenchLocale from '../../locales/workbench/zh.json' with { type: 'json' }
+import presetsLocale from '../../locales/presets/zh.json' with { type: 'json' }
 
 import { loadDesktopE2EConfig, startProbe, stopProbe, getProbeStatus } from './fixtures/official-desktop-probe.mjs'
 import { loadOfficialProfilePatchAdapter } from './fixtures/official-profile-patch.mjs'
@@ -323,9 +329,39 @@ async function clickMainFrameElement(page, selector) {
 
 async function openPluginSettings(page) {
   await clickMainFrameElement(page, 'button[aria-label="插件"]')
-  await waitForValue(page, `document.querySelector('button[aria-label="查看 harness-comfyui"]') !== null`, value => value === true)
-  await clickMainFrameElement(page, 'button[aria-label="查看 harness-comfyui"]')
-  await waitForValue(page, `document.querySelector('.harness-comfyui-settings') !== null`, value => value === true)
+  const packageSelector = `[data-plugin-package=${JSON.stringify(pluginPackageConfig.packageName)}]`
+  const viewButtonSelector = `${packageSelector} button:not([role="switch"])`
+  await waitForValue(page, `document.querySelector(${JSON.stringify(viewButtonSelector)}) !== null`, value => value === true)
+  expect(await page.evaluate(`(() => {
+    const button = document.querySelector(${JSON.stringify(viewButtonSelector)})
+    return { title: button.innerText.trim(), ariaLabel: button.getAttribute('aria-label') }
+  })()`)).toEqual({
+    title: workbenchLocale.meta.title,
+    ariaLabel: lifecycleFixtureJson.operations.viewBundleButtonAriaLabelTemplate.replace('{name}', workbenchLocale.meta.title),
+  })
+  await clickMainFrameElement(page, viewButtonSelector)
+  const detailSelector = `[data-plugin-detail=${JSON.stringify(pluginPackageConfig.packageName)}]`
+  await waitForValue(page, `document.querySelector(${JSON.stringify(detailSelector)}) !== null
+    && document.querySelector('.harness-comfyui-settings') !== null`, value => value === true)
+  expect(await page.evaluate(`(() => {
+    const detail = document.querySelector(${JSON.stringify(detailSelector)})
+    return {
+      title: detail.querySelector('h3')?.innerText.trim(),
+      components: [...detail.querySelectorAll('[data-plugin-row]')].map(row => ({
+        id: row.getAttribute('data-plugin-row'),
+        title: row.innerText.split('\\n').map(text => text.trim()).find(Boolean),
+      })),
+    }
+  })()`)).toEqual({
+    title: workbenchLocale.meta.title,
+    components: [
+      { id: 'include:harness-comfyui-core', title: coreLocale.meta.title },
+      { id: 'include:harness-comfyui-image-reader', title: imageReaderLocale.meta.title },
+      { id: 'include:harness-comfyui-cli', title: cliLocale.meta.title },
+      { id: 'include:harness-comfyui', title: workbenchLocale.meta.title },
+      { id: 'include:harness-comfyui-presets', title: presetsLocale.meta.title },
+    ],
+  })
 }
 
 async function closePluginSettings(page) {

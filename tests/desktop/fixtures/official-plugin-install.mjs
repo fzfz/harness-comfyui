@@ -3,6 +3,8 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 
+import workbenchLocale from '../../../locales/workbench/zh.json' with { type: 'json' }
+
 import { matchesDesktopRendererTitle, parseDesktopE2ERunRecord } from '../../../config/desktop-e2e-schema.mjs'
 import { parsePluginPackageConfig } from '../../../config/plugin-package-schema.mjs'
 import { loadDesktopE2EConfig, processGroupMatchesRun } from './official-desktop-probe.mjs'
@@ -36,6 +38,10 @@ export async function installOfficialPluginCandidate(options) {
     loadDesktopE2EConfig(),
     loadPluginPackageConfig(),
   ])
+  const enabledBundle = {
+    packageName: packageConfig.packageName,
+    ariaLabel: uiConfig.ui.enabledBundleSwitchLabelTemplate.replace('{name}', workbenchLocale.meta.title),
+  }
   const timeoutMs = normalizedOptions.timeoutMs ?? e2eConfig.startup.startupTimeoutMs
   const pollIntervalMs = normalizedOptions.pollIntervalMs ?? e2eConfig.startup.pollIntervalMs
   validateTimeout(timeoutMs, 'timeoutMs')
@@ -202,11 +208,10 @@ export async function installOfficialPluginCandidate(options) {
     addOperation(state, 'enable-installed-bundle', { text: uiConfig.ui.enableNowButtonText })
 
     state.phase = 'waiting-for-enabled-bundle'
-    const enabledLabel = uiConfig.ui.enabledBundleSwitchLabelTemplate.replace('{name}', packageConfig.packageName)
     const bundleControl = await waitForSnapshot(
       normalizedOptions.page,
       'wait-for-enabled-bundle-control',
-      snapshot => !snapshot.hasDialog && enabledBundleControls(snapshot, enabledLabel).length > 0,
+      snapshot => !snapshot.hasDialog && enabledBundleControls(snapshot, enabledBundle).length > 0,
       state,
       deadline,
       pollIntervalMs,
@@ -216,7 +221,7 @@ export async function installOfficialPluginCandidate(options) {
     if (bundleControl.timedOut) {
       state.status = 'enable-timeout'
       state.reason = 'The official plugin manager did not expose the enabled bundle switch before the deadline.'
-      state.enabledObservation = describeEnabledBundle(lastSnapshot, enabledLabel)
+      state.enabledObservation = describeEnabledBundle(lastSnapshot, enabledBundle)
       addOperation(state, 'wait-for-enabled-bundle-control', {
         attempts: bundleControl.attempts,
         timedOut: true,
@@ -227,21 +232,21 @@ export async function installOfficialPluginCandidate(options) {
     addOperation(state, 'wait-for-enabled-bundle-control', { attempts: bundleControl.attempts })
     const revealed = await evaluatePage(normalizedOptions.page, 'reveal-enabled-bundle', {
       type: 'scroll-switch-into-view',
-      ariaLabel: enabledLabel,
+      ...enabledBundle,
     }, state, deadline)
     requireActionSucceeded(revealed, 'The official plugin manager did not expose a unique enabled bundle switch')
-    addOperation(state, 'reveal-enabled-bundle', { ariaLabel: enabledLabel })
+    addOperation(state, 'reveal-enabled-bundle', enabledBundle)
     const enabledResult = await waitForSnapshot(
       normalizedOptions.page,
       'wait-for-enabled-bundle',
-      snapshot => !snapshot.hasDialog && hasEnabledBundleSwitch(snapshot, enabledLabel),
+      snapshot => !snapshot.hasDialog && hasEnabledBundleSwitch(snapshot, enabledBundle),
       state,
       deadline,
       pollIntervalMs,
       enableClick.snapshot,
     )
     lastSnapshot = enabledResult.snapshot
-    state.enabledObservation = describeEnabledBundle(lastSnapshot, enabledLabel)
+    state.enabledObservation = describeEnabledBundle(lastSnapshot, enabledBundle)
     state.enabled = !enabledResult.timedOut && isEnabledObservation(state.enabledObservation)
     if (enabledResult.timedOut) {
       state.status = 'enable-timeout'
@@ -262,8 +267,7 @@ export async function installOfficialPluginCandidate(options) {
       state.status = 'evidence-incomplete'
     } else if (isTimeoutError(error) && ['enabling-bundle', 'waiting-for-enabled-bundle'].includes(state.phase)) {
       state.status = 'enable-timeout'
-      const enabledLabel = uiConfig.ui.enabledBundleSwitchLabelTemplate.replace('{name}', packageConfig.packageName)
-      state.enabledObservation = describeEnabledBundle(lastSnapshot, enabledLabel)
+      state.enabledObservation = describeEnabledBundle(lastSnapshot, enabledBundle)
     } else {
       state.status = isTimeoutError(error) ? 'timed-out' : 'failed'
     }
@@ -618,23 +622,24 @@ function hasInput(snapshot, placeholder) {
   return matches.length > 0
 }
 
-function enabledBundleControl(snapshot, label) {
-  const controls = enabledBundleControls(snapshot, label)
+function enabledBundleControl(snapshot, bundle) {
+  const controls = enabledBundleControls(snapshot, bundle)
   return controls.length === 1 ? controls[0] : null
 }
 
-function enabledBundleControls(snapshot, label) {
-  return snapshot?.buttons?.filter(button => button.ariaLabel === label && button.role === 'switch') ?? []
+function enabledBundleControls(snapshot, bundle) {
+  return snapshot?.buttons?.filter(button => button.packageName === bundle.packageName
+    && button.ariaLabel === bundle.ariaLabel && button.role === 'switch') ?? []
 }
 
-function hasEnabledBundleSwitch(snapshot, label) {
-  const control = enabledBundleControl(snapshot, label)
+function hasEnabledBundleSwitch(snapshot, bundle) {
+  const control = enabledBundleControl(snapshot, bundle)
   return control !== null && !control.disabled && control.ariaChecked === 'true'
     && control.inViewport === true && boundsInsideViewport(control.bounds, snapshot.viewport)
 }
 
-function describeEnabledBundle(snapshot, label) {
-  const control = enabledBundleControl(snapshot, label)
+function describeEnabledBundle(snapshot, bundle) {
+  const control = enabledBundleControl(snapshot, bundle)
   return {
     hasDialog: snapshot?.hasDialog === true,
     role: control?.role ?? null,
@@ -827,9 +832,10 @@ function summarizeSnapshot(snapshot) {
     hasDialog: snapshot.hasDialog,
     viewport: snapshot.viewport,
     messages: snapshot.messages,
-    buttons: snapshot.buttons?.map(({ text, ariaLabel, disabled, role, ariaChecked, inViewport, bounds }) => ({
+    buttons: snapshot.buttons?.map(({ text, ariaLabel, packageName, disabled, role, ariaChecked, inViewport, bounds }) => ({
       text,
       ariaLabel,
+      packageName,
       disabled,
       role,
       ariaChecked,
@@ -872,10 +878,11 @@ function performOfficialPluginUIAction(action) {
       && rect.left >= 0 && rect.top >= 0 && rect.right <= size.width && rect.bottom <= size.height
   }
   const visible = element => inViewport(element)
-  const readAttribute = (element, name) => element.getAttribute?.(name) ?? null
+  const readAttribute = (element, name) => element?.getAttribute?.(name) ?? null
   const buttonSnapshot = element => ({
     text: String(element.innerText ?? element.textContent ?? '').trim(),
     ariaLabel: readAttribute(element, 'aria-label'),
+    packageName: readAttribute(element.closest('[data-plugin-package]'), 'data-plugin-package'),
     disabled: element.disabled === true,
     role: readAttribute(element, 'role'),
     ariaChecked: readAttribute(element, 'aria-checked') ?? (typeof element.checked === 'boolean' ? String(element.checked) : null),
@@ -941,7 +948,8 @@ function performOfficialPluginUIAction(action) {
   }
   if (action.type === 'scroll-switch-into-view') {
     const candidates = Array.from(document.querySelectorAll('[role="switch"]'))
-      .filter(element => readAttribute(element, 'aria-label') === action.ariaLabel)
+      .filter(element => readAttribute(element.closest('[data-plugin-package]'), 'data-plugin-package') === action.packageName
+        && readAttribute(element, 'aria-label') === action.ariaLabel)
     if (candidates.length === 0) return { ok: false, reason: 'not-found', snapshot: snapshot() }
     if (candidates.length > 1) return { ok: false, reason: 'ambiguous', snapshot: snapshot() }
     if (candidates[0].disabled === true) return { ok: false, reason: 'disabled', snapshot: snapshot() }

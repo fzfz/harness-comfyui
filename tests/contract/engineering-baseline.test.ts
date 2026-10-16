@@ -12,7 +12,7 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.46.0',
+      version: '0.46.1',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.11.0',
@@ -20,10 +20,11 @@ describe('source workspace engineering contract', () => {
     })
     expect(manifest).not.toHaveProperty('bin')
     expect(manifest).not.toHaveProperty('files')
-    expect(manifest.exports).toEqual({
+    expect(manifest.exports).toMatchObject({
       '.': { types: './src/index.ts', default: './.local/source-host/index.js' },
       './client': { types: './src/client/index.tsx', default: './.local/source-client/client.js' },
       './package.json': './package.json',
+      './presets': './agent-presets/project-installed-presets.mjs',
       './core': { types: './src/host/core/plugin.ts', default: './.local/source-host/core.js' },
       './image-reader': { types: './src/host/image-reader/plugin.ts', default: './.local/source-host/image-reader.js' },
       './cli': { types: './src/host/cli/plugin.ts', default: './.local/source-host/cli.js' },

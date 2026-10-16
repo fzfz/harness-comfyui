@@ -48,7 +48,7 @@ describe('official installed Preset declarations', () => {
   it('loads the Client-bearing package and installed Presets without changing Host defaults', async () => {
     const patch = await readFile(resolve(repositoryRoot, 'cordis.patch.yml'), 'utf8')
     expect(patch).toMatch(/name: harness-comfyui\s*$/m)
-    expect(patch).toContain('name: ./agent-presets/project-installed-presets.mjs')
+    expect(patch).toContain('name: harness-comfyui/presets')
     expect(patch).not.toMatch(/^- id: (?:agent-default-model|llm-pi-ai|agent-preset-registry|bash-sandbox)$/m)
     expect(patch).not.toContain('process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE')
   })
