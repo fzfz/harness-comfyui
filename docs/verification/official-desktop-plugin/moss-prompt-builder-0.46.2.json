@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "pluginVersion": "0.46.2",
+  "desktopVersion": "0.2.0-rc.2",
+  "probeRunId": "95a9fe9d-235e-4132-8ee2-07569d90bbf3",
+  "installation": {
+    "status": "installed",
+    "enabled": true,
+    "evidenceComplete": true
+  },
+  "cases": [
+    {
+      "presetId": "harness-comfyui-cli-candidate",
+      "sessionId": "session-e2f53779-4296-445c-8bf0-ccc948ab5f5d",
+      "request": "使用 moss-prompt-builder，为雨后街道上撑红伞的旅人编写 MOSS-Image Caption。将草稿和编译后的提示词保存到当前 Workspace 的 moss-caption 目录，返回文件路径。只制作提示词。",
+      "model": "openrouter/thinkingmachines/inkling:free",
+      "turnEnd": "completed",
+      "toolEvidence": [
+        {
+          "seq": 19,
+          "name": "skill",
+          "arguments": {
+            "name": "moss-prompt-builder"
+          },
+          "result": {
+            "isError": false
+          }
+        },
+        {
+          "seq": 59,
+          "name": "bash",
+          "arguments": {
+            "command": "python3 /Users/fzfz/.codex/worktrees/moss-skill-release/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/moss-prompt-builder/scripts/compile_prompt.py --help",
+            "description": "Show compiler help"
+          },
+          "result": {
+            "role": "tool",
+            "source": {
+              "kind": "tool",
+              "callId": "call_b5aea6799c944ae3a88ea241"
+            },
+            "toolCallId": "call_b5aea6799c944ae3a88ea241",
+            "content": [
+              {
+                "type": "text",
+                "text": "usage: python3 scripts/compile_prompt.py [-h] [--output PATH] draft\n\nCompile a caption or absolute-pixel Layout draft into a MOSS-Image prompt.\n\npositional arguments:\n  draft          Required string: UTF-8 Caption/Layout JSON file path, or '-'\n                 for UTF-8 JSON from stdin (no default)\n\noptions:\n  -h, --help     show this help message and exit\n  --output PATH  Optional file path (default: prompt.txt in a new temporary\n                 directory for each call)\n\nThe result file contains UTF-8 prompt text. On success, stdout contains only\nits absolute path and a newline. Diagnostics go to stderr; errors exit nonzero.\nAn existing --output file is replaced after the draft passes validation.\n\nExamples (from the Skill directory):\n  python3 scripts/compile_prompt.py draft.json\n  python3 scripts/compile_prompt.py draft.json --output prompt.txt\n  cat draft.json | python3 scripts/compile_prompt.py -\n"
+              }
+            ],
+            "isError": false,
+            "id": "cf0f5748-d772-4e80-ad53-486a0d224e6d"
+          }
+        },
+        {
+          "seq": 64,
+          "name": "bash",
+          "arguments": {
+            "command": "python3 /Users/fzfz/.codex/worktrees/moss-skill-release/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/moss-prompt-builder/scripts/compile_prompt.py moss-caption/draft.json --output moss-caption/prompt.txt",
+            "description": "Compile caption draft"
+          },
+          "result": {
+            "role": "tool",
+            "source": {
+              "kind": "tool",
+              "callId": "call_d811aa38fece4d4684f7ccbc"
+            },
+            "toolCallId": "call_d811aa38fece4d4684f7ccbc",
+            "content": [
+              {
+                "type": "text",
+                "text": "/Users/fzfz/.codex/worktrees/moss-skill-release/harness-comfyui/.local/desktop-development/official-environment/workspace/moss-caption/prompt.txt\n"
+              }
+            ],
+            "isError": false,
+            "id": "ea76d1a6-a4c4-48ab-b77d-abeeca3c7aad"
+          }
+        }
+      ],
+      "draft": {
+        "caption": "Rain-wet cobblestone street at twilight, a lone traveler in a dark cloak walking under a vivid crimson umbrella. The red umbrella is open and centered, its curved canopy gleaming with rain droplets against muted blues and warm streetlamp reflections. Puddles on the stone ground mirror the umbrella's deep red and the golden lantern glow. The traveler's silhouette is seen from behind, small against the wet street's receding depth. Cinematic atmosphere, soft focus background, photographic lighting, moody and contemplative."
+      },
+      "compiledPrompt": "Rain-wet cobblestone street at twilight, a lone traveler in a dark cloak walking under a vivid crimson umbrella. The red umbrella is open and centered, its curved canopy gleaming with rain droplets against muted blues and warm streetlamp reflections. Puddles on the stone ground mirror the umbrella's deep red and the golden lantern glow. The traveler's silhouette is seen from behind, small against the wet street's receding depth. Cinematic atmosphere, soft focus background, photographic lighting, moody and contemplative.\n",
+      "traceIndex": ".local/moss-release/harness-comfyui-cli-candidate-trace/trace-index.json",
+      "traceMissing": [
+        "RAW_MODEL_REQUEST_NOT_PERSISTED",
+        "RAW_MODEL_STREAM_NOT_PERSISTED"
+      ]
+    },
+    {
+      "presetId": "harness-comfyui-iteration",
+      "sessionId": "session-1d3a80ae-eeb4-4287-bb05-f12bb6f92f74",
+      "request": "使用 moss-prompt-builder，设计1536×1024咖啡海报 Layout：左边蓝色陶瓷杯，右边标题严格为“咖啡与清晨”，下方文字两行为“慢一点\\n也很好”，暖色自然光，留白充足。将草稿和编译后的提示词保存到当前 Workspace 的 moss-layout 目录，返回路径和尺寸。只制作提示词。",
+      "model": "openrouter/thinkingmachines/inkling:free",
+      "turnEnd": "completed",
+      "toolEvidence": [
+        {
+          "seq": 19,
+          "name": "skill",
+          "arguments": {
+            "name": "moss-prompt-builder"
+          },
+          "result": {
+            "isError": false
+          }
+        },
+        {
+          "seq": 74,
+          "name": "bash",
+          "arguments": {
+            "command": "python3 /Users/fzfz/.codex/worktrees/moss-skill-release/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/moss-prompt-builder/scripts/compile_prompt.py --help",
+            "description": "Check compiler help"
+          },
+          "result": {
+            "role": "tool",
+            "source": {
+              "kind": "tool",
+              "callId": "call_f9a60af70bb94dd794737103"
+            },
+            "toolCallId": "call_f9a60af70bb94dd794737103",
+            "content": [
+              {
+                "type": "text",
+                "text": "usage: python3 scripts/compile_prompt.py [-h] [--output PATH] draft\n\nCompile a caption or absolute-pixel Layout draft into a MOSS-Image prompt.\n\npositional arguments:\n  draft          Required string: UTF-8 Caption/Layout JSON file path, or '-'\n                 for UTF-8 JSON from stdin (no default)\n\noptions:\n  -h, --help     show this help message and exit\n  --output PATH  Optional file path (default: prompt.txt in a new temporary\n                 directory for each call)\n\nThe result file contains UTF-8 prompt text. On success, stdout contains only\nits absolute path and a newline. Diagnostics go to stderr; errors exit nonzero.\nAn existing --output file is replaced after the draft passes validation.\n\nExamples (from the Skill directory):\n  python3 scripts/compile_prompt.py draft.json\n  python3 scripts/compile_prompt.py draft.json --output prompt.txt\n  cat draft.json | python3 scripts/compile_prompt.py -\n"
+              }
+            ],
+            "isError": false,
+            "id": "dbdc23bf-1ad3-4f11-a601-4320e39aec49"
+          }
+        },
+        {
+          "seq": 84,
+          "name": "bash",
+          "arguments": {
+            "command": "python3 /Users/fzfz/.codex/worktrees/moss-skill-release/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/moss-prompt-builder/scripts/compile_prompt.py moss-layout/draft.json --output moss-layout/prompt.txt",
+            "description": "Compile layout draft"
+          },
+          "result": {
+            "role": "tool",
+            "source": {
+              "kind": "tool",
+              "callId": "call_b9f08d79358847479bb7aba1"
+            },
+            "toolCallId": "call_b9f08d79358847479bb7aba1",
+            "content": [
+              {
+                "type": "text",
+                "text": "/Users/fzfz/.codex/worktrees/moss-skill-release/harness-comfyui/.local/desktop-development/official-environment/workspace/moss-layout/prompt.txt\n"
+              }
+            ],
+            "isError": false,
+            "id": "2bd7386f-d89c-464e-a442-814b1bf7be7a"
+          }
+        }
+      ],
+      "draft": {
+        "width": 1536,
+        "height": 1024,
+        "bbox_coord_space": "abs",
+        "bbox_format": "xyxy",
+        "summary": {
+          "caption": "A 1536x1024 coffee poster: left half holds a blue ceramic cup on a warm wooden surface; right half carries the headline and subtext over generous negative space; warm natural side light from the left; clean editorial layout with ample breathing room.",
+          "meta": [
+            "poster",
+            "coffee",
+            "editorial"
+          ],
+          "palette": [
+            "ceramic blue",
+            "warm cream",
+            "soft amber",
+            "charcoal"
+          ]
+        },
+        "items": [
+          {
+            "label": "object",
+            "caption": "A handcrafted blue ceramic coffee cup with a rounded handle, smooth matte glaze, slightly tapered body, resting on a warm wood-grain surface; gentle steam rises; warm natural light catches the left shoulder of the cup.",
+            "bbox": [
+              60,
+              300,
+              680,
+              880
+            ],
+            "tags": [
+              "ceramic",
+              "cup",
+              "coffee"
+            ],
+            "palette": [
+              "ceramic blue",
+              "warm wood"
+            ]
+          },
+          {
+            "label": "text",
+            "caption": "Main title in elegant serif typography, large scale, dark charcoal color, right-aligned within the right half, positioned in the upper-middle zone for clear visual hierarchy.",
+            "text": "咖啡与清晨",
+            "bbox": [
+              820,
+              220,
+              1460,
+              380
+            ],
+            "tags": [
+              "title",
+              "headline"
+            ]
+          },
+          {
+            "label": "text",
+            "caption": "Two-line sub-copy in refined sans-serif, slightly smaller and lighter weight, warm charcoal, centered under the title, line break preserved as written.",
+            "text": "慢一点\n也很好",
+            "bbox": [
+              820,
+              520,
+              1460,
+              720
+            ],
+            "tags": [
+              "subtext",
+              "line-break"
+            ]
+          }
+        ]
+      },
+      "compiledPrompt": "{\"summary\":{\"caption\":\"A 1536x1024 coffee poster: left half holds a blue ceramic cup on a warm wooden surface; right half carries the headline and subtext over generous negative space; warm natural side light from the left; clean editorial layout with ample breathing room.\",\"meta\":[\"poster\",\"coffee\",\"editorial\"],\"palette\":[\"ceramic blue\",\"warm cream\",\"soft amber\",\"charcoal\"]},\"items\":[{\"label\":\"object\",\"caption\":\"A handcrafted blue ceramic coffee cup with a rounded handle, smooth matte glaze, slightly tapered body, resting on a warm wood-grain surface; gentle steam rises; warm natural light catches the left shoulder of the cup.\",\"bbox\":[-212,-708,368,-88],\"tags\":[\"ceramic\",\"cup\",\"coffee\"],\"palette\":[\"ceramic blue\",\"warm wood\"]},{\"label\":\"text\",\"caption\":\"Main title in elegant serif typography, large scale, dark charcoal color, right-aligned within the right half, positioned in the upper-middle zone for clear visual hierarchy.\",\"text\":\"咖啡与清晨\",\"bbox\":[-292,52,-132,692],\"tags\":[\"title\",\"headline\"]},{\"label\":\"text\",\"caption\":\"Two-line sub-copy in refined sans-serif, slightly smaller and lighter weight, warm charcoal, centered under the title, line break preserved as written.\",\"text\":\"慢一点\\n也很好\",\"bbox\":[8,52,208,692],\"tags\":[\"subtext\",\"line-break\"]}],\"bbox_coord_space\":\"abs_centralized\",\"bbox_format\":\"yxyx\"}\n",
+      "traceIndex": ".local/moss-release/harness-comfyui-iteration-trace/trace-index.json",
+      "traceMissing": [
+        "RAW_MODEL_REQUEST_NOT_PERSISTED",
+        "RAW_MODEL_STREAM_NOT_PERSISTED"
+      ]
+    }
+  ]
+}

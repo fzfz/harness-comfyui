@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import repositorySkillCatalog from '../../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import { cp, mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
@@ -203,7 +204,7 @@ try {
   const workbenchDefinition = await scopedDefinition(workbenchRow)
   const iterationDefinition = await scopedDefinition(iterationRow)
   const names = await skillNamesOnDisk()
-  assert.equal(names.length, 8)
+  assert.deepEqual(names, repositorySkillCatalog.map(skill => skill.name).sort())
 
   const noIsolationDefinition = structuredClone(workbenchDefinition)
   noIsolationDefinition.id = 'harness-comfyui-cli-candidate-without-isolation'

@@ -4,7 +4,7 @@
 ---
 # Harness ComfyUI
 
-Harness ComfyUI 通过预构建插件包安装到官方 DeepSeek Harness Desktop。宿主提供窗口、会话、模型设置和插件管理；插件提供 ComfyUI 工作台、两套项目预设及八个 Skills。
+Harness ComfyUI 通过预构建插件包安装到官方 DeepSeek Harness Desktop。宿主提供窗口、会话、模型设置和插件管理；插件提供 ComfyUI 工作台、两套项目预设及项目 Skills。
 
 Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出图的 AI 助手。你只需说清想画什么、选好工作流模板和底模，助手就会根据需求查找作品、角色、画师和 LoRA，搭配画师风格与 LoRA、设置各自的权重，并设计提示词和绘图参数。你不用逐项打开工作流手动调参数，可以把精力放在画面本身。
 
@@ -25,7 +25,7 @@ Harness ComfyUI 是一个帮你自动查素材、配参数、调用 ComfyUI 出�
 
 ## 适用版本
 
-1. v0.46.1 面向官方 macOS DeepSeek Harness Desktop `0.2.0-rc.2`。验收范围见[版本说明](docs/releasenotes.md)。
+1. v0.46.2 面向官方 macOS DeepSeek Harness Desktop `0.2.0-rc.2`。验收范围见[版本说明](docs/releasenotes.md)。
 
 ## CLI 帮助与图片读取
 
@@ -116,6 +116,7 @@ Agent 核对所选资源和参数后提交任务，并返回 Run ID。右侧“�
 | --- | --- |
 | ANIMA 提示词 | 使用 anima-prompt-builder，根据已选角色和画风，为雪夜车站场景构建十二槽 ANIMA3 Prompt。 |
 | WAI 提示词 | 使用 wai-sdxl-prompt-builder，将这段画面描述改写为 WAI-illustrious-SDXL 英文 Prompt，并返回完整结果 JSON。 |
+| MOSS-Image 提示词 | 使用 moss-prompt-builder，将画面描述扩写为 Caption；需要精确布局时，提供画布尺寸并生成 Layout 提示词。 |
 | Krea2 动漫提示词 | 使用 krea2-anime-prompt-builder，为全身正面站姿的舞蹈迁移源图编写提示词，并返回完整结果 JSON。 |
 | 人物立绘提示词 | 使用 character-portrait-prompt-designer，读取我提供的书籍目录，为指定人物设计基本外观和各场景的立绘提示词。 |
 

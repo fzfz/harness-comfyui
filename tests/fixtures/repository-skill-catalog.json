@@ -28,6 +28,10 @@
     "description": "使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。"
   },
   {
+    "name": "moss-prompt-builder",
+    "description": "Expand an image-generation request into a detailed MOSS-Image caption or spatial layout, and compile a local JSON draft into a ready-to-paste prompt. Use for prompt enhancement, image composition and text placement; this skill does not generate images."
+  },
+  {
     "name": "wai-sdxl-prompt-builder",
     "description": "用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt，或者查询一个或多个 ComfyUI Generation Run 的生成参数或 Actual Workflow 时使用。"
   }

@@ -2,6 +2,13 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.46.2
+
+## MOSS-Image 提示词
+
+1. ComfyUI工作台预设与 ComfyUI迭代预设提供 `moss-prompt-builder`，支持扩写 Caption、设计像素 Layout，并将 JSON 草稿编译为可直接使用的提示词。
+2. Layout 编译器校验画布尺寸、文字字段和边界框，输出 MOSS-Image 使用的中心坐标；使用该编译器需要本机 Python 3。
+
 # Harness ComfyUI v0.46.1
 
 ## 插件名称

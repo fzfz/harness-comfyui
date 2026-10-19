@@ -46,7 +46,7 @@
    | `agent-presets/project-subagent-workspace.mjs` | 父子 Session 的 Workspace 关联。 |
    | `agent-presets/project-tool-visibility.mjs`、`project-system-prompt-visibility.mjs` | Preset 的 Tool 与系统提示词可见范围。 |
 
-2. 八个项目 Skill 的唯一源码目录如下；执行入口为各目录的 `SKILL.md`。
+2. 项目 Skill 的唯一源码目录如下；执行入口为各目录的 `SKILL.md`。
 
    | 路径 | 内容 |
    | --- | --- |
@@ -56,6 +56,7 @@
    | `.agents/skills/comfyui-image-review/` | Run 图片读取、参数比较与 Prompt 改进。 |
    | `.agents/skills/comfyui-iterate-generation/` | 图片迭代调度；文件交接合同位于 `references/records.md`。 |
    | `.agents/skills/krea2-anime-prompt-builder/` | Krea2 动漫 Prompt 与历史 Generation Run 查询。 |
+   | `.agents/skills/moss-prompt-builder/` | MOSS-Image Caption 与像素 Layout 提示词。 |
    | `.agents/skills/local-image-reader/` | 用户提供本地图片路径时的视觉读取。 |
    | `.agents/skills/wai-sdxl-prompt-builder/` | WAI Prompt 与历史 Generation Run 查询。 |
 
