@@ -30,7 +30,7 @@
    | `harness-comfyui-cli-candidate` | ComfyUI工作台预设 | `agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml` |
    | `harness-comfyui-iteration` | ComfyUI迭代预设 | `agent-presets/harness-comfyui-iteration/agent.cordis.yml` |
 
-2. [project-installed-skills.mjs](../../agent-presets/project-installed-skills.mjs) 为每个项目 Preset 注册项目 Skill provider，提供八个项目 Skill。provider 使用官方 filesystem Skill provider，设置 `includeDefaultRoots: false`，并读取插件包内 `.agents/skills/`。Preset、Skill 与共享资源以各自模块 URL 定位；provider 的可见范围为所属项目 Preset。
+2. [project-installed-skills.mjs](../../agent-presets/project-installed-skills.mjs) 为每个项目 Preset 注册项目 Skill provider。provider 使用官方 filesystem Skill provider，设置 `includeDefaultRoots: false`，并读取插件包内 `.agents/skills/`。Preset、Skill 与共享资源以各自模块 URL 定位；provider 的可见范围为所属项目 Preset。
 
 3. 两个项目 Preset 的 Agent 通过 DSH 原生 MCP 客户端访问 NoobAI MCP 服务，查询目录记录。Host 内部数据源客户端为 Catalog 展示和 Generation 准备读取数据；其入口为 [queryCatalog()](../../src/host/source-client/catalog-client.ts) 与 [readSourceRecord()](../../src/host/source-client/source-client.ts)，协议路径与请求限制由 `config/source-client.json` 定义。两条访问路径连接同一目录数据；地址与凭据配置见[配置规范的 NoobAI MCP 服务章节](configuration.md#noobai-mcp-服务)。
 

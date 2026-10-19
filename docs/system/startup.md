@@ -2,7 +2,7 @@
 
 ## 宿主职责
 
-官方 DeepSeek Harness Desktop 管理应用安装、升级、启动、退出、Profile 和模型凭据。Harness ComfyUI 以 `harness-comfyui` 插件包运行；插件包提供 Host、Client、managed CLI、Workflow 编译 Worker、数据源客户端、两个项目 Preset 和八个 Repository Skills。
+官方 DeepSeek Harness Desktop 管理应用安装、升级、启动、退出、Profile 和模型凭据。Harness ComfyUI 以 `harness-comfyui` 插件包运行；插件包提供 Host、Client、managed CLI、Workflow 编译 Worker、数据源客户端、两个项目 Preset 和 Repository Skills。
 
 官方应用根据当前 Profile 的插件注册加载插件。Host 插件在启用时读取插件配置和 `production` Configuration Profile，校验业务数据目录，注册 Catalog、Generation、图片读取、浏览器设置和 managed CLI 服务。插件的目录、配置层级和凭据归属见 `docs/system/configuration.md`。
 

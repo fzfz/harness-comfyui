@@ -6,6 +6,8 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 
+import repositorySkillCatalog from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
+
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -143,16 +145,7 @@ describe('official installed Preset declarations', () => {
     expect(result).toMatchObject({
       activeProductSessions: 2,
       hostSkills: 1,
-      installedSkills: [
-        'anima-prompt-builder',
-        'character-portrait-prompt-designer',
-        'comfyui-generate',
-        'comfyui-image-review',
-        'comfyui-iterate-generation',
-        'krea2-anime-prompt-builder',
-        'local-image-reader',
-        'wai-sdxl-prompt-builder',
-      ],
+      installedSkills: repositorySkillCatalog.map(skill => skill.name).sort(),
       retiredGenerationSurvivedUser: true,
       disposedAfterUserRelease: true,
       restoredAfterReload: true,

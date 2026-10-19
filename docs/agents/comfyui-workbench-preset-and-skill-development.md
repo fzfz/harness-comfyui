@@ -30,7 +30,7 @@
 
 1. 当前 checkout 的 `.agents/skills/<skill-name>/` 是项目 Skill 唯一源码目录。开发者在该目录创建或修改 Skill，并使用该目录中的文件构建插件包。
 
-2. `config/product-agent.json.skills.sourceRootRelativePath` 定义 checkout 中项目 Skill 源码根目录；该字段当前为 `.agents/skills`。插件包内的 `agent-presets/project-installed-skills.mjs` 按自身安装模块位置解析包内 `.agents/skills/`，并以 `providerName: harness-comfyui`、`includeDefaultRoots: false`、`watch: false` 注册官方 filesystem Skill provider。两个项目 Preset 各自加载该组件，因此两个 Preset 都能读取插件包内的八个 Repository Skills，其他 Preset 不加载该项目 Skill provider。
+2. `config/product-agent.json.skills.sourceRootRelativePath` 定义 checkout 中项目 Skill 源码根目录；该字段当前为 `.agents/skills`。插件包内的 `agent-presets/project-installed-skills.mjs` 按自身安装模块位置解析包内 `.agents/skills/`，并以 `providerName: harness-comfyui`、`includeDefaultRoots: false`、`watch: false` 注册官方 filesystem Skill provider。两个项目 Preset 各自加载该组件，因此两个 Preset 都能读取插件包内的 Repository Skills，其他 Preset 不加载该项目 Skill provider。
 
 3. 项目 Skill 的安装包内相对路径是运行时唯一来源。工作台和迭代 Preset 不读取 checkout 或用户主目录中的项目 Skill 副本；官方内置 Preset 与其他 Preset 保留官方自身的 Workspace 和用户级 Skill 行为。
 

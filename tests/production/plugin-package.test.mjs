@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import repositorySkillCatalog from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
 import { parsePluginPackageConfig } from '../../config/plugin-package-schema.mjs'
@@ -258,16 +259,7 @@ describe('plugin build and package entry points', () => {
       expect(details.mode & 0o222, `${reference} must resolve inside a read-only package`).toBe(0)
       await readFile(resource)
     }
-    for (const skill of [
-      'anima-prompt-builder',
-      'character-portrait-prompt-designer',
-      'comfyui-generate',
-      'comfyui-image-review',
-      'comfyui-iterate-generation',
-      'krea2-anime-prompt-builder',
-      'local-image-reader',
-      'wai-sdxl-prompt-builder',
-    ]) {
+    for (const { name: skill } of repositorySkillCatalog) {
       await readFile(join(packageRoot, '.agents/skills', skill, 'SKILL.md'))
     }
     const packageConfig = JSON.parse(await readFile(join(repositoryRoot, 'config/plugin-package.json'), 'utf8'))
