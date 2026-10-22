@@ -1,0 +1,159 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "mossimage\\moss_image_sft_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "MOSS SFT INT8"
+    }
+  },
+  "3": {
+    "inputs": {
+      "text": "A candid waist-up portrait of a woman in her thirties with shoulder-length dark brown hair, wearing a forest-green linen shirt with rolled sleeves, seated by a cafe window. She holds one white ceramic coffee cup with both hands. Soft daylight from the left, natural skin texture, warm wooden background, a small leafy plant on the table. Calm expression, realistic proportions, gentle depth of field. No text.",
+      "clip": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Prompt (positive)"
+    }
+  },
+  "4": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative (leave empty — CFG is 1.0)"
+    }
+  },
+  "6": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "空Latent图像（Flux2）"
+    }
+  },
+  "7": {
+    "inputs": {
+      "seed": 42,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler — 4 steps, CFG 1, euler/simple"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "workflow-skill-research/new-loras-ab",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "10": {
+    "inputs": {
+      "clip_name": "qwen3.5_9b_w4a8_gptq.safetensors",
+      "type": "moss_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load Qwen3.5 text encoder (type moss_image)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "vae_name": "flux2-vae_small.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load FLUX.2 VAE"
+    }
+  },
+  "12": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "moss\\moss_image_sft_4step_v2.0.safetensors",
+        "strength": 1
+      },
+      "lora_2": {
+        "on": true,
+        "lora": "moss\\E79C9FE5AE9EE794BBE9A3.ERin.safetensors",
+        "strength": 0.7
+      },
+      "lora_3": {
+        "on": true,
+        "lora": "moss\\YB5MQB97RNGC2RH56F7KJZ9XQ0.safetensors",
+        "strength": 0.7
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "Acceleration + two MOSS LoRAs"
+    }
+  }
+}

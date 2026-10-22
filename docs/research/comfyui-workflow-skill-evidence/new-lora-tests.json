@@ -1,0 +1,231 @@
+{
+  "instance": "http://192.168.110.122:8188",
+  "lora_count": 105,
+  "models": [
+    {
+      "name": "moss\\E79C9FE5AE9EE794BBE9A3.ERin.safetensors",
+      "size": 148697624,
+      "expected_length": 148697624,
+      "base_model": "moss_image",
+      "training_name": "真实画风",
+      "tensor_count": 504
+    },
+    {
+      "name": "moss\\YB5MQB97RNGC2RH56F7KJZ9XQ0.safetensors",
+      "size": 129017232,
+      "expected_length": 129017232,
+      "base_model": "urn:air:moss:diffusion_model:huggingface:Comfy-Org/MOSS-Image@main/diffusion_models/moss_image_sft_int8_convrot.safetensors",
+      "training_name": "training_11685180-20261018130523030-12ts",
+      "tensor_count": 328
+    }
+  ],
+  "user_description_of_second_lora": "This is a more realistic style anime LoRA. The dataset used contains a large number of NSFW images. Under normal circumstances, most NSFW-related image generation can be achieved. The LoRA itself also trained a face model that I really like, so using this LoRA will result in relatively high consistency in appearance.",
+  "source_pages_and_trigger_words": "unconfirmed",
+  "fixed_settings": {
+    "acceleration_lora": "moss\\moss_image_sft_4step_v2.0.safetensors",
+    "acceleration_strength": 1.0,
+    "new_lora_exploratory_strengths": [
+      0.7,
+      0.7
+    ],
+    "steps": 4,
+    "cfg": 1,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "width": 1024,
+    "height": 1024
+  },
+  "cases": [
+    {
+      "name": "new-loras-baseline",
+      "prompt_id": "71581696-9527-4eda-9003-aa87636b1321",
+      "node_errors": {},
+      "completed": true,
+      "status": "success",
+      "elapsed_seconds": 44.26,
+      "output_files": [
+        "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-baseline-9-0.png"
+      ],
+      "roundtrip_equal": true,
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-baseline"
+    },
+    {
+      "name": "new-loras-a",
+      "prompt_id": "2ae8fce9-6b37-4f01-a994-23d9c5f4743f",
+      "node_errors": {},
+      "completed": true,
+      "status": "success",
+      "elapsed_seconds": 48.37,
+      "output_files": [
+        "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-a-9-0.png"
+      ],
+      "roundtrip_equal": true,
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-a"
+    },
+    {
+      "name": "new-loras-b",
+      "prompt_id": "4adf5ccf-ea84-4ba0-90c2-8de68f24816b",
+      "node_errors": {},
+      "completed": true,
+      "status": "success",
+      "elapsed_seconds": 27.45,
+      "output_files": [
+        "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-b-9-0.png"
+      ],
+      "roundtrip_equal": true,
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-b"
+    },
+    {
+      "name": "new-loras-ab",
+      "prompt_id": "0ce19154-63dd-4109-b51b-6bcfcbda5203",
+      "node_errors": {},
+      "completed": true,
+      "status": "success",
+      "elapsed_seconds": 10.11,
+      "output_files": [
+        "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-ab-9-0.png"
+      ],
+      "roundtrip_equal": true,
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-ab"
+    },
+    {
+      "name": "new-loras-native-ab",
+      "prompt_id": "eb4f9971-003b-4dd6-a329-839fcf1b8913",
+      "node_errors": {},
+      "completed": true,
+      "status": "success",
+      "elapsed_seconds": 6.9,
+      "output_files": [
+        "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-native-ab-9-0.png"
+      ],
+      "roundtrip_equal": true,
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-native-ab"
+    },
+    {
+      "name": "new-loras-baseline-seed43",
+      "prompt_id": "4f97e66b-d2bb-4332-8472-61cc45deb433",
+      "node_errors": {},
+      "completed": true,
+      "status": "success",
+      "elapsed_seconds": 6.72,
+      "output_files": [
+        "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-baseline-seed43-9-0.png"
+      ],
+      "roundtrip_equal": true,
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-baseline-seed43"
+    },
+    {
+      "name": "new-loras-b-seed43",
+      "prompt_id": "25b08acd-31bc-4a8d-ac5a-88e55fc276c9",
+      "node_errors": {},
+      "completed": true,
+      "status": "success",
+      "elapsed_seconds": 6.37,
+      "output_files": [
+        "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-b-seed43-9-0.png"
+      ],
+      "roundtrip_equal": true,
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-b-seed43"
+    }
+  ],
+  "pixel_comparisons": [
+    {
+      "a": "new-loras-baseline",
+      "b": "new-loras-a",
+      "shape": {
+        "format": "raw",
+        "width": 1024,
+        "height": 1024,
+        "channels": 3,
+        "depth": "uchar",
+        "premultiplied": false,
+        "hasAlpha": false,
+        "size": 3145728
+      },
+      "changedComponents": 3086348,
+      "mae": 24.003196716308594,
+      "maxAbsoluteDifference": 244
+    },
+    {
+      "a": "new-loras-baseline",
+      "b": "new-loras-b",
+      "shape": {
+        "format": "raw",
+        "width": 1024,
+        "height": 1024,
+        "channels": 3,
+        "depth": "uchar",
+        "premultiplied": false,
+        "hasAlpha": false,
+        "size": 3145728
+      },
+      "changedComponents": 3077357,
+      "mae": 28.33061122894287,
+      "maxAbsoluteDifference": 242
+    },
+    {
+      "a": "new-loras-a",
+      "b": "new-loras-ab",
+      "shape": {
+        "format": "raw",
+        "width": 1024,
+        "height": 1024,
+        "channels": 3,
+        "depth": "uchar",
+        "premultiplied": false,
+        "hasAlpha": false,
+        "size": 3145728
+      },
+      "changedComponents": 3072145,
+      "mae": 30.638328552246094,
+      "maxAbsoluteDifference": 246
+    },
+    {
+      "a": "new-loras-b",
+      "b": "new-loras-ab",
+      "shape": {
+        "format": "raw",
+        "width": 1024,
+        "height": 1024,
+        "channels": 3,
+        "depth": "uchar",
+        "premultiplied": false,
+        "hasAlpha": false,
+        "size": 3145728
+      },
+      "changedComponents": 3054276,
+      "mae": 17.69729709625244,
+      "maxAbsoluteDifference": 241
+    },
+    {
+      "a": "new-loras-ab",
+      "b": "new-loras-native-ab",
+      "shape": {
+        "format": "raw",
+        "width": 1024,
+        "height": 1024,
+        "channels": 3,
+        "depth": "uchar",
+        "premultiplied": false,
+        "hasAlpha": false,
+        "size": 3145728
+      },
+      "changedComponents": 0,
+      "mae": 0,
+      "maxAbsoluteDifference": 0
+    }
+  ],
+  "visual_observations": {
+    "baseline_seed42": "Cafe window, woman in green shirt, both hands hold a white cup, plant visible.",
+    "a_seed42": "Face and hair changed; smoother skin; only one hand holds the cup, violating the requested pose.",
+    "b_seed42": "Both hands hold cup; stronger visible skin texture and contrast; face changes relative to baseline.",
+    "ab_seed42": "Both hands hold cup; green shirt, window and plant retained; smoother face than B alone.",
+    "baseline_seed43": "Both hands hold cup; scene requirements retained.",
+    "b_seed43": "Both hands hold cup; face and skin texture differ from baseline seed43.",
+    "face_consistency_scope": "Two seeds with the same prompt do not isolate identity consistency from baseline tendencies; broader prompts and seeds remain untested."
+  },
+  "runtime_log": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/new-loras-runtime-log.json",
+  "runtime_warning_or_error_lines": [],
+  "queue_empty": true,
+  "browser_cleanup": []
+}

@@ -212,7 +212,7 @@ afterEach(async () => {
     }
   }
   if (cleanupErrors.length > 0) throw new AggregateError(cleanupErrors, 'Official Desktop E2E cleanup failed')
-})
+}, lifecycleFixtureJson.timeouts.cleanupTimeoutMs)
 
 async function startModelRequestCaptureServer() {
   const services = await startOfficialBusinessServices(OFFICIAL_BUSINESS_FIXTURE)

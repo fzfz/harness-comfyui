@@ -14,7 +14,7 @@
 | API Workflow 缓存 | Node 文件系统与 SHA-256 | `src/host/generation/official-api-workflow.ts` 对实例、模板与执行结构身份计算缓存键，并以临时文件和原子重命名写入缓存。 |
 | 配置校验 | Schemastery | `3.18.4`；从官方 SDK 公共 peer 解析。 |
 | 本地构建工具 | Node.js、pnpm、TypeScript、tsdown | 开发工具 Node 版本由 `.node-version` 固定为 `22.19.0`；pnpm 为 `11.11.0`，TypeScript 为 `6.0.3`，tsdown 为 `0.22.2`。开发工具版本不定义官方应用内的 Host Node 版本。 |
-| 自动化测试 | Vitest / V8 coverage | `4.1.11`；覆盖率阈值来自 `config/quality-gates.json`。真实官方应用测试由 `tests/desktop/fixtures/` 支持。 |
+| 自动化测试 | Vitest / V8 coverage | `4.1.12`；覆盖率阈值来自 `config/quality-gates.json`。真实官方应用测试由 `tests/desktop/fixtures/` 支持。 |
 | 插件构建与归档 | pnpm scripts | `pnpm build` 构建包内 Host、Client、managed CLI 和 Workflow worker；`pnpm pack:plugin` 生成官方插件管理器可安装的 `harness-comfyui-<version>.tgz`。 |
 
 [官方 Desktop 插件升级方案的验收清单](../plans/official-desktop-plugin-20260929.md#验收清单)使用 A1 至 A18 标识各项验收。Host Electron Node 下 Sharp、`node:sqlite`、managed CLI 和 Workflow Worker 的实机兼容性由 A9 定义；截至当前验收记录，该项仍未通过。上表描述目标运行结构，不代表 A9 或完整插件验收已通过。
