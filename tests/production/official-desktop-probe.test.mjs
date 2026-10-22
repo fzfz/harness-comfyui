@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createStartCommandResult,
   getProbeStatus,
+  inspectProcessGroup,
   loadDesktopE2EConfig,
   parseDesktopE2EConfig,
   prepareProbeRun,
@@ -934,6 +935,168 @@ describe('official Desktop probe preparation and lifecycle', () => {
     expect(JSON.parse(await readFile(join(started.record.directories.evidence, config.paths.outputFilenames.stopResultEvidence), 'utf8')).portsReleased).toBe(true)
   })
 
+  it('starts when a same-group Host listener appears while process details are sampled', async () => {
+    const repositoryRoot = await temporaryRepository()
+    const config = await fakeApplicationConfig()
+    const harness = createFakeProcessHarness({ config })
+    const hostChildPid = harness.pid + 1
+    let hostChildStarted = false
+    const inspect = rootPid => inspectProcessGroup(rootPid, {
+      execFileImplementation: async (command, args) => {
+        const group = await harness.inspect(rootPid)
+        if (group === null) return { stdout: '' }
+        const root = group.members[0]
+        if (command === 'ps') {
+          return { stdout: [
+            `${root.pid} ${root.parentPid} ${root.processGroupId} ${root.command}`,
+            ...(hostChildStarted ? [`${hostChildPid} ${root.pid} ${root.processGroupId} packaged desktop host child`] : []),
+          ].join('\n') }
+        }
+        if (args.includes('cwd')) {
+          hostChildStarted = true
+          return { stdout: `n${root.workingDirectory}\n` }
+        }
+        const processId = Number(args[args.indexOf('-p') + 1])
+        const port = root.listeningPorts[processId === hostChildPid ? 0 : 1]
+        return { stdout: `n127.0.0.1:${port}\n` }
+      },
+    })
+    const portOwners = async ports => {
+      const owners = await harness.options.portOwners(ports)
+      if (owners.every(owner => owner.pids.length === 0)) return owners
+      const group = await harness.inspect(harness.pid)
+      const hostPort = group?.members[0].listeningPorts[0]
+      return owners.map(owner => owner.port === hostPort
+        ? { port: owner.port, pids: hostChildStarted ? [hostChildPid] : [] }
+        : owner)
+    }
+
+    const started = await startProbe({ repositoryRoot, config, ...harness.options, inspect, portOwners })
+    try {
+      expect(started.record.state).toBe('running')
+      const ready = JSON.parse(await readFile(join(
+        started.record.directories.evidence, config.paths.outputFilenames.startupReadyEvidence,
+      ), 'utf8'))
+      expect(ready.host.owningPids).toEqual([hostChildPid])
+    } finally {
+      await stopProbe({
+        repositoryRoot, runId: started.record.runId, config,
+        ...harness.statusOptions, inspect, portOwners,
+      })
+    }
+  })
+
+  it('commits readiness when a same-group Host listener appears after the process snapshot', async () => {
+    const repositoryRoot = await temporaryRepository()
+    const config = await fakeApplicationConfig()
+    const harness = createFakeProcessHarness({ config })
+    const hostChildPid = harness.pid + 1
+    let rendererReady = false
+    let hostChildStarted = false
+    const inspect = async rootPid => {
+      const group = await harness.inspect(rootPid)
+      if (group !== null && hostChildStarted) {
+        group.members.push({
+          ...group.members[0], pid: hostChildPid, parentPid: rootPid, command: 'packaged desktop host child',
+        })
+      }
+      return group
+    }
+    const portOwners = async ports => {
+      const owners = await harness.options.portOwners(ports)
+      if (!rendererReady || owners.every(owner => owner.pids.length === 0)) return owners
+      hostChildStarted = true
+      const hostPort = (await harness.inspect(harness.pid)).members[0].listeningPorts[0]
+      return owners.map(owner => owner.port === hostPort ? { port: owner.port, pids: [hostChildPid] } : owner)
+    }
+    const started = await startProbe({
+      repositoryRoot, config, ...harness.options, inspect, portOwners,
+      rendererStatus: async (...args) => {
+        rendererReady = true
+        return harness.options.rendererStatus(...args)
+      },
+    })
+    try {
+      expect(started.record.state).toBe('running')
+      const ready = JSON.parse(await readFile(join(
+        started.record.directories.evidence, config.paths.outputFilenames.startupReadyEvidence,
+      ), 'utf8'))
+      expect(ready.host.owningPids).toEqual([hostChildPid])
+    } finally {
+      await stopProbe({
+        repositoryRoot, runId: started.record.runId, config,
+        ...harness.statusOptions, inspect, portOwners,
+      })
+    }
+  })
+
+  it.each(['startup', 'readiness', 'stop', 'forced-stop'].flatMap(phase =>
+    ['foreign-listener', 'changed-root'].map(scenario => [phase, scenario]),
+  ))('rejects %s ownership changes after the process snapshot: %s', async (phase, scenario) => {
+    const repositoryRoot = await temporaryRepository()
+    const config = await fakeApplicationConfig()
+    const harness = createFakeProcessHarness({ config })
+    const listenerPid = harness.pid + 1
+    let triggerRace = phase === 'startup'
+    let listenerStarted = false
+    let rootChanged = false
+    let clock = 0
+    const signals = []
+    const inspect = async rootPid => {
+      const group = await harness.inspect(rootPid)
+      if (group === null) return group
+      if (rootChanged) group.members[0].command = 'another application'
+      if (listenerStarted && scenario === 'changed-root') {
+        group.members.push({
+          ...group.members[0], pid: listenerPid, parentPid: rootPid, command: 'packaged desktop host child',
+        })
+      }
+      return group
+    }
+    const portOwners = async ports => {
+      const owners = await harness.options.portOwners(ports)
+      if (!triggerRace || owners.every(owner => owner.pids.length === 0)) return owners
+      listenerStarted = true
+      rootChanged = scenario === 'changed-root'
+      const hostPort = (await harness.inspect(harness.pid)).members[0].listeningPorts[0]
+      return owners.map(owner => owner.port === hostPort ? { port: owner.port, pids: [listenerPid] } : owner)
+    }
+    const signalProcessGroup = async (groupId, signal) => {
+      signals.push([groupId, signal])
+      if (phase === 'forced-stop' && signal === 'SIGTERM') triggerRace = true
+      else await harness.signalProcessGroup(groupId, signal)
+    }
+    const options = {
+      config, ...harness.options, inspect, portOwners, signalProcessGroup,
+      now: () => clock, sleep: async milliseconds => { clock += milliseconds },
+      rendererStatus: async (...args) => {
+        if (phase === 'readiness') triggerRace = true
+        return harness.options.rendererStatus(...args)
+      },
+    }
+
+    try {
+      if (phase === 'startup' || phase === 'readiness') {
+        await expect(startProbe({ repositoryRoot, ...options })).rejects.toMatchObject({
+          code: scenario === 'foreign-listener' ? 'PORT_CONFLICT' : 'PROCESS_IDENTITY_MISMATCH',
+        })
+      } else {
+        const started = await startProbe({ repositoryRoot, ...options })
+        if (phase === 'stop') triggerRace = true
+        await expect(stopProbe({
+          repositoryRoot, runId: started.record.runId, ...options,
+        })).rejects.toMatchObject({
+          code: phase === 'forced-stop' && scenario === 'changed-root'
+            ? 'PROCESS_IDENTITY_CHANGED'
+            : 'PROCESS_IDENTITY_MISMATCH',
+        })
+      }
+      expect(signals).toEqual(phase === 'forced-stop' ? [[harness.pid, 'SIGTERM']] : [])
+    } finally {
+      await harness.signalProcessGroup(harness.pid, 'SIGTERM')
+    }
+  })
+
   it('does not pass the configured Desktop runner context to the launched application', async () => {
     const repositoryRoot = await temporaryRepository()
     const baseConfig = await fakeApplicationConfig()
@@ -1317,6 +1480,40 @@ describe('official Desktop probe preparation and lifecycle', () => {
     }
   })
 
+  it('stops when a same-group Host listener appears after the process snapshot', async () => {
+    const repositoryRoot = await temporaryRepository()
+    const config = await fakeApplicationConfig()
+    const harness = createFakeProcessHarness({ config })
+    const started = await startProbe({ repositoryRoot, config, ...harness.options })
+    const hostChildPid = harness.pid + 1
+    let hostChildStarted = false
+    const inspect = async rootPid => {
+      const group = await harness.inspect(rootPid)
+      if (group !== null && hostChildStarted) {
+        group.members.push({
+          ...group.members[0], pid: hostChildPid, parentPid: rootPid, command: 'packaged desktop host child',
+        })
+      }
+      return group
+    }
+    const portOwners = async ports => {
+      const owners = await harness.options.portOwners(ports)
+      if (owners.every(owner => owner.pids.length === 0)) return owners
+      hostChildStarted = true
+      return owners.map(owner => owner.port === started.record.ports.host
+        ? { port: owner.port, pids: [hostChildPid] }
+        : owner)
+    }
+
+    const stopped = await stopProbe({
+      repositoryRoot, runId: started.record.runId,
+      ...harness.statusOptions, inspect, portOwners,
+    })
+    expect(stopped.record.state).toBe('stopped')
+    expect(stopped.record.result.portsReleased).toBe(true)
+    expect(harness.signals).toEqual([[harness.pid, 'SIGTERM']])
+  })
+
   it('checks development lease ownership before sending a stop signal', async () => {
     const repositoryRoot = await temporaryRepository()
     const runId = randomUUID()
@@ -1391,6 +1588,49 @@ describe('official Desktop probe preparation and lifecycle', () => {
 
     expect(stopped.record.state).toBe('stopped')
     expect(postSignalInspection).toBe(3)
+  })
+
+  it('forces stop when a same-group Host listener appears after the process snapshot', async () => {
+    const repositoryRoot = await temporaryRepository()
+    const config = await fakeApplicationConfig()
+    const harness = createFakeProcessHarness({ config })
+    const started = await startProbe({ repositoryRoot, config, ...harness.options })
+    const hostChildPid = harness.pid + 1
+    let termSent = false
+    let hostChildStarted = false
+    let clock = 0
+    const signals = []
+    const inspect = async rootPid => {
+      const group = await harness.inspect(rootPid)
+      if (group !== null && hostChildStarted) {
+        group.members.push({
+          ...group.members[0], pid: hostChildPid, parentPid: rootPid, command: 'packaged desktop host child',
+        })
+      }
+      return group
+    }
+    const portOwners = async ports => {
+      const owners = await harness.options.portOwners(ports)
+      if (!termSent || owners.every(owner => owner.pids.length === 0)) return owners
+      hostChildStarted = true
+      return owners.map(owner => owner.port === started.record.ports.host
+        ? { port: owner.port, pids: [hostChildPid] }
+        : owner)
+    }
+    const signalProcessGroup = async (groupId, signal) => {
+      signals.push([groupId, signal])
+      if (signal === 'SIGTERM') termSent = true
+      else await harness.signalProcessGroup(groupId, signal)
+    }
+
+    const stopped = await stopProbe({
+      repositoryRoot, runId: started.record.runId,
+      ...harness.statusOptions, inspect, portOwners, signalProcessGroup,
+      now: () => clock, sleep: async milliseconds => { clock += milliseconds },
+    })
+    expect(stopped.record.state).toBe('stopped')
+    expect(stopped.record.result.portsReleased).toBe(true)
+    expect(signals).toEqual([[harness.pid, 'SIGTERM'], [harness.pid, 'SIGKILL']])
   })
 
   it.each(['owned', 'lease-changed', 'foreign-port'])('checks ownership before forced stop: %s', async scenario => {

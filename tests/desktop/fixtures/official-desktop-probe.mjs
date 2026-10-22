@@ -272,6 +272,23 @@ export function processGroupMatchesRun(group, record) {
   return record.launch.arguments.every(argument => root.command.includes(argument))
 }
 
+async function inspectRunOwnership(record, { inspect, portOwners }) {
+  let group = await inspect(record.process.pid)
+  const owners = await portOwners(Object.values(record.ports))
+  let groupPids = new Set(group?.members.map(member => member.pid) ?? [])
+  if ((group === null || processGroupMatchesRun(group, record))
+    && owners.some(owner => owner.pids.some(pid => !groupPids.has(pid)))) {
+    group = await inspect(record.process.pid)
+    groupPids = new Set(group?.members.map(member => member.pid) ?? [])
+  }
+  return {
+    group,
+    owners,
+    foreignOwners: owners.filter(owner => owner.pids.some(pid => !groupPids.has(pid))),
+    ownedListeningPorts: owners.filter(owner => owner.pids.some(pid => groupPids.has(pid))).map(owner => owner.port),
+  }
+}
+
 async function writeProfilePortPatch(path, patchRows, { persistent, initialProfilePatches, profilePatchAdapter: adapter, signal }) {
   const initialRows = persistent ? [...initialProfilePatches, ...patchRows] : patchRows
   const initialContent = `${JSON.stringify(initialRows, null, 2)}\n`
@@ -449,7 +466,7 @@ export async function startProbe({
     }
     const inspectReadyOwnership = async () => {
       assertChildRunning()
-      const group = await inspect(child.pid)
+      const { group, owners, foreignOwners, ownedListeningPorts } = await inspectRunOwnership(record, { inspect, portOwners })
       assertChildRunning()
       if (group === null) {
         throw probeError('APPLICATION_EARLY_EXIT', 'probe process group disappeared before readiness could be committed')
@@ -457,16 +474,9 @@ export async function startProbe({
       if (!processGroupMatchesRun(group, record)) {
         throw probeError('PROCESS_IDENTITY_MISMATCH', 'probe process identity changed before readiness could be committed')
       }
-      const owners = await portOwners(Object.values(record.ports))
-      assertChildRunning()
-      const groupPids = new Set(group.members.map(member => member.pid))
-      const foreignOwners = owners.filter(owner => owner.pids.some(pid => !groupPids.has(pid)))
       if (foreignOwners.length > 0) {
         throw probeError('PORT_CONFLICT', `a probe port changed ownership before readiness could be committed: ${formatPortOwners(foreignOwners)}`)
       }
-      const ownedListeningPorts = owners
-        .filter(owner => owner.pids.some(pid => groupPids.has(pid)))
-        .map(owner => owner.port)
       const missingRequiredPorts = prepared.config.ports.requiredForReady
         .filter(role => !ownedListeningPorts.includes(record.ports[role]))
       if (missingRequiredPorts.length > 0) {
@@ -488,21 +498,20 @@ export async function startProbe({
     while (now() < startupDeadline) {
       assertChildRunning()
 
-      lastGroup = await inspect(child.pid)
+      const ownership = await inspectRunOwnership(record, { inspect, portOwners })
+      lastGroup = ownership.group
+      lastOwners = ownership.owners
       assertChildRunning()
       if (lastGroup === null) {
         assertChildRunning()
       } else if (!processGroupMatchesRun(lastGroup, record)) {
         throw probeError('PROCESS_IDENTITY_MISMATCH', 'probe PID, command, user-data argument, or process group did not match this run')
       }
+      if (ownership.foreignOwners.length > 0) {
+        throw probeError('PORT_CONFLICT', `a probe port belongs to another process: ${formatPortOwners(ownership.foreignOwners)}`)
+      }
 
-      lastOwners = await portOwners(Object.values(record.ports))
-      assertChildRunning()
-      const groupPids = new Set(lastGroup?.members.map(member => member.pid) ?? [])
-      const foreignOwners = lastOwners.filter(owner => owner.pids.some(pid => !groupPids.has(pid)))
-      if (foreignOwners.length > 0) throw probeError('PORT_CONFLICT', `a probe port belongs to another process: ${formatPortOwners(foreignOwners)}`)
-
-      const ownedListeningPorts = lastOwners.filter(owner => owner.pids.some(pid => groupPids.has(pid))).map(owner => owner.port)
+      const ownedListeningPorts = ownership.ownedListeningPorts
       requiredListenersReady = prepared.config.ports.requiredForReady.every(role => ownedListeningPorts.includes(record.ports[role]))
       const readinessBudgetMs = startupDeadline - now()
       if (readinessBudgetMs <= 0) break
@@ -840,16 +849,13 @@ async function stopRecord(record, config, recordPath, {
     return finalizeStop(record, recordPath, portOwners, now, config, 'no process was recorded', persistRunRecord)
   }
   await assertDevelopmentEnvironmentLeaseOwner(record)
-  let group = await inspect(record.process.pid)
+  let { group, foreignOwners } = await inspectRunOwnership(record, { inspect, portOwners })
   if (group === null) return finalizeStop(record, recordPath, portOwners, now, config, null, persistRunRecord)
   if (!processGroupMatchesRun(group, record)) {
     const error = probeError('PROCESS_IDENTITY_MISMATCH', 'refusing to signal a process group whose PID, command, user-data argument, or group id does not match this run')
     await failCleanup(record, recordPath, error, now, config, persistRunRecord)
     throw error
   }
-  const groupPids = new Set(group.members.map(member => member.pid))
-  const currentOwners = await portOwners(Object.values(record.ports))
-  const foreignOwners = currentOwners.filter(owner => owner.pids.some(pid => !groupPids.has(pid)))
   if (foreignOwners.length > 0) {
     const error = probeError('PROCESS_IDENTITY_MISMATCH', `refusing to signal a process group while a run port belongs to another process: ${formatPortOwners(foreignOwners)}`)
     await failCleanup(record, recordPath, error, now, config, persistRunRecord)
@@ -869,16 +875,13 @@ async function stopRecord(record, config, recordPath, {
   let stopped = await waitForGroupExit(record.process.processGroupId, config.startup.stopTimeoutMs,
     { inspect, now, sleep, pollIntervalMs: config.startup.pollIntervalMs })
   if (!stopped) {
-    group = await inspect(record.process.processGroupId)
+    ;({ group, foreignOwners } = await inspectRunOwnership(record, { inspect, portOwners }))
     if (group === null) stopped = true
     else if (!processGroupMatchesRun(group, record)) {
       const error = probeError('PROCESS_IDENTITY_CHANGED', 'process group identity changed before forced stop; no further signal was sent')
       await failCleanup(record, recordPath, error, now, config, persistRunRecord)
       throw error
     } else {
-      const remainingPids = new Set(group.members.map(member => member.pid))
-      const remainingOwners = await portOwners(Object.values(record.ports))
-      const foreignOwners = remainingOwners.filter(owner => owner.pids.some(pid => !remainingPids.has(pid)))
       if (foreignOwners.length > 0) {
         const error = probeError('PROCESS_IDENTITY_MISMATCH', `refusing forced stop while a run port belongs to another process: ${formatPortOwners(foreignOwners)}`)
         await failCleanup(record, recordPath, error, now, config, persistRunRecord)

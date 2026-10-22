@@ -1,0 +1,38 @@
+{
+  "nodeVersion": "v25.8.2",
+  "imports": "node built-ins only",
+  "cwd": "/private/tmp",
+  "outcomes": [
+    {
+      "file": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-power-dual-int8.ui.json",
+      "output": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-power-dual-int8.standalone-export.json",
+      "nodeCount": 10,
+      "roundtripEqual": true,
+      "status": "exported"
+    },
+    {
+      "file": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-subgraph-layout-connected.ui.json",
+      "output": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-subgraph-layout-connected.standalone-export.json",
+      "nodeCount": 20,
+      "roundtripEqual": true,
+      "status": "exported"
+    },
+    {
+      "file": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/image-mask-batch.ui.json",
+      "output": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/image-mask-batch.standalone-export.json",
+      "nodeCount": 9,
+      "roundtripEqual": true,
+      "status": "exported"
+    }
+  ],
+  "integration_required": false,
+  "new_dependencies_installed": [],
+  "previous_api_comparison": {
+    "moss-subgraph-layout-connected": "equal",
+    "image-mask-batch": "equal",
+    "moss-power-dual-int8": {
+      "difference": "PowerLoraLoaderHeaderWidget.type is preserved by JSON string transfer; old raw CDP transfer produced an empty object",
+      "lora_configuration_and_model_links_equal": true
+    }
+  }
+}

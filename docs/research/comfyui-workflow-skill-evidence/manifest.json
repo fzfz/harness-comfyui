@@ -1,0 +1,797 @@
+{
+  "recorded_at": "2026-10-20T23:49:21.936055+08:00",
+  "checkout_base": "811b89021de5e3f02b904b9b6a0f96f543225e73",
+  "evidence_directory": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020",
+  "instance": "http://192.168.110.122:8188",
+  "object_info_node_count": 2837,
+  "saved_workflow_count": 20,
+  "cases": [
+    {
+      "name": "moss-original",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-original",
+      "rejection": {
+        "error": {
+          "type": "prompt_outputs_failed_validation",
+          "message": "Prompt outputs failed validation",
+          "details": "",
+          "extra_info": {}
+        },
+        "node_errors": {
+          "1": {
+            "errors": [
+              {
+                "type": "value_not_in_list",
+                "message": "Value not in list",
+                "details": "unet_name: 'moss_image_sft_bf16.safetensors' not in (list of length 35)",
+                "extra_info": {
+                  "input_name": "unet_name",
+                  "input_config": null,
+                  "received_value": "moss_image_sft_bf16.safetensors"
+                }
+              }
+            ],
+            "dependent_outputs": [
+              "9"
+            ],
+            "class_type": "UNETLoader"
+          },
+          "12": {
+            "errors": [
+              {
+                "type": "value_not_in_list",
+                "message": "Value not in list",
+                "details": "lora_name: 'moss_image_sft_4step_v2.0.safetensors' not in (list of length 103)",
+                "extra_info": {
+                  "input_name": "lora_name",
+                  "input_config": null,
+                  "received_value": "moss_image_sft_4step_v2.0.safetensors"
+                }
+              }
+            ],
+            "dependent_outputs": [
+              "9"
+            ],
+            "class_type": "LoraLoaderModelOnly"
+          },
+          "4": {
+            "errors": [
+              {
+                "type": "required_input_missing",
+                "message": "Required input is missing",
+                "details": "clip",
+                "extra_info": {
+                  "input_name": "clip"
+                }
+              }
+            ],
+            "dependent_outputs": [
+              "9"
+            ],
+            "class_type": "CLIPTextEncode"
+          },
+          "10": {
+            "errors": [
+              {
+                "type": "value_not_in_list",
+                "message": "Value not in list",
+                "details": "clip_name: 'qwen3.5_9b_int8_convrot.safetensors' not in ['qwen3.5_9b_w4a8_gptq.safetensors', 'qwen3VLInstruct4bHeretic_v10.safetensors', 'qwen3vl_32b_minimax_h3_int4_convrot.safetensors', 'qwen3vl_4b_fp8_scaled.safetensors', 'qwen_3_06b_base.safetensors']",
+                "extra_info": {
+                  "input_name": "clip_name",
+                  "input_config": [
+                    [
+                      "qwen3.5_9b_w4a8_gptq.safetensors",
+                      "qwen3VLInstruct4bHeretic_v10.safetensors",
+                      "qwen3vl_32b_minimax_h3_int4_convrot.safetensors",
+                      "qwen3vl_4b_fp8_scaled.safetensors",
+                      "qwen_3_06b_base.safetensors"
+                    ],
+                    {}
+                  ],
+                  "received_value": "qwen3.5_9b_int8_convrot.safetensors"
+                }
+              }
+            ],
+            "dependent_outputs": [
+              "9"
+            ],
+            "class_type": "CLIPLoader"
+          },
+          "11": {
+            "errors": [
+              {
+                "type": "value_not_in_list",
+                "message": "Value not in list",
+                "details": "vae_name: 'flux2-vae.safetensors' not in ['flux2-vae_small.safetensors', 'krea2RealVae_v10.safetensors', 'minimax_h3_audio_vae_fp32.safetensors', 'minimax_h3_video_vae_fp16.safetensors', 'qwen_image_vae.safetensors', 'wan_2.1_vae.safetensors', 'pixel_space']",
+                "extra_info": {
+                  "input_name": "vae_name",
+                  "input_config": [
+                    [
+                      "flux2-vae_small.safetensors",
+                      "krea2RealVae_v10.safetensors",
+                      "minimax_h3_audio_vae_fp32.safetensors",
+                      "minimax_h3_video_vae_fp16.safetensors",
+                      "qwen_image_vae.safetensors",
+                      "wan_2.1_vae.safetensors",
+                      "pixel_space"
+                    ],
+                    {}
+                  ],
+                  "received_value": "flux2-vae.safetensors"
+                }
+              }
+            ],
+            "dependent_outputs": [
+              "9"
+            ],
+            "class_type": "VAELoader"
+          }
+        }
+      }
+    },
+    {
+      "name": "moss-baseline",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-baseline",
+      "result": {
+        "name": "moss-baseline",
+        "prompt_id": "641b340c-5ed5-490f-bbfb-148e2e913ccc",
+        "status": {
+          "status_str": "error",
+          "completed": false,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "641b340c-5ed5-490f-bbfb-148e2e913ccc",
+                "timestamp": 1792510257336
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [
+                  "6",
+                  "10",
+                  "11"
+                ],
+                "prompt_id": "641b340c-5ed5-490f-bbfb-148e2e913ccc",
+                "timestamp": 1792510257338
+              }
+            ],
+            [
+              "execution_error",
+              {
+                "prompt_id": "641b340c-5ed5-490f-bbfb-148e2e913ccc",
+                "node_id": "1",
+                "node_type": "UNETLoader",
+                "executed": [
+                  "4",
+                  "3"
+                ],
+                "exception_message": "Tensor 'layers.5.proj.o.weight' extends past the end of the file.\n\nFile path: D:\\comfyui\\models\\diffusion_models\\mossimage\\moss_image_sft_bf16.safetensors\n\nThe safetensors file is corrupt/incomplete. Check the file size and make sure you have copied/downloaded it correctly.\n",
+                "exception_type": "ValueError",
+                "traceback": [
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\execution.py\", line 548, in execute\n    output_data, output_ui, has_subgraph, has_pending_tasks = await get_output_data(prompt_id, unique_id, obj, input_data_all, execution_block_cb=execution_block_cb, pre_execute_cb=pre_execute_cb, v3_data=v3_data)\n                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\execution.py\", line 353, in get_output_data\n    return_values = await _async_map_node_over_list(prompt_id, unique_id, obj, input_data_all, obj.FUNCTION, allow_interrupt=True, execution_block_cb=execution_block_cb, pre_execute_cb=pre_execute_cb, v3_data=v3_data)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\custom_nodes\\comfyui-lora-manager\\py\\metadata_collector\\metadata_hook.py\", line 177, in async_map_node_over_list_with_metadata\n    results = await original_map_node_over_list(\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<2 lines>...\n    )\n    ^\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\execution.py\", line 327, in _async_map_node_over_list\n    await process_inputs(input_dict, i)\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\execution.py\", line 315, in process_inputs\n    result = f(**inputs)\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\nodes.py\", line 1014, in load_unet\n    model = comfy.sd.load_diffusion_model(unet_path, model_options=model_options)\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\comfy\\sd.py\", line 2444, in load_diffusion_model\n    sd, metadata = comfy.utils.load_torch_file(unet_path, return_metadata=True)\n                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\comfy\\utils.py\", line 186, in load_torch_file\n    raise e\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\comfy\\utils.py\", line 166, in load_torch_file\n    sd, metadata = load_safetensors(ckpt)\n                   ~~~~~~~~~~~~~~~~^^^^^^\n",
+                  "  File \"D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\comfy\\utils.py\", line 138, in load_safetensors\n    raise _incomplete_safetensors_error(\"Tensor '{}' extends past the end of the file.\".format(name), ckpt)\n"
+                ],
+                "current_inputs": {
+                  "unet_name": [
+                    "mossimage\\moss_image_sft_bf16.safetensors"
+                  ],
+                  "weight_dtype": [
+                    "default"
+                  ]
+                },
+                "current_outputs": [
+                  "6",
+                  "10",
+                  "12",
+                  "4",
+                  "3",
+                  "9",
+                  "1",
+                  "8",
+                  "11",
+                  "7"
+                ],
+                "timestamp": 1792510260453
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 6.02,
+        "files": []
+      },
+      "accepted": {
+        "prompt_id": "641b340c-5ed5-490f-bbfb-148e2e913ccc",
+        "number": 20,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "moss-baseline-int8",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-baseline-int8",
+      "result": {
+        "name": "moss-baseline-int8",
+        "prompt_id": "a75ef4b8-e50e-4ff3-81ba-04467a52b776",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "a75ef4b8-e50e-4ff3-81ba-04467a52b776",
+                "timestamp": 1792510479542
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [],
+                "prompt_id": "a75ef4b8-e50e-4ff3-81ba-04467a52b776",
+                "timestamp": 1792510479544
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "a75ef4b8-e50e-4ff3-81ba-04467a52b776",
+                "timestamp": 1792510610809
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 134.72,
+        "files": [
+          ".local/research/workflow-skill-20261020/moss-baseline-int8-9-0.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "a75ef4b8-e50e-4ff3-81ba-04467a52b776",
+        "number": 22,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "moss-power-disabled-int8",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-power-disabled-int8",
+      "result": {
+        "name": "moss-power-disabled-int8",
+        "prompt_id": "058fa6bf-545d-43a3-b53e-07b1b4caec38",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "058fa6bf-545d-43a3-b53e-07b1b4caec38",
+                "timestamp": 1792510614266
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [
+                  "1",
+                  "3",
+                  "4",
+                  "6",
+                  "10",
+                  "11"
+                ],
+                "prompt_id": "058fa6bf-545d-43a3-b53e-07b1b4caec38",
+                "timestamp": 1792510614269
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "058fa6bf-545d-43a3-b53e-07b1b4caec38",
+                "timestamp": 1792510659280
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 45.77,
+        "files": [
+          ".local/research/workflow-skill-20261020/moss-power-disabled-int8-9-0.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "058fa6bf-545d-43a3-b53e-07b1b4caec38",
+        "number": 23,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "moss-native-dual-int8",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-native-dual-int8",
+      "result": {
+        "name": "moss-native-dual-int8",
+        "prompt_id": "65a942ce-1c90-4295-b8c3-1a8338ac2c0c",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "65a942ce-1c90-4295-b8c3-1a8338ac2c0c",
+                "timestamp": 1792510660104
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [
+                  "1",
+                  "3",
+                  "4",
+                  "6",
+                  "10",
+                  "11"
+                ],
+                "prompt_id": "65a942ce-1c90-4295-b8c3-1a8338ac2c0c",
+                "timestamp": 1792510660106
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "65a942ce-1c90-4295-b8c3-1a8338ac2c0c",
+                "timestamp": 1792510712210
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 54.56,
+        "files": [
+          ".local/research/workflow-skill-20261020/moss-native-dual-int8-9-0.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "65a942ce-1c90-4295-b8c3-1a8338ac2c0c",
+        "number": 24,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "moss-power-dual-int8",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-power-dual-int8",
+      "result": {
+        "name": "moss-power-dual-int8",
+        "prompt_id": "235b54fc-5cc1-48a0-9171-9b4e614e093e",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "235b54fc-5cc1-48a0-9171-9b4e614e093e",
+                "timestamp": 1792510714698
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [
+                  "1",
+                  "3",
+                  "4",
+                  "6",
+                  "10",
+                  "11"
+                ],
+                "prompt_id": "235b54fc-5cc1-48a0-9171-9b4e614e093e",
+                "timestamp": 1792510714701
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "235b54fc-5cc1-48a0-9171-9b4e614e093e",
+                "timestamp": 1792510727321
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 15.79,
+        "files": [
+          ".local/research/workflow-skill-20261020/moss-power-dual-int8-9-0.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "235b54fc-5cc1-48a0-9171-9b4e614e093e",
+        "number": 25,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "moss-dual-caption-tuned",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-dual-caption-tuned",
+      "result": {
+        "name": "moss-dual-caption-tuned",
+        "prompt_id": "50ab1249-e4f9-4b32-a48b-3e5b39484e64",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "50ab1249-e4f9-4b32-a48b-3e5b39484e64",
+                "timestamp": 1792511096245
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [
+                  "1",
+                  "4",
+                  "6",
+                  "10",
+                  "11",
+                  "12"
+                ],
+                "prompt_id": "50ab1249-e4f9-4b32-a48b-3e5b39484e64",
+                "timestamp": 1792511096246
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "50ab1249-e4f9-4b32-a48b-3e5b39484e64",
+                "timestamp": 1792511100693
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 6.36,
+        "files": [
+          ".local/research/workflow-skill-20261020/moss-dual-caption-tuned-9-0.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "50ab1249-e4f9-4b32-a48b-3e5b39484e64",
+        "number": 26,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "image-mask-batch",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/image-mask-batch",
+      "result": {
+        "name": "image-mask-batch",
+        "prompt_id": "9dd18017-560b-4fb6-81c2-5b77877476fc",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "9dd18017-560b-4fb6-81c2-5b77877476fc",
+                "timestamp": 1792510371813
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [],
+                "prompt_id": "9dd18017-560b-4fb6-81c2-5b77877476fc",
+                "timestamp": 1792510371821
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "9dd18017-560b-4fb6-81c2-5b77877476fc",
+                "timestamp": 1792510374456
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 6.04,
+        "files": [
+          ".local/research/workflow-skill-20261020/image-mask-batch-9-0.png",
+          ".local/research/workflow-skill-20261020/image-mask-batch-7-0.png",
+          ".local/research/workflow-skill-20261020/image-mask-batch-7-1.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "9dd18017-560b-4fb6-81c2-5b77877476fc",
+        "number": 21,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "moss-subgraph-layout",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-subgraph-layout",
+      "result": {
+        "name": "moss-subgraph-layout",
+        "prompt_id": "9fb9475a-4c35-4d11-ace6-28303d288196",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "9fb9475a-4c35-4d11-ace6-28303d288196",
+                "timestamp": 1792511102617
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [
+                  "18:1",
+                  "18:2",
+                  "18:3"
+                ],
+                "prompt_id": "9fb9475a-4c35-4d11-ace6-28303d288196",
+                "timestamp": 1792511102620
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "9fb9475a-4c35-4d11-ace6-28303d288196",
+                "timestamp": 1792511128678
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 27.57,
+        "files": [
+          ".local/research/workflow-skill-20261020/moss-subgraph-layout-9-0.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "9fb9475a-4c35-4d11-ace6-28303d288196",
+        "number": 27,
+        "node_errors": {}
+      }
+    },
+    {
+      "name": "moss-subgraph-layout-connected",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/moss-subgraph-layout-connected",
+      "accepted": {
+        "prompt_id": "8de0def9-5122-48a1-82c4-3d49e714e145",
+        "number": 29,
+        "node_errors": {}
+      },
+      "result": {
+        "name": "moss-subgraph-layout-connected",
+        "prompt_id": "8de0def9-5122-48a1-82c4-3d49e714e145",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "8de0def9-5122-48a1-82c4-3d49e714e145",
+                "timestamp": 1792511278213
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [],
+                "prompt_id": "8de0def9-5122-48a1-82c4-3d49e714e145",
+                "timestamp": 1792511278226
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "8de0def9-5122-48a1-82c4-3d49e714e145",
+                "timestamp": 1792511401035
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 124.3,
+        "files": [
+          ".local/research/workflow-skill-20261020/moss-subgraph-layout-connected-9-0.png"
+        ]
+      }
+    },
+    {
+      "name": "anima-upscale",
+      "evidence_prefix": "/Users/fzfz/.codex/worktrees/comfyui-workflow-skill-research/harness-comfyui/.local/research/workflow-skill-20261020/anima-upscale",
+      "result": {
+        "name": "anima-upscale",
+        "prompt_id": "03e5a47e-03db-450b-b0a9-f19e355119d5",
+        "status": {
+          "status_str": "success",
+          "completed": true,
+          "messages": [
+            [
+              "execution_start",
+              {
+                "prompt_id": "03e5a47e-03db-450b-b0a9-f19e355119d5",
+                "timestamp": 1792511130186
+              }
+            ],
+            [
+              "execution_cached",
+              {
+                "nodes": [],
+                "prompt_id": "03e5a47e-03db-450b-b0a9-f19e355119d5",
+                "timestamp": 1792511130187
+              }
+            ],
+            [
+              "execution_success",
+              {
+                "prompt_id": "03e5a47e-03db-450b-b0a9-f19e355119d5",
+                "timestamp": 1792511211970
+              }
+            ]
+          ]
+        },
+        "elapsed_seconds": 84.6,
+        "files": [
+          ".local/research/workflow-skill-20261020/anima-upscale-11-0.png"
+        ]
+      },
+      "accepted": {
+        "prompt_id": "03e5a47e-03db-450b-b0a9-f19e355119d5",
+        "number": 28,
+        "node_errors": {}
+      }
+    }
+  ],
+  "compiler_probes": [
+    {
+      "name": "supplied-image_moss_image_t2i",
+      "status": "failed",
+      "code": "WORKFLOW_COMPILE_FAILED",
+      "message": "ComfyUI node definition \"3301b744-2960-415a-83b0-fe8a89d99fdb\" is invalid."
+    },
+    {
+      "name": "supplied-image_moss_image_t2i_bboxes",
+      "status": "failed",
+      "code": "WORKFLOW_COMPILE_FAILED",
+      "message": "ComfyUI node definition \"3301b744-2960-415a-83b0-fe8a89d99fdb\" is invalid."
+    },
+    {
+      "name": "remote-0.original",
+      "status": "compiled",
+      "outputIds": [
+        "11"
+      ]
+    },
+    {
+      "name": "remote-2.original",
+      "status": "compiled",
+      "outputIds": [
+        "305"
+      ]
+    },
+    {
+      "name": "remote-3.original",
+      "status": "failed",
+      "code": "COMFYUI_API_WORKFLOW_OVERLAY_FAILED",
+      "message": "Official API Workflow node \"42\" input \"select\" connection structure does not match the runtime projection."
+    },
+    {
+      "name": "remote-4.original",
+      "status": "failed",
+      "code": "WORKFLOW_COMPILE_FAILED",
+      "message": "ComfyUI node definition \"UnetLoaderGGUF\" is invalid."
+    },
+    {
+      "name": "remote-5.original",
+      "status": "compiled",
+      "outputIds": [
+        "5"
+      ]
+    }
+  ],
+  "pixel_comparisons": [
+    {
+      "left": "moss-baseline-int8",
+      "right": "moss-power-disabled-int8",
+      "equal": true
+    },
+    {
+      "left": "moss-native-dual-int8",
+      "right": "moss-power-dual-int8",
+      "equal": true
+    },
+    {
+      "left": "moss-baseline-int8",
+      "right": "moss-power-dual-int8",
+      "equal": false,
+      "mean_absolute_channel_difference": 11.879542668660482,
+      "changed_components": 2807494,
+      "total_components": 3145728
+    }
+  ],
+  "image_mask_batch": {
+    "images": 2,
+    "dimensions": [
+      128,
+      64
+    ],
+    "all_pixels": [
+      127,
+      255,
+      127
+    ],
+    "mask_dimensions": [
+      256,
+      128
+    ],
+    "mask_all_pixels": [
+      127,
+      127,
+      127
+    ]
+  },
+  "probes_are_product_implementation": false,
+  "trial_artifacts": [
+    {
+      "name": "moss-multi-lora-rgthree",
+      "ui": "moss-multi-lora-rgthree.ui.json",
+      "api": "moss-multi-lora-rgthree.api.json",
+      "purpose": "loader equivalence experiment; combined weights are not a recommended generation configuration"
+    },
+    {
+      "name": "moss-multi-lora-native",
+      "ui": "moss-multi-lora-native.ui.json",
+      "api": "moss-multi-lora-native.api.json",
+      "purpose": "loader equivalence experiment; combined weights are not a recommended generation configuration"
+    }
+  ],
+  "observations": {
+    "moss-dual-caption-tuned": "实际图片保留咖啡馆、暖灯与杯子图案；招牌出现 TODAY’S SPECIAL、Flat White、$4.50 三行，SPECIAL 未重复。",
+    "moss-subgraph-layout": "运行完成，但试验中关闭 PreviewAny 切断了提示词链，输出是默认的白色大衣人物，未达到布局目标。",
+    "moss-subgraph-layout-connected": "恢复提示词传递并保留完整边界框数据后，实际图片呈现坐姿盔甲骑士、头盔花束、背景 MOSS 大字及左上、左侧、右侧和右下文字。",
+    "anima-upscale": "实际输出为 768×768 图片，包含橘猫、蓝色茶壶、绿植和水彩效果。"
+  },
+  "inputs": {
+    "original_moss_workflow": "/Volumes/4Tdisk/work/download/Moss超级保真加速4步Lora/4步Lora以及工作流/moss/moss-image-4step-turbo.json",
+    "additional_moss_directory": "/Volumes/4Tdisk/work/download/Mossimage/【新】更强更快版本/工作流",
+    "remote_saved_workflows": "D:\\comfyui\\comfyui-install\\comfyui3080\\ComfyUI\\user\\default\\workflows",
+    "remote_inventory": "saved-workflow-inventory.json",
+    "model_integrity_evidence": "model-lengths.json",
+    "system_evidence": "system_stats.json"
+  },
+  "final_queue": {
+    "running": 0,
+    "pending": 0
+  },
+  "moss_lora_evidence_scope": {
+    "verified_at": "2026-10-21",
+    "identity_evidence": ".local/research/workflow-skill-20261020/moss-lora-identity-20261021.json",
+    "comparison": "4step_v2.0 at 1.0 plus lora.safetensors at 0.1",
+    "tensor_payloads_identical": false,
+    "second_lora_metadata_steps": "4",
+    "verified_scope": [
+      "dynamic widget serialization",
+      "enabled toggle behavior",
+      "native chain and rgthree output equivalence"
+    ],
+    "unverified_scope": [
+      "second LoRA independent style or character purpose",
+      "useful combination of different LoRA purposes",
+      "recommended combined weights"
+    ],
+    "author_source": "https://huggingface.co/akhaliq/MOSS-Image-SFT-4-steps"
+  }
+}
