@@ -1,0 +1,229 @@
+diff --git a/packages/client/ui-conversation/src/client/contract/input.ts b/packages/client/ui-conversation/src/client/contract/input.ts
+index 9b9502bf92..c01ed5f99f 100644
+--- a/packages/client/ui-conversation/src/client/contract/input.ts
++++ b/packages/client/ui-conversation/src/client/contract/input.ts
+@@ -225 +225 @@ export interface SessionInputResolver {
+-   * @param options - content to adopt and explicit permission to replace existing text.
++   * @param options - content to adopt and the handling of an existing draft.
+@@ -234,0 +235 @@ export interface DraftInitializationOptions {
++  /** `true` acts as `whenDraftExists: 'replace'`; ignored when `whenDraftExists` is set. */
+@@ -235,0 +237,7 @@ export interface DraftInitializationOptions {
++  /**
++   * Handling of a target that already has text or attachments: `replace` swaps the text and
++   * inline references for the prompt (or clears them without one), `append` adds the prompt
++   * as new paragraphs after the existing text, and `keep` leaves the draft unchanged. Omitted,
++   * it is `replace` when `clearPreviousDraft` is true and `keep` otherwise.
++   */
++  readonly whenDraftExists?: 'replace' | 'append' | 'keep'
+diff --git a/packages/client/ui-conversation/src/client/contract/slots.ts b/packages/client/ui-conversation/src/client/contract/slots.ts
+index a02f5aa662..4a0bd3a739 100644
+--- a/packages/client/ui-conversation/src/client/contract/slots.ts
++++ b/packages/client/ui-conversation/src/client/contract/slots.ts
+@@ -256,0 +257,2 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
++    /** Rows of the View tab row's More menu; the header shows More only while this list has registrations. */
++    'conversation.session.header.views.actions': { kind: 'list'; scope: 'root'; owner: ConversationViewActionsOwnerProps }
+@@ -424,0 +427,31 @@ export interface ConversationSessionInjected {
++/** One customizable View tab listed in the More menu. */
++export interface ConversationViewActionEntry {
++  /** View id. */
++  readonly id: string
++  /** Resolved View label. */
++  readonly label: string
++  /** False while the View is manually unpinned. A pinned View still enters More when the header's width budget cannot hold it. */
++  readonly pinned: boolean
++  /** Whether this View is selected in this Session, independently of its pin state. */
++  readonly active?: boolean
++}
++
++/** Owner share of the View tab row's More menu rows. */
++export interface ConversationViewActionsOwnerProps {
++  /** Views outside the header in registration order. */
++  readonly entries: readonly ConversationViewActionEntry[]
++  /**
++   * Select a View in this Session without changing its pin state.
++   * @param id - Listed View id.
++   */
++  readonly onOpen: (id: string) => void
++  /**
++   * Pin or unpin a View in every Session.
++   * @param id - Listed View id.
++   * @param pinned - Whether the View is manually pinned; the width budget can still fold it into More.
++   */
++  readonly onPinnedChange: (id: string, pinned: boolean) => void
++  /** Close the More menu. */
++  readonly onDismiss: () => void
++}
++
+@@ -428 +461,13 @@ export interface ConversationSessionHeaderInjected {
+-  readonly hooks: { readonly conversationViews: ObservableSnapshot<readonly ViewTab[]> }
++  readonly hooks: {
++    readonly conversationViews: ObservableSnapshot<readonly ViewTab[]>
++    /** Ids of unpinned View tabs held in memory and shared by every Session until plugin reload. */
++    readonly entryPins: ObservableSnapshot<readonly string[]>
++    /** Whether `conversation.session.header.views.actions` has registrations. */
++    readonly entryActions: ObservableSnapshot<boolean>
++  }
++  /**
++   * Pin or unpin one View tab in every Session; Chat is ignored.
++   * @param id - View id.
++   * @param pinned - Whether the View is manually pinned; the width budget can still fold it into More.
++   */
++  setPinned: (id: string, pinned: boolean) => void
+@@ -581,0 +627 @@ export type ConversationSessionHeaderSlotProps =
++    | 'conversation.session.header.views.actions'
+diff --git a/packages/client/ui-sidebar-right/src/client/contract/slots.ts b/packages/client/ui-sidebar-right/src/client/contract/slots.ts
+index 98696d0f60..517dfbf68c 100644
+--- a/packages/client/ui-sidebar-right/src/client/contract/slots.ts
++++ b/packages/client/ui-sidebar-right/src/client/contract/slots.ts
+@@ -89,0 +90,2 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
++    /** Rows of the guide's More menu; the guide shows More only while this list has registrations. */
++    'sidebar.right.tab.guide.actions': { kind: 'list'; scope: 'root'; owner: SidebarRightGuideActionsOwnerProps }
+@@ -217,0 +220,29 @@ export interface SidebarRightGuideEntryOwnerProps {
++
++/** One customizable guide card listed in the More menu. */
++export interface SidebarRightGuideActionEntry {
++  /** Card id, `kind:entry id`. */
++  readonly id: string
++  /** Resolved card title. */
++  readonly label: string
++  /** False while the card is unpinned from the guide. */
++  readonly pinned: boolean
++}
++
++/** Owner share of the guide's More menu rows. */
++export interface SidebarRightGuideActionsOwnerProps {
++  /** Guide cards in registry order; cards of kind `files` are never listed. */
++  readonly entries: readonly SidebarRightGuideActionEntry[]
++  /**
++   * Open a card's tab type in the guide's place without changing its pin state.
++   * @param id - Listed card id.
++   */
++  readonly onOpen: (id: string) => void
++  /**
++   * Show (true) or unpin (false) a guide card.
++   * @param id - Listed card id.
++   * @param pinned - Whether the card shows on the guide.
++   */
++  readonly onPinnedChange: (id: string, pinned: boolean) => void
++  /** Close the More menu. */
++  readonly onDismiss: () => void
++}
+diff --git a/packages/client/ui-sidebar/src/client/contract/slots.ts b/packages/client/ui-sidebar/src/client/contract/slots.ts
+index c6ba475fec..9e018b8be6 100644
+--- a/packages/client/ui-sidebar/src/client/contract/slots.ts
++++ b/packages/client/ui-sidebar/src/client/contract/slots.ts
+@@ -14,0 +15 @@ import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
++import type { ProductEventMap } from '@deepseek-ai/dsh-client-product-analytics/client'
+@@ -35,0 +37,2 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
++    /** Rows of the panel list's More menu; the sidebar shows More only while this list has registrations. */
++    'sidebar.panellist.actions': { kind: 'list'; scope: 'root'; owner: SidebarPanelActionsOwnerProps }
+@@ -86,0 +90,31 @@ export interface SidebarPanelMetadata {
++/** One customizable panel launcher listed in the More menu. */
++export interface SidebarPanelActionEntry {
++  /** Panel id. */
++  readonly id: string
++  /** Resolved panel label. */
++  readonly label: string
++  /** False while the launcher is unpinned from the sidebar. */
++  readonly pinned: boolean
++  /** Whether this panel is selected, independently of its pin state. */
++  readonly active?: boolean
++}
++
++/** Owner share of the panel list's More menu rows. */
++export interface SidebarPanelActionsOwnerProps {
++  /** Customizable panels in registration order; Plugins is never listed. */
++  readonly entries: readonly SidebarPanelActionEntry[]
++  /**
++   * Open a panel without changing its pin state.
++   * @param id - Listed panel id.
++   */
++  readonly onOpen: (id: string) => void
++  /**
++   * Show (true) or unpin (false) a panel launcher.
++   * @param id - Listed panel id.
++   * @param pinned - Whether the launcher shows in the sidebar.
++   */
++  readonly onPinnedChange: (id: string, pinned: boolean) => void
++  /** Close the More menu. */
++  readonly onDismiss: () => void
++}
++
+@@ -127,0 +162,8 @@ export type SidebarRootInjected = {
++  /**
++   * Show or unpin one panel launcher; Plugins is ignored.
++   * @param id - Panel id.
++   * @param pinned - Whether the launcher shows in the sidebar.
++   */
++  setPinned: (id: string, pinned: boolean) => void
++  /** Record activation of an official navigation control without changing navigation. */
++  trackEntryClick: (attributes: ProductEventMap['sidebar_menu_click']) => void
+@@ -129 +171,8 @@ export type SidebarRootInjected = {
+-  hooks: { panels: ObservableSnapshot<readonly SidebarPanelMetadata[]>; shortcuts: ObservableSnapshot<readonly ShortcutCatalogEntry[]> }
++  hooks: {
++    panels: ObservableSnapshot<readonly SidebarPanelMetadata[]>
++    shortcuts: ObservableSnapshot<readonly ShortcutCatalogEntry[]>
++    /** Ids of unpinned panel launchers held in memory until plugin reload. */
++    entryPins: ObservableSnapshot<readonly string[]>
++    /** Whether `sidebar.panellist.actions` has registrations. */
++    entryActions: ObservableSnapshot<boolean>
++  }
+@@ -143,0 +193 @@ export type SidebarRootComponentProps =
++    | 'sidebar.panellist.actions'
+diff --git a/packages/client/ui-workspace/src/client/navigation.ts b/packages/client/ui-workspace/src/client/navigation.ts
+index 9c8fa97760..55e03054ce 100644
+--- a/packages/client/ui-workspace/src/client/navigation.ts
++++ b/packages/client/ui-workspace/src/client/navigation.ts
+@@ -73,3 +73,3 @@ export interface UiWorkspace {
+-   * Resolve the Session for a new conversation in a Workspace: the Host reuses
+-   * the first listed blank member while it is reusable and otherwise creates one,
+-   * under the requested preset or the Host default.
++   * Resolve the Session for a new conversation in a Workspace: navigation names the first
++   * reusable blank member, skipping blanks that list a preset other than a requested one, and
++   * the Host reuses it under the requested preset or its default, or creates another Session.
+@@ -82,2 +82,3 @@ export interface UiWorkspace {
+-   * Create a fresh Session, or reuse a blank when preparing an explicit draft. A creation the Host
+-   * refuses is shown through the Workspace notice and leaves the selection as it was.
++   * Open the Workspace blank `connectWorkspace` resolves, so New Session returns to that blank's
++   * unsent draft. A creation the Host refuses is shown through the Workspace notice and leaves the
++   * selection as it was.
+@@ -85,2 +86,2 @@ export interface UiWorkspace {
+-   * @param options - initial content and the reused blank's preset; existing text or attachments
+-   * are preserved unless clearPreviousDraft is true.
++   * @param options - initial content, the blank's preset, and `whenDraftExists`, which decides
++   * whether existing text or attachments are kept, replaced, or followed by the prompt.
+@@ -198 +199 @@ class UiWorkspaceService extends Service implements UiWorkspace {
+-   * @param reuse - preset for the reused or created blank; absent creates a fresh Session.
++   * @param reuse - preset for the reused or created blank.
+@@ -202 +203 @@ class UiWorkspaceService extends Service implements UiWorkspace {
+-    reuse: Pick<StartSessionOptions, 'agentPreset'> | undefined,
++    reuse: Pick<StartSessionOptions, 'agentPreset'>,
+@@ -209 +209,0 @@ class UiWorkspaceService extends Service implements UiWorkspace {
+-    if (reuse === undefined) return this.sessions.create({ workspaceId })
+@@ -219,0 +220 @@ class UiWorkspaceService extends Service implements UiWorkspace {
++  /** Name the first reusable member blank; a requested preset also skips blanks listing another preset. */
+@@ -224,0 +226 @@ class UiWorkspaceService extends Service implements UiWorkspace {
++      const listed = summary?.projectionValues?.agentPreset
+@@ -226,0 +229 @@ class UiWorkspaceService extends Service implements UiWorkspace {
++        && (options.agentPreset === undefined || typeof listed !== 'string' || listed === options.agentPreset)
+@@ -291 +294 @@ class UiWorkspaceService extends Service implements UiWorkspace {
+-    reuse: Pick<StartSessionOptions, 'agentPreset'> | undefined,
++    reuse: Pick<StartSessionOptions, 'agentPreset'>,
+@@ -323,2 +326,2 @@ class UiWorkspaceService extends Service implements UiWorkspace {
+-    const initializeDraft = draftOptions !== undefined
+-      && (draftOptions.prompt !== undefined || draftOptions.clearPreviousDraft === true)
++    const initializeDraft = draftOptions !== undefined && (draftOptions.prompt !== undefined
++      || (draftOptions.whenDraftExists ?? (draftOptions.clearPreviousDraft === true ? 'replace' : 'keep')) === 'replace')
+@@ -343,7 +346,5 @@ class UiWorkspaceService extends Service implements UiWorkspace {
+-    const opening = draftOptions === undefined
+-      ? this.openWorkspaceSession(target, undefined, undefined)
+-      : this.openWorkspace(target, initializeDraft ? (id) => {
+-        const binding = this.sessions.binding(id)
+-        if (binding === undefined) this.draftPreparationFailed()
+-        this.prepareDraft(binding, draftOptions)
+-      } : undefined, agentPreset === undefined ? {} : { agentPreset })
++    const opening = this.openWorkspace(target, initializeDraft ? (id) => {
++      const binding = this.sessions.binding(id)
++      if (binding === undefined) this.draftPreparationFailed()
++      this.prepareDraft(binding, draftOptions)
++    } : undefined, agentPreset === undefined ? {} : { agentPreset })

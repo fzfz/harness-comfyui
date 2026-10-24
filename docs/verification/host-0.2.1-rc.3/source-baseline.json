@@ -1,0 +1,29 @@
+{
+  "pluginBase": "6adc446c78aa177dc9213fdec47a37a9441c1a05",
+  "branch": "codex/host-0-2-1-rc-3",
+  "currentPluginVersion": "0.47.1",
+  "proposedPluginVersion": "0.47.2",
+  "targetHost": "0.2.1-rc.3",
+  "targetCommit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+  "baseCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "releaseUrl": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3",
+  "installedApplicationVersion": "0.2.1-rc.3",
+  "upstreamCommitCount": 6,
+  "sourceInspection": "No implementation change in subagent, workspace service, credential service, skills, shell-env, attachments, app-boot or typert protocol; plugin slots remain available. Client draft navigation and entry menus require Desktop validation.",
+  "evidence": [
+    "dependency-audit.json",
+    "sdk-package.json",
+    "upstream-files.txt",
+    "client-interfaces.diff"
+  ],
+  "authorization": {
+    "upgrade": true,
+    "dependencyInstallation": true,
+    "pullRequest": true,
+    "mergeMain": true,
+    "releaseForLocalDeployment": true,
+    "localDeployment": true,
+    "historyMigration": false,
+    "oldEnvironmentRetirement": false
+  }
+}

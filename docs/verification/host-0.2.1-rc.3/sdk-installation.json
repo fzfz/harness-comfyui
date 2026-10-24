@@ -1,0 +1,398 @@
+{
+  "packageCount": 93,
+  "unknown": [],
+  "unexpectedDsh": [],
+  "packages": [
+    "@deepseek-ai/cordis-plugin-group@1.0.5",
+    "@deepseek-ai/cordis-plugin-include@1.0.10",
+    "@deepseek-ai/cordis-plugin-loader@1.0.6",
+    "@deepseek-ai/cordis@4.0.5",
+    "@deepseek-ai/cosmokit@1.8.6",
+    "@deepseek-ai/dsh-agent-preset-registry@0.2.1-rc.3",
+    "@deepseek-ai/dsh-agent-preset@0.2.1-rc.3",
+    "@deepseek-ai/dsh-agent@0.2.1-rc.3",
+    "@deepseek-ai/dsh-api-remotes@0.2.1-rc.3",
+    "@deepseek-ai/dsh-app-boot@0.2.1-rc.3",
+    "@deepseek-ai/dsh-atomic-write@0.2.1-rc.3",
+    "@deepseek-ai/dsh-attachment@0.2.1-rc.3",
+    "@deepseek-ai/dsh-brand@0.2.1-rc.3",
+    "@deepseek-ai/dsh-chunked-list@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-connection@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-locale@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-conversation@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-input-trigger@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-layout@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-primitives@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-settings@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-sidebar-right@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-sidebar@0.2.1-rc.3",
+    "@deepseek-ai/dsh-client-ui-slots@0.2.1-rc.3",
+    "@deepseek-ai/dsh-config-editor@0.2.1-rc.3",
+    "@deepseek-ai/dsh-credentials@0.2.1-rc.3",
+    "@deepseek-ai/dsh-deque@0.2.1-rc.3",
+    "@deepseek-ai/dsh-fs@0.2.1-rc.3",
+    "@deepseek-ai/dsh-home-paths@0.2.1-rc.3",
+    "@deepseek-ai/dsh-http-proxy@0.2.1-rc.3",
+    "@deepseek-ai/dsh-jobs@0.2.1-rc.3",
+    "@deepseek-ai/dsh-launch-environment@0.2.1-rc.3",
+    "@deepseek-ai/dsh-llm@0.2.1-rc.3",
+    "@deepseek-ai/dsh-package-manifest@0.2.1-rc.3",
+    "@deepseek-ai/dsh-ptc-runtime@0.2.1-rc.3",
+    "@deepseek-ai/dsh-sandbox-policy@0.2.1-rc.3",
+    "@deepseek-ai/dsh-sandbox@0.2.1-rc.3",
+    "@deepseek-ai/dsh-scope@0.2.1-rc.3",
+    "@deepseek-ai/dsh-session-persistence@0.2.1-rc.3",
+    "@deepseek-ai/dsh-session-projection@0.2.1-rc.3",
+    "@deepseek-ai/dsh-session@0.2.1-rc.3",
+    "@deepseek-ai/dsh-settings@0.2.1-rc.3",
+    "@deepseek-ai/dsh-shell-env@0.2.1-rc.3",
+    "@deepseek-ai/dsh-shell@0.2.1-rc.3",
+    "@deepseek-ai/dsh-skill-filesystem@0.2.1-rc.3",
+    "@deepseek-ai/dsh-skill@0.2.1-rc.3",
+    "@deepseek-ai/dsh-storage-domain@0.2.1-rc.3",
+    "@deepseek-ai/dsh-storage@0.2.1-rc.3",
+    "@deepseek-ai/dsh-subagent@0.2.1-rc.3",
+    "@deepseek-ai/dsh-subprocess@0.2.1-rc.3",
+    "@deepseek-ai/dsh-system-prompt@0.2.1-rc.3",
+    "@deepseek-ai/dsh-timeout@0.2.1-rc.3",
+    "@deepseek-ai/dsh-tools@0.2.1-rc.3",
+    "@deepseek-ai/dsh-typert-protocol@0.2.1-rc.3",
+    "@deepseek-ai/dsh-user-approval@0.2.1-rc.3",
+    "@deepseek-ai/dsh-util-crypto@0.2.1-rc.3",
+    "@deepseek-ai/dsh-util-time@0.2.1-rc.3",
+    "@deepseek-ai/dsh-util-values@0.2.1-rc.3",
+    "@deepseek-ai/dsh-working-directory@0.2.1-rc.3",
+    "@deepseek-ai/dsh-workspace@0.2.1-rc.3",
+    "@deepseek-ai/schemastery@3.18.5",
+    "@eslint-community/regexpp@4.12.2",
+    "@standard-schema/spec@1.1.0",
+    "ajv@8.20.0",
+    "argparse@2.0.1",
+    "chokidar@5.0.0",
+    "fast-deep-equal@3.1.3",
+    "fast-uri@3.1.8",
+    "js-tokens@4.0.0",
+    "js-yaml@4.3.2",
+    "json-schema-traverse@1.0.0",
+    "loose-envify@1.4.0",
+    "node-addon-native-custom-loader@0.1.9",
+    "node-addon-require-builtin-darwin-arm64@0.1.9",
+    "node-addon-require-builtin-darwin-x64@0.1.9",
+    "node-addon-require-builtin-linux-arm64-gnu@0.1.9",
+    "node-addon-require-builtin-linux-arm64-musl@0.1.9",
+    "node-addon-require-builtin-linux-x64-gnu@0.1.9",
+    "node-addon-require-builtin-linux-x64-musl@0.1.9",
+    "node-addon-require-builtin-win32-arm64-msvc@0.1.9",
+    "node-addon-require-builtin-win32-ia32-msvc@0.1.9",
+    "node-addon-require-builtin-win32-x64-msvc@0.1.9",
+    "node-addon-require-builtin@0.1.9",
+    "react-dom@18.3.1",
+    "react@18.3.1",
+    "readdirp@5.1.1",
+    "require-from-string@2.0.2",
+    "resolve.exports@2.0.3",
+    "scheduler@0.23.2",
+    "semver@7.8.5",
+    "undici@8.11.2",
+    "yaml@2.9.1",
+    "zod@4.4.3"
+  ],
+  "installCommand": "pnpm install --frozen-lockfile --ignore-scripts",
+  "pluginAdvisories": {
+    "all": 0,
+    "production": 0
+  },
+  "installConfiguration": {
+    "ignoreScripts": true,
+    "autoInstallPeers": false,
+    "strictPeerDependencies": true
+  },
+  "installedDirectPackages": [
+    {
+      "name": "@deepseek-ai/cordis",
+      "expected": "4.0.5",
+      "installed": "4.0.5"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-group",
+      "expected": "1.0.5",
+      "installed": "1.0.5"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-include",
+      "expected": "1.0.10",
+      "installed": "1.0.10"
+    },
+    {
+      "name": "@deepseek-ai/cordis-plugin-loader",
+      "expected": "1.0.6",
+      "installed": "1.0.6"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent-preset-registry",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-remotes",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-app-boot",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-attachment",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-brand",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-connection",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-locale",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-conversation",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-input-trigger",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-layout",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-primitives",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-settings",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-sidebar-right",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-slots",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-credentials",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-home-paths",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-http-proxy",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-jobs",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-launch-environment",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-ptc-runtime",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox-policy",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-scope",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-persistence",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-session-projection",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-settings",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-shell",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-shell-env",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-skill-filesystem",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-storage-domain",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-subagent",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-subprocess",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-system-prompt",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-timeout",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tools",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-typert-protocol",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-user-approval",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-time",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-util-values",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-working-directory",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/dsh-workspace",
+      "expected": "0.2.1-rc.3",
+      "installed": "0.2.1-rc.3"
+    },
+    {
+      "name": "@deepseek-ai/schemastery",
+      "expected": "3.18.5",
+      "installed": "3.18.5"
+    },
+    {
+      "name": "js-yaml",
+      "expected": "4.3.2",
+      "installed": "4.3.2"
+    },
+    {
+      "name": "react",
+      "expected": "18.3.1",
+      "installed": "18.3.1"
+    },
+    {
+      "name": "react-dom",
+      "expected": "18.3.1",
+      "installed": "18.3.1"
+    }
+  ],
+  "installedVersionMismatches": []
+}

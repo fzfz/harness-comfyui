@@ -6,7 +6,7 @@
 
 ## 宿主与运行技术
 
-1. 插件 `0.47.1` 的宿主基线为官方 macOS DeepSeek Harness Desktop `0.2.1-rc.2`。宿主和 SDK 的精确版本约束由 [package.json](../../package.json) 的 `engines.dsh` 与 `peerDependencies` 字段定义。其他操作系统的支持范围由该平台上的插件安装和业务验收结果确定。
+1. 插件 `0.47.2` 的宿主基线为官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3`。宿主和 SDK 的精确版本约束由 [package.json](../../package.json) 的 `engines.dsh` 与 `peerDependencies` 字段定义。其他操作系统的支持范围由该平台上的插件安装和业务验收结果确定。
 
 2. 各层使用以下技术。
 
@@ -31,8 +31,8 @@
 
 1. 根 `package.json` 保存 SDK peers、运行依赖、开发工具的精确版本及公开导出。`pnpm-lock.yaml` 保存解析结果。官方 Desktop 提供完整 Harness Host；插件通过公共 SDK peers 接入。
 2. `package.json.exports` 定义 Host、Client、Core、Image Reader、CLI、Web、Preset 与 locale 的公开子路径。`dsh.client.inject` 定义 Client 注入表。候选包中的运行目标必须位于 tarball 内。
-3. [宿主升级依赖证据目录](../verification/host-0.2.1-rc.2/) 保存 Desktop `0.2.1-rc.2` 升级的精确清单、公告查询和安装记录。宿主 MCP 依赖公告及获准使用范围见[升级方案第 3.2、6 节](../plans/host-0.2.1-rc.2-upgrade-20261024.md#32-宿主-mcp-依赖公告)。
+3. [宿主升级依赖证据目录](../verification/host-0.2.1-rc.3/) 保存 Desktop `0.2.1-rc.3` 升级的精确清单、公告查询和安装记录。SDK 与 Preset 依赖公告见[升级方案第 3.2 节](../plans/host-0.2.1-rc.3-upgrade-20261025.md#32-安装前依赖审计)，获准使用范围见[第 9 节](../plans/host-0.2.1-rc.3-upgrade-20261025.md#9-已获得的授权)。
 
 ## 安装与验收入口
 
-1. 插件安装、更新与版本核对遵循[发布规范](releasing.md)。自动化测试范围见[测试规范](testing.md)，Desktop `0.2.1-rc.2` 升级的通过条件见[升级方案第 7 节](../plans/host-0.2.1-rc.2-upgrade-20261024.md#7-计划验收清单)。
+1. 插件安装、更新与版本核对遵循[发布规范](releasing.md)。自动化测试范围见[测试规范](testing.md)，Desktop `0.2.1-rc.3` 升级的通过条件见[升级方案第 7 节](../plans/host-0.2.1-rc.3-upgrade-20261025.md#7-计划验收清单)。

@@ -25,7 +25,7 @@
 
 ## 适用版本
 
-1. 插件 `0.47.1` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.2` 使用。版本功能见[发布说明](docs/releasenotes.md#harness-comfyui-v0471)。
+1. 插件 `0.47.2` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](docs/releasenotes.md#harness-comfyui-v0472)。
 
 ## CLI 帮助与图片读取
 
@@ -42,7 +42,7 @@
 
 ## 安装与使用前准备
 
-1. 用户准备官方 DeepSeek Harness Desktop `0.2.1-rc.2`、本机 Chrome 或 Chromium、可访问的数据源服务和已登记的 ComfyUI 实例。目标实例须具备所选 Workflow 使用的模型、LoRA 和自定义节点。对话模型及凭据通过官方应用设置配置；图片读取模型须支持图片输入，并在插件设置中单独选择。ComfyUI 的生成模型负责实际出图，模型设置中的对话模型负责理解需求和调用工具。
+1. 用户准备官方 DeepSeek Harness Desktop `0.2.1-rc.3`、本机 Chrome 或 Chromium、可访问的数据源服务和已登记的 ComfyUI 实例。目标实例须具备所选 Workflow 使用的模型、LoRA 和自定义节点。对话模型及凭据通过官方应用设置配置；图片读取模型须支持图片输入，并在插件设置中单独选择。ComfyUI 的生成模型负责实际出图，模型设置中的对话模型负责理解需求和调用工具。
 
 2. 用户从 [GitHub Releases](https://github.com/fzfz/harness-comfyui/releases) 下载目标版本的 `harness-comfyui-<版本>.tgz`。
 3. 用户在官方 Desktop 的“插件”页面选择“添加插件”，填写本机包的绝对路径或 Release 附件下载地址，完成安装并启用。
