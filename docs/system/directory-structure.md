@@ -38,11 +38,16 @@
    | --- | --- |
    | `agent-presets/presets.cordis.yml` | 项目 Preset registry 声明。 |
    | `agent-presets/harness-comfyui-cli-candidate/` | ComfyUI工作台预设的资源。 |
-   | `agent-presets/harness-comfyui-iteration/` | ComfyUI迭代预设的主 Agent、四个角色与派发配置。 |
-   | `agent-presets/noobai-mcp.cordis.yml` | 两个项目 Preset 共用的 NoobAI MCP 服务配置。 |
+   | `agent-presets/harness-comfyui-iteration/` | ComfyUI迭代预设的主 Agent 与四种角色派发配置。 |
+   | `agent-presets/harness-comfyui-task/` | 工作台任务角色的 persona 与工具组合。 |
+   | `agent-presets/harness-comfyui-composition/`、`harness-comfyui-generation/`、`harness-comfyui-observation/`、`harness-comfyui-comparison/` | 构图、生成、观察和比较角色的 persona 与工具组合。 |
+   | `agent-presets/shared/agent.cordis.yml` | 7 个项目 Preset 共用的工具、Skills、提示词可见性、Workspace 和 compaction 组合。 |
+   | `agent-presets/noobai-mcp.cordis.yml` | 项目 Preset 共用的 NoobAI MCP 服务配置。 |
    | `agent-presets/project-installed-presets.mjs` | 已安装 Preset 资源入口。 |
    | `agent-presets/project-installed-skills.mjs` | Preset 作用域内的 Skill 资源入口。 |
-   | `agent-presets/project-iteration-dispatch.mjs` | 迭代角色工具与 DSH 子会话派发接口。 |
+   | `agent-presets/project-iteration-dispatch.mjs` | 工作台与迭代角色的子会话首次派发与后续派发接口。 |
+   | `agent-presets/project-observation-dispatch.mjs` | 观察任务的 Run 媒体解析与派发适配。 |
+   | `agent-presets/project-subagent-control.mjs` | 产品 Preset 的子任务中断工具。 |
    | `agent-presets/project-subagent-workspace.mjs` | 父子 Session 的 Workspace 关联。 |
    | `agent-presets/project-tool-visibility.mjs`、`project-system-prompt-visibility.mjs` | Preset 的 Tool 与系统提示词可见范围。 |
 
@@ -83,6 +88,7 @@
    | `config/managed-cli-environment.json` | 受管 CLI 环境字段。 |
    | `config/node-script-runtime.json` | Electron Node 脚本环境字段。 |
    | `config/desktop-e2e.json`、`config/desktop-e2e-schema.mjs` | 官方 Desktop 验收配置与运行记录合同。 |
+   | `tsconfig.agent-presets.json` | Preset 派发与生命周期适配文件的 `checkJs` 类型检查配置。 |
    | `scripts/build/` | 插件构建与 tarball 打包入口。 |
    | `scripts/cli/` | 受管 CLI 入口、帮助、参数解析与结果文件管理模块。 |
 
@@ -107,6 +113,7 @@
    | `tests/production/` | 发行包、官方 Profile、Renderer 与安装生命周期的确定性测试。 |
    | `tests/unit/`、`tests/integration/`、`tests/contract/`、`tests/security/` | 模块、插件组合、发行合同与安全边界测试。 |
    | `docs/verification/official-desktop-plugin/` | 官方应用能力、依赖与插件验收记录。 |
+   | `docs/verification/host-0.2.1-rc.2/` | 宿主升级的依赖审计与候选验收证据。 |
 
 ## 文档目录
 

@@ -31,8 +31,11 @@ async function resolvePatched(root, patch) {
     const path = resolve(root, 'agent-presets', composition.config.path)
     const originalComposition = await readRows(path)
     const composed = apply(originalComposition, composition.config.patches)
-    const mcpInclude = composed.find(entry => entry.id === 'noobai-mcp')
-    const mcpPath = resolve(dirname(path), mcpInclude.config.path)
+    const common = composed.find(entry => entry.id === 'project-common')
+    const commonPath = resolve(dirname(path), common.config.path)
+    const shared = apply(await readRows(commonPath), common.config.patches)
+    const mcpInclude = shared.find(entry => entry.id === 'noobai-mcp')
+    const mcpPath = resolve(dirname(commonPath), mcpInclude.config.path)
     const originalMcp = await readRows(mcpPath)
     result.push({ row, originalComposition, composed, originalMcp, mcp: apply(originalMcp, mcpInclude.config.patches) })
   }
@@ -65,7 +68,8 @@ describe('installed Preset Profile overrides', () => {
   it.each(['missing', 'duplicate'])('rejects %s target entries at each include layer', async kind => {
     for (const [relativePath, id] of [
       ['agent-presets/presets.cordis.yml', 'preset-harness-comfyui-cli-candidate'],
-      ['agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml', 'noobai-mcp'],
+      ['agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml', 'project-common'],
+      ['agent-presets/shared/agent.cordis.yml', 'noobai-mcp'],
       ['agent-presets/noobai-mcp.cordis.yml', 'mcp-noobai'],
       ['agent-presets/harness-comfyui-iteration/agent.cordis.yml', 'composition-agent'],
     ]) {
@@ -93,7 +97,7 @@ describe('installed Preset Profile overrides', () => {
     const mcpOnly = await resolvePatched(root, await createOfficialPresetProfilePatch({ installedPackageRoot: root,
       mcpUrl: 'http://127.0.0.1:12345/mcp' }))
     for (const entry of mcpOnly.result) {
-      expect(entry.composed.filter(row => row.id !== 'noobai-mcp')).toEqual(entry.originalComposition.filter(row => row.id !== 'noobai-mcp'))
+      expect(entry.composed.filter(row => row.id !== 'project-common')).toEqual(entry.originalComposition.filter(row => row.id !== 'project-common'))
     }
   })
 
@@ -107,7 +111,7 @@ describe('installed Preset Profile overrides', () => {
     for (const entry of result) {
       expect(entry.mcp[0].config).toEqual({ ...entry.originalMcp[0].config, url: 'http://127.0.0.1:31234/mcp' })
       expect(entry.mcp[0].config.headers.Authorization).toEqual({ __jsExpr: '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`' })
-      for (const composed of entry.composed.filter(row => row.id !== 'noobai-mcp')) {
+      for (const composed of entry.composed.filter(row => row.id !== 'project-common')) {
         const before = entry.originalComposition.find(row => row.id === composed.id)
         expect(composed).toEqual(composed.id === 'composition-agent'
           ? { ...before, config: { ...before.config, agentOptions: roleAgentOptions['composition-agent'] } }

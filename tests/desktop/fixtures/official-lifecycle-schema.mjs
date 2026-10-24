@@ -77,12 +77,12 @@ const WORKSPACE_READBACK_KEYS = ['workspaceId', 'path', 'sessionIds']
 const IDENTITY_READBACK_KEYS = ['sessionId', 'cwd']
 const SETTING_KEYS = ['entryId', browserSettings.fieldName]
 const BUNDLE_KEYS = ['name', 'version', 'installed', 'enabled']
-const BUNDLE_INFO_REQUIRED_KEYS = ['name', 'enabled', 'installed', 'optional', 'removable', 'rows', 'overrides']
-const BUNDLE_INFO_OPTIONAL_KEYS = ['version', 'meta', 'description', 'readOnlyReason', 'error']
+const BUNDLE_INFO_REQUIRED_KEYS = ['official', 'availability', 'name', 'enabled', 'installed', 'optional', 'removable', 'rows', 'overrides']
+const BUNDLE_INFO_OPTIONAL_KEYS = ['installTarget', 'source', 'version', 'meta', 'description', 'readOnlyReason', 'error']
 const BUNDLE_ROW_REQUIRED_KEYS = ['rowId', 'moduleName']
 const BUNDLE_ROW_OPTIONAL_KEYS = ['meta', 'entryId']
 const BUNDLE_ERROR_CODES = new Set([
-  'management-required', 'unaddressable', 'unknown-plugin', 'invalid-spec', 'ambiguous-install', 'not-bundle',
+  'management-required', 'unaddressable', 'unknown-plugin', 'invalid-spec', 'already-installed', 'ambiguous-install', 'not-bundle',
   'not-removable', 'stop-profile', 'bundle-in-use', 'stale-approval', 'incompatible-version', 'operation-error',
 ])
 const CLEANUP_KEYS = ['state', 'exitCode', 'error', 'portsReleased', 'processGroupMembers', 'portOwners']
@@ -420,12 +420,12 @@ function validateBundleMeta(value, label) {
 }
 
 function validateIncompatiblePlugin(value, label) {
-  const incompatible = exactKeys(value, ['name', 'version', 'runtimeVersion', 'peers'], label)
+  const incompatible = exactKeys(value, ['name', 'version', 'runtimeVersion', 'requirements'], label)
   for (const key of ['name', 'version', 'runtimeVersion']) nonEmptyString(incompatible[key], `${label}.${key}`)
-  record(incompatible.peers, `${label}.peers`)
-  for (const [name, range] of Object.entries(incompatible.peers)) {
-    nonEmptyString(name, `${label}.peers package`)
-    if (typeof range !== 'string') throw new TypeError(`${label}.peers.${name} must be a string`)
+  record(incompatible.requirements, `${label}.requirements`)
+  for (const [name, range] of Object.entries(incompatible.requirements)) {
+    nonEmptyString(name, `${label}.requirements package`)
+    if (typeof range !== 'string') throw new TypeError(`${label}.requirements.${name} must be a string`)
   }
 }
 
@@ -445,8 +445,17 @@ function validateBundleInfo(value, label) {
   const bundle = knownKeys(value, BUNDLE_INFO_REQUIRED_KEYS, BUNDLE_INFO_OPTIONAL_KEYS, label)
   nonEmptyString(bundle.name, `${label}.name`)
   if (bundle.version !== undefined) nonEmptyString(bundle.version, `${label}.version`)
-  for (const key of ['enabled', 'installed', 'optional', 'removable']) {
+  for (const key of ['official', 'enabled', 'installed', 'optional', 'removable']) {
     if (typeof bundle[key] !== 'boolean') throw new TypeError(`${label}.${key} must be boolean`)
+  }
+  if (!['installation', 'profile', 'missing'].includes(bundle.availability)) {
+    throw new TypeError(`${label}.availability must be a supported SDK value`)
+  }
+  if (bundle.source !== undefined) nonEmptyString(bundle.source, `${label}.source`)
+  if (bundle.installTarget !== undefined) {
+    const target = exactKeys(bundle.installTarget, ['spec', 'version'], `${label}.installTarget`)
+    nonEmptyString(target.spec, `${label}.installTarget.spec`)
+    nonEmptyString(target.version, `${label}.installTarget.version`)
   }
   if (!Array.isArray(bundle.rows)) throw new TypeError(`${label}.rows must be an array`)
   bundle.rows.forEach((rowValue, index) => {

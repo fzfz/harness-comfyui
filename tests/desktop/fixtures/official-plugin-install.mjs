@@ -879,10 +879,14 @@ function performOfficialPluginUIAction(action) {
   }
   const visible = element => inViewport(element)
   const readAttribute = (element, name) => element?.getAttribute?.(name) ?? null
+  const readPackageName = element => {
+    const surface = element.closest('[data-plugin-package], [data-plugin-detail]')
+    return readAttribute(surface, 'data-plugin-package') ?? readAttribute(surface, 'data-plugin-detail')
+  }
   const buttonSnapshot = element => ({
     text: String(element.innerText ?? element.textContent ?? '').trim(),
     ariaLabel: readAttribute(element, 'aria-label'),
-    packageName: readAttribute(element.closest('[data-plugin-package]'), 'data-plugin-package'),
+    packageName: readPackageName(element),
     disabled: element.disabled === true,
     role: readAttribute(element, 'role'),
     ariaChecked: readAttribute(element, 'aria-checked') ?? (typeof element.checked === 'boolean' ? String(element.checked) : null),
@@ -948,7 +952,7 @@ function performOfficialPluginUIAction(action) {
   }
   if (action.type === 'scroll-switch-into-view') {
     const candidates = Array.from(document.querySelectorAll('[role="switch"]'))
-      .filter(element => readAttribute(element.closest('[data-plugin-package]'), 'data-plugin-package') === action.packageName
+      .filter(element => readPackageName(element) === action.packageName
         && readAttribute(element, 'aria-label') === action.ariaLabel)
     if (candidates.length === 0) return { ok: false, reason: 'not-found', snapshot: snapshot() }
     if (candidates.length > 1) return { ok: false, reason: 'ambiguous', snapshot: snapshot() }

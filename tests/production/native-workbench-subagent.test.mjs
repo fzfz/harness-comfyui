@@ -16,26 +16,12 @@ const role = composition.find(entry => entry.id === 'task-agent')
 
 function setup() {
   const registered = new Map()
-  const listeners = new Map()
-  const emit = (name, ...args) => { for (const callback of listeners.get(name) ?? []) callback(...args) }
-  const finish = childId => {
-    emit('session/event', { id: childId, header: { parentSession: 'parent-1' } }, {
-      type: 'agent/inbox/spliced', data: { inserted: [{ id: 'message-1' }] },
-    })
-    emit('subagent/end', { id: childId, runId: 'activation-1', stopReason: 'completed' })
-  }
   const subagents = {
-    startContinuable: vi.fn(async () => { finish('child-1'); return { childId: 'child-1', messageId: 'message-1' } }),
-    sendMessage: vi.fn(async (_parent, childId) => { finish(childId); return 'message-1' }),
+    startActivation: vi.fn(async () => ({ childId: 'child-1', messageId: 'message-1' })),
+    sendMessage: vi.fn(async () => 'message-1'),
     interrupt: vi.fn(),
   }
   const ctx = {
-    effect: callback => callback(),
-    on(name, callback) {
-      if (!listeners.has(name)) listeners.set(name, new Set())
-      listeners.get(name).add(callback)
-      return () => listeners.get(name).delete(callback)
-    },
     tools: { register: tool => {
       assertObjectJsonSchema(tool.parameters)
       assertSupportedJsonSchema(tool.output.schema)
@@ -57,11 +43,10 @@ const message = [{ type: 'text', text: `# 子 Agent 任务\n\n## 本次任务\n$
 describe('workbench project subagent dispatch component', () => {
   it('registers its dispatch tool and declares workspace and native control components', () => {
     expect([...setup().registered.keys()]).toEqual(['subagent_task'])
-    expect(role.config.toolFilter.deny).toEqual(['subagent_task', 'interrupt_agent'])
+    expect(role.config.agentPreset).toBe('harness-comfyui-task')
     expect(role.config.parameters.required).toEqual(['description', 'task'])
     expect(role.config.parameters.additionalProperties).toBe(false)
     expect(role.config.agentOptions).toEqual({})
-    expect(composition.find(entry => entry.name === '../project-subagent-workspace.mjs')).toBeDefined()
     expect(composition.find(entry => entry.name === '../project-subagent-control.mjs')).toBeDefined()
   })
 
@@ -69,14 +54,13 @@ describe('workbench project subagent dispatch component', () => {
     const { registered, subagents } = setup()
     const exec = execution()
     const result = await registered.get('subagent_task').execute(task, exec)
-    expect(result).toEqual({ kind: 'continuable', subagentId: 'child-1' })
-    expect(validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
-    expect(subagents.startContinuable).toHaveBeenCalledExactlyOnceWith({
-      provider: 'spawn', label: task.description, signal: expect.any(AbortSignal),
+    expect(result).toEqual({ status: 'accepted', operation: 'create', subagentId: 'child-1', messageId: 'message-1' })
+    expect(validateJsonSchemaValue(registered.get('subagent_task').output.schema, result, '')).toEqual([])
+    expect(subagents.startActivation).toHaveBeenCalledExactlyOnceWith({
+      provider: 'spawn', label: task.description, signal: expect.any(AbortSignal), delivery: 'parent',
       request: {
-        parent: exec.agent, label: task.description, prompt: message,
-        persona: role.config.persona, agentOptions: {},
-        toolFilter: { deny: ['subagent_task', 'interrupt_agent'] }, maxDepth: 1,
+        parent: exec.agent, prompt: message,
+        agentPreset: 'harness-comfyui-task', agentOptions: {}, maxDepth: 1,
       },
     })
     expect(subagents.sendMessage).not.toHaveBeenCalled()
@@ -86,11 +70,11 @@ describe('workbench project subagent dispatch component', () => {
     const { registered, subagents } = setup()
     const exec = execution()
     const result = await registered.get('subagent_task').execute({ ...task, agent_id: 'child-1' }, exec)
-    expect(result).toEqual({ messageId: 'message-1' })
-    expect(validateJsonSchemaValue(role.config.outputSchema, result, '')).toEqual([])
+    expect(result).toEqual({ status: 'accepted', operation: 'continue', subagentId: 'child-1', messageId: 'message-1' })
+    expect(validateJsonSchemaValue(registered.get('subagent_task').output.schema, result, '')).toEqual([])
     expect(subagents.sendMessage).toHaveBeenCalledExactlyOnceWith(exec.agent, 'child-1', message,
       { signal: expect.any(AbortSignal) })
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -107,16 +91,16 @@ describe('workbench project subagent dispatch component', () => {
     const { registered, subagents } = setup()
     await expect(registered.get('subagent_task').execute(args, execution()))
       .rejects.toThrow(role.config.nonEmptyFieldErrors[field])
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
   })
 
   it('passes native creation and continuation errors to the caller without retry', async () => {
     const { registered, subagents } = setup()
     const error = new Error('subagent "child-1" belongs to another parent session')
-    subagents.startContinuable.mockRejectedValueOnce(error)
+    subagents.startActivation.mockRejectedValueOnce(error)
     await expect(registered.get('subagent_task').execute(task, execution())).rejects.toBe(error)
-    expect(subagents.startContinuable).toHaveBeenCalledTimes(1)
+    expect(subagents.startActivation).toHaveBeenCalledTimes(1)
     subagents.sendMessage.mockRejectedValueOnce(error)
     await expect(registered.get('subagent_task').execute({ ...task, agent_id: 'child-1' }, execution()))
       .rejects.toBe(error)
@@ -128,7 +112,7 @@ describe('workbench project subagent dispatch component', () => {
     await expect(registered.get('subagent_task').execute({
       ...task, ...(continuation ? { agent_id: 'child-1' } : {}),
     }, execution(AbortSignal.abort()))).rejects.toThrow()
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
   })
 

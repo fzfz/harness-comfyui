@@ -4,9 +4,11 @@ import { join, resolve } from 'node:path'
 import { execFile as execFileCallback } from 'node:child_process'
 import { promisify } from 'node:util'
 import { pathToFileURL } from 'node:url'
-import { createRequire } from 'node:module'
 
 import { expect, it } from 'vitest'
+
+import { readProjectComposition } from '../fixtures/preset-composition.mjs'
+import productAgent from '../../config/product-agent.json' with { type: 'json' }
 
 import { buildPlugin, packPlugin } from '../../scripts/build/index.mjs'
 
@@ -36,7 +38,7 @@ it('rejects an invalid project Preset before writing plugin build outputs', asyn
   }
 })
 
-it('packages the shared MCP configuration with both resolvable Preset includes', async () => {
+it('packages the shared MCP configuration for every managed Preset and the product control tool', async () => {
   const repositoryRoot = resolve(import.meta.dirname, '../..')
   const root = await mkdtemp(join(tmpdir(), 'plugin-package-mcp-'))
   const execFile = promisify(execFileCallback)
@@ -45,16 +47,14 @@ it('packages the shared MCP configuration with both resolvable Preset includes',
     const { archivePath } = await packPlugin({ repositoryRoot, artifactRoot: root, outputFile: join(root, 'plugin.tgz') })
     await execFile('tar', ['-xzf', archivePath, '-C', root])
     await symlink(join(repositoryRoot, 'node_modules'), join(root, 'package/node_modules'), 'dir')
-    const require = createRequire(import.meta.url)
-    const yaml = require('js-yaml')
-    const { entryListSchema } = await import('@deepseek-ai/cordis-plugin-include')
-    for (const presetId of ['harness-comfyui-cli-candidate', 'harness-comfyui-iteration']) {
+    for (const presetId of [productAgent.preset.id, ...productAgent.preset.additionalManagedPresetIds]) {
       const directory = join(root, 'package', 'agent-presets', presetId)
-      const composition = yaml.load(await readFile(join(directory, 'agent.cordis.yml'), 'utf8'), { schema: entryListSchema })
+      const { composition } = await readProjectComposition(join(root, 'package'), presetId)
       const includes = composition.filter(row => row.name === 'cordis:include' && row.config?.path === '../noobai-mcp.cordis.yml')
       expect(includes).toHaveLength(1)
       const source = await readFile(resolve(directory, includes[0].config.path), 'utf8')
       expect(source).toBe(await readFile(join(repositoryRoot, 'agent-presets/noobai-mcp.cordis.yml'), 'utf8'))
+      if (![productAgent.preset.id, 'harness-comfyui-iteration'].includes(presetId)) continue
       const control = composition.filter(row => row.id === 'tool-subagent-control')
       expect(control).toHaveLength(1)
       expect(control[0].name).toBe('../project-subagent-control.mjs')

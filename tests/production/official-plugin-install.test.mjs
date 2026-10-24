@@ -216,6 +216,35 @@ describe('official Desktop candidate install adapter', () => {
     expect(stateFor(page).scrollIntoViewCount).toBe(1)
   })
 
+  it('confirms the enabled bundle on its detail page and captures the visible switch after reinstall', async () => {
+    const fixture = await createInstallFixture()
+    const page = await createFakeOfficialPage('installed', {
+      enabledSurface: 'detail',
+      otherBundleSwitch: true,
+      switchInitiallyOffscreen: true,
+    })
+
+    const result = await installOfficialPluginCandidate({
+      page, tarballPath: fixture.tarballPath, probeStatus: fixture.probeStatus,
+      repositoryRoot: fixture.repositoryRoot, timeoutMs: 2_000, pollIntervalMs: 1,
+    })
+
+    expect(result).toMatchObject({
+      status: 'installed', enabled: true, evidenceComplete: true,
+      enabledObservation: {
+        hasDialog: false, role: 'switch', ariaLabel: '启用 ComfyUI 工作台',
+        ariaChecked: 'true', disabled: false, inViewport: true,
+      },
+    })
+    expect(stateFor(page).enableClickCount).toBe(1)
+    expect(stateFor(page).scrollIntoViewCount).toBe(1)
+    expect(result.enabledObservation.bounds.top).toBeGreaterThanOrEqual(0)
+    expect(result.enabledObservation.bounds.bottom).toBeLessThanOrEqual(result.enabledObservation.viewport.height)
+    expect(result.screenshots.map(item => item.stage)).toEqual(screenshotStages)
+    const screenshot = result.screenshots.find(item => item.stage === 'enabled-bundle')
+    expect(await readFile(screenshot.path)).toEqual(SCREENSHOT_PNG)
+  })
+
   it('scrolls an off-screen enabled switch into the viewport and verifies its bounds before capture', async () => {
     const fixture = await createInstallFixture()
     const page = await createFakeOfficialPage('installed', { switchInitiallyOffscreen: true })
@@ -610,9 +639,15 @@ describe('official Desktop candidate install adapter', () => {
     })
   })
 
-  it.each(['navigation', 'install', 'package-input', 'enabled-switch'])('stops when the official %s control is ambiguous', async ambiguousControl => {
+  it.each([
+    ['navigation', 'list'],
+    ['install', 'list'],
+    ['package-input', 'list'],
+    ['enabled-switch', 'list'],
+    ['enabled-switch', 'detail'],
+  ])('stops when the official %s control is ambiguous on the %s page', async (ambiguousControl, enabledSurface) => {
     const fixture = await createInstallFixture()
-    const page = await createFakeOfficialPage('installed', { ambiguousControl })
+    const page = await createFakeOfficialPage('installed', { ambiguousControl, enabledSurface })
 
     const result = await installOfficialPluginCandidate({
       page,
@@ -876,6 +911,7 @@ class FakeOfficialPage {
     runId = TEST_RUN_ID,
     targetBehavior = null,
     switchInitiallyOffscreen = false,
+    enabledSurface = 'list',
     enableObservationNeverResponds = false,
     enableActionNeverResponds = false,
     enabledScreenshotNeverResponds = false,
@@ -890,6 +926,7 @@ class FakeOfficialPage {
     this.ambiguousControl = ambiguousControl
     this.otherBundleSwitch = otherBundleSwitch
     this.switchInitiallyOffscreen = switchInitiallyOffscreen
+    this.enabledSurface = enabledSurface
     this.switchInViewport = !switchInitiallyOffscreen
     this.scrollIntoViewCount = 0
     this.state = 'home'
@@ -997,8 +1034,14 @@ class FakeOfficialPage {
     })
     if (this.state === 'plugins' || this.state === 'enable-pending') return [nav, add]
     if (this.state === 'enabled') {
+      const packageSurface = packageName => new FakeElement(this, {
+        tagName: this.enabledSurface === 'detail' ? 'section' : 'li',
+        attributes: { [this.enabledSurface === 'detail' ? 'data-plugin-detail' : 'data-plugin-package']: packageName },
+      })
+      const switchParent = new FakeElement(this, { tagName: 'div', parentElement: packageSurface('harness-comfyui') })
       const switchControl = new FakeElement(this, {
         tagName: 'button',
+        parentElement: switchParent,
         attributes: { 'aria-label': `启用 ${workbenchLocale.meta.title}`, role: 'switch', 'aria-checked': 'true' },
       })
       return [
@@ -1007,11 +1050,12 @@ class FakeOfficialPage {
         switchControl,
         ...(this.otherBundleSwitch ? [new FakeElement(this, {
           tagName: 'button',
-          packageName: 'another-plugin',
+          parentElement: packageSurface('another-plugin'),
           attributes: { 'aria-label': `启用 ${workbenchLocale.meta.title}`, role: 'switch', 'aria-checked': 'true' },
         })] : []),
         ...(this.ambiguousControl === 'enabled-switch' ? [new FakeElement(this, {
           tagName: 'button',
+          parentElement: switchParent,
           attributes: { 'aria-label': `启用 ${workbenchLocale.meta.title}`, role: 'switch', 'aria-checked': 'true' },
         })] : []),
       ]
@@ -1084,21 +1128,23 @@ class FakeEvent {
 }
 
 class FakeElement {
-  constructor(page, { tagName, textContent = '', attributes = {}, packageName = 'harness-comfyui', disabled = false, onClick = () => {} }) {
+  constructor(page, { tagName, textContent = '', attributes = {}, parentElement = null, disabled = false, onClick = () => {} }) {
     this.page = page
     this.tagName = tagName.toUpperCase()
     this.textContent = textContent
     this.attributes = attributes
-    this.packageName = packageName
+    this.parentElement = parentElement
     this.disabled = disabled
     this.onClick = onClick
   }
 
   getAttribute(name) { return this.attributes[name] ?? null }
   closest(selector) {
-    return selector === '[data-plugin-package]' && this.getAttribute('role') === 'switch'
-      ? new FakeElement(this.page, { tagName: 'li', attributes: { 'data-plugin-package': this.packageName } })
-      : null
+    const attributes = selector.split(',').map(value => value.trim().slice(1, -1))
+    for (let element = this; element !== null; element = element.parentElement) {
+      if (attributes.some(name => element.getAttribute(name) !== null)) return element
+    }
+    return null
   }
   getClientRects() { return [1] }
   getBoundingClientRect() {

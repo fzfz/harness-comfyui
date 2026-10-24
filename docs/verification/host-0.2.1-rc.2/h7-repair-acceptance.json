@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "pluginVersion": "0.47.0",
+  "hostVersion": "0.2.1-rc.2",
+  "status": "accepted-with-model-limitations",
+  "candidateIdentity": ".local/h7-repair/final-candidate-source-identity.json",
+  "earlierCandidateIdentity": ".local/h7-repair/evidence/candidate-v1-source-identity.json",
+  "evidenceRoot": ".local/h7-repair",
+  "implementationFiles": [
+    "agent-presets/project-dispatch.json",
+    "agent-presets/project-iteration-dispatch.mjs",
+    "agent-presets/project-observation.json",
+    "agent-presets/project-observation-dispatch.mjs",
+    "agent-presets/harness-comfyui-generation/agent.cordis.yml",
+    "agent-presets/harness-comfyui-observation/agent.cordis.yml",
+    "agent-presets/harness-comfyui-comparison/agent.cordis.yml",
+    ".agents/skills/comfyui-iterate-generation/SKILL.md",
+    ".agents/skills/comfyui-iterate-generation/references/records.md",
+    ".agents/skills/comfyui-iterate-generation/references/iteration-method.md"
+  ],
+  "structuralVerification": {
+    "targetedLog": ".local/h7-repair/final-targeted.log",
+    "targetedTestsPassed": 74,
+    "typecheck": "passed",
+    "mcpConsumerRegression": {
+      "redLog": ".local/h7-repair/mcp-consumer-red.log",
+      "greenLog": ".local/h7-repair/mcp-consumer-green.log",
+      "testsPassed": 52,
+      "typecheckLog": ".local/h7-repair/final-typecheck.log"
+    }
+  },
+  "models": {
+    "initial": "nvidia/nemotron-3.5-super-vl:free",
+    "fallback": "dots-studio/dots-3-note-preview:free",
+    "fallbackPricingEvidence": "evidence/fallback-models.json",
+    "fallbackConfiguration": "evidence/dots-fallback-profile.json",
+    "fallbackResults": "evidence/fallback-controls.json"
+  },
+  "scenarios": [
+    {
+      "id": "A1",
+      "status": "earlier-candidate-passed",
+      "completedRepetitions": 3,
+      "result": "指定子会话将 Prompt Builder JSON 写入 builder.json。父会话收到完成通知后读取该文件。",
+      "traces": [
+        "traces/candidate-delegation-1/trace-index.json",
+        "traces/candidate-delegation-2/trace-index.json",
+        "traces/candidate-delegation-3/trace-index.json"
+      ]
+    },
+    {
+      "id": "A2",
+      "status": "earlier-candidate-passed",
+      "completedRepetitions": 3,
+      "result": "每次父会话提交数为 0，生成子会话各产生 1 个 Run，ComfyUI 各执行 1 次。",
+      "evidence": [
+        "evidence/generation-store-and-comfy-history.json",
+        "evidence/post-recovery-run-counts.json"
+      ]
+    },
+    {
+      "id": "A3",
+      "status": "incomplete",
+      "completedRepetitions": 1,
+      "requiredRepetitions": 3,
+      "result": "一次真实 max-tokens 中断后的消息进入原生成会话，并复用已有 Run。",
+      "trace": "traces/iteration-nvidia/trace-index.json"
+    },
+    {
+      "id": "A4",
+      "status": "partially-waived",
+      "completedRestartRepetitions": 3,
+      "result": "重启后的 3 次任务均创建了新会话。其中 1 次先成功续派原会话，随后发生模型服务错误。父任务中断后的业务交接尚待验收。",
+      "traces": [
+        "traces/cold-recovery-1/trace-index.json",
+        "traces/cold-recovery-2/trace-index.json",
+        "traces/cold-recovery-3/trace-index.json"
+      ],
+      "criteria": [
+        {
+          "name": "restart-session-selection",
+          "status": "waived-by-user",
+          "blocking": false
+        },
+        {
+          "name": "parent-interruption-handoff",
+          "status": "unverified"
+        }
+      ]
+    },
+    {
+      "id": "A5",
+      "status": "not-passed",
+      "traces": [
+        "traces/comparison-candidate-1/trace-index.json",
+        "traces/comparison-candidate-2/trace-index.json",
+        "traces/comparison-candidate-3/trace-index.json",
+        "traces/comparison-relations-1/trace-index.json",
+        "traces/comparison-relations-2/trace-index.json",
+        "traces/comparison-relations-3/trace-index.json"
+      ],
+      "imagePipelineEvidence": "evidence/image-acceptance-1-partial-export.json",
+      "findingIds": [
+        "B2"
+      ]
+    },
+    {
+      "id": "A6",
+      "status": "incomplete",
+      "result": "独立 Reviewer 已核对 4 张原图。关系条件的完整观察与比较回归尚未通过。"
+    },
+    {
+      "id": "A7",
+      "status": "incomplete",
+      "result": "正确图片与模糊图片尚未完成规定的 3 次真实模型验收。"
+    },
+    {
+      "id": "A8",
+      "status": "incomplete",
+      "result": "构图、生成、观察、比较、按反馈再次生成及最终交付尚未完成规定的 3 次真实模型验收。"
+    },
+    {
+      "id": "A9",
+      "status": "partial",
+      "result": "Run、媒体和生成次数已有对应证据。本轮进程和端口已释放。",
+      "lifecycleEvidence": "evidence/final-lifecycle-status.json",
+      "pendingScenarioIds": [
+        "A8"
+      ]
+    },
+    {
+      "id": "A10",
+      "status": "incomplete",
+      "result": "代码与语义审查已完成，H7 真实模型矩阵仍未通过。",
+      "reviews": "review-status.json"
+    }
+  ],
+  "observedBoundaries": [
+    {
+      "boundary": "dispatch-to-host",
+      "result": "原 agent_id 续派得到 operation=continue 回执；随后省略 agent_id 的调用按接口合同创建新会话。",
+      "trace": "traces/cold-recovery-1/trace-index.json",
+      "eventSeqs": [
+        311,
+        312,
+        351,
+        353
+      ]
+    },
+    {
+      "boundary": "observation-to-comparison",
+      "artifact": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/acceptance-workspace/h7-repair/image-acceptance-1/rounds/001/comparison-001.md",
+      "findingIds": [
+        "B2"
+      ]
+    },
+    {
+      "boundary": "model-to-artifact",
+      "result": "备用模型的首个比较任务以 completed 结束，但未写入要求的报告。",
+      "trace": "traces/dots-candidate-1/trace-index.json"
+    },
+    {
+      "boundary": "run-query-contract",
+      "result": "现有 CLI 提供生成参数和媒体查询，完整运行状态查询入口尚未明确。",
+      "reference": ".agents/skills/comfyui-iterate-generation/references/run-query-cli.md",
+      "classification": "investigation-only",
+      "blocking": false,
+      "openQuestion": "images 为空时，现有查询与通知能否支持正常任务继续执行或报告失败？",
+      "requirementSource": "docs/plans/h7-delegation-and-image-acceptance-20261024.md#54-步骤三在原生成子会话中恢复任务"
+    }
+  ],
+  "traceLimitations": [
+    "官方 Session 导出保存连续会话事件，原始 Provider 请求和响应流未完整持久化。",
+    "image-acceptance-1 在独立审阅确认比较失败后结束；一个子会话缺少 turn/end，原始官方 ZIP 按部分轨迹保存。",
+    "comparison-relations-2 读取了额外的 reference-2.md；该组存在输入差异。"
+  ],
+  "finalGates": {
+    "command": "pnpm quality",
+    "qualityLog": ".local/release-0.47.0/quality.log",
+    "result": ".local/release-0.47.0/final-gates.json",
+    "diffCheckCommand": "git diff --check"
+  },
+  "acceptanceDecisions": [
+    {
+      "criterion": "应用重启后，父 Agent 必须选择原生成子会话。",
+      "status": "waived-by-user",
+      "blocking": false,
+      "authorization": "那就忽略这条，继续看还有哪些阻塞",
+      "retainedContract": "宿主按明确的 agent_id 续派已有子会话的接口合同。"
+    },
+    {
+      "criterion": "观察、比较及真实模型矩阵的输出质量。",
+      "status": "excluded-from-host-upgrade-gate-by-user",
+      "blocking": false,
+      "authorization": "那也只是测试用的模型本身能力问题按",
+      "scope": "B1、B2 和未完成的真实模型场景保留为模型测试记录。",
+      "hostUpgradeCriteria": "acceptance-index.json#acceptance"
+    }
+  ],
+  "realModelMatrixStatus": "not-passed",
+  "releaseDecision": {
+    "status": "authorized-subject-to-final-gates",
+    "authorization": "那就创建PR,合入main,本机部署",
+    "requiredGates": [
+      "pnpm quality",
+      "git diff --check"
+    ]
+  },
+  "modelAssessment": {
+    "confirmedFailures": [
+      {
+        "id": "B1",
+        "stage": "observation",
+        "result": "观察文件称红伞遮挡头部上半部分及肩部。原图中，人物头部和肩部位于伞面前方，可直接看见。",
+        "evidence": [
+          "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/acceptance-workspace/h7-repair/image-acceptance-1/rounds/001/observation-001.md",
+          ".local/desktop-development/official-environment/dsh-home/data/plugins/harness-comfyui/media/90/f4/media_90f494ff-3097-4cd4-b3ad-d88ba9b068a2.png"
+        ],
+        "classification": "model-output-quality",
+        "blockingHostUpgrade": false
+      },
+      {
+        "id": "B2",
+        "stage": "comparison",
+        "result": "比较报告把“人物在石桥上”拆成“石砌桥身与桥面”，并判为满足。报告遗漏人物与桥面的空间关系，也未处理“桥下”观察与目标的冲突。",
+        "evidence": [
+          "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/acceptance-workspace/h7-repair/image-acceptance-1/rounds/001/comparison-001.md",
+          "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/acceptance-workspace/h7-repair/image-acceptance-1/rounds/001/observation-001.md"
+        ],
+        "classification": "model-output-quality",
+        "blockingHostUpgrade": false
+      }
+    ],
+    "pendingVerification": [
+      {
+        "scenarioIds": [
+          "A6",
+          "A7"
+        ],
+        "blockingHostUpgrade": false
+      },
+      {
+        "scenarioIds": [
+          "A8",
+          "A9"
+        ],
+        "blockingHostUpgrade": false
+      },
+      {
+        "scenarioIds": [
+          "A3"
+        ],
+        "blockingHostUpgrade": false
+      },
+      {
+        "scenarioIds": [
+          "A4"
+        ],
+        "criterion": "parent-interruption-handoff",
+        "blockingHostUpgrade": false
+      }
+    ],
+    "modelExecutionEvidence": {
+      "path": "evidence/fallback-controls.json",
+      "result": "备用模型的 6 次对照均未交付比较报告。对应记录包含模型服务错误、输出上限和 completed 结束。"
+    },
+    "qualityEvidence": ".local/h7-repair/evidence/final-gates.json"
+  }
+}

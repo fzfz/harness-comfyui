@@ -6,7 +6,7 @@
 
 ## 官方插件配置与存储校验
 
-1. 官方 Harness 按 bundle、Profile、home、invocation 的顺序合并插件配置，后续层覆盖较早层的同名字段；Profile 的 `config` 使用整体替换对象。Host 插件收到官方应用合并后的配置，再加载项目 Configuration Profile。
+1. 官方 Harness 按 bundle、Profile、home、invocation 的顺序合并插件配置，后续层覆盖较早层的同名字段。Profile 条目的 `config` 会整体替换该条目此前的配置对象。Host 插件收到官方应用合并后的配置，再加载项目 Configuration Profile。
 
 2. Core 的官方插件配置字段如下。
 
@@ -66,7 +66,7 @@
 
 3. `COMFYUI_API_WORKFLOW_CACHE_INVALID` 表示错误消息指向的缓存文件存在 JSON、identity 或 API Workflow 结构问题。维护者关闭官方应用、删除该文件，再重新打开应用并重试；文件缺失时，Host 执行官方前端导出并写入缓存。缓存 identity、校验和并发导出由 [OfficialApiWorkflowCompiler](../../src/host/generation/official-api-workflow.ts) 维护。
 
-4. Host 使用 Electron Node 执行 Workflow Worker，浏览器固定启动参数由 [ChromeComfyFrontend](../../src/host/generation/comfy-frontend-browser.ts) 定义。用户在“Workflow 浏览器”设置中保存路径后，下一次需要启动浏览器的导出使用该路径。
+4. 浏览器固定启动参数由 [ChromeComfyFrontend](../../src/host/generation/comfy-frontend-browser.ts) 定义。用户在“Workflow 浏览器”设置中保存路径后，下一次需要启动浏览器的导出使用该路径。
 
 ## Host 内部数据源设置
 
@@ -81,7 +81,7 @@
 
 ## NoobAI MCP 服务
 
-1. ComfyUI工作台预设与 ComfyUI迭代预设共用 [agent-presets/noobai-mcp.cordis.yml](../../agent-presets/noobai-mcp.cordis.yml)，由 DSH 原生 MCP 客户端连接 NoobAI MCP 服务。该文件定义服务名、传输方式、地址、请求头、Tool 调用期限和启动失败行为；维护者在官方 DSH home 的 `.env` 文件中设置 `NOOBAI_MCP_TOKEN`，由官方应用启动时加载并提供 Bearer 凭据；本机默认文件为 `~/.dsh/.env`。修改后，维护者完全退出并重新打开官方应用。
+1. 7 个项目 Preset 通过共享组合加载 [agent-presets/noobai-mcp.cordis.yml](../../agent-presets/noobai-mcp.cordis.yml)，由 DSH 原生 MCP 客户端连接 NoobAI MCP 服务。该文件定义服务名、传输方式、地址、请求头、Tool 调用期限和启动失败行为；维护者在官方 DSH home 的 `.env` 文件中设置 `NOOBAI_MCP_TOKEN`，由官方应用启动时加载并提供 Bearer 凭据；本机默认文件为 `~/.dsh/.env`。修改后，维护者完全退出并重新打开官方应用。
 
 2. NoobAI MCP 服务与 Host 内部数据源客户端必须连接同一目录数据。维护者分别配置 MCP 声明和“数据源服务”设置，确保 Agent 选择的目录 ID 能由 Host 读取。
 
@@ -137,23 +137,23 @@
 
 4. Runtime Provider 失败使用 `IMAGE_READER_PROVIDER_FAILED`，诊断包含本次配置名称与 ID、Provider、模型、温度、输出上限、finish kind、`LlmFailure.code`，以及 Provider 提供的状态码和 request ID。用户据此核对配置和凭据；返回 `providerRetryAfterMs` 时按该时长重试。OpenAI 兼容响应的 `finish_reason=length` 使用 `IMAGE_READER_OUTPUT_LIMIT`，操作指引由 `config/error-catalog.json` 提供。
 
-## 图片迭代角色配置
+## 子 Agent 派发配置
 
-1. [agent-presets/harness-comfyui-iteration/agent.cordis.yml](../../agent-presets/harness-comfyui-iteration/agent.cordis.yml) 定义主 Agent persona，以及 `composition-agent`、`generation-agent`、`observation-agent`、`comparison-agent` 四个角色。观察角色加载 `../project-observation-dispatch.mjs`，其他角色加载 `../project-iteration-dispatch.mjs`。字段用途如下。
+1. 工作台的 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 定义 `task-agent`；迭代预设的 [agent.cordis.yml](../../agent-presets/harness-comfyui-iteration/agent.cordis.yml) 定义构图、生成、观察和比较的派发工具。字段用途如下。
 
    | 字段 | 用途与规则 |
    | --- | --- |
    | `toolName`、`description` | 角色工具名称与调用说明。 |
-   | `persona` | 子 Agent 的职责、工作流程与结果要求。 |
+   | `agentPreset` | 子 Agent 使用的角色 Preset ID；角色入口见[系统架构](architecture.md#项目-presetskills-与目录访问)。 |
    | `agentOptions.provider`、`agentOptions.model`、`agentOptions.reasoningEffort` | 模型供应商、模型与推理设置。 |
    | `provider` | 使用 `spawn` 创建独立子会话。 |
    | `maxDepth` | 使用 `1` 限定子 Agent 的派发深度。 |
-   | `toolFilter.deny` | 子 Agent 的工具拒绝列表。 |
    | `parameters` | 角色工具的模型可见参数 JSON Schema。 |
    | `taskTemplate.title`、`taskTemplate.sections[]` | 任务消息标题，以及按顺序呈现参数的分组标题与字段。 |
-   | `outputSchema` | 首次派发与续派的返回值 JSON Schema。 |
 
-2. 共享派发入口为 [project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs)。观察适配器 [project-observation-dispatch.mjs](../../agent-presets/project-observation-dispatch.mjs) 先通过 Core 将 `run_id`、`media_id` 解析为本地图片路径，再调用共享派发入口。角色执行流程由 persona 定义，输出文件合同由 [references/records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md) 定义。
+2. 每个角色 Preset 的 `agent.cordis.yml` 定义自身 persona，并通过 [shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) 加载公共组合。工具能力由该 Preset 加载的组件确定；产品 Preset 加载派发与中断工具，迭代产品 Preset 另加载 Goal 工具。
+
+3. 派发合同见[系统架构](architecture.md#项目-presetskills-与目录访问)，输出文件合同见 [references/records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md)。
 
 ## 受管 CLI 配置
 

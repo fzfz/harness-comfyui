@@ -21,7 +21,7 @@ const [cordis, registryModule, scopeModule, skillModule, loaderModule, includeMo
 ])
 
 const { Context } = cordis
-const { AgentPresetRegistry, livePresetMounts } = registryModule
+const { AgentPresetRegistry } = registryModule
 const { createScope, scopeOf } = scopeModule
 const SkillRegistry = skillModule.default
 const presetRows = yaml.load(await readFile(
@@ -34,7 +34,10 @@ async function scopedDefinition(presetRow) {
   const composition = yaml.load(await readFile(compositionPath, 'utf8'), {
     schema: includeModule.entryListSchema,
   })
-  const installedSkillsRow = composition.find(row => row.id === 'skill-filesystem')
+  const common = composition.find(row => row.id === 'project-common')
+  const commonPath = resolve(dirname(compositionPath), common.config.path)
+  const shared = yaml.load(await readFile(commonPath, 'utf8'), { schema: includeModule.entryListSchema })
+  const installedSkillsRow = shared.find(row => row.id === 'skill-filesystem')
   const group = presetRow.config.plugins.find(row => row.id === 'project-skill-scope')
   const skillsRow = group.config.find(row => row.id === 'skills')
 
@@ -48,7 +51,7 @@ async function scopedDefinition(presetRow) {
         structuredClone(skillsRow),
         {
           ...structuredClone(installedSkillsRow),
-          name: pathToFileURL(resolve(dirname(compositionPath), installedSkillsRow.name)).href,
+          name: pathToFileURL(resolve(dirname(commonPath), installedSkillsRow.name)).href,
         },
       ],
     }],
@@ -102,10 +105,6 @@ async function assertHostSkills(skills) {
   assert.equal(await skills.get('anima-prompt-builder'), undefined)
 }
 
-function presetMountCount(presetId) {
-  return livePresetMounts().filter(mount => mount.presetId === presetId).length
-}
-
 if (process.argv.includes('--include-config')) {
   const installedRoot = await mkdtemp(resolve(repositoryRoot, '.local/installed presets with spaces-'))
   await mkdir(resolve(installedRoot, 'agent-presets'))
@@ -141,7 +140,7 @@ if (process.argv.includes('--include-config')) {
   try {
     const fiber = ctx.extend({ baseUrl: pathToFileURL(resolve(repositoryRoot, 'cordis.patch.yml')).href }).plugin(InstalledPresets)
     await fiber
-    await waitForPresetRows(() => snapshots.size === 2)
+    await waitForPresetRows(() => snapshots.size === presetRows.length)
     const defaultPresetIds = [...snapshots.keys()].sort()
     assert.equal(snapshots.get('harness-comfyui-cli-candidate').order, 91)
     await fiber.update({ patches: [{
@@ -243,14 +242,12 @@ try {
   await assertSkills(workbenchSkills, workbenchSession, names)
   await assertHostSkills(hostSkills)
 
-  assert.equal(presetMountCount(workbenchDefinition.id), 1)
   await unregisterById.get(workbenchDefinition.id)()
   unregisterById.delete(workbenchDefinition.id)
   await assert.rejects(registry.resolve(workbenchDefinition.id), /Unknown agent preset/u)
-  assert.equal(presetMountCount(workbenchDefinition.id), 1)
   const retiredSessionSkills = registry.serviceFor({ ctx: workbenchSession.ctx }, 'skills')
   assert.equal(retiredSessionSkills !== undefined, true, 'retired generation must keep its Session service live')
-  assert.equal(registryModule.standingMountFor(workbenchSession.ctx)?.presetId, workbenchDefinition.id)
+  assert.equal(registry.inspectCompositions(workbenchSession.ctx)[0]?.id, workbenchDefinition.id)
   await assertSkills(retiredSessionSkills, workbenchSession, names)
   await assertSkills(iterationSkills, iterationSession, names)
   await assertHostSkills(hostSkills)
@@ -262,25 +259,21 @@ try {
   const reloadedSkills = registry.serviceFor({ ctx: workbenchReloadedSession.ctx }, 'skills')
   assert.ok(reloadedSkills)
   assert.equal(reloadedSkills === workbenchSkills, false, 'reloaded Preset must use a new Skills registry')
-  assert.equal(presetMountCount(workbenchDefinition.id), 2)
   await assertSkills(reloadedSkills, workbenchReloadedSession, names)
   await assertSkills(workbenchSkills, workbenchSession, names)
 
   await workbenchSession.dispose()
   sessions.splice(sessions.indexOf(workbenchSession), 1)
   assert.equal(registry.serviceFor({ ctx: workbenchSession.ctx }, 'skills') === undefined, true)
-  assert.equal(presetMountCount(workbenchDefinition.id), 1)
   await assertSkills(reloadedSkills, workbenchReloadedSession, names)
   await assertSkills(iterationSkills, iterationSession, names)
 
   await unregisterById.get(workbenchDefinition.id)()
   unregisterById.delete(workbenchDefinition.id)
-  assert.equal(presetMountCount(workbenchDefinition.id), 1)
   await assertSkills(reloadedSkills, workbenchReloadedSession, names)
   await workbenchReloadedSession.dispose()
   sessions.splice(sessions.indexOf(workbenchReloadedSession), 1)
   assert.equal(registry.serviceFor({ ctx: workbenchReloadedSession.ctx }, 'skills') === undefined, true)
-  assert.equal(presetMountCount(workbenchDefinition.id), 0)
 
   unregisterById.set(workbenchDefinition.id, await registry.register(workbenchDefinition))
   const restoredSession = createScope(context, { sessionId: Symbol('workbench-restored') })
@@ -292,7 +285,25 @@ try {
   await assertSkills(iterationSkills, iterationSession, names)
   await assertHostSkills(hostSkills)
 
+  const roleRegistries = new Set([hostSkills, restoredSkills, iterationSkills])
+  const roleIds = presetRows.map(row => row.config.id)
+    .filter(id => ![workbenchDefinition.id, iterationDefinition.id].includes(id))
+  for (const roleId of roleIds) {
+    const definition = await scopedDefinition(presetRows.find(row => row.config.id === roleId))
+    unregisterById.set(roleId, await registry.register(definition))
+    const roleSession = createScope(context, { sessionId: Symbol(roleId) })
+    sessions.push(roleSession)
+    await registry.mount(roleSession.ctx, roleId)
+    const skills = registry.serviceFor({ ctx: roleSession.ctx }, 'skills')
+    assert.ok(skills)
+    assert.ok(!roleRegistries.has(skills))
+    roleRegistries.add(skills)
+    await assertSkills(skills, roleSession, names)
+  }
+  await assertHostSkills(hostSkills)
+
   console.log(JSON.stringify({
+    activeRoleSessions: roleIds.length,
     activeProductSessions: 2,
     hostSkills: 1,
     installedSkills: names,

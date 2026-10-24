@@ -55,48 +55,29 @@ describe('official installed Preset declarations', () => {
     expect(patch).not.toContain('process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE')
   })
 
-  it('declares exactly the two existing Presets and loads each installed composition', async () => {
+  it('declares the product and role Presets with isolated compositions', async () => {
     const entries = await readYaml(resolve(repositoryRoot, 'agent-presets/presets.cordis.yml'))
-    const workbench = findRow(entries, 'preset-harness-comfyui-cli-candidate')
-    const iteration = findRow(entries, 'preset-harness-comfyui-iteration')
-
-    expect(entries).toHaveLength(2)
-    expect(entries.map(({ id }) => id).sort()).toEqual([
-      'preset-harness-comfyui-cli-candidate',
-      'preset-harness-comfyui-iteration',
+    expect(entries.map(row => row.config.id)).toEqual([
+      'harness-comfyui-cli-candidate', 'harness-comfyui-iteration', 'harness-comfyui-task',
+      'harness-comfyui-composition', 'harness-comfyui-generation', 'harness-comfyui-observation', 'harness-comfyui-comparison',
     ])
-    expect(entries.every(row => row.name === '@deepseek-ai/dsh-agent-preset')).toBe(true)
-    expect(workbench.config).toMatchObject({
-      id: 'harness-comfyui-cli-candidate',
-      name: 'ComfyUI工作台预设',
-      order: 91,
-    })
-    expect(iteration.config).toMatchObject({
-      id: 'harness-comfyui-iteration',
-      name: 'ComfyUI迭代预设',
-      order: 92,
-    })
-    expect(await entryListProblemFor(workbench.config.plugins)).toBeUndefined()
-    expect(await entryListProblemFor(iteration.config.plugins)).toBeUndefined()
-    expect(await entryListProblemFor([{ name: 'cordis:group', group: true, config: {} }]))
-      .toBe('group row 1 must hold a list of plugin rows')
-
-    for (const [row, compositionPath] of [
-      [workbench, './harness-comfyui-cli-candidate/agent.cordis.yml'],
-      [iteration, './harness-comfyui-iteration/agent.cordis.yml'],
-    ]) {
+    expect(findRow(entries, 'preset-harness-comfyui-cli-candidate').config)
+      .toMatchObject({ name: 'ComfyUI工作台预设', order: 91 })
+    expect(findRow(entries, 'preset-harness-comfyui-iteration').config)
+      .toMatchObject({ name: 'ComfyUI迭代预设', order: 92 })
+    for (const row of entries) {
+      expect(row.name).toBe('@deepseek-ai/dsh-agent-preset')
+      expect(await entryListProblemFor(row.config.plugins)).toBeUndefined()
       expect(row.config.plugins).toEqual([{
-        id: 'project-skill-scope',
-        name: 'cordis:group',
-        group: true,
-        isolate: { skills: true },
+        id: 'project-skill-scope', name: 'cordis:group', group: true, isolate: { skills: true },
         config: [
           { id: 'skills', name: '@deepseek-ai/dsh-skill' },
-          { id: 'composition', name: 'cordis:include', config: { path: compositionPath } },
+          { id: 'composition', name: 'cordis:include', config: { path: `./${row.config.id}/agent.cordis.yml` } },
         ],
       }])
     }
-    expect(entries.some(row => row.id === 'agent-preset-registry')).toBe(false)
+    expect(await entryListProblemFor([{ name: 'cordis:group', group: true, config: {} }]))
+      .toBe('group row 1 must hold a list of plugin rows')
   })
 
   it('loads installed declarations through the official Loader with Profile patches and lazy expressions', async () => {
@@ -105,7 +86,10 @@ describe('official installed Preset declarations', () => {
       '--include-config',
     ], { cwd: repositoryRoot, env: { NODE_ENV: 'test' }, encoding: 'utf8' })
     expect(JSON.parse(stdout.trim())).toEqual({
-      defaultPresetIds: ['harness-comfyui-cli-candidate', 'harness-comfyui-iteration'],
+      defaultPresetIds: [
+        'harness-comfyui-cli-candidate', 'harness-comfyui-comparison', 'harness-comfyui-composition',
+        'harness-comfyui-generation', 'harness-comfyui-iteration', 'harness-comfyui-observation', 'harness-comfyui-task',
+      ],
       patchedOrder: 193,
       nestedExpressionPreserved: true,
       reloadedOrder: 91,
@@ -113,12 +97,9 @@ describe('official installed Preset declarations', () => {
     })
   })
 
-  it('mounts the installed filesystem component only in the two product Presets', async () => {
+  it('owns the installed filesystem component in the shared project composition', async () => {
     const presetRoot = resolve(repositoryRoot, 'agent-presets')
-    const productCompositions = new Set([
-      resolve(presetRoot, 'harness-comfyui-cli-candidate/agent.cordis.yml'),
-      resolve(presetRoot, 'harness-comfyui-iteration/agent.cordis.yml'),
-    ])
+    const productCompositions = new Set([resolve(presetRoot, 'shared/agent.cordis.yml')])
     const componentReferences = []
 
     for (const path of await findFiles(presetRoot)) {
@@ -144,6 +125,7 @@ describe('official installed Preset declarations', () => {
 
     expect(result).toMatchObject({
       activeProductSessions: 2,
+      activeRoleSessions: 5,
       hostSkills: 1,
       installedSkills: repositorySkillCatalog.map(skill => skill.name).sort(),
       retiredGenerationSurvivedUser: true,

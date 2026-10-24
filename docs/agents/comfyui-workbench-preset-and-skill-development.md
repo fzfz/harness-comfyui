@@ -3,66 +3,70 @@
 读取时机: 创建或修改项目预设、项目 Skill、全局 Skill 链接或受管 CLI 参考前。
 ---
 
-# ComfyUI 产品预设与项目 Skill 开发规范
+# ComfyUI 项目预设与 Skill 开发规范
 
 ## 适用范围
 
-1. Agent 创建或修改 `ComfyUI工作台预设`、`ComfyUI迭代预设`、本仓库 `.agents/skills/<skill-name>/` 中的项目 Skill，或 Skill 自带的 CLI 使用参考文档时，必须遵守本规范。
+1. Agent 创建或修改项目 Preset、本仓库 `.agents/skills/<skill-name>/` 中的项目 Skill，或 Skill 自带的 CLI 使用参考文档时，必须遵守本规范。项目 Preset 的身份与入口见[系统架构](../system/architecture.md#项目-presetskills-与目录访问)。
 
 2. Agent 修改现有项目 Skill 目录中的脚本或程序前，必须获得用户明确授权。
 
 ## 插件包资源与预设身份
 
-1. `agent-presets/harness-comfyui-cli-candidate/` 是 `ComfyUI工作台预设` 的唯一源码目录，`agent-presets/harness-comfyui-iteration/` 是 `ComfyUI迭代预设` 的唯一源码目录。`config/product-agent.json` 使用 `schemaVersion: 3`；`preset.id` 保存工作台预设兼容性内部 ID，`preset.additionalManagedPresetIds` 列出迭代预设 ID，`preset.sourceRootRelativePath` 指定 `agent-presets`。
+1. `config/product-agent.json` 保存受管 Preset ID 与资源根目录。`preset.id` 指定工作台产品 Preset，`preset.additionalManagedPresetIds` 列出迭代产品 Preset 和 5 个角色 Preset。
 
-2. `agent-presets/presets.cordis.yml` 在插件 bundle 中注册这两个项目预设，并通过安装包内的相对路径加载各自的 `agent.cordis.yml`。插件安装包同时包含 `agent-presets/` 和 `.agents/skills/`；插件构建先校验产品 Preset 的配置资源，打包流程再校验清单资源及安装包内引用。
+2. `agent-presets/presets.cordis.yml` 在插件 bundle 中注册 7 个项目 Preset，并通过包内相对路径加载各自的 `agent.cordis.yml`。每个 Preset 必须通过 `agent-presets/shared/agent.cordis.yml` 加载公共组合，并在自身配置中声明 persona 与自身工具。
 
-3. 插件注册两个可选项目 Preset；官方全局默认 Preset 和默认对话模型由用户选择并由官方应用管理。用户在官方会话界面选择项目 Preset。
+3. 插件安装包包含 `agent-presets/` 和 `.agents/skills/`。插件构建校验 Preset 配置，打包流程校验资源清单和包内引用。
 
 4. 开发者修改预设注册时必须保持以下身份：
 
-   1. `preset.id` 为 `harness-comfyui-cli-candidate`，`preset.additionalManagedPresetIds` 包含 `harness-comfyui-iteration`；
-   2. `harness-comfyui-cli-candidate/preset.yml` 的 `name` 为 `ComfyUI工作台预设`；
-   3. `harness-comfyui-iteration/preset.yml` 的 `name` 为 `ComfyUI迭代预设`；
-   4. 注册组件保留官方内置 Preset，并增加这两个项目预设。
+   1. 产品 Preset 保持系统架构所列的 ID、名称与源码入口；
+   2. 每个角色使用独立的 `agentPreset`；
+   3. registry 中每个项目 Preset 只注册一次，并保留官方内置 Preset；
+   4. 官方全局默认 Preset 和默认对话模型由用户选择。
 
 ## 项目 Skill 来源与作用域
 
 1. 当前 checkout 的 `.agents/skills/<skill-name>/` 是项目 Skill 唯一源码目录。开发者在该目录创建或修改 Skill，并使用该目录中的文件构建插件包。
 
-2. `config/product-agent.json.skills.sourceRootRelativePath` 定义 checkout 中项目 Skill 源码根目录；该字段当前为 `.agents/skills`。插件包内的 `agent-presets/project-installed-skills.mjs` 按自身安装模块位置解析包内 `.agents/skills/`，并以 `providerName: harness-comfyui`、`includeDefaultRoots: false`、`watch: false` 注册官方 filesystem Skill provider。两个项目 Preset 各自加载该组件，因此两个 Preset 都能读取插件包内的 Repository Skills，其他 Preset 不加载该项目 Skill provider。
+2. `agent-presets/presets.cordis.yml` 必须为每个项目 Preset 隔离 Skill service。包内 Skill provider 的加载入口和作用域见[系统架构](../system/architecture.md#项目-presetskills-与目录访问)。
 
-3. 项目 Skill 的安装包内相对路径是运行时唯一来源。工作台和迭代 Preset 不读取 checkout 或用户主目录中的项目 Skill 副本；官方内置 Preset 与其他 Preset 保留官方自身的 Workspace 和用户级 Skill 行为。
+3. 项目 Preset 必须按安装包内相对路径读取项目 Skills。官方内置 Preset 与其他 Preset 保留官方的 Workspace 和用户级 Skill 来源。
 
 ## Tool schema 可见性
 
 1. 本文将 Preset 加载、由模型直接调用或经 `run_code` 调用的 Tool 称为末端 Tool。
-2. 两个 ComfyUI 产品 Preset 必须加载 [project-tool-visibility.mjs](../../agent-presets/project-tool-visibility.mjs)，并使用 `local-only` 模式。两个 Preset 向模型提供的末端 Tool schema 只能来自各自加载的 Tool；PTC 的 `run_code` 只能调用当前 Preset scope 已可见的末端 Tool。
-3. 两个预设使用 [project-subagent-control.mjs](../../agent-presets/project-subagent-control.mjs) 注册 `interrupt_agent`；父 Agent 通过各自的派发工具继续子任务。
+2. 全部项目 Preset 必须通过共享组合加载 [project-tool-visibility.mjs](../../agent-presets/project-tool-visibility.mjs)，并使用 `local-only` 模式。末端 Tool schema 只能来自当前 Preset 加载的 Tool；PTC 的 `run_code` 只能调用当前 Preset scope 已可见的末端 Tool。
+3. 两个产品 Preset 使用 [project-subagent-control.mjs](../../agent-presets/project-subagent-control.mjs) 注册 `interrupt_agent`；父 Agent 通过各自的派发工具继续子任务。
 4. Host 目录工具由 [catalog-tool.ts](../../src/host/catalog/catalog-tool.ts) 注册；生成、Run 查询、媒体和图片读取工具分别由 [generation-tool.ts](../../src/host/generation/generation-tool.ts)、[generation-run-input-tool.ts](../../src/host/generation/generation-run-input-tool.ts)、[generation-media-tool.ts](../../src/host/generation/generation-media-tool.ts) 和 [image-reader-tool.ts](../../src/host/image-reader/image-reader-tool.ts) 注册。
-5. 新增 Host 项目 Tool schema 时，两个项目 Preset 仍遵守本节第 2 项的作用域；官方 `standard` Preset 保留 Host 项目 Tool 的可见性。
+5. 新增 Host 项目 Tool schema 时，项目 Preset 必须遵守本节第 2 项的作用域；官方 `standard` Preset 保留 Host 项目 Tool 的可见性。
 
 ## 系统提示词段落可见性
 
-1. 两个 ComfyUI 产品 Preset 必须加载 [project-system-prompt-visibility.mjs](../../agent-presets/project-system-prompt-visibility.mjs)，并通过各自的 `hiddenSectionNames` 配置声明隐藏的段落。
+1. 全部项目 Preset 必须通过共享组合加载 [project-system-prompt-visibility.mjs](../../agent-presets/project-system-prompt-visibility.mjs)。共享组合的 `hiddenSectionNames` 声明隐藏的段落。
 
 2. 该组件必须保留 `deployment:persona`、当前可用 Tool 的使用说明及 `PromptAssembly.contexts`、`PromptAssembly.tools` 和 `PromptAssembly.variables`。官方 `standard`、`minimal`、`cordis` 和其他 Agent Preset 保留各自现有的系统提示词 assembly。
 
 ## 工作台预设的子 Agent 续派
 
-1. `ComfyUI工作台预设` 的 `subagent_task` 参数、消息模板、模型继承与子任务工具范围统一定义在 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 的 `task-agent` 配置中。
-2. 派发生命周期见下文“派发工具的完成与恢复”。
+1. `ComfyUI工作台预设` 的 `subagent_task` 参数、消息模板、模型继承和角色 Preset 引用定义在 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 的 `task-agent` 配置中。
+2. 子 Agent 的职责与工具组合由工作台任务角色 Preset 定义。派发字段见[配置规范](../system/configuration.md#子-agent-派发配置)。
 
-## 迭代预设的四个子 Agent 与 Workspace
+## 迭代预设的四个子 Agent
 
-1. 构图、生成、观察和比较的角色配置统一定义在 [agent.cordis.yml](../../agent-presets/harness-comfyui-iteration/agent.cordis.yml)。角色执行、续派和交接按 [comfyui-iterate-generation](../../.agents/skills/comfyui-iterate-generation/SKILL.md) 的“派发任务并接收结果文件”执行，文件职责按其引用的交接目录规范执行。
-2. 两个项目 Preset 均加载 [project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs)。该组件必须在子 Session 首个 Agent step 前完成 Workspace 附加，并等待附加完成；后续 step 复用已完成的附加结果。
-3. Workspace 附加失败时，该组件必须停止当前 Agent step，并报告子 Session ID、失败原因、涉及的父 Session、路径或 Workspace，以及需要修正的具体项。附加条件和执行入口见第 2 项组件。
+1. [迭代产品 Preset](../../agent-presets/harness-comfyui-iteration/agent.cordis.yml) 定义四种派发工具；各角色 Preset 定义对应职责与工具组合。角色执行、续派和交接按 [comfyui-iterate-generation](../../.agents/skills/comfyui-iterate-generation/SKILL.md) 的“派发任务并接收结果文件”执行。
 
-## 派发工具的完成与恢复
+## 全部项目 Preset 的 Workspace 关联
 
-1. 两个预设的派发工具共用 [project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs)。该组件通过 DSH 原生服务创建或续派子 Session，并在对应工作结束后返回身份。DSH 的原生结束通知提供状态和最终答复。
-2. 该组件通过工具附加上下文保存已接纳任务的身份。两个预设加载官方 `@deepseek-ai/dsh-tool-subagent-control/list-agents`；父 Agent 在中断后使用 `list_agents` 找回原子会话。业务结果按所用 Skill 处理。
+1. 全部项目 Preset 通过共享组合加载 [project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs)。该组件必须在子 Session 首个 Agent step 前完成 Workspace 附加；后续 step 复用已完成的附加结果。
+2. Workspace 附加失败时，该组件必须停止当前 Agent step，并报告子 Session ID、失败原因、涉及的父 Session、路径或 Workspace，以及需要修正的具体项。附加条件和执行入口见第 1 项组件。
+
+## 派发工具的接纳与恢复
+
+1. 首派、续派和结束通知的合同见[系统架构](../system/architecture.md#项目-presetskills-与目录访问)。开发者必须保留接纳后立即返回的行为；不得用 `startActivation()` 的 `childId` 参数恢复已有会话。
+2. [project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs) 通过工具附加上下文保存接纳身份。父 Agent 必须取得对应结束通知，并按所用 Skill 读取结果文件，再派发依赖该结果的任务。
+3. 父 Agent 中断后，使用 `list_agents` 找回子会话，再通过原派发工具续派。显式停止子任务时，使用 `interrupt_agent`。
 
 ## 项目 Skill 的 CLI 使用参考文档
 
@@ -89,7 +93,7 @@
 
 ## SKILL.md 的参考文档读取条件
 
-1. 用户请求符合项目 Skill frontmatter `description` 时，选择 ComfyUI 产品 Preset 的 Agent 必须完整读取对应 `SKILL.md`。任务需要项目 managed CLI 时，Agent 必须先完整读取 `SKILL.md` 指定的 CLI 使用参考文档，再通过官方前台 shell Tool Call 执行其中定义的项目 CLI 命令。
+1. 用户请求符合项目 Skill frontmatter `description` 时，项目 Preset 的 Agent 必须完整读取对应 `SKILL.md`。任务需要项目 managed CLI 时，Agent 必须先完整读取 `SKILL.md` 指定的 CLI 使用参考文档，再通过官方前台 shell Tool Call 执行其中定义的项目 CLI 命令。
 
 2. 使用项目 CLI 的 `SKILL.md` 必须在首次需要该 CLI 的任务步骤中写出准确的参考文档相对路径，并要求执行者在首次调用前完整读取。命令字段、错误码和重试规则集中定义在 CLI 使用参考文档中。
 
@@ -99,13 +103,14 @@
 
 ### 自动化与黑盒检查
 
-1. 开发者修改产品 Preset、注册组件或相关 Host Tool scope 时，必须运行所改行为对应的正常、异常和边界自动化测试，并完成 `docs/system/testing.md` 规定的检查。开发者新增或修改项目 Skill 或 CLI 参考文档时，必须运行执行该 Skill 的应用规定的启动检查、Skill 黑盒测试，以及提交、构建或发布所要求的静态检查，并使各项检查达到规定的通过条件。开发者必须使 Skill 黑盒测试覆盖该应用启动检查为该 Skill 定义的全部项目，并采用相同的通过条件。
+1. 开发者修改项目 Preset、注册组件或 Host Tool scope 时，必须运行对应的正常、异常和边界测试。测试选择与通过条件见[测试规范](../system/testing.md)。
+2. 新增或修改项目 Skill 或 CLI 参考文档时，开发者必须按[测试规范的“Preset 与子 Agent 合同”](../system/testing.md#preset-与子-agent-合同)验证包内资源和 Skill 作用域，并按[官方应用与真实模型验收](#官方应用与真实模型验收)完成真实模型验收。
 
 ### 官方应用与真实模型验收
 
-1. 产品 Preset、Tool roster、提示词可见性、Skill 读取、managed CLI 调用、子 Agent 派发或 Workspace 登记行为发生变化时，开发者按已批准的 `docs/plans/official-desktop-plugin-20260929.md` 真实模型验收矩阵验证对应行为。开发者先用 `pnpm test:desktop` 完成当前候选包的构建、安装、Live 和生命周期 E2E，再通过独立 worktree 的官方应用 development probe 完成需要真实模型的项目验收；development probe 的启动、状态检查和停止命令见 `docs/agents/worktree-development.md`。Agent 在官方应用中显式选择被测产品 Preset。
+1. 项目 Preset、Tool roster、提示词可见性、Skill 读取、managed CLI 调用、子 Agent 派发或 Workspace 登记行为发生变化时，开发者必须按当前获准任务的真实模型验收矩阵验证对应行为。开发者先用 `pnpm test:desktop` 验证候选包的构建、安装、Live 和生命周期，再通过独立 worktree 的 development probe 完成真实模型验收。启动、状态检查和停止命令见[worktree 开发规范](worktree-development.md)。Agent 必须在官方应用中显式选择被测产品 Preset。
 
-2. 开发者必须在 `docs/verification/official-desktop-plugin/` 保存验收记录，记录应用与插件版本、被测 Preset、模型、Workspace、Skill 和参考文档路径、用户请求、Tool 与 shell Tool Call、CLI stdin、退出码、stdout、stderr、子 Session 身份及最终业务结果。开发者执行正式 ComfyUI Run 验收时，还必须记录完整 Run ID、目标实例、Workflow 与资源 ID、实际 Seed 和参数、Actual/API Workflow、状态变化、最终媒体路径及应用重启后的查询结果。
+2. 开发者必须在当前获准任务指定的 `docs/verification/` 子目录保存验收记录。记录包含应用与插件版本、被测 Preset、模型、Workspace、Skill 和参考文档路径、用户请求、Tool 与 shell Tool Call、CLI stdin、退出码、stdout、stderr、接纳身份、结束通知及业务结果。正式 ComfyUI Run 验收还必须记录完整 Run ID、目标实例、Workflow 与资源 ID、实际 Seed 和参数、Actual/API Workflow、状态变化、媒体路径及应用重启后的查询结果。
 
 ### 语义审查
 
@@ -114,10 +119,10 @@
 2. Reviewer 必须逐句核对以下内容：
 
    1. 句子使用通顺、可朗读的表达，并写明执行主体、动作、对象和结果；常用词与专业术语采用现有名称，任务专用名称先定义再使用；
-   2. 每项规则使用正向句式，写明具体动作、对象所属文件或模块及执行条件；每章正文服务于该章用途，每项要求只完整定义一次；
+   2. 每项规则写明具体动作、对象所属文件或模块及执行条件；每章正文服务于该章用途，每项要求只完整定义一次；
    3. UI 文案和后端接口错误文案写明实际情况和用户可采取的操作；
    4. 对本规范，Reviewer 逐句并在需要时逐分句执行删除检查。删除后仍能理解要求、完成动作和判断结果的文字列为删除意见；删除会妨碍开发者理解、实施或验收的内容保留；
-   5. 对 `SKILL.md` 与 CLI 使用参考文档，Reviewer 逐句并在需要时逐分句执行删除检查。保留执行者完成任务需要的规范、步骤、资源、工具调用方法及输入输出字段用途；将开发者要求、宿主内部流程、工具实现细节、升级过程或逻辑、旧版本描述列为删除意见；限制条款须以正向句式说明允许执行的动作，并以反复测试中出现同一错误动作为依据；
+   5. 对 `SKILL.md` 与 CLI 使用参考文档，Reviewer 逐句并在需要时逐分句执行删除检查。保留执行者完成任务需要的规范、步骤、资源、工具调用方法及输入输出字段用途；将开发者要求、宿主内部流程、工具实现细节、升级过程或逻辑、旧版本描述列为删除意见。限制条款须写明适用条件和受限动作。
    6. Reviewer 使用含源文件行号的验收清单逐项标记“通过”或“需修改”，并记录独立理解的含义和判定理由；每项“需修改”均写明位置、问题、具体改法以及可直接替换的文本，或注明“删除且不替换”。
 
 3. 开发者必须在语义审阅前依据源码与测试核实 CLI 命令、参数和输出字段。程序检查只处理具有确定性规则的结构化数据；语义理解、语义测试和语义验收由 Reviewer 阅读和判断完成。

@@ -1,13 +1,15 @@
 import { rmSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope } from '../desktop/fixtures/official-mcp-acceptance.mjs'
+import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope, isOfficialMcpChildRequest } from '../desktop/fixtures/official-mcp-acceptance.mjs'
 import { startOfficialBusinessServices } from '../desktop/fixtures/official-business-services.mjs'
 import businessFixture from '../desktop/fixtures/official-business-fixture.json' with { type: 'json' }
 import { OFFICIAL_MCP_FIXTURE } from '../desktop/fixtures/official-mcp-services.mjs'
 import { readProjectAgentPresetResources } from '../../scripts/build/agent-preset-resources.mjs'
 import { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
-import { observationMediaFixture } from '../unit/fixtures/observation-media-runtime.ts'
+import { observationExecution, observationMediaFixture } from '../unit/fixtures/observation-media-runtime.ts'
+import { apply as applyDispatch } from '../../agent-presets/project-iteration-dispatch.mjs'
+import { apply as applyObservation } from '../../agent-presets/project-observation-dispatch.mjs'
 
 const presetIds = ['workbench', 'iteration']
 const activated = presetId => ({ presetId, result: { ok: true, value: { sessionId: `${presetId}-session` } } })
@@ -86,6 +88,23 @@ describe('official MCP acceptance assertions', () => {
             expect.objectContaining({ ...images[0], path: expect.any(String) }),
           ])
         }
+        let registered
+        let activation
+        const apply = role.name === '../project-observation-dispatch.mjs' ? applyObservation : applyDispatch
+        apply({
+          tools: { register: value => { registered = value } },
+          subagents: { startActivation: async value => {
+            activation = value
+            return { childId: 'child-1', messageId: 'message-1' }
+          } },
+          harnessComfyuiCore: { services: { resolveObservationMedia: media.resolveMedia } },
+        }, role.config)
+        await registered.execute(args, { ...observationExecution(), deferContext() {} })
+        const childRequest = { sequence: 3, body: { messages: [{ role: 'user', content: activation.request.prompt }] } }
+        expect(isOfficialMcpChildRequest(childRequest, 3)).toBe(true)
+        expect(isOfficialMcpChildRequest({ ...childRequest, sequence: 2 }, 3)).toBe(false)
+        expect(isOfficialMcpChildRequest({ sequence: 3,
+          body: { messages: [{ role: 'user', content: args.description }] } }, 3)).toBe(false)
       }
     } finally {
       await services.close()

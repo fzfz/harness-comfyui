@@ -911,7 +911,10 @@ describe('image reader Host settings and model catalog', () => {
     expect([...service.credentialStore.values.values()]).toContain('new-key')
   })
 
-  it('rejects writes to read-only existing credential references before mutating either store', async () => {
+  it.each([
+    { action: 'replace' as const, apiKey: 'new-key' },
+    { action: 'clear' as const },
+  ])('rejects $action of a read-only existing credential before mutating either store', async credential => {
     const context = new Context()
     const scope = settings()
     const service = createRemote(context, {
@@ -920,7 +923,7 @@ describe('image reader Host settings and model catalog', () => {
     } as never, scope as never)
     service.credentialStore.provider.describe.mockImplementation(async () => ({ configured: true, source: 'env', writable: false }))
 
-    await expect(service.saveProfile({ ...validOpenAiRequest, credential: { action: 'replace', apiKey: 'new-key' } }, new AbortController().signal))
+    await expect(service.saveProfile({ ...validOpenAiRequest, credential }, new AbortController().signal))
       .rejects.toMatchObject(remoteFailure('IMAGE_READER_CREDENTIAL_REFERENCE_READ_ONLY'))
 
     expect(service.credentialStore.provider.set).not.toHaveBeenCalled()

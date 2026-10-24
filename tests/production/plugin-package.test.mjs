@@ -54,6 +54,16 @@ async function setTreeMode(path, readOnly) {
   await chmod(path, readOnly ? 0o444 : 0o644)
 }
 
+it('declares the supported official host baseline in the install manifest', async () => {
+  const manifest = JSON.parse(await readFile(join(repositoryRoot, 'package.json'), 'utf8'))
+  const desktop = JSON.parse(await readFile(join(repositoryRoot, 'config/desktop-e2e.json'), 'utf8'))
+  expect(manifest.engines.dsh).toBe('0.2.1-rc.2')
+  expect(desktop.application.version).toBe(manifest.engines.dsh)
+  expect([...new Set(Object.entries(manifest.peerDependencies)
+    .filter(([name]) => name.startsWith('@deepseek-ai/dsh-'))
+    .map(([, version]) => version))]).toEqual(['0.2.1-rc.2'])
+})
+
 describe('plugin build and package entry points', () => {
   it('builds the configured Host, Client, managed CLI, and workflow worker into the output root', async () => {
     const outputRoot = await temporaryDirectory()

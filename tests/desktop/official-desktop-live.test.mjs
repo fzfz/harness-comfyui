@@ -42,7 +42,7 @@ import { GenerationRuntime } from '../../src/host/generation/generation-runtime.
 import { loadProfile } from '../../src/config/load-profile.ts'
 
 import { startOfficialMcpServices, OFFICIAL_MCP_FIXTURE } from './fixtures/official-mcp-services.mjs'
-import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope } from './fixtures/official-mcp-acceptance.mjs'
+import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope, isOfficialMcpChildRequest, requestMessageText } from './fixtures/official-mcp-acceptance.mjs'
 import {
   COMFYUI_INSTANCE_QUERY_TOOL_NAME, GENERATION_MODEL_RESOLVER_TOOL_NAME,
   LORA_RESOLVER_TOOL_NAME, TEMPLATE_RESOLVER_TOOL_NAME,
@@ -64,7 +64,10 @@ const WORKSPACE_SKILL_MARKER = OFFICIAL_BUSINESS_FIXTURE.skills.workspaceMarker
 const USER_SKILL_NAME = OFFICIAL_BUSINESS_FIXTURE.skills.userName
 const USER_SKILL_DESCRIPTION = OFFICIAL_BUSINESS_FIXTURE.skills.userDescription
 const USER_SKILL_MARKER = OFFICIAL_BUSINESS_FIXTURE.skills.userMarker
-const HOST_BUNDLED_SKILL_NAMES = new Set(['office-docx', 'office-pptx', 'office-xlsx'])
+const HOST_BUNDLED_SKILL_NAMES = new Set(['office', 'office-docx', 'office-export-pdf', 'office-pptx', 'office-recalculate', 'office-render', 'office-xlsx'])
+const CORDIS_SKILL_NAMES = ['agent-experience', 'cordis-composition-reference', 'cordis-plugin-development', 'editing-cordis-compositions']
+const ITERATION_PRESET_ID = 'harness-comfyui-iteration'
+const PRODUCT_PRESET_IDS = [PRODUCT_PRESET_ID, ITERATION_PRESET_ID]
 const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'startup-ready.json',
   'stop-request.json',
@@ -365,7 +368,7 @@ async function openPluginSettings(page) {
 }
 
 async function closePluginSettings(page) {
-  await clickMainFrameElement(page, 'button[aria-label="返回插件列表"]')
+  await clickMainFrameElement(page, 'button[aria-label="返回插件"]')
   await waitForValue(page, `document.querySelector('.harness-comfyui-settings') === null`, value => value === true)
 }
 
@@ -931,7 +934,12 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     let observation
     if (PROJECT_PRESET_IDS.includes(presetId)) {
       observation = await exerciseOfficialMcpWorkflow(page, services, mcp, sessionId)
-      assertToolScope(observation.tools, { required: [...mcpToolNames, 'list_agents', 'interrupt_agent'], forbidden: [...globalCatalogToolNames, 'send_message'] })
+      const isParent = PRODUCT_PRESET_IDS.includes(presetId)
+      assertToolScope(observation.tools, {
+        required: [...mcpToolNames, 'list_agents', ...(isParent ? ['interrupt_agent'] : [])],
+        forbidden: [...globalCatalogToolNames, 'send_message',
+          ...(isParent ? [] : ['interrupt_agent', 'subagent_task', ...iterationDispatchTools, 'get_goal', 'create_goal', 'update_goal'])],
+      })
     } else {
       const requestStart = services.requestLog.length
       await openBusinessSession(page, sessionId)
@@ -949,11 +957,10 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     }
     observations.push({ presetId, ...observation })
   }
-  const iterationPresetIds = PROJECT_PRESET_IDS.filter(id => id !== PRODUCT_PRESET_ID)
-  expect(iterationPresetIds).toHaveLength(1)
+  expect(PROJECT_PRESET_IDS).toContain(ITERATION_PRESET_ID)
   const childCases = [
     { presetId: PRODUCT_PRESET_ID, dispatchTool: 'subagent_task' },
-    ...iterationDispatchTools.map(dispatchTool => ({ presetId: iterationPresetIds[0], dispatchTool })),
+    ...iterationDispatchTools.map(dispatchTool => ({ presetId: ITERATION_PRESET_ID, dispatchTool })),
   ]
   for (const { presetId, dispatchTool } of childCases) {
     const created = await page.evaluate(`(async () => window.__runPanelTestContext.get('remote.session').create({
@@ -971,20 +978,24 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     const isParentRequest = request => request.sequence >= childRequestStart
       && (request.body.messages ?? []).some(message => message.role === 'user'
         && requestMessageText(message) === parentPrompt)
-    const isChildRequest = request => request.sequence >= childRequestStart
-      && (request.body.messages ?? []).some(message => message.role === 'user'
-        && requestMessageText(message).includes(parentPrompt)
-        && requestMessageText(message).includes(OFFICIAL_MCP_FIXTURE.workflowPrompt))
-    await openBusinessSession(page, parentSessionId)
-    await submitComposerPrompt(page, parentPrompt)
-    const parentResultRequest = await services.requestWhere(request => isParentRequest(request)
-      && (request.body.messages ?? []).some(message => message.role === 'tool'
-        && JSON.stringify(message.content).includes('subagentId')), 30_000)
+    const isChildRequest = request => isOfficialMcpChildRequest(request, childRequestStart)
+    const pausedChild = services.pauseNextModelResponse(isChildRequest)
+    let parentResultRequest
+    let childModelRequest
+    try {
+      await openBusinessSession(page, parentSessionId)
+      await submitComposerPrompt(page, parentPrompt)
+      childModelRequest = await services.requestWhere(isChildRequest, 30_000)
+      parentResultRequest = await services.requestWhere(request => isParentRequest(request)
+        && (request.body.messages ?? []).some(message => message.role === 'tool'
+          && JSON.stringify(message.content).includes('subagentId')), 30_000)
+    } finally {
+      pausedChild.release()
+    }
     const parentTools = (parentResultRequest.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
     assertToolScope(parentTools, { required: [...mcpToolNames, dispatchTool, 'list_agents', 'interrupt_agent'], forbidden: [...globalCatalogToolNames, 'send_message'] })
     expect(parentResultRequest.body.messages.flatMap(message => message.tool_calls ?? [])
       .map(call => call.function?.name)).toEqual([dispatchTool])
-    const childModelRequest = await services.requestWhere(isChildRequest, 30_000)
     const childTools = (childModelRequest.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
     assertToolScope(childTools, {
       required: mcpToolNames,
@@ -994,10 +1005,12 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     const completed = await services.requestWhere(request => isChildRequest(request)
       && (request.body.messages ?? []).some(message => message.role === 'tool'
         && JSON.stringify(message.content).includes('workflow_json')), 30_000)
-    expect(parentResultRequest.sequence).toBeGreaterThan(completed.sequence)
-    expect(parentResultRequest.body.messages.some(message => message.role === 'user'
-      && requestMessageText(message).includes('Background subagent')
-      && requestMessageText(message).includes('finished and will do no further work'))).toBe(true)
+    expect(parentResultRequest.sequence).toBeLessThan(completed.sequence)
+    const settledRequest = await services.requestWhere(request => isParentRequest(request)
+      && request.body.messages.some(message => message.role === 'user'
+        && requestMessageText(message).includes('Background subagent')
+        && requestMessageText(message).includes('finished and will do no further work')), 30_000)
+    expect(settledRequest.sequence).toBeGreaterThan(completed.sequence)
     expect(parentResultRequest.body.messages.some(message => {
       if (message.role !== 'user') return false
       try {
@@ -1329,7 +1342,7 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
   ]
   const standardSkills = sessions.get('standard').skills.value.skills
     .map(({ name, description }) => ({ name, description }))
-  for (const id of ['standard', 'ptc']) {
+  for (const id of ['standard', 'ptc', 'cordis']) {
     const visibleSkills = sessions.get(id).skills.value.skills
     const sources = visibleSkills.map(skill => classifySkillSource({
       name: skill.name,
@@ -1342,14 +1355,21 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
     ]))
     expect.soft(sources.filter(source => source === 'user')).toHaveLength(1)
     expect.soft(sources.filter(source => source === 'workspace')).toHaveLength(2)
-    expect.soft(sources.filter(source => source === 'host-bundled')).toHaveLength(3)
+    expect.soft(sources.filter(source => source === 'host-bundled')).toHaveLength(HOST_BUNDLED_SKILL_NAMES.size)
     expect.soft(sources.filter(source => source === 'installed-project')).toHaveLength(0)
-    expect.soft(sources.filter(source => source === 'other-path' || source === 'unclassified')).toEqual([])
+    expect.soft(sources.filter(source => source === 'unclassified')).toEqual([])
+    const extraSkills = visibleSkills.filter((_, index) => sources[index] === 'other-path')
+    expect(extraSkills.map(skill => skill.name).sort()).toEqual(id === 'cordis' ? [...CORDIS_SKILL_NAMES].sort() : [])
+    if (id === 'cordis') {
+      const desktopConfig = await loadDesktopE2EConfig()
+      const presetSkills = join(desktopConfig.application.bundlePath, 'Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-agent-preset/skills')
+      expect(extraSkills.every(skill => isPathWithin(skill.path, presetSkills))).toBe(true)
+    }
   }
-  const minimalAndCordisOfficeSkills = ['office-docx', 'office-pptx', 'office-xlsx'].sort()
-  for (const id of ['minimal', 'cordis']) {
+  const minimalOfficeSkills = [...HOST_BUNDLED_SKILL_NAMES].sort()
+  for (const id of ['minimal']) {
     const visibleSkills = sessions.get(id).skills.value.skills
-    expect(visibleSkills.map(skill => skill.name).sort()).toEqual(minimalAndCordisOfficeSkills)
+    expect(visibleSkills.map(skill => skill.name).sort()).toEqual(minimalOfficeSkills)
     expect(visibleSkills.every(skill => classifySkillSource({
       name: skill.name,
       pathFields: pathFields(skill),
@@ -1937,12 +1957,6 @@ async function verifyGenerationAfterRestart(page, generationEvidence, evidenceDi
   return evidence
 }
 
-function requestMessageText(message) {
-  if (typeof message.content === 'string') return message.content
-  if (!Array.isArray(message.content)) return ''
-  return message.content.flatMap(part => typeof part?.text === 'string' ? [part.text] : []).join('\n')
-}
-
 describe('official Desktop plugin regression', () => {
   it('installs the packed candidate through Desktop, restarts the app, and verifies workbench behavior', async () => {
     const repositoryRoot = sourceRepositoryRoot
@@ -2290,7 +2304,7 @@ description: ${USER_SKILL_DESCRIPTION}
       )
       expect(initial.workspaceChooser).toBe(false)
       expect(installation).toMatchObject({ status: 'installed', expectedPackageName: sourceIdentity.packageName, enabled: true })
-      expect(run.record.application.version).toBe('0.2.0-rc.2')
+      expect(run.record.application.version).toBe(desktopConfig.application.version)
       expect(sourceIdentity.packageVersion).toBe(packageManifest.version)
 
       await openPluginSettings(page)

@@ -12,11 +12,11 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.46.2',
+      version: '0.47.0',
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.11.0',
-      engines: { node: '^22.19.0 || >=24.0.0' },
+      engines: { node: '^22.19.0 || >=24.0.0', dsh: readJson('config/desktop-e2e.json').application.version },
     })
     expect(manifest).not.toHaveProperty('bin')
     expect(manifest).not.toHaveProperty('files')

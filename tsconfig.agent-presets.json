@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": [
+    "agent-presets/message-source.d.ts",
+    "agent-presets/project-iteration-dispatch.mjs",
+    "agent-presets/project-observation-dispatch.mjs",
+    "agent-presets/project-subagent-control.mjs",
+    "agent-presets/project-subagent-workspace.mjs"
+  ]
+}
