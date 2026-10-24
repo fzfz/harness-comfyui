@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "task": "remove-prompt-route-gate",
+  "candidate": {
+    "baseCommit": "852ce513f6ed4a33a16b7762d2784298b73579de",
+    "pluginVersion": "0.47.1",
+    "applicationVersion": "0.2.1-rc.2",
+    "presetId": "harness-comfyui-cli-candidate",
+    "presetName": "ComfyUI工作台预设",
+    "workspace": "/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/workspace",
+    "installedSkill": "/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate"
+  },
+  "acceptance": {
+    "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+    "probeRunId": "f8d1048b-bac4-4383-b5c7-bfcc84f8c4be",
+    "sessionId": "session-1d2d022a-bab7-4170-995d-866f5adde1c5",
+    "end": {
+      "type": "turn/end",
+      "seq": 51,
+      "time": 1792852147641,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    },
+    "input": [
+      {
+        "case": "A",
+        "generation_model": {
+          "skill_name": null
+        },
+        "result": {
+          "model_route": "moss-image",
+          "positive_prompt": "An orange cat sits on a wooden table beside one blue cup, daylight, clear details.",
+          "negative_mode": "native_negative",
+          "negative_prompt": "blurry, low quality",
+          "positive_avoidance": null,
+          "generation_purpose": "test",
+          "aspect_ratio": "1:1",
+          "width": 1024,
+          "height": 1024,
+          "megapixels": 1
+        }
+      },
+      {
+        "case": "B",
+        "generation_model": {
+          "skill_name": "wai-sdxl-prompt-builder"
+        },
+        "result": {
+          "model_route": "anima-aesthetic-v1.1",
+          "positive_prompt": "An orange cat sits on a wooden table beside one blue cup, daylight, clear details.",
+          "negative_mode": "native_negative",
+          "negative_prompt": "blurry, low quality",
+          "positive_avoidance": null,
+          "generation_purpose": "test",
+          "aspect_ratio": "1:1",
+          "width": 1024,
+          "height": 1024,
+          "megapixels": 1
+        }
+      },
+      {
+        "case": "C",
+        "generation_model": {
+          "skill_name": null
+        },
+        "result": {
+          "model_route": "moss-image",
+          "positive_prompt": "An orange cat sits on a wooden table beside one blue cup, daylight, clear details.",
+          "negative_mode": "native_negative",
+          "negative_prompt": null,
+          "positive_avoidance": null,
+          "generation_purpose": "test",
+          "aspect_ratio": "1:1",
+          "width": 1024,
+          "height": 1024,
+          "megapixels": 1
+        }
+      },
+      {
+        "case": "D",
+        "generation_model": {
+          "skill_name": null
+        },
+        "result": {
+          "model_route": "moss-image",
+          "positive_prompt": "An orange cat sits on a wooden table beside one blue cup, daylight, clear details.",
+          "negative_mode": "native_negative",
+          "negative_prompt": "blurry, low quality",
+          "positive_avoidance": null,
+          "generation_purpose": "test",
+          "aspect_ratio": "2:1",
+          "width": 1024,
+          "height": 1024,
+          "megapixels": 1
+        }
+      }
+    ],
+    "results": [
+      {
+        "case": "A",
+        "valid": true,
+        "completedStep": "all_validations_passed"
+      },
+      {
+        "case": "B",
+        "valid": true,
+        "completedStep": "all_validations_passed"
+      },
+      {
+        "case": "C",
+        "valid": false,
+        "completedStep": "negative_mode_validation"
+      },
+      {
+        "case": "D",
+        "valid": false,
+        "completedStep": "image_size_validation"
+      }
+    ],
+    "userRequest": {
+      "content": [
+        {
+          "type": "text",
+          "text": "请使用当前安装的 comfyui-generate Skill，按其 Prompt Builder 结果校验规则分别判断当前 Workspace 中 validation-cases.json 的 A、B、C、D 四个案例。每例的 result 是待校验的结果 JSON，generation_model 是该例采用的生成模型记录。读取 Skill 和它引用的校验参考文件；逐例返回有效或无效、执行到哪一项校验、具体理由和所读文件路径，将结果写入 validation-results.json。只执行输入校验，禁止提交生图任务，也不要修改输入或 Skill 文件。"
+        }
+      ],
+      "source": {
+        "kind": "user",
+        "rpcId": "6e4fb9ec-b160-45a0-8c1d-7cb06d300328",
+        "clientTimeZone": "Asia/Shanghai"
+      },
+      "role": "user",
+      "id": "8d470358-c145-4c0a-9540-ef550c39c037"
+    },
+    "toolCalls": [
+      {
+        "seq": 20,
+        "turn": 1,
+        "step": 1,
+        "callId": "call-f70fcd47-6be5-408d-85d4-52d53040c3f1",
+        "name": "skill",
+        "arguments": "{\"name\":\"comfyui-generate\"}",
+        "resultSeq": 21
+      },
+      {
+        "seq": 25,
+        "turn": 1,
+        "step": 2,
+        "callId": "call-e81965ef-bfb7-4914-ba6a-5734274bed50",
+        "name": "bash",
+        "arguments": "{\"description\":\"Read the validation-cases.json file to understand the test cases\",\"command\":\"cat /Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/workspace/validation-cases.json\"}",
+        "resultSeq": 26
+      },
+      {
+        "seq": 30,
+        "turn": 1,
+        "step": 3,
+        "callId": "call-eb7bb0aa-54d5-440d-8891-86107512ad5b",
+        "name": "bash",
+        "arguments": "{\"command\":\"cat /Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md\",\"description\":\"Read the prompt-result-contract.md reference file for validation rules\"}",
+        "resultSeq": 31
+      },
+      {
+        "seq": 35,
+        "turn": 1,
+        "step": 4,
+        "callId": "call-ea1a79c1-02d4-47ba-a251-8a68ee9490c5",
+        "name": "bash",
+        "arguments": "{\"command\":\"cat /Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json\",\"description\":\"Read the prompt-result-schema.json for JSON schema validation\"}",
+        "resultSeq": 36
+      },
+      {
+        "seq": 40,
+        "turn": 1,
+        "step": 5,
+        "callId": "call-aa5153a9-1488-495d-b244-2e724bb3d0d6",
+        "name": "bash",
+        "arguments": "{\"description\":\"Write validation results to validation-results.json\",\"command\":\"cat > /Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/workspace/validation-results.json << 'EOF'\\n[\\n  {\\n    \\\"case\\\": \\\"A\\\",\\n    \\\"valid\\\": true,\\n    \\\"validation_step_completed\\\": \\\"all_validations_passed\\\",\\n    \\\"reason\\\": \\\"所有校验均通过。结构校验：所有必填字段存在、类型正确、无额外属性。负向模式校验：negative_mode 为 native_negative，negative_prompt 为非空字符串，positive_avoidance 为 null。图片尺寸校验：width=1024, height=1024，GCD=1024，计算得出的 aspect_ratio 为 1:1 与输入一致；面积 1.048576 megapixels，相对偏差 0.048576 ≤ 0.05。\\\",\\n    \\\"files_read\\\": [\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md\\\",\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json\\\"\\n    ]\\n  },\\n  {\\n    \\\"case\\\": \\\"B\\\",\\n    \\\"valid\\\": true,\\n    \\\"validation_step_completed\\\": \\\"all_validations_passed\\\",\\n    \\\"reason\\\": \\\"所有校验均通过。结构校验：所有必填字段存在、类型正确、无额外属性。负向模式校验：negative_mode 为 native_negative，negative_prompt 为非空字符串，positive_avoidance 为 null。图片尺寸校验：width=1024, height=1024，GCD=1024，计算得出的 aspect_ratio 为 1:1 与输入一致；面积 1.048576 megapixels，相对偏差 0.048576 ≤ 0.05。\\\",\\n    \\\"files_read\\\": [\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md\\\",\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json\\\"\\n    ]\\n  },\\n  {\\n    \\\"case\\\": \\\"C\\\",\\n    \\\"valid\\\": false,\\n    \\\"validation_step_completed\\\": \\\"negative_mode_validation\\\",\\n    \\\"reason\\\": \\\"负向模式校验失败。negative_mode 为 native_negative 时，negative_prompt 必须是非空字符串，但当前值为 null。根据 prompt-result-contract.md 负向模式校验规则第 1 条：native_negative 模式要求 negative_prompt 为非空字符串，positive_avoidance 为 null。\\\",\\n    \\\"files_read\\\": [\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md\\\",\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json\\\"\\n    ]\\n  },\\n  {\\n    \\\"case\\\": \\\"D\\\",\\n    \\\"valid\\\": false,\\n    \\\"validation_step_completed\\\": \\\"image_size_validation\\\",\\n    \\\"reason\\\": \\\"图片尺寸校验失败。width=1024, height=1024，GCD=1024，计算得出的 aspect_ratio 为 1:1，但输入的 aspect_ratio 为 2:1，不一致。根据 prompt-result-contract.md 图片尺寸校验规则第 5-8 条：需确认构造出的字符串与 aspect_ratio 完全一致。\\\",\\n    \\\"files_read\\\": [\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md\\\",\\n      \\\"/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json\\\"\\n    ]\\n  }\\n]\\nEOF\\necho \\\"validation-results.json written successfully\\\"\"}",
+        "resultSeq": 41
+      },
+      {
+        "seq": 45,
+        "turn": 1,
+        "step": 6,
+        "callId": "call-73be545a-9abf-4f3d-abf8-6dd893b1d3d6",
+        "name": "bash",
+        "arguments": "{\"command\":\"cat /Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/workspace/validation-results.json\",\"description\":\"Verify the written validation results\"}",
+        "resultSeq": 46
+      }
+    ],
+    "trace": "/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/release-0.47.1/nemotron-validation-trace/sessions/session-session-1d2d022a-bab7-4170-995d-866f5adde1c5/session.json",
+    "resultFile": "/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/desktop-development/official-environment/workspace/validation-results.json",
+    "missing": [
+      "RAW_MODEL_REQUEST_NOT_PERSISTED",
+      "RAW_MODEL_STREAM_NOT_PERSISTED",
+      "SEPARATE_SHELL_EXIT_CODE_STDOUT_STDERR_NOT_PERSISTED"
+    ],
+    "generationSubmitted": false,
+    "cleanup": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-24T14:29:37.433Z",
+      "portsReleased": true
+    }
+  },
+  "otherAttempts": [
+    {
+      "model": "openrouter/thinkingmachines/inkling:free",
+      "sessionId": "session-1afe70f8-6e7a-4eb9-90f3-6e9dafcd76f9",
+      "outcome": "A_AND_B_FALSE_REJECTION",
+      "end": "cancelled",
+      "traceIndex": "/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/release-0.47.1/inkling-validation-trace/trace-index.json"
+    },
+    {
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "sessionId": "session-2c04b142-95d8-4e5a-ac8d-c0d44634a200",
+      "outcome": "MISSING_SESSION_HEADER",
+      "traceIndex": "/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/release-0.47.1/deepseek-provider-failure/trace-index.json"
+    },
+    {
+      "model": "opencode-go/deepseek-v4.1-flash",
+      "sessionId": "session-eca6d821-5f03-4a9c-a53c-aca926fa3ddb",
+      "outcome": "AUTH_FAILED",
+      "traceIndex": "/Users/fzfz/.codex/worktrees/remove-prompt-route-gate/harness-comfyui/.local/release-0.47.1/deepseek-auth-failure/trace-index.json"
+    }
+  ]
+}

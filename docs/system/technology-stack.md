@@ -6,7 +6,7 @@
 
 ## 宿主与运行技术
 
-1. 插件 `0.47.0` 的宿主基线为官方 macOS DeepSeek Harness Desktop `0.2.1-rc.2`。精确约束由 [package.json](../../package.json) 的 `engines.dsh` 和 SDK peers 定义。其他操作系统的支持范围由对应安装与业务验收确定。
+1. 插件 `0.47.1` 的宿主基线为官方 macOS DeepSeek Harness Desktop `0.2.1-rc.2`。宿主和 SDK 的精确版本约束由 [package.json](../../package.json) 的 `engines.dsh` 与 `peerDependencies` 字段定义。其他操作系统的支持范围由该平台上的插件安装和业务验收结果确定。
 
 2. 各层使用以下技术。
 

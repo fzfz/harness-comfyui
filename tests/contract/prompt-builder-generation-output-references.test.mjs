@@ -27,29 +27,11 @@ const builderResult = ({ route, mode, profile, purpose = 'test' }) => ({
 })
 
 describe('Prompt Builder generation output references', () => {
-  it('maps each generation model route to the Prompt Builder used by that route', () => {
-    const routes = readJson(resolve(
-      root,
-      '.agents/skills/comfyui-generate/references/prompt-builder-model-routes.json',
-    )).model_routes
-
-    expect(routes).toEqual({
-      'anima-aesthetic-v1.1': { skill_name: 'anima-prompt-builder' },
-      'wai-illustrious-sdxl': { skill_name: 'wai-sdxl-prompt-builder' },
-      'krea2-turbo': { skill_name: 'krea2-anime-prompt-builder' },
-    })
-    for (const [route, { skill_name: skillName }] of Object.entries(routes)) {
-      const profiles = readJson(resolve(skillDirectory(skillName), 'references/generation-profiles.json'))
-      expect(profiles.model_routes, `${route} must be defined by ${skillName}`).toHaveProperty(route)
-    }
-    for (const skillName of builderNames) {
-      const profiles = readJson(resolve(skillDirectory(skillName), 'references/generation-profiles.json'))
-      const mappedRoutes = Object.entries(routes)
-        .filter(([, route]) => route.skill_name === skillName)
-        .map(([route]) => route)
-        .sort()
-      expect(Object.keys(profiles.model_routes).sort()).toEqual(mappedRoutes)
-    }
+  it('excludes the retired generation model route registry from runtime resources', () => {
+    const routeRegistry = '.agents/skills/comfyui-generate/references/prompt-builder-model-routes.json'
+    const resources = readJson(resolve(root, 'config/plugin-runtime-resources.json'))
+    expect(existsSync(resolve(root, routeRegistry))).toBe(false)
+    expect(resources.requiredFiles).not.toContain(routeRegistry)
   })
 
   it('uses the WAI validator CLI directly without removed Skill tools', () => {

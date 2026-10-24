@@ -74,7 +74,6 @@
     ".agents/skills/character-portrait-prompt-designer/references/prompt-structure.md",
     ".agents/skills/comfyui-generate/SKILL.md",
     ".agents/skills/comfyui-generate/references/generation-cli.md",
-    ".agents/skills/comfyui-generate/references/prompt-builder-model-routes.json",
     ".agents/skills/comfyui-generate/references/prompt-result-contract.md",
     ".agents/skills/comfyui-generate/references/prompt-result-schema.json",
     ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
