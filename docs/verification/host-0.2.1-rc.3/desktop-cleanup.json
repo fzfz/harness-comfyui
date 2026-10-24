@@ -1,0 +1,71 @@
+{
+  "ok": true,
+  "record": {
+    "schemaVersion": 1,
+    "runId": "d9d5f668-fa57-4856-81ac-738084cf7e2e",
+    "mode": "development",
+    "state": "stopped",
+    "createdAt": "2026-10-24T17:15:57.392Z",
+    "updatedAt": "2026-10-24T17:26:22.999Z",
+    "application": {
+      "bundlePath": "/Applications/DeepSeek Harness.app",
+      "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+      "version": "0.2.1-rc.3",
+      "bundleId": "com.deepseek.dsh"
+    },
+    "directories": {
+      "run": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-e2e/d9d5f668-fa57-4856-81ac-738084cf7e2e",
+      "dshHome": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/dsh-home",
+      "electronUserData": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/user-data",
+      "workspace": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/workspace",
+      "logs": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-e2e/d9d5f668-fa57-4856-81ac-738084cf7e2e/logs",
+      "evidence": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-e2e/d9d5f668-fa57-4856-81ac-738084cf7e2e/evidence",
+      "profile": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop",
+      "diagnosticFile": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-e2e/d9d5f668-fa57-4856-81ac-738084cf7e2e/logs/diagnostic.log"
+    },
+    "environment": {
+      "root": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment",
+      "leasePath": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/active-probe.json"
+    },
+    "ports": {
+      "host": 55592,
+      "rendererCdp": 55593,
+      "hostInspector": 55594
+    },
+    "launch": {
+      "arguments": [
+        "--user-data-dir=/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/user-data",
+        "--remote-debugging-port=55593",
+        "--remote-debugging-address=127.0.0.1"
+      ],
+      "environment": {
+        "DSH_HOME": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/dsh-home",
+        "DSH_DESKTOP_USER_DATA_DIR": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/user-data",
+        "DSH_DESKTOP_DIAGNOSTIC_FILE": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-e2e/d9d5f668-fa57-4856-81ac-738084cf7e2e/logs/diagnostic.log",
+        "DSH_DESKTOP_HOST_INSPECT_PORT": "55594"
+      },
+      "unsetEnvironmentNames": [
+        "ELECTRON_RUN_AS_NODE"
+      ]
+    },
+    "process": {
+      "pid": 54974,
+      "processGroupId": 54974,
+      "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/user-data --remote-debugging-port=55593 --remote-debugging-address=127.0.0.1",
+      "workingDirectory": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-development/official-environment/workspace",
+      "listeningPorts": [
+        55592,
+        55593,
+        55669
+      ],
+      "observedAt": "2026-10-24T17:16:00.269Z"
+    },
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-24T17:26:22.999Z",
+      "portsReleased": true
+    }
+  },
+  "recordPath": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/.local/desktop-e2e/d9d5f668-fa57-4856-81ac-738084cf7e2e/run.json"
+}
