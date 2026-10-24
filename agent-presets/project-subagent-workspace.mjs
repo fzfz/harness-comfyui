@@ -3,14 +3,17 @@ import { realpath } from 'node:fs/promises'
 export const name = 'harness-comfyui-project-subagent-workspace'
 export const inject = ['workspaceRegistry', 'agents']
 
+/** @param {import('@deepseek-ai/dsh-workspace').Workspace} workspace @param {import('@deepseek-ai/dsh-session').SessionId} sessionId */
 function includesSession(workspace, sessionId) {
   return workspace.sessionIds.some(id => String(id) === String(sessionId))
 }
 
+/** @param {unknown} error */
 function errorMessage(error) {
   return error instanceof Error ? error.message : String(error)
 }
 
+/** @param {string | undefined} cwd @param {'child' | 'parent'} label @param {import('@deepseek-ai/dsh-session').SessionId} sessionId */
 async function sessionRealpath(cwd, label, sessionId) {
   if (typeof cwd !== 'string' || cwd.length === 0) {
     const action = label === 'child'
@@ -28,13 +31,14 @@ async function sessionRealpath(cwd, label, sessionId) {
   }
 }
 
+/** @param {import('@deepseek-ai/cordis').Context} ctx */
 export function apply(ctx) {
   ctx.on('agent/pre-step', async ({ agent }, next) => {
     const childHeader = agent.session.header
     if (childHeader.origin !== 'subagent') return next()
 
     const childSessionId = agent.session.id
-    const parent = ctx.agents.get(childHeader.parentSession)
+    const parent = childHeader.parentSession === undefined ? undefined : ctx.agents.get(childHeader.parentSession)
     if (parent === undefined || parent === null) {
       throw new Error(
         `Registration of subagent Session ${String(childSessionId)} failed because parent Session ${String(childHeader.parentSession)} was not found; set the child Session header.parentSession field to an existing parent Session ID.`,
@@ -54,7 +58,7 @@ export function apply(ctx) {
 
     let workspace
     try {
-      workspace = await ctx.workspaceRegistry.resolveByPath(parentHeader.cwd)
+      workspace = await ctx.workspaceRegistry.resolveByPath(/** @type {string} */ (parentHeader.cwd))
     } catch (error) {
       throw new Error(
         `Registration of subagent Session ${String(childSessionId)} failed because Workspace lookup for parent cwd ${parentHeader.cwd} failed with ${errorMessage(error)}; check the Workspace registry and parent Session cwd, then retry.`,

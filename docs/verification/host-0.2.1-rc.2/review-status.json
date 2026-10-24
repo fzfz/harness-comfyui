@@ -1,0 +1,399 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "47962bbb3dcb4a273a4356d0054cf5f0b0add236",
+  "semanticReviews": [
+    {
+      "file": "README.md",
+      "reviewer": "/root/readme_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/releasenotes.md",
+      "reviewer": "/root/release_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "reviewer": "/root/preset_docs_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/directory-structure.md",
+      "reviewer": "/root/directories_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/technology-stack.md",
+      "reviewer": "/root/technology_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/startup.md",
+      "reviewer": "/root/startup_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/testing.md",
+      "reviewer": "/root/testing_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/releasing.md",
+      "reviewer": "/root/releasing_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/user/install-update.md",
+      "reviewer": "/root/install_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-iteration/agent.cordis.yml",
+      "reviewer": "/root/native_goal_preset_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+      "reviewer": "/root/workbench_yaml_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-task/agent.cordis.yml",
+      "reviewer": "/root/task_role_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-composition/agent.cordis.yml",
+      "reviewer": "/root/composition_role_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/research/host-0.2.1-rc.2-compatibility.md",
+      "reviewer": "/root/research_final_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "docs/plans/host-0.2.1-rc.2-upgrade-20261024.md",
+      "reviewer": "/root/plan_final_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "real-model/iteration-analysis.json",
+      "reviewer": "/root/iteration_report_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "real-model/iteration-nvidia-execution-summary.json",
+      "reviewer": "/root/iteration_nvidia_report_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": "acceptance-index.json",
+      "reviewer": "/root/native_goal_index_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/SKILL.md",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/references/records.md",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": ".agents/skills/comfyui-iterate-generation/references/iteration-method.md",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-generation/agent.cordis.yml",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-observation/agent.cordis.yml",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/harness-comfyui-comparison/agent.cordis.yml",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "agent-presets/project-observation.json",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "docs/plans/h7-delegation-and-image-acceptance-20261024.md",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/architecture.md",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "docs/system/configuration.md",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "tests/fixtures/repository-skill-catalog.json",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "docs/verification/host-0.2.1-rc.2/h7-repair-acceptance.json",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "docs/verification/host-0.2.1-rc.2/acceptance-index.json",
+      "reviewer": "/root/h7_candidate_semantics",
+      "cleanContext": true,
+      "singleFile": false,
+      "status": "passed"
+    },
+    {
+      "file": "docs/verification/host-0.2.1-rc.2/h7-repair-acceptance.json",
+      "reviewer": "/root/remaining_blockers_semantics",
+      "cleanContext": true,
+      "singleFile": true,
+      "status": "passed"
+    },
+    {
+      "files": [
+        "docs/verification/host-0.2.1-rc.2/acceptance-index.json",
+        "docs/verification/host-0.2.1-rc.2/h7-repair-acceptance.json",
+        ".local/release-0.47.0/pr-body.txt"
+      ],
+      "reviewer": "/root/release_acceptance_text_review",
+      "cleanContext": true,
+      "status": "passed"
+    }
+  ],
+  "codeReviews": [
+    {
+      "reviewer": "/root/upgrade_standards",
+      "lens": "standards-and-simplification",
+      "status": "passed",
+      "scope": [
+        "agent-presets",
+        "config",
+        "package.json",
+        "tsconfig.agent-presets.json",
+        "tests/production",
+        "tests/unit",
+        "tests/fixtures"
+      ],
+      "exclusions": [
+        "tests/desktop"
+      ]
+    },
+    {
+      "reviewer": "/root/upgrade_spec",
+      "lens": "spec",
+      "status": "passed",
+      "scope": [
+        "agent-presets",
+        "config",
+        "package.json",
+        "tsconfig.agent-presets.json",
+        "tests/production",
+        "tests/unit",
+        "tests/fixtures",
+        ".agents/skills/comfyui-iterate-generation/SKILL.md"
+      ],
+      "exclusions": [
+        "tests/desktop"
+      ]
+    },
+    {
+      "reviewer": "/root/desktop_repair_review",
+      "lens": "standards-and-spec",
+      "status": "passed",
+      "scope": [
+        "tests/desktop/official-desktop-live.test.mjs",
+        "agent-presets/harness-comfyui-generation/agent.cordis.yml"
+      ]
+    },
+    {
+      "reviewer": "/root/install_detail_review",
+      "lens": "standards-and-spec",
+      "status": "passed",
+      "scope": [
+        "tests/desktop/fixtures/official-plugin-install.mjs",
+        "tests/production/official-plugin-install.test.mjs"
+      ],
+      "targetedTestsPassed": 49
+    },
+    {
+      "reviewer": "/root/credential_clear_review",
+      "lens": "standards-and-spec-and-simplification",
+      "status": "passed",
+      "scope": [
+        "tests/unit/image-reader-model-catalog.test.ts"
+      ],
+      "targetedTestsPassed": 76
+    },
+    {
+      "reviewer": "/root/moss_inventory_review",
+      "lens": "standards-and-spec-and-simplification",
+      "status": "passed",
+      "scope": [
+        "config/plugin-runtime-resources.json",
+        "tests/unit/plugin-resources.test.ts"
+      ],
+      "targetedTestsPassed": 63
+    },
+    {
+      "reviewer": "/root/final_contract_review",
+      "lens": "standards-and-spec-and-simplification",
+      "status": "passed",
+      "scope": [
+        "tests/contract/engineering-baseline.test.ts",
+        "tests/contract/profile-skill-ownership.test.ts",
+        "tests/fixtures/preset-composition.d.mts"
+      ],
+      "targetedTestsPassed": 7,
+      "typecheck": "passed"
+    },
+    {
+      "reviewer": "/root/final_contract_review",
+      "lens": "standards-and-spec-and-simplification",
+      "status": "passed",
+      "scope": [
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "tests/production/plugin-build-presets.test.mjs"
+      ],
+      "targetedTestsPassed": 32
+    },
+    {
+      "reviewer": "/root/undici_patch_review",
+      "lens": "standards-and-spec-and-simplification",
+      "status": "passed",
+      "scope": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "docs/verification/host-0.2.1-rc.2/dependency-installation.json",
+        "docs/verification/host-0.2.1-rc.2/undici-security-audit.json"
+      ],
+      "targetedTestsPassed": 55
+    },
+    {
+      "reviewer": "/root/upgrade_standards_review",
+      "lens": "standards-and-simplification",
+      "status": "passed",
+      "scope": [
+        "."
+      ],
+      "diffCommand": "git diff HEAD",
+      "baseCommit": "47962bbb3dcb4a273a4356d0054cf5f0b0add236"
+    },
+    {
+      "reviewer": "/root/upgrade_spec_review",
+      "lens": "spec",
+      "status": "passed",
+      "scope": [
+        "."
+      ],
+      "acceptanceClaim": false,
+      "diffCommand": "git diff HEAD",
+      "baseCommit": "47962bbb3dcb4a273a4356d0054cf5f0b0add236"
+    },
+    {
+      "reviewer": "/root/upgrade_standards_review",
+      "lens": "standards-and-simplification",
+      "status": "passed",
+      "scope": [
+        "tests/desktop/fixtures/official-business-services.mjs",
+        "tests/desktop/fixtures/official-mcp-acceptance.mjs",
+        "tests/desktop/official-desktop-live.test.mjs",
+        "tests/production/official-mcp-acceptance.test.mjs"
+      ],
+      "acceptanceClaim": false,
+      "targetedTestsPassed": 52,
+      "typecheck": "passed"
+    },
+    {
+      "reviewer": "/root/upgrade_spec_review",
+      "lens": "spec",
+      "status": "passed",
+      "scope": [
+        "tests/desktop/fixtures/official-business-services.mjs",
+        "tests/desktop/fixtures/official-mcp-acceptance.mjs",
+        "tests/desktop/official-desktop-live.test.mjs",
+        "tests/production/official-mcp-acceptance.test.mjs"
+      ],
+      "acceptanceClaim": false,
+      "targetedTestsPassed": 52,
+      "typecheck": "passed"
+    }
+  ],
+  "completedAt": "2026-10-24T12:33:24.062338+00:00"
+}

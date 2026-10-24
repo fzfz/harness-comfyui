@@ -1,4 +1,17 @@
 import assert from 'node:assert/strict'
+import { OFFICIAL_MCP_FIXTURE } from './official-mcp-services.mjs'
+
+export function requestMessageText(message) {
+  if (typeof message.content === 'string') return message.content
+  if (!Array.isArray(message.content)) return ''
+  return message.content.flatMap(part => typeof part?.text === 'string' ? [part.text] : []).join('\n')
+}
+
+export function isOfficialMcpChildRequest(request, sequenceStart) {
+  return request.sequence >= sequenceStart
+    && (request.body.messages ?? []).some(message => message.role === 'user'
+      && requestMessageText(message).includes(OFFICIAL_MCP_FIXTURE.workflowPrompt))
+}
 
 export function assertSuccessfulProjectActivations(sessions, presetIds) {
   assert.equal(sessions.length, presetIds.length, 'Every project Preset must produce one activation result')

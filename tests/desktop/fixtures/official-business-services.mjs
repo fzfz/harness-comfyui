@@ -502,7 +502,8 @@ function controlledMcpChildArguments(toolName, observationImages) {
   }
   const shared = { description, output_files: [] }
   if (toolName === 'subagent_observation') return {
-    ...shared, images: observationImages, questions: [OFFICIAL_MCP_FIXTURE.workflowPrompt],
+    ...shared, images: observationImages,
+    observation: { mode: 'supplement', missing_facts: [OFFICIAL_MCP_FIXTURE.workflowPrompt] },
   }
   return {
     ...shared, requirements: [OFFICIAL_MCP_FIXTURE.workflowPrompt], input_files: [], reference_files: [],

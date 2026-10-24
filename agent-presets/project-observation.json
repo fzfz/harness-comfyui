@@ -1,0 +1,5 @@
+{
+  "label": "观察实际图片",
+  "missingFactsError": "补充观察的 missing_facts 必须包含至少一项非空的待观察事实。首次读图请使用 observation: {mode: initial}。",
+  "initialInstruction": "逐图描述可见的人物、动作、接触关系、空间关系和环境。说明主体的位置、承托面、遮挡与前后关系，并记录无法看清或无法确定的内容。"
+}

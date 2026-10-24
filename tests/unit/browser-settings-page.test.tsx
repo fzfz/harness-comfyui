@@ -37,7 +37,7 @@ function form(options: {
   const listeners = new Set<() => void>()
   let snapshot: ConfigFormSnapshot<BrowserSettingsView> = {
     status: options.status ?? 'ready', value: options.value ?? {}, base: {}, user: {},
-    revision: 1, writable: options.writable ?? true, mode: 'host',
+    revision: 1, writable: options.writable ?? true,
   }
   const publish = (update: Partial<ConfigFormSnapshot<BrowserSettingsView>>) => {
     snapshot = { ...snapshot, ...update }

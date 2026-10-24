@@ -82,6 +82,28 @@ describe('CLI shell capability', () => {
     expect(store.authorize('capability-1')).toBeUndefined()
   })
 
+  it.each(['/workspace/subdirectory', '/other-workspace'])(
+    'retains Session ownership after the Shell working directory changes to %s', cwd => {
+      const store = new CliShellCapabilityStore({
+        cliPath: '/plugin/cli.mjs', apiUrl: 'http://127.0.0.1:4173/cli',
+        ...sourceOptions, createCapability: () => 'directory-capability',
+      })
+      const exec = execution({ agent: { session: {
+        id: 'session-1', header: { cwd: '/workspace' },
+        snapshotEvents: () => [
+          { type: 'working-directory/change', data: { cwd } },
+          { type: 'tool/call', data: { callId: 'call_shell_1', name: 'bash', turn: 4 } },
+        ],
+      } } })
+      store.environment(exec)
+      expect(store.authorize('directory-capability')).toEqual({
+        sessionId: 'session-1', cwd: '/workspace', turn: 4, callId: 'call_shell_1',
+      })
+      store.revoke(exec)
+      expect(store.authorize('directory-capability')).toBeUndefined()
+    },
+  )
+
   it('does not issue capabilities to background, agentless, or ambiguous shell calls', () => {
     const store = new CliShellCapabilityStore({
       cliPath: '/repo/scripts/cli/harness-comfyui.mjs',

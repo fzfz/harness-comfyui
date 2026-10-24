@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { readProjectAgentPresetResources } from '../../scripts/build/agent-preset-resources.mjs'
+import { readProjectComposition as readProjectAgentPresetResources } from '../fixtures/preset-composition.mjs'
 
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
@@ -106,7 +106,7 @@ describe('project Agent Preset resources', () => {
       toolName: 'subagent_task',
       maxDepth: 1,
       agentOptions: {},
-      toolFilter: { deny: ['subagent_task', 'interrupt_agent'] },
+      agentPreset: 'harness-comfyui-task',
       parameters: {
         required: ['description', 'task'],
         additionalProperties: false,
@@ -117,10 +117,6 @@ describe('project Agent Preset resources', () => {
       },
     })
     expect(task.config.parameters.properties).toHaveProperty('agent_id')
-    expect(task.config.outputSchema.oneOf.map(schema => schema.required)).toEqual([
-      ['kind', 'subagentId'],
-      ['messageId'],
-    ])
     expect(composition.map(row => row.name)).toContain('../project-subagent-workspace.mjs')
     expect(composition.map(row => row.name)).toContain('../project-subagent-control.mjs')
   })
@@ -140,23 +136,15 @@ describe('project Agent Preset resources', () => {
     expect(names).toEqual([
       'subagent_composition', 'subagent_generation', 'subagent_observation', 'subagent_comparison',
     ])
-    expect(new Set(roles.map(row => row.config.persona)).size).toBe(4)
+    expect(new Set(roles.map(row => row.config.agentPreset)).size).toBe(4)
     for (const role of roles) {
       expect(role.config).toMatchObject({
         provider: 'spawn',
         maxDepth: 1,
-        persona: expect.any(String),
+        agentPreset: expect.any(String),
         agentOptions: { provider: expect.any(String), model: expect.any(String) },
-        toolFilter: {
-          deny: expect.arrayContaining([
-            ...names, 'interrupt_agent', 'get_goal', 'create_goal', 'update_goal',
-          ]),
-        },
       })
       expect(role.config.parameters.additionalProperties).toBe(false)
-      expect(role.config.outputSchema.oneOf.map(schema => schema.required)).toEqual([
-        ['kind', 'subagentId'], ['messageId'],
-      ])
     }
     expect(composition.map(row => row.name)).toContain('../project-subagent-workspace.mjs')
     expect(composition.map(row => row.name)).toContain('@deepseek-ai/dsh-command-goal')

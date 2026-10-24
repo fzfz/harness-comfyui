@@ -2,185 +2,90 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { apply } from '../../agent-presets/project-iteration-dispatch.mjs'
 
-function setup(dispatch) {
-  const listeners = new Map()
-  const disposers = new Set()
-  let tool
-  const emit = (name, ...args) => {
-    for (const callback of [...(listeners.get(name) ?? [])]) callback(...args)
-  }
-  const accepted = (childId, messageId) => emit('session/event', { id: childId, header: { parentSession: 'parent-1' } }, {
-    type: 'agent/inbox/spliced', data: { inserted: [{ id: messageId }] },
-  })
-  const end = (childId, runId = 'activation-1', stopReason = 'completed') => emit('subagent/end', {
-    id: childId, runId, provider: 'spawn', local: true, stopReason,
-  })
+function setup() {
+  const pending = Promise.withResolvers()
+  const activation = { childId: 'child-1', messageId: 'message-1', result: pending.promise, dispose: vi.fn() }
   const subagents = {
-    startContinuable: vi.fn(() => dispatch({ accepted, end, emit })),
-    sendMessage: vi.fn(async () => (await dispatch({ accepted, end, emit })).messageId),
+    startActivation: vi.fn(async () => activation),
+    sendMessage: vi.fn(async () => 'message-2'),
   }
-  const ctx = {
-    effect(callback) {
-      const cleanup = callback()
-      const dispose = () => { if (disposers.delete(dispose)) cleanup() }
-      disposers.add(dispose)
-      return dispose
-    },
-    on(name, callback) {
-      if (!listeners.has(name)) listeners.set(name, new Set())
-      listeners.get(name).add(callback)
-      return () => listeners.get(name).delete(callback)
-    },
-    tools: { register(value) { tool = value } },
-    subagents,
-  }
-  apply(ctx, {
-    toolName: 'test-dispatch', parameters: {}, outputSchema: {},
+  let tool
+  apply({ tools: { register(value) { tool = value } }, subagents }, {
+    toolName: 'test-dispatch', parameters: {},
     taskTemplate: { title: 'Task', sections: [] }, provider: 'spawn',
+    agentPreset: 'harness-comfyui-task',
   })
-  return {
-    tool, subagents, accepted, end, emit,
-    unload: () => { for (const dispose of [...disposers]) dispose() },
-    listenerCount: () => [...listeners.values()].reduce((sum, set) => sum + set.size, 0),
-  }
+  return { tool, subagents, activation, pending }
 }
 
-const tick = async () => { for (let i = 0; i < 8; i++) await Promise.resolve() }
-const execution = () => ({ agent: { id: 'parent-1' }, signal: new AbortController().signal, deferContext: vi.fn() })
+const execution = () => ({ agent: { id: 'parent-1' }, signal: new AbortController().signal, deferContext: vi.fn(), callId: 'call-1' })
 
-describe('project dispatch native completion boundary', () => {
-  it.each([false, true])('keeps %s dispatch pending after acceptance until its child ends', async continuation => {
-    const env = setup(({ accepted }) => {
-      accepted('child-1', 'message-1')
-      return { childId: 'child-1', messageId: 'message-1' }
-    })
-    let resolved = false
-    const result = env.tool.execute({ description: 'task', ...(continuation ? { agent_id: 'child-1' } : {}) }, execution())
-    void result.then(() => { resolved = true })
-    await tick()
-    try {
-      expect(resolved).toBe(false)
-      env.end('sibling-child')
-      await tick()
-      expect(resolved).toBe(false)
-    } finally { env.end('child-1') }
-    expect(await result).toEqual(continuation ? { messageId: 'message-1' } : { kind: 'continuable', subagentId: 'child-1' })
-    expect(env.listenerCount()).toBe(0)
-  })
-
-  it('ignores a previous activation ending before the continuation is accepted', async () => {
-    const env = setup(({ accepted, end }) => {
-      end('child-1', 'previous-activation')
-      accepted('child-1', 'message-2')
-      return { childId: 'child-1', messageId: 'message-2' }
-    })
-    let resolved = false
-    const result = env.tool.execute({ description: 'continue', agent_id: 'child-1' }, execution())
-    void result.then(() => { resolved = true })
-    await tick()
-    try { expect(resolved).toBe(false) }
-    finally { env.end('child-1', 'resumed-activation') }
-    expect(await result).toEqual({ messageId: 'message-2' })
-    expect(env.subagents.sendMessage).toHaveBeenCalledTimes(1)
-    expect(env.subagents.startContinuable).not.toHaveBeenCalled()
-    expect(env.listenerCount()).toBe(0)
-  })
-
-  it('recognizes completion emitted before the SDK acceptance promise returns', async () => {
-    const env = setup(({ accepted, end }) => {
-      accepted('child-1', 'message-1')
-      end('child-1')
-      return { childId: 'child-1', messageId: 'message-1' }
-    })
-    expect(await env.tool.execute({ description: 'task' }, execution())).toEqual({ kind: 'continuable', subagentId: 'child-1' })
-    expect(env.listenerCount()).toBe(0)
-  })
-  it('retains accepted identity when waiting is cancelled and releases its listeners', async () => {
-    const env = setup(({ accepted }) => {
-      accepted('child-1', 'message-1')
-      return { childId: 'child-1', messageId: 'message-1' }
-    })
-    const controller = new AbortController()
-    const exec = { ...execution(), signal: controller.signal, callId: 'call-1' }
-    const result = env.tool.execute({ description: 'task' }, exec)
-    const rejected = expect(result).rejects.toMatchObject({ name: 'AbortError' })
-    await tick()
-    controller.abort()
-    await rejected
-    expect(exec.deferContext).toHaveBeenCalledTimes(1)
-    const context = exec.deferContext.mock.calls[0][0]
-    expect(context).toMatchObject({ role: 'user', source: { kind: 'harness-subagent-accepted' } })
-    expect(JSON.parse(context.content[0].text)).toEqual({ toolName: 'test-dispatch', callId: 'call-1', subagentId: 'child-1', messageId: 'message-1', status: 'accepted' })
-    expect(env.listenerCount()).toBe(0)
-    expect(env.subagents.startContinuable).toHaveBeenCalledTimes(1)
-  })
-
-  it('rejects an unloaded dispatch without restarting accepted work', async () => {
-    const env = setup(({ accepted }) => {
-      accepted('child-1', 'message-1')
-      return { childId: 'child-1', messageId: 'message-1' }
-    })
-    const result = env.tool.execute({ description: 'task' }, execution())
-    const rejected = expect(result).rejects.toMatchObject({ name: 'AbortError' })
-    await tick()
-    env.unload()
-    await rejected
-    expect(env.listenerCount()).toBe(0)
-    expect(env.subagents.startContinuable).toHaveBeenCalledTimes(1)
-  })
-
-  it('cleans up when the SDK refuses acceptance', async () => {
-    const error = new Error('acceptance refused')
-    const env = setup(() => { throw error })
-    const exec = execution()
-    await expect(env.tool.execute({ description: 'task' }, exec)).rejects.toBe(error)
+describe('project dispatch native acceptance boundary', () => {
+  it('rejects a call without its parent Agent before accepting work', async () => {
+    const env = setup()
+    const exec = { ...execution(), agent: undefined }
+    await expect(env.tool.execute({ description: 'task' }, exec)).rejects.toThrow('parent Agent')
+    expect(env.subagents.startActivation).not.toHaveBeenCalled()
     expect(exec.deferContext).not.toHaveBeenCalled()
-    expect(env.listenerCount()).toBe(0)
   })
 
-  it('requires the direct-parent inbox event before accepting a matching child end', async () => {
-    const env = setup(() => ({ childId: 'child-1', messageId: 'message-1' }))
-    let resolved = false
-    const result = env.tool.execute({ description: 'task' }, execution())
-    void result.then(() => { resolved = true })
-    await tick()
-    env.emit('session/event', { id: 'child-1', header: { parentSession: 'other-parent' } }, {
-      type: 'agent/inbox/spliced', data: { inserted: [{ id: 'message-1' }] },
+  it('continues the existing identity and returns its accepted message', async () => {
+    const env = setup()
+    const exec = execution()
+    expect(await env.tool.execute({ description: 'continue', agent_id: 'saved-child' }, exec))
+      .toEqual({ status: 'accepted', operation: 'continue', subagentId: 'saved-child', messageId: 'message-2' })
+    expect(env.subagents.startActivation).not.toHaveBeenCalled()
+    expect(env.subagents.sendMessage).toHaveBeenCalledWith(exec.agent, 'saved-child',
+      expect.any(Array), { signal: exec.signal })
+    expect(JSON.parse(exec.deferContext.mock.calls[0][0].content[0].text))
+      .toMatchObject({ subagentId: 'saved-child', messageId: 'message-2', status: 'accepted' })
+  })
+
+  it.each([false, true])('preserves a host rejection without publishing acceptance, continuation=%s', async continuation => {
+    const env = setup()
+    const error = new Error('host rejected work')
+    const service = continuation ? env.subagents.sendMessage : env.subagents.startActivation
+    service.mockRejectedValue(error)
+    const exec = execution()
+    await expect(env.tool.execute({ description: 'task', ...(continuation ? { agent_id: 'saved-child' } : {}) }, exec))
+      .rejects.toBe(error)
+    expect(exec.deferContext).not.toHaveBeenCalled()
+    expect(env.activation.dispose).not.toHaveBeenCalled()
+  })
+
+  it('keeps parallel acceptance receipts attached to their own Tool Calls', async () => {
+    const env = setup()
+    env.subagents.startActivation.mockImplementation(async ({ label }) => ({
+      ...env.activation, childId: `child-${label}`, messageId: `message-${label}`,
+    }))
+    const executions = ['a', 'b'].map(label => ({ ...execution(), callId: `call-${label}` }))
+    const results = await Promise.all(executions.map((exec, index) =>
+      env.tool.execute({ description: ['a', 'b'][index] }, exec)))
+    expect(results).toEqual([
+      { status: 'accepted', operation: 'create', subagentId: 'child-a', messageId: 'message-a' },
+      { status: 'accepted', operation: 'create', subagentId: 'child-b', messageId: 'message-b' },
+    ])
+    expect(executions.map(exec => JSON.parse(exec.deferContext.mock.calls[0][0].content[0].text)))
+      .toEqual(['a', 'b'].map(label => ({
+        toolName: 'test-dispatch', callId: `call-${label}`, subagentId: `child-${label}`,
+        messageId: `message-${label}`, status: 'accepted', operation: 'create',
+      })))
+    env.pending.resolve({ stopReason: 'completed' })
+  })
+
+  it('returns the child identity while the host activation is still running', async () => {
+    const env = setup()
+    const exec = execution()
+    expect(await env.tool.execute({ description: 'task' }, exec))
+      .toEqual({ status: 'accepted', operation: 'create', subagentId: 'child-1', messageId: 'message-1' })
+    expect(env.subagents.startActivation).toHaveBeenCalledWith(expect.objectContaining({
+      delivery: 'parent',
+      request: expect.objectContaining({ agentPreset: 'harness-comfyui-task', parent: exec.agent }),
+    }))
+    expect(env.activation.dispose).not.toHaveBeenCalled()
+    expect(JSON.parse(exec.deferContext.mock.calls[0][0].content[0].text)).toEqual({
+      toolName: 'test-dispatch', callId: 'call-1', subagentId: 'child-1', messageId: 'message-1', status: 'accepted', operation: 'create',
     })
-    env.end('child-1')
-    await tick()
-    try { expect(resolved).toBe(false) }
-    finally { env.accepted('child-1', 'message-1'); env.end('child-1') }
-    await result
-    expect(env.listenerCount()).toBe(0)
+    env.pending.resolve({ stopReason: 'completed' })
   })
-
-  it.each(['completed', 'aborted', 'error', 'max-tokens', 'refusal'])('leaves %s business interpretation to the native notice', async stopReason => {
-    const env = setup(({ accepted, end }) => {
-      accepted('child-1', 'message-1')
-      end('child-1', 'activation-1', stopReason)
-      return { childId: 'child-1', messageId: 'message-1' }
-    })
-    expect(await env.tool.execute({ description: 'task' }, execution())).toEqual({ kind: 'continuable', subagentId: 'child-1' })
-    expect(env.listenerCount()).toBe(0)
-  })
-
-  it('checks the observed activation ID while accepting an already running epoch without a new start', async () => {
-    const env = setup(({ accepted, emit }) => {
-      emit('subagent/start', { id: 'child-1', runId: 'activation-current' })
-      accepted('child-1', 'message-1')
-      return { childId: 'child-1', messageId: 'message-1' }
-    })
-    let resolved = false
-    const result = env.tool.execute({ description: 'task' }, execution())
-    void result.then(() => { resolved = true })
-    await tick()
-    env.end('child-1', 'activation-other')
-    await tick()
-    try { expect(resolved).toBe(false) }
-    finally { env.end('child-1', 'activation-current') }
-    await result
-    expect(env.listenerCount()).toBe(0)
-  })
-
 })

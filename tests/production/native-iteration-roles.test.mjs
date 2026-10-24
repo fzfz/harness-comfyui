@@ -29,26 +29,12 @@ async function registerTools() {
   mediaFixtures.push(media)
   await media.accept()
   const registered = new Map()
-  const listeners = new Map()
-  const emit = (name, ...args) => { for (const callback of listeners.get(name) ?? []) callback(...args) }
-  const finish = childId => {
-    emit('session/event', { id: childId, header: { parentSession: 'parent-1' } }, {
-      type: 'agent/inbox/spliced', data: { inserted: [{ id: 'message-1' }] },
-    })
-    emit('subagent/end', { id: childId, runId: 'activation-1', stopReason: 'completed' })
-  }
   const subagents = {
-    startContinuable: vi.fn(async () => { finish('child-1'); return { childId: 'child-1', messageId: 'message-1' } }),
-    sendMessage: vi.fn(async (_parent, childId) => { finish(childId); return 'message-1' }),
+    startActivation: vi.fn(async () => ({ childId: 'child-1', messageId: 'message-1' })),
+    sendMessage: vi.fn(async () => 'message-1'),
     interrupt: vi.fn(),
   }
   const ctx = {
-    effect: callback => callback(),
-    on(name, callback) {
-      if (!listeners.has(name)) listeners.set(name, new Set())
-      listeners.get(name).add(callback)
-      return () => listeners.get(name).delete(callback)
-    },
     tools: { register: tool => {
       assertObjectJsonSchema(tool.parameters)
       assertSupportedJsonSchema(tool.output.schema)
@@ -58,7 +44,7 @@ async function registerTools() {
     harnessComfyuiCore: { services: { resolveObservationMedia: media.resolveMedia } },
   }
   for (const role of roles) (role.name === '../project-observation-dispatch.mjs' ? applyObservation : apply)(ctx, role.config)
-  return { registered, subagents, media, listeners, finish, emit, ctx }
+  return { registered, subagents, media, ctx }
 }
 
 function execution(callId) {
@@ -74,7 +60,7 @@ function task(index) {
   if (index === 2) return {
     ...shared,
     images: [{ run_id: 'run_00000001-1111-4111-8111-111111111111', media_id: 'media_aa_bb_1' }],
-    questions: ['人物的双手在哪里？'],
+    observation: { mode: 'supplement', missing_facts: ['人物的双手位置'] },
   }
   return {
     ...shared,
@@ -87,14 +73,14 @@ function task(index) {
 }
 
 function expectedMessage(index, args, root) {
-  if (index === 2) args = { ...args, images: [{
+  if (index === 2) args = { ...args, description: '观察实际图片', output_files: args.output_files.map(({ path }) => ({ path })), images: [{
     run_id: 'run_00000001-1111-4111-8111-111111111111', media_id: 'media_aa_bb_1',
     path: join(root, 'media/aa/bb/media_aa_bb_1.png'),
   }] }
   const section = (heading, data) => `## ${heading}\n${JSON.stringify(data, null, 2)}`
   return [`# ${names[index]}任务`, section('本次任务名称', { description: args.description }),
     ...(index === 2
-      ? [section('需要观察的图片与问题', { images: args.images, questions: args.questions })]
+      ? [section('需要观察的图片与问题', { images: args.images, observation: args.observation })]
       : [section('本次要求', { requirements: args.requirements }),
         section('需要读取的材料与参考', { input_files: args.input_files, reference_files: args.reference_files })]),
     ...(args.supplied_data === undefined ? [] : [section('本次提供的生成数据', { supplied_data: args.supplied_data })]),
@@ -111,8 +97,47 @@ async function call(tool, args, exec) {
 }
 
 describe('iteration role dispatch components', () => {
-  it.each(['failure', 'cancellation'])('stops before creating completion observers when asynchronous parameter preparation ends in %s', async mode => {
-    const { registered, subagents, listeners, ctx } = await registerTools()
+  it('separates initial observation from requests for additional facts', async () => {
+    const { registered } = await registerTools()
+    const schema = registered.get('subagent_observation').parameters
+    const args = task(2)
+    expect(validateJsonSchemaValue(schema, { ...args, observation: { mode: 'initial' } }, '')).toEqual([])
+    expect(validateJsonSchemaValue(schema, { ...args, observation: { mode: 'supplement', missing_facts: ['Describe the contact surface.'] } }, '')).toEqual([])
+    for (const observation of [
+      { mode: 'initial', missing_facts: ['expected answer'] },
+      { mode: 'supplement' },
+      { mode: 'unknown' },
+    ]) expect(validateJsonSchemaValue(schema, { ...args, observation }, '')).not.toEqual([])
+  })
+
+  it('passes only normalized media and output paths with a fixed initial observation request', async () => {
+    const { registered, subagents } = await registerTools()
+    const args = { ...task(2), description: 'PRIVATE_EXPECTED_SCENE', observation: { mode: 'initial' },
+      output_files: [{ path: '/task/observation.md', purpose: 'PRIVATE_EXPECTED_ANSWER' }] }
+    const before = structuredClone(args)
+    await call(registered.get('subagent_observation'), args, execution())
+    const request = subagents.startActivation.mock.calls[0][0]
+    expect(request.label).toBe('观察实际图片')
+    const text = request.request.prompt[0].text
+    expect(text).not.toContain('PRIVATE_EXPECTED_SCENE')
+    expect(text).not.toContain('PRIVATE_EXPECTED_ANSWER')
+    const observation = JSON.parse(text.split('## 需要观察的图片与问题\n')[1].split('\n\n')[0]).observation
+    expect(observation).toMatchObject({ mode: 'initial', instruction: expect.any(String) })
+    expect(observation).not.toHaveProperty('missing_facts')
+    expect(args).toEqual(before)
+  })
+
+  it.each([{ missing_facts: [] }, { missing_facts: [' '] }])('rejects empty supplemental facts before resolving media', async ({ missing_facts }) => {
+    const { registered, subagents, media } = await registerTools()
+    await expect(registered.get('subagent_observation').execute({
+      ...task(2), observation: { mode: 'supplement', missing_facts },
+    }, execution())).rejects.toThrow('missing_facts')
+    expect(media.workspaceRegistry.resolveByPath).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
+  })
+
+  it.each(['failure', 'cancellation'])('stops before dispatch when asynchronous parameter preparation ends in %s', async mode => {
+    const { registered, subagents, ctx } = await registerTools()
     const controller = new AbortController()
     const reason = new Error(`parameter preparation ${mode}`)
     apply(ctx, roles[0].config, async args => {
@@ -121,9 +146,8 @@ describe('iteration role dispatch components', () => {
       return args
     })
     await expect(registered.get('subagent_composition').execute(task(0), { ...execution(), signal: controller.signal })).rejects.toBe(reason)
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
-    expect([...listeners.values()].flatMap(value => [...value])).toEqual([])
   })
 
   it.each([false, true])('rejects observation cancellation before resolving media; continuation=%s', async continuation => {
@@ -132,7 +156,7 @@ describe('iteration role dispatch components', () => {
     const args = { ...task(2), ...(continuation ? { agent_id: 'existing-child' } : {}) }
     await expect(registered.get('subagent_observation').execute(args, exec)).rejects.toThrow()
     expect(media.workspaceRegistry.resolveByPath).not.toHaveBeenCalled()
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
   })
 
@@ -141,7 +165,7 @@ describe('iteration role dispatch components', () => {
     const images = [...task(2).images]
     for (let index = 1; index < 21; index += 1) images.push({ run_id: await media.accept(), media_id: `media_aa_bb_${index * 3 + 1}` })
     await call(registered.get('subagent_observation'), { ...task(2), images: [...images].reverse() }, execution())
-    const text = subagents.startContinuable.mock.calls[0][0].request.prompt[0].text
+    const text = subagents.startActivation.mock.calls[0][0].request.prompt[0].text
     const section = text.split('## 需要观察的图片与问题\n')[1].split('\n\n')[0]
     const selected = JSON.parse(section).images
     expect(selected).toHaveLength(21)
@@ -158,22 +182,22 @@ describe('iteration role dispatch components', () => {
     ] }
     const before = structuredClone(args)
     await call(registered.get('subagent_observation'), args, execution())
-    const text = subagents.startContinuable.mock.calls[0][0].request.prompt[0].text
+    const text = subagents.startActivation.mock.calls[0][0].request.prompt[0].text
     expect(text).toContain(JSON.stringify([
       { run_id: 'run_00000001-1111-4111-8111-111111111111', media_id: 'media_aa_bb_3', path: join(media.root, 'media/aa/bb/media_aa_bb_3.png') },
       { run_id: 'run_00000001-1111-4111-8111-111111111111', media_id: 'media_aa_bb_1', path: join(media.root, 'media/aa/bb/media_aa_bb_1.png') },
       { run_id: 'run_00000001-1111-4111-8111-111111111111', media_id: 'media_aa_bb_3', path: join(media.root, 'media/aa/bb/media_aa_bb_3.png') },
     ], null, 2).split('\n').map(line => `  ${line}`).join('\n').trim())
-    expect(text).toContain(JSON.stringify({ output_files: args.output_files }, null, 2))
-    expect(text).toContain(JSON.stringify({ description: args.description }, null, 2))
-    expect(text).toContain(JSON.stringify(args.questions[0]))
+    expect(text).toContain(JSON.stringify({ output_files: args.output_files.map(({ path }) => ({ path })) }, null, 2))
+    expect(text).toContain(JSON.stringify({ description: '观察实际图片' }, null, 2))
+    expect(text).toContain(JSON.stringify(args.observation.missing_facts[0]))
     expect(text).not.toContain('TARGET_TITLE_MUST_STAY_PRIVATE')
     expect(text).not.toContain('TARGET_PROMPT_MUST_STAY_PRIVATE')
     expect(args).toEqual(before)
   })
 
   it.each([false, true])('fails a later media query batch before any child dispatch; continuation=%s', async continuation => {
-    const { registered, subagents, media, listeners } = await registerTools()
+    const { registered, subagents, media } = await registerTools()
     const images = [...task(2).images]
     for (let index = 1; index < 21; index += 1) {
       images.push({ run_id: await media.accept(), media_id: `media_aa_bb_${index * 3 + 1}` })
@@ -181,9 +205,8 @@ describe('iteration role dispatch components', () => {
     images.push({ run_id: 'run_ffffffff', media_id: 'media_missing' })
     const args = { ...task(2), images, ...(continuation ? { agent_id: 'existing-child' } : {}) }
     await expect(registered.get('subagent_observation').execute(args, execution())).rejects.toMatchObject({ code: 'GENERATION_RUN_NOT_FOUND' })
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
-    expect([...listeners.values()].flatMap(value => [...value])).toEqual([])
   })
 
   it.each([
@@ -201,19 +224,18 @@ describe('iteration role dispatch components', () => {
     { name: 'cross Workspace Run', code: 'GENERATION_RUN_NOT_FOUND', change: async (args, _exec, media) => { args.images = [{ run_id: await media.accept('workspace-2'), media_id: 'media_aa_bb_4' }] } },
     { name: 'media not yet saved', code: 'GENERATION_MEDIA_NOT_FOUND', change: async (args, _exec, media) => { args.images = [{ run_id: await media.accept('workspace-1', false), media_id: 'media_aa_bb_4' }] } },
   ])('rejects $name without creating or continuing a child', async ({ code, change }) => {
-    const { registered, subagents, media, listeners } = await registerTools()
+    const { registered, subagents, media } = await registerTools()
     const args = task(2)
     const exec = execution()
     await change(args, exec, media)
     await expect(registered.get('subagent_observation').execute(args, exec)).rejects.toMatchObject({ code })
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
     expect(exec.deferContext).not.toHaveBeenCalled()
-    expect([...listeners.values()].flatMap(value => [...value])).toEqual([])
   })
 
   it.each([false, true])('cancels during media resolution with no dispatch; continuation=%s', async continuation => {
-    const { registered, subagents, media, listeners } = await registerTools()
+    const { registered, subagents, media } = await registerTools()
     const controller = new AbortController()
     const reason = new Error('cancelled during resolution')
     media.workspaceRegistry.resolveByPath.mockImplementationOnce(async () => {
@@ -223,26 +245,24 @@ describe('iteration role dispatch components', () => {
     const exec = { ...execution(), signal: controller.signal }
     const args = { ...task(2), ...(continuation ? { agent_id: 'existing-child' } : {}) }
     await expect(registered.get('subagent_observation').execute(args, exec)).rejects.toBe(reason)
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
     expect(exec.deferContext).not.toHaveBeenCalled()
-    expect([...listeners.values()].flatMap(value => [...value])).toEqual([])
   })
 
   it('keeps the accepted observation identity after cancellation and resumes the original child', async () => {
-    const { registered, subagents, listeners } = await registerTools()
+    const { registered, subagents } = await registerTools()
     const controller = new AbortController()
     const reason = new Error('cancelled after acceptance')
-    subagents.startContinuable.mockResolvedValueOnce({ childId: 'accepted-child', messageId: 'accepted-message' })
+    subagents.startActivation.mockResolvedValueOnce({ childId: 'accepted-child', messageId: 'accepted-message' })
     const exec = { ...execution(), signal: controller.signal }
     exec.deferContext.mockImplementationOnce(() => controller.abort(reason))
     const tool = registered.get('subagent_observation')
-    await expect(tool.execute(task(2), exec)).rejects.toBe(reason)
+    await expect(tool.execute(task(2), exec)).resolves.toEqual({ status: 'accepted', operation: 'create', subagentId: 'accepted-child', messageId: 'accepted-message' })
     const accepted = JSON.parse(exec.deferContext.mock.calls[0][0].content[0].text)
-    expect(accepted).toEqual({ toolName: 'subagent_observation', callId: 'observation-1', subagentId: 'accepted-child', messageId: 'accepted-message', status: 'accepted' })
-    expect([...listeners.values()].flatMap(value => [...value])).toEqual([])
-    expect(await call(tool, { ...task(2), agent_id: accepted.subagentId }, execution('observation-2'))).toEqual({ messageId: 'message-1' })
-    expect(subagents.startContinuable).toHaveBeenCalledTimes(1)
+    expect(accepted).toEqual({ toolName: 'subagent_observation', callId: 'observation-1', subagentId: 'accepted-child', messageId: 'accepted-message', status: 'accepted', operation: 'create' })
+    expect(await call(tool, { ...task(2), agent_id: accepted.subagentId }, execution('observation-2'))).toEqual({ status: 'accepted', operation: 'continue', subagentId: 'accepted-child', messageId: 'message-1' })
+    expect(subagents.startActivation).toHaveBeenCalledTimes(1)
     expect(subagents.sendMessage.mock.calls[0][1]).toBe('accepted-child')
   })
 
@@ -256,19 +276,19 @@ describe('iteration role dispatch components', () => {
     expect(preset.find(entry => entry.name === '@deepseek-ai/dsh-command-goal')).toBeDefined()
   })
 
-  it.each(roles.map((role, index) => ({ role, index })))('creates $role.id with its template and persona', async ({ role, index }) => {
+  it.each(roles.map((role, index) => ({ role, index })))('creates $role.id with its template and independent Preset', async ({ role, index }) => {
     const { registered, subagents, media } = await registerTools()
     const exec = execution()
     const args = task(index)
     const before = structuredClone(args)
     expect(await call(registered.get(role.config.toolName), args, exec))
-      .toEqual({ kind: 'continuable', subagentId: 'child-1' })
-    expect(subagents.startContinuable).toHaveBeenCalledExactlyOnceWith({
-      provider: 'spawn', label: args.description, signal: expect.any(AbortSignal),
+      .toEqual({ status: 'accepted', operation: 'create', subagentId: 'child-1', messageId: 'message-1' })
+    expect(subagents.startActivation).toHaveBeenCalledExactlyOnceWith({
+      provider: 'spawn', label: index === 2 ? '观察实际图片' : args.description, signal: expect.any(AbortSignal), delivery: 'parent',
       request: {
-        label: args.description, prompt: [{ type: 'text', text: expectedMessage(index, args, media.root) }],
-        parent: exec.agent, persona: role.config.persona,
-        agentOptions: role.config.agentOptions, toolFilter: role.config.toolFilter, maxDepth: 1,
+        prompt: [{ type: 'text', text: expectedMessage(index, args, media.root) }],
+        parent: exec.agent, agentPreset: `harness-comfyui-${['composition', 'generation', 'observation', 'comparison'][index]}`,
+        agentOptions: role.config.agentOptions, maxDepth: 1,
       },
     })
     expect(args).toEqual(before)
@@ -279,10 +299,10 @@ describe('iteration role dispatch components', () => {
     const { registered, subagents, media } = await registerTools()
     const exec = execution()
     const args = { ...task(index), agent_id: 'existing-child' }
-    expect(await call(registered.get(role.config.toolName), args, exec)).toEqual({ messageId: 'message-1' })
+    expect(await call(registered.get(role.config.toolName), args, exec)).toEqual({ status: 'accepted', operation: 'continue', subagentId: 'existing-child', messageId: 'message-1' })
     expect(subagents.sendMessage).toHaveBeenCalledExactlyOnceWith(exec.agent, 'existing-child',
       [{ type: 'text', text: expectedMessage(index, args, media.root) }], { signal: expect.any(AbortSignal) })
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
   })
 
   it('omits unsupplied optional generation data', async () => {
@@ -290,7 +310,7 @@ describe('iteration role dispatch components', () => {
     const args = task(1)
     delete args.supplied_data
     await call(registered.get('subagent_generation'), args, execution())
-    expect(subagents.startContinuable.mock.calls[0][0].request.prompt)
+    expect(subagents.startActivation.mock.calls[0][0].request.prompt)
       .toEqual([{ type: 'text', text: expectedMessage(1, args) }])
   })
 
@@ -309,21 +329,18 @@ describe('iteration role dispatch components', () => {
     }
     expect(validateJsonSchemaValue(schema, { ...task(index), prompt: 'unstructured' }, ''))
       .not.toEqual([])
-    expect(role.config.toolFilter.deny).toEqual(expect.arrayContaining([
-      ...roles.map(item => item.config.toolName), 'interrupt_agent', 'get_goal', 'create_goal', 'update_goal',
-    ]))
   })
 
   it('gives observation only image, question and output parameters', () => {
     expect(Object.keys(roles[2].config.parameters.properties).sort()).toEqual([
-      'agent_id', 'description', 'images', 'output_files', 'questions',
+      'agent_id', 'description', 'images', 'observation', 'output_files',
     ])
   })
 
   it.each([false, true])('propagates native errors without retry; continuation=%s', async continuation => {
     const { registered, subagents, media } = await registerTools()
     const error = new Error('native service failure')
-    const service = continuation ? subagents.sendMessage : subagents.startContinuable
+    const service = continuation ? subagents.sendMessage : subagents.startActivation
     service.mockRejectedValueOnce(error)
     const args = { ...task(0), ...(continuation ? { agent_id: 'child-1' } : {}) }
     await expect(registered.get('subagent_composition').execute(args, execution())).rejects.toBe(error)
@@ -335,7 +352,7 @@ describe('iteration role dispatch components', () => {
     const exec = { ...execution(), signal: AbortSignal.abort() }
     const args = { ...task(0), ...(continuation ? { agent_id: 'child-1' } : {}) }
     await expect(registered.get('subagent_composition').execute(args, exec)).rejects.toThrow()
-    expect(subagents.startContinuable).not.toHaveBeenCalled()
+    expect(subagents.startActivation).not.toHaveBeenCalled()
     expect(subagents.sendMessage).not.toHaveBeenCalled()
   })
 })

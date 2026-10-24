@@ -10,6 +10,10 @@ import {
   validateProjectAgentPresetResources,
 } from '../../scripts/build/agent-preset-resources.mjs'
 
+import productAgent from '../../config/product-agent.json' with { type: 'json' }
+import { readProjectComposition } from '../fixtures/preset-composition.mjs'
+
+const managedPresetIds = [productAgent.preset.id, ...productAgent.preset.additionalManagedPresetIds]
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const temporaryRoots = []
 
@@ -52,7 +56,7 @@ describe('project Agent Preset resource reader', () => {
     ['harness-comfyui-cli-candidate', 'ComfyUI工作台预设'],
     ['harness-comfyui-iteration', 'ComfyUI迭代预设'],
   ])('reads and validates the %s source resources', async (presetId, name) => {
-    const resources = await readProjectAgentPresetResources(repositoryRoot, presetId)
+    const resources = await readProjectComposition(repositoryRoot, presetId)
 
     expect(resources).toMatchObject({
       id: presetId,
@@ -71,10 +75,10 @@ describe('project Agent Preset resource reader', () => {
     ]))
   })
 
-  it.each(['harness-comfyui-cli-candidate', 'harness-comfyui-iteration'])(
+  it.each(managedPresetIds)(
     'resolves the shared NoobAI include for %s without embedding credentials',
     async (presetId) => {
-      const { composition } = await readProjectAgentPresetResources(repositoryRoot, presetId)
+      const { composition } = await readProjectComposition(repositoryRoot, presetId)
       const includes = composition.filter(row => row.name === 'cordis:include'
         && row.config?.path === '../noobai-mcp.cordis.yml')
       expect(includes).toHaveLength(1)
@@ -150,13 +154,15 @@ describe('project Agent Preset resource reader', () => {
   it('validates every Preset selected by product-agent.json', async () => {
     const result = await validateProjectAgentPresetResources(repositoryRoot)
 
-    expect(result.presetIds).toEqual([
-      'harness-comfyui-cli-candidate',
-      'harness-comfyui-iteration',
-    ])
+    expect(result.presetIds).toEqual(managedPresetIds)
     expect(result.presets.map(({ metadata }) => metadata.name)).toEqual([
       'ComfyUI工作台预设',
       'ComfyUI迭代预设',
+      'ComfyUI 工作台任务角色',
+      'ComfyUI 构图角色',
+      'ComfyUI 生成角色',
+      'ComfyUI 观察角色',
+      'ComfyUI 比较角色',
     ])
   })
 

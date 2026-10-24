@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { readProjectAgentPresetResources } from '../../../scripts/build/agent-preset-resources.mjs'
+import { readProjectComposition as readProjectAgentPresetResources } from '../../fixtures/preset-composition.mjs'
 import { apply as applyVisibility } from '../../../agent-presets/project-tool-visibility.mjs'
 import { fixtureTool, renderToolsSdk, toolRegistry } from './tool-registry-runtime.mjs'
 
@@ -49,21 +49,27 @@ try {
     const standardBefore = registry.root.tools.schemas(standard)
     const dispatchers = composition.filter(row => ['../project-iteration-dispatch.mjs', '../project-observation-dispatch.mjs'].includes(row.name))
     scope.ctx.tools.register({ ...fixtureTool('list_agents'), description: 'Use send_message to continue the conversation.' })
-    for (const name of new Set(dispatchers.flatMap(row => row.config.toolFilter.deny))) {
-      if (name !== 'interrupt_agent') scope.ctx.tools.register(fixtureTool(name))
-    }
-    const children = dispatchers.map(row => {
+    for (const row of dispatchers) scope.ctx.tools.register(fixtureTool(row.config.toolName))
+    const children = []
+    for (const row of dispatchers) {
       const agent = {}
-      const childScope = registry.scope(agent, parent)
-      childScope.ctx.tools.restrict(row.config.toolFilter)
-      return { agent, toolName: row.config.toolName }
-    })
-    const scopes = [{ agent: parent, toolName: 'parent' }, ...children]
+      const childScope = registry.scope(agent)
+      const { composition: childRows } = await readProjectAgentPresetResources(repositoryRoot, row.config.agentPreset)
+      assert.equal(childRows.some(entry => ['../project-subagent-control.mjs', '../project-iteration-dispatch.mjs',
+        '../project-observation-dispatch.mjs', '@deepseek-ai/dsh-tool-goal'].includes(entry.name)), false)
+      const childVisibility = childRows.find(entry => entry.name === '../project-tool-visibility.mjs')
+      applyVisibility(childScope.ctx, childVisibility.config)
+      assert.ok(childRows.some(entry => entry.name === '@deepseek-ai/dsh-tool-subagent-control/list-agents'))
+      childScope.ctx.tools.register(fixtureTool('list_agents'))
+      childScope.ctx.tools.register(fixtureTool('skill'))
+      children.push({ agent, ctx: childScope.ctx, toolName: row.config.toolName })
+    }
+    const scopes = [{ agent: parent, ctx: scope.ctx, toolName: 'parent' }, ...children]
     const surfaces = []
     for (const mode of ['native', 'ptc']) {
       if (mode === 'ptc') {
         registry.root.provide('ptcRuntime', { language: 'typescript' })
-        scope.ctx.tools.presentAs(mode)
+        for (const scoped of scopes) scoped.ctx.tools.presentAs(mode)
       }
       for (const { agent, toolName } of scopes) {
         const nativeNames = registry.root.tools.wireSchemas(agent).schemas.map(tool => tool.name)

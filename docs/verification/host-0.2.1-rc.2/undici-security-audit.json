@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-24T03:24:00.311Z",
+  "scope": "independent-worktree",
+  "package": "undici",
+  "version": "8.12.2",
+  "dependencyType": "devDependencies",
+  "packageManager": "pnpm@11.11.0",
+  "node": "25.8.2",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "dependencies": {},
+  "installLifecycleScripts": {},
+  "sources": [
+    "https://github.com/nodejs/undici/releases/tag/v8.12.2",
+    "https://github.com/advisories/GHSA-xjj6-f33q-929c",
+    "https://github.com/advisories/GHSA-4qv8-2p9j-2685",
+    "https://github.com/advisories/GHSA-f72v-6w45-q472"
+  ],
+  "lockfileCommand": "pnpm add --save-dev --save-exact undici@8.12.2 --lockfile-only --ignore-scripts",
+  "preinstall": {
+    "command": "pnpm run quality:preinstall",
+    "exitCode": 0,
+    "log": ".local/host-upgrade-research/undici-8.12.2-preinstall.log"
+  },
+  "installation": {
+    "command": "pnpm install --frozen-lockfile --ignore-scripts",
+    "exitCode": 0,
+    "scriptsEnabled": false,
+    "log": ".local/host-upgrade-research/undici-8.12.2-install.log"
+  },
+  "sdkLinksVerified": 54,
+  "targetedTests": {
+    "command": "pnpm exec vitest run tests/production/renderer-cdp.test.mjs",
+    "passed": 55,
+    "exitCode": 0
+  },
+  "audits": {
+    "full": {
+      "advisories": {},
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0
+        },
+        "dependencies": 6,
+        "devDependencies": 150,
+        "optionalDependencies": 74,
+        "totalDependencies": 184
+      }
+    },
+    "production": {
+      "advisories": {},
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0
+        },
+        "dependencies": 4,
+        "devDependencies": 0,
+        "optionalDependencies": 30,
+        "totalDependencies": 34
+      }
+    }
+  }
+}

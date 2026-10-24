@@ -18,11 +18,11 @@
 | `pnpm quality` | 依赖、类型、覆盖率、合同、安全、production 回归、原型与官方 Desktop E2E 完整门禁。 |
 | `pnpm verify:comfyui-workflows -- --source-url <数据源服务URL> --source-port <端口> --instance-id <数据源服务实例ID> --output <结果JSON路径>` | 已部署数据源服务中的 Workflow 模板、精确参数支持基线、目标实例实时 `/object_info`、组合参数编译、官方页面导出与缓存 miss→hit 一致性；省略 URL 或端口时使用程序配置的本机默认值。 |
 
-1. `package.json` 是命令名称与 quality 顺序的唯一来源。`test:desktop` 先运行插件构建和打包，再串行运行配置的 live Desktop、生命周期和相关 production fixtures；构建包写入 `.local/desktop-e2e/desktop-test-runner/artifacts/`。完整测试使用 `config/desktop-e2e.json` 校验官方应用身份、按 `fresh` 模式隔离每轮 Harness home 与 user-data，并经官方插件管理界面安装候选包。
+1. `package.json` 是命令名称与 quality 顺序的唯一来源。`test:desktop` 先构建并打包插件，再串行运行配置的 live Desktop、生命周期和 production fixtures。构建包写入 `.local/desktop-e2e/desktop-test-runner/artifacts/`。完整测试使用 `config/desktop-e2e.json` 校验官方应用身份，按 `fresh` 模式隔离 Harness home 与 user-data，再经官方插件管理界面安装候选包。
 
 ## 官方 Desktop E2E 通过条件
 
-1. `tests/desktop/fixtures/` 定义每轮应用目录、进程、端口、Profile patch、插件安装与证据结构。`config/desktop-e2e.json` 定义应用路径与版本、fresh/development 模式、目录名称、回环端口角色、启动期限、Renderer 目标、运行记录和证据文件名。
+1. `config/desktop-e2e.json` 定义官方应用身份、隔离目录、端口、Profile patch 和核心运行证据配置。`tests/desktop/fixtures/` 按该配置准备环境并执行验收。
 
 2. E2E 通过条件包括：
 
@@ -33,7 +33,7 @@
    5. Live 测试通过真实 UI 安装、启用、配置和会话操作，核对 managed CLI 返回值、Controlled Generation 结果以及应用重启后的持久化数据；
    6. 测试结束后本轮应用进程和端口全部释放，运行记录保留清理结果；失败、取消、超时及端口冲突提供相应证据。
 
-3. 业务 E2E 使用测试夹具启动受控服务并核对请求、响应和业务持久化结果。真实模型和正式 ComfyUI Run 验收按当前 release/acceptance 任务规定独立执行；`test:desktop` 的成功不表示真实模型已完成验收。
+3. 业务 E2E 使用测试夹具启动受控服务并核对请求、响应和业务持久化结果。验收者按当前发布任务的验收要求，独立完成真实模型和正式 ComfyUI Run 验收。
 
 ## Agent 调用轨迹验收
 
@@ -41,6 +41,12 @@
 2. `tests/production/collect-session-trace.test.mjs` 验证结束状态、父子关系、官方导出包读取及缺失记录。[official-trace-evidence.test.mjs](../../tests/production/official-trace-evidence.test.mjs) 验证离线脱敏及文件写入；[official-desktop-probe.test.mjs](../../tests/production/official-desktop-probe.test.mjs) 验证启动流程保持原有 Profile 配置；[plugin-package.test.mjs](../../tests/production/plugin-package.test.mjs) 验证发行文件排除测试设施。
 3. `tests/desktop/official-desktop-live.test.mjs` 复用受控父子任务，验证正常结束及取消后的会话导出、工具调用与返回和已持久化的中断消息；该测试由 `pnpm test:desktop` 执行。
 4. 调查者分别记录应用清理结果与会话结束状态。官方记录未保存的信息必须标为缺失，受影响的验收结论保持证据不足。
+
+## Preset 与子 Agent 合同
+
+1. [installed-presets.test.mjs](../../tests/unit/installed-presets.test.mjs) 与 [plugin-package.test.mjs](../../tests/production/plugin-package.test.mjs) 验证 7 个项目 Preset 的注册、共享组合、Skill 作用域与包内资源。
+2. `tests/production/native-workbench-subagent.test.mjs`、`native-iteration-roles.test.mjs` 和 `native-subagent-completion.test.mjs` 从已注册 Tool 执行入口验证首派、续派、接纳时机、取消和子会话恢复。公共行为见[系统架构](architecture.md#项目-presetskills-与目录访问)。
+3. `pnpm typecheck` 同时检查 TypeScript 源码与 [tsconfig.agent-presets.json](../../tsconfig.agent-presets.json) 声明的 Preset 适配文件。
 
 ## 目录边界测试
 
@@ -53,6 +59,6 @@
 
 2. 新功能和缺陷修复的测试覆盖成功、拒绝、清理、错误和边界分支。语义文档由独立 Reviewer 阅读并按内容写作规则验收；脚本只处理具有确定性规则的数据结构。
 
-3. 数据源设置与图片读取配置由 Host settings 和 Remote 回归覆盖。Repository Skills 可见性测试在 checkout 外的 Workspace 验证两个项目 Preset 的包内 Skill 资源与其他 Preset、Workspace Skills 的隔离。managed CLI 的进程测试验证 6 条业务命令的结果文件与错误阶段；独立包测试验证安装入口的路径发布与文件内容。官方 Desktop 的前台 Bash Tool Call 验证 capability 生成、请求身份、返回路径与后续文件读取。
+3. 数据源设置与图片读取配置由 Host settings 和 Remote 回归覆盖。Repository Skills 可见性测试在 checkout 外的 Workspace 验证 7 个项目 Preset 的包内 Skill 资源与其他 Preset、Workspace Skills 的隔离。managed CLI 的进程测试验证 6 条业务命令的结果文件与错误阶段；独立包测试验证安装入口的路径发布与文件内容。官方 Desktop 的前台 Bash Tool Call 验证 capability 生成、请求身份、返回路径与后续文件读取。
 
 4. Workflow verification 使用已经部署的数据源服务和目标 ComfyUI 实例。验收记录包含服务地址、端口、实例 ID、结果 JSON 路径、参数支持结果、官方前端导出和缓存 miss/hit 比较结果。

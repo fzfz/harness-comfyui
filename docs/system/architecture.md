@@ -23,20 +23,29 @@
 
 ## 项目 Preset、Skills 与目录访问
 
-1. [Preset registry](../../agent-presets/presets.cordis.yml) 将以下两个项目 Preset 注册为独立会话选项。用户在官方会话界面选择 Preset；官方 Host 管理内置默认 Preset 与用户配置。
+1. [Preset registry](../../agent-presets/presets.cordis.yml) 注册 2 个产品 Preset 和 5 个角色 Preset。用户选择产品 Preset 开始任务；派发工具为子 Agent 选择对应角色 Preset。官方列表显示全部 7 个项目 Preset。
 
    | Preset ID | 用户可见名称 | Agent 配置入口 |
    | --- | --- | --- |
    | `harness-comfyui-cli-candidate` | ComfyUI工作台预设 | `agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml` |
    | `harness-comfyui-iteration` | ComfyUI迭代预设 | `agent-presets/harness-comfyui-iteration/agent.cordis.yml` |
+   | `harness-comfyui-task` | ComfyUI 工作台任务角色 | `agent-presets/harness-comfyui-task/agent.cordis.yml` |
+   | `harness-comfyui-composition` | ComfyUI 构图角色 | `agent-presets/harness-comfyui-composition/agent.cordis.yml` |
+   | `harness-comfyui-generation` | ComfyUI 生成角色 | `agent-presets/harness-comfyui-generation/agent.cordis.yml` |
+   | `harness-comfyui-observation` | ComfyUI 观察角色 | `agent-presets/harness-comfyui-observation/agent.cordis.yml` |
+   | `harness-comfyui-comparison` | ComfyUI 比较角色 | `agent-presets/harness-comfyui-comparison/agent.cordis.yml` |
 
-2. [project-installed-skills.mjs](../../agent-presets/project-installed-skills.mjs) 为每个项目 Preset 注册项目 Skill provider。provider 使用官方 filesystem Skill provider，设置 `includeDefaultRoots: false`，并读取插件包内 `.agents/skills/`。Preset、Skill 与共享资源以各自模块 URL 定位；provider 的可见范围为所属项目 Preset。
+2. 每个项目 Preset 通过 [shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) 加载公共工具、Skills、提示词可见性、Workspace 关联和 compaction 组件。各 Preset 的 `agent.cordis.yml` 声明 persona 与自身工具。
 
-3. 两个项目 Preset 的 Agent 通过 DSH 原生 MCP 客户端访问 NoobAI MCP 服务，查询目录记录。Host 内部数据源客户端为 Catalog 展示和 Generation 准备读取数据；其入口为 [queryCatalog()](../../src/host/source-client/catalog-client.ts) 与 [readSourceRecord()](../../src/host/source-client/source-client.ts)，协议路径与请求限制由 `config/source-client.json` 定义。两条访问路径连接同一目录数据；地址与凭据配置见[配置规范的 NoobAI MCP 服务章节](configuration.md#noobai-mcp-服务)。
+3. registry 为每个项目 Preset 隔离 Skill service。[project-installed-skills.mjs](../../agent-presets/project-installed-skills.mjs) 使用官方 filesystem Skill provider 读取包内 `.agents/skills/`。资源按模块 URL 定位，provider 的可见范围为所属项目 Preset。
 
-4. 各 Skill 的执行流程由其 `.agents/skills/<skill-name>/SKILL.md` 定义。ComfyUI迭代预设的角色职责由其 Agent 配置中的 persona 定义；[project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs) 负责角色工具与 DSH 子会话接口的连接，交接文件合同见[records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md)。
+4. 项目 Preset 的 Agent 通过 DSH 原生 MCP 客户端访问 NoobAI MCP 服务，查询目录记录。Host 内部数据源客户端读取 Catalog 展示与 Generation Workflow 准备所需的数据；其入口为 [queryCatalog()](../../src/host/source-client/catalog-client.ts) 与 [readSourceRecord()](../../src/host/source-client/source-client.ts)，协议路径与请求限制由 `config/source-client.json` 定义。两条访问路径连接同一目录数据；地址与凭据配置见[配置规范的 NoobAI MCP 服务章节](configuration.md#noobai-mcp-服务)。
 
-5. [project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs) 将两个项目 Preset 创建的真实子 Session 关联到父 Session 所属 Workspace。DSH 管理子会话执行、续派与完成通知。
+5. 各 Skill 的执行流程由 `.agents/skills/<skill-name>/SKILL.md` 定义。角色职责由对应角色 Preset 的 persona 定义；交接文件合同见[records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md)。
+
+6. [project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs) 通过 `startActivation()` 首次派发任务，并指定 `delivery: parent` 与角色 `agentPreset`。后续任务通过 `sendMessage()` 派发。宿主接纳后，工具返回统一回执；结构与共同委派说明由 [project-dispatch.json](../../agent-presets/project-dispatch.json) 定义。工具返回与附加上下文复用同一回执。宿主负责调度、结束通知和资源释放。父 Agent 收到结束通知并读取结果文件后，再派发依赖该结果的任务。
+
+7. [project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs) 在子 Session 首个 Agent step 前，将子 Session 关联到父 Session 所属 Workspace。工作目录与 Workspace 的职责见下节。
 
 ## Host Node 与受管 CLI 身份
 
@@ -44,7 +53,7 @@
 
 2. [CLI plugin](../../src/host/cli/plugin.ts) 通过官方 `shellEnv` 为前台 Tool Call 提供受管 CLI 调用环境。[CliShellCapabilityStore](../../src/host/cli/shell-capability.ts) 创建当前 Tool Call 的短期 capability，[CLI route](../../src/host/cli/route.ts) 校验 capability 并派生业务调用身份；ToolExecution 完成时撤销 capability。环境字段、listener 地址与卸载期限见[配置规范的受管 CLI 章节](configuration.md#受管-cli-配置)。
 
-3. Generation 创建与历史查询的 Workspace、Session、Turn 和 Tool Call 身份由 Host 派生。CLI 按实际 cwd 查找 Workspace 并校验 Session 归属，Tool 使用实际执行上下文与 Workspace registry。身份解析入口分别为 [CLI route](../../src/host/cli/route.ts) 与 [tool-execution-identity.ts](../../src/host/generation/tool-execution-identity.ts)；Agent 请求只提供业务参数。
+3. Generation 创建与历史查询的 Workspace、Session、Turn 和 Tool Call 身份由 Host 派生。CLI 与 Tool 按 Session header 的 `cwd` 查询 Workspace registry，并校验 Session 归属。Shell 当前工作目录用于执行命令和解释相对文件路径；Run 归属沿用 Session 的 Workspace。身份解析入口为 [CLI route](../../src/host/cli/route.ts) 与 [tool-execution-identity.ts](../../src/host/generation/tool-execution-identity.ts)；Agent 请求只提供业务参数。
 
 4. CLI 请求分发由 [dispatch()](../../src/host/cli/dispatch.ts) 实现，Generation 请求交给 Runtime，图片读取请求交给 Image Reader。已接纳 Run 的持续执行归 Host coordinator 所有。
 
@@ -80,7 +89,7 @@
 
 2. [ComfyWorkflowCompiler.inspectRuntimeParameters() 与 compile()](../../src/host/generation/workflow-compiler.ts) 共用运行参数计划。UI Workflow 与目标实例 `/object_info` 是参数发现和机器约束的来源，Source TemplateBundle 提供模板 ID、标题与 UI Workflow。参数发现、尺寸配对、精确数值比较、动态控件、模型与 LoRA 映射、bypass 和活动输出筛选均由该 compiler 维护；Source adapter、Runtime 和 CLI 转交输入与结果。
 
-3. 参数检查的 `parameters` 表达非尺寸参数合同，`size_candidates` 表达能够控制全部活动图片输出最终尺寸的候选组合。参数值违反实例发布的类型、范围或候选值时，compiler 返回 `GENERATION_PARAMETER_INVALID`；缺少可解释合同的自定义控件只接受与当前值相同的值，修改值返回 `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`。错误信息标明参数键与目标节点输入。
+3. 参数检查的 `parameters` 表达非尺寸参数合同，`size_candidates` 表达能够控制全部活动图片输出最终尺寸的候选组合。参数值违反实例发布的类型、范围或候选值时，compiler 返回 `GENERATION_PARAMETER_INVALID`。compiler 无法解析自定义控件的参数约束时，只接受与当前值相同的值；修改值返回 `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`。错误信息标明参数键与目标节点输入。
 
 4. 目标 ComfyUI 在接收 Prompt 时执行节点自定义 Python 校验。该校验拒绝请求时，Run 返回 `COMFYUI_PROMPT_REJECTED` 并保存 `node_errors`；调用方依据节点 ID、输入名称和校验消息修正参数或 UI Workflow。
 

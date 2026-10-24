@@ -116,7 +116,7 @@ function lifecycleEnvironment(label, firstPort, owner = label.replace(/-restart$
       : null,
     pluginManagerResponse: restarted
       ? { ok: true, value: [{
-        name: 'harness-comfyui', version: '0.44.3', enabled: true, installed: true, optional: false, removable: true,
+        name: 'harness-comfyui', version: '0.44.3', enabled: true, installed: true, optional: false, removable: true, official: false, availability: 'profile',
         rows: [], overrides: [],
       }] }
       : null,
@@ -233,6 +233,10 @@ describe('official Desktop lifecycle fixture configuration', () => {
         enabled: true,
         installed: true,
         optional: false,
+        official: false,
+        availability: 'profile',
+        source: '/tmp/candidate.tgz',
+        installTarget: { spec: 'harness-comfyui@0.44.3', version: '0.44.3' },
         removable: true,
         rows: [{ rowId: 'workflow', moduleName: 'harness-comfyui/workflow' }],
         overrides: [],
@@ -1128,7 +1132,7 @@ describe('official Desktop lifecycle environment builder', () => {
       pluginManagerResponse: {
         ok: true,
         value: [{
-          name: 'harness-comfyui', version: '0.44.3', enabled: true, installed: true, optional: false, removable: true,
+          name: 'harness-comfyui', version: '0.44.3', enabled: true, installed: true, optional: false, removable: true, official: false, availability: 'profile',
           rows: [], overrides: [],
         }],
       },

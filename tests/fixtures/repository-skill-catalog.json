@@ -17,7 +17,7 @@
   },
   {
     "name": "comfyui-iterate-generation",
-    "description": "主 Agent 在用户要求根据故事和人物构思画面，并通过生图、独立观察、比较反馈和小步 Prompt 修复迭代达成画面目标时使用。"
+    "description": "用户要求根据故事和人物构思、生成并迭代图片时使用。主 Agent 调度构图、生成、独立观察、比较和 Prompt 修复。"
   },
   {
     "name": "krea2-anime-prompt-builder",

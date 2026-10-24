@@ -38,18 +38,26 @@ export async function createOfficialPresetProfilePatch({ installedPackageRoot, m
     const rows = await readEntries(compositionPath)
     const compositionPatches = [...(composition.config.patches ?? [])]
     if (mcpUrl !== undefined) {
-      const include = unique(rows, 'noobai-mcp', compositionPath)
-      const mcpPath = resolve(dirname(compositionPath), include.config.path)
+      const common = unique(rows, 'project-common', compositionPath)
+      const commonPath = resolve(dirname(compositionPath), common.config.path)
+      const shared = await readEntries(commonPath)
+      const include = unique(shared, 'noobai-mcp', commonPath)
+      const mcpPath = resolve(dirname(commonPath), include.config.path)
       const mcpRows = await readEntries(mcpPath)
       const client = unique(mcpRows, 'mcp-noobai', mcpPath)
-      compositionPatches.push({ id: include.id, config: {
-        ...structuredClone(include.config),
-        patches: [...(include.config.patches ?? []), { id: client.id, config: { ...structuredClone(client.config), url: mcpUrl } }],
+      compositionPatches.push({ id: common.id, config: {
+        ...structuredClone(common.config),
+        patches: [...(common.config.patches ?? []), { id: include.id, config: {
+          ...structuredClone(include.config),
+          patches: [...(include.config.patches ?? []), { id: client.id, config: { ...structuredClone(client.config), url: mcpUrl } }],
+        } }],
       } })
     }
     if (presetId !== product.preset.id) {
       for (const [id, agentOptions] of Object.entries(roleAgentOptions)) {
+        if (entriesWithId(rows, id).length === 0) continue
         const role = unique(rows, id, compositionPath)
+        if (!unmatchedRoles.has(id)) throw new Error(`expected exactly one role ${id} across installed Presets`)
         compositionPatches.push({ id, config: { ...structuredClone(role.config), agentOptions: structuredClone(agentOptions) } })
         unmatchedRoles.delete(id)
       }
@@ -57,7 +65,7 @@ export async function createOfficialPresetProfilePatch({ installedPackageRoot, m
     if (compositionPatches.length > 0) composition.config.patches = compositionPatches
     patches.push({ id: preset.id, config: preset.config })
   }
-  if (unmatchedRoles.size > 0) throw new Error(`Installed iteration Preset is missing roles: ${[...unmatchedRoles].join(', ')}`)
+  if (unmatchedRoles.size > 0) throw new Error(`expected exactly one entry for each requested role; missing: ${[...unmatchedRoles].join(', ')}`)
   return { id: 'harness-comfyui-presets', config: { patches } }
 }
 

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-23T17:56:14.366Z",
+  "endpoint": "http://127.0.0.1:18943/mcp",
+  "status": 200,
+  "redirectMode": "manual",
+  "location": null,
+  "credentialReference": "NOOBAI_MCP_TOKEN",
+  "installedSdkVersion": "2.2.0"
+}

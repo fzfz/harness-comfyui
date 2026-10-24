@@ -13,7 +13,6 @@ function currentForm(configuration?: { activeProfileId: string; profiles: readon
     user: undefined,
     revision: 1,
     writable: true,
-    mode: 'host' as const,
   }
   const listeners = new Set<() => void>()
   return {

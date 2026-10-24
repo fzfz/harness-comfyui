@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "pluginVersion": "0.47.0",
+  "hostVersion": "0.2.1-rc.2",
+  "hostCommit": "687f282e8625c6b8d11ff58211a90524be2e4317",
+  "sourceBaseCommit": "47962bbb3dcb4a273a4356d0054cf5f0b0add236",
+  "branch": "codex/host-0-2-1-rc-2",
+  "workspacePath": "/Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/acceptance-workspace",
+  "evidenceRoot": ".local/host-upgrade-research/acceptance-evidence/real-model",
+  "traceRoot": ".local/host-upgrade-research/traces",
+  "audits": [
+    "dependency-audit.json",
+    "dependency-installation.json",
+    "host-mcp-advisory.json",
+    "mcp-endpoint-observation.json",
+    "official-credential-contract.json",
+    "free-models.json",
+    "review-status.json"
+  ],
+  "acceptance": [
+    {
+      "id": "H1",
+      "evidence": [
+        "dependency-audit.json",
+        "dependency-installation.json",
+        "host-mcp-advisory.json"
+      ],
+      "testFiles": [
+        "tests/production/plugin-package.test.mjs",
+        "tests/desktop/official-desktop-live.test.mjs"
+      ]
+    },
+    {
+      "id": "H2",
+      "testFiles": [
+        "tests/unit/installed-presets.test.mjs",
+        "tests/unit/plugin-resources.test.ts",
+        "tests/production/source-agent-preset.test.mjs"
+      ],
+      "targetedResourceTests": {
+        "result": "63 passed"
+      }
+    },
+    {
+      "id": "H3",
+      "testFiles": [
+        "tests/production/native-workbench-subagent.test.mjs",
+        "tests/production/native-iteration-roles.test.mjs",
+        "tests/production/native-subagent-completion.test.mjs",
+        "tests/desktop/official-desktop-live.test.mjs"
+      ],
+      "traces": [
+        "workbench-cold-resume/trace-index.json"
+      ],
+      "evidence": [
+        "workbench-dispatch-timeline.json",
+        "iteration-nvidia-execution-summary.json"
+      ]
+    },
+    {
+      "id": "H4",
+      "testFiles": [
+        "tests/unit/cli-shell-capability.test.ts",
+        "tests/production/native-workbench-subagent.test.mjs",
+        "tests/desktop/official-desktop-live.test.mjs"
+      ],
+      "traces": [
+        "workbench-cold-resume/trace-index.json",
+        "history-nvidia/trace-index.json"
+      ]
+    },
+    {
+      "id": "H5",
+      "providerContract": "official-credential-contract.json",
+      "providerContractScope": "凭据合同测试使用实际安装的 LocalCredentialProvider，验证已保存凭据优先于环境变量、清除保存值后的环境回退，以及凭据缺失时的行为。",
+      "readOnlyContractScope": "插件接口测试验证只读引用拒绝替换和清除；目标 LocalCredentialProvider 的引用均可写。",
+      "testFiles": [
+        "tests/unit/image-reader-model-catalog.test.ts",
+        "tests/unit/image-reader-service.test.ts",
+        "tests/desktop/official-desktop-live.test.mjs"
+      ],
+      "evidence": [
+        "credential-save.json",
+        "credential-source-saved.json",
+        "credential-ui-saved.json",
+        "credential-restarted.json",
+        "credential-ui-restarted.json"
+      ],
+      "traces": [
+        "credential-saved/trace-index.json",
+        "credential-lifecycle/trace-index.json"
+      ]
+    },
+    {
+      "id": "H6",
+      "testFiles": [
+        "tests/desktop/official-desktop-live.test.mjs"
+      ],
+      "evidence": [
+        "workbench-real-ui.json"
+      ]
+    },
+    {
+      "id": "H7",
+      "status": "accepted-with-model-limitations",
+      "traces": [
+        "workbench-cold-resume/trace-index.json",
+        "moss/trace-index.json",
+        "history-nvidia/trace-index.json",
+        "review-nvidia/trace-index.json"
+      ],
+      "evidence": [
+        "iteration-analysis.json",
+        "iteration-nvidia-execution-summary.json",
+        "iteration-nvidia-trace/trace-index.json"
+      ],
+      "scope": "本轮已验证 ANIMA、Krea2 与人物立绘 Skill 的历史查询分支，以及 MOSS 的 Caption 编译分支。",
+      "repairAcceptance": "h7-repair-acceptance.json",
+      "realModelMatrixStatus": "not-passed"
+    },
+    {
+      "id": "H8",
+      "evidence": [
+        "generation-evidence.json",
+        "workbench-real-ui.json",
+        "fallback-restart.json"
+      ],
+      "traces": [
+        "review-nvidia/trace-index.json",
+        "history-nvidia/trace-index.json",
+        "workbench-cold-resume/trace-index.json"
+      ]
+    },
+    {
+      "id": "H9",
+      "testFiles": [
+        "tests/production/official-desktop-lifecycle.test.mjs",
+        "tests/production/official-desktop-probe.test.mjs",
+        "tests/desktop/official-desktop-live.test.mjs"
+      ],
+      "evidence": [
+        "final-uninstall.json",
+        "final-reinstallation.json",
+        "final-stop.json"
+      ]
+    },
+    {
+      "id": "H10",
+      "reviews": "review-status.json",
+      "qualityCommand": "pnpm quality",
+      "qualityLog": ".local/release-0.47.0/quality.log",
+      "gateResult": ".local/release-0.47.0/final-gates.json",
+      "desktopArtifacts": ".local/desktop-e2e/desktop-test-runner/artifacts"
+    }
+  ],
+  "traceCoverage": {
+    "limitations": "h7-repair-acceptance.json#traceLimitations",
+    "missingItems": "各 trace-index.json 记录缺失项。"
+  },
+  "authorization": {
+    "source": "那就创建PR,合入main,本机部署",
+    "localCommit": true,
+    "push": true,
+    "pullRequest": true,
+    "merge": true,
+    "release": true,
+    "releaseScope": "发布本机部署所需的 0.47.0 安装包。",
+    "productionSwitch": true,
+    "productionScope": "更新本机官方 Desktop 中的插件。",
+    "historyMigration": false,
+    "oldEnvironmentRetirement": false
+  },
+  "releaseDecision": {
+    "status": "authorized-subject-to-final-gates",
+    "acceptanceDecisions": "h7-repair-acceptance.json",
+    "requiredGates": [
+      "pnpm quality",
+      "git diff --check"
+    ]
+  }
+}

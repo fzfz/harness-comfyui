@@ -92,7 +92,7 @@ describe('official Desktop probe configuration and records', () => {
     expect(config.application).toMatchObject({
       bundlePath: '/Applications/DeepSeek Harness.app',
       bundleId: 'com.deepseek.dsh',
-      version: '0.2.0-rc.2',
+      version: '0.2.1-rc.2',
     })
     expect(config.ports.allocation).toBe('held-loopback-ephemeral')
     expect(config.paths.runRootRelativePath).toBe('.local/desktop-e2e')

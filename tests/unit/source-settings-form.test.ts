@@ -12,7 +12,6 @@ function sourceForm(configuration?: { url: string; port: number }, status: 'read
     user: undefined,
     revision: 1,
     writable: true,
-    mode: 'host' as const,
   }
   const listeners = new Set<() => void>()
   return {

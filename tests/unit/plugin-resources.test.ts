@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import pluginRuntimeResources from '../../config/plugin-runtime-resources.json' with { type: 'json' }
+import repositorySkillCatalog from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import { parsePluginRuntimeResources } from '../../config/plugin-runtime-resources-schema.ts'
 import {
   assertPluginRuntimeResourcesAvailable,
@@ -192,6 +193,10 @@ function createRuntimeResources(root: string): Record<keyof typeof PLUGIN_RUNTIM
 }
 
 describe('installed plugin runtime resource validation', () => {
+  it.each(repositorySkillCatalog)('requires the $name Skill entrypoint at activation', ({ name }) => {
+    expect(pluginRuntimeResources.requiredFiles).toContain(`.agents/skills/${name}/SKILL.md`)
+  })
+
   it('checks the configured Workflow worker and managed CLI entrypoint', () => {
     const root = temporaryPackageRoot()
     const paths = createRuntimeResources(root)
@@ -229,6 +234,10 @@ describe('installed plugin runtime resource validation', () => {
     ['Skill reference', '.agents/skills/local-image-reader/references/image-inspection-cli.md'],
     ['Skill script', '.agents/skills/anima-prompt-builder/scripts/cli-help.mjs'],
     ['Preset configuration', 'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml'],
+    ['shared composition', 'agent-presets/shared/agent.cordis.yml'],
+    ...['task', 'composition', 'generation', 'observation', 'comparison'].flatMap(role =>
+      ['preset.yml', 'agent.cordis.yml'].map(file => ['role Preset resource', `agent-presets/harness-comfyui-${role}/${file}`])),
+
   ])('reports a missing packaged %s with its path and reinstall action', (_resource, relativePath) => {
     const root = temporaryPackageRoot()
     const target = resolve(root, relativePath)
