@@ -10,9 +10,6 @@ export const ProductAgentConfigurationSchema = Schema.object({
     additionalManagedPresetIds: Schema.array(presetId).required(),
     sourceRootRelativePath: relativePath,
   }).required(),
-  skills: Schema.object({
-    sourceRootRelativePath: relativePath,
-  }).required(),
 })
 
 function rejectUnknownFields(value, schema, path) {

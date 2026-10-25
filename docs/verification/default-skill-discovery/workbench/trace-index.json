@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "runId": "21594b2f-e71f-46fc-90d1-ae73620f4396",
+  "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+  "source": {
+    "kind": "official-session-export",
+    "route": "api/session.export"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+      "parentSessionId": null,
+      "entry": "session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/default-skill-discovery/harness-comfyui/docs/verification/default-skill-discovery/workbench/sessions/session-session-3009a0c5-f043-432a-8336-242dca22b01f/session.json",
+      "eventCount": 38,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 37,
+        "complete": true
+      }
+    }
+  ],
+  "missing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "complete": false
+}

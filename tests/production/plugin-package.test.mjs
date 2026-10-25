@@ -7,7 +7,6 @@ import { promisify } from 'node:util'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import repositorySkillCatalog from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
 import { parsePluginPackageConfig } from '../../config/plugin-package-schema.mjs'
@@ -249,7 +248,7 @@ describe('plugin build and package entry points', () => {
         expect(metadata.meta.title.length).toBeGreaterThan(0)
       }
     }
-    expect(manifest.files).toContain('.agents/skills')
+    expect(manifest.files).not.toContain('.agents/skills')
     expect(manifest.files).toContain('agent-presets')
     expect(manifest.files).not.toContain('scripts/build')
     expect(manifest.files).not.toContain('scripts/production')
@@ -269,9 +268,7 @@ describe('plugin build and package entry points', () => {
       expect(details.mode & 0o222, `${reference} must resolve inside a read-only package`).toBe(0)
       await readFile(resource)
     }
-    for (const { name: skill } of repositorySkillCatalog) {
-      await readFile(join(packageRoot, '.agents/skills', skill, 'SKILL.md'))
-    }
+    await expect(stat(join(packageRoot, '.agents'))).rejects.toMatchObject({ code: 'ENOENT' })
     const packageConfig = JSON.parse(await readFile(join(repositoryRoot, 'config/plugin-package.json'), 'utf8'))
     await assertConfiguredResourcesPresent(packageRoot, repositoryRoot, artifactRoot, packageConfig)
     for (const artifactPath of packageConfig.artifacts) {

@@ -71,7 +71,6 @@
     "@deepseek-ai/dsh-agent-preset-registry": "0.2.1-rc.3",
     "@deepseek-ai/dsh-home-paths": "0.2.1-rc.3",
     "@deepseek-ai/dsh-scope": "0.2.1-rc.3",
-    "@deepseek-ai/dsh-skill": "0.2.1-rc.3",
     "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.3",
     "@deepseek-ai/dsh-shell-env": "0.2.1-rc.3",
     "@deepseek-ai/cordis-plugin-include": "1.0.10",
@@ -158,9 +157,6 @@
       "optional": true
     },
     "@deepseek-ai/dsh-scope": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-skill": {
       "optional": true
     },
     "@deepseek-ai/dsh-skill-filesystem": {

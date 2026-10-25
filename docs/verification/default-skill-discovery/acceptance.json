@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-25T14:14:44.153Z",
+  "application": {
+    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+    "version": "0.2.1-rc.3",
+    "bundleId": "com.deepseek.dsh"
+  },
+  "plugin": {
+    "name": "harness-comfyui",
+    "version": "0.47.2",
+    "sourceCommit": "954837b9c78c8622c071ec609a2910c381dbf76f",
+    "dirty": true
+  },
+  "workspace": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn",
+  "request": "请完成一次只读的 Skill 资源读取验收：使用 skill 工具完整读取 local-image-reader，再从工具返回的实际资源目录读取 references/image-inspection-cli.md。最终报告 Skill 的实际目录、参考文件标题以及读取是否成功。本次任务到文件读取和报告为止，不调用图片模型或业务 CLI，不派发子任务。",
+  "skillReadAcceptance": [
+    {
+      "preset": "harness-comfyui-cli-candidate",
+      "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+      "model": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free"
+      },
+      "traceIndex": "workbench/trace-index.json",
+      "listedSkill": {
+        "name": "local-image-reader",
+        "path": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/local-image-reader/SKILL.md",
+        "description": "使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。",
+        "modelInvocable": true
+      },
+      "skillToolCallSeq": 16,
+      "referenceReadResultSeq": 27,
+      "turnEnd": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      },
+      "toolErrorCount": 0,
+      "persistedSessionCoverage": {
+        "firstSeq": 0,
+        "lastSeq": 37,
+        "complete": true
+      },
+      "missingEvidence": [
+        {
+          "source": "model-request",
+          "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+          "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+        },
+        {
+          "source": "model-stream",
+          "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+          "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+        }
+      ]
+    },
+    {
+      "preset": "harness-comfyui-iteration",
+      "sessionId": "session-8bc9cf4b-5a8b-4dc3-ad74-efa50f4bbfd6",
+      "model": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free"
+      },
+      "traceIndex": "iteration/trace-index.json",
+      "listedSkill": {
+        "name": "local-image-reader",
+        "path": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/local-image-reader/SKILL.md",
+        "description": "使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。",
+        "modelInvocable": true
+      },
+      "skillToolCallSeq": 16,
+      "referenceReadResultSeq": 27,
+      "turnEnd": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      },
+      "toolErrorCount": 0,
+      "persistedSessionCoverage": {
+        "firstSeq": 0,
+        "lastSeq": 37,
+        "complete": true
+      },
+      "missingEvidence": [
+        {
+          "source": "model-request",
+          "sessionId": "session-8bc9cf4b-5a8b-4dc3-ad74-efa50f4bbfd6",
+          "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+        },
+        {
+          "source": "model-stream",
+          "sessionId": "session-8bc9cf4b-5a8b-4dc3-ad74-efa50f4bbfd6",
+          "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+        }
+      ]
+    }
+  ],
+  "automatedChecks": {
+    "quality": {
+      "command": "pnpm quality",
+      "exitCode": 0,
+      "unitIntegrationSkills": 1472,
+      "contractsAndSecurity": 73,
+      "production": 473,
+      "prototype": 32,
+      "desktop": 289,
+      "log": ".local/skill-discovery-verification/quality.log"
+    },
+    "diffCheck": {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  },
+  "cleanup": {
+    "runId": "21594b2f-e71f-46fc-90d1-ae73620f4396",
+    "state": "stopped",
+    "portsReleased": true
+  },
+  "deployment": {
+    "published": false,
+    "productionProfileChanged": false
+  }
+}

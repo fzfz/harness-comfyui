@@ -25,7 +25,6 @@ it('rejects an invalid project Preset before writing plugin build outputs', asyn
         additionalManagedPresetIds: [],
         sourceRootRelativePath: 'agent-presets',
       },
-      skills: { sourceRootRelativePath: '.agents/skills' },
     }))
     await writeFile(join(presetDirectory, 'preset.yml'), 'name: Invalid preset\n')
     await writeFile(join(presetDirectory, 'agent.cordis.yml'), '- id: missing-plugin-name\n')

@@ -86,7 +86,7 @@ export function assertPluginRuntimeResourcesAvailable(
       path: paths[key],
     })),
     ...configuration.requiredFiles.map(path => ({
-      resource: 'Preset or Skill package resource',
+      resource: 'Preset package resource',
       path: resolvePath(path),
     })),
   ]

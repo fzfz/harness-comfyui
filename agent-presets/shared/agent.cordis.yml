@@ -33,7 +33,7 @@
   config:
     mode: native
 - id: skill-filesystem
-  name: ../project-installed-skills.mjs
+  name: '@deepseek-ai/dsh-skill-filesystem'
 - id: tool-skill
   name: '@deepseek-ai/dsh-tool-skill'
 - id: project-subagent-workspace

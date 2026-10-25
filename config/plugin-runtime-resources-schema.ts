@@ -78,9 +78,8 @@ export function parsePluginRuntimeResources(value: unknown): PluginRuntimeResour
     const seenRequiredFiles = new Set<string>()
     for (const [index, path] of parsed.requiredFiles.entries()) {
       validateRelativePath(path, `Plugin runtime resources config.requiredFiles[${index}]`)
-      if (!path.startsWith('agent-presets/')
-        && !/^\.agents\/skills\/[^/]+\/(?:SKILL\.md|references\/.+|scripts\/.+)$/u.test(path)) {
-        throw new TypeError(`Plugin runtime required file must be inside agent-presets/ or a Skill runtime directory: ${path}`)
+      if (!path.startsWith('agent-presets/')) {
+        throw new TypeError(`Plugin runtime required file must be inside agent-presets/: ${path}`)
       }
       if (seenRequiredFiles.has(path)) {
         throw new TypeError(`Plugin runtime required file paths must be distinct: ${path}`)

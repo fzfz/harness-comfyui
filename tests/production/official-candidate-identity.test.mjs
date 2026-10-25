@@ -146,7 +146,7 @@ describe('official Desktop candidate source identity', () => {
       ...OFFICIAL_CANDIDATE_RUNTIME_PATHS,
       '.local/source-host/review-runtime-chunk.js',
       'agent-presets/project-installed-presets.mjs',
-      '.agents/skills/comfyui-generate/SKILL.md',
+      'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml',
       'config/source-client.json',
       'scripts/cli/help.mjs',
     ].sort()
@@ -177,7 +177,7 @@ describe('official Desktop candidate source identity', () => {
     expect(comparisons.every(comparison => comparison.matchesCandidate)).toBe(true)
     expect(comparisons.map(comparison => comparison.relativePath)).toContain('.local/source-host/review-runtime-chunk.js')
 
-    const stalePackageResource = '.agents/skills/comfyui-generate/SKILL.md'
+    const stalePackageResource = 'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml'
     await writeFile(join(installedRoot, stalePackageResource), 'old bytes from the same package version')
     await expect(compareOfficialCandidateFiles({ sourceIdentity, installedPackageRoot: installedRoot }))
       .rejects.toThrow(`Installed ${stalePackageResource} bytes differ from the fixed candidate`)
