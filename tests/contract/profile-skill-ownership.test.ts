@@ -25,8 +25,9 @@ describe('ComfyUI Workbench Skill plugin ownership', () => {
     for (const presetId of [productAgent.preset.id, ...productAgent.preset.additionalManagedPresetIds]) {
       const { composition } = await readProjectComposition(repositoryRoot, presetId)
       expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-skill')).toHaveLength(1)
-      expect(composition.filter(row => row.name === '../project-installed-skills.mjs')).toHaveLength(1)
-      expect(composition.some(row => row.name === '@deepseek-ai/dsh-skill-filesystem')).toBe(false)
+      expect(composition.some(row => row.name === '@deepseek-ai/dsh-skill')).toBe(false)
+      expect(composition.filter(row => row.name === '@deepseek-ai/dsh-skill-filesystem'))
+        .toEqual([{ id: 'skill-filesystem', name: '@deepseek-ai/dsh-skill-filesystem' }])
     }
   })
 })

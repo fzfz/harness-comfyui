@@ -345,7 +345,6 @@ describe('Harness ComfyUI Host plugin', () => {
   })
 
   it.each([
-    ['Skill instructions', '.agents/skills/comfyui-generate/SKILL.md'],
     ['Preset composition', 'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml'],
   ])('stops activation when the installed package is missing %s before business data initialization', async (_kind, relativePath) => {
     const profileRoot = stubTestProfileEnvironment()

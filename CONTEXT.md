@@ -18,7 +18,7 @@
 
 ## 配置与插件服务
 
-1. **Configuration Profile**：Host 使用的一组结构化业务配置，当前配置为 `production`。字段定义见 [config/schema.ts](config/schema.ts)，加载入口见 [loadProfile()](src/config/load-profile.ts)，配置覆盖规则见 [Configuration Profile 计算顺序](docs/system/configuration.md#configuration-profile-计算顺序)。
+1. **Configuration Profile**：Host 使用的一组结构化业务配置。字段定义见 [config/schema.ts](config/schema.ts)，加载入口见 [loadProfile()](src/config/load-profile.ts)，配置覆盖规则见 [Configuration Profile 计算顺序](docs/system/configuration.md#configuration-profile-计算顺序)。
 
 2. **Host Plugin**：官方 Harness Desktop 加载的 `harness-comfyui` 插件模块。插件入口见 [src/host/plugin.ts](src/host/plugin.ts)，服务装配见 [ComfyuiCoreService](src/host/core/plugin.ts)。
 
@@ -80,15 +80,13 @@
 
 1. **Project Tool Registry**：Host Plugin 注册项目 Tool 的唯一入口。实现见 [registerProjectTools()](src/host/tools/register-project-tools.ts)。
 
-2. **Repository Skills**：随插件包发布在 `.agents/skills/` 中的八个 Harness Skill。发布文件清单见 [config/plugin-runtime-resources.json](config/plugin-runtime-resources.json)，各 Skill 的用途与执行步骤由其 `SKILL.md` 定义。
+2. **Repository Skills**：仓库 [.agents/skills/](.agents/skills/) 管理的项目 Skill。各 Skill 的用途与执行步骤由其 `SKILL.md` 定义，安装方法见[安装项目 Skills](docs/user/install-update.md#安装项目-skills)。
 
-3. **Preset-scoped Repository Skill Source**：为项目 Preset 提供插件包内 Repository Skills 的文件系统 Skill 来源。注册入口见 [agent-presets/project-installed-skills.mjs](agent-presets/project-installed-skills.mjs)。
+3. **ComfyUI Workbench Preset**：显示名称为 `ComfyUI工作台预设`、内部 ID 为 `harness-comfyui-cli-candidate` 的可选项目 Agent Preset，负责按 Repository Skills 执行 ComfyUI 任务。定义入口见 [工作台 Preset 配置](agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml)。
 
-4. **ComfyUI Workbench Preset**：显示名称为 `ComfyUI工作台预设`、内部 ID 为 `harness-comfyui-cli-candidate` 的可选项目 Agent Preset，负责按 Repository Skills 执行 ComfyUI 任务。定义入口见 [工作台 Preset 配置](agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml)。
+4. **ComfyUI Iteration Preset**：显示名称为 `ComfyUI迭代预设`、内部 ID 为 `harness-comfyui-iteration` 的可选项目 Agent Preset，负责协调构图、生成、观察和比较四个角色完成图片迭代。定义入口见[迭代 Preset 配置](agent-presets/harness-comfyui-iteration/agent.cordis.yml)。
 
-5. **ComfyUI Iteration Preset**：显示名称为 `ComfyUI迭代预设`、内部 ID 为 `harness-comfyui-iteration` 的可选项目 Agent Preset，负责协调构图、生成、观察和比较四个角色完成图片迭代。定义入口见[迭代 Preset 配置](agent-presets/harness-comfyui-iteration/agent.cordis.yml)。
-
-6. 两项 ComfyUI 产品 Preset 的资源作用域、Tool schema 可见性、系统提示词和子 Agent 执行规则见[产品预设与项目 Skill 开发规范](docs/agents/comfyui-workbench-preset-and-skill-development.md)。
+5. 两项 ComfyUI 产品 Preset 的资源作用域、Tool schema 可见性、系统提示词和子 Agent 执行规则见[产品预设与项目 Skill 开发规范](docs/agents/comfyui-workbench-preset-and-skill-development.md)。
 
 ## 发布
 

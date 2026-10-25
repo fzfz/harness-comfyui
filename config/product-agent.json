@@ -11,8 +11,5 @@
       "harness-comfyui-comparison"
     ],
     "sourceRootRelativePath": "agent-presets"
-  },
-  "skills": {
-    "sourceRootRelativePath": ".agents/skills"
   }
 }

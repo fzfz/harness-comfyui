@@ -1,0 +1,2802 @@
+{
+  "schemaVersion": 1,
+  "runId": "21594b2f-e71f-46fc-90d1-ae73620f4396",
+  "sessionId": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+  "parentSessionId": null,
+  "entry": "session.v4.jsonl",
+  "header": {
+    "type": "session",
+    "version": 4,
+    "id": "session-3009a0c5-f043-432a-8336-242dca22b01f",
+    "createdAt": 1792937438895,
+    "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn",
+    "isSeeded": false,
+    "delegationDepth": 0,
+    "agentPreset": "harness-comfyui-cli-candidate"
+  },
+  "events": [
+    {
+      "type": "permission/preset",
+      "seq": 0,
+      "time": 1792937438897,
+      "data": {
+        "preset": "workspace-write"
+      }
+    },
+    {
+      "type": "sandbox/mode",
+      "seq": 1,
+      "time": 1792937438897,
+      "data": {
+        "mode": "workspace-write"
+      }
+    },
+    {
+      "type": "approval/policy",
+      "seq": 2,
+      "time": 1792937438897,
+      "data": {
+        "policy": "ask"
+      }
+    },
+    {
+      "type": "model/selection",
+      "seq": 3,
+      "time": 1792937438912,
+      "data": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free"
+      }
+    },
+    {
+      "type": "session/title",
+      "seq": 4,
+      "time": 1792937438962,
+      "data": {
+        "title": "Skill 目录发现验收 harness-comfyui-cli-candidate",
+        "messageSeqs": [],
+        "source": {
+          "kind": "user"
+        }
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 5,
+      "time": 1792937438966,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "请完成一次只读的 Skill 资源读取验收：使用 skill 工具完整读取 local-image-reader，再从工具返回的实际资源目录读取 references/image-inspection-cli.md。最终报告 Skill 的实际目录、参考文件标题以及读取是否成功。本次任务到文件读取和报告为止，不调用图片模型或业务 CLI，不派发子任务。"
+              }
+            ],
+            "source": {
+              "kind": "user",
+              "rpcId": "a0648b86-d0d1-4ea6-8790-fd5c23b7f86a",
+              "clientTimeZone": "Asia/Shanghai"
+            },
+            "role": "user",
+            "id": "26203403-cf7a-4638-ac45-ce26bb533706"
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 6,
+      "time": 1792937438966,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 7,
+      "time": 1792937438967,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 8,
+      "time": 1792937438982,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "system/message",
+      "seq": 9,
+      "time": 1792937438983,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "You are the Harness ComfyUI workbench Agent. Follow the selected project Skill. Use NoobAI MCP to look up works, characters, prompt terms, base models, generation models, LoRAs, artist styles, artist prompt strings, workflow templates, and ComfyUI instances. Use the managed project CLI to generate images and read images. Reply in the user's language.\n\nCheck the [exit code: N] marker on every bash result; investigate failures before moving on.\n\n## MCP resource servers\n\nUse list_mcp_resources, list_mcp_resource_templates, or read_mcp_resource with one of these names as the server argument: [\"noobai\"]."
+            }
+          ],
+          "source": {
+            "kind": "system-prompt"
+          },
+          "id": "f4ffe5f9-8fca-434a-ac59-319df86269b8"
+        }
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 10,
+      "time": 1792937438983,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "请完成一次只读的 Skill 资源读取验收：使用 skill 工具完整读取 local-image-reader，再从工具返回的实际资源目录读取 references/image-inspection-cli.md。最终报告 Skill 的实际目录、参考文件标题以及读取是否成功。本次任务到文件读取和报告为止，不调用图片模型或业务 CLI，不派发子任务。"
+          }
+        ],
+        "source": {
+          "kind": "user",
+          "rpcId": "a0648b86-d0d1-4ea6-8790-fd5c23b7f86a",
+          "clientTimeZone": "Asia/Shanghai"
+        },
+        "role": "user",
+        "id": "26203403-cf7a-4638-ac45-ce26bb533706"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 11,
+      "time": 1792937438983,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn\".\n\nCurrent DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn\". Some platform temporary areas may also be writable.\n\nApproval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed.\n\nCurrent DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\".\n\nCurrent DeepSeek Harness Web GUI URL: \"http://127.0.0.1:58013\"."
+          }
+        ],
+        "source": {
+          "kind": "runtime-context",
+          "form": "snapshot",
+          "sections": [
+            {
+              "name": "working-directory:current",
+              "text": "Current working directory: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn\"."
+            },
+            {
+              "name": "sandbox:policy",
+              "text": "Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn\". Some platform temporary areas may also be writable."
+            },
+            {
+              "name": "approval:policy",
+              "text": "Approval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed."
+            },
+            {
+              "name": "harness:source",
+              "text": "Current DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\"."
+            },
+            {
+              "name": "app:web-surface",
+              "text": "Current DeepSeek Harness Web GUI URL: \"http://127.0.0.1:58013\"."
+            }
+          ]
+        },
+        "role": "user",
+        "id": "d37f9cf5-2bb1-454a-ba6a-fed6c16532b3"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 12,
+      "time": 1792937438983,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "<system-reminder>\nA skill is a reusable set of task-specific instructions. The following skills are available in this session:\n\n<available_skills>\n- `acting`: 为 AI 视频生成提示词编写、审阅或修正角色表演内容。当用户需要创建角色表演档案、将角色表演适配到具体场景、设定角色声音，或改善视频提示词中的动作、眼神、台词表现和群体反应时，使用此 Skill。适用于 Seedance 等视频生成模型。\n- `anima-prompt-builder`: 用户要求根据自然语言画面要求与当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录构建并校验十二槽 ANIMA3 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。\n- `character-portrait-prompt-designer`: 根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，要求“根据某个目录中的人物 md 和证据设计人物形象”，或要求查询历史 run_id 时使用。\n- `cindy-skill-creator`: Create or edit a Cindy Skill, search the SkillHub public marketplace or your organization's Skills, upload your own Skill, or publish a new version of a Skill you authored.\n- `comfyui-generate`: 用户要求使用当前选择的 ComfyUI Workflow 创建图片、核对所选 Workflow 模板、生成模型和 LoRA 是否兼容、查询历史 Generation Run，或者在创建图片时复用历史 Seed 时使用。\n- `comfyui-image-review`: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。\n- `comfyui-iterate-generation`: 用户要求根据故事和人物构思、生成并迭代图片时使用。主 Agent 调度构图、生成、独立观察、比较和 Prompt 修复。\n- `krea2-anime-prompt-builder`: 用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。\n- `learn`: Distill a reusable Cindy Skill from the current task, a described workflow, or a SkillHub skill through Cindy's review flow when the user directly invokes /learn or /skill:learn in Pi.\n- `lira-image-prompts`: Lira — a master-level prompt-optimization persona for AI IMAGE generation. Use this skill WHENEVER the user wants to write, fix, optimize, or iterate an image-generation prompt — Higgsfield Soul 2.0 / Cinema Studio AI Cast (characters), Higgsfield Soul Cinema (locations/cinematic stills), frame edits via Nano Banana Pro (NBP, always first: post-processing of an original), Seedream 4.5 (texture-slop cleanup only), GPT Image 2 (last resort: finest local micro-edits, location view changes), or a...\n- `local-image-reader`: 使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。\n- `moss-prompt-builder`: Expand an image-generation request into a detailed MOSS-Image caption or spatial layout, and compile a local JSON draft into a ready-to-paste prompt. Use for prompt enhancement, image composition and text placement; this skill does not generate images.\n- `office`: Create, edit, inspect, or convert Office documents, spreadsheets, presentations, and PDFs. Load to choose the relevant workflow.\n- `office-docx`: Create, read, edit, and validate Word documents (.docx).\n- `office-export-pdf`: Convert an Office document to a requested PDF with LibreOffice Kit.\n- `office-pptx`: Create, read, edit, and validate PowerPoint presentations (.pptx).\n- `office-recalculate`: Refresh spreadsheet formula caches and verify calculated values with LibreOffice Kit.\n- `office-render`: Render requested document images or inspect visual layout with LibreOffice Kit.\n- `office-xlsx`: Read, create, edit, and validate Excel workbooks, data, and formulas (.xlsx).\n- `team-mode`: Use when a task may benefit from a bounded subagent for implementation, large-codebase discovery at task start, independent review, requested or pre-commit code simplification, or expert work on complex decisions, modeling, automation, or repeated failures. The main agent chooses whether to delegate and accepts the result. Keep simple questions and short work in the main thread.\n- `wai-sdxl-prompt-builder`: 用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt，或者查询一个或多个 ComfyUI Generation Run 的生成参数或 Actual Workflow 时使用。\n- `writing-for-agents`: Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.\n</available_skills>\n\nIf the user names a skill, or the task clearly matches a skill's description, call the `skill` tool with the exact skill name before taking task actions. Load all applicable skills, then follow their full instructions. This catalog contains summaries only; do not infer or follow a skill's instructions until it has been loaded.\nA user may also invoke a skill directly; its <skill_content> block then appears in this conversation. Follow it, and do not call the `skill` tool again for that skill.\n</system-reminder>"
+          }
+        ],
+        "source": {
+          "kind": "skill-catalog",
+          "form": "catalog",
+          "entries": [
+            {
+              "name": "acting",
+              "description": "为 AI 视频生成提示词编写、审阅或修正角色表演内容。当用户需要创建角色表演档案、将角色表演适配到具体场景、设定角色声音，或改善视频提示词中的动作、眼神、台词表现和群体反应时，使用此 Skill。适用于 Seedance 等视频生成模型。"
+            },
+            {
+              "name": "anima-prompt-builder",
+              "description": "用户要求根据自然语言画面要求与当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录构建并校验十二槽 ANIMA3 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+            },
+            {
+              "name": "character-portrait-prompt-designer",
+              "description": "根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，要求“根据某个目录中的人物 md 和证据设计人物形象”，或要求查询历史 run_id 时使用。"
+            },
+            {
+              "name": "cindy-skill-creator",
+              "description": "Create or edit a Cindy Skill, search the SkillHub public marketplace or your organization's Skills, upload your own Skill, or publish a new version of a Skill you authored."
+            },
+            {
+              "name": "comfyui-generate",
+              "description": "用户要求使用当前选择的 ComfyUI Workflow 创建图片、核对所选 Workflow 模板、生成模型和 LoRA 是否兼容、查询历史 Generation Run，或者在创建图片时复用历史 Seed 时使用。"
+            },
+            {
+              "name": "comfyui-image-review",
+              "description": "按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。"
+            },
+            {
+              "name": "comfyui-iterate-generation",
+              "description": "用户要求根据故事和人物构思、生成并迭代图片时使用。主 Agent 调度构图、生成、独立观察、比较和 Prompt 修复。"
+            },
+            {
+              "name": "krea2-anime-prompt-builder",
+              "description": "用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+            },
+            {
+              "name": "learn",
+              "description": "Distill a reusable Cindy Skill from the current task, a described workflow, or a SkillHub skill through Cindy's review flow when the user directly invokes /learn or /skill:learn in Pi."
+            },
+            {
+              "name": "lira-image-prompts",
+              "description": "Lira — a master-level prompt-optimization persona for AI IMAGE generation. Use this skill WHENEVER the user wants to write, fix, optimize, or iterate an image-generation prompt — Higgsfield Soul 2.0 / Cinema Studio AI Cast (characters), Higgsfield Soul Cinema (locations/cinematic stills), frame edits via Nano Banana Pro (NBP, always first: post-processing of an original), Seedream 4.5 (texture-slop cleanup only), GPT Image 2 (last resort: finest local micro-edits, location view changes), or a..."
+            },
+            {
+              "name": "local-image-reader",
+              "description": "使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。"
+            },
+            {
+              "name": "moss-prompt-builder",
+              "description": "Expand an image-generation request into a detailed MOSS-Image caption or spatial layout, and compile a local JSON draft into a ready-to-paste prompt. Use for prompt enhancement, image composition and text placement; this skill does not generate images."
+            },
+            {
+              "name": "office",
+              "description": "Create, edit, inspect, or convert Office documents, spreadsheets, presentations, and PDFs. Load to choose the relevant workflow."
+            },
+            {
+              "name": "office-docx",
+              "description": "Create, read, edit, and validate Word documents (.docx)."
+            },
+            {
+              "name": "office-export-pdf",
+              "description": "Convert an Office document to a requested PDF with LibreOffice Kit."
+            },
+            {
+              "name": "office-pptx",
+              "description": "Create, read, edit, and validate PowerPoint presentations (.pptx)."
+            },
+            {
+              "name": "office-recalculate",
+              "description": "Refresh spreadsheet formula caches and verify calculated values with LibreOffice Kit."
+            },
+            {
+              "name": "office-render",
+              "description": "Render requested document images or inspect visual layout with LibreOffice Kit."
+            },
+            {
+              "name": "office-xlsx",
+              "description": "Read, create, edit, and validate Excel workbooks, data, and formulas (.xlsx)."
+            },
+            {
+              "name": "team-mode",
+              "description": "Use when a task may benefit from a bounded subagent for implementation, large-codebase discovery at task start, independent review, requested or pre-commit code simplification, or expert work on complex decisions, modeling, automation, or repeated failures. The main agent chooses whether to delegate and accepts the result. Keep simple questions and short work in the main thread."
+            },
+            {
+              "name": "wai-sdxl-prompt-builder",
+              "description": "用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt，或者查询一个或多个 ComfyUI Generation Run 的生成参数或 Actual Workflow 时使用。"
+            },
+            {
+              "name": "writing-for-agents",
+              "description": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md."
+            }
+          ]
+        },
+        "role": "user",
+        "id": "6d1a128e-29ef-4045-a5a6-dfb974cff910"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "request/header",
+      "seq": 13,
+      "time": 1792937438984,
+      "data": {
+        "header": {
+          "config": {
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free",
+            "maxTokens": 8192
+          },
+          "adapterDefaults": {
+            "maxTokens": true
+          },
+          "tools": [
+            {
+              "name": "bash",
+              "description": "Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell; pass `workdir` instead of using `cd`. Managed `$DSH_*` variables expose current harness environment facts. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Provide `description` before `command` in the arguments. Before any delete or move, verify that the resolved absolute target path is the intended one; never run it against a computed path you have not checked. An unset variable expands to an empty string, so guard variables in such paths with `${VAR:?}`. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]`, a policy denial: do not retry another way.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: \"ls\" → \"List files in current directory\"; \"git status\" → \"Show working tree status\"; \"npm install\" → \"Install package dependencies\"."
+                  },
+                  "command": {
+                    "type": "string",
+                    "description": "The bash command to execute."
+                  },
+                  "timeoutMs": {
+                    "type": "number",
+                    "description": "Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry."
+                  },
+                  "workdir": {
+                    "type": "string",
+                    "description": "Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."
+                  },
+                  "sandbox_permissions": {
+                    "type": "string",
+                    "description": "The narrowest wider sandbox mode for a one-shot retry of the exact command the sandbox just denied; the retry asks the user for approval.",
+                    "enum": [
+                      "workspace-write",
+                      "danger-full-access"
+                    ]
+                  },
+                  "justification": {
+                    "type": "string",
+                    "description": "Required with sandbox_permissions: one sentence for the user explaining why this exact command needs the wider access. Use the language of the user’s current request."
+                  }
+                },
+                "required": [
+                  "description",
+                  "command"
+                ]
+              }
+            },
+            {
+              "name": "interrupt_agent",
+              "description": "请求子 Agent 停止当前任务。工具返回后，中断请求已发出。父 Agent 可以通过当前预设的任务派发工具继续原有子会话；该子 Agent 已派发的后代任务继续运行。",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "agent_id": {
+                    "type": "string",
+                    "description": "当前 Agent 派发的子 Agent 或后代 Agent 的会话 ID。"
+                  }
+                },
+                "required": [
+                  "agent_id"
+                ]
+              }
+            },
+            {
+              "name": "list_agents",
+              "description": "List subagents you started, with their ids, labels, and status. running means it is working; inactive means it is not currently working. You will be notified when a subagent finishes; there is no need to keep checking its status. Use send_message to continue the conversation.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "type": "string",
+                    "description": "children (default) lists direct children, which accept send_message in any status. descendants lists the whole tree below you with each entry's parent session id and depth; entries deeper than 1 accept only interrupt_agent.",
+                    "enum": [
+                      "children",
+                      "descendants"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "name": "list_mcp_resource_templates",
+              "description": "List parameterized resource URI templates from an MCP server.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "server": {
+                    "type": "string",
+                    "description": "Configured MCP server name."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Continuation cursor returned by this server."
+                  }
+                },
+                "required": [
+                  "server"
+                ]
+              }
+            },
+            {
+              "name": "list_mcp_resources",
+              "description": "List resources available from an MCP server.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "server": {
+                    "type": "string",
+                    "description": "Configured MCP server name."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Continuation cursor returned by this server."
+                  }
+                },
+                "required": [
+                  "server"
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__get_catalog_resource",
+              "description": "## 查询用途\n\n1. 按已知资源类别和 ID 直接读取完整记录，取得完整说明、使用方法、提示词素材或节点配置。实例凭据通过 get_instance_connection 读取。\n\n## 输入参数\n\n1. ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. item：查询结果；始终提供。读取对应资源的完整字段。\n5. item.ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n6. item.name：资源定位；始终提供。核对资源名称。\n7. item.ref.kind：资源定位；始终提供。识别资源类别。\n8. item.ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n\n### item.ref.kind 为 model 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.file_name：生成配置；始终提供。将该文件名用于模型加载节点的文件名参数。\n3. item.file_format：资源定位；始终提供。核对模型文件格式。\n4. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n5. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n6. item.version：资源定位；null 表示未填写版本。核对资源版本。\n7. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n8. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n9. item.skill_name：Skill 选择；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。\n10. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 lora 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。\n3. item.file_name：生成配置；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。\n4. item.file_format：资源定位；始终提供。核对模型文件格式。\n5. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n6. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n7. item.version：资源定位；null 表示未填写版本。核对资源版本。\n8. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n9. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n10. item.trigger_words：Prompt 素材；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。\n11. item.weight：生成配置；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。\n12. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n13. item.base_model.name：资源定位；始终提供。核对资源名称。\n14. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n15. item.model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 style 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.aliases：资源定位；空数组表示没有别名。辅助识别画风。\n3. item.style_description：资源选择与使用指导；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。\n4. item.prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 artist_prompt_string 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.styles：关联筛选；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。\n3. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n4. item.artist_string：Prompt 素材；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n7. item.styles[].id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n8. item.styles[].name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 workflow 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n3. item.lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n4. item.workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n5. item.workflow_json：生成配置；始终提供完整对象。调用者读取全部节点与连接，并根据生成目标设置节点中的提示词。\n6. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n7. item.base_model.name：资源定位；始终提供。核对资源名称。\n8. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n9. item.model.name：资源定位；始终提供。核对资源名称。\n10. item.lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.lora.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 instance 时的字段\n\n1. item.url：实例连接；始终提供。连接已登记的实例服务地址。\n2. item.credential_type：实例连接；none 表示无需认证。据此识别连接认证方式。\n3. item.enabled：登记状态；始终提供布尔值。识别管理员保存的启用配置。\n4. item.validation_passed：登记状态；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "base_model",
+                          "model",
+                          "lora",
+                          "style",
+                          "artist_prompt_string",
+                          "workflow",
+                          "instance"
+                        ],
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。"
+                  }
+                },
+                "required": [
+                  "ref"
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__get_instance_connection",
+              "description": "## 查询用途\n\n1. 读取登记的实例地址与认证信息。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. instance_id：资源定位；始终提供。定位登记实例。\n4. name：资源定位；始终提供。核对资源名称。\n5. url：实例连接；始终提供。连接实例服务地址。\n6. credential_type：实例连接；none 表示无需认证。按类型配置连接认证。\n7. authorization：实例连接；null 表示无需认证头。仅用于连接该实例，禁止追加到 Prompt。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "资源 ID，使用正整数十进制字符串。"
+                  }
+                },
+                "required": [
+                  "instance_id"
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__get_instance_node",
+              "description": "## 查询用途\n\n1. 按节点 class_name 精确读取实例当前完整节点定义，保留输入输出和配置内容。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. instance_id：资源定位；始终提供。定位登记实例。\n4. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n5. class_name：资源定位；始终提供。识别节点类别，并填写 Workflow 节点的 class_type。\n6. definition：生成配置；始终提供对象。调用者据此填写节点参数并连接输入输出。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "资源 ID，使用正整数十进制字符串。"
+                  },
+                  "class_name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "not": {
+                      "enum": [
+                        ".",
+                        ".."
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "instance_id",
+                  "class_name"
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__get_instance_queue",
+              "description": "## 查询用途\n\n1. 读取实例当前运行中与等待中的队列。结果按状态和队列编号排序。\n\n## 输入参数\n\n1. limit：每页记录数量；默认 5，最小 1，最大 20。\n2. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. instance_id：资源定位；始终提供。定位登记实例。\n5. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n6. running_count：运行信息；0 表示没有运行中的任务。读取本次完整队列中的运行任务数量。\n7. pending_count：运行信息；0 表示没有等待中的任务。读取本次完整队列中的等待任务数量。\n8. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n9. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n10. results[].prompt_id：资源定位；始终提供。识别队列任务。\n11. results[].queue_number：运行信息；始终提供数值。按实例返回的队列序号比较顺序。\n12. results[].state：运行信息；始终提供。区分 running 与 pending。\n13. next.tool：查询控制；始终提供。选择对应工具。\n14. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "资源 ID，使用正整数十进制字符串。"
+                  },
+                  "state": {
+                    "enum": [
+                      "all",
+                      "running",
+                      "pending"
+                    ],
+                    "default": "all"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "instance_id"
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__get_instance_status",
+              "description": "## 查询用途\n\n1. 查询实例当前连通性和系统设备信息。登记校验结果通过 search_instances 读取。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. instance_id：资源定位；始终提供。定位登记实例。\n4. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n5. reachable：实时状态；始终提供布尔值。判断本次连通性，独立于登记校验结果。\n6. http_status：实时状态；null 表示未取得 HTTP 响应。判断本次远端响应状态。\n7. latency_ms：实时状态；始终提供数值。读取本次请求耗时，单位为毫秒。\n8. system：运行信息；null 表示未取得系统信息。核对实例系统信息。\n9. devices：运行信息；空数组表示未取得设备信息。核对实例运行设备。\n10. error：查询诊断；null 表示本次读取没有错误。根据错误码和消息排查连接问题。\n11. error.request_id：查询诊断；错误定位时提供。向管理员提供请求标识以查找诊断记录。\n12. error.code：查询诊断；始终提供。识别失败类别。\n13. error.message：实例请求失败的具体原因；错误对象存在时始终提供。根据原因核对实例地址、运行状态或网络连接。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "资源 ID，使用正整数十进制字符串。"
+                  }
+                },
+                "required": [
+                  "instance_id"
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__list_prompt_term_categories",
+              "description": "## 查询用途\n\n1. 取得提示词分类入口与类别的 ID、名称及用途。选中的一级入口 ID 可填入 query_semantic_prompt_terms 的 root_id，二级类别 ID 可填入 category_ids。\n\n## 输入参数\n\n1. level：必填字符串；roots 浏览一级入口，categories 读取二级类别。\n2. page：页码；默认 1，最小 1，最大 100000。\n3. page_size：每页记录数量；默认 20，最小 1，最大 100。\n4. root_id：level 为 categories 时可选的一级入口 ID；填写 roots 返回的 ID，限定该入口关联的二级类别；省略时读取全部二级类别。\n5. q：level 为 categories 时可选的搜索文字；按二级类别 ID、名称或用途进行文字搜索；省略或空字符串时浏览类别。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前条件下没有分类记录。读取当前 level、root_id 与 q 条件对应的记录总数。\n10. results[].id：分类筛选；始终提供字符串 ID。level 为 roots 时，将该 ID 用于 root_id；level 为 categories 时，将该 ID 用于 category_ids。\n11. results[].name：分类选择；始终提供名称。核对分类入口或类别名称。\n12. results[].intent：分类选择；始终提供用途文字。依据用途选择当前画面所需的入口或类别。\n13. results[].position：分类顺序；始终提供非负整数。读取管理员设置的展示顺序。\n14. results[].category_count：入口范围；仅在 level 为 roots 时提供；0 表示入口下没有类别。读取该入口关联的二级类别数量。\n15. results[].root_ids：类别归属；仅在 level 为 categories 时提供。通过字符串 ID 核对该类别关联的一级入口。\n16. results[].term_count：类别范围；仅在 level 为 categories 时提供；0 表示该类别下没有词条。读取该类别关联的去重词条数量。",
+              "parameters": {
+                "type": "object",
+                "oneOf": [
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "level"
+                        ],
+                        "properties": {
+                          "level": {
+                            "const": "roots",
+                            "description": "浏览一级入口及用途。",
+                            "example": "roots"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "当前页，从 1 开始；page × page_size 小于 total_count 时继续读取下一页。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "每页最多返回的记录数。",
+                            "example": 20
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "level": {
+                            "const": "roots",
+                            "description": "level：必填字符串；roots 浏览一级入口，categories 读取二级类别。",
+                            "example": "roots"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "page：页码；默认 1，最小 1，最大 100000。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                            "example": 20
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "level"
+                        ],
+                        "properties": {
+                          "level": {
+                            "const": "categories",
+                            "description": "读取二级类别及用途。",
+                            "example": "categories"
+                          },
+                          "root_id": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]*$",
+                            "description": "roots 返回的真实入口 ID，用于限定二级类别。",
+                            "example": "clothing"
+                          },
+                          "q": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "default": "",
+                            "description": "按二级类别 ID、名称或用途搜索；输入按已有搜索规则规范化。",
+                            "example": "裙"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "当前页，从 1 开始；page × page_size 小于 total_count 时继续读取下一页。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "每页最多返回的记录数。",
+                            "example": 20
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "level": {
+                            "const": "categories",
+                            "description": "level：必填字符串；roots 浏览一级入口，categories 读取二级类别。",
+                            "example": "categories"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "page：页码；默认 1，最小 1，最大 100000。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                            "example": 20
+                          },
+                          "root_id": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]*$",
+                            "description": "root_id：level 为 categories 时可选的一级入口 ID；填写 roots 返回的 ID，限定该入口关联的二级类别；省略时读取全部二级类别。",
+                            "example": "clothing"
+                          },
+                          "q": {
+                            "type": "string",
+                            "maxLength": 100,
+                            "default": "",
+                            "description": "q：level 为 categories 时可选的搜索文字；按二级类别 ID、名称或用途进行文字搜索；省略或空字符串时浏览类别。",
+                            "example": "裙"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__query_semantic_characters",
+              "description": "## 查询用途\n\n1. 查找角色和角色提示词素材，支持用已知作品 ID 限定作品；已知角色 ID 时可直接读取角色记录。\n\n## 输入参数\n\n1. mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。\n2. query：search 使用的角色名称、别名、作品名称或角色提示词线索；省略或空字符串时浏览可用角色，非空文字执行语义检索。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. page_size：每页记录数量；默认 20，最小 1，最大 100。\n5. work_id：search 可选的作品 ID 字符串；填写 query_semantic_works 返回的作品 ID，将整数转为字符串；省略时跨作品查询。\n6. id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。\n10. results[].id：记录定位；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。\n11. results[].work_id：作品归属；始终提供作品 ID 整数。将该整数转为十进制字符串，填入 query_semantic_characters 的 work_id 限定作品；读取作品记录时，在 query_semantic_works 中设置 mode 为 resolve，并将转换后的字符串填入 id。\n12. results[][\"works.name\"]：作品归属；null 表示当前记录没有提供作品名称。核对作品名称；记录中的键名是 works.name。\n13. results[].name：记录定位；始终提供名称。核对角色名称。\n14. results[].aliases_json：记录定位；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。\n15. results[].prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者保留素材内容，按目标生成模型的提示词语法组合。",
+              "parameters": {
+                "type": "object",
+                "oneOf": [
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "mode"
+                        ],
+                        "description": "Search branch for the character Catalog operation.",
+                        "properties": {
+                          "mode": {
+                            "const": "search",
+                            "description": "Catalog request branch discriminator for semantic character search",
+                            "example": "search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 200,
+                            "default": "",
+                            "description": "Work name, character name, aliases, and prompt text sent to the fixed character semantic index",
+                            "example": "watercolor"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "One-based result page number",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "Maximum number of character items returned on one page",
+                            "example": 20
+                          },
+                          "work_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "Optional stable string identifier for the exact works parent record",
+                            "example": "123"
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "mode": {
+                            "const": "search",
+                            "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                            "example": "search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 200,
+                            "default": "",
+                            "description": "query：search 使用的角色名称、别名、作品名称或角色提示词线索；省略或空字符串时浏览可用角色，非空文字执行语义检索。",
+                            "example": "watercolor"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "page：页码；默认 1，最小 1，最大 100000。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                            "example": 20
+                          },
+                          "work_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "work_id：search 可选的作品 ID 字符串；填写 query_semantic_works 返回的作品 ID，将整数转为字符串；省略时跨作品查询。",
+                            "example": "123"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "mode",
+                          "id"
+                        ],
+                        "description": "Resolve branch for one character Catalog record.",
+                        "properties": {
+                          "mode": {
+                            "const": "resolve",
+                            "description": "Catalog request branch discriminator for stable-ID resolution",
+                            "example": "resolve"
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "Decimal characters.id value represented as a stable string identifier",
+                            "example": "123"
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "mode": {
+                            "const": "resolve",
+                            "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                            "example": "resolve"
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。",
+                            "example": "123"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__query_semantic_prompt_terms",
+              "description": "## 查询用途\n\n1. 按画面描述查找提示词素材，或浏览指定分类范围的词条；已知词条 ID 时可直接读取词条及全部分类义项。需要分类 ID 时，调用 list_prompt_term_categories。\n\n## 输入参数\n\n1. mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。\n2. query：search 使用的画面描述；省略或空字符串时浏览筛选范围内的全部词条，非空文字在范围内执行语义检索。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. page_size：每页记录数量；默认 20，最小 1，最大 100。\n5. root_id：search 可选的一级入口 ID；填写 list_prompt_term_categories 在 level 为 roots 时返回的 ID。同一匹配义项至少有一个类别属于该入口，并同时满足 category_ids。\n6. category_ids：search 可选的二级类别 ID 数组；填写 list_prompt_term_categories 在 level 为 categories 时返回的 ID。不同画面要素分别查询；需要同一词条满足多种条件时组合类别。\n7. category_match：可省略，默认 all；提供该参数时必须同时提供 category_ids。all 要求同一义项包含全部指定类别，any 要求一个义项包含至少一个指定类别。\n8. classification_status：search 可选的分类状态；classified 表示已分类，evidence_gap 表示证据不足，coverage_gap 表示分类覆盖不足，unclassified 表示没有分类记录。状态与分类归属条件同时生效；unclassified 与 root_id 或 category_ids 组合时返回空页。\n9. id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。\n10. results[].id：记录定位；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。\n11. results[].canonical_tag：Prompt 素材；始终提供规范标签。调用者按目标生成模型的提示词语法使用标签。\n12. results[].aliases_json：记录定位；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。\n13. results[].category：来源类型；始终提供整数类型码。核对来源 Danbooru 的标签类型；提示词分类入口与类别由 classification 提供。\n14. results[].post_count：来源统计；0 表示来源记录的使用次数为零。读取来源使用次数，辅助比较词条。\n15. results[].matched_sense_ids：本次筛选结果；空数组表示本次查询没有使用入口或类别筛选。通过 sense_id 定位本次分类条件命中的义项；数组按 ID 排序。\n16. results[].classification：词条含义与分类；null 表示尚无分类记录。阅读 senses 中的 condition，判断词条在当前画面中的适用含义。\n17. results[].classification.status：分类状态；始终为 classified、evidence_gap 或 coverage_gap。状态含义见输入参数 classification_status 的说明。\n18. results[].classification.reason：分类依据；空字符串表示未填写分类理由。\n19. results[].classification.dataset_version：分类来源；始终提供来源版本。\n20. results[].classification.source_id：分类来源；始终提供来源记录 ID 整数。\n21. results[].classification.category_ids：词条分类；空数组表示全部义项均未关联类别。核对词条全部义项涉及的二级类别。\n22. results[].classification.root_ids：词条分类入口；空数组表示已保存的类别没有对应入口。核对已保存类别涉及的一级入口。\n23. results[].classification.senses：词条含义；始终提供词条的全部条件义项。阅读每个义项，依据 condition 选择适用含义。\n24. results[].classification.review：分类审阅；始终提供审阅状态、理由与建议类别。结合审阅内容评估分类依据。\n25. results[].classification.senses[].sense_id：义项定位；始终提供词条内唯一的字符串。用该值对应 matched_sense_ids，识别本次筛选命中的义项。\n26. results[].classification.senses[].condition：义项适用条件；始终提供条件文字。判断当前画面或语境是否符合该义项。\n27. results[].classification.senses[].category_ids：义项分类；空数组表示该义项尚无类别归属。通过类别 ID 核对当前义项的归属。\n28. results[].classification.review.status：分类审阅状态；始终提供已保存的状态。not_sampled 表示尚未抽样审阅；pass 表示审阅通过；missing_membership 表示归属遗漏；wrong_and_missing 表示归属错误且有遗漏；wrong_branch 表示分类分支错误；wrong_membership 表示归属错误；unresolved 表示尚未得出审阅结论。结合 reason 读取具体依据。\n29. results[].classification.review.reason：分类审阅依据；空字符串表示未填写审阅理由。\n30. results[].classification.review.correct_category_ids：分类审阅建议；空数组表示没有建议类别。核对审阅者建议的类别；当前查询筛选依据 senses 中已保存的类别归属。",
+              "parameters": {
+                "type": "object",
+                "oneOf": [
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "mode"
+                        ],
+                        "description": "Search branch for the Prompt-term Catalog operation.",
+                        "properties": {
+                          "mode": {
+                            "const": "search",
+                            "description": "Catalog request branch discriminator for prompt-term browsing and semantic search",
+                            "example": "search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 200,
+                            "default": "",
+                            "description": "空文本按规范标签及 ID 浏览分类范围内全部词条；非空文本在范围内检索向量候选并重排，候选数量受配置上限限制。",
+                            "example": "watercolor"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "当前页，从 1 开始；page × page_size 小于 total_count 时继续读取下一页。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "每页最多返回的记录数。",
+                            "example": 20
+                          },
+                          "root_id": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]*$",
+                            "description": "分类发现返回的真实一级入口 ID。同一匹配义项必须有至少一个类别属于该入口，并同时满足 category_ids。",
+                            "example": "clothing"
+                          },
+                          "category_ids": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 16,
+                            "uniqueItems": true,
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]*$"
+                            },
+                            "description": "分类发现返回的真实二级类别 ID。不同画面要素分别查询；需要同一个词条满足多种条件时组合类别。",
+                            "example": [
+                              "skirts"
+                            ]
+                          },
+                          "category_match": {
+                            "type": "string",
+                            "enum": [
+                              "any",
+                              "all"
+                            ],
+                            "default": "all",
+                            "description": "仅与 category_ids 一起提供；默认 all 要求同一义项含全部指定类别，any 要求一个义项含至少一个指定类别。",
+                            "example": "any"
+                          },
+                          "classification_status": {
+                            "type": "string",
+                            "enum": [
+                              "classified",
+                              "evidence_gap",
+                              "coverage_gap",
+                              "unclassified"
+                            ],
+                            "description": "classified 已分类；evidence_gap 证据不足；coverage_gap 分类覆盖不足；unclassified 没有分类记录。状态与归属条件按 AND 组合；unclassified 与入口或类别组合返回空页。",
+                            "example": "classified"
+                          }
+                        },
+                        "allOf": [
+                          {
+                            "if": {
+                              "required": [
+                                "category_match"
+                              ]
+                            },
+                            "then": {
+                              "required": [
+                                "category_ids"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "properties": {
+                          "mode": {
+                            "const": "search",
+                            "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                            "example": "search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 200,
+                            "default": "",
+                            "description": "query：search 使用的画面描述；省略或空字符串时浏览筛选范围内的全部词条，非空文字在范围内执行语义检索。",
+                            "example": "watercolor"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "page：页码；默认 1，最小 1，最大 100000。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                            "example": 20
+                          },
+                          "root_id": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_]*$",
+                            "description": "root_id：search 可选的一级入口 ID；填写 list_prompt_term_categories 在 level 为 roots 时返回的 ID。同一匹配义项至少有一个类别属于该入口，并同时满足 category_ids。",
+                            "example": "clothing"
+                          },
+                          "category_ids": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 16,
+                            "uniqueItems": true,
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]*$"
+                            },
+                            "description": "category_ids：search 可选的二级类别 ID 数组；填写 list_prompt_term_categories 在 level 为 categories 时返回的 ID。不同画面要素分别查询；需要同一词条满足多种条件时组合类别。",
+                            "example": [
+                              "skirts"
+                            ]
+                          },
+                          "category_match": {
+                            "type": "string",
+                            "enum": [
+                              "any",
+                              "all"
+                            ],
+                            "default": "all",
+                            "description": "category_match：可省略，默认 all；提供该参数时必须同时提供 category_ids。all 要求同一义项包含全部指定类别，any 要求一个义项包含至少一个指定类别。",
+                            "example": "any"
+                          },
+                          "classification_status": {
+                            "type": "string",
+                            "enum": [
+                              "classified",
+                              "evidence_gap",
+                              "coverage_gap",
+                              "unclassified"
+                            ],
+                            "description": "classification_status：search 可选的分类状态；classified 表示已分类，evidence_gap 表示证据不足，coverage_gap 表示分类覆盖不足，unclassified 表示没有分类记录。状态与分类归属条件同时生效；unclassified 与 root_id 或 category_ids 组合时返回空页。",
+                            "example": "classified"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "mode",
+                          "id"
+                        ],
+                        "description": "Resolve branch for one Prompt-term Catalog record.",
+                        "properties": {
+                          "mode": {
+                            "const": "resolve",
+                            "description": "Catalog request branch discriminator for stable-ID resolution",
+                            "example": "resolve"
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "Decimal prompt_terms.id value represented as a stable string identifier",
+                            "example": "123"
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "mode": {
+                            "const": "resolve",
+                            "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                            "example": "resolve"
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。",
+                            "example": "123"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__query_semantic_works",
+              "description": "## 查询用途\n\n1. 查找作品及其已有角色名称，或按已知作品 ID 直接读取作品记录。需要作品下的角色信息时，将作品 ID 转为字符串，填入 query_semantic_characters 的 work_id。\n\n## 输入参数\n\n1. mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。\n2. query：search 使用的作品名称、别名或类别线索；省略或空字符串时浏览可用作品，非空文字执行语义检索。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. page_size：每页记录数量；默认 20，最小 1，最大 100。\n5. id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。\n10. results[].id：记录定位；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。\n11. results[].name：记录定位；始终提供名称。核对作品名称。\n12. results[].aliases_json：记录定位；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。\n13. results[].category_name：作品分类；null 表示未填写作品类别。核对作品所属类别。\n14. results[].character_names：角色查找；空数组表示作品下没有可用角色。据此选择角色，再调用 query_semantic_characters 获取角色记录。",
+              "parameters": {
+                "type": "object",
+                "oneOf": [
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "mode"
+                        ],
+                        "description": "Search branch for the work Catalog operation.",
+                        "properties": {
+                          "mode": {
+                            "const": "search",
+                            "description": "Catalog request branch discriminator for semantic work search",
+                            "example": "search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 200,
+                            "default": "",
+                            "description": "Work name, aliases, and category text sent to the fixed work semantic index",
+                            "example": "watercolor"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "One-based result page number",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "Maximum number of work items returned on one page",
+                            "example": 20
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "mode": {
+                            "const": "search",
+                            "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                            "example": "search"
+                          },
+                          "query": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 200,
+                            "default": "",
+                            "description": "query：search 使用的作品名称、别名或类别线索；省略或空字符串时浏览可用作品，非空文字执行语义检索。",
+                            "example": "watercolor"
+                          },
+                          "page": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100000,
+                            "default": 1,
+                            "description": "page：页码；默认 1，最小 1，最大 100000。",
+                            "example": 1
+                          },
+                          "page_size": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20,
+                            "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                            "example": 20
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "mode",
+                          "id"
+                        ],
+                        "description": "Resolve branch for one work Catalog record.",
+                        "properties": {
+                          "mode": {
+                            "const": "resolve",
+                            "description": "Catalog request branch discriminator for stable-ID resolution",
+                            "example": "resolve"
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "Decimal works.id value represented as a stable string identifier",
+                            "example": "123"
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "mode": {
+                            "const": "resolve",
+                            "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                            "example": "resolve"
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 20,
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。",
+                            "example": "123"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__search_artist_prompt_strings",
+              "description": "## 查询用途\n\n1. 查找指定画风关联的画师串，或按视觉效果搜索画师串候选；可直接用画风名称和底模名称筛选。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].styles：关联筛选；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。\n12. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。\n13. results[].artist_string：Prompt 素材；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。\n22. results[].styles[].id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].styles[].name：资源定位；始终提供。核对资源名称。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "base_model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "style": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  }
+                },
+                "required": []
+              }
+            },
+            {
+              "name": "mcp__noobai__search_base_models",
+              "description": "## 查询用途\n\n1. 浏览或查找底模名称与 ID。查询已知底模下的资源时，直接调用目标资源的搜索工具并填写 base_model 条件。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. next.tool：查询控制；始终提供。选择对应工具。\n11. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n12. suggested_call.tool：查询控制；始终提供。选择对应工具。\n13. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n14. results[].ref.kind：资源定位；始终提供。识别资源类别。\n15. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": []
+              }
+            },
+            {
+              "name": "mcp__noobai__search_instance_nodes",
+              "description": "## 查询用途\n\n1. 按类名、显示名称或说明文字查询实例当前节点。将 class_name 传给 get_instance_node 读取完整定义。\n\n## 输入参数\n\n1. query：填写节点类名、显示名称或说明中的搜索文字；空字符串或省略时浏览节点。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n5. instance_id：资源定位；始终提供。定位登记实例。\n6. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n7. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n8. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n9. results[].class_name：资源定位；始终提供。识别节点类别，并填写 Workflow 节点的 class_type。\n10. results[].display_name：资源定位；null 或空字符串表示远端未提供显示名称。展示远端节点名称；选择节点时使用 class_name。\n11. results[].category：资源定位；空字符串表示远端未提供分类。识别节点分类。\n12. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示没有节点说明。比较节点，需要完整定义时读取详情。\n13. next.tool：查询控制；始终提供。选择对应工具。\n14. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "instance_id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "资源 ID，使用正整数十进制字符串。"
+                  },
+                  "query": {
+                    "type": "string",
+                    "description": "query：填写节点类名、显示名称或说明中的搜索文字；空字符串或省略时浏览节点。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  }
+                },
+                "required": [
+                  "instance_id"
+                ]
+              }
+            },
+            {
+              "name": "mcp__noobai__search_instances",
+              "description": "## 查询用途\n\n1. 查询实例登记目录。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].url：实例连接；始终提供。连接已登记的实例服务地址。\n11. results[].enabled：登记状态；始终提供布尔值。识别管理员保存的启用配置。\n12. results[].validation_passed：登记状态；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。\n13. next.tool：查询控制；始终提供。选择对应工具。\n14. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n15. suggested_call.tool：查询控制；始终提供。选择对应工具。\n16. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n17. results[].ref.kind：资源定位；始终提供。识别资源类别。\n18. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "validation_passed": {
+                    "type": "boolean"
+                  }
+                },
+                "required": []
+              }
+            },
+            {
+              "name": "mcp__noobai__search_loras",
+              "description": "## 查询用途\n\n1. 按视觉效果查找 LoRA 候选，或浏览指定底模、模型关联的 LoRA；可直接用底模名称或模型文件名筛选。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].file_name：生成配置；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。\n11. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n12. results[].model：关联筛选；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。\n13. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。\n14. results[].trigger_words：Prompt 素材；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。\n15. results[].weight：生成配置；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。\n16. next.tool：查询控制；始终提供。选择对应工具。\n17. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. suggested_call.tool：查询控制；始终提供。选择对应工具。\n19. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n20. results[].ref.kind：资源定位；始终提供。识别资源类别。\n21. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n22. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].base_model.name：资源定位；始终提供。核对资源名称。\n24. results[].model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].model.name：资源定位；始终提供。核对资源名称。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "base_model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "file_format": {
+                    "type": "string"
+                  },
+                  "precision_or_quantization": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": []
+              }
+            },
+            {
+              "name": "mcp__noobai__search_models",
+              "description": "## 查询用途\n\n1. 按视觉效果查找生成模型候选，或浏览指定底模下的模型；可直接用已知底模名称筛选。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].file_name：生成配置；始终提供。将该文件名用于模型加载节点的文件名参数。\n11. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n12. results[].file_format：资源定位；始终提供。核对模型文件格式。\n13. results[].precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n14. results[].author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n15. results[].version：资源定位；null 表示未填写版本。核对资源版本。\n16. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。\n17. results[].skill_name：Skill 选择；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。\n18. next.tool：查询控制；始终提供。选择对应工具。\n19. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n20. suggested_call.tool：查询控制；始终提供。选择对应工具。\n21. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n22. results[].ref.kind：资源定位；始终提供。识别资源类别。\n23. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n24. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].base_model.name：资源定位；始终提供。核对资源名称。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "base_model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "file_format": {
+                    "type": "string"
+                  },
+                  "precision_or_quantization": {
+                    "type": "string"
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": []
+              }
+            },
+            {
+              "name": "mcp__noobai__search_styles",
+              "description": "## 查询用途\n\n1. 按视觉效果查找画风候选，可直接用底模名称筛选。需要已知画风关联的画师串时，使用 search_artist_prompt_strings 的 style 条件。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].aliases：资源定位；空数组表示没有别名。辅助识别画风。\n12. results[].style_description：资源选择与使用指导；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。\n13. results[].prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "base_model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  }
+                },
+                "required": []
+              }
+            },
+            {
+              "name": "mcp__noobai__search_workflows",
+              "description": "## 查询用途\n\n1. 查找指定底模、模型或 LoRA 关联的工作流，或按视觉描述搜索工作流候选；可直接使用关联名称或文件名。需要完整节点配置时，将候选 ref 传入 get_catalog_resource。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n12. results[].lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n13. results[].workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。\n22. results[].model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].model.name：资源定位；始终提供。核对资源名称。\n24. results[].lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].lora.name：资源定位；始终提供。核对资源名称。",
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "base_model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "lora": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "workflow_type": {
+                    "type": "string",
+                    "enum": [
+                      "text_to_image",
+                      "text_to_image_lora",
+                      "text_to_image_hires_fix",
+                      "text_to_image_second_pass",
+                      "text_to_video",
+                      "image_to_image",
+                      "image_to_video",
+                      "video_to_video",
+                      "style_transfer",
+                      "controlnet",
+                      "inpainting",
+                      "outpainting",
+                      "upscale",
+                      "face_detailer",
+                      "other"
+                    ]
+                  }
+                },
+                "required": []
+              }
+            },
+            {
+              "name": "read_mcp_resource",
+              "description": "Read an MCP resource by URI from the named server. Use a listed URI or an expanded resource template.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "server": {
+                    "type": "string",
+                    "description": "Configured MCP server name."
+                  },
+                  "uri": {
+                    "type": "string",
+                    "description": "Resource URI to read."
+                  }
+                },
+                "required": [
+                  "server",
+                  "uri"
+                ]
+              }
+            },
+            {
+              "name": "skill",
+              "description": "Load the full instructions for a skill. Call it before acting on a task that names or clearly matches a skill in the session skill catalog.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The exact skill name from the available skills list."
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            {
+              "name": "subagent_task",
+              "description": "向子 Agent 派发任务。\n\n派发前确定子任务的输入、输出文件和完成条件。status=accepted 表示指定子会话已接纳任务，由该子会话执行并写入产物。父 Agent 保存回执，等待宿主结束通知后读取并核对结果；等待期间可处理无关工作。父 Agent 不得代写已委派的产物或重复执行已委派的生成。同一任务补齐缺项、恢复执行或用户要求复用子会话时，通过原工具填写原 subagentId 作为 agent_id 续派。完成、inactive 和 max-tokens 表示该次执行已结束，原子会话身份仍可接收后续消息；身份缺失时先用 list_agents 找回。",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "子 Agent 会话在列表中显示的简短任务标签。"
+                  },
+                  "task": {
+                    "type": "string",
+                    "description": "本次交给子 Agent 的完整任务要求和输入材料。"
+                  },
+                  "agent_id": {
+                    "type": "string",
+                    "description": "续派时填写此前返回的 subagentId；首次创建时省略。"
+                  }
+                },
+                "required": [
+                  "description",
+                  "task"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "reason": "initial"
+      }
+    },
+    {
+      "type": "request/context",
+      "seq": 14,
+      "time": 1792937438985,
+      "data": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling:free",
+        "contextWindow": 1048576
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 15,
+      "time": 1792937442981,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "call_e785f8d621944d96a970fa50",
+              "name": "skill",
+              "arguments": "{\"name\":\"local-image-reader\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "openrouter",
+                "model": "thinkingmachines/inkling:free",
+                "responseId": "gen-1792937440-1rfAETxLUtK81TkU8c3Y",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "87c47e93-3f04-467d-bcff-c70c08a390c2"
+        },
+        "usage": {
+          "inputTokens": 22091,
+          "outputTokens": 18,
+          "totalTokens": 22109
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792937442969,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1792937442969,
+            "index": 0,
+            "dt": [
+              8
+            ],
+            "id": "call_e785f8d621944d96a970fa50",
+            "name": "skill",
+            "args": [
+              "",
+              "{\"name\": \"local-image-reader\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792937442980,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "call_e785f8d621944d96a970fa50",
+                "name": "skill",
+                "arguments": "{\"name\":\"local-image-reader\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937442980,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 22091,
+                "outputTokens": 18,
+                "totalTokens": 22109
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937442980,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "openrouter",
+                  "model": "thinkingmachines/inkling:free",
+                  "responseId": "gen-1792937440-1rfAETxLUtK81TkU8c3Y",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 16,
+      "time": 1792937442981,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "call_e785f8d621944d96a970fa50",
+        "name": "skill",
+        "arguments": "{\"name\":\"local-image-reader\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 17,
+      "time": 1792937442987,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_e785f8d621944d96a970fa50"
+          },
+          "toolCallId": "call_e785f8d621944d96a970fa50",
+          "content": [
+            {
+              "type": "text",
+              "text": "<skill_content name=\"local-image-reader\">\n<skill_resources>\nBase directory for this skill: /Users/fzfz/.agents/skills/local-image-reader\nResolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.\n</skill_resources>\n\n<skill_instructions>\n# Local Image Reader\n\n## 1. 读取 CLI 合同\n\n1. 当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/image-inspection-cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。\n\n## 2. 取得本地图片路径\n\n1. 当前 Agent 必须从用户消息中按出现顺序收集一张或多张本地图片的绝对路径。用户指代当前消息中带有本地路径的图片附件时，当前 Agent 必须使用该附件提供的本地绝对路径。当前消息没有可用的本地图片绝对路径时，当前 Agent 必须请用户提供至少一个本地图片绝对路径，并结束本次 Skill 执行。\n\n2. 当前 Agent 只把用户明确提供或明确指代的本地图片路径加入本次读取列表。当前 Agent 必须保留重复路径和输入顺序。\n\n## 3. 确定本次读图提示词\n\n1. 用户明确给出本次读图提示词，或者明确要求视觉模型专门观察某项画面内容或按指定格式返回观察时，当前 Agent 必须把该要求组织成一份脱离默认提示词也能独立理解的完整 `prompt`。`prompt` 的缺省与覆盖行为见 [CLI 参考](references/image-inspection-cli.md#参数与标准输入)“参数与标准输入”第 5 项。用户只要求一般性的图片识别、描述或分析，没有指定观察重点或返回格式时，当前 Agent 必须省略 `prompt`。\n\n2. 同一项观察要求适用于多张图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为不同图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。\n\n## 4. 逐图读取\n\n1. 当前 Agent 必须按输入顺序为每张图片分别调用一次 `ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin`。每次调用的 stdin JSON 必须包含当前图片的 `file_path`，并且只在第 3 节确定了本次读图提示词时包含 `prompt`。图片读取使用 Harness“图片读取”设置中当前命名配置保存的视觉模型和采样参数。\n\n2. 命令成功后，当前 Agent 必须读取返回路径中的结果文件。\n\n3. 某张图片读取失败时，当前 Agent 必须记录该图片的 `file_path`、命令错误码和错误消息，并继续读取其余图片。用户或宿主取消调用时，当前 Agent 必须立即结束本次 Skill 执行。\n\n## 5. 返回观察结果\n\n1. 当前 Agent 必须按输入路径顺序返回每张图片的以下结果：\n\n   1. `file_path`；\n   2. CLI 结果文件中的 `provider` 与 `model`；\n   3. CLI 结果文件中的 `observation`，或本次读取的错误码与错误消息。\n\n2. 当前 Agent 仅根据用户的问题组织成功返回的 `observation`，并使用这些观察结果回答该问题。\n</skill_instructions>\n</skill_content>"
+            }
+          ],
+          "isError": false,
+          "id": "f2324f2b-c96f-4611-8ea6-b86f7c9e5441"
+        }
+      },
+      "sourceEventSeqs": [
+        16
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 18,
+      "time": 1792937442988,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 19,
+      "time": 1792937442995,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 20,
+      "time": 1792937446056,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "call_2b9fc12df5e24c98ba2a2ac5",
+              "name": "bash",
+              "arguments": "{\"command\":\"ls -la /Users/fzfz/.agents/skills/local-image-reader\",\"description\":\"List skill directory contents\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "openrouter",
+                "model": "thinkingmachines/inkling:free",
+                "responseId": "gen-1792937443-pg1BYc3s1ya6cUluNYAW",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "0aba3f6b-758a-477b-8df0-36e785a4aa66"
+        },
+        "usage": {
+          "inputTokens": 956,
+          "outputTokens": 37,
+          "totalTokens": 23009,
+          "cacheReadTokens": 22016
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792937446051,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1792937446051,
+            "index": 0,
+            "dt": [
+              0
+            ],
+            "id": "call_2b9fc12df5e24c98ba2a2ac5",
+            "name": "bash",
+            "args": [
+              "",
+              "{\"command\": \"ls -la /Users/fzfz/.agents/skills/local-image-reader\", \"description\": \"List skill directory contents\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792937446055,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "call_2b9fc12df5e24c98ba2a2ac5",
+                "name": "bash",
+                "arguments": "{\"command\":\"ls -la /Users/fzfz/.agents/skills/local-image-reader\",\"description\":\"List skill directory contents\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937446055,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 956,
+                "outputTokens": 37,
+                "totalTokens": 23009,
+                "cacheReadTokens": 22016
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937446055,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "openrouter",
+                  "model": "thinkingmachines/inkling:free",
+                  "responseId": "gen-1792937443-pg1BYc3s1ya6cUluNYAW",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 21,
+      "time": 1792937446056,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "call_2b9fc12df5e24c98ba2a2ac5",
+        "name": "bash",
+        "arguments": "{\"command\":\"ls -la /Users/fzfz/.agents/skills/local-image-reader\",\"description\":\"List skill directory contents\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 22,
+      "time": 1792937446084,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_2b9fc12df5e24c98ba2a2ac5"
+          },
+          "toolCallId": "call_2b9fc12df5e24c98ba2a2ac5",
+          "content": [
+            {
+              "type": "text",
+              "text": "lrwxr-xr-x@ 1 fzfz  staff  74 Oct 25 21:15 /Users/fzfz/.agents/skills/local-image-reader -> /Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/local-image-reader\n"
+            }
+          ],
+          "isError": false,
+          "id": "023fde86-656f-47d1-a961-ea88cc0127d9"
+        },
+        "meta": {
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn"
+        }
+      },
+      "sourceEventSeqs": [
+        21
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 23,
+      "time": 1792937446085,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 24,
+      "time": 1792937446094,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 25,
+      "time": 1792937452590,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "call_55ee23b768a84db2ab98fa84",
+              "name": "bash",
+              "arguments": "{\"command\":\"cat /Users/fzfz/.agents/skills/local-image-reader/references/image-inspection-cli.md\",\"description\":\"Read CLI reference file\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "openrouter",
+                "model": "thinkingmachines/inkling:free",
+                "responseId": "gen-1792937446-ieOXRlcPRJNspDy6cNlj",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "6d0e0c9c-f26d-44e0-89c9-00731ebbf29c"
+        },
+        "usage": {
+          "inputTokens": 161,
+          "outputTokens": 42,
+          "totalTokens": 23115,
+          "cacheReadTokens": 22912
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792937452585,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1792937452585,
+            "index": 0,
+            "dt": [
+              4
+            ],
+            "id": "call_55ee23b768a84db2ab98fa84",
+            "name": "bash",
+            "args": [
+              "",
+              "{\"command\": \"cat /Users/fzfz/.agents/skills/local-image-reader/references/image-inspection-cli.md\", \"description\": \"Read CLI reference file\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792937452589,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "call_55ee23b768a84db2ab98fa84",
+                "name": "bash",
+                "arguments": "{\"command\":\"cat /Users/fzfz/.agents/skills/local-image-reader/references/image-inspection-cli.md\",\"description\":\"Read CLI reference file\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937452589,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 161,
+                "outputTokens": 42,
+                "totalTokens": 23115,
+                "cacheReadTokens": 22912
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937452589,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "openrouter",
+                  "model": "thinkingmachines/inkling:free",
+                  "responseId": "gen-1792937446-ieOXRlcPRJNspDy6cNlj",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 26,
+      "time": 1792937452590,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "callId": "call_55ee23b768a84db2ab98fa84",
+        "name": "bash",
+        "arguments": "{\"command\":\"cat /Users/fzfz/.agents/skills/local-image-reader/references/image-inspection-cli.md\",\"description\":\"Read CLI reference file\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 27,
+      "time": 1792937452608,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_55ee23b768a84db2ab98fa84"
+          },
+          "toolCallId": "call_55ee23b768a84db2ab98fa84",
+          "content": [
+            {
+              "type": "text",
+              "text": "---\n文档用途: 定义本地图片读取命令的调用条件、输入输出与错误处理。\n读取时机: Skill 执行者首次调用图片读取命令前。\n---\n# Harness ComfyUI 本地图片读取 CLI 参考\n\n## CLI 的用途与适用任务\n\n1. Harness ComfyUI 本地图片读取 CLI 使用 Harness“图片读取”设置中当前命名配置的视觉模型读取一张本地图片。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时，`local-image-reader` Skill 调用 `image inspect --stdin`。\n\n2. 该命令只读取调用者提供的本地图片路径并返回视觉模型观察文本。调用副作用见“副作用与重复调用”。\n\n## 调用环境与可执行入口\n\n1. Harness ComfyUI Host 必须处于运行状态。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE`、CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`、Host 连接地址和本次调用的短期授权凭证（capability）。Skill 执行者必须设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，并执行本文件定义的命令。\n\n2. Skill 执行者可以从当前 Session 工作目录调用该命令。`file_path` 的条件和来源分别见“参数与标准输入”和“图片路径与提示词的来源”。\n\n3. 用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图提示词、`temperature`、最大输出 Token 和模型连接信息。Skill 执行者按“参数与标准输入”提供本次输入。\n\n## 命令与调用时机\n\n1. 每张图片的调用次数、输入顺序和取消处理按 `SKILL.md` 第 4 节执行。`image inspect --stdin` 每次只接受一个 `file_path`：\n\n   ```sh\n   ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin\n   ```\n\n## 参数与标准输入\n\n1. 该命令接受可选的 `--quiet`，用于省略成功后的操作提示。Skill 执行者必须向 stdin 写入包含 `file_path` 的 JSON 对象：\n\n   ```json\n   {\n     \"file_path\": \"/absolute/local/path/result.png\"\n   }\n   ```\n\n2. 调用者提供可选的 `prompt` 时，stdin 使用以下字段：\n\n   ```json\n   {\n     \"file_path\": \"/absolute/local/path/result.png\",\n     \"prompt\": \"只识别图片中可见的文字，并按从上到下的顺序返回。\"\n   }\n   ```\n\n3. `file_path` 必须是长度不超过一万个字符的非空字符串。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小必须在 Host 当前图片输入上限以内。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。`file_path` 中的字符必须位于 U+0000–U+001F 和 U+007F–U+009F 控制字符范围以外。\n\n4. 视觉模型接收的是缩小后的图片：每帧宽高约为原图的 70%，输出尺寸取整数像素且每边至少为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。用户原图保持不变，成功输出中的 `file_path` 仍为输入的原图绝对路径。\n\n5. `prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图提示词；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图提示词。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串；该字符串可以包含 JSON 转义后的换行符。\n\n6. 缺失 `file_path`、`file_path` 不是字符串、路径超过长度限制、路径包含控制字符、`prompt` 不是字符串或 stdin JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。空白 `prompt` 与超过长度上限的 `prompt` 由 Host 分别返回 `IMAGE_READER_PROMPT_REQUIRED` 与 `IMAGE_READER_PROMPT_TOO_LONG`。Skill 执行者不得通过命令行或 stdin 传入 Provider、模型、凭据、`temperature` 或最大输出 Token。\n\n## 图片路径与提示词的来源\n\n1. 图片 `file_path` 的来源按 `SKILL.md` 第 2 节执行；`prompt` 的选择和构造按 `SKILL.md` 第 3 节执行。\n\n## 结果文件中的 JSON 与完成语义\n\n1. 结果文件包含以下结构的 JSON：\n\n   ```json\n   {\n     \"provider\": \"provider-route\",\n     \"model\": \"vision-model\",\n     \"file_path\": \"/absolute/local/path/result.png\",\n     \"observation\": \"图片中可见一名白发人物，采用半身正面构图。\"\n   }\n   ```\n\n2. `provider` 和 `model` 是 Host 报告的本次图片读取连接标识与实际模型。`file_path` 是本次输入的本地图片路径。`observation` 是视觉模型返回的图片观察文本。该输出表示本次视觉模型调用已经完成。\n\n3. 命令错误按“错误、修正与重试”处理。\n\n## 错误、修正与重试\n\n1. 公共文件错误按“帮助与 Python 调用”处理。Skill 执行者按下表处理其他错误：\n\n   | 错误码 | 含义与修正动作 |\n   | --- | --- |\n   | `CLI_ARGUMENT_INVALID` | Skill 执行者使用了未定义的命令行或选项。Skill 执行者必须按本文件的固定命令行重新构造调用。 |\n   | `CLI_REQUEST_INVALID` | stdin JSON 不符合输入合同。Skill 执行者必须修正 `file_path` 的属性名、类型、长度或字符，修正 `prompt` 的属性名或类型，或删除额外属性后重试。 |\n   | `CLI_ENVIRONMENT_INVALID` | 当前 shell Tool Call 没有可用的 managed CLI 环境，或 Host endpoint 无效。Skill 执行者必须改用受管前台 shell Tool Call，并确认 Harness ComfyUI Host 正在运行。 |\n   | `CLI_CAPABILITY_INVALID` | Host 拒绝当前 shell Tool Call 的 capability。Skill 执行者必须在新的受管前台 shell Tool Call 中重试。 |\n   | `CLI_REQUEST_TOO_LARGE` | CLI 脚本或 Host 拒绝超过请求体上限的 stdin JSON。Skill 执行者必须确认本次 JSON 只包含一个 `file_path` 和可选 `prompt`，并缩短过长输入。 |\n   | `CLI_RESPONSE_TOO_LARGE` | Host 响应超过 CLI 读取上限。Skill 执行者必须报告当前 `file_path` 和错误码，并停止重试当前图片。 |\n   | `CLI_PROTOCOL_ERROR` | Host 返回的响应不符合 CLI 要求。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n   | `CLI_REQUEST_FAILED` | CLI 无法完成 loopback Host 请求。Skill 执行者必须确认 Host 仍在运行后重试。 |\n   | `CLI_INTERNAL_ERROR` | Harness ComfyUI Host 在处理请求时发生内部错误。Skill 执行者必须报告错误码和错误文本，并请用户检查 Harness ComfyUI Host；用户确认问题修复后，Skill 执行者可以重试。 |\n   | `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |\n   | `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图提示词。 |\n   | `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |\n   | `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，目标不是 Host 可读取的非空普通文件，输入文件或缩放结果超过 Host 当前图片输入上限，文件读取失败，图片内容签名不是 PNG、JPEG、WebP 或 GIF，或 Host 无法解码、缩放或按原格式重新编码图片。Skill 执行者必须报告当前 `file_path`；用户提供满足输入条件且可以完成缩放的本地图片绝对路径后，Skill 执行者可以重试。 |\n   | `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`；Host 图片读取服务恢复后，Skill 执行者可以重试。 |\n   | `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试。 |\n   | `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试。 |\n   | `IMAGE_READER_PROVIDER_FAILED` | Host 没有完成本次视觉模型调用。Skill 执行者必须报告当前 `file_path` 和 Host 返回的错误文本；当前命名配置对应的模型服务恢复后，Skill 执行者可以重试。 |\n   | `IMAGE_READER_EMPTY_RESPONSE` | 当前视觉模型调用没有返回观察文本。Skill 执行者必须报告当前 `file_path`；本次调用包含 `prompt` 时检查该 `prompt`，省略 `prompt` 时请用户检查当前配置的默认读图提示词，然后重试。 |\n\n1. 调用取消时，Skill 执行者按“命令与调用时机”结束本次执行。\n\n## 副作用与重复调用\n\n1. `image inspect --stdin` 不创建或修改 Generation Run、Saved Media、图片读取设置或 Prompt。该命令根据当前命名配置发起一次视觉模型请求。重复调用同一路径会再次发起视觉模型请求。CLI 不缓存或覆盖前一次成功观察。\n\n## 完整调用示例\n\n1. 以下命令展示只传入 `file_path` 时的输入格式：\n\n   ```sh\n   ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n   {\"file_path\":\"/absolute/local/path/result.png\"}\n   JSON\n   ```\n\n2. 以下命令展示 `file_path` 与可选 `prompt` 一起传入时的输入格式：\n\n   ```sh\n   ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" image inspect --stdin <<'JSON'\n   {\"file_path\":\"/absolute/local/path/result.png\",\"prompt\":\"只识别图片中可见的文字，并按从上到下的顺序返回。\"}\n   JSON\n   ```\n\n## 帮助与 Python 调用\n\n1. 首次调用受管 CLI 前，Skill 执行者将本文件调用入口中的 `--stdin` 替换为 `--help`，读取该命令帮助。公共输出与文件错误按帮助处理。本文件的成功 JSON 指返回路径中的文件内容。\n\n2. Python 调用必须把 `image`、`inspect`、`--stdin` 分别作为 argv 元素，并通过 `input` 交付 JSON 和关闭 stdin。以下路径是示例，Skill 执行者必须替换为用户提供的实际路径：\n\n   ```python\n   import json\n   import os\n   import subprocess\n   from pathlib import Path\n\n   node_environment = os.environ.copy()\n   node_environment[\"ELECTRON_RUN_AS_NODE\"] = \"1\"\n   result = subprocess.run(\n       [\n           os.environ[\"DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\"],\n           \"--expose-internals\",\n           os.environ[\"DSH_HARNESS_COMFYUI_CLI\"],\n           \"image\",\n           \"inspect\",\n           \"--stdin\",\n       ],\n       input=json.dumps({\"file_path\": \"/absolute/local/path/result.png\"}),\n       text=True,\n       capture_output=True,\n       env=node_environment,\n   )\n   if result.returncode == 0:\n       result_path = Path(result.stdout.removesuffix(\"\\n\"))\n       observation = json.loads(result_path.read_text(encoding=\"utf-8\"))[\"observation\"]\n       print(observation)\n   else:\n       print(result.stderr)\n   ```\n"
+            }
+          ],
+          "isError": false,
+          "id": "a77fe47a-7e3e-47a4-a8d4-541b03a9f763"
+        },
+        "meta": {
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn"
+        }
+      },
+      "sourceEventSeqs": [
+        26
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 28,
+      "time": 1792937452608,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 29,
+      "time": 1792937452616,
+      "data": {
+        "turn": 1,
+        "step": 4
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 30,
+      "time": 1792937455891,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "call_aad34f0d477840c6b665265a",
+              "name": "bash",
+              "arguments": "{\"command\":\"ls -la /Users/fzfz/.agents/skills/local-image-reader/references/ && echo \\\"---\\\" && ls -la /Users/fzfz/.agents/skills/local-image-reader/\",\"description\":\"List skill dir and references\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "openrouter",
+                "model": "thinkingmachines/inkling:free",
+                "responseId": "gen-1792937453-X94VwkfKeiPDCJDPubZg",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "2635ff7b-dbcc-4f65-a066-751dded15bff"
+        },
+        "usage": {
+          "inputTokens": 3104,
+          "outputTokens": 63,
+          "totalTokens": 26207,
+          "cacheReadTokens": 23040
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792937455884,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1792937455884,
+            "index": 0,
+            "dt": [
+              1
+            ],
+            "id": "call_aad34f0d477840c6b665265a",
+            "name": "bash",
+            "args": [
+              "",
+              "{\"command\": \"ls -la /Users/fzfz/.agents/skills/local-image-reader/references/ && echo \\\"---\\\" && ls -la /Users/fzfz/.agents/skills/local-image-reader/\", \"description\": \"List skill dir and references\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792937455891,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "call_aad34f0d477840c6b665265a",
+                "name": "bash",
+                "arguments": "{\"command\":\"ls -la /Users/fzfz/.agents/skills/local-image-reader/references/ && echo \\\"---\\\" && ls -la /Users/fzfz/.agents/skills/local-image-reader/\",\"description\":\"List skill dir and references\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937455891,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 3104,
+                "outputTokens": 63,
+                "totalTokens": 26207,
+                "cacheReadTokens": 23040
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937455891,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "openrouter",
+                  "model": "thinkingmachines/inkling:free",
+                  "responseId": "gen-1792937453-X94VwkfKeiPDCJDPubZg",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 31,
+      "time": 1792937455893,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "callId": "call_aad34f0d477840c6b665265a",
+        "name": "bash",
+        "arguments": "{\"command\":\"ls -la /Users/fzfz/.agents/skills/local-image-reader/references/ && echo \\\"---\\\" && ls -la /Users/fzfz/.agents/skills/local-image-reader/\",\"description\":\"List skill dir and references\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 32,
+      "time": 1792937455981,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_aad34f0d477840c6b665265a"
+          },
+          "toolCallId": "call_aad34f0d477840c6b665265a",
+          "content": [
+            {
+              "type": "text",
+              "text": "total 32\ndrwxr-xr-x  3 fzfz  staff     96 Oct 16 12:50 .\ndrwxr-xr-x  4 fzfz  staff    128 Oct 16 12:50 ..\n-rw-r--r--  1 fzfz  staff  11512 Oct 16 12:50 image-inspection-cli.md\n---\ntotal 16\ndrwxr-xr-x   4 fzfz  staff   128 Oct 16 12:50 .\ndrwxr-xr-x@ 12 fzfz  staff   384 Oct 20 00:25 ..\n-rw-r--r--   1 fzfz  staff  3363 Oct 16 12:50 SKILL.md\ndrwxr-xr-x   3 fzfz  staff    96 Oct 16 12:50 references\n"
+            }
+          ],
+          "isError": false,
+          "id": "3b9db89c-28e0-433e-bb94-de6db38b482c"
+        },
+        "meta": {
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-skill-discovery-dz2NJn"
+        }
+      },
+      "sourceEventSeqs": [
+        31
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 33,
+      "time": 1792937455981,
+      "data": {
+        "turn": 1,
+        "step": 4
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 34,
+      "time": 1792937456000,
+      "data": {
+        "turn": 1,
+        "step": 5
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 35,
+      "time": 1792937461849,
+      "data": {
+        "turn": 1,
+        "step": 5,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "验收报告（只读，不调用图片模型/业务 CLI，不派发子任务）：\n\n1. Skill 工具读取：已完整读取 `local-image-reader`（返回 `skill_resources` 和 `skill_instructions`）。\n2. 实际目录：`/Users/fzfz/.agents/skills/local-image-reader` → 实际解析到 `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/local-image-reader`（符号链接）。\n3. 参考文件：已读取 `references/image-inspection-cli.md`。\n4. 参考文件标题：文档用途行中的文档标识为 `Harness ComfyUI 本地图片读取 CLI 参考`，文档名为 `references/image-inspection-cli.md`。\n5. 读取状态：成功（文件内容完整可读，包含“CLI 的用途与适用任务”“参数与标准输入”“错误、修正与重试”“副作用与重复调用”等完整章节）。\n6. 本次未执行图片读取、未调用业务 CLI、未派发子任务。"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "openrouter",
+            "model": "thinkingmachines/inkling:free",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "openrouter",
+                "model": "thinkingmachines/inkling:free",
+                "responseId": "gen-1792937456-u9qcEoOMe4rvs9rQJbTw",
+                "stopReason": "stop"
+              },
+              "blocks": [
+                {
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "id": "34a01c6a-a94d-4935-91b9-ceabd4c09347"
+        },
+        "usage": {
+          "inputTokens": 294,
+          "outputTokens": 232,
+          "totalTokens": 26638,
+          "cacheReadTokens": 26112
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792937458450,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "text"
+            }
+          },
+          {
+            "type": "text-chunks",
+            "time0": 1792937458450,
+            "index": 0,
+            "dt": [
+              1380,
+              1025,
+              181,
+              451,
+              1,
+              253,
+              0,
+              98
+            ],
+            "texts": [
+              "验收报告（只读，不",
+              "调用图片模型/业务 CLI，不派",
+              "发子任务）：\n\n1. Skill 工具读取：已完整读取 `local-image-reader`（返回 `skill_resources` 和 `skill_instructions`）。\n2. 实际目录：`/Users/fzfz/.agents/skills/local-image-reader` → 实际解析到 `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/local-image-reader`（符号链接）。\n3. 参考文件：已读取 `references/image-inspection-cli.md`。\n4. 参考文件标题：文档用途行中的文档标识为 `Harness ComfyUI 本地图片读取 CLI 参考`，文档名为 `references/image-inspection-cli.md`。\n5. 读取状态",
+              "：成功（文件内容完整可读",
+              "，包含“CLI 的用途与适",
+              "用任务”“参数与标准输入”“",
+              "错误、修正与重试”“",
+              "副作用与重复调用”等完整章节",
+              "）。\n6. 本次未执行图片读取、未调用业务 CLI、未派发子任务。"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792937461849,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "text",
+                "text": "验收报告（只读，不调用图片模型/业务 CLI，不派发子任务）：\n\n1. Skill 工具读取：已完整读取 `local-image-reader`（返回 `skill_resources` 和 `skill_instructions`）。\n2. 实际目录：`/Users/fzfz/.agents/skills/local-image-reader` → 实际解析到 `/Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills/local-image-reader`（符号链接）。\n3. 参考文件：已读取 `references/image-inspection-cli.md`。\n4. 参考文件标题：文档用途行中的文档标识为 `Harness ComfyUI 本地图片读取 CLI 参考`，文档名为 `references/image-inspection-cli.md`。\n5. 读取状态：成功（文件内容完整可读，包含“CLI 的用途与适用任务”“参数与标准输入”“错误、修正与重试”“副作用与重复调用”等完整章节）。\n6. 本次未执行图片读取、未调用业务 CLI、未派发子任务。"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937461849,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 294,
+                "outputTokens": 232,
+                "totalTokens": 26638,
+                "cacheReadTokens": 26112
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792937461849,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "stop"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "openrouter",
+                  "model": "thinkingmachines/inkling:free",
+                  "responseId": "gen-1792937456-u9qcEoOMe4rvs9rQJbTw",
+                  "stopReason": "stop"
+                },
+                "blocks": [
+                  {
+                    "type": "text"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 36,
+      "time": 1792937461849,
+      "data": {
+        "turn": 1,
+        "step": 5
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 37,
+      "time": 1792937461850,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ]
+}

@@ -6,19 +6,18 @@
 
 ## 测试入口
 
-| 命令 | 覆盖范围 |
-| --- | --- |
-| `pnpm test:unit` | Host、Agent、Client、配置与单元测试辅助模块。 |
-| `pnpm test:integration` | Host 插件组合、业务请求、CLI route 和逐媒体 HTTP 路由。 |
-| `pnpm test:production` | 官方应用 probe、插件安装、Profile 配置、Renderer CDP、插件包与 Desktop 测试运行器的生产模块回归。 |
-| `pnpm test:desktop` | 自动构建并打包当前插件候选，通过已安装官方 Desktop 执行 live UI、插件安装、生命周期与业务 E2E。 |
-| `pnpm test:contract` | package、Git 跟踪、发布门禁和安全合同。 |
-| `pnpm test:prototype` | 静态原型结构与数据关系。 |
-| `pnpm test:coverage` | unit、integration 与 Skills 覆盖率。 |
-| `pnpm quality` | 依赖、类型、覆盖率、合同、安全、production 回归、原型与官方 Desktop E2E 完整门禁。 |
-| `pnpm verify:comfyui-workflows -- --source-url <数据源服务URL> --source-port <端口> --instance-id <数据源服务实例ID> --output <结果JSON路径>` | 已部署数据源服务中的 Workflow 模板、精确参数支持基线、目标实例实时 `/object_info`、组合参数编译、官方页面导出与缓存 miss→hit 一致性；省略 URL 或端口时使用程序配置的本机默认值。 |
+1. `pnpm test:unit`：Host、Agent、Client、配置与单元测试辅助模块。
+2. `pnpm test:integration`：Host 插件组合、业务请求、CLI route 和逐媒体 HTTP 路由。
+3. `pnpm test:production`：官方应用 probe、插件安装、Profile 配置、Renderer CDP、插件包与 Desktop 测试运行器的生产模块回归。
+4. `pnpm test:desktop`：自动构建并打包当前插件候选，通过已安装官方 Desktop 执行 live UI、插件安装、生命周期与业务 E2E。
+5. `pnpm test:contract`：package、Git 跟踪、发布门禁和安全合同。
+6. `pnpm test:prototype`：静态原型结构与数据关系。
+7. `pnpm test:coverage`：unit、integration 与 Skills 覆盖率。
+8. `pnpm quality`：依赖、类型、覆盖率、合同、安全、production 回归、原型与官方 Desktop E2E 完整门禁。
+9. `pnpm verify:comfyui-workflows -- --source-url <数据源服务URL> --source-port <端口> --instance-id <数据源服务实例ID> --output <结果JSON路径>`：已部署数据源服务中的 Workflow 模板、精确参数支持基线、目标实例实时 `/object_info`、组合参数编译、官方页面导出与缓存 miss→hit 一致性；省略 URL 或端口时使用程序配置的本机默认值。
 
-1. `package.json` 是命令名称与 quality 顺序的唯一来源。`test:desktop` 先构建并打包插件，再串行运行配置的 live Desktop、生命周期和 production fixtures。构建包写入 `.local/desktop-e2e/desktop-test-runner/artifacts/`。完整测试使用 `config/desktop-e2e.json` 校验官方应用身份，按 `fresh` 模式隔离 Harness home 与 user-data，再经官方插件管理界面安装候选包。
+10. 测试命令与 `pnpm quality` 的执行顺序见 [package.json](../../package.json)。
+11. `pnpm test:desktop` 的构建包写入 `.local/desktop-e2e/desktop-test-runner/artifacts/`。该命令按 `fresh` 模式隔离 Harness home 与 user-data，并串行执行已配置的 live Desktop、生命周期和 production fixtures 测试。
 
 ## 官方 Desktop E2E 通过条件
 
@@ -44,7 +43,7 @@
 
 ## Preset 与子 Agent 合同
 
-1. [installed-presets.test.mjs](../../tests/unit/installed-presets.test.mjs) 与 [plugin-package.test.mjs](../../tests/production/plugin-package.test.mjs) 验证 7 个项目 Preset 的注册、共享组合、Skill 作用域与包内资源。
+1. [installed-presets.test.mjs](../../tests/unit/installed-presets.test.mjs) 与 [plugin-package.test.mjs](../../tests/production/plugin-package.test.mjs) 验证 7 个项目 Preset 的注册、宿主 Skill service 复用和插件包资源范围。
 2. `tests/production/native-workbench-subagent.test.mjs`、`native-iteration-roles.test.mjs` 和 `native-subagent-completion.test.mjs` 从已注册 Tool 执行入口验证首派、续派、接纳时机、取消和子会话恢复。公共行为见[系统架构](architecture.md#项目-presetskills-与目录访问)。
 3. `pnpm typecheck` 同时检查 TypeScript 源码与 [tsconfig.agent-presets.json](../../tsconfig.agent-presets.json) 声明的 Preset 适配文件。
 
@@ -55,10 +54,10 @@
 
 ## 其他业务验证
 
-1. 目录 MCP 迁移的真实模型验收按 [迁移计划第 5.9 节](../plans/skills-mcp-migration-20261013.md#59-步骤八使用获准模型逐项执行与验收) 执行。
+1. 新功能和缺陷修复的测试覆盖成功、拒绝、清理、错误和边界分支。独立 Reviewer 按内容写作规则审阅语义文档。
 
-2. 新功能和缺陷修复的测试覆盖成功、拒绝、清理、错误和边界分支。语义文档由独立 Reviewer 阅读并按内容写作规则验收；脚本只处理具有确定性规则的数据结构。
+2. 数据源设置与图片读取配置由 [source-settings.test.ts](../../tests/unit/source-settings.test.ts)、[image-reader-settings.test.ts](../../tests/unit/image-reader-settings.test.ts) 和 [host-plugin.test.ts](../../tests/integration/host-plugin.test.ts) 覆盖。[Desktop Skill 测试](../../tests/desktop/official-desktop-live.test.mjs)在仓库检出目录之外的 Workspace 中，验证 7 个项目 Preset 对工作区 Skills、用户级 Skills 和仓库 Skill 软链接的访问，以及工作区同名 Skill 的选择优先级。
 
-3. 数据源设置与图片读取配置由 Host settings 和 Remote 回归覆盖。Repository Skills 可见性测试在 checkout 外的 Workspace 验证 7 个项目 Preset 的包内 Skill 资源与其他 Preset、Workspace Skills 的隔离。managed CLI 的进程测试验证 6 条业务命令的结果文件与错误阶段；独立包测试验证安装入口的路径发布与文件内容。官方 Desktop 的前台 Bash Tool Call 验证 capability 生成、请求身份、返回路径与后续文件读取。
+3. managed CLI 的[进程测试](../../tests/integration/cli-command.test.ts)验证 6 条业务命令的结果文件与错误阶段；[独立包测试](../../tests/production/plugin-package.test.mjs)验证安装入口返回的路径及对应文件内容。官方 Desktop 的前台 Bash Tool Call 验证 capability 生成、请求身份、返回路径与后续文件读取。
 
 4. Workflow verification 使用已经部署的数据源服务和目标 ComfyUI 实例。验收记录包含服务地址、端口、实例 ID、结果 JSON 路径、参数支持结果、官方前端导出和缓存 miss/hit 比较结果。

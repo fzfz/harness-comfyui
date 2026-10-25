@@ -26,8 +26,7 @@ async function resolvePatched(root, patch) {
   const rows = apply(original, patch.config.patches)
   const result = []
   for (const row of rows) {
-    const group = row.config.plugins.find(entry => entry.id === 'project-skill-scope')
-    const composition = group.config.find(entry => entry.id === 'composition')
+    const composition = row.config.plugins.find(entry => entry.id === 'composition')
     const path = resolve(root, 'agent-presets', composition.config.path)
     const originalComposition = await readRows(path)
     const composed = apply(originalComposition, composition.config.patches)
@@ -107,7 +106,8 @@ describe('installed Preset Profile overrides', () => {
     const patch = await createOfficialPresetProfilePatch({ installedPackageRoot: root, mcpUrl: 'http://127.0.0.1:31234/mcp', roleAgentOptions })
     expect(patch.id).toBe('harness-comfyui-presets')
     const { original, rows, result } = await resolvePatched(root, patch)
-    expect(rows.map(row => row.config.plugins[0].isolate)).toEqual(original.map(row => row.config.plugins[0].isolate))
+    const pluginIdentities = entries => entries.map(row => row.config.plugins.map(({ id, name }) => ({ id, name })))
+    expect(pluginIdentities(rows)).toEqual(pluginIdentities(original))
     for (const entry of result) {
       expect(entry.mcp[0].config).toEqual({ ...entry.originalMcp[0].config, url: 'http://127.0.0.1:31234/mcp' })
       expect(entry.mcp[0].config.headers.Authorization).toEqual({ __jsExpr: '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`' })

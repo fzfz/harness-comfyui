@@ -35,7 +35,6 @@ async function fixture({
       additionalManagedPresetIds: [presetIds[1]],
       sourceRootRelativePath: 'project-presets',
     },
-    skills: { sourceRootRelativePath: '.agents/skills' },
   }, null, 2), 'utf8')
   for (const presetId of presetIds) {
     const directory = resolve(sourceRoot, presetId)
@@ -188,7 +187,6 @@ describe('project Agent Preset resource reader', () => {
           additionalManagedPresetIds: ['fixture-iteration'],
           sourceRootRelativePath: 'project-presets',
         },
-        skills: { sourceRootRelativePath: '.agents/skills' },
       },
     })
 
@@ -204,7 +202,6 @@ describe('project Agent Preset resource reader', () => {
           additionalManagedPresetIds: ['fixture-workbench'],
           sourceRootRelativePath: 'project-presets',
         },
-        skills: { sourceRootRelativePath: '.agents/skills' },
       },
     })
 
@@ -220,7 +217,6 @@ describe('project Agent Preset resource reader', () => {
           additionalManagedPresetIds: ['fixture-iteration'],
           sourceRootRelativePath: '../outside',
         },
-        skills: { sourceRootRelativePath: '.agents/skills' },
       },
     })
 
@@ -229,7 +225,7 @@ describe('project Agent Preset resource reader', () => {
 
   it.each([
     ['unsupported schema version', { schemaVersion: 2, preset: {}, skills: {} }],
-    ['missing skills source root', {
+    ['unsupported skills configuration', {
       schemaVersion: 3,
       preset: {
         id: 'fixture-workbench',
@@ -248,7 +244,6 @@ describe('project Agent Preset resource reader', () => {
     ['preset.installRootRelativePath', 'preset', 'installRootRelativePath'],
     ['preset.retiredManagedPresetIds', 'preset', 'retiredManagedPresetIds'],
     ['preset.sharedFiles', 'preset', 'sharedFiles'],
-    ['skills.environmentVariable', 'skills', 'environmentVariable'],
   ])('rejects retired product-agent field %s', async (_label, section, field) => {
     const productAgent = {
       schemaVersion: 3,
@@ -257,7 +252,6 @@ describe('project Agent Preset resource reader', () => {
         additionalManagedPresetIds: ['fixture-iteration'],
         sourceRootRelativePath: 'project-presets',
       },
-      skills: { sourceRootRelativePath: '.agents/skills' },
     }
     productAgent[section][field] = 'retired'
     const root = await fixture({ productAgent })

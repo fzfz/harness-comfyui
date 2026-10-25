@@ -17,7 +17,7 @@
 
 2. `agent-presets/presets.cordis.yml` 在插件 bundle 中注册 7 个项目 Preset，并通过包内相对路径加载各自的 `agent.cordis.yml`。每个 Preset 必须通过 `agent-presets/shared/agent.cordis.yml` 加载公共组合，并在自身配置中声明 persona 与自身工具。
 
-3. 插件安装包包含 `agent-presets/` 和 `.agents/skills/`。插件构建校验 Preset 配置，打包流程校验资源清单和包内引用。
+3. 插件安装包包含 `agent-presets/`。插件构建校验 Preset 配置，打包流程校验资源清单和包内引用。
 
 4. 开发者修改预设注册时必须保持以下身份：
 
@@ -28,11 +28,9 @@
 
 ## 项目 Skill 来源与作用域
 
-1. 当前 checkout 的 `.agents/skills/<skill-name>/` 是项目 Skill 唯一源码目录。开发者在该目录创建或修改 Skill，并使用该目录中的文件构建插件包。
+1. 当前 checkout 的 `.agents/skills/<skill-name>/` 是项目 Skill 唯一源码目录。开发者在该目录创建或修改 Skill。
 
-2. `agent-presets/presets.cordis.yml` 必须为每个项目 Preset 隔离 Skill service。包内 Skill provider 的加载入口和作用域见[系统架构](../system/architecture.md#项目-presetskills-与目录访问)。
-
-3. 项目 Preset 必须按安装包内相对路径读取项目 Skills。官方内置 Preset 与其他 Preset 保留官方的 Workspace 和用户级 Skill 来源。
+2. 项目 Preset 的 Skill 服务与目录来源见[系统架构](../system/architecture.md#项目-presetskills-与目录访问)。
 
 ## Tool schema 可见性
 
@@ -48,7 +46,7 @@
 
 2. 该组件必须保留 `deployment:persona`、当前可用 Tool 的使用说明及 `PromptAssembly.contexts`、`PromptAssembly.tools` 和 `PromptAssembly.variables`。官方 `standard`、`minimal`、`cordis` 和其他 Agent Preset 保留各自现有的系统提示词 assembly。
 
-## 工作台预设的子 Agent 续派
+## 工作台预设的子 Agent 派发配置
 
 1. `ComfyUI工作台预设` 的 `subagent_task` 参数、消息模板、模型继承和角色 Preset 引用定义在 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 的 `task-agent` 配置中。
 2. 子 Agent 的职责与工具组合由工作台任务角色 Preset 定义。派发字段见[配置规范](../system/configuration.md#子-agent-派发配置)。
@@ -83,7 +81,7 @@
    | 输入值的来源 | Workflow 模板、生成模型、LoRA、ComfyUI 实例、Generation Run ID 和其他业务值的输入或查询来源。 |
    | 结果文件中的 JSON 与业务错误 | 业务 JSON 字段含义、业务错误和处理动作；异步命令须说明业务成功表示请求已接受还是任务已完成。 |
    | 错误处理与重试 | 每个错误码或错误类别的报告内容、输入修正方法、重试条件和部分成功结果处理方式。 |
-   | 调用次数与结果复用 | 每个对象的调用次数、多对象调用顺序、成功结果复用和重试条件；创建或修改记录的命令还须定义持久化结果及失败后重试对前次结果的影响。 |
+   | 调用次数与结果复用 | 每个对象的调用次数、多对象调用顺序和成功结果复用方式；创建或修改记录的命令还须定义持久化结果及失败后重试对前次结果的影响。 |
 
 3. CLI 使用参考文档必须使用实际命令、参数和输出字段。完整示例只在能说明正文未展示的 stdin 接法或多命令组合时保留。示例使用无需认证的输入，或明确标记为虚构的凭据占位符。
 
@@ -104,7 +102,7 @@
 ### 自动化与黑盒检查
 
 1. 开发者修改项目 Preset、注册组件或 Host Tool scope 时，必须运行对应的正常、异常和边界测试。测试选择与通过条件见[测试规范](../system/testing.md)。
-2. 新增或修改项目 Skill 或 CLI 参考文档时，开发者必须按[测试规范的“Preset 与子 Agent 合同”](../system/testing.md#preset-与子-agent-合同)验证包内资源和 Skill 作用域，并按[官方应用与真实模型验收](#官方应用与真实模型验收)完成真实模型验收。
+2. 新增或修改项目 Skill 或 CLI 参考文档时，开发者必须按[测试规范](../system/testing.md)验证 Skill 的目录发现与读取，并按[官方应用与真实模型验收](#官方应用与真实模型验收)完成真实模型验收。
 
 ### 官方应用与真实模型验收
 
@@ -114,15 +112,15 @@
 
 ### 语义审查
 
-1. 修改本规范、项目 `SKILL.md` 或 CLI 使用参考文档后，开发者必须派发独立语义 Reviewer。Reviewer 的审计输入只包含本次审阅的一个目标文件、仓库“内容写作”规则和本节审计标准；审阅 `SKILL.md` 或 CLI 使用参考文档时，输入还包含“Skill 使用与开发”中的 Skill 文档规则。Reviewer 独立阅读目标文件，并逐项判断语义质量。
+1. 修改本规范、项目 `SKILL.md` 或 CLI 使用参考文档后，开发者必须派发独立语义 Reviewer。审计输入仅包含一个目标文件、本节审计标准，以及仓库 `AGENTS.md` 的“markdown和文字内容规范”；审阅 `SKILL.md` 或 CLI 使用参考文档时，还须提供“Skill开发规范”。Reviewer 独立阅读目标文件，并逐项判断语义质量。
 
 2. Reviewer 必须逐句核对以下内容：
 
    1. 句子使用通顺、可朗读的表达，并写明执行主体、动作、对象和结果；常用词与专业术语采用现有名称，任务专用名称先定义再使用；
    2. 每项规则写明具体动作、对象所属文件或模块及执行条件；每章正文服务于该章用途，每项要求只完整定义一次；
    3. UI 文案和后端接口错误文案写明实际情况和用户可采取的操作；
-   4. 对本规范，Reviewer 逐句并在需要时逐分句执行删除检查。删除后仍能理解要求、完成动作和判断结果的文字列为删除意见；删除会妨碍开发者理解、实施或验收的内容保留；
-   5. 对 `SKILL.md` 与 CLI 使用参考文档，Reviewer 逐句并在需要时逐分句执行删除检查。保留执行者完成任务需要的规范、步骤、资源、工具调用方法及输入输出字段用途；将开发者要求、宿主内部流程、工具实现细节、升级过程或逻辑、旧版本描述列为删除意见。限制条款须写明适用条件和受限动作。
+   4. 对目标文件，Reviewer 逐句并在需要时逐分句执行删除检查。删除后仍能理解要求、完成动作和判断结果的文字列为删除意见；删除会妨碍开发者理解、实施或验收的内容保留；
+   5. 审阅 `SKILL.md` 与 CLI 使用参考文档时，Reviewer 保留执行者完成任务需要的规范、步骤、资源、工具调用方法及输入输出字段用途；将开发者要求、宿主内部流程、工具实现细节、升级过程或逻辑、旧版本描述列为删除意见。限制条款须写明适用条件和受限动作。
    6. Reviewer 使用含源文件行号的验收清单逐项标记“通过”或“需修改”，并记录独立理解的含义和判定理由；每项“需修改”均写明位置、问题、具体改法以及可直接替换的文本，或注明“删除且不替换”。
 
 3. 开发者必须在语义审阅前依据源码与测试核实 CLI 命令、参数和输出字段。程序检查只处理具有确定性规则的结构化数据；语义理解、语义测试和语义验收由 Reviewer 阅读和判断完成。

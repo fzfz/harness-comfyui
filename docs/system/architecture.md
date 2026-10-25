@@ -17,7 +17,7 @@
    | `harness-comfyui/cli` | 提供前台 Tool Call 的受管 CLI 请求入口。 |
    | `harness-comfyui` | 注册 Catalog、Generation、Image Reader Remote 与媒体路由。 |
    | Client bundle | 注册工作台、上下文选择器、结果页与插件设置表单。 |
-   | 已安装 Preset component | 载入项目 Preset 与其作用域内的 Skill provider。 |
+   | 已安装 Preset component | 载入项目 Preset。 |
 
 3. Core 与 Image Reader 各提供一份 Host service，CLI 和 Web 插件共用这些实例。插件业务数据与安装资源分别存储；Profile 设置和凭据由官方 Host 保存。存储路径、配置覆盖与生效时机见[配置规范](configuration.md)，源码与资源定位见[目录结构](directory-structure.md)。
 
@@ -35,17 +35,17 @@
    | `harness-comfyui-observation` | ComfyUI 观察角色 | `agent-presets/harness-comfyui-observation/agent.cordis.yml` |
    | `harness-comfyui-comparison` | ComfyUI 比较角色 | `agent-presets/harness-comfyui-comparison/agent.cordis.yml` |
 
-2. 每个项目 Preset 通过 [shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) 加载公共工具、Skills、提示词可见性、Workspace 关联和 compaction 组件。各 Preset 的 `agent.cordis.yml` 声明 persona 与自身工具。
+2. 每个项目 Preset 通过 [shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) 加载公共工具、提示词可见性、Workspace 关联和 compaction 组件。各 Preset 的 `agent.cordis.yml` 声明 persona 与自身工具。
 
-3. registry 为每个项目 Preset 隔离 Skill service。[project-installed-skills.mjs](../../agent-presets/project-installed-skills.mjs) 使用官方 filesystem Skill provider 读取包内 `.agents/skills/`。资源按模块 URL 定位，provider 的可见范围为所属项目 Preset。
+3. 项目 Preset 复用宿主的 Skill service，并在共享组合中启用官方 filesystem Skill provider 的默认配置。该 provider 负责目录发现、软链接解析和同名 Skill 的选择。项目 Skill 的安装步骤见[安装项目 Skills](../user/install-update.md#安装项目-skills)。
 
 4. 项目 Preset 的 Agent 通过 DSH 原生 MCP 客户端访问 NoobAI MCP 服务，查询目录记录。Host 内部数据源客户端读取 Catalog 展示与 Generation Workflow 准备所需的数据；其入口为 [queryCatalog()](../../src/host/source-client/catalog-client.ts) 与 [readSourceRecord()](../../src/host/source-client/source-client.ts)，协议路径与请求限制由 `config/source-client.json` 定义。两条访问路径连接同一目录数据；地址与凭据配置见[配置规范的 NoobAI MCP 服务章节](configuration.md#noobai-mcp-服务)。
 
 5. 各 Skill 的执行流程由 `.agents/skills/<skill-name>/SKILL.md` 定义。角色职责由对应角色 Preset 的 persona 定义；交接文件合同见[records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md)。
 
-6. [project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs) 通过 `startActivation()` 首次派发任务，并指定 `delivery: parent` 与角色 `agentPreset`。后续任务通过 `sendMessage()` 派发。宿主接纳后，工具返回统一回执；结构与共同委派说明由 [project-dispatch.json](../../agent-presets/project-dispatch.json) 定义。工具返回与附加上下文复用同一回执。宿主负责调度、结束通知和资源释放。父 Agent 收到结束通知并读取结果文件后，再派发依赖该结果的任务。
+6. [project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs) 通过 `startActivation()` 首次派发任务，并指定 `delivery: parent` 与角色 `agentPreset`。后续任务通过 `sendMessage()` 派发。宿主接纳后，工具返回统一回执；回执结构与任务委派说明由 [project-dispatch.json](../../agent-presets/project-dispatch.json) 定义。工具返回结果和附加上下文使用同一份回执。宿主负责调度、结束通知和资源释放。父 Agent 收到结束通知并读取结果文件后，再派发依赖该结果的任务。
 
-7. [project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs) 在子 Session 首个 Agent step 前，将子 Session 关联到父 Session 所属 Workspace。工作目录与 Workspace 的职责见下节。
+7. [project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs) 在子 Session 首个 Agent step 前，将子 Session 关联到父 Session 所属 Workspace。工作目录与 Workspace 的职责见[Host Node 与受管 CLI 身份](#host-node-与受管-cli-身份)第 3 项。
 
 ## Host Node 与受管 CLI 身份
 
@@ -55,9 +55,9 @@
 
 3. Generation 创建与历史查询的 Workspace、Session、Turn 和 Tool Call 身份由 Host 派生。CLI 与 Tool 按 Session header 的 `cwd` 查询 Workspace registry，并校验 Session 归属。Shell 当前工作目录用于执行命令和解释相对文件路径；Run 归属沿用 Session 的 Workspace。身份解析入口为 [CLI route](../../src/host/cli/route.ts) 与 [tool-execution-identity.ts](../../src/host/generation/tool-execution-identity.ts)；Agent 请求只提供业务参数。
 
-4. CLI 请求分发由 [dispatch()](../../src/host/cli/dispatch.ts) 实现，Generation 请求交给 Runtime，图片读取请求交给 Image Reader。已接纳 Run 的持续执行归 Host coordinator 所有。
+4. CLI 请求分发由 [dispatch()](../../src/host/cli/dispatch.ts) 实现，Generation 请求交给 Runtime，图片读取请求交给 Image Reader。Host coordinator 负责持续执行已接纳的 Run。
 
-5. [受管 CLI 入口](../../scripts/cli/harness-comfyui.mjs) 在展示层保存业务响应。[result-file.mjs](../../scripts/cli/result-file.mjs) 管理单次调用的结果文件创建、写入、关闭与未完成文件清理。文件完成后，入口发布文件路径；Run 和业务持久化由 Runtime 管理。公共输出与文件错误由 [CLI 帮助配置](../../config/managed-cli-help.json) 定义。
+5. [受管 CLI 入口](../../scripts/cli/harness-comfyui.mjs) 通过 [result-file.mjs](../../scripts/cli/result-file.mjs) 将业务响应保存到单次调用的结果文件；`result-file.mjs` 负责文件创建、写入、关闭与未完成文件清理。文件完成后，入口发布文件路径；Run 和业务持久化由 Runtime 管理。公共输出与文件错误由 [CLI 帮助配置](../../config/managed-cli-help.json) 定义。
 
 ## Generation Run 生命周期与历史查询
 
@@ -95,7 +95,7 @@
 
 5. [OfficialApiWorkflowCompiler](../../src/host/generation/official-api-workflow.ts) 管理官方基础对象与缓存。[overlayRuntimeApiWorkflow()](../../src/host/generation/official-api-workflow.ts) 保留官方执行节点和连接，只覆盖对应的非连接运行值。官方前端导出、缓存读取或覆盖失败时，Run 以相应错误结束。缓存路径与维护操作见[配置规范的缓存维护章节](configuration.md#配置生效与缓存维护)。
 
-6. [NodeWorkerComfyFrontend](../../src/host/generation/comfy-frontend-worker-client.ts) 通过版本化 stdin/stdout JSON 协议调用包内 Worker；实例认证值通过 stdin 传递。Worker 由 [ChromeComfyFrontend](../../src/host/generation/comfy-frontend-browser.ts) 使用独立临时 browser profile 完成导出。取消和超时清理限定在本次 Worker 进程组与其浏览器资源内。
+6. [NodeWorkerComfyFrontend](../../src/host/generation/comfy-frontend-worker-client.ts) 通过版本化 stdin/stdout JSON 协议调用包内 Worker；实例认证值通过 stdin 传递。Worker 通过 [ChromeComfyFrontend](../../src/host/generation/comfy-frontend-browser.ts) 使用独立临时 browser profile 完成导出。取消和超时清理限定在本次 Worker 进程组与其浏览器资源内。
 
 7. [ComfyHttpTransport](../../src/host/generation/comfy-http-transport.ts) 把 Actual Workflow 写入 `extra_data.extra_pnginfo.workflow`，并按 compiler 返回的活动输出集合筛选结果。`type=output` 的图片和视频经过路径、媒体类型、大小与文件签名校验后保存为 Saved Media；`type=temp` 预览属于远端临时结果。
 

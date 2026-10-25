@@ -5,18 +5,10 @@
     name: ComfyUI工作台预设
     order: 91
     plugins:
-      - id: project-skill-scope
-        name: cordis:group
-        group: true
-        isolate:
-          skills: true
+      - id: composition
+        name: cordis:include
         config:
-          - id: skills
-            name: '@deepseek-ai/dsh-skill'
-          - id: composition
-            name: cordis:include
-            config:
-              path: ./harness-comfyui-cli-candidate/agent.cordis.yml
+          path: ./harness-comfyui-cli-candidate/agent.cordis.yml
 - id: preset-harness-comfyui-iteration
   name: '@deepseek-ai/dsh-agent-preset'
   config:
@@ -24,18 +16,10 @@
     name: ComfyUI迭代预设
     order: 92
     plugins:
-      - id: project-skill-scope
-        name: cordis:group
-        group: true
-        isolate:
-          skills: true
+      - id: composition
+        name: cordis:include
         config:
-          - id: skills
-            name: '@deepseek-ai/dsh-skill'
-          - id: composition
-            name: cordis:include
-            config:
-              path: ./harness-comfyui-iteration/agent.cordis.yml
+          path: ./harness-comfyui-iteration/agent.cordis.yml
 - id: preset-harness-comfyui-task
   name: '@deepseek-ai/dsh-agent-preset'
   config:
@@ -43,18 +27,10 @@
     name: ComfyUI 工作台任务角色
     order: 93
     plugins:
-      - id: project-skill-scope
-        name: cordis:group
-        group: true
-        isolate:
-          skills: true
+      - id: composition
+        name: cordis:include
         config:
-          - id: skills
-            name: '@deepseek-ai/dsh-skill'
-          - id: composition
-            name: cordis:include
-            config:
-              path: ./harness-comfyui-task/agent.cordis.yml
+          path: ./harness-comfyui-task/agent.cordis.yml
 - id: preset-harness-comfyui-composition
   name: '@deepseek-ai/dsh-agent-preset'
   config:
@@ -62,18 +38,10 @@
     name: ComfyUI 构图角色
     order: 94
     plugins:
-      - id: project-skill-scope
-        name: cordis:group
-        group: true
-        isolate:
-          skills: true
+      - id: composition
+        name: cordis:include
         config:
-          - id: skills
-            name: '@deepseek-ai/dsh-skill'
-          - id: composition
-            name: cordis:include
-            config:
-              path: ./harness-comfyui-composition/agent.cordis.yml
+          path: ./harness-comfyui-composition/agent.cordis.yml
 - id: preset-harness-comfyui-generation
   name: '@deepseek-ai/dsh-agent-preset'
   config:
@@ -81,18 +49,10 @@
     name: ComfyUI 生成角色
     order: 95
     plugins:
-      - id: project-skill-scope
-        name: cordis:group
-        group: true
-        isolate:
-          skills: true
+      - id: composition
+        name: cordis:include
         config:
-          - id: skills
-            name: '@deepseek-ai/dsh-skill'
-          - id: composition
-            name: cordis:include
-            config:
-              path: ./harness-comfyui-generation/agent.cordis.yml
+          path: ./harness-comfyui-generation/agent.cordis.yml
 - id: preset-harness-comfyui-observation
   name: '@deepseek-ai/dsh-agent-preset'
   config:
@@ -100,18 +60,10 @@
     name: ComfyUI 观察角色
     order: 96
     plugins:
-      - id: project-skill-scope
-        name: cordis:group
-        group: true
-        isolate:
-          skills: true
+      - id: composition
+        name: cordis:include
         config:
-          - id: skills
-            name: '@deepseek-ai/dsh-skill'
-          - id: composition
-            name: cordis:include
-            config:
-              path: ./harness-comfyui-observation/agent.cordis.yml
+          path: ./harness-comfyui-observation/agent.cordis.yml
 - id: preset-harness-comfyui-comparison
   name: '@deepseek-ai/dsh-agent-preset'
   config:
@@ -119,15 +71,7 @@
     name: ComfyUI 比较角色
     order: 97
     plugins:
-      - id: project-skill-scope
-        name: cordis:group
-        group: true
-        isolate:
-          skills: true
+      - id: composition
+        name: cordis:include
         config:
-          - id: skills
-            name: '@deepseek-ai/dsh-skill'
-          - id: composition
-            name: cordis:include
-            config:
-              path: ./harness-comfyui-comparison/agent.cordis.yml
+          path: ./harness-comfyui-comparison/agent.cordis.yml

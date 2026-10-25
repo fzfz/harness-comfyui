@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
-import { cp, lstat, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, realpath, symlink, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -115,6 +115,7 @@ function classifySkillSource(skill, configuredRoots) {
   const candidatePath = Object.values(skill.pathFields).find(value => typeof value === 'string')
   if (candidatePath !== undefined) {
     if (isPathWithin(candidatePath, configuredRoots.installedPluginSkills)) return 'installed-project'
+    if (isPathWithin(candidatePath, configuredRoots.linkedRepositorySkills)) return 'linked-repository'
     if (isPathWithin(candidatePath, configuredRoots.workspaceSkills)) return 'workspace'
     if (isPathWithin(candidatePath, configuredRoots.userSkills)) return 'user'
     return 'other-path'
@@ -1197,7 +1198,7 @@ async function verifyOfficialSessionTrace(page, services, parentSessionId, paren
   }
 }
 
-async function verifyPresetScopedRepositorySkills(page, workspaceId, {
+async function verifyDefaultSkillDiscovery(page, workspaceId, {
   evidenceDirectory,
   workspacePath,
   agentsHome,
@@ -1257,6 +1258,7 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
     userHome: agentsHome,
     userSkills: join(agentsHome, 'skills'),
     installedPluginSkills: installedPluginSkillDirectory,
+    linkedRepositorySkills: await realpath(join(sourceRepositoryRoot, '.agents/skills')),
   }
   const diagnostic = {
     schemaVersion: 1,
@@ -1266,7 +1268,7 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
     presets: (state.sessions ?? []).map(session => ({
       id: session.agentPreset ?? state.roster?.value?.presets?.find(preset => preset.isDefault)?.id ?? null,
       skillCount: session.skills?.value?.skills?.length ?? 0,
-      skillSources: Object.fromEntries(['installed-project', 'workspace', 'user', 'host-bundled', 'other-path', 'unclassified']
+      skillSources: Object.fromEntries(['installed-project', 'linked-repository', 'workspace', 'user', 'host-bundled', 'other-path', 'unclassified']
         .map(source => [source, (session.skills?.value?.skills ?? []).filter(skill => classifySkillSource({
           name: skill.name,
           pathFields: pathFields(skill),
@@ -1308,31 +1310,8 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
   expect(sessions.get('implicit-default').created.value.agentPreset).toBe(defaultPresetId)
   expect(sessions.get(PRODUCT_PRESET_ID).created.value.agentPreset).toBe(PRODUCT_PRESET_ID)
 
-  const expectedProductSkills = [...expectedRepositorySkills]
-    .sort((left, right) => left.name.localeCompare(right.name))
-  expect(expectedProductSkills.length).toBeGreaterThan(0)
-  for (const presetId of PROJECT_PRESET_IDS) {
-    expect(sessions.get(presetId).created.value.agentPreset).toBe(presetId)
-    const productSkills = sessions.get(presetId).skills.value.skills
-      .map(({ name, description }) => ({ name, description }))
-      .sort((left, right) => left.name.localeCompare(right.name))
-    expect(productSkills).toEqual(expectedProductSkills)
-    const productSkillSources = sessions.get(presetId).skills.value.skills.map(skill => classifySkillSource({
-      name: skill.name,
-      pathFields: pathFields(skill),
-    }, configuredRoots))
-    expect(productSkillSources).toEqual(expectedProductSkills.map(() => 'installed-project'))
-    expect(productSkills).not.toContainEqual({ name: USER_SKILL_NAME, description: USER_SKILL_DESCRIPTION })
-    expect(productSkills).not.toContainEqual({
-      name: 'comfyui-generate',
-      description: WORKSPACE_COMFYUI_GENERATE_DESCRIPTION,
-    })
-    expect(productSkills).not.toContainEqual({
-      name: UNIQUE_WORKSPACE_SKILL_NAME,
-      description: UNIQUE_WORKSPACE_SKILL_DESCRIPTION,
-    })
-  }
-
+  const expectedLinkedSkills = expectedRepositorySkills.filter(skill =>
+    skill.name !== OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName)
   const expectedWorkspaceSkills = [
     { name: 'comfyui-generate', description: WORKSPACE_COMFYUI_GENERATE_DESCRIPTION },
     { name: UNIQUE_WORKSPACE_SKILL_NAME, description: UNIQUE_WORKSPACE_SKILL_DESCRIPTION },
@@ -1342,7 +1321,7 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
   ]
   const standardSkills = sessions.get('standard').skills.value.skills
     .map(({ name, description }) => ({ name, description }))
-  for (const id of ['standard', 'ptc', 'cordis']) {
+  for (const id of ['standard', 'ptc', 'cordis', ...PROJECT_PRESET_IDS]) {
     const visibleSkills = sessions.get(id).skills.value.skills
     const sources = visibleSkills.map(skill => classifySkillSource({
       name: skill.name,
@@ -1352,11 +1331,15 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
     expect.soft(projectedSkills, `${id} must retain its user and Workspace Skills`).toEqual(expect.arrayContaining([
       ...expectedUserSkills,
       ...expectedWorkspaceSkills,
+      ...expectedLinkedSkills,
     ]))
     expect.soft(sources.filter(source => source === 'user')).toHaveLength(1)
     expect.soft(sources.filter(source => source === 'workspace')).toHaveLength(2)
     expect.soft(sources.filter(source => source === 'host-bundled')).toHaveLength(HOST_BUNDLED_SKILL_NAMES.size)
     expect.soft(sources.filter(source => source === 'installed-project')).toHaveLength(0)
+    expect.soft(sources.filter(source => source === 'linked-repository')).toHaveLength(expectedLinkedSkills.length)
+    expect(projectedSkills.filter(skill => skill.name === OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName))
+      .toEqual([expectedWorkspaceSkills[0]])
     expect.soft(sources.filter(source => source === 'unclassified')).toEqual([])
     const extraSkills = visibleSkills.filter((_, index) => sources[index] === 'other-path')
     expect(extraSkills.map(skill => skill.name).sort()).toEqual(id === 'cordis' ? [...CORDIS_SKILL_NAMES].sort() : [])
@@ -1380,20 +1363,6 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
     .sort((left, right) => left.name.localeCompare(right.name))
   expect(implicitSkills).toEqual(standardSkills.sort((left, right) => left.name.localeCompare(right.name)))
 
-  for (const [key, session] of sessions) {
-    if (PROJECT_PRESET_IDS.includes(key) || key === 'implicit-default') continue
-    const visible = session.skills.value.skills.map(({ name, description }) => ({ name, description }))
-    const installedProjectSkills = session.skills.value.skills.filter(skill => classifySkillSource({
-      name: skill.name,
-      pathFields: pathFields(skill),
-    }, configuredRoots) === 'installed-project')
-    expect(installedProjectSkills.map(skill => ({ name: skill.name, description: skill.description })))
-      .toEqual([])
-    for (const repositorySkill of expectedRepositorySkills) {
-      expect.soft(visible, `non-product preset ${key} must not receive repository skill ${repositorySkill.name}`)
-        .not.toContainEqual(repositorySkill)
-    }
-  }
   const standardSkillRecords = sessions.get('standard').skills.value.skills
   const skillRecordFor = name => standardSkillRecords.find(skill => skill.name === name)
   const skillPaths = {
@@ -1404,7 +1373,7 @@ async function verifyPresetScopedRepositorySkills(page, workspaceId, {
   expect(isAbsolute(skillPaths.user)).toBe(true)
   expect(isPathWithin(skillPaths.workspace, configuredRoots.workspaceSkills)).toBe(true)
   expect(isPathWithin(skillPaths.user, configuredRoots.userSkills)).toBe(true)
-  return { standardSessionId: sessions.get('standard').sessionId, skillPaths }
+  return { productSessionId: sessions.get(PRODUCT_PRESET_ID).sessionId, skillPaths }
 }
 
 async function verifyKimiPptHostRequestDisabled(page, capture, workspaceId) {
@@ -1676,7 +1645,7 @@ async function verifyWorkspaceAndUserSkillMarkers(page, services, sessionId, ski
     classification: 'automated-regression',
     acceptanceClaim: false,
     sessionId,
-    selectedPreset: 'standard',
+    selectedPreset: PRODUCT_PRESET_ID,
     model: firstRequest.body.model,
     userRequest: markerRequest,
     skillToolCalls: services.skillToolCalls,
@@ -2013,8 +1982,13 @@ description: ${UNIQUE_WORKSPACE_SKILL_DESCRIPTION}
 
 For the workspace-skill verification task, repeat this unique token exactly: ${WORKSPACE_SKILL_MARKER}
 `, { encoding: 'utf8', mode: 0o600 })
-    await mkdir(resolve(agentsHome, 'skills', USER_SKILL_NAME), { recursive: true, mode: 0o700 })
-    await writeFile(resolve(agentsHome, 'skills', USER_SKILL_NAME, 'SKILL.md'), `---
+    const userSkillSource = resolve(agentsHome, 'skills', '.fixtures', USER_SKILL_NAME)
+    await mkdir(userSkillSource, { recursive: true, mode: 0o700 })
+    await symlink(userSkillSource, resolve(agentsHome, 'skills', USER_SKILL_NAME), 'dir')
+    for (const { name } of REPOSITORY_SKILL_CATALOG) {
+      await symlink(resolve(sourceRepositoryRoot, '.agents/skills', name), resolve(agentsHome, 'skills', name), 'dir')
+    }
+    await writeFile(resolve(userSkillSource, 'SKILL.md'), `---
 name: ${USER_SKILL_NAME}
 description: ${USER_SKILL_DESCRIPTION}
 ---
@@ -2236,21 +2210,22 @@ description: ${USER_SKILL_DESCRIPTION}
         }
       })()`)
       const canonicalAgentsHome = await realpath(agentsHome)
-      const installedPluginSkillDirectory = await realpath(join(
+      const installedPluginSkillDirectory = join(
         context.dshHome,
         desktopConfig.paths.profileRelativePath,
         'node_modules',
         'harness-comfyui',
         '.agents',
         'skills',
-      ))
+      )
+      await expect(lstat(installedPluginSkillDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
       expect(mcp.requests.some(request => request.method === 'tools/list' && request.status === 200)).toBe(true)
       await writeFile(join(context.businessEvidenceDirectory, 'official-business-mcp.json'), JSON.stringify({
         installedPackageRoot: dirname(installation.installedPackagePath),
         profilePatch: installation.presetProfilePatch,
         requests: mcp.requests,
       }, null, 2))
-      const presetSessions = await verifyPresetScopedRepositorySkills(page, identity.workspaceId, {
+      const presetSessions = await verifyDefaultSkillDiscovery(page, identity.workspaceId, {
         evidenceDirectory: context.businessEvidenceDirectory,
         workspacePath: run.record.directories.workspace,
         agentsHome: canonicalAgentsHome,
@@ -2259,7 +2234,7 @@ description: ${USER_SKILL_DESCRIPTION}
       await verifyWorkspaceAndUserSkillMarkers(
         page,
         promptCapture,
-        presetSessions.standardSessionId,
+        presetSessions.productSessionId,
         presetSessions.skillPaths,
         context.businessEvidenceDirectory,
       )

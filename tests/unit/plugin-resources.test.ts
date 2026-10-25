@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import pluginRuntimeResources from '../../config/plugin-runtime-resources.json' with { type: 'json' }
-import repositorySkillCatalog from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import { parsePluginRuntimeResources } from '../../config/plugin-runtime-resources-schema.ts'
 import {
   assertPluginRuntimeResourcesAvailable,
@@ -28,7 +27,6 @@ function validRuntimeResourcesConfiguration(): Record<string, unknown> {
     requiredFiles: [
       'agent-presets/presets.cordis.yml',
       'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml',
-      '.agents/skills/local-image-reader/SKILL.md',
     ],
     failureDetailsTemplate: 'Unavailable resources:\n{resources}',
   }
@@ -56,7 +54,6 @@ describe('plugin runtime resources configuration parser', () => {
       requiredFiles: [
         'agent-presets/presets.cordis.yml',
         'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml',
-        '.agents/skills/local-image-reader/SKILL.md',
       ],
       failureDetailsTemplate: 'Unavailable resources:\n{resources}',
     })
@@ -127,8 +124,8 @@ describe('plugin runtime resources configuration parser', () => {
   it.each([
     ['/agent-presets/presets.cordis.yml', 'relative POSIX path'],
     ['.agents/skills/local-image-reader/references/../SKILL.md', 'empty or traversing path segments'],
-    ['tests/plugin-resources.test.ts', 'must be inside agent-presets/ or a Skill runtime directory'],
-    ['.agents/skills/local-image-reader/evals/evals.json', 'must be inside agent-presets/ or a Skill runtime directory'],
+    ['tests/plugin-resources.test.ts', 'must be inside agent-presets/'],
+    ['.agents/skills/local-image-reader/evals/evals.json', 'must be inside agent-presets/'],
   ])('rejects an unsafe or non-runtime required package path %j', (path, message) => {
     const value = validRuntimeResourcesConfiguration()
     value.requiredFiles = [path]
@@ -193,9 +190,15 @@ function createRuntimeResources(root: string): Record<keyof typeof PLUGIN_RUNTIM
 }
 
 describe('installed plugin runtime resource validation', () => {
-  it.each(repositorySkillCatalog)('requires the $name Skill entrypoint at activation', ({ name }) => {
-    expect(pluginRuntimeResources.requiredFiles).toContain(`.agents/skills/${name}/SKILL.md`)
+  it('accepts an installed plugin without a packaged Skills directory', () => {
+    const root = temporaryPackageRoot()
+    const paths = createRuntimeResources(root)
+    rmSync(resolve(root, '.agents'), { recursive: true, force: true })
+
+    expect(assertPluginRuntimeResourcesAvailable({ resolvePath: path => resolve(root, path) }))
+      .toEqual(paths)
   })
+
 
   it('checks the configured Workflow worker and managed CLI entrypoint', () => {
     const root = temporaryPackageRoot()
@@ -230,9 +233,6 @@ describe('installed plugin runtime resource validation', () => {
   })
 
   it.each([
-    ['Skill root instructions', '.agents/skills/local-image-reader/SKILL.md'],
-    ['Skill reference', '.agents/skills/local-image-reader/references/image-inspection-cli.md'],
-    ['Skill script', '.agents/skills/anima-prompt-builder/scripts/cli-help.mjs'],
     ['Preset configuration', 'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml'],
     ['shared composition', 'agent-presets/shared/agent.cordis.yml'],
     ...['task', 'composition', 'generation', 'observation', 'comparison'].flatMap(role =>
@@ -276,9 +276,9 @@ describe('installed plugin runtime resource validation', () => {
     }))
   })
 
-  it('reports a required Skill file that cannot be read', () => {
+  it('reports a required Preset file that cannot be read', () => {
     const root = temporaryPackageRoot()
-    const target = resolve(root, '.agents/skills/local-image-reader/SKILL.md')
+    const target = resolve(root, 'agent-presets/presets.cordis.yml')
     const unreadable = Object.assign(new Error(`EACCES: permission denied ${target}`), { code: 'EACCES' })
     const fileSystem = {
       lstatSync: vi.fn(() => ({ isFile: () => true })),
