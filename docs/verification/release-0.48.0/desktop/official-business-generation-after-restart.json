@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceClaim": false,
+  "sessionId": "session-e169cf13-de5e-4ef4-94eb-197e6e3c811b",
+  "runId": "run_ee2cd919-1bf4-4317-b58e-7721f84b6e9e",
+  "runStatus": "succeeded",
+  "mediaFilename": "official-desktop-controlled.png",
+  "uiRunAndMediaVisible": true
+}

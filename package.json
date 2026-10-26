@@ -1,6 +1,6 @@
 {
   "name": "harness-comfyui",
-  "version": "0.47.2",
+  "version": "0.48.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.11.0",

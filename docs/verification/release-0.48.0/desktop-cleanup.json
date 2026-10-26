@@ -1,0 +1,642 @@
+{
+  "schemaVersion": 1,
+  "invocationIds": [
+    "566a52af-b32d-49de-826b-db0ed20adde2"
+  ],
+  "probeRuns": 21,
+  "allProcessesAndPortsReleased": true,
+  "runs": [
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "0513936e-a26c-4c66-b9cf-c197422b4a5b",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/0513936e-a26c-4c66-b9cf-c197422b4a5b/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:16:48.477Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 58325,
+          "pids": []
+        },
+        {
+          "port": 58326,
+          "pids": []
+        },
+        {
+          "port": 58327,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "15ee60dd-84b8-4a59-bc14-25fc7b2db3a9",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/15ee60dd-84b8-4a59-bc14-25fc7b2db3a9/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:13:47.838Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 56144,
+          "pids": []
+        },
+        {
+          "port": 56145,
+          "pids": []
+        },
+        {
+          "port": 56146,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "21c48561-ce51-4abc-81c8-6ba5f93b392a",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/21c48561-ce51-4abc-81c8-6ba5f93b392a/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:15:55.695Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57957,
+          "pids": []
+        },
+        {
+          "port": 57958,
+          "pids": []
+        },
+        {
+          "port": 57959,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "2a7c095e-b414-468c-a17b-baa5632839fb",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/2a7c095e-b414-468c-a17b-baa5632839fb/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:15:45.130Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57744,
+          "pids": []
+        },
+        {
+          "port": 57745,
+          "pids": []
+        },
+        {
+          "port": 57746,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "3cb6d070-e780-477a-aa31-6f7e8635fbea",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/3cb6d070-e780-477a-aa31-6f7e8635fbea/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:14:22.781Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 56904,
+          "pids": []
+        },
+        {
+          "port": 56905,
+          "pids": []
+        },
+        {
+          "port": 56906,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "3e935f52-6446-4fb6-80b3-c10d52f8f9e9",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/3e935f52-6446-4fb6-80b3-c10d52f8f9e9/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:17:17.772Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 58435,
+          "pids": []
+        },
+        {
+          "port": 58436,
+          "pids": []
+        },
+        {
+          "port": 58437,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "64fc5051-919a-4785-b76e-1ce811fb3be3",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/64fc5051-919a-4785-b76e-1ce811fb3be3/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:16:16.626Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 58076,
+          "pids": []
+        },
+        {
+          "port": 58077,
+          "pids": []
+        },
+        {
+          "port": 58078,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "65b9bf66-5830-4c67-9681-602a64e495dc",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/65b9bf66-5830-4c67-9681-602a64e495dc/run.json",
+      "state": "failed",
+      "result": {
+        "exitCode": null,
+        "error": "PORT_CONFLICT: PORT_CONFLICT: assigned ports are already listening: 57689:[61960], 57690:[], 57691:[]",
+        "completedAt": "2026-10-26T04:15:20.649Z",
+        "portsReleased": false
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57689,
+          "pids": []
+        },
+        {
+          "port": 57690,
+          "pids": []
+        },
+        {
+          "port": 57691,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "78934aa4-9eeb-4ee3-8c67-40bdd4cf1af3",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/78934aa4-9eeb-4ee3-8c67-40bdd4cf1af3/run.json",
+      "state": "failed",
+      "result": {
+        "exitCode": null,
+        "error": "STARTUP_TIMEOUT: STARTUP_TIMEOUT: Host and Renderer UI were not ready within 10147ms (port deadline 5000ms, startup deadline 10000ms); observed 57615:[38422], 57616:[38087], 57617:[]",
+        "completedAt": "2026-10-26T04:15:20.142Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57615,
+          "pids": []
+        },
+        {
+          "port": 57616,
+          "pids": []
+        },
+        {
+          "port": 57617,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "7f93754a-0e29-405a-93e6-c75723092512",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/7f93754a-0e29-405a-93e6-c75723092512/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:16:27.166Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 58127,
+          "pids": []
+        },
+        {
+          "port": 58128,
+          "pids": []
+        },
+        {
+          "port": 58129,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "81490840-160d-49e7-9034-602e57206b97",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/81490840-160d-49e7-9034-602e57206b97/run.json",
+      "state": "failed",
+      "result": {
+        "exitCode": 0,
+        "error": "PROBE_FAILED: controlled lifecycle failure at renderer readiness boundary",
+        "completedAt": "2026-10-26T04:14:55.951Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57509,
+          "pids": []
+        },
+        {
+          "port": 57510,
+          "pids": []
+        },
+        {
+          "port": 57511,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "884fa8f2-5d75-45fb-8ab8-553a832c97dc",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/884fa8f2-5d75-45fb-8ab8-553a832c97dc/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:17:29.849Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 58602,
+          "pids": []
+        },
+        {
+          "port": 58603,
+          "pids": []
+        },
+        {
+          "port": 58604,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "8c4a0a64-8bae-4b38-b48a-c3a813b53ae9",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/8c4a0a64-8bae-4b38-b48a-c3a813b53ae9/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:14:52.829Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57401,
+          "pids": []
+        },
+        {
+          "port": 57402,
+          "pids": []
+        },
+        {
+          "port": 57403,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "9a4af6e5-b6a3-4553-9595-19d6d8834cf1",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/9a4af6e5-b6a3-4553-9595-19d6d8834cf1/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:14:42.363Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57143,
+          "pids": []
+        },
+        {
+          "port": 57144,
+          "pids": []
+        },
+        {
+          "port": 57145,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "a185e34d-9af6-41bf-854d-529fe3d3c66d",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/a185e34d-9af6-41bf-854d-529fe3d3c66d/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:13:57.764Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 56141,
+          "pids": []
+        },
+        {
+          "port": 56142,
+          "pids": []
+        },
+        {
+          "port": 56143,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "aefc7475-6c8f-432e-a37b-8ae5ea51b82a",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/aefc7475-6c8f-432e-a37b-8ae5ea51b82a/run.json",
+      "state": "cancelled",
+      "result": {
+        "exitCode": null,
+        "error": "CANCELLED: official Desktop probe preparation was cancelled",
+        "completedAt": "2026-10-26T04:15:03.741Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57552,
+          "pids": []
+        },
+        {
+          "port": 57553,
+          "pids": []
+        },
+        {
+          "port": 57554,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "bede1ef0-d773-4b7a-94a6-8ddb00693bcb",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/bede1ef0-d773-4b7a-94a6-8ddb00693bcb/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:14:36.211Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57005,
+          "pids": []
+        },
+        {
+          "port": 57006,
+          "pids": []
+        },
+        {
+          "port": 57007,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "c75fda39-feb6-4c95-99fa-9fe8f4d55c31",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/c75fda39-feb6-4c95-99fa-9fe8f4d55c31/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:14:10.677Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 56566,
+          "pids": []
+        },
+        {
+          "port": 56567,
+          "pids": []
+        },
+        {
+          "port": 56568,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "dc07abeb-eb80-4541-9f7c-4eab5c7a2909",
+      "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+      "recordPath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/dc07abeb-eb80-4541-9f7c-4eab5c7a2909/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:15:30.012Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 57694,
+          "pids": []
+        },
+        {
+          "port": 57695,
+          "pids": []
+        },
+        {
+          "port": 57696,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "dfbdbb18-a3d7-4a63-8bdf-0c4c7f802d96",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/dfbdbb18-a3d7-4a63-8bdf-0c4c7f802d96/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:16:37.622Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 58193,
+          "pids": []
+        },
+        {
+          "port": 58194,
+          "pids": []
+        },
+        {
+          "port": 58195,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "invocationId": "566a52af-b32d-49de-826b-db0ed20adde2",
+      "runId": "e3e12a63-f2d0-4614-b1b3-77c762c4d221",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h",
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/e3e12a63-f2d0-4614-b1b3-77c762c4d221/run.json",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T04:16:06.180Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 58013,
+          "pids": []
+        },
+        {
+          "port": 58014,
+          "pids": []
+        },
+        {
+          "port": 58015,
+          "pids": []
+        }
+      ]
+    }
+  ],
+  "allRecordedCleanupFlagsTrue": false,
+  "historicalUnreleasedPortRecords": [
+    {
+      "runId": "65b9bf66-5830-4c67-9681-602a64e495dc",
+      "recordedError": "PORT_CONFLICT: PORT_CONFLICT: assigned ports are already listening: 57689:[61960], 57690:[], 57691:[]",
+      "currentPortOwners": [
+        {
+          "port": 57689,
+          "pids": []
+        },
+        {
+          "port": 57690,
+          "pids": []
+        },
+        {
+          "port": 57691,
+          "pids": []
+        }
+      ]
+    }
+  ],
+  "observationBasis": "Current process groups and current port owners returned by getProbeStatus after the completed quality command.",
+  "observedAt": "2026-10-26T04:19:45.830Z"
+}

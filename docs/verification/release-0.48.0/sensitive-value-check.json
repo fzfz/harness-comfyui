@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "source": "main checkout .env",
+  "scope": "All candidate verification JSON and TXT files.",
+  "comparison": "Local literal and JSON string comparison; values are not emitted.",
+  "nonEmptySensitiveValuesCompared": 3,
+  "filesChecked": 21,
+  "matches": [],
+  "passed": true
+}

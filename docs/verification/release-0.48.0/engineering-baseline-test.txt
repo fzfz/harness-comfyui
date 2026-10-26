@@ -1,0 +1,8 @@
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  12:11:26
+   Duration  164ms (transform 14ms, setup 0ms, import 22ms, tests 7ms, environment 0ms)

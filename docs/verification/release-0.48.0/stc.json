@@ -1,0 +1,50 @@
+{
+  "command": [
+    "node",
+    "/Users/fzfz/.codex/skills/stc/tools/cli.mjs",
+    "check",
+    "README.md",
+    "docs/user/install-update.md",
+    "docs/releasenotes.md",
+    "--profile",
+    "for-document",
+    "--anti-echo",
+    "--json"
+  ],
+  "exitCode": 0,
+  "errors": 0,
+  "warnings": 162,
+  "fullReport": ".local/release-0.48.0/stc-initial.json",
+  "files": [
+    {
+      "path": "README.md",
+      "warnings": 20
+    },
+    {
+      "path": "docs/user/install-update.md",
+      "warnings": 7
+    },
+    {
+      "path": "docs/releasenotes.md",
+      "warnings": 135
+    }
+  ],
+  "newReleaseNoteWarnings": [
+    {
+      "rule": "G19",
+      "lines": [
+        9,
+        21,
+        22
+      ],
+      "decision": "retain",
+      "reason": "Quoted Preset names match the exact labels displayed by Desktop."
+    },
+    {
+      "rule": "G12",
+      "line": 26,
+      "decision": "retain",
+      "reason": "The sentence lists the verified acceptance scope and exceeds the recommended length by 3 Chinese character units."
+    }
+  ]
+}

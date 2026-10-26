@@ -1,0 +1,8 @@
+{
+  "qualityExitCode": 1,
+  "failedStage": "test:contract",
+  "desktopStageStarted": false,
+  "newDesktopInvocations": [],
+  "newDesktopRuns": 0,
+  "allProcessesAndPortsReleased": true
+}

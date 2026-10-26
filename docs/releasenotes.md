@@ -2,6 +2,30 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.48.0
+
+## 工作台与原生宿主能力
+
+1. 插件仅注册“ComfyUI工作台预设”。官方内置预设由宿主管理。
+2. 工作台使用宿主原生子 Agent 派发、续派、中断和查询工具。宿主管理子会话的结束通知与恢复。
+3. 宿主管理会话工作目录。Shell 使用当前工作目录执行命令，生成记录与历史查询归属会话原始项目的 Workspace。
+4. 工作台通过宿主原生 MCP 客户端查询 NoobAI 目录。Host 内部数据源客户端读取工作台和生成任务所需的目录数据。
+
+## 独立安装项目 Skills
+
+1. 8 个业务 Skill 使用宿主的工作区与用户级 Skill 目录。用户按[安装项目 Skills](user/install-update.md#安装项目-skills)单独安装。
+2. 项目 Skill 名称与源码入口见[Preset 与 Skill 资源](system/directory-structure.md#preset-与-skill-资源)。
+
+## 已退役预设的历史会话
+
+1. 本版本退役“ComfyUI迭代预设”及 5 个角色预设。
+2. 使用已退役预设的历史会话保留记录、产物文件和媒体，但无法继续执行任务。继续工作时，用户新建采用“ComfyUI工作台预设”的会话。
+
+## 功能验收范围
+
+1. 官方 Desktop 受控验收覆盖插件安装、原生子任务生命周期、目录访问、业务读写和退役预设的历史数据保留。逐项结果见[工作台验收记录](verification/comfyui-workbench-only/index.json)。
+2. 真实模型验收使用 `openrouter/free`，推理强度为 `medium`。验收覆盖父子会话读取 Skill 文档、写入结果文件和同一子会话续派，提交的 ComfyUI 生成任务数为 0。结果见[真实模型验收记录](verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-status.json)。
+
 # Harness ComfyUI v0.47.2
 
 ## 官方宿主基线
