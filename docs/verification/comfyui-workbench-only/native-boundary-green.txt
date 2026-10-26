@@ -1,0 +1,1 @@
+JSON report written to /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/comfyui-native-cleanup/native-boundary-green.json

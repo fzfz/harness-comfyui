@@ -1,0 +1,530 @@
+{
+  "config": {
+    "schemaVersion": 1,
+    "modes": {
+      "defaultMode": "fresh",
+      "fresh": {
+        "persistent": false
+      },
+      "development": {
+        "persistent": true,
+        "environmentRootRelativePath": ".local/desktop-development/native-real-model",
+        "environmentFilePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env",
+        "credentialEnvironmentNames": [
+          "OPENCODE_GO_API_KEY",
+          "NOOBAI_MCP_TOKEN",
+          "OPENROUTER_API_KEY"
+        ],
+        "requiredEnvironmentNames": [
+          "OPENROUTER_API_KEY"
+        ],
+        "initialProfilePatches": [
+          {
+            "id": "session-persistence-jsonl",
+            "config": {
+              "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/sessions",
+              "compression": "none"
+            }
+          },
+          {
+            "id": "agent-default-model",
+            "config": {
+              "provider": "opencode-go",
+              "model": "deepseek-v4.1-flash",
+              "reasoningEffort": "max"
+            }
+          },
+          {
+            "id": "llm-pi-ai",
+            "config": {
+              "providers": {
+                "opencode-go": {
+                  "displayName": "OpenCode Go",
+                  "apiKeyEnv": "OPENCODE_GO_API_KEY",
+                  "headers": {
+                    "x-opencode-session": "dsh-opencode-go-4c35399bef"
+                  },
+                  "api": "openai-completions",
+                  "baseURL": "https://opencode.ai/zen/go/v1",
+                  "models": [
+                    {
+                      "id": "deepseek-v4.1-flash",
+                      "name": "DeepSeek V4.1 Flash",
+                      "contextWindow": 1000000,
+                      "maxTokens": 384000,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "deepseek-v4-pro",
+                      "name": "DeepSeek V4 Pro (New)",
+                      "contextWindow": 1000000,
+                      "maxTokens": 384000,
+                      "input": [
+                        "text"
+                      ]
+                    },
+                    {
+                      "id": "glm-5.3",
+                      "name": "GLM-5.3",
+                      "contextWindow": 1000000,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text"
+                      ]
+                    },
+                    {
+                      "id": "glm-5.3-flash",
+                      "name": "GLM-5.3-Flash",
+                      "contextWindow": 1000000,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "glm-5.2",
+                      "name": "GLM-5.2",
+                      "contextWindow": 1000000,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text"
+                      ]
+                    },
+                    {
+                      "id": "glm-5.1",
+                      "name": "GLM-5.1",
+                      "contextWindow": 204800,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text"
+                      ]
+                    },
+                    {
+                      "id": "kimi-k3",
+                      "name": "Kimi K3",
+                      "contextWindow": 1048576,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "kimi-k2.7-code",
+                      "name": "Kimi K2.7 Code",
+                      "contextWindow": 262144,
+                      "maxTokens": 262144,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "kimi-k2.6",
+                      "name": "Kimi K2.6",
+                      "contextWindow": 262144,
+                      "maxTokens": 65536,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "qwen3.8-max",
+                      "name": "Qwen3.8 Max",
+                      "contextWindow": 1000000,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "qwen3.8-flash",
+                      "name": "Qwen3.8 Flash",
+                      "contextWindow": 1000000,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "qwen3.7-max",
+                      "name": "qwen3.7-max",
+                      "input": [
+                        "text"
+                      ]
+                    },
+                    {
+                      "id": "qwen3.7-plus",
+                      "name": "Qwen3.7 Plus",
+                      "contextWindow": 1000000,
+                      "maxTokens": 65536,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "qwen3.6-plus",
+                      "name": "Qwen3.6 Plus",
+                      "contextWindow": 262144,
+                      "maxTokens": 65536,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "minimax-m3",
+                      "name": "MiniMax-M3",
+                      "contextWindow": 1000000,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "minimax-m3.1-flash",
+                      "name": "MiniMax M3.1 Flash",
+                      "contextWindow": 1000000,
+                      "maxTokens": 512000,
+                      "input": [
+                        "text",
+                        "image"
+                      ],
+                      "reasoningEfforts": {
+                        "off": null,
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh",
+                        "max": "max"
+                      }
+                    },
+                    {
+                      "id": "minimax-m2.5",
+                      "name": "MiniMax-M2.5",
+                      "contextWindow": 204800,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text"
+                      ],
+                      "reasoningEfforts": {
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high"
+                      }
+                    },
+                    {
+                      "id": "mimo-v2.6-pro",
+                      "name": "MiMo-V2.6-Pro",
+                      "contextWindow": 1048576,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "mimo-v2.6-flash",
+                      "name": "MiMo-V2.6-Flash",
+                      "contextWindow": 1048576,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "mimo-v2.5",
+                      "name": "MiMo V2.5",
+                      "contextWindow": 1000000,
+                      "maxTokens": 128000,
+                      "input": [
+                        "text",
+                        "image"
+                      ]
+                    },
+                    {
+                      "id": "hy4-preview",
+                      "name": "Hy4 preview",
+                      "contextWindow": 1024000,
+                      "maxTokens": 64000,
+                      "input": [
+                        "text"
+                      ]
+                    },
+                    {
+                      "id": "hy3",
+                      "name": "Hy3",
+                      "contextWindow": 256000,
+                      "maxTokens": 128000,
+                      "input": [
+                        "text"
+                      ]
+                    },
+                    {
+                      "id": "omen-alpha",
+                      "name": "omen-alpha",
+                      "input": [
+                        "text"
+                      ],
+                      "reasoningEfforts": {
+                        "off": null,
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh",
+                        "max": "max"
+                      }
+                    },
+                    {
+                      "id": "step-5-preview",
+                      "name": "Step 5 Preview",
+                      "contextWindow": 1000000,
+                      "maxTokens": 65536,
+                      "input": [
+                        "text",
+                        "image"
+                      ],
+                      "reasoningEfforts": {
+                        "off": null,
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high"
+                      }
+                    },
+                    {
+                      "id": "beam-free",
+                      "name": "Beam Free",
+                      "contextWindow": 1048576,
+                      "maxTokens": 131072,
+                      "input": [
+                        "text"
+                      ],
+                      "reasoningEfforts": {
+                        "off": null,
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high",
+                        "xhigh": "xhigh",
+                        "max": "max"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "directoryNames": {
+          "dshHome": "dsh-home",
+          "electronUserData": "user-data",
+          "workspace": "workspace"
+        },
+        "leaseFilename": "active-probe.json"
+      }
+    },
+    "application": {
+      "bundlePath": "/Applications/DeepSeek Harness.app",
+      "executableRelativePath": "Contents/MacOS/DeepSeek Harness",
+      "bundleId": "com.deepseek.dsh",
+      "version": "0.2.1-rc.3"
+    },
+    "paths": {
+      "runRootRelativePath": ".local/desktop-e2e",
+      "directoryNames": {
+        "dshHome": "dsh-home",
+        "electronUserData": "user-data",
+        "workspace": "workspace",
+        "logs": "logs",
+        "evidence": "evidence"
+      },
+      "profileRelativePath": "profiles/desktop",
+      "profilePatchFilename": "cordis.patch.yml",
+      "runRecordFilename": "run.json",
+      "diagnosticFilename": "diagnostic.log",
+      "outputFilenames": {
+        "stdoutLog": "desktop.stdout.log",
+        "stderrLog": "desktop.stderr.log",
+        "startupReadyEvidence": "startup-ready.json",
+        "preparationFailureEvidence": "preparation-failure.json",
+        "failureEvidence": "failure.json",
+        "cleanupFailureEvidence": "cleanup-failure.json",
+        "stopRequestEvidence": "stop-request.json",
+        "stopResultEvidence": "stop-result.json"
+      }
+    },
+    "ports": {
+      "allocation": "held-loopback-ephemeral",
+      "host": "127.0.0.1",
+      "roles": [
+        "host",
+        "rendererCdp",
+        "hostInspector"
+      ],
+      "requiredForReady": [
+        "host",
+        "rendererCdp"
+      ]
+    },
+    "startup": {
+      "startupTimeoutMs": 60000,
+      "portReadyTimeoutMs": 45000,
+      "singleInstanceExitWindowMs": 12000,
+      "stopTimeoutMs": 5000,
+      "killTimeoutMs": 5000,
+      "pollIntervalMs": 100
+    },
+    "rendererCdp": {
+      "maxPayloadSize": 67108864
+    },
+    "readiness": {
+      "rendererTargetTitle": "DeepSeek Harness",
+      "rendererSessionTitleSeparator": " — ",
+      "applicationUrlPrefix": "dsh-app://",
+      "documentReadyState": "complete",
+      "requireVisibleBodyText": true
+    },
+    "invocation": {
+      "environmentNames": {
+        "dshHome": "DSH_HOME",
+        "electronUserData": "DSH_DESKTOP_USER_DATA_DIR",
+        "diagnosticFile": "DSH_DESKTOP_DIAGNOSTIC_FILE",
+        "hostInspectorPort": "DSH_DESKTOP_HOST_INSPECT_PORT"
+      },
+      "unsetEnvironmentNames": [
+        "ELECTRON_RUN_AS_NODE"
+      ],
+      "arguments": [
+        "--user-data-dir={electronUserData}",
+        "--remote-debugging-port={rendererCdpPort}",
+        "--remote-debugging-address={loopbackHost}"
+      ]
+    },
+    "profilePortPatch": {
+      "entryId": "webserver",
+      "hostField": "host",
+      "portField": "port"
+    },
+    "capabilities": {
+      "defaultApplicationLogsIsolated": false,
+      "applicationHostHealthVerified": false,
+      "pluginIdentityVerified": false
+    },
+    "sessionTrace": {
+      "directoryName": "session-trace",
+      "filenames": {
+        "sessionsDirectory": "sessions",
+        "session": "session.json",
+        "index": "trace-index.json"
+      },
+      "export": {
+        "route": "api/session.export",
+        "sessionLogFilename": "session.v4.jsonl"
+      }
+    },
+    "commandRunner": {
+      "invocationDirectoryEnvironmentName": "HARNESS_COMFYUI_DESKTOP_TEST_INVOCATION_DIRECTORY",
+      "invocationsRelativePath": ".local/desktop-e2e/desktop-test-runner/invocations",
+      "descriptorDirectoryName": "runs",
+      "invocationFilename": "invocation.json",
+      "cancellationFilename": "cancel-request.json",
+      "resultFilename": "cancellation-result.json",
+      "pendingStartDrainTimeoutMs": 80000,
+      "commandStopTimeoutMs": 5000,
+      "commandKillTimeoutMs": 5000
+    }
+  },
+  "record": {
+    "schemaVersion": 1,
+    "runId": "e0a2e64c-3409-4caa-ab32-cdb0786a596a",
+    "mode": "development",
+    "state": "running",
+    "createdAt": "2026-10-26T03:17:17.593Z",
+    "updatedAt": "2026-10-26T03:17:20.017Z",
+    "application": {
+      "bundlePath": "/Applications/DeepSeek Harness.app",
+      "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+      "version": "0.2.1-rc.3",
+      "bundleId": "com.deepseek.dsh"
+    },
+    "directories": {
+      "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a",
+      "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home",
+      "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+      "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/evidence",
+      "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/profiles/desktop",
+      "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs/diagnostic.log"
+    },
+    "environment": {
+      "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model",
+      "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/active-probe.json"
+    },
+    "ports": {
+      "host": 55008,
+      "rendererCdp": 55009,
+      "hostInspector": 55010
+    },
+    "launch": {
+      "arguments": [
+        "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+        "--remote-debugging-port=55009",
+        "--remote-debugging-address=127.0.0.1"
+      ],
+      "environment": {
+        "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home",
+        "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+        "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs/diagnostic.log",
+        "DSH_DESKTOP_HOST_INSPECT_PORT": "55010"
+      },
+      "unsetEnvironmentNames": [
+        "ELECTRON_RUN_AS_NODE"
+      ]
+    },
+    "process": {
+      "pid": 35330,
+      "processGroupId": 35330,
+      "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data --remote-debugging-port=55009 --remote-debugging-address=127.0.0.1",
+      "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+      "listeningPorts": [
+        55008,
+        55009,
+        55022
+      ],
+      "observedAt": "2026-10-26T03:17:20.017Z"
+    },
+    "result": null
+  },
+  "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/run.json",
+  "developmentEnvironment": {
+    "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model",
+    "directories": {
+      "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home",
+      "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+      "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+      "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/profiles/desktop"
+    },
+    "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/active-probe.json",
+    "environmentExistsBefore": true,
+    "initializationStatus": "unverified"
+  },
+  "stdoutPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs/desktop.stdout.log",
+  "stderrPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs/desktop.stderr.log",
+  "renderer": {
+    "ready": true,
+    "title": "DeepSeek Harness",
+    "url": "dsh-app://app/",
+    "readyState": "complete",
+    "bodyTextLength": 707
+  }
+}

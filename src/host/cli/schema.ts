@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import type { WorkspaceRegistryProjection } from '../generation/workspace-access.ts'
 
 import {
   type GenerationRuntime
@@ -15,12 +16,7 @@ export interface CliHandlerOptions {
     'acceptGeneration' | 'inspectTemplateRuntimeParameters' | 'readGenerationRunInputs' | 'readGenerationRunMedia'
   >
   readonly imageReader: Pick<ImageReaderService, 'inspect'>
-  readonly workspaceRegistry: {
-    resolveByPath(path: string): Promise<{
-      readonly id: string | number
-      readonly sessionIds: readonly (string | number)[]
-    } | undefined>
-  }
+  readonly workspaceRegistry: WorkspaceRegistryProjection
 }
 
 export type CliHandler = (request: IncomingMessage, response: ServerResponse) => void | Promise<void>

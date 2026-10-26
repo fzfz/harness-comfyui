@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 1,
+  "candidate": {
+    "baseline": "2bb302449a0a1580e8322b3db2837d854bff9f67",
+    "branch": "codex/comfyui-native-cleanup",
+    "state": "candidate-in-containing-commit",
+    "pluginVersion": "0.47.2",
+    "desktopVersion": "0.2.1-rc.3"
+  },
+  "status": "passed-with-real-model-trace-limitations",
+  "deletionOrder": "deletion-order.json",
+  "nativeConfiguration": "native-config-validation.json",
+  "semanticReview": "semantic-review.json",
+  "nativeBusiness": [
+    {
+      "report": "native-business-green.json",
+      "tests": 79,
+      "passed": 79,
+      "exitCode": 0,
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/integration/generation-media-routes.test.ts",
+        "tests/integration/cli-route.test.ts",
+        "tests/unit/generation-workspace-access.test.ts",
+        "tests/unit/generation-tool.test.ts",
+        "tests/unit/generation-service.test.ts",
+        "tests/unit/cli-shell-capability.test.ts",
+        "tests/integration/host-plugin.test.ts",
+        "tests/integration/official-plugin-activation.test.ts",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=json",
+        "--outputFile=docs/verification/comfyui-workbench-only/native-business-green.json"
+      ]
+    },
+    {
+      "report": "native-business-message-green.json",
+      "tests": 30,
+      "passed": 30,
+      "exitCode": 0,
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/integration/cli-route.test.ts",
+        "tests/integration/generation-media-routes.test.ts",
+        "tests/unit/image-reader-tool.test.ts",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=json",
+        "--outputFile=docs/verification/comfyui-workbench-only/native-business-message-green.json"
+      ]
+    },
+    {
+      "command": [
+        "pnpm",
+        "typecheck"
+      ],
+      "exitCode": 0,
+      "log": "native-typecheck.txt"
+    }
+  ],
+  "desktop": "desktop-native-status.json",
+  "nativeScopeGap": "native-preset-scope-gap.json",
+  "acceptance": [
+    {
+      "id": "A1",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "native-config-targeted.json",
+        "desktop-native-status.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A2",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "desktop-native-status.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A3",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "desktop-native-status.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A4",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "native-business-green.json",
+        "native-workspace-green.json",
+        "desktop-native-status.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A5",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "desktop-native-status.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A6",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "deleted-implementation-files.json",
+        "deleted-test-files.json",
+        "native-config-targeted.json",
+        "deletion-order.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A7",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "native-business-green.json",
+        "native-business-message-green.json",
+        "desktop-native-status.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A8",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "desktop-native-status.json",
+        "desktop-native-fixtures-production.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    },
+    {
+      "id": "A9",
+      "status": "passed",
+      "evidence": [
+        "deletion-order.json",
+        "deleted-implementation-files.json",
+        "deleted-test-files.json"
+      ]
+    },
+    {
+      "id": "A10",
+      "status": "passed-targeted-and-controlled-desktop",
+      "evidence": [
+        "native-preset-scope-resolution.json",
+        "native-filter-default-inheritance-tests.json",
+        "desktop-native-attempt-3.json",
+        "desktop-native-attempt-11.json",
+        "desktop-native-attempt-13.json"
+      ]
+    }
+  ],
+  "realModel": {
+    "status": "passed-with-trace-limitations",
+    "authorization": "User authorized OpenRouter free for the isolated real-model acceptance; no ComfyUI generation Runs.",
+    "provider": "openrouter",
+    "model": "openrouter/free",
+    "reasoningEffort": "medium",
+    "comfyuiRunsSubmitted": 0,
+    "nativeWorkflowStatus": "passed",
+    "artifactContentStatus": "passed",
+    "traceStatus": "original-request-and-stream-not-persisted",
+    "evidence": "desktop-native-real-openrouter-reasoning-status.json",
+    "modelEvidence": "desktop-native-real-openrouter-reasoning-model-selection.json",
+    "parentChildHeaders": "desktop-native-real-openrouter-reasoning-parent-child-headers.json",
+    "configurationDiagnosis": "desktop-native-real-openrouter-reasoning-diagnosis.json",
+    "reasoningMapping": "desktop-native-real-openrouter-reasoning-mapping-check.json",
+    "promptComparison": "desktop-native-real-openrouter-reasoning-prompt-comparison.json",
+    "trace": "desktop-native-real-openrouter-reasoning-trace/trace-index.json",
+    "cleanupEvidence": "desktop-native-real-openrouter-reasoning-final-status.json",
+    "previousAttempts": [
+      "desktop-native-real-status.json",
+      "desktop-native-real-openrouter-status.json"
+    ],
+    "userDefaultModelChanged": false
+  },
+  "cleanup": {
+    "evidence": "desktop-native-attempt-13-cleanup.json",
+    "stoppedProcesses": 9,
+    "portsReleased": true,
+    "scope": "controlled-Desktop-acceptance",
+    "realModel": {
+      "evidence": "desktop-native-real-openrouter-reasoning-final-status.json",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    "finalQuality": {
+      "evidence": "final-quality-desktop-cleanup.json",
+      "probeRuns": 21,
+      "allProcessesAndPortsReleased": true
+    }
+  },
+  "fullQuality": {
+    "status": "passed",
+    "command": [
+      "pnpm",
+      "quality"
+    ],
+    "exitCode": 0,
+    "log": "final-quality.txt",
+    "previousFailureLog": "final-quality-attempt-1.txt",
+    "summary": [
+      "Test Files  75 passed (75)",
+      "Tests  1439 passed (1439)",
+      "All files          |   93.98 |    87.35 |     100 |   96.57 |",
+      "Test Files  12 passed (12)",
+      "Tests  76 passed (76)",
+      "Test Files  19 passed (19)",
+      "Tests  360 passed (360)",
+      "Test Files  13 passed (13)",
+      "Tests  291 passed (291)"
+    ],
+    "desktopCleanup": "final-quality-desktop-cleanup.json"
+  },
+  "commit": {
+    "identitySource": "git-commit-containing-this-record",
+    "branch": "codex/comfyui-native-cleanup",
+    "scope": "local"
+  },
+  "productionModified": false,
+  "dependenciesInstalled": false,
+  "codeReview": "code-review.json",
+  "pendingDecisions": [
+    {
+      "id": "D1",
+      "requiredBefore": "production-switch",
+      "scope": "Retired preset historical sessions"
+    }
+  ],
+  "scopeRequirementCorrection": {
+    "decision": "Remove the project tool-filter implementation and use native default inherited tools.",
+    "reason": "The main agent had incorrectly retained an unrequested Host-global tool-hiding constraint when removing duplicate Host behavior.",
+    "historicalFailureEvidence": "native-preset-scope-gap.json",
+    "resolutionEvidence": "native-preset-scope-resolution.json"
+  },
+  "nativeScopeResolution": "native-preset-scope-resolution.json",
+  "desktopFilterRetirement": {
+    "failureEvidence": "desktop-native-attempt-3.json",
+    "cleanupEvidence": "desktop-native-attempt-3-cleanup.json",
+    "remaining": "Completed; controlled official Desktop acceptance passed."
+  },
+  "desktopControlled": {
+    "report": "desktop-native-attempt-13.json",
+    "cleanup": "desktop-native-attempt-13-cleanup.json",
+    "evidence": "desktop-native-final/index.json",
+    "passedTests": 1,
+    "failedTests": 0,
+    "probeRuns": 9,
+    "portsReleased": true
+  },
+  "lateRetiredTestCleanup": "final-test-cleanup-order.json"
+}

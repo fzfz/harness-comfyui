@@ -1,0 +1,66 @@
+{
+  "failure": "missing-credential",
+  "phase": "failed",
+  "runId": "0dcc8ad9-a0ea-4c78-b4b8-d220a8cb2ae6",
+  "sessions": [
+    {
+      "presetId": "harness-comfyui-cli-candidate",
+      "result": {
+        "ok": false,
+        "error": {
+          "code": "agent-preset/invalid",
+          "details": {
+            "agentPreset": "harness-comfyui-cli-candidate",
+            "reason": "mcp-noobai (@deepseek-ai/dsh-mcp-client): mcp-client(noobai): initial connection or tool synchronization failed"
+          },
+          "isDSHRemoteError": true,
+          "name": "RemoteError"
+        }
+      }
+    },
+    {
+      "presetId": "standard",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-a8cfc7bf-ed9e-48e2-b3c7-a08658cc7995",
+          "agentPreset": "standard"
+        }
+      }
+    },
+    {
+      "presetId": "minimal",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-554d0e1f-89f2-4274-91be-eaef2861da52",
+          "agentPreset": "minimal"
+        }
+      }
+    },
+    {
+      "presetId": "cordis",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-a012d094-f052-4a56-be52-e8c3ff531567",
+          "agentPreset": "cordis"
+        }
+      }
+    }
+  ],
+  "workflows": [],
+  "recoveryMode": "application-restart",
+  "requests": [
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": false,
+      "method": null,
+      "params": null,
+      "status": 401,
+      "result": {
+        "error": "Controlled MCP credential does not match"
+      }
+    }
+  ]
+}

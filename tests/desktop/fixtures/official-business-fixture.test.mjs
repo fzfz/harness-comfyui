@@ -6,6 +6,40 @@ import officialBusinessFixtureJson from './official-business-fixture.json' with 
 import { parseOfficialBusinessFixture } from './official-business-schema.mjs'
 import { startOfficialBusinessServices } from './official-business-services.mjs'
 
+describe('controlled model response scripts', () => {
+  it('delivers a matching native tool call once and preserves unrelated queued responses', async () => {
+    const services = await startOfficialBusinessServices(parseOfficialBusinessFixture(officialBusinessFixtureJson))
+    const request = async content => {
+      const response = await fetch(`${services.baseURL}/chat/completions`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content }], stream: true }),
+      })
+      return (await response.text()).split('\n').filter(line => line.startsWith('data: {'))
+        .map(line => JSON.parse(line.slice(6)))
+    }
+    try {
+      services.enqueueModelResponse(request => request.body.messages[0].content === 'create child', {
+        role: 'assistant', tool_calls: [{ index: 0, id: 'native-child', type: 'function', function: {
+          name: 'subagent', arguments: JSON.stringify({ description: 'Read project Skill', prompt: 'Read the Skill and save the result.' }),
+        } }],
+      })
+      services.enqueueModelResponse(request => request.body.messages[0].content === 'continue child', {
+        role: 'assistant', tool_calls: [{ index: 0, id: 'native-followup', type: 'function', function: {
+          name: 'send_message', arguments: JSON.stringify({ agent_id: 'child-id', message: 'Read the reference file.' }),
+        } }],
+      })
+      expect((await request('unrelated'))[0].choices[0].delta.content).toBe('captured')
+      const created = await request('create child')
+      expect(created[0].choices[0].delta.tool_calls[0].function.name).toBe('subagent')
+      expect(created[1].choices[0].finish_reason).toBe('tool_calls')
+      expect((await request('create child'))[0].choices[0].delta.content).toBe('captured')
+      expect((await request('continue child'))[0].choices[0].delta.tool_calls[0].function.name).toBe('send_message')
+    } finally {
+      await services.close()
+    }
+  })
+})
+
 describe('official Desktop business fixture schema', () => {
   it('requires distinct browser evidence filenames within the run evidence directory', () => {
     const fixture = structuredClone(officialBusinessFixtureJson)

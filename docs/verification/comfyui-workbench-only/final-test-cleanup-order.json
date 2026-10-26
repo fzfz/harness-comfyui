@@ -1,0 +1,28 @@
+{
+  "retirements": [
+    "R1",
+    "R9"
+  ],
+  "implementationWasAlreadyDeleted": true,
+  "unchangedTestFailureLog": "final-quality-attempt-1.txt",
+  "unchangedTestFailures": {
+    "retiredRoleResourceCases": 10,
+    "manualToolUnregisterAssertions": 2
+  },
+  "cleanup": {
+    "removedRoleResourceCases": [
+      "task",
+      "composition",
+      "generation",
+      "observation",
+      "comparison"
+    ],
+    "removedMock": "Test-owned register/unregister callbacks in image-reader-plugin.test.ts",
+    "replacement": "Official ToolRuntime registration and schema visibility before and after plugin disposal"
+  },
+  "targetedResult": {
+    "report": "final-test-cleanup.json",
+    "passed": 48,
+    "failed": 0
+  }
+}

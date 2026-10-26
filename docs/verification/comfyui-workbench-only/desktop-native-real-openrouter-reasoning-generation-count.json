@@ -1,0 +1,599 @@
+{
+  "results": [
+    {
+      "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      }
+    },
+    {
+      "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      }
+    }
+  ],
+  "sessions": {
+    "ok": true,
+    "value": {
+      "items": [
+        {
+          "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+          "updatedAt": 1792985559887,
+          "agentAvailable": true,
+          "formatStatus": "current",
+          "running": false,
+          "blank": false,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+          "projections": {
+            "kind": "sequenced",
+            "asOfSeq": 75,
+            "values": {
+              "title": "Read and write native agent documentation",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 184696,
+                "outputTokens": 3074,
+                "cacheReadTokens": 76320,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {
+                "pressureTokens": 35702,
+                "projectedTokens": 36031,
+                "contextWindow": 200000
+              },
+              "contextBreakdown": {
+                "systemTokens": 858,
+                "toolsTokens": 14640,
+                "messageTokens": 5335
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 4,
+                "steps": 9,
+                "llmMs": 72988,
+                "toolMs": 125,
+                "ttftMs": 29028,
+                "ttftSteps": 9,
+                "decodeMs": 43960,
+                "decodeTokens": 3074
+              },
+              "turnOutline": [
+                {
+                  "turn": 1,
+                  "seq": 5,
+                  "prompt": "这是原生子 Agent 文档读取验收。请使用官方 subagent 工具派发 1 个子任务。子任务…",
+                  "response": "子任务已派发，子会话标识为 `83d5bbad-f92f-4744-a9e0-43a5273b2d98`。正在等待宿主通知子任务完成。 收到通知后，我将读取子任务的结果文件并报告内容。"
+                },
+                {
+                  "turn": 2,
+                  "seq": 27,
+                  "prompt": "",
+                  "response": "✅ **子任务已完成！** 从子任务的结果文件中提取到的内容如下： **📋 提取的信息：** 1. **技能名称：** `comfyui-generate` 2. **参考文件路径：** `/private/var/folders/td…"
+                },
+                {
+                  "turn": 3,
+                  "seq": 48,
+                  "prompt": "请继续上一轮同一个子 Agent。使用官方 send_message 工具向先前 subagent…",
+                  "response": "已向原子会话标识 `83d5bbad-f92f-4744-a9e0-43a5273b2d98` 续派，未创建新 Agent。等待宿主通知子任务完成。"
+                },
+                {
+                  "turn": 4,
+                  "seq": 61,
+                  "prompt": "",
+                  "response": "✅ **续派子任务已完成！** 从子任务的结果文件中提取到的内容如下： **📋 补充提取的信息：** 1. **技能名称：** `comfyui-generate` 2. **参考文件路径：** `/private/var/folder…"
+                }
+              ],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+              "subagentCatalog": [
+                {
+                  "mode": "continuable",
+                  "label": "Read comfyui-generate skill docs",
+                  "id": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+                  "createdAt": 1792985454047
+                }
+              ],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free",
+                  "reasoningEffort": "medium"
+                },
+                "next": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free",
+                  "reasoningEffort": "medium"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": false,
+                "lastPromptAt": 1792985559887
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+          "updatedAt": 1792985454099,
+          "agentAvailable": false,
+          "formatStatus": "current",
+          "running": false,
+          "blank": false,
+          "parentSessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+          "origin": "subagent",
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+          "projections": {
+            "kind": "cached",
+            "asOfSeq": 66,
+            "values": {
+              "title": "You are a child agent",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 250147,
+                "outputTokens": 3357,
+                "cacheReadTokens": 91136,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {
+                "pressureTokens": 38752,
+                "projectedTokens": 39395,
+                "contextWindow": 200000
+              },
+              "contextBreakdown": {
+                "systemTokens": 858,
+                "toolsTokens": 14640,
+                "messageTokens": 11623
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 2,
+                "steps": 10,
+                "llmMs": 59585,
+                "toolMs": 151,
+                "ttftMs": 29196,
+                "ttftSteps": 10,
+                "decodeMs": 30389,
+                "decodeTokens": 3357
+              },
+              "turnOutline": [
+                {
+                  "turn": 1,
+                  "seq": 4,
+                  "prompt": "You are a child agent tasked with reading documen…",
+                  "response": "I have completed the task. Here's a summary of what I extracted: **Extracted Information:** 1. **Skill name:** `comfyui…"
+                },
+                {
+                  "turn": 2,
+                  "seq": 39,
+                  "prompt": "",
+                  "response": "The task is complete. Here's a summary of the results: **Task 1: Generation CLI Query** The `comfyui-generate` skill wa…"
+                }
+              ],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "custom"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 59897,
+                "lastTurnCompleted": true
+              },
+              "subagent": {
+                "mode": "continuable",
+                "label": "Read comfyui-generate skill docs",
+                "seq": 0
+              },
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free",
+                  "reasoningEffort": "medium"
+                },
+                "next": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free",
+                  "reasoningEffort": "medium"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": false,
+                "lastPromptAt": 1792985454099
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+          "updatedAt": 1792984781631,
+          "agentAvailable": true,
+          "formatStatus": "current",
+          "running": false,
+          "blank": false,
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+          "projections": {
+            "kind": "sequenced",
+            "asOfSeq": 54,
+            "values": {
+              "title": "这是原生子 Agent 文档读取验收",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 51093,
+                "outputTokens": 564,
+                "cacheReadTokens": 26112,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {
+                "pressureTokens": 0,
+                "projectedTokens": 0,
+                "contextWindow": 200000
+              },
+              "contextBreakdown": {
+                "systemTokens": 858,
+                "toolsTokens": 14640,
+                "messageTokens": 2145
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 4,
+                "steps": 5,
+                "llmMs": 12172,
+                "toolMs": 29,
+                "ttftMs": 10009,
+                "ttftSteps": 3,
+                "decodeMs": 2163,
+                "decodeTokens": 564
+              },
+              "turnOutline": [
+                {
+                  "turn": 1,
+                  "seq": 4,
+                  "prompt": "这是原生子 Agent 文档读取验收。请使用官方 subagent 工具派发 1 个子任务。子任务…",
+                  "response": ""
+                },
+                {
+                  "turn": 2,
+                  "seq": 21,
+                  "prompt": "这是原生子 Agent 文档读取验收。请使用官方 subagent 工具派发 1 个子任务。子任务…",
+                  "response": "子任务已派发，子会话标识为：`7e3d5680-7507-46fd-9bf6-866ec4c7790a`。 我将等待宿主发送子任务完成通知，然后读取结果文件并向你报告内容。"
+                },
+                {
+                  "turn": 3,
+                  "seq": 39,
+                  "prompt": "",
+                  "response": "子任务已完成，子会话标识：`7e3d5680-7507-46fd-9bf6-866ec4c7790a`。 现在读取结果文件并报告内容。"
+                },
+                {
+                  "turn": 4,
+                  "seq": 47,
+                  "prompt": "请继续上一轮同一个子 Agent。使用官方 send_message 工具向先前 subagent…",
+                  "response": ""
+                }
+              ],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+              "subagentCatalog": [
+                {
+                  "mode": "continuable",
+                  "label": "Read comfyui-generate skill docs",
+                  "id": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+                  "createdAt": 1792984662679
+                }
+              ],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free"
+                },
+                "next": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": false,
+                "lastPromptAt": 1792984781631
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "sessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+          "updatedAt": 1792984662721,
+          "agentAvailable": false,
+          "formatStatus": "current",
+          "running": false,
+          "blank": false,
+          "parentSessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+          "origin": "subagent",
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+          "projections": {
+            "kind": "cached",
+            "asOfSeq": 31,
+            "values": {
+              "title": "你是原生文档读取子 Agent，只",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 129397,
+                "outputTokens": 947,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {
+                "pressureTokens": 32975,
+                "projectedTokens": 33436,
+                "contextWindow": 200000
+              },
+              "contextBreakdown": {
+                "systemTokens": 858,
+                "toolsTokens": 14640,
+                "messageTokens": 5255
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 1,
+                "steps": 4,
+                "llmMs": 19400,
+                "toolMs": 96,
+                "ttftMs": 17543,
+                "ttftSteps": 4,
+                "decodeMs": 1857,
+                "decodeTokens": 947
+              },
+              "turnOutline": [
+                {
+                  "turn": 1,
+                  "seq": 4,
+                  "prompt": "你是原生文档读取子 Agent，只读取、提取并写入结果，不生成图片、不执行 CLI、不提交任何 C…",
+                  "response": "<tool_call>bash <final_submit> {\"skill_name\":\"comfyui-generate\",\"reference_file_path\":\"/private/var/folders/td/trvrwv_d…"
+                }
+              ],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "custom"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 19557,
+                "lastTurnCompleted": true
+              },
+              "subagent": {
+                "mode": "continuable",
+                "label": "Read comfyui-generate skill docs",
+                "seq": 0
+              },
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free"
+                },
+                "next": {
+                  "provider": "openrouter",
+                  "model": "openrouter/free"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": false,
+                "lastPromptAt": 1792984662721
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "sessionId": "session-2cd8d275-19a5-4714-bd23-1805b963599f",
+          "updatedAt": 1792982898028,
+          "agentAvailable": false,
+          "formatStatus": "current",
+          "running": false,
+          "blank": true,
+          "cwd": "/Users/fzfz/Documents/deepseek-harness/default-workspace",
+          "projections": {
+            "kind": "cached",
+            "asOfSeq": 3,
+            "values": {
+              "title": null,
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 0,
+                "outputTokens": 0,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {},
+              "contextBreakdown": {
+                "systemTokens": 0,
+                "toolsTokens": 0,
+                "messageTokens": 0
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 0,
+                "steps": 0,
+                "llmMs": 0,
+                "toolMs": 0,
+                "ttftMs": 0,
+                "ttftSteps": 0,
+                "decodeMs": 0,
+                "decodeTokens": 0
+              },
+              "turnOutline": [],
+              "agentPreset": "standard",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/Users/fzfz/Documents/deepseek-harness/default-workspace",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": null,
+                "next": null
+              },
+              "sessionListMetadata": {
+                "blank": true,
+                "lastPromptAt": null
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

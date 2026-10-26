@@ -1,0 +1,83 @@
+{
+  "recordedAt": "2026-10-26T03:31:36.170Z",
+  "sessions": [
+    {
+      "file": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-comfyui-native-real-Ue7ocF-.local-desktop-development-native-real-model-workspace-openrouter-reasoning--/83d5bbad-f92f-4744-a9e0-43a5273b2d98/session.v4.jsonl",
+      "identity": {
+        "type": "session",
+        "version": 4,
+        "id": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+        "createdAt": 1792985454047,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+        "parentSession": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+        "isSeeded": false,
+        "origin": "subagent",
+        "delegationDepth": 1,
+        "agentPreset": "harness-comfyui-cli-candidate"
+      },
+      "configEvents": [
+        {
+          "type": "subagent/descriptor",
+          "seq": 0,
+          "time": 1792985454049,
+          "config": {
+            "version": 3,
+            "mode": "continuable",
+            "provider": "spawn",
+            "label": "Read comfyui-generate skill docs",
+            "agentProvider": "openrouter",
+            "agentModel": "openrouter/free",
+            "agentReasoningEffort": "medium"
+          }
+        },
+        {
+          "type": "request/header",
+          "seq": 11,
+          "time": 1792985454100,
+          "config": {
+            "provider": "openrouter",
+            "model": "openrouter/free",
+            "reasoningEffort": "medium",
+            "maxTokens": 4096
+          }
+        }
+      ]
+    },
+    {
+      "file": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-comfyui-native-real-Ue7ocF-.local-desktop-development-native-real-model-workspace-openrouter-reasoning--/session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225/session.v4.jsonl",
+      "identity": {
+        "type": "session",
+        "version": 4,
+        "id": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+        "createdAt": 1792985422811,
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+        "isSeeded": false,
+        "delegationDepth": 0,
+        "agentPreset": "harness-comfyui-cli-candidate"
+      },
+      "configEvents": [
+        {
+          "type": "model/selection",
+          "seq": 3,
+          "time": 1792985422829,
+          "config": {
+            "provider": "openrouter",
+            "model": "openrouter/free",
+            "reasoningEffort": "medium"
+          }
+        },
+        {
+          "type": "request/header",
+          "seq": 12,
+          "time": 1792985446374,
+          "config": {
+            "provider": "openrouter",
+            "model": "openrouter/free",
+            "reasoningEffort": "medium",
+            "maxTokens": 4096
+          }
+        }
+      ]
+    }
+  ]
+}

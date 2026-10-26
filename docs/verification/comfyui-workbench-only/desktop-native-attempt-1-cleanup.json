@@ -1,0 +1,86 @@
+{
+  "invocationId": "fe6602bb-3a6d-4df4-b940-1f597775a1ab",
+  "exitCode": 1,
+  "runs": [
+    {
+      "runId": "15d72dfb-873c-473b-9eae-db3b920a1016",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-25T17:07:55.468Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61990,
+        "rendererCdp": 61991,
+        "hostInspector": 61992
+      },
+      "process": {
+        "pid": 73932,
+        "processGroupId": 73932,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data --remote-debugging-port=61991 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+        "listeningPorts": [
+          61990,
+          61991,
+          62002
+        ],
+        "observedAt": "2026-10-25T17:07:17.476Z"
+      }
+    },
+    {
+      "runId": "e9d59a8e-7727-4ba4-8431-add3d259590e",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-25T17:07:15.251Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61929,
+        "rendererCdp": 61930,
+        "hostInspector": 61931
+      },
+      "process": {
+        "pid": 68639,
+        "processGroupId": 68639,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data --remote-debugging-port=61930 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+        "listeningPorts": [
+          61929,
+          61930,
+          61943
+        ],
+        "observedAt": "2026-10-25T17:07:07.457Z"
+      }
+    },
+    {
+      "runId": "ed5172f8-1aae-463b-b8f0-fd7ba97a4121",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-25T17:07:05.215Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61742,
+        "rendererCdp": 61743,
+        "hostInspector": 61744
+      },
+      "process": {
+        "pid": 62438,
+        "processGroupId": 62438,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data --remote-debugging-port=61743 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+        "listeningPorts": [
+          61742,
+          61743
+        ],
+        "observedAt": "2026-10-25T17:06:53.556Z"
+      }
+    }
+  ]
+}

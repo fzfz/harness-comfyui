@@ -1,0 +1,92 @@
+{
+  "invocationId": "89e32498-b2c8-4c83-b452-2330f156ef42",
+  "exitCode": 1,
+  "runs": [
+    {
+      "runId": "0a2af65d-dc54-407f-a795-d4bd3d561995",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-25T17:10:18.224Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 63503,
+        "rendererCdp": 63504,
+        "hostInspector": 63505
+      },
+      "process": {
+        "pid": 81578,
+        "processGroupId": 81578,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data --remote-debugging-port=63504 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+        "listeningPorts": [
+          63503,
+          63504
+        ],
+        "observedAt": "2026-10-25T17:10:07.126Z"
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/0a2af65d-dc54-407f-a795-d4bd3d561995/run.json"
+    },
+    {
+      "runId": "1920be3b-eb45-47d3-be17-09d29a9b2bb7",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-25T17:10:28.371Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 63717,
+        "rendererCdp": 63718,
+        "hostInspector": 63719
+      },
+      "process": {
+        "pid": 87693,
+        "processGroupId": 87693,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data --remote-debugging-port=63718 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+        "listeningPorts": [
+          63717,
+          63718,
+          63732
+        ],
+        "observedAt": "2026-10-25T17:10:20.586Z"
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/1920be3b-eb45-47d3-be17-09d29a9b2bb7/run.json"
+    },
+    {
+      "runId": "9e108fb7-fbf1-4a9d-84c7-dc756c537f68",
+      "repositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-25T17:11:08.643Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 63773,
+        "rendererCdp": 63774,
+        "hostInspector": 63775
+      },
+      "process": {
+        "pid": 93035,
+        "processGroupId": 93035,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data --remote-debugging-port=63774 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+        "listeningPorts": [
+          63773,
+          63774,
+          63833
+        ],
+        "observedAt": "2026-10-25T17:10:30.674Z"
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/9e108fb7-fbf1-4a9d-84c7-dc756c537f68/run.json"
+    }
+  ]
+}

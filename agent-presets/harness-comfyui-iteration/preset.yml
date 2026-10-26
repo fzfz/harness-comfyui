@@ -1,3 +1,0 @@
-name: ComfyUI迭代预设
-description: 主 Agent 调度构图、生成、独立观察和比较，各子 Agent 按自己的 system prompt 执行，迭代实现画面目标。
-order: 92

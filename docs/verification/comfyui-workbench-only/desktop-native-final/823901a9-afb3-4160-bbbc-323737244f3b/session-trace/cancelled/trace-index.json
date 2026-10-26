@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "runId": "823901a9-afb3-4160-bbbc-323737244f3b",
+  "sessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+  "source": {
+    "kind": "official-session-export",
+    "route": "api/session.export"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+      "parentSessionId": null,
+      "entry": "session.v4.jsonl",
+      "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/823901a9-afb3-4160-bbbc-323737244f3b/evidence/session-trace/cancelled/sessions/session-session-80748980-04ed-4d6a-8a9e-299b8ca7e149/session.json",
+      "eventCount": 57,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 56,
+        "complete": true
+      }
+    },
+    {
+      "sessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+      "parentSessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+      "entry": "subagents/e4dac470-2c3c-4d4b-9f19-148bf47d67de/session.v4.jsonl",
+      "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/823901a9-afb3-4160-bbbc-323737244f3b/evidence/session-trace/cancelled/sessions/session-e4dac470-2c3c-4d4b-9f19-148bf47d67de/session.json",
+      "eventCount": 73,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 72,
+        "complete": true
+      }
+    }
+  ],
+  "missing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    },
+    {
+      "source": "model-request",
+      "sessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "complete": false
+}

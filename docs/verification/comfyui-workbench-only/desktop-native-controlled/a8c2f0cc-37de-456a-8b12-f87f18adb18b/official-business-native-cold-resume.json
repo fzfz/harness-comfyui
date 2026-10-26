@@ -1,0 +1,12 @@
+{
+  "observations": [
+    {
+      "phase": "cold",
+      "parentSessionId": "session-549765a6-2e2d-4757-a5d0-7035c97554f7",
+      "childSessionId": "1ae84576-9915-4222-a051-7208f0b151e0",
+      "cliResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-ZxLL7Q/result.json",
+      "runId": "run_a0bc03f7-e47b-4093-9549-815838aac528",
+      "parentEndedAt": 173
+    }
+  ]
+}

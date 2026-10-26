@@ -13,7 +13,6 @@ import {
 import productAgent from '../../config/product-agent.json' with { type: 'json' }
 import { readProjectComposition } from '../fixtures/preset-composition.mjs'
 
-const managedPresetIds = [productAgent.preset.id, ...productAgent.preset.additionalManagedPresetIds]
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const temporaryRoots = []
 
@@ -25,14 +24,13 @@ async function fixture({
 } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'official-agent-preset-resources-'))
   temporaryRoots.push(root)
-  const presetIds = ['fixture-workbench', 'fixture-iteration']
+  const presetIds = ['fixture-workbench']
   const sourceRoot = resolve(root, 'project-presets')
   await mkdir(resolve(root, 'config'), { recursive: true })
   await writeFile(resolve(root, 'config/product-agent.json'), JSON.stringify(productAgent ?? {
-    schemaVersion: 3,
+    schemaVersion: 4,
     preset: {
       id: presetIds[0],
-      additionalManagedPresetIds: [presetIds[1]],
       sourceRootRelativePath: 'project-presets',
     },
   }, null, 2), 'utf8')
@@ -53,7 +51,6 @@ afterEach(async () => {
 describe('project Agent Preset resource reader', () => {
   it.each([
     ['harness-comfyui-cli-candidate', 'ComfyUI工作台预设'],
-    ['harness-comfyui-iteration', 'ComfyUI迭代预设'],
   ])('reads and validates the %s source resources', async (presetId, name) => {
     const resources = await readProjectComposition(repositoryRoot, presetId)
 
@@ -63,18 +60,10 @@ describe('project Agent Preset resource reader', () => {
     })
     expect(resources.composition.length).toBeGreaterThan(0)
     expect(resources.composition.every(row => typeof row.name === 'string')).toBe(true)
-    expect(resources.composition.filter(row => row.name === '../project-subagent-control.mjs')).toHaveLength(1)
     expect(resources.composition.filter(row => row.name === '@deepseek-ai/dsh-tool-subagent-control/list-agents')).toHaveLength(1)
-    expect(resources.composition.some(row => row.name === '@deepseek-ai/dsh-tool-subagent-control')).toBe(false)
-    expect(resources.composition.find(row => row.name === '../project-tool-visibility.mjs').config)
-      .toEqual({ mode: 'local-only' })
-    const runtimeResources = JSON.parse(await readFile(resolve(repositoryRoot, 'config/plugin-runtime-resources.json'), 'utf8'))
-    expect(runtimeResources.requiredFiles).toEqual(expect.arrayContaining([
-      'agent-presets/project-subagent-control.mjs', 'agent-presets/project-subagent-control.json',
-    ]))
   })
 
-  it.each(managedPresetIds)(
+  it.each([productAgent.preset.id])(
     'resolves the shared NoobAI include for %s without embedding credentials',
     async (presetId) => {
       const { composition } = await readProjectComposition(repositoryRoot, presetId)
@@ -95,9 +84,20 @@ describe('project Agent Preset resource reader', () => {
         failOnStartupError: true,
       })
       expect(source.match(/Authorization:.*/)?.[0]).toBe("Authorization: !!js '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`'")
-      expect(composition.find(row => row.name === '../project-tool-visibility.mjs').config.mode).toBe('local-only')
     },
   )
+
+  it('loads native delegation, control, and working directory tools for the workbench', async () => {
+    const { composition } = await readProjectComposition(repositoryRoot, productAgent.preset.id)
+    expect(composition.filter(row => row.id === 'task-agent')).toEqual([{
+      id: 'task-agent', name: '@deepseek-ai/dsh-tool-subagent', config: { provider: 'spawn', maxDepth: 1 },
+    }])
+    expect(composition.filter(row => row.id === 'tool-subagent-control')).toEqual([{
+      id: 'tool-subagent-control', name: '@deepseek-ai/dsh-tool-subagent-control',
+    }])
+    expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-subagent-control/list-agents')).toHaveLength(1)
+    expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-working-directory')).toHaveLength(1)
+  })
 
   it('rejects an id outside the configured project Presets before reading files', async () => {
     await expect(readProjectAgentPresetResources(repositoryRoot, '../outside'))
@@ -153,27 +153,18 @@ describe('project Agent Preset resource reader', () => {
   it('validates every Preset selected by product-agent.json', async () => {
     const result = await validateProjectAgentPresetResources(repositoryRoot)
 
-    expect(result.presetIds).toEqual(managedPresetIds)
-    expect(result.presets.map(({ metadata }) => metadata.name)).toEqual([
-      'ComfyUI工作台预设',
-      'ComfyUI迭代预设',
-      'ComfyUI 工作台任务角色',
-      'ComfyUI 构图角色',
-      'ComfyUI 生成角色',
-      'ComfyUI 观察角色',
-      'ComfyUI 比较角色',
-    ])
+    expect(result.presetIds).toEqual([productAgent.preset.id])
+    expect(result.presets.map(({ metadata }) => metadata.name)).toEqual(['ComfyUI工作台预设'])
   })
 
-  it('uses the configured source root and ID list instead of a test-owned Preset list', async () => {
+  it('uses the configured source root and Preset ID', async () => {
     const root = await fixture()
 
     await expect(validateProjectAgentPresetResources(root)).resolves.toMatchObject({
       sourceRoot: resolve(root, 'project-presets'),
-      presetIds: ['fixture-workbench', 'fixture-iteration'],
+      presetIds: ['fixture-workbench'],
       presets: [
         { id: 'fixture-workbench', metadata: { name: 'fixture-workbench' } },
-        { id: 'fixture-iteration', metadata: { name: 'fixture-iteration' } },
       ],
     })
   })
@@ -181,10 +172,9 @@ describe('project Agent Preset resource reader', () => {
   it('rejects an invalid configured Preset ID', async () => {
     const root = await fixture({
       productAgent: {
-        schemaVersion: 3,
+        schemaVersion: 4,
         preset: {
           id: 'Invalid_ID',
-          additionalManagedPresetIds: ['fixture-iteration'],
           sourceRootRelativePath: 'project-presets',
         },
       },
@@ -193,28 +183,12 @@ describe('project Agent Preset resource reader', () => {
     await expect(validateProjectAgentPresetResources(root)).rejects.toThrow('preset.id')
   })
 
-  it('rejects duplicate IDs across the default and managed Presets', async () => {
-    const root = await fixture({
-      productAgent: {
-        schemaVersion: 3,
-        preset: {
-          id: 'fixture-workbench',
-          additionalManagedPresetIds: ['fixture-workbench'],
-          sourceRootRelativePath: 'project-presets',
-        },
-      },
-    })
-
-    await expect(validateProjectAgentPresetResources(root)).rejects.toThrow('IDs must be unique')
-  })
-
   it('rejects a source root that resolves outside the repository root', async () => {
     const root = await fixture({
       productAgent: {
-        schemaVersion: 3,
+        schemaVersion: 4,
         preset: {
           id: 'fixture-workbench',
-          additionalManagedPresetIds: ['fixture-iteration'],
           sourceRootRelativePath: '../outside',
         },
       },
@@ -225,11 +199,11 @@ describe('project Agent Preset resource reader', () => {
 
   it.each([
     ['unsupported schema version', { schemaVersion: 2, preset: {}, skills: {} }],
+    ['previous schema version', { schemaVersion: 3, preset: { id: 'fixture-workbench', sourceRootRelativePath: 'project-presets' } }],
     ['unsupported skills configuration', {
-      schemaVersion: 3,
+      schemaVersion: 4,
       preset: {
         id: 'fixture-workbench',
-        additionalManagedPresetIds: ['fixture-iteration'],
         sourceRootRelativePath: 'project-presets',
       },
       skills: {},
@@ -241,15 +215,15 @@ describe('project Agent Preset resource reader', () => {
   })
 
   it.each([
+    ['preset.additionalManagedPresetIds', 'preset', 'additionalManagedPresetIds'],
     ['preset.installRootRelativePath', 'preset', 'installRootRelativePath'],
     ['preset.retiredManagedPresetIds', 'preset', 'retiredManagedPresetIds'],
     ['preset.sharedFiles', 'preset', 'sharedFiles'],
   ])('rejects retired product-agent field %s', async (_label, section, field) => {
     const productAgent = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       preset: {
         id: 'fixture-workbench',
-        additionalManagedPresetIds: ['fixture-iteration'],
         sourceRootRelativePath: 'project-presets',
       },
     }
@@ -261,9 +235,7 @@ describe('project Agent Preset resource reader', () => {
 
   it.each([
     ['fixture-workbench', 'invalid DSH YAML', '- id: [broken\n', 'composition is invalid DSH YAML'],
-    ['fixture-iteration', 'invalid DSH YAML', '- id: [broken\n', 'composition is invalid DSH YAML'],
     ['fixture-workbench', 'invalid plugin row', '- id: missing-name\n  config: {}\n', 'composition is invalid'],
-    ['fixture-iteration', 'invalid plugin row', '- id: missing-name\n  config: {}\n', 'composition is invalid'],
   ])('fails complete validation when %s contains an %s', async (presetId, _problem, composition, message) => {
     const root = await fixture({ malformedPresetId: presetId, composition })
 

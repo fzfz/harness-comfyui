@@ -1,0 +1,94 @@
+{
+  "record": {
+    "schemaVersion": 1,
+    "runId": "e0a2e64c-3409-4caa-ab32-cdb0786a596a",
+    "mode": "development",
+    "state": "stopped",
+    "createdAt": "2026-10-26T03:17:17.593Z",
+    "updatedAt": "2026-10-26T03:21:49.527Z",
+    "application": {
+      "bundlePath": "/Applications/DeepSeek Harness.app",
+      "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+      "version": "0.2.1-rc.3",
+      "bundleId": "com.deepseek.dsh"
+    },
+    "directories": {
+      "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a",
+      "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home",
+      "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+      "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/evidence",
+      "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/profiles/desktop",
+      "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs/diagnostic.log"
+    },
+    "environment": {
+      "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model",
+      "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/active-probe.json"
+    },
+    "ports": {
+      "host": 55008,
+      "rendererCdp": 55009,
+      "hostInspector": 55010
+    },
+    "launch": {
+      "arguments": [
+        "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+        "--remote-debugging-port=55009",
+        "--remote-debugging-address=127.0.0.1"
+      ],
+      "environment": {
+        "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home",
+        "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+        "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/logs/diagnostic.log",
+        "DSH_DESKTOP_HOST_INSPECT_PORT": "55010"
+      },
+      "unsetEnvironmentNames": [
+        "ELECTRON_RUN_AS_NODE"
+      ]
+    },
+    "process": {
+      "pid": 35330,
+      "processGroupId": 35330,
+      "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data --remote-debugging-port=55009 --remote-debugging-address=127.0.0.1",
+      "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+      "listeningPorts": [
+        55008,
+        55009,
+        55022
+      ],
+      "observedAt": "2026-10-26T03:17:20.017Z"
+    },
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-26T03:21:49.527Z",
+      "portsReleased": true
+    }
+  },
+  "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-e2e/e0a2e64c-3409-4caa-ab32-cdb0786a596a/run.json",
+  "developmentEnvironment": {
+    "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model",
+    "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home",
+    "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/user-data",
+    "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+    "environmentExists": true,
+    "initializationStatus": "unverified"
+  },
+  "processGroupMatchesRun": false,
+  "processGroup": null,
+  "ports": [
+    {
+      "port": 55008,
+      "pids": []
+    },
+    {
+      "port": 55009,
+      "pids": []
+    },
+    {
+      "port": 55010,
+      "pids": []
+    }
+  ]
+}

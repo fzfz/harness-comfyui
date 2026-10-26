@@ -8,7 +8,7 @@ import type { } from '../image-reader/plugin.ts'
 import { BrowserSettingsRemoteService } from '../core/browser-settings-service.ts'
 
 export const name = 'harness-comfyui-web'
-export const inject = ['harnessComfyuiCore', 'imageReader', 'webServer', 'workspaceRegistry', 'sessionPersistence'] as const
+export const inject = ['harnessComfyuiCore', 'imageReader', 'webServer', 'workspaceRegistry', 'sessionPersistence', 'subagents'] as const
 export function apply(ctx: Context): void {
   const { catalog, runtime, profile, sourceAddress } = ctx.harnessComfyuiCore.services
   new CatalogRemoteService(ctx, catalog, sourceAddress)
@@ -17,6 +17,6 @@ export function apply(ctx: Context): void {
   new BrowserSettingsRemoteService(ctx, () => profile.comfyui.frontendCompiler.browserExecutablePath)
   ctx.effect(() => registerGenerationMediaRoutes({
     webServer: (ctx as unknown as { webServer: GenerationWebServer }).webServer,
-    runtime, workspaceRegistry: ctx.workspaceRegistry, sessionPersistence: ctx.sessionPersistence,
+    runtime, workspaceRegistry: ctx.workspaceRegistry, sessionPersistence: ctx.sessionPersistence, subagents: ctx.subagents,
   }), 'Generation media routes')
 }

@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-10-26T03:34:19.495Z",
+  "source": "/Users/fzfz/.dsh/profiles/desktop/cordis.patch.yml",
+  "defaultModel": {
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "reasoningEffort": "max"
+  }
+}

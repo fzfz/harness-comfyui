@@ -60,6 +60,7 @@ describe('official Host plugin activation', () => {
     context.provide('webServer' as never, { register: registerRoute } as never)
     context.provide('workspaceRegistry', { resolveByPath: vi.fn(async () => undefined) })
     context.provide('sessionPersistence' as never, { stat: vi.fn(async () => undefined) } as never)
+    context.provide('subagents' as never, { listDescendants: vi.fn(async () => []) } as never)
     context.provide('credentials' as never, createTestCredentialProvider() as never)
     context.provide('settings' as never, {
       describe: vi.fn(() => []),

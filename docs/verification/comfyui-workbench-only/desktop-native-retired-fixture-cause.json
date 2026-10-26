@@ -1,0 +1,15 @@
+{
+  "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/8ae781d8-e2bd-4b95-b736-6f446510c70b/official-environment/dsh-home/storages/session_projcache/sessions/session-5f4cae30-4754-4fe6-beec-a07c14afb808.json",
+  "preset": {
+    "ver": 1,
+    "seq": 34,
+    "val": "harness-comfyui-iteration"
+  },
+  "identity": {
+    "formatVersion": 4,
+    "createdAt": 1792982098611,
+    "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/8ae781d8-e2bd-4b95-b736-6f446510c70b/official-environment/workspace",
+    "isSeeded": false,
+    "inheritedEventCount": 0
+  }
+}

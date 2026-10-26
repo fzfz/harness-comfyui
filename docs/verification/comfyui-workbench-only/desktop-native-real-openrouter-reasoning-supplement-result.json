@@ -1,0 +1,6 @@
+{
+  "skill_name": "comfyui-generate",
+  "reference_file_path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+  "query_workflow_parameter_command": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation inspect-template-parameters --stdin",
+  "purpose": "This command queries the generation parameters accepted by a specified Workflow template on a specified ComfyUI instance, returning parameter details including IDs, kinds, value types, current values, and constraints like minimums, maximums, and allowed values, as well as size candidate dimensions."
+}

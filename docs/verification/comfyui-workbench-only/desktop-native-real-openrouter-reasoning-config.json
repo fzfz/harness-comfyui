@@ -1,0 +1,10 @@
+{
+  "provider": "openrouter",
+  "model": "openrouter/free",
+  "beforeReasoning": null,
+  "reasoning": "medium",
+  "profilePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/profiles/desktop/cordis.patch.yml",
+  "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+  "credentialEnvironmentName": "OPENROUTER_API_KEY",
+  "credentialSource": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env"
+}

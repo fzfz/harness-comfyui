@@ -16,6 +16,7 @@ import {
 import {
   workspaceSessionScopeForSession,
   type SessionPersistenceProjection,
+  type SubagentQueryProjection,
   type WorkspaceRegistryProjection,
 } from './workspace-access.ts'
 
@@ -37,6 +38,7 @@ export interface RegisterGenerationMediaRoutesOptions {
     'getMedia' | 'queryMedia' | 'positivePromptForRun' | 'mediaContentPath' | 'mediaRunId' | 'actualWorkflowPath'>
   readonly workspaceRegistry: WorkspaceRegistryProjection
   readonly sessionPersistence: SessionPersistenceProjection
+  readonly subagents: SubagentQueryProjection
 }
 
 function send(response: ServerResponse, status: number, message: string): void {
@@ -45,8 +47,8 @@ function send(response: ServerResponse, status: number, message: string): void {
   response.end(message)
 }
 
-function sendError(response: ServerResponse, status: number, code: string): void {
-  const body = JSON.stringify({ code })
+function sendError(response: ServerResponse, status: number, code: string, message?: string): void {
+  const body = JSON.stringify({ code, ...(message === undefined ? {} : { message }) })
   response.statusCode = status
   response.setHeader('content-type', 'application/json; charset=utf-8')
   response.setHeader('content-length', String(Buffer.byteLength(body)))
@@ -134,6 +136,7 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
         const sessionScope = await workspaceSessionScopeForSession(
           options.workspaceRegistry,
           options.sessionPersistence,
+          options.subagents,
           sessionId,
           abortController.signal,
         )
@@ -201,9 +204,11 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
             GENERATION_MEDIA_NOT_FOUND: 404,
             GENERATION_RUN_NOT_FOUND: 404,
             GENERATION_SESSION_NOT_FOUND: 404,
+            GENERATION_WORKSPACE_REQUIRED: 404,
+            GENERATION_SESSION_UNAVAILABLE: 503,
           }[error.code]
           if (status !== undefined) {
-            sendError(response, status, error.code)
+            sendError(response, status, error.code, status === 503 ? error.message : undefined)
             return
           }
         }

@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
-import { cp, lstat, mkdir, mkdtemp, readFile, realpath, symlink, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, symlink, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import repositorySkillCatalogFixture from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import officialBusinessFixtureJson from './fixtures/official-business-fixture.json' with { type: 'json' }
 import productAgentConfig from '../../config/product-agent.json' with { type: 'json' }
+import managedCliHelp from '../../config/managed-cli-help.json' with { type: 'json' }
 import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 import browserSettings from '../../config/browser-settings.json' with { type: 'json' }
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
@@ -37,9 +38,11 @@ import { captureProjectClientContext } from './fixtures/official-client-context.
 import { parseOfficialCandidateSourceIdentity } from './fixtures/official-candidate-identity-schema.mjs'
 import { startOfficialBusinessServices } from './fixtures/official-business-services.mjs'
 import { publishSavedDesktopRun } from './fixtures/official-business-media.mjs'
+import { stageRetiredPresetHistory } from './fixtures/official-lifecycle-services.mjs'
 import { trackedStartProbe } from './fixtures/official-command-cancellation.mjs'
 import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
 import { loadProfile } from '../../src/config/load-profile.ts'
+import { generationMediaContentUrl } from '../../src/generation/contract.ts'
 
 import { startOfficialMcpServices, OFFICIAL_MCP_FIXTURE } from './fixtures/official-mcp-services.mjs'
 import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope, isOfficialMcpChildRequest, requestMessageText } from './fixtures/official-mcp-acceptance.mjs'
@@ -54,7 +57,7 @@ const sourceRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '.
 
 const active = []
 const PRODUCT_PRESET_ID = productAgentConfig.preset.id
-const PROJECT_PRESET_IDS = [PRODUCT_PRESET_ID, ...productAgentConfig.preset.additionalManagedPresetIds]
+const PROJECT_PRESET_IDS = [PRODUCT_PRESET_ID]
 const REPOSITORY_SKILL_CATALOG = Object.freeze(repositorySkillCatalogFixture)
 const OFFICIAL_BUSINESS_FIXTURE = parseOfficialBusinessFixture(officialBusinessFixtureJson)
 const WORKSPACE_COMFYUI_GENERATE_DESCRIPTION = OFFICIAL_BUSINESS_FIXTURE.skills.workspaceDescription
@@ -66,8 +69,6 @@ const USER_SKILL_DESCRIPTION = OFFICIAL_BUSINESS_FIXTURE.skills.userDescription
 const USER_SKILL_MARKER = OFFICIAL_BUSINESS_FIXTURE.skills.userMarker
 const HOST_BUNDLED_SKILL_NAMES = new Set(['office', 'office-docx', 'office-export-pdf', 'office-pptx', 'office-recalculate', 'office-render', 'office-xlsx'])
 const CORDIS_SKILL_NAMES = ['agent-experience', 'cordis-composition-reference', 'cordis-plugin-development', 'editing-cordis-compositions']
-const ITERATION_PRESET_ID = 'harness-comfyui-iteration'
-const PRODUCT_PRESET_IDS = [PRODUCT_PRESET_ID, ITERATION_PRESET_ID]
 const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'startup-ready.json',
   'stop-request.json',
@@ -93,6 +94,9 @@ const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'official-business-mcp.json',
   'official-business-mcp-scope.json',
   'official-business-mcp-activation.json',
+  'official-business-native-continuation.json',
+  'official-business-native-cold-resume.json',
+  'official-business-retired-preset.json',
 ]
 
 function findProfileEntry(entries, entryId) {
@@ -235,7 +239,7 @@ async function startModelRequestCaptureServer() {
     async requestWhere(predicate, timeoutMs = 10_000) { return services.nextRequestWhere(predicate, timeoutMs) },
     async readHistory(promptId) { return services.readHistory(promptId) },
     pauseNextModelResponse(predicate) { return services.pauseNextModelResponse(predicate) },
-    setMcpObservationImages(images) { return services.setMcpObservationImages(images) },
+    enqueueModelResponse(predicate, delta) { services.enqueueModelResponse(predicate, delta) },
     async close() { return services.close() },
   }
 }
@@ -581,7 +585,7 @@ async function seedOfficialBusinessSessions(page, workspacePath) {
   }
 }
 
-function createOfficialBusinessConfig(baseConfig, fixtureId, environmentFilePath, workspacePath, sourcePort, customProviders) {
+function createOfficialBusinessConfig(baseConfig, fixtureId, environmentFilePath, sourcePort, customProviders) {
   const config = structuredClone(baseConfig)
   const fixtureRelativePath = `.local/desktop-e2e/${fixtureId}`
   config.modes.development.environmentRootRelativePath = `${fixtureRelativePath}/official-environment`
@@ -592,6 +596,10 @@ function createOfficialBusinessConfig(baseConfig, fixtureId, environmentFilePath
   ]
   config.modes.development.requiredEnvironmentNames = [OFFICIAL_BUSINESS_FIXTURE.provider.apiKeyEnvironmentName]
   config.modes.development.initialProfilePatches = [
+    {
+      id: 'session-persistence-jsonl',
+      config: { root: resolve(dirname(environmentFilePath), config.modes.development.directoryNames.dshHome, 'sessions'), compression: 'none' },
+    },
     {
       id: 'agent-default-model',
       config: {
@@ -611,7 +619,6 @@ function createOfficialBusinessConfig(baseConfig, fixtureId, environmentFilePath
       id: 'harness-comfyui-core',
       config: {
         configurationProfile: 'production',
-        startupWorkspacePath: workspacePath,
         configuration: { url: 'http://127.0.0.1', port: sourcePort },
       },
     },
@@ -822,21 +829,31 @@ async function verifyKimiPptDisabled(page, sessionId) {
 async function exerciseOfficialMcpWorkflow(page, services, mcp, sessionId) {
   const requestStart = services.requestLog.length
   const callStart = mcp.requests.length
-  await openBusinessSession(page, sessionId)
-  await submitComposerPrompt(page, OFFICIAL_MCP_FIXTURE.workflowPrompt)
-  const first = await services.requestWhere(request => request.sequence >= requestStart
-    && (request.body.messages ?? []).some(message => message.role === 'user'
-      && requestMessageText(message).includes(OFFICIAL_MCP_FIXTURE.workflowPrompt)), 30_000)
-  const completed = await services.requestWhere(request => request.sequence >= requestStart
-    && (request.body.messages ?? []).some(message => message.role === 'tool'
-      && JSON.stringify(message.content).includes('workflow_json')), 30_000)
-  const calls = mcp.requests.slice(callStart).filter(request => request.method === 'tools/call')
-  expect(calls.map(request => request.params.name)).toEqual(OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name))
-  expect(calls.every(request => request.status === 200 && request.result.result.isError === false)).toBe(true)
-  return { sessionId, model: first.body.model,
-    tools: (first.body.tools ?? []).map(tool => tool.function?.name ?? tool.name),
-    calls, resultReceivedByModel: completed.body.messages.some(message => message.role === 'tool'
-      && JSON.stringify(message.content).includes('workflow_json')) }
+  try {
+    await openBusinessSession(page, sessionId)
+    await submitComposerPrompt(page, OFFICIAL_MCP_FIXTURE.workflowPrompt)
+    const first = await services.requestWhere(request => request.sequence >= requestStart
+      && (request.body.tools ?? []).length > 0
+      && (request.body.messages ?? []).some(message => message.role === 'user'
+        && requestMessageText(message).includes(OFFICIAL_MCP_FIXTURE.workflowPrompt)), 30_000)
+    const completed = await services.requestWhere(request => request.sequence >= requestStart
+      && (request.body.messages ?? []).some(message => message.role === 'tool'
+        && JSON.stringify(message.content).includes('workflow_json')), 30_000)
+    const calls = mcp.requests.slice(callStart).filter(request => request.method === 'tools/call')
+    expect(calls.map(request => request.params.name)).toEqual(OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name))
+    expect(calls.every(request => request.status === 200 && request.result.result.isError === false)).toBe(true)
+    return { sessionId, model: first.body.model,
+      tools: (first.body.tools ?? []).map(tool => tool.function?.name ?? tool.name),
+      calls, resultReceivedByModel: completed.body.messages.some(message => message.role === 'tool'
+        && JSON.stringify(message.content).includes('workflow_json')) }
+  } catch (cause) {
+    const pageState = await page.evaluate('document.body.innerText').catch(() => null)
+    const requests = services.requestLog.slice(requestStart).map(request => ({
+      model: request.body.model, messages: request.body.messages,
+      toolNames: (request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name),
+    }))
+    throw new Error(`Controlled MCP workflow failed: ${JSON.stringify({ sessionId, requests, pageState })}`, { cause })
+  }
 }
 
 async function verifyOfficialMcpActivationRecovery({
@@ -910,6 +927,30 @@ async function verifyOfficialMcpActivationRecovery({
   return observations
 }
 
+function shellQuoteArgument(value) {
+  return `'${value.replaceAll("'", "'\\''")}'`
+}
+
+function managedCliCommand(command, input) {
+  return `printf '%s\\n' ${shellQuoteArgument(JSON.stringify(input))} | ${managedCliHelp.invocation} ${command} --stdin`
+}
+
+function controlledToolResponse(calls) {
+  return { role: 'assistant', tool_calls: calls.map(({ id, name, arguments: args }, index) => ({
+    index, id, type: 'function', function: { name, arguments: JSON.stringify(args) },
+  })) }
+}
+
+function hasControlledToolResult(request, callId) {
+  return (request.body.messages ?? []).some(message => message.role === 'tool' && message.tool_call_id === callId)
+}
+
+function controlledToolResult(request, callId) {
+  const message = (request.body.messages ?? []).find(message => message.role === 'tool' && message.tool_call_id === callId)
+  expect(message, `Missing native tool result ${callId}`).toBeDefined()
+  return requestMessageText(message)
+}
+
 async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidenceDirectory, traceContext) {
   const callStart = mcp.requests.length
   const observations = []
@@ -918,9 +959,6 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
   const globalCatalogToolNames = [
     TEMPLATE_RESOLVER_TOOL_NAME, LORA_RESOLVER_TOOL_NAME,
     GENERATION_MODEL_RESOLVER_TOOL_NAME, COMFYUI_INSTANCE_QUERY_TOOL_NAME,
-  ]
-  const iterationDispatchTools = [
-    'subagent_composition', 'subagent_generation', 'subagent_observation', 'subagent_comparison',
   ]
   for (const presetId of [...PROJECT_PRESET_IDS, 'standard', 'minimal', 'cordis']) {
     const created = await page.evaluate(`(async () => window.__runPanelTestContext.get('remote.session').create({
@@ -935,11 +973,8 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     let observation
     if (PROJECT_PRESET_IDS.includes(presetId)) {
       observation = await exerciseOfficialMcpWorkflow(page, services, mcp, sessionId)
-      const isParent = PRODUCT_PRESET_IDS.includes(presetId)
       assertToolScope(observation.tools, {
-        required: [...mcpToolNames, 'list_agents', ...(isParent ? ['interrupt_agent'] : [])],
-        forbidden: [...globalCatalogToolNames, 'send_message',
-          ...(isParent ? [] : ['interrupt_agent', 'subagent_task', ...iterationDispatchTools, 'get_goal', 'create_goal', 'update_goal'])],
+        required: [...mcpToolNames, 'list_agents', 'interrupt_agent'],
       })
     } else {
       const requestStart = services.requestLog.length
@@ -958,11 +993,25 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     }
     observations.push({ presetId, ...observation })
   }
-  expect(PROJECT_PRESET_IDS).toContain(ITERATION_PRESET_ID)
-  const childCases = [
-    { presetId: PRODUCT_PRESET_ID, dispatchTool: 'subagent_task' },
-    ...iterationDispatchTools.map(dispatchTool => ({ presetId: ITERATION_PRESET_ID, dispatchTool })),
-  ]
+  const native = {
+    initialDirectory: join(traceContext.workspacePath, 'native-parent-directory'),
+    childDirectory: join(dirname(traceContext.workspacePath), 'native-child-directory'),
+    resultPath: join(traceContext.workspacePath, 'native-child-result.txt'),
+    resultText: 'OFFICIAL_NATIVE_CHILD_RESULT',
+    repositorySkill: REPOSITORY_SKILL_CATALOG.find(skill => skill.name !== OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName).name,
+  }
+  await Promise.all([native.initialDirectory, native.childDirectory].map(path => mkdir(path, { recursive: true })))
+  await symlink(join(traceContext.workspacePath, '.agents'), join(native.initialDirectory, '.agents'), 'dir')
+  expect(isPathWithin(native.childDirectory, traceContext.workspacePath)).toBe(false)
+  const unrelated = await page.evaluate(`(async () => {
+    const workspace = await window.__runPanelTestContext.get('remote.workspace').create({ path: ${JSON.stringify(native.childDirectory)} })
+    if (!workspace.ok) return { workspace }
+    const session = await window.__runPanelTestContext.get('remote.session').create({ workspaceId: workspace.value.workspace.workspaceId, agentPreset: ${JSON.stringify(PRODUCT_PRESET_ID)} })
+    return { workspace, session }
+  })()`)
+  expect(unrelated).toMatchObject({ workspace: { ok: true }, session: { ok: true } })
+  native.unrelatedSessionId = unrelated.session.value.sessionId
+  const childCases = [{ presetId: PRODUCT_PRESET_ID, dispatchTool: 'subagent' }]
   for (const { presetId, dispatchTool } of childCases) {
     const created = await page.evaluate(`(async () => window.__runPanelTestContext.get('remote.session').create({
       workspaceId: ${JSON.stringify(workspaceId)}, agentPreset: ${JSON.stringify(presetId)}
@@ -980,6 +1029,48 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       && (request.body.messages ?? []).some(message => message.role === 'user'
         && requestMessageText(message) === parentPrompt)
     const isChildRequest = request => isOfficialMcpChildRequest(request, childRequestStart)
+      && (request.body.tools ?? []).some(tool => (tool.function?.name ?? tool.name) === 'skill')
+    services.enqueueModelResponse(isParentRequest, controlledToolResponse([{ id: 'native-parent-cd', name: 'working_directory',
+      arguments: { cd: native.initialDirectory } }]))
+    services.enqueueModelResponse(request => isParentRequest(request) && hasControlledToolResult(request, 'native-parent-cd'),
+      controlledToolResponse([{ id: 'native-dispatch', name: dispatchTool, arguments: {
+        description: 'Controlled MCP child', prompt: `${OFFICIAL_MCP_FIXTURE.workflowPrompt}\n${parentPrompt}`,
+      } }]))
+    services.enqueueModelResponse(isChildRequest, controlledToolResponse([
+      OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, UNIQUE_WORKSPACE_SKILL_NAME, USER_SKILL_NAME, native.repositorySkill,
+    ].map((name, index) => ({ id: `native-skill-${index}`, name: 'skill', arguments: { name } }))))
+    services.enqueueModelResponse(request => isChildRequest(request) && (request.body.messages ?? []).some(message =>
+      message.role === 'tool' && requestMessageText(message).includes('workflow_json')),
+    controlledToolResponse([{ id: 'native-child-depth', name: 'subagent', arguments: {
+      description: 'Verify official depth limit', prompt: 'Report the nested child identity.',
+    } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-depth'),
+      controlledToolResponse([{ id: 'native-child-cwd', name: 'working_directory', arguments: {} }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-cwd'),
+      controlledToolResponse([{ id: 'native-child-cd', name: 'working_directory', arguments: { cd: native.childDirectory } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-cd'),
+      controlledToolResponse([{ id: 'native-child-generation', name: 'bash', arguments: {
+        description: 'Submit controlled native child generation',
+        command: managedCliCommand('generation submit', {
+          title: 'Controlled native child generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
+          template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId,
+          model: null,
+          parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt, seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
+          loras: [],
+        }),
+      } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-generation'),
+      controlledToolResponse([{ id: 'native-result-write', name: 'bash', arguments: {
+        description: 'Write controlled child task result',
+        command: `printf '%s\\n' ${shellQuoteArgument(native.resultText)} > ${shellQuoteArgument(native.resultPath)}`,
+      } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-result-write'),
+      { role: 'assistant', content: `Read the result file at ${native.resultPath}.` })
+    services.enqueueModelResponse(request => isParentRequest(request) && (request.body.messages ?? []).some(message =>
+      message.role === 'user' && requestMessageText(message).includes('Background subagent')),
+    controlledToolResponse([{ id: 'native-result-read', name: 'bash', arguments: {
+      description: 'Read completed child task result', command: `cat ${shellQuoteArgument(native.resultPath)}`,
+    } }]))
     const pausedChild = services.pauseNextModelResponse(isChildRequest)
     let parentResultRequest
     let childModelRequest
@@ -988,19 +1079,22 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       await submitComposerPrompt(page, parentPrompt)
       childModelRequest = await services.requestWhere(isChildRequest, 30_000)
       parentResultRequest = await services.requestWhere(request => isParentRequest(request)
-        && (request.body.messages ?? []).some(message => message.role === 'tool'
-          && JSON.stringify(message.content).includes('subagentId')), 30_000)
+        && hasControlledToolResult(request, 'native-dispatch'), 30_000)
     } finally {
       pausedChild.release()
     }
     const parentTools = (parentResultRequest.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
-    assertToolScope(parentTools, { required: [...mcpToolNames, dispatchTool, 'list_agents', 'interrupt_agent'], forbidden: [...globalCatalogToolNames, 'send_message'] })
+    assertToolScope(parentTools, { required: [...mcpToolNames, dispatchTool, 'list_agents', 'interrupt_agent'] })
     expect(parentResultRequest.body.messages.flatMap(message => message.tool_calls ?? [])
-      .map(call => call.function?.name)).toEqual([dispatchTool])
+      .map(call => call.function?.name)).toEqual(['working_directory', dispatchTool])
+    const activation = controlledToolResult(parentResultRequest, 'native-dispatch')
+    const activated = /^started subagent (\S+)$/u.exec(activation)
+    expect(activated, activation).not.toBeNull()
+    native.parentSessionId = parentSessionId
+    native.childSessionId = activated[1]
     const childTools = (childModelRequest.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
     assertToolScope(childTools, {
-      required: mcpToolNames,
-      forbidden: [...globalCatalogToolNames, 'subagent_task', ...iterationDispatchTools, 'send_message'],
+      required: [...mcpToolNames, 'subagent', 'send_message', 'interrupt_agent', 'list_agents', 'working_directory', 'skill', 'bash'],
     })
     expect(childModelRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
     const completed = await services.requestWhere(request => isChildRequest(request)
@@ -1012,14 +1106,49 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
         && requestMessageText(message).includes('Background subagent')
         && requestMessageText(message).includes('finished and will do no further work')), 30_000)
     expect(settledRequest.sequence).toBeGreaterThan(completed.sequence)
-    expect(parentResultRequest.body.messages.some(message => {
-      if (message.role !== 'user') return false
-      try {
-        const identity = JSON.parse(requestMessageText(message))
-        return identity.toolName === dispatchTool && typeof identity.subagentId === 'string'
-          && typeof identity.messageId === 'string' && typeof identity.callId === 'string'
-      } catch { return false }
-    })).toBe(true)
+    const resultRead = await services.requestWhere(request => isParentRequest(request)
+      && hasControlledToolResult(request, 'native-result-read'), 30_000)
+    expect(controlledToolResult(resultRead, 'native-result-read').trim()).toBe(native.resultText)
+    expect(await readFile(native.resultPath, 'utf8')).toBe(`${native.resultText}\n`)
+    const childGenerationRequest = services.requestLog.find(request => isChildRequest(request)
+      && hasControlledToolResult(request, 'native-child-generation'))
+    const childGenerationCall = controlledToolResult(childGenerationRequest, 'native-child-generation')
+    const childGeneration = JSON.parse(await readFile(childGenerationCall.split('\n', 1)[0], 'utf8'))
+    expect(childGeneration).toMatchObject({ run_id: expect.any(String) })
+    native.childRunId = childGeneration.run_id
+    const childDepthRequest = services.requestLog.find(request => isChildRequest(request)
+      && hasControlledToolResult(request, 'native-child-depth'))
+    expect(requestMessageText(childDepthRequest.body.messages.find(message => message.tool_call_id === 'native-child-depth')))
+      .toContain('subagent depth 2 exceeds maxDepth 1')
+    const childDirectoryRead = services.requestLog.find(request => isChildRequest(request)
+      && hasControlledToolResult(request, 'native-child-cwd'))
+    expect(controlledToolResult(childDirectoryRead, 'native-child-cwd')).toBe(native.initialDirectory)
+    const childDirectoryChanged = services.requestLog.find(request => isChildRequest(request)
+      && hasControlledToolResult(request, 'native-child-cd'))
+    expect(controlledToolResult(childDirectoryChanged, 'native-child-cd')).toBe(native.childDirectory)
+    const childSkillRequest = services.requestLog.find(request => isChildRequest(request)
+      && hasControlledToolResult(request, 'native-skill-3'))
+    for (const [index, name] of [OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, UNIQUE_WORKSPACE_SKILL_NAME,
+      USER_SKILL_NAME, native.repositorySkill].entries()) {
+      expect(requestMessageText(childSkillRequest.body.messages.find(message => message.tool_call_id === `native-skill-${index}`)))
+        .toContain(`<skill_content name=\"${name}\">`)
+    }
+    expect(requestMessageText(childSkillRequest.body.messages.find(message => message.tool_call_id === 'native-skill-0')))
+      .toContain('OFFICIAL_WORKSPACE_PRIORITY_MARKER')
+    await waitForOfficialSessionEnd(page, parentSessionId, 'completed')
+    const workspaceStorage = JSON.parse(await readFile(join(traceContext.dshHome, 'storages/workspace.json'), 'utf8'))
+    expect(workspaceStorage.tables.workspaces[workspaceId].sessionIds).not.toContain(native.childSessionId)
+    const childProjection = await page.evaluate(`window.__runPanelTestContext.get('remote.session').projections({ sessionId: ${JSON.stringify(native.childSessionId)} })`)
+    expect(childProjection).toMatchObject({ ok: true, value: { values: { workingDirectory: native.childDirectory } } })
+    const parentDirectory = await page.evaluate(`window.__runPanelTestContext.get('remote.session').projections({ sessionId: ${JSON.stringify(parentSessionId)} })`)
+    expect(parentDirectory).toMatchObject({ ok: true, value: { values: { workingDirectory: native.initialDirectory } } })
+    const parentRuns = await waitForValue(page, `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(parentSessionId)}, turn: null })`,
+      result => result?.ok === true && result.value.runs.some(run => run.runId === native.childRunId && run.status === 'succeeded')
+        && result.value.media.some(media => media.runId === native.childRunId), 180_000)
+    expect(parentRuns.value.runs).toContainEqual(expect.objectContaining({ runId: native.childRunId, status: 'succeeded' }))
+    const unrelatedRuns = await page.evaluate(`window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(native.unrelatedSessionId)}, turn: null })`)
+    expect(unrelatedRuns).toMatchObject({ ok: true })
+    expect(unrelatedRuns.value.runs.some(run => run.runId === native.childRunId)).toBe(false)
     const calls = mcp.requests.slice(childCallStart).filter(request => request.method === 'tools/call')
     expect(calls.map(request => request.params.name)).toEqual(mcpToolNames)
     expect(calls.every(request => request.status === 200 && request.result.result.isError === false)).toBe(true)
@@ -1031,25 +1160,241 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       resultReceivedByModel: completed.body.messages.some(message => message.role === 'tool'
         && JSON.stringify(message.content).includes('workflow_json')),
     })
-    if (dispatchTool === 'subagent_task') {
-      await verifyOfficialSessionTrace(page, services, parentSessionId, parentPrompt, traceContext)
-    }
+    await verifyOfficialSessionTrace(page, services, parentSessionId, parentPrompt, traceContext)
   }
-  expect(children).toHaveLength(5)
+  expect(children).toHaveLength(childCases.length)
   expect(mcp.requests.slice(callStart).filter(request => request.method === 'tools/call' && request.status === 200))
     .toHaveLength(2 * (PROJECT_PRESET_IDS.length + childCases.length))
   await writeFile(join(evidenceDirectory, 'official-business-mcp-scope.json'), JSON.stringify({
-    observations, children, globalCatalogToolNames, requests: mcp.requests,
+    observations, children, globalCatalogToolNames, requests: mcp.requests, native,
   }, null, 2))
+  return native
 }
 
-async function waitForOfficialSessionEnd(page, sessionId, reasonKind, afterSeq = -1) {
+async function readOfficialMediaContent(page, mediaId, sessionId) {
+  return page.evaluate(`(async () => {
+    const response = await fetch(${JSON.stringify(generationMediaContentUrl(mediaId, sessionId))})
+    return { status: response.status, contentType: response.headers.get('content-type'),
+      bytes: [...new Uint8Array(await response.arrayBuffer())] }
+  })()`)
+}
+
+async function createRetiredPresetFixture(page, services, workspaceId, workspacePath) {
+  const created = await page.evaluate(`window.__runPanelTestContext.get('remote.session').create({ workspaceId: ${JSON.stringify(workspaceId)}, agentPreset: ${JSON.stringify(PRODUCT_PRESET_ID)} })`)
+  expect(created).toMatchObject({ ok: true })
+  const sessionId = created.value.sessionId
+  const prompt = 'Create the controlled historical Preset task.'
+  const requestStart = services.requestLog.length
+  const requested = request => request.sequence >= requestStart && (request.body.messages ?? []).some(message =>
+    message.role === 'user' && requestMessageText(message) === prompt)
+  services.enqueueModelResponse(requested, controlledToolResponse([{ id: 'retired-generation', name: 'bash', arguments: {
+    description: 'Create controlled historical generation record',
+    command: managedCliCommand('generation submit', {
+      title: 'Controlled retired Preset generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
+      template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId,
+      model: null,
+      parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt, seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
+      loras: [],
+    }),
+  } }]))
+  await openBusinessSession(page, sessionId)
+  await submitComposerPrompt(page, prompt)
+  const resultRequest = await services.requestWhere(request => requested(request) && hasControlledToolResult(request, 'retired-generation'), 30_000)
+  const shell = controlledToolResult(resultRequest, 'retired-generation')
+  const accepted = JSON.parse(await readFile(shell.split('\n', 1)[0], 'utf8'))
+  expect(accepted.run_id).toEqual(expect.any(String))
+  await waitForOfficialSessionEnd(page, sessionId, 'completed')
+  const projection = await waitForValue(page, `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(sessionId)}, turn: null })`,
+    result => result?.ok === true && result.value.runs.some(run => run.runId === accepted.run_id && run.status === 'succeeded'), 180_000)
+  const media = projection.value.media.filter(item => item.runId === accepted.run_id)
+  expect(media).toHaveLength(1)
+  const mediaContent = await readOfficialMediaContent(page, media[0].mediaId, sessionId)
+  expect(mediaContent).toMatchObject({ status: 200, contentType: 'image/png' })
+  expect(mediaContent.bytes).toHaveLength(services.controlledPngByteLength)
+  const artifactPath = join(workspacePath, 'retired-preset-result.txt')
+  const artifactContents = `${accepted.run_id}\n`
+  await writeFile(artifactPath, artifactContents, { mode: 0o600 })
+  return { sessionId, retiredPresetId: 'harness-comfyui-iteration', prompt, runId: accepted.run_id,
+    artifactPath, artifactContents, mediaIds: media.map(item => item.mediaId), mediaContent }
+}
+
+async function stageRetiredPresetFixture(dshHome, retired) {
+  const sessionRoot = join(dshHome, 'sessions')
+  const candidates = (await readdir(sessionRoot, { recursive: true })).filter(path =>
+    path.split(sep).includes(retired.sessionId) && path.endsWith('.jsonl'))
+  expect(candidates).toHaveLength(1)
+  const logPath = join(sessionRoot, candidates[0])
+  const projectionCachePath = join(dshHome, 'storages/session_projcache/sessions', `${retired.sessionId}.json`)
+  await stageRetiredPresetHistory({ logPath, projectionCachePath, sessionId: retired.sessionId, retiredPresetId: retired.retiredPresetId })
+  return { ...retired, logPath, projectionCachePath, historicalLog: await readFile(logPath, 'utf8') }
+}
+
+async function verifyRetiredPresetFixture(page, services, retired, evidenceDirectory) {
+  const prompt = 'Resume the controlled historical Preset task.'
+  const requestStart = services.requestLog.length
+  const sessionProjection = await page.evaluate(`window.__runPanelTestContext.get('remote.session').projections({ sessionId: ${JSON.stringify(retired.sessionId)} })`)
+  expect(sessionProjection).toMatchObject({ ok: true, value: { values: { agentPreset: retired.retiredPresetId } } })
+  const presets = await page.evaluate(`window.__runPanelTestContext.get('remote.agentPresets').list()`)
+  expect(presets).toMatchObject({ ok: true })
+  expect(presets.value.presets.some(preset => preset.id === retired.retiredPresetId)).toBe(false)
+  const response = await page.evaluate(`window.__runPanelTestContext.get('remote.session').prompt({
+    requestId: ${JSON.stringify(randomUUID())}, sessionId: ${JSON.stringify(retired.sessionId)},
+    mode: 'queue', content: [{ type: 'text', text: ${JSON.stringify(prompt)} }],
+  })`)
+  expect(response).toMatchObject({ ok: false })
+  expect(services.requestLog.slice(requestStart).some(request => (request.body.messages ?? []).some(message =>
+    message.role === 'user' && requestMessageText(message) === prompt))).toBe(false)
+  expect(await readFile(retired.logPath, 'utf8')).toBe(retired.historicalLog)
+  expect(await readFile(retired.artifactPath, 'utf8')).toBe(retired.artifactContents)
+  const projection = await page.evaluate(`window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(retired.sessionId)}, turn: null })`)
+  expect(projection).toMatchObject({ ok: true })
+  expect(projection.value.runs).toContainEqual(expect.objectContaining({ runId: retired.runId, status: 'succeeded' }))
+  expect(projection.value.media.filter(media => media.runId === retired.runId).map(media => media.mediaId)).toEqual(retired.mediaIds)
+  const mediaContent = await readOfficialMediaContent(page, retired.mediaIds[0], retired.sessionId)
+  expect(mediaContent).toEqual(retired.mediaContent)
+  const history = await page.evaluate(`(async () => {
+    const remote = window.__runPanelTestContext.get('remote.session')
+    const projection = await remote.projections({ sessionId: ${JSON.stringify(retired.sessionId)} })
+    return projection.ok ? remote.page({ address: { kind: 'session', sessionId: ${JSON.stringify(retired.sessionId)} }, throughSeq: projection.value.asOfSeq }) : projection
+  })()`)
+  expect(history).toMatchObject({ ok: true })
+  expect(JSON.stringify(history.value.records)).toContain(retired.prompt)
+  await writeFile(join(evidenceDirectory, 'official-business-retired-preset.json'), JSON.stringify({
+    sessionId: retired.sessionId, retiredPresetId: retired.retiredPresetId, resumeResponse: response,
+    sessionProjection, presets, modelRequestCount: services.requestLog.length - requestStart,
+    runId: retired.runId, mediaIds: retired.mediaIds, logPath: retired.logPath, artifactPath: retired.artifactPath,
+    historyReadable: true, historicalLogPreserved: true, artifactPreserved: true,
+    mediaContentPreserved: true, mediaByteLength: mediaContent.bytes.length,
+  }, null, 2) + '\n', { mode: 0o600 })
+}
+
+async function verifyNativeSubagentContinuation(page, services, native, evidenceDirectory, afterRestart = false) {
+  const phases = afterRestart ? ['cold'] : ['finished', 'active', 'interrupted']
+  const observations = []
+  for (const phase of phases) {
+    const requestStart = services.requestLog.length
+    const prompt = `Continue the controlled native child: ${phase}.`
+    const childMessage = `Controlled native child input: ${phase}.`
+    const activeMessage = `${childMessage} Received while active.`
+    let activeMessageRequestSequence
+    const parentRequest = request => request.sequence >= requestStart && (request.body.messages ?? []).some(message =>
+      message.role === 'user' && requestMessageText(message) === prompt)
+    const childRequest = request => request.sequence >= requestStart
+      && (request.body.tools ?? []).some(tool => (tool.function?.name ?? tool.name) === 'bash')
+      && (request.body.messages ?? []).some(message =>
+        message.role === 'user' && requestMessageText(message).includes(childMessage))
+    const call = (id, name, args) => controlledToolResponse([{ id: `${phase}-${id}`, name, arguments: args }])
+    services.enqueueModelResponse(parentRequest,
+      call('send', 'send_message', { agent_id: native.childSessionId, message: childMessage }))
+    const controlledChild = phase === 'active' || phase === 'interrupted'
+      ? services.pauseNextModelResponse(childRequest) : null
+    let parentPause
+    if (phase === 'active') {
+      services.enqueueModelResponse(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-send`),
+        call('append', 'send_message', { agent_id: native.childSessionId, message: activeMessage }))
+    } else if (phase === 'interrupted') {
+      const afterSend = request => parentRequest(request) && hasControlledToolResult(request, `${phase}-send`)
+      services.enqueueModelResponse(afterSend, call('interrupt', 'interrupt_agent', { agent_id: native.childSessionId }))
+      parentPause = services.pauseNextModelResponse(afterSend)
+      services.enqueueModelResponse(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-interrupt`),
+        call('resume', 'send_message', { agent_id: native.childSessionId, message: `${childMessage} Resume after interruption.` }))
+    }
+    const lastCall = phase === 'active' ? 'append' : phase === 'interrupted' ? 'resume' : 'send'
+    services.enqueueModelResponse(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-${lastCall}`),
+      call('list', 'list_agents', {}))
+    const phaseResultPath = join(dirname(native.resultPath), `native-child-${phase}-result.txt`)
+    const phaseResultText = `OFFICIAL_NATIVE_CHILD_RESULT_${phase}`
+    const completionText = `Completed ${phase}; read the result file at ${phaseResultPath}.`
+    const cliCommand = `${managedCliCommand('generation run-inputs', { run_ids: [native.childRunId] })} && printf '%s\\n' ${shellQuoteArgument(phaseResultText)} > ${shellQuoteArgument(phaseResultPath)}`
+    if (phase === 'interrupted') {
+      services.enqueueModelResponse(childRequest, { role: 'assistant', content: 'Controlled child awaiting interruption.' })
+      services.enqueueModelResponse(request => childRequest(request) && (request.body.messages ?? []).some(message =>
+        message.role === 'user' && requestMessageText(message).includes('Resume after interruption.')),
+      call('cli', 'bash', { description: 'Read native child generation inputs', command: cliCommand }))
+    } else {
+      services.enqueueModelResponse(childRequest, call('cli', 'bash', {
+        description: 'Read native child generation inputs', command: cliCommand,
+      }))
+    }
+    services.enqueueModelResponse(request => childRequest(request) && hasControlledToolResult(request, `${phase}-cli`),
+      { role: 'assistant', content: completionText })
+    const parentNotified = request => parentRequest(request) && (request.body.messages ?? []).some(message =>
+      message.role === 'user' && requestMessageText(message).includes('Background subagent')
+      && requestMessageText(message).includes(native.childSessionId)
+      && requestMessageText(message).includes(completionText))
+    services.enqueueModelResponse(parentNotified, call('result-read', 'bash', {
+      description: 'Read continued child task result', command: `cat ${shellQuoteArgument(phaseResultPath)}`,
+    }))
+    try {
+      const childBefore = await page.evaluate(`window.__runPanelTestContext.get('remote.session').projections({ sessionId: ${JSON.stringify(native.childSessionId)} })`)
+      expect(childBefore).toMatchObject({ ok: true })
+      await openBusinessSession(page, native.parentSessionId)
+      const before = await page.evaluate(`window.__runPanelTestContext.get('remote.session').projections({ sessionId: ${JSON.stringify(native.parentSessionId)} })`)
+      await submitComposerPrompt(page, prompt)
+      if (controlledChild !== null) {
+        await controlledChild.started
+        if (phase === 'active') {
+          const appended = await services.requestWhere(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-append`), 30_000)
+          expect(controlledToolResult(appended, `${phase}-append`)).toBe(`message delivered to agent ${native.childSessionId}`)
+          controlledChild.release()
+          const received = await services.requestWhere(request => childRequest(request) && (request.body.messages ?? []).some(message =>
+            message.role === 'user' && requestMessageText(message).includes(activeMessage)), 30_000)
+          activeMessageRequestSequence = received.sequence
+        } else {
+          await parentPause.started
+          parentPause.release()
+          expect(await controlledChild.closed).toMatchObject({ finished: false })
+          await services.requestWhere(request => childRequest(request) && (request.body.messages ?? []).some(message =>
+            message.role === 'user' && requestMessageText(message).includes('Resume after interruption.')), 30_000)
+        }
+      }
+      const listed = await services.requestWhere(request => parentRequest(request)
+        && hasControlledToolResult(request, `${phase}-list`), 30_000)
+      const agentLines = controlledToolResult(listed, `${phase}-list`).split('\n')
+      expect(agentLines.some(line => ['running', 'inactive'].some(status =>
+        line === `${native.childSessionId} [${status}] — Controlled MCP child`))).toBe(true)
+      expect(controlledToolResult(listed, `${phase}-send`)).toBe(`message delivered to agent ${native.childSessionId}`)
+      if (phase === 'interrupted') {
+        expect(controlledToolResult(listed, `${phase}-interrupt`)).toBe(`interrupt requested for agent ${native.childSessionId}`)
+      }
+      const childEnded = await waitForOfficialSessionEnd(page, native.childSessionId, 'completed', childBefore.value.asOfSeq,
+        { kind: 'subagent', parentSessionId: native.parentSessionId, childSessionId: native.childSessionId, mode: 'continuable' })
+      const resultRead = await services.requestWhere(request => parentNotified(request)
+        && hasControlledToolResult(request, `${phase}-result-read`), 30_000)
+      expect(controlledToolResult(resultRead, `${phase}-result-read`).trim()).toBe(phaseResultText)
+      const notified = services.requestLog.find(parentNotified)
+      const ended = await waitForOfficialSessionEnd(page, native.parentSessionId, 'completed', before.value.asOfSeq)
+      const cliRequest = services.requestLog.find(request => childRequest(request)
+        && hasControlledToolResult(request, `${phase}-cli`))
+      expect(cliRequest).toBeDefined()
+      expect(cliRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
+      const resultPath = controlledToolResult(cliRequest, `${phase}-cli`).split('\n', 1)[0]
+      const result = JSON.parse(await readFile(resultPath, 'utf8'))
+      expect(result).toMatchObject({ runs: [expect.objectContaining({ run_id: native.childRunId })] })
+      const childProjection = await page.evaluate(`window.__runPanelTestContext.get('remote.session').projections({ sessionId: ${JSON.stringify(native.childSessionId)} })`)
+      expect(childProjection).toMatchObject({ ok: true, value: { values: { workingDirectory: native.childDirectory } } })
+      observations.push({ phase, parentSessionId: native.parentSessionId, childSessionId: native.childSessionId,
+        cliResultPath: resultPath, runId: native.childRunId, parentEndedAt: ended.seq,
+        childEndedAt: childEnded.seq, notificationRequestSequence: notified.sequence,
+        parentReadRequestSequence: resultRead.sequence, phaseResultPath,
+        ...(activeMessageRequestSequence === undefined ? {} : { activeMessageRequestSequence }) })
+    } finally {
+      parentPause?.release()
+      controlledChild?.release()
+    }
+  }
+  await writeFile(join(evidenceDirectory, afterRestart ? 'official-business-native-cold-resume.json' : 'official-business-native-continuation.json'),
+    JSON.stringify({ observations }, null, 2) + '\n', { mode: 0o600 })
+  return observations
+}
+
+async function waitForOfficialSessionEnd(page, sessionId, reasonKind, afterSeq = -1, address = { kind: 'session', sessionId }) {
   const state = await waitForValue(page, `(async () => {
     const remote = window.__runPanelTestContext.get('remote.session')
     const projection = await remote.projections({ sessionId: ${JSON.stringify(sessionId)} })
     if (!projection.ok) return { projection }
     const history = await remote.page({
-      address: { kind: 'session', sessionId: ${JSON.stringify(sessionId)} },
+      address: ${JSON.stringify(address)},
       throughSeq: projection.value.asOfSeq, maxMessages: 1,
     })
     const sessions = await remote.list({})
@@ -1098,6 +1443,8 @@ async function verifyOfficialSessionTrace(page, services, parentSessionId, paren
       const snapshot = JSON.parse(await readFile(session.path, 'utf8'))
       expect(snapshot.header.id).toBe(session.sessionId)
       if (session.parentSessionId !== null) expect(snapshot.header.parentSession).toBe(session.parentSessionId)
+      expect(snapshot.header.cwd).toBe(traceContext.workspacePath)
+      expect(snapshot.header.agentPreset).toBe(PRODUCT_PRESET_ID)
       const address = session.parentSessionId === null
         ? { kind: 'session', sessionId: session.sessionId }
         : { kind: 'subagent', parentSessionId, childSessionId: session.sessionId, mode: 'continuable' }
@@ -1207,7 +1554,7 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   const expectedRepositorySkills = structuredClone(REPOSITORY_SKILL_CATALOG)
   const state = await page.evaluate(`new Promise((resolve, reject) => {
     window.__runPanelTestContext.inject(
-      ['remote.agentPresets', 'remote.session', 'remote.skills', 'remote.commands'],
+      ['remote.agentPresets', 'remote.session', 'remote.skills'],
       async injected => {
         try {
           const roster = await injected.remote.agentPresets.list()
@@ -1234,13 +1581,7 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
             const skills = created.ok
               ? await injected.remote.skills.list({ sessionId })
               : null
-            const commands = created.ok
-              ? await injected.remote.commands.list(sessionId)
-              : null
-            const goal = commands?.ok && commands.value.some(command => command.name === 'goal')
-              ? await injected.remote.commands.execute(sessionId, '/goal', [])
-              : null
-            sessions.push({ ...entry, sessionId, created, skills, commands, goal })
+            sessions.push({ ...entry, sessionId, created, skills })
           }
           resolve({ roster, sessions })
         } catch (error) {
@@ -1298,15 +1639,6 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
     expect(session.created).toEqual(expect.objectContaining({ ok: true }))
     expect(session.skills).toEqual(expect.objectContaining({ ok: true }))
   }
-  const iterationSession = sessions.get('harness-comfyui-iteration')
-  expect(iterationSession.commands).toEqual(expect.objectContaining({ ok: true }))
-  expect(iterationSession.commands.value).toContainEqual(expect.objectContaining({ name: 'goal' }))
-  expect(iterationSession.goal).toEqual(expect.objectContaining({
-    ok: true,
-    value: expect.objectContaining({
-      result: expect.objectContaining({ kind: 'success', text: expect.stringContaining('No goal is currently set.') }),
-    }),
-  }))
   expect(sessions.get('implicit-default').created.value.agentPreset).toBe(defaultPresetId)
   expect(sessions.get(PRODUCT_PRESET_ID).created.value.agentPreset).toBe(PRODUCT_PRESET_ID)
 
@@ -1567,6 +1899,13 @@ async function verifyWorkspaceAndUserSkillMarkers(page, services, sessionId, ski
       ].filter(Boolean).join(' ')))
     return composer !== undefined && !composer.matches(':disabled, [aria-disabled="true"]')
   })()`, value => value === true)
+  const repositorySkill = REPOSITORY_SKILL_CATALOG.find(skill => skill.name !== OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName).name
+  services.enqueueModelResponse(request => (request.body.messages ?? []).some(message => message.role === 'user'
+    && requestMessageText(message) === markerRequest) && (request.body.messages ?? []).some(message => message.role === 'tool'
+    && requestMessageText(message).includes(USER_SKILL_MARKER)),
+  controlledToolResponse([OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, repositorySkill].map((name, index) => ({
+    id: `parent-source-skill-${index}`, name: 'skill', arguments: { name },
+  }))))
   await submitComposerPrompt(page, markerRequest)
   const firstRequest = await services.requestWhere(request =>
     (request.body.messages ?? []).some(message => message.role === 'user'
@@ -1598,7 +1937,14 @@ async function verifyWorkspaceAndUserSkillMarkers(page, services, sessionId, ski
   expect(services.skillToolCalls).toEqual([
     { name: 'skill', arguments: { name: UNIQUE_WORKSPACE_SKILL_NAME } },
     { name: 'skill', arguments: { name: USER_SKILL_NAME } },
+    { name: 'skill', arguments: { name: OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName } },
+    { name: 'skill', arguments: { name: repositorySkill } },
   ])
+  const sourceSkillRequest = await services.requestWhere(request => hasControlledToolResult(request, 'parent-source-skill-1'), 30_000)
+  expect(requestMessageText(sourceSkillRequest.body.messages.find(message => message.tool_call_id === 'parent-source-skill-0')))
+    .toContain('OFFICIAL_WORKSPACE_PRIORITY_MARKER')
+  expect(requestMessageText(sourceSkillRequest.body.messages.find(message => message.tool_call_id === 'parent-source-skill-1')))
+    .toContain(`<skill_content name=\"${repositorySkill}\">`)
   const workspaceSkillPath = await realpath(skillPaths.workspace)
   const userSkillPath = await realpath(skillPaths.user)
   const [workspaceSkillSource, userSkillSource] = await Promise.all([
@@ -1935,7 +2281,7 @@ describe('official Desktop plugin regression', () => {
     const environmentRoot = resolve(fixtureRoot, '.local/desktop-e2e', fixtureId, 'official-environment')
     const auditDirectory = resolve(repositoryRoot, '.local/desktop-e2e/official-business-audit', fixtureId)
     const environmentFilePath = resolve(environmentRoot, 'controlled.env')
-    const startupWorkspacePath = resolve(environmentRoot, 'workspace')
+    const workspacePath = resolve(environmentRoot, 'workspace')
     const agentsHome = resolve(environmentRoot, 'agents-home')
     let downloadPath
     const dshHome = resolve(environmentRoot, 'dsh-home')
@@ -1958,7 +2304,7 @@ describe('official Desktop plugin regression', () => {
     expect(relativeFixtureRoot === '..' || relativeFixtureRoot.startsWith(`..${sep}`)).toBe(true)
     await expect(lstat(join(fixtureRepositoryRoot, '.git'))).rejects.toMatchObject({ code: 'ENOENT' })
     await mkdir(resolve(fixtureRoot, 'artifacts'), { recursive: true, mode: 0o700 })
-    await mkdir(startupWorkspacePath, { recursive: true, mode: 0o700 })
+    await mkdir(workspacePath, { recursive: true, mode: 0o700 })
     await mkdir(agentsHome, { recursive: true, mode: 0o700 })
     const mcp = await startOfficialMcpServices()
     fixture.close = () => mcp.close()
@@ -1966,16 +2312,18 @@ describe('official Desktop plugin regression', () => {
     await writeFile(environmentFilePath,
       `${OFFICIAL_BUSINESS_FIXTURE.provider.apiKeyEnvironmentName}=${testApiKey}\n${mcp.credentialEnvironmentName}=${mcp.token}\n`,
       { encoding: 'utf8', mode: 0o600 })
-    await mkdir(resolve(startupWorkspacePath, '.agents/skills', OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName), { recursive: true, mode: 0o700 })
-    await writeFile(resolve(startupWorkspacePath, '.agents/skills', OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, 'SKILL.md'), `---
+    await mkdir(resolve(workspacePath, '.agents/skills', OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName), { recursive: true, mode: 0o700 })
+    await writeFile(resolve(workspacePath, '.agents/skills', OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, 'SKILL.md'), `---
 name: ${OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName}
 description: ${WORKSPACE_COMFYUI_GENERATE_DESCRIPTION}
 ---
 
 # Official Desktop E2E workspace skill fixture
+
+OFFICIAL_WORKSPACE_PRIORITY_MARKER
 `, 'utf8')
-    await mkdir(resolve(startupWorkspacePath, '.agents/skills', UNIQUE_WORKSPACE_SKILL_NAME), { recursive: true, mode: 0o700 })
-    await writeFile(resolve(startupWorkspacePath, '.agents/skills', UNIQUE_WORKSPACE_SKILL_NAME, 'SKILL.md'), `---
+    await mkdir(resolve(workspacePath, '.agents/skills', UNIQUE_WORKSPACE_SKILL_NAME), { recursive: true, mode: 0o700 })
+    await writeFile(resolve(workspacePath, '.agents/skills', UNIQUE_WORKSPACE_SKILL_NAME, 'SKILL.md'), `---
 name: ${UNIQUE_WORKSPACE_SKILL_NAME}
 description: ${UNIQUE_WORKSPACE_SKILL_DESCRIPTION}
 ---
@@ -2023,7 +2371,7 @@ description: ${USER_SKILL_DESCRIPTION}
       },
     }
     const desktopConfig = createOfficialBusinessConfig(
-      await loadDesktopE2EConfig(), fixtureId, environmentFilePath, startupWorkspacePath,
+      await loadDesktopE2EConfig(), fixtureId, environmentFilePath,
       Number(new URL(promptCapture.baseURL).port), customProviders,
     )
     const profileYamlAdapter = await loadOfficialProfilePatchAdapter(desktopConfig)
@@ -2033,6 +2381,8 @@ description: ${USER_SKILL_DESCRIPTION}
     let mediaFixture
     let generationEvidence
     let generationRestartEvidence
+    let nativeSubagentEvidence
+    let retiredPresetFixture
     let savedBrowserPath
     let businessRunStopped
 
@@ -2125,8 +2475,6 @@ description: ${USER_SKILL_DESCRIPTION}
       profilePatchAdapter: profileYamlAdapter,
       installedPackageRoot: dirname(installation.installedPackagePath),
       mcpUrl: mcp.url,
-      roleAgentOptions: Object.fromEntries(['composition-agent', 'generation-agent', 'observation-agent', 'comparison-agent']
-        .map(id => [id, { provider: provider.id, model: provider.modelId }])),
     })
 
     installation.mcpRecovery = await verifyOfficialMcpActivationRecovery({
@@ -2163,8 +2511,10 @@ description: ${USER_SKILL_DESCRIPTION}
         repositoryRoot: fixtureRepositoryRoot,
         config: desktopConfig,
         directory: join(run.record.directories.evidence, desktopConfig.sessionTrace.directoryName),
+        workspacePath: run.record.directories.workspace,
+        dshHome,
       }
-      const actualWorkspacePath = await realpath(startupWorkspacePath)
+      const actualWorkspacePath = await realpath(workspacePath)
       expect(run.record.directories.workspace).toBe(actualWorkspacePath)
       const environmentIsOutsideSourceRepository = !isPathWithin(environmentRoot, sourceRepositoryRoot)
       const workspaceIsOutsideSourceRepository = !isPathWithin(actualWorkspacePath, sourceRepositoryRoot)
@@ -2176,7 +2526,7 @@ description: ${USER_SKILL_DESCRIPTION}
         acceptanceClaim: false,
         sourceRepositoryRoot: repositoryRoot,
         probeRepositoryRoot: fixtureRepositoryRoot,
-        configuredWorkspacePath: startupWorkspacePath,
+        configuredWorkspacePath: workspacePath,
         workspacePath: actualWorkspacePath,
         environmentIsOutsideSourceRepository,
         workspaceIsOutsideSourceRepository,
@@ -2243,8 +2593,8 @@ description: ${USER_SKILL_DESCRIPTION}
       generationEvidence = await verifyControlledGeneration(
         page, promptCapture, identity.workspaceId, context.businessEvidenceDirectory,
       )
-      promptCapture.setMcpObservationImages([{ run_id: generationEvidence.runId, media_id: generationEvidence.output.mediaId }])
-      await verifyOfficialMcpScope(page, promptCapture, mcp, identity.workspaceId, context.businessEvidenceDirectory, traceContext)
+      nativeSubagentEvidence = await verifyOfficialMcpScope(page, promptCapture, mcp, identity.workspaceId, context.businessEvidenceDirectory, traceContext)
+      await verifyNativeSubagentContinuation(page, promptCapture, nativeSubagentEvidence, context.businessEvidenceDirectory)
       const catalogRemote = await page.evaluate("window.__runPanelTestContext.get('remote.harnessComfyuiCatalog').baseModels()")
       expect(catalogRemote).toEqual({ ok: true, value: { ok: true, value: { items: [{ id: '123', label: 'Desktop catalog fixture' }] } } })
       const imageModels = await page.evaluate("window.__runPanelTestContext.get('remote.harnessComfyuiImageReader').models()")
@@ -3119,6 +3469,7 @@ description: ${USER_SKILL_DESCRIPTION}
       await waitForValue(page, 'window.innerWidth', width => width === desktopViewport.width)
       await verifyContextDialog(page, context)
       savedBrowserPath = await verifyWorkflowBrowserSettings(page, context, desktopConfig, profileYamlAdapter)
+      retiredPresetFixture = await createRetiredPresetFixture(page, promptCapture, identity.workspaceId, workspacePath)
       if (contextCaptureScript !== undefined) {
         await page.command('Page.removeScriptToEvaluateOnNewDocument', { identifier: contextCaptureScript })
         contextCaptureScript = undefined
@@ -3151,6 +3502,7 @@ description: ${USER_SKILL_DESCRIPTION}
       fixture.runs.find(activeRun => activeRun.runId === run.record.runId).active = false
       expect(businessRunStopped.record.state).toBe('stopped')
       expect(businessRunStopped.record.result.portsReleased).toBe(true)
+      retiredPresetFixture = await stageRetiredPresetFixture(dshHome, retiredPresetFixture)
 
       const finalRun = await startOfficialBusinessDesktop({
         repositoryRoot: fixtureRepositoryRoot,
@@ -3174,6 +3526,8 @@ description: ${USER_SKILL_DESCRIPTION}
       const finalClientLoad = await captureProjectClientContext(page, sourceIdentity, finalRun.record.directories.evidence, waitForValue)
       contextCaptureScript = finalClientLoad.identifier
       installation.loadedClientSourceAfterRestart = finalClientLoad.loadedClientSource
+      await verifyRetiredPresetFixture(page, promptCapture, retiredPresetFixture, context.businessEvidenceDirectory)
+      await verifyNativeSubagentContinuation(page, promptCapture, nativeSubagentEvidence, context.businessEvidenceDirectory, true)
       generationRestartEvidence = await verifyGenerationAfterRestart(
         page, generationEvidence, context.businessEvidenceDirectory,
       )
@@ -3223,6 +3577,7 @@ description: ${USER_SKILL_DESCRIPTION}
         ],
         generation: generationEvidence,
         generationAfterRestart: generationRestartEvidence,
+        nativeSubagent: nativeSubagentEvidence,
       }, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 })
     } catch (error) {
       const pageState = await page.evaluate(`({

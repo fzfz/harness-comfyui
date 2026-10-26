@@ -1,0 +1,34 @@
+{
+  "recordedAt": "2026-10-26T03:30:17.462Z",
+  "package": {
+    "name": "@earendil-works/pi-ai",
+    "version": "1.1.0",
+    "root": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@earendil-works/pi-ai"
+  },
+  "method": "Execute the unchanged installed buildParams OpenRouter branch in isolation; no network or model invocation.",
+  "sourcePath": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js",
+  "source": "if (compat.thinkingFormat === \"openrouter\" && model.reasoning) {\n        // OpenRouter normalizes reasoning across providers via a nested reasoning object.\n        const openRouterParams = params;\n        if (options?.reasoningEffort) {\n            openRouterParams.reasoning = {\n                effort: model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort,\n            };\n        }\n        else if (model.thinkingLevelMap?.off !== null) {\n            openRouterParams.reasoning = { effort: model.thinkingLevelMap?.off ?? \"none\" };\n        }\n    }\n",
+  "cases": [
+    {
+      "name": "effort-omitted",
+      "options": {},
+      "params": {
+        "reasoning": {
+          "effort": "none"
+        }
+      }
+    },
+    {
+      "name": "effort-medium",
+      "options": {
+        "reasoningEffort": "medium"
+      },
+      "params": {
+        "reasoning": {
+          "effort": "medium"
+        }
+      }
+    }
+  ],
+  "originalRequestCaptured": false
+}

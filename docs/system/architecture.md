@@ -23,41 +23,29 @@
 
 ## 项目 Preset、Skills 与目录访问
 
-1. [Preset registry](../../agent-presets/presets.cordis.yml) 注册 2 个产品 Preset 和 5 个角色 Preset。用户选择产品 Preset 开始任务；派发工具为子 Agent 选择对应角色 Preset。官方列表显示全部 7 个项目 Preset。
+1. 项目预设由 [Preset registry](../../agent-presets/presets.cordis.yml) 注册。用户通过官方会话界面选择 ComfyUI工作台预设；官方内置 Preset 由宿主管理。
 
-   | Preset ID | 用户可见名称 | Agent 配置入口 |
-   | --- | --- | --- |
-   | `harness-comfyui-cli-candidate` | ComfyUI工作台预设 | `agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml` |
-   | `harness-comfyui-iteration` | ComfyUI迭代预设 | `agent-presets/harness-comfyui-iteration/agent.cordis.yml` |
-   | `harness-comfyui-task` | ComfyUI 工作台任务角色 | `agent-presets/harness-comfyui-task/agent.cordis.yml` |
-   | `harness-comfyui-composition` | ComfyUI 构图角色 | `agent-presets/harness-comfyui-composition/agent.cordis.yml` |
-   | `harness-comfyui-generation` | ComfyUI 生成角色 | `agent-presets/harness-comfyui-generation/agent.cordis.yml` |
-   | `harness-comfyui-observation` | ComfyUI 观察角色 | `agent-presets/harness-comfyui-observation/agent.cordis.yml` |
-   | `harness-comfyui-comparison` | ComfyUI 比较角色 | `agent-presets/harness-comfyui-comparison/agent.cordis.yml` |
+2. 工作台通过 [shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) 加载 NoobAI MCP、前台 shell、会话目录、Skill 访问和 compaction。工作台的 `agent.cordis.yml` 声明 persona 与官方子 Agent 组件；工具作用域和系统提示词要求见[项目预设与 Skill 开发规范](../agents/comfyui-workbench-preset-and-skill-development.md)。
 
-2. 每个项目 Preset 通过 [shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) 加载公共工具、提示词可见性、Workspace 关联和 compaction 组件。各 Preset 的 `agent.cordis.yml` 声明 persona 与自身工具。
+3. 官方 `subagent` 接纳任务后返回子会话 ID。子会话继承派发时的工作台组合、模型配置和当前工作目录，并独立开始对话。父 Agent 使用 `send_message` 续派，使用 `interrupt_agent` 中断，使用 `list_agents` 查询子会话。调度、深度限制、结束通知和恢复由宿主管理。组件来源与字段见[子 Agent 派发配置](configuration.md#子-agent-派发配置)。
 
-3. 项目 Preset 复用宿主的 Skill service，并在共享组合中启用官方 filesystem Skill provider 的默认配置。该 provider 负责目录发现、软链接解析和同名 Skill 的选择。项目 Skill 的安装步骤见[安装项目 Skills](../user/install-update.md#安装项目-skills)。
+4. 工作台复用宿主 Skill service，使用官方 filesystem Skill provider 的默认来源。provider 负责工作区目录、用户目录、软链接及同名 Skill 的选择。项目 Skill 的源码入口见[目录结构](directory-structure.md#preset-与-skill-资源)，安装步骤见[安装项目 Skills](../user/install-update.md#安装项目-skills)。
 
-4. 项目 Preset 的 Agent 通过 DSH 原生 MCP 客户端访问 NoobAI MCP 服务，查询目录记录。Host 内部数据源客户端读取 Catalog 展示与 Generation Workflow 准备所需的数据；其入口为 [queryCatalog()](../../src/host/source-client/catalog-client.ts) 与 [readSourceRecord()](../../src/host/source-client/source-client.ts)，协议路径与请求限制由 `config/source-client.json` 定义。两条访问路径连接同一目录数据；地址与凭据配置见[配置规范的 NoobAI MCP 服务章节](configuration.md#noobai-mcp-服务)。
-
-5. 各 Skill 的执行流程由 `.agents/skills/<skill-name>/SKILL.md` 定义。角色职责由对应角色 Preset 的 persona 定义；交接文件合同见[records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md)。
-
-6. [project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs) 通过 `startActivation()` 首次派发任务，并指定 `delivery: parent` 与角色 `agentPreset`。后续任务通过 `sendMessage()` 派发。宿主接纳后，工具返回统一回执；回执结构与任务委派说明由 [project-dispatch.json](../../agent-presets/project-dispatch.json) 定义。工具返回结果和附加上下文使用同一份回执。宿主负责调度、结束通知和资源释放。父 Agent 收到结束通知并读取结果文件后，再派发依赖该结果的任务。
-
-7. [project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs) 在子 Session 首个 Agent step 前，将子 Session 关联到父 Session 所属 Workspace。工作目录与 Workspace 的职责见[Host Node 与受管 CLI 身份](#host-node-与受管-cli-身份)第 3 项。
+5. 工作台 Agent 通过宿主原生 MCP 客户端访问 NoobAI MCP 服务，查询目录记录。Host 内部数据源客户端读取 Catalog 展示与 Generation Workflow 准备所需的数据；其入口为 [queryCatalog()](../../src/host/source-client/catalog-client.ts) 与 [readSourceRecord()](../../src/host/source-client/source-client.ts)，协议路径与请求限制由 `config/source-client.json` 定义。两条访问路径连接同一目录数据；地址与凭据配置见[NoobAI MCP 服务](configuration.md#noobai-mcp-服务)。
 
 ## Host Node 与受管 CLI 身份
 
 1. managed CLI 与 Workflow Worker 使用 Host 的 `process.execPath` 执行 Electron Node 脚本；脚本环境由 [nodeScriptEnvironment()](../../src/host/node-script-environment.ts) 提供。插件安装声明提供插件运行依赖，Host 提供 `node:sqlite`。
 
-2. [CLI plugin](../../src/host/cli/plugin.ts) 通过官方 `shellEnv` 为前台 Tool Call 提供受管 CLI 调用环境。[CliShellCapabilityStore](../../src/host/cli/shell-capability.ts) 创建当前 Tool Call 的短期 capability，[CLI route](../../src/host/cli/route.ts) 校验 capability 并派生业务调用身份；ToolExecution 完成时撤销 capability。环境字段、listener 地址与卸载期限见[配置规范的受管 CLI 章节](configuration.md#受管-cli-配置)。
+2. [CLI plugin](../../src/host/cli/plugin.ts) 通过官方 `shellEnv` 为前台 Tool Call 提供受管 CLI 调用环境。[CliShellCapabilityStore](../../src/host/cli/shell-capability.ts) 创建当前 Tool Call 的短期调用凭证（capability），[CLI route](../../src/host/cli/route.ts) 校验该凭证并派生业务调用身份；ToolExecution 完成时撤销该凭证。环境字段、listener 地址与卸载期限见[配置规范的受管 CLI 章节](configuration.md#受管-cli-配置)。
 
-3. Generation 创建与历史查询的 Workspace、Session、Turn 和 Tool Call 身份由 Host 派生。CLI 与 Tool 按 Session header 的 `cwd` 查询 Workspace registry，并校验 Session 归属。Shell 当前工作目录用于执行命令和解释相对文件路径；Run 归属沿用 Session 的 Workspace。身份解析入口为 [CLI route](../../src/host/cli/route.ts) 与 [tool-execution-identity.ts](../../src/host/generation/tool-execution-identity.ts)；Agent 请求只提供业务参数。
+3. 宿主 `workingDirectory` 服务管理当前工作目录，并向模型提供目录上下文。官方 `working_directory` 工具读取或切换会话目录。Shell 使用当前工作目录执行命令和解释相对文件路径；shell 的 `workdir` 参数只覆盖单次命令的执行位置。
 
-4. CLI 请求分发由 [dispatch()](../../src/host/cli/dispatch.ts) 实现，Generation 请求交给 Runtime，图片读取请求交给 Image Reader。Host coordinator 负责持续执行已接纳的 Run。
+4. CLI 与 Tool 共用 [resolveGenerationWorkspaceId()](../../src/host/generation/workspace-access.ts)，按原始项目目录取得已有 Workspace。Session、Turn 与 Tool Call 身份来自宿主执行上下文。未分组子会话可使用同一业务入口；当前工作目录变化后，Run 仍归属原始项目。原始项目目录尚未注册时，业务接口提示用户通过官方入口选择或创建 Workspace。调用身份入口为 [CLI route](../../src/host/cli/route.ts) 与 [tool-execution-identity.ts](../../src/host/generation/tool-execution-identity.ts)。
 
-5. [受管 CLI 入口](../../scripts/cli/harness-comfyui.mjs) 通过 [result-file.mjs](../../scripts/cli/result-file.mjs) 将业务响应保存到单次调用的结果文件；`result-file.mjs` 负责文件创建、写入、关闭与未完成文件清理。文件完成后，入口发布文件路径；Run 和业务持久化由 Runtime 管理。公共输出与文件错误由 [CLI 帮助配置](../../config/managed-cli-help.json) 定义。
+5. [dispatch()](../../src/host/cli/dispatch.ts) 将 Generation 请求交给 Runtime，将图片读取请求交给 Image Reader。Host coordinator 负责持续执行已接纳的 Run。
+
+6. [受管 CLI 入口](../../scripts/cli/harness-comfyui.mjs) 通过 [result-file.mjs](../../scripts/cli/result-file.mjs) 将业务响应保存到单次调用的结果文件，并在写入完成后返回文件路径。Run 和业务持久化由 Runtime 管理。CLI 输出格式与结果文件错误信息由 [CLI 帮助配置](../../config/managed-cli-help.json) 定义。
 
 ## Generation Run 生命周期与历史查询
 
@@ -69,7 +57,7 @@
 
 4. Run Repository 保存状态和索引；每个 Run 的目录保存请求、来源快照、Actual Workflow 与 API Workflow；Saved Media 保存下载后的媒体文件。对应写入和恢复逻辑由 [GenerationRuntime](../../src/host/generation/generation-runtime.ts) 维护，目录字段见[配置规范](configuration.md#configuration-profile-字段)。
 
-5. `GenerationRuntime.readGenerationRunInputs()` 与 `readGenerationRunMedia()` 统一处理当前 Workspace 的历史查询。一次请求接受一至二十个完整 `run_id`，或包含 `run_` 与至少八个 UUID 字符的规范前缀，按输入顺序返回逐项结果。完整 ID 优先精确匹配；唯一前缀返回完整 ID，缺失或歧义前缀返回对应错误。逐项读取失败保留其他结果，取消信号终止整次查询。
+5. `GenerationRuntime.readGenerationRunInputs()` 与 `readGenerationRunMedia()` 统一处理当前 Workspace 的历史查询。批量查询、Run ID 匹配与查询取消规则由 [GenerationRuntime](../../src/host/generation/generation-runtime.ts) 实现。
 
 6. 历史参数查询返回创建 Run 时保存的请求参数与 Actual Workflow 状态。Actual Workflow 缺失或无效时，结果保留参数并返回 `workflow_status` 与 `workflow_error`。历史请求缺少显式模型覆盖或结构化 LoRA 选择时，结果按 [runInputArguments()](../../src/host/generation/generation-runtime.ts) 投影；模板内的模型与 LoRA 状态由 Actual Workflow 表达。媒体查询返回参数与本地图片路径，结果合同由 [src/generation/contract.ts](../../src/generation/contract.ts) 定义。
 
@@ -83,17 +71,17 @@
      → OfficialApiWorkflowCompiler：读取或创建 Official Base API Workflow
          → 缓存未命中：NodeWorkerComfyFrontend → ChromeComfyFrontend
              → 目标实例官方 loadGraphData() 与 graphToPrompt()
-     → overlayRuntimeApiWorkflow：把非连接请求值写入官方基础对象的副本
+     → overlayRuntimeApiWorkflow：把非连接请求值写入 Official Base API Workflow 的副本
      → ComfyHttpTransport：提交最终 API Workflow
    ```
 
-2. [ComfyWorkflowCompiler.inspectRuntimeParameters() 与 compile()](../../src/host/generation/workflow-compiler.ts) 共用运行参数计划。UI Workflow 与目标实例 `/object_info` 是参数发现和机器约束的来源，Source TemplateBundle 提供模板 ID、标题与 UI Workflow。参数发现、尺寸配对、精确数值比较、动态控件、模型与 LoRA 映射、bypass 和活动输出筛选均由该 compiler 维护；Source adapter、Runtime 和 CLI 转交输入与结果。
+2. [ComfyWorkflowCompiler.inspectRuntimeParameters() 与 compile()](../../src/host/generation/workflow-compiler.ts) 共用运行参数计划。UI Workflow 与目标实例 `/object_info` 提供参数发现和参数约束所需的数据，Source TemplateBundle 提供模板 ID、标题与 UI Workflow。该 compiler 负责运行参数解析、校验与 Workflow 编译；Source adapter、Runtime 和 CLI 负责转交输入与结果。
 
-3. 参数检查的 `parameters` 表达非尺寸参数合同，`size_candidates` 表达能够控制全部活动图片输出最终尺寸的候选组合。参数值违反实例发布的类型、范围或候选值时，compiler 返回 `GENERATION_PARAMETER_INVALID`。compiler 无法解析自定义控件的参数约束时，只接受与当前值相同的值；修改值返回 `GENERATION_PARAMETER_CONTRACT_UNSUPPORTED`。错误信息标明参数键与目标节点输入。
+3. `parameters` 描述非尺寸参数，`size_candidates` 描述能够控制全部活动图片输出最终尺寸的候选组合。参数校验规则与错误结果见 [ComfyWorkflowCompiler](../../src/host/generation/workflow-compiler.ts)。
 
 4. 目标 ComfyUI 在接收 Prompt 时执行节点自定义 Python 校验。该校验拒绝请求时，Run 返回 `COMFYUI_PROMPT_REJECTED` 并保存 `node_errors`；调用方依据节点 ID、输入名称和校验消息修正参数或 UI Workflow。
 
-5. [OfficialApiWorkflowCompiler](../../src/host/generation/official-api-workflow.ts) 管理官方基础对象与缓存。[overlayRuntimeApiWorkflow()](../../src/host/generation/official-api-workflow.ts) 保留官方执行节点和连接，只覆盖对应的非连接运行值。官方前端导出、缓存读取或覆盖失败时，Run 以相应错误结束。缓存路径与维护操作见[配置规范的缓存维护章节](configuration.md#配置生效与缓存维护)。
+5. [OfficialApiWorkflowCompiler](../../src/host/generation/official-api-workflow.ts) 管理 Official Base API Workflow 与缓存。[overlayRuntimeApiWorkflow()](../../src/host/generation/official-api-workflow.ts) 保留该 Workflow 的执行节点和连接，只覆盖对应的非连接运行值。官方前端导出、缓存读取或覆盖失败时，Run 以相应错误结束。缓存路径与维护操作见[配置规范的缓存维护章节](configuration.md#配置生效与缓存维护)。
 
 6. [NodeWorkerComfyFrontend](../../src/host/generation/comfy-frontend-worker-client.ts) 通过版本化 stdin/stdout JSON 协议调用包内 Worker；实例认证值通过 stdin 传递。Worker 通过 [ChromeComfyFrontend](../../src/host/generation/comfy-frontend-browser.ts) 使用独立临时 browser profile 完成导出。取消和超时清理限定在本次 Worker 进程组与其浏览器资源内。
 
@@ -101,9 +89,9 @@
 
 ## Client 工作台、结果与媒体访问
 
-1. Client 通过官方右侧栏扩展位注册 ComfyUI 结果页，展示当前 Session 的媒体与 Run 状态。工作台页签状态由 [WorkbenchController](../../src/client/workbench/controller.ts) 管理，结果页投影由 [GenerationProjectionStore](../../src/client/workbench/generation-store.ts) 管理。Store 依据订阅者、Session 运行状态与活动 Run 决定查询和释放资源；迟到响应的处理由该 Store 统一负责。
+1. Client 通过官方右侧栏扩展位注册 ComfyUI 结果页，展示当前 Session 的媒体与 Run 状态。工作台页签状态由 [WorkbenchController](../../src/client/workbench/controller.ts) 管理，结果页投影由 [GenerationProjectionStore](../../src/client/workbench/generation-store.ts) 管理。该 Store 统一管理结果查询、资源释放和迟到响应处理。
 
-2. [workspace-access.ts](../../src/host/generation/workspace-access.ts) 从官方 `sessionPersistence.stat()` 读取会话头，为 Remote 和媒体路由计算归属。当前 Session 可访问同一 Workspace 中、具有无循环祖先链的子 Session 结果；会话头读取失败时请求报告错误。持久化祖先关系用于重启后的相同查询。
+2. [workspaceSessionScopeForSession()](../../src/host/generation/workspace-access.ts) 使用官方 `subagents.listDescendants()` 查询后代会话。当前 Session 可读取自身结果，以及原始项目目录解析到同一 Workspace 的本地后代结果。后代会话查询返回分支错误，或缺少后代会话头信息时，接口报告对应分支不可读取。调用取消信号传给官方查询；应用重启后，持久化会话信息支持恢复相同的访问范围。
 
 3. Catalog 列表、详情与封面画廊由 [native-surfaces.tsx](../../src/client/workbench/native-surfaces.tsx) 和 [catalog-details.tsx](../../src/client/workbench/catalog-details.tsx) 展示。预览与详情保留查询、选择和返回位置。展示字段与详情合同分别由 `src/catalog/presentation.json` 和 `src/catalog/details-schema.ts` 定义；`coverUrl` 与 `sampleImageUrls` 属于 Client 展示投影。
 

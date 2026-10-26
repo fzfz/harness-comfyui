@@ -1,0 +1,17 @@
+{
+  "runId": "823901a9-afb3-4160-bbbc-323737244f3b",
+  "parentSessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+  "childSessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+  "completedIndexPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/823901a9-afb3-4160-bbbc-323737244f3b/evidence/session-trace/completed/trace-index.json",
+  "cancelledIndexPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/823901a9-afb3-4160-bbbc-323737244f3b/evidence/session-trace/cancelled/trace-index.json",
+  "exportApplicationPid": 37277,
+  "interruptedMessageId": "34596e73-e42e-4be8-a793-adfa318d1b02",
+  "preservedText": "Controlled generation accepted.",
+  "cancellation": {
+    "ok": true,
+    "value": {
+      "accepted": true
+    }
+  },
+  "reasoningBlocks": 0
+}

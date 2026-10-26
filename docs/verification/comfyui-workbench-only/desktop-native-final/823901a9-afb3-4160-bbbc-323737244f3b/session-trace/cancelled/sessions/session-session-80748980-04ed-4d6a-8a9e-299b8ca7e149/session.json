@@ -1,0 +1,2179 @@
+{
+  "schemaVersion": 1,
+  "runId": "823901a9-afb3-4160-bbbc-323737244f3b",
+  "sessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+  "parentSessionId": null,
+  "entry": "session.v4.jsonl",
+  "header": {
+    "type": "session",
+    "version": 4,
+    "id": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+    "createdAt": 1792983790911,
+    "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace",
+    "isSeeded": false,
+    "delegationDepth": 0,
+    "agentPreset": "harness-comfyui-cli-candidate"
+  },
+  "events": [
+    {
+      "type": "permission/preset",
+      "seq": 0,
+      "time": 1792983790912,
+      "data": {
+        "preset": "workspace-write"
+      }
+    },
+    {
+      "type": "sandbox/mode",
+      "seq": 1,
+      "time": 1792983790912,
+      "data": {
+        "mode": "workspace-write"
+      }
+    },
+    {
+      "type": "approval/policy",
+      "seq": 2,
+      "time": 1792983790912,
+      "data": {
+        "policy": "ask"
+      }
+    },
+    {
+      "type": "model/selection",
+      "seq": 3,
+      "time": 1792983790931,
+      "data": {
+        "provider": "desktop-prompt-capture",
+        "model": "desktop-prompt-capture-model"
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 4,
+      "time": 1792983790977,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Dispatch the controlled MCP child regression. subagent"
+              }
+            ],
+            "source": {
+              "kind": "user",
+              "rpcId": "722525f3-7c3c-4e54-a2e0-1ef0b6d79c68",
+              "clientTimeZone": "Asia/Shanghai"
+            },
+            "role": "user",
+            "id": "aeca5076-023f-4730-a1e9-d80ff490702f"
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 5,
+      "time": 1792983790977,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 6,
+      "time": 1792983790978,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 7,
+      "time": 1792983790995,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "system/message",
+      "seq": 8,
+      "time": 1792983790995,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "You are an AI agent powered by DeepSeek Harness.\n\nYou are the Harness ComfyUI workbench Agent. Follow the selected project Skill. Use NoobAI MCP to look up works, characters, prompt terms, base models, generation models, LoRAs, artist styles, artist prompt strings, workflow templates, and ComfyUI instances. Use the managed project CLI to generate images and read images. Reply in the user's language.\n\nCheck the [exit code: N] marker on every bash result; investigate failures before moving on.\n\nStart independent delegations with `subagent` together in one assistant message and continue useful work while they run.\n\n## MCP resource servers\n\nUse list_mcp_resources, list_mcp_resource_templates, or read_mcp_resource with one of these names as the server argument: [\"noobai\"].\n\nPrefer showing the primary results within your final response alongside a brief explanation. Use ![Description](<path/to/image.png>) when an image supports an explanation or comparison. Use [Description](<path/to/image.png>) when referring to an image or listing files. Enclose Markdown file destinations in angle brackets, especially paths containing spaces. Do not call present just to list edited source files, or run commands to check whether a diff view will appear. Use present when a separate file card helps the user open the complete deliverable, including images, Office documents, spreadsheets, and slide decks. Each presented file adds a card below the reply, with preview and native-open actions. Avoid repeating results already shown inline unless the separate card adds useful access. Outside commands, configuration expressions, and code blocks, link every mention of an existing file, including repeats and tables, to its full path relative to the working directory or absolute; append #L24 or #L24-L30 to the target for known lines. Use the filename or a clear alias as the label, adding only enough parent directories to distinguish files; keep full paths out of labels. Default to the name alone; when precise locations matter, append :24 or :24–30, with no # or L in the line suffix.\n\nThe runtime context names the DeepSeek Harness implementation checkout. The checkout location and current working directory are separate values and may differ; never infer the working directory from the checkout path. Use pwd to determine the current working directory. Use this checkout only to inspect or extend DSH itself.\n\nYou are interacting with the user through the DeepSeek Harness Web GUI whose URL the runtime context names. When the user refers to \"this page\", \"this GUI\", or \"this app\" without naming another target, they mean this GUI. The browser provides no implicit DOM, route, or screenshot context. The client-plugin HMR receiver is active, but client-plugin changes reload without a refresh only while `pnpm run dev:web` is also running from this same checkout to rebuild their bundles; verify that watcher before promising automatic updates. Every other change — the apps/web shell and plain packages — requires rebuilding the affected Web artifacts and verifying this existing URL after a page refresh. Starting another server does not update this GUI. The apps/web Vite entry builds the shell but is not a standalone application because only dsh web injects window.__DSH_BOOT__. Do not start a replacement server unless the user asks; if one is needed, use a managed background job and verify its exact URL."
+            }
+          ],
+          "source": {
+            "kind": "system-prompt"
+          },
+          "id": "8b43d7d6-9de6-418b-96f7-b7f36ddc3e17"
+        }
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 9,
+      "time": 1792983790995,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Dispatch the controlled MCP child regression. subagent"
+          }
+        ],
+        "source": {
+          "kind": "user",
+          "rpcId": "722525f3-7c3c-4e54-a2e0-1ef0b6d79c68",
+          "clientTimeZone": "Asia/Shanghai"
+        },
+        "role": "user",
+        "id": "aeca5076-023f-4730-a1e9-d80ff490702f"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 10,
+      "time": 1792983790996,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\".\n\nCurrent DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\". Some platform temporary areas may also be writable.\n\nApproval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed.\n\nCurrent DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\".\n\nCurrent DeepSeek Harness Web GUI URL: \"http://127.0.0.1:63620\"."
+          }
+        ],
+        "source": {
+          "kind": "runtime-context",
+          "form": "snapshot",
+          "sections": [
+            {
+              "name": "working-directory:current",
+              "text": "Current working directory: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\"."
+            },
+            {
+              "name": "sandbox:policy",
+              "text": "Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\". Some platform temporary areas may also be writable."
+            },
+            {
+              "name": "approval:policy",
+              "text": "Approval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed."
+            },
+            {
+              "name": "harness:source",
+              "text": "Current DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\"."
+            },
+            {
+              "name": "app:web-surface",
+              "text": "Current DeepSeek Harness Web GUI URL: \"http://127.0.0.1:63620\"."
+            }
+          ]
+        },
+        "role": "user",
+        "id": "9156d57c-f809-4fe7-93eb-ea75af2dc853"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 11,
+      "time": 1792983790996,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "<system-reminder>\nA skill is a reusable set of task-specific instructions. The following skills are available in this session:\n\n<available_skills>\n- `anima-prompt-builder`: 用户要求根据自然语言画面要求与当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录构建并校验十二槽 ANIMA3 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。\n- `character-portrait-prompt-designer`: 根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，要求“根据某个目录中的人物 md 和证据设计人物形象”，或要求查询历史 run_id 时使用。\n- `comfyui-generate`: official-business-workspace-comfyui-generate-description\n- `comfyui-image-review`: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。\n- `krea2-anime-prompt-builder`: 用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。\n- `local-image-reader`: 使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。\n- `moss-prompt-builder`: Expand an image-generation request into a detailed MOSS-Image caption or spatial layout, and compile a local JSON draft into a ready-to-paste prompt. Use for prompt enhancement, image composition and text placement; this skill does not generate images.\n- `office`: Create, edit, inspect, or convert Office documents, spreadsheets, presentations, and PDFs. Load to choose the relevant workflow.\n- `office-docx`: Create, read, edit, and validate Word documents (.docx).\n- `office-export-pdf`: Convert an Office document to a requested PDF with LibreOffice Kit.\n- `office-pptx`: Create, read, edit, and validate PowerPoint presentations (.pptx).\n- `office-recalculate`: Refresh spreadsheet formula caches and verify calculated values with LibreOffice Kit.\n- `office-render`: Render requested document images or inspect visual layout with LibreOffice Kit.\n- `office-xlsx`: Read, create, edit, and validate Excel workbooks, data, and formulas (.xlsx).\n- `official-business-unique-user-skill`: official-business-unique-user-skill-description\n- `official-business-unique-workspace-skill`: official-business-unique-workspace-skill-description\n- `wai-sdxl-prompt-builder`: 用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt，或者查询一个或多个 ComfyUI Generation Run 的生成参数或 Actual Workflow 时使用。\n</available_skills>\n\nIf the user names a skill, or the task clearly matches a skill's description, call the `skill` tool with the exact skill name before taking task actions. Load all applicable skills, then follow their full instructions. This catalog contains summaries only; do not infer or follow a skill's instructions until it has been loaded.\nA user may also invoke a skill directly; its <skill_content> block then appears in this conversation. Follow it, and do not call the `skill` tool again for that skill.\n</system-reminder>"
+          }
+        ],
+        "source": {
+          "kind": "skill-catalog",
+          "form": "catalog",
+          "entries": [
+            {
+              "name": "anima-prompt-builder",
+              "description": "用户要求根据自然语言画面要求与当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录构建并校验十二槽 ANIMA3 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+            },
+            {
+              "name": "character-portrait-prompt-designer",
+              "description": "根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，要求“根据某个目录中的人物 md 和证据设计人物形象”，或要求查询历史 run_id 时使用。"
+            },
+            {
+              "name": "comfyui-generate",
+              "description": "official-business-workspace-comfyui-generate-description"
+            },
+            {
+              "name": "comfyui-image-review",
+              "description": "按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。"
+            },
+            {
+              "name": "krea2-anime-prompt-builder",
+              "description": "用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+            },
+            {
+              "name": "local-image-reader",
+              "description": "使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。"
+            },
+            {
+              "name": "moss-prompt-builder",
+              "description": "Expand an image-generation request into a detailed MOSS-Image caption or spatial layout, and compile a local JSON draft into a ready-to-paste prompt. Use for prompt enhancement, image composition and text placement; this skill does not generate images."
+            },
+            {
+              "name": "office",
+              "description": "Create, edit, inspect, or convert Office documents, spreadsheets, presentations, and PDFs. Load to choose the relevant workflow."
+            },
+            {
+              "name": "office-docx",
+              "description": "Create, read, edit, and validate Word documents (.docx)."
+            },
+            {
+              "name": "office-export-pdf",
+              "description": "Convert an Office document to a requested PDF with LibreOffice Kit."
+            },
+            {
+              "name": "office-pptx",
+              "description": "Create, read, edit, and validate PowerPoint presentations (.pptx)."
+            },
+            {
+              "name": "office-recalculate",
+              "description": "Refresh spreadsheet formula caches and verify calculated values with LibreOffice Kit."
+            },
+            {
+              "name": "office-render",
+              "description": "Render requested document images or inspect visual layout with LibreOffice Kit."
+            },
+            {
+              "name": "office-xlsx",
+              "description": "Read, create, edit, and validate Excel workbooks, data, and formulas (.xlsx)."
+            },
+            {
+              "name": "official-business-unique-user-skill",
+              "description": "official-business-unique-user-skill-description"
+            },
+            {
+              "name": "official-business-unique-workspace-skill",
+              "description": "official-business-unique-workspace-skill-description"
+            },
+            {
+              "name": "wai-sdxl-prompt-builder",
+              "description": "用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt，或者查询一个或多个 ComfyUI Generation Run 的生成参数或 Actual Workflow 时使用。"
+            }
+          ]
+        },
+        "role": "user",
+        "id": "a3b18cf5-141b-4080-87b1-263a4c3ae537"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "request/header",
+      "seq": 12,
+      "time": 1792983790996,
+      "data": {
+        "header": {
+          "config": {
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model",
+            "maxTokens": 1024
+          },
+          "adapterDefaults": {
+            "maxTokens": true
+          },
+          "tools": [
+            {
+              "name": "bash",
+              "description": "Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell; pass `workdir` instead of using `cd`. Managed `$DSH_*` variables expose current harness environment facts. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Provide `description` before `command` in the arguments. Before any delete or move, verify that the resolved absolute target path is the intended one; never run it against a computed path you have not checked. An unset variable expands to an empty string, so guard variables in such paths with `${VAR:?}`. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]`, a policy denial: do not retry another way.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: \"ls\" → \"List files in current directory\"; \"git status\" → \"Show working tree status\"; \"npm install\" → \"Install package dependencies\"."
+                  },
+                  "command": {
+                    "type": "string",
+                    "description": "The bash command to execute."
+                  },
+                  "timeoutMs": {
+                    "type": "number",
+                    "description": "Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry."
+                  },
+                  "workdir": {
+                    "type": "string",
+                    "description": "Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."
+                  },
+                  "sandbox_permissions": {
+                    "type": "string",
+                    "description": "The narrowest wider sandbox mode for a one-shot retry of the exact command the sandbox just denied; the retry asks the user for approval.",
+                    "enum": [
+                      "workspace-write",
+                      "danger-full-access"
+                    ]
+                  },
+                  "justification": {
+                    "type": "string",
+                    "description": "Required with sandbox_permissions: one sentence for the user explaining why this exact command needs the wider access. Use the language of the user’s current request."
+                  }
+                },
+                "required": [
+                  "description",
+                  "command"
+                ]
+              }
+            },
+            {
+              "name": "generate_with_comfyui",
+              "description": "Create one durable ComfyUI Generation Run from one approved template, an optional resolved generation model, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Title shown for this Generation Run."
+                  },
+                  "instance_id": {
+                    "type": "string",
+                    "description": "Approved ComfyUI instance identity."
+                  },
+                  "template_id": {
+                    "type": "string",
+                    "description": "Approved ComfyUI template identity."
+                  },
+                  "model": {
+                    "type": "object",
+                    "description": "Generation model resolved by query_semantic_generation_models; the Host replaces the template default model with this model on the target ComfyUI instance.",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Resolved generation-model catalog identity."
+                      },
+                      "file_name": {
+                        "type": "string",
+                        "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "file_name"
+                    ]
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "description": "Explicit Workflow runtime values. Standard semantic keys include positive_prompt, negative_prompt, width, height, seed, cfg, steps, sampler_name, scheduler, denoise, batch_size, resolution_preset, reference_image, aspect_ratio, megapixels. An exact user-supplied Workflow input key is also accepted. The Host resolves every supplied key against the executable Workflow and the target ComfyUI instance.",
+                    "additionalProperties": true
+                  },
+                  "loras": {
+                    "type": "array",
+                    "description": "LoRAs resolved by query_semantic_loras and applied to the current Workflow through the target ComfyUI instance node definitions.",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Resolved LoRA catalog identity."
+                        },
+                        "file_name": {
+                          "type": "string",
+                          "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                        },
+                        "weight": {
+                          "type": "number",
+                          "description": "Model weight selected for this LoRA."
+                        },
+                        "trigger_words": {
+                          "type": "array",
+                          "description": "Trigger words actually used in the rewritten final prompt.",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "file_name",
+                        "weight",
+                        "trigger_words"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "title",
+                  "template_id",
+                  "parameters"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "get_generation_run_media",
+              "description": "Read saved local image paths and original parameters for one to 20 full Generation Run IDs or unique Run ID prefixes in the current Workspace. Every Run returns one ordered success or error item. This Tool does not inspect images.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "run_ids": {
+                    "type": "array",
+                    "description": "One to 20 Generation Run identities. Results preserve this order and duplicate identities.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "run_ids"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "inspect_image",
+              "description": "Inspect exactly one local image with the visual provider, model, temperature, and output limit selected in Harness settings. An optional prompt overrides defaultPrompt for this inspection only; omit it to use the active image-reader profile defaultPrompt. The visual model may return ordinary text; this Tool wraps that text in provider, model, file_path, and observation properties.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "file_path": {
+                    "type": "string",
+                    "description": "Absolute local path of exactly one image."
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "Optional image-reading prompt for this inspection only. Omit it to use the active image-reader profile defaultPrompt."
+                  }
+                },
+                "required": [
+                  "file_path"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "interrupt_agent",
+              "description": "Ask a subagent to stop its current work. This call returns without waiting for it to stop. You can continue a local direct child's conversation later with send_message. External executions stop permanently and cannot receive follow-ups. Subagents it started will keep running.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "agent_id": {
+                    "type": "string",
+                    "description": "The id of an agent created under you: your direct child or a deeper descendant."
+                  }
+                },
+                "required": [
+                  "agent_id"
+                ]
+              }
+            },
+            {
+              "name": "list_agents",
+              "description": "List subagents you started, with their ids, labels, and status. running means it is working; inactive means it is not currently working. You will be notified when a subagent finishes; there is no need to keep checking its status. Use send_message to continue the conversation.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "scope": {
+                    "type": "string",
+                    "description": "children (default) lists direct children, which accept send_message in any status. descendants lists the whole tree below you with each entry's parent session id and depth; entries deeper than 1 accept only interrupt_agent.",
+                    "enum": [
+                      "children",
+                      "descendants"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "name": "list_mcp_resource_templates",
+              "description": "List parameterized resource URI templates from an MCP server.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "server": {
+                    "type": "string",
+                    "description": "Configured MCP server name."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Continuation cursor returned by this server."
+                  }
+                },
+                "required": [
+                  "server"
+                ]
+              }
+            },
+            {
+              "name": "list_mcp_resources",
+              "description": "List resources available from an MCP server.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "server": {
+                    "type": "string",
+                    "description": "Configured MCP server name."
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Continuation cursor returned by this server."
+                  }
+                },
+                "required": [
+                  "server"
+                ]
+              }
+            },
+            {
+              "name": "load_workspace_dependencies",
+              "description": "Get absolute paths to bundled Python and library directories, plus bundled Python distribution versions. Node.js and pnpm paths are included when the payload provides them. Python includes numpy, pandas, python-docx, python-pptx, openpyxl, Pillow, lxml, and XlsxWriter. Use these libraries for Office files unless the user or workspace instructions select another environment. When Node.js and pnpm paths are returned, run pnpm with that Node executable and pnpm script path. This does not change PATH or package-manager settings.",
+              "parameters": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "mcp__noobai__get_catalog_resource",
+              "description": "## 查询用途\n\n1. 按已知资源类别和 ID 直接读取完整记录，取得完整说明、使用方法、提示词素材或节点配置。实例凭据通过 get_instance_connection 读取。\n\n## 输入参数\n\n1. ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. item：查询结果；始终提供。读取对应资源的完整字段。\n5. item.ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n6. item.name：资源定位；始终提供。核对资源名称。\n7. item.ref.kind：资源定位；始终提供。识别资源类别。\n8. item.ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n\n### item.ref.kind 为 model 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.file_name：生成配置；始终提供。将该文件名用于模型加载节点的文件名参数。\n3. item.file_format：资源定位；始终提供。核对模型文件格式。\n4. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n5. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n6. item.version：资源定位；null 表示未填写版本。核对资源版本。\n7. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n8. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n9. item.skill_name：Skill 选择；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。\n10. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 lora 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。\n3. item.file_name：生成配置；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。\n4. item.file_format：资源定位；始终提供。核对模型文件格式。\n5. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n6. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n7. item.version：资源定位；null 表示未填写版本。核对资源版本。\n8. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n9. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n10. item.trigger_words：Prompt 素材；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。\n11. item.weight：生成配置；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。\n12. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n13. item.base_model.name：资源定位；始终提供。核对资源名称。\n14. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n15. item.model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 style 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.aliases：资源定位；空数组表示没有别名。辅助识别画风。\n3. item.style_description：资源选择与使用指导；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。\n4. item.prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 artist_prompt_string 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.styles：关联筛选；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。\n3. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n4. item.artist_string：Prompt 素材；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n7. item.styles[].id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n8. item.styles[].name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 workflow 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n3. item.lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n4. item.workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n5. item.workflow_json：生成配置；始终提供完整对象。调用者读取全部节点与连接，并根据生成目标设置节点中的提示词。\n6. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n7. item.base_model.name：资源定位；始终提供。核对资源名称。\n8. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n9. item.model.name：资源定位；始终提供。核对资源名称。\n10. item.lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.lora.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 instance 时的字段\n\n1. item.url：实例连接；始终提供。连接已登记的实例服务地址。\n2. item.credential_type：实例连接；none 表示无需认证。据此识别连接认证方式。\n3. item.enabled：登记状态；始终提供布尔值。识别管理员保存的启用配置。\n4. item.validation_passed：登记状态；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "base_model",
+                          "model",
+                          "lora",
+                          "style",
+                          "artist_prompt_string",
+                          "workflow",
+                          "instance"
+                        ],
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。"
+                  }
+                },
+                "required": [
+                  "ref"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "mcp__noobai__search_workflows",
+              "description": "## 查询用途\n\n1. 查找指定底模、模型或 LoRA 关联的工作流，或按视觉描述搜索工作流候选；可直接使用关联名称或文件名。需要完整节点配置时，将候选 ref 传入 get_catalog_resource。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n12. results[].lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n13. results[].workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。\n22. results[].model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].model.name：资源定位；始终提供。核对资源名称。\n24. results[].lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].lora.name：资源定位；始终提供。核对资源名称。",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "base_model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "lora": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "workflow_type": {
+                    "type": "string",
+                    "enum": [
+                      "text_to_image",
+                      "text_to_image_lora",
+                      "text_to_image_hires_fix",
+                      "text_to_image_second_pass",
+                      "text_to_video",
+                      "image_to_image",
+                      "image_to_video",
+                      "video_to_video",
+                      "style_transfer",
+                      "controlnet",
+                      "inpainting",
+                      "outpainting",
+                      "upscale",
+                      "face_detailer",
+                      "other"
+                    ]
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "query_semantic_comfyui_instances",
+              "description": "List the current approved ComfyUI instance IDs for generate_with_comfyui.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "description": "Fixed Catalog search mode.",
+                    "const": "search"
+                  },
+                  "query": {
+                    "type": "string",
+                    "description": "Fixed empty instance search text.",
+                    "const": ""
+                  },
+                  "page": {
+                    "type": "integer",
+                    "description": "Fixed first Catalog result page.",
+                    "const": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "description": "Fixed maximum number of instance records returned by the Catalog CLI.",
+                    "const": 100
+                  }
+                },
+                "required": [
+                  "mode",
+                  "query",
+                  "page",
+                  "page_size"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "query_semantic_comfyui_templates",
+              "description": "Resolve one approved ComfyUI Workflow template ID to its title and model compatibility identities.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Approved ComfyUI Workflow template identity."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "query_semantic_generation_models",
+              "description": "Resolve one selected generation-model ID to its catalog file name, model guidance, and compatible Prompt Skill.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Selected generation-model catalog identity from the current message context."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "query_semantic_loras",
+              "description": "Resolve one selected LoRA ID to its semantic guidance, trigger words, default model weight, and catalog file name.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Selected LoRA catalog identity from the current message context."
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "read_comfyui_run_inputs",
+              "description": "Read the complete persisted generate_with_comfyui arguments and saved Actual Workflow for one to twenty full Run IDs or unique Run ID prefixes in the current Workspace; return one ordered success or error item for every requested run_id.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "run_ids": {
+                    "type": "array",
+                    "description": "One to 20 full Generation Run IDs or canonical UUID prefixes containing at least 8 UUID characters. Every ID is queried independently and results keep this order.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "run_ids"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "read_mcp_resource",
+              "description": "Read an MCP resource by URI from the named server. Use a listed URI or an expanded resource template.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "server": {
+                    "type": "string",
+                    "description": "Configured MCP server name."
+                  },
+                  "uri": {
+                    "type": "string",
+                    "description": "Resource URI to read."
+                  }
+                },
+                "required": [
+                  "server",
+                  "uri"
+                ]
+              }
+            },
+            {
+              "name": "send_message",
+              "description": "Send a message to an agent. A working agent receives it at its next step; an idle agent starts a new turn with it. Returns delivery confirmation, not the agent's answer.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "agent_id": {
+                    "type": "string",
+                    "description": "The agent id of your direct continuable child, or your direct parent when you are a resident continuable child."
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "The message to deliver to the agent."
+                  }
+                },
+                "required": [
+                  "agent_id",
+                  "message"
+                ]
+              }
+            },
+            {
+              "name": "skill",
+              "description": "Load the full instructions for a skill. Call it before acting on a task that names or clearly matches a skill in the session skill catalog.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The exact skill name from the available skills list."
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            {
+              "name": "subagent",
+              "description": "Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. This tool starts an independently managed subagent and immediately returns its id. The runtime notifies you when it finishes. The child reports results with `send_message`; use `send_message` to steer it while running or continue its conversation after it finishes.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "cwd": {
+                    "type": "string",
+                    "description": "Initial child working directory. Relative paths use your current directory; omitted inherits it. Later directory changes in either agent are independent."
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "A short (3-5 word) description of the delegated task, for display."
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "description": "The complete, self-contained task for the subagent. It does not share this conversation's context, so include everything it needs."
+                  }
+                },
+                "required": [
+                  "description",
+                  "prompt"
+                ]
+              }
+            },
+            {
+              "name": "working_directory",
+              "description": "Read the current working directory, or change it with cd. Relative paths use the current directory. Existing shells and running processes keep their own directories.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "cd": {
+                    "type": "string",
+                    "description": "Existing directory to enter. Omit to read the current directory."
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "reason": "initial"
+      }
+    },
+    {
+      "type": "request/context",
+      "seq": 13,
+      "time": 1792983790996,
+      "data": {
+        "provider": "desktop-prompt-capture",
+        "model": "desktop-prompt-capture-model",
+        "contextWindow": 16384
+      }
+    },
+    {
+      "type": "session/title",
+      "seq": 14,
+      "time": 1792983790997,
+      "data": {
+        "title": "Dispatch the controlled MCP child",
+        "messageSeqs": [
+          9
+        ],
+        "source": {
+          "kind": "fallback"
+        }
+      }
+    },
+    {
+      "type": "session/title-llm-request",
+      "seq": 15,
+      "time": 1792983790997,
+      "data": {
+        "titleProvider": "session-title-first-prompt-llm",
+        "messageSeqs": [
+          9
+        ],
+        "route": {
+          "provider": "desktop-prompt-capture",
+          "model": "desktop-prompt-capture-model"
+        },
+        "system": "Create a concise title for an AI coding-assistant session from the supplied human messages.\nReturn only the title on one line, **in plain text of natural language**, with no quotes, prefix, explanation, Markdown, XML, or terminal control codes. No code is allowed.\nUse the language of the messages.\nAim for about 5 words in non-CJK languages or 10 CJK characters.\nIf the messages give little to name, still return a short best-effort title, such as Greeting, instead of explaining.",
+        "messages": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Generate the session title from this JSON array of human messages:\n[{\"seq\":9,\"text\":\"Dispatch the controlled MCP child regression. subagent\"}]"
+              }
+            ],
+            "source": {
+              "kind": "dsh-session-title-llm"
+            },
+            "role": "user",
+            "id": "0be842f8-a421-4626-a4a5-30bcc2cb54dd"
+          }
+        ],
+        "maxTokens": 4096
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 16,
+      "time": 1792983791008,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "native-parent-cd",
+              "name": "working_directory",
+              "arguments": "{\"cd\":\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "desktop-prompt-capture",
+                "model": "desktop-prompt-capture-model",
+                "responseId": "official-desktop-controlled-response",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "cff104fd-e801-44ec-a970-6de77291fb46"
+        },
+        "usage": {
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792983791007,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1792983791007,
+            "index": 0,
+            "dt": [],
+            "id": "native-parent-cd",
+            "name": "working_directory",
+            "args": [
+              "{\"cd\":\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791007,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "native-parent-cd",
+                "name": "working_directory",
+                "arguments": "{\"cd\":\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791007,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 0,
+                "outputTokens": 0,
+                "totalTokens": 0
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791007,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "desktop-prompt-capture",
+                  "model": "desktop-prompt-capture-model",
+                  "responseId": "official-desktop-controlled-response",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 17,
+      "time": 1792983791008,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "native-parent-cd",
+        "name": "working_directory",
+        "arguments": "{\"cd\":\"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\"}"
+      }
+    },
+    {
+      "type": "session/title",
+      "seq": 18,
+      "time": 1792983791009,
+      "data": {
+        "title": "captured",
+        "messageSeqs": [
+          9
+        ],
+        "source": {
+          "kind": "provider",
+          "provider": "session-title-first-prompt-llm",
+          "model": {
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model"
+          }
+        }
+      }
+    },
+    {
+      "type": "working-directory/change",
+      "seq": 19,
+      "time": 1792983791015,
+      "data": {
+        "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory"
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 20,
+      "time": 1792983791015,
+      "data": {
+        "target": "next-step",
+        "start": 0,
+        "inserted": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "The working directory changed from \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\" to \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\"."
+              }
+            ],
+            "source": {
+              "kind": "working-directory"
+            },
+            "role": "user",
+            "id": "809657de-6aaa-43cd-9cce-f0cc2d27b1e9"
+          }
+        ]
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 21,
+      "time": 1792983791015,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "native-parent-cd"
+          },
+          "toolCallId": "native-parent-cd",
+          "content": [
+            {
+              "type": "text",
+              "text": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory"
+            }
+          ],
+          "isError": false,
+          "id": "21b1e75f-3a62-4398-a8dd-209c17880c90"
+        }
+      },
+      "sourceEventSeqs": [
+        17
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 22,
+      "time": 1792983791015,
+      "data": {
+        "turn": 1,
+        "step": 1
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 23,
+      "time": 1792983791015,
+      "data": {
+        "target": "next-step",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 24,
+      "time": 1792983791027,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "user/message",
+      "seq": 25,
+      "time": 1792983791028,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "The working directory changed from \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\" to \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\"."
+          }
+        ],
+        "source": {
+          "kind": "working-directory"
+        },
+        "role": "user",
+        "id": "809657de-6aaa-43cd-9cce-f0cc2d27b1e9"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "user/message",
+      "seq": 26,
+      "time": 1792983791028,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\".\n\nCurrent DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\". Some platform temporary areas may also be writable.\n\nApproval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed.\n\nCurrent DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\".\n\nCurrent DeepSeek Harness Web GUI URL: \"http://127.0.0.1:63620\"."
+          }
+        ],
+        "source": {
+          "kind": "runtime-context",
+          "form": "snapshot",
+          "sections": [
+            {
+              "name": "working-directory:current",
+              "text": "Current working directory: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory\"."
+            },
+            {
+              "name": "sandbox:policy",
+              "text": "Current DSH file policy: workspace-write. Any available operation enforced by the DSH file sandbox may modify files under the session workspace: \"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace\". Some platform temporary areas may also be writable."
+            },
+            {
+              "name": "approval:policy",
+              "text": "Approval policy: ask. Operations that require approval may ask through the configured answerers; without an available answerer, the request fails closed."
+            },
+            {
+              "name": "harness:source",
+              "text": "Current DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\"."
+            },
+            {
+              "name": "app:web-surface",
+              "text": "Current DeepSeek Harness Web GUI URL: \"http://127.0.0.1:63620\"."
+            }
+          ]
+        },
+        "role": "user",
+        "id": "aee5b05d-a581-481d-a6bd-5da1ffcf8dfa"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "assistant/message",
+      "seq": 27,
+      "time": 1792983791034,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "native-dispatch",
+              "name": "subagent",
+              "arguments": "{\"description\":\"Controlled MCP child\",\"prompt\":\"Run the controlled MCP Workflow lookup regression.\\nDispatch the controlled MCP child regression. subagent\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "desktop-prompt-capture",
+                "model": "desktop-prompt-capture-model",
+                "responseId": "official-desktop-controlled-response",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "eae2f9d0-340f-4906-9e2d-49a664a0a3c7"
+        },
+        "usage": {
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792983791034,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1792983791034,
+            "index": 0,
+            "dt": [],
+            "id": "native-dispatch",
+            "name": "subagent",
+            "args": [
+              "{\"description\":\"Controlled MCP child\",\"prompt\":\"Run the controlled MCP Workflow lookup regression.\\nDispatch the controlled MCP child regression. subagent\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791034,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "native-dispatch",
+                "name": "subagent",
+                "arguments": "{\"description\":\"Controlled MCP child\",\"prompt\":\"Run the controlled MCP Workflow lookup regression.\\nDispatch the controlled MCP child regression. subagent\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791034,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 0,
+                "outputTokens": 0,
+                "totalTokens": 0
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791034,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "desktop-prompt-capture",
+                  "model": "desktop-prompt-capture-model",
+                  "responseId": "official-desktop-controlled-response",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 28,
+      "time": 1792983791035,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "native-dispatch",
+        "name": "subagent",
+        "arguments": "{\"description\":\"Controlled MCP child\",\"prompt\":\"Run the controlled MCP Workflow lookup regression.\\nDispatch the controlled MCP child regression. subagent\"}"
+      }
+    },
+    {
+      "type": "subagent/catalog",
+      "seq": 29,
+      "time": 1792983791056,
+      "data": {
+        "version": 0,
+        "childId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+        "childCreatedAt": 1792983791041,
+        "mode": "continuable",
+        "label": "Controlled MCP child"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 30,
+      "time": 1792983791056,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "native-dispatch"
+          },
+          "toolCallId": "native-dispatch",
+          "content": [
+            {
+              "type": "text",
+              "text": "started subagent e4dac470-2c3c-4d4b-9f19-148bf47d67de"
+            }
+          ],
+          "isError": false,
+          "id": "3833c8eb-c763-481f-adc7-1062395f62a3"
+        }
+      },
+      "sourceEventSeqs": [
+        28
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 31,
+      "time": 1792983791057,
+      "data": {
+        "turn": 1,
+        "step": 2
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 32,
+      "time": 1792983791066,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 33,
+      "time": 1792983791071,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "Controlled generation accepted."
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "desktop-prompt-capture",
+                "model": "desktop-prompt-capture-model",
+                "responseId": "official-desktop-controlled-response",
+                "stopReason": "stop"
+              },
+              "blocks": [
+                {
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "id": "7e112da6-a2fb-4b20-bcae-3cbfe82bda87"
+        },
+        "usage": {
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792983791071,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "text"
+            }
+          },
+          {
+            "type": "text-chunks",
+            "time0": 1792983791071,
+            "index": 0,
+            "dt": [],
+            "texts": [
+              "Controlled generation accepted."
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791071,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "text",
+                "text": "Controlled generation accepted."
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791071,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 0,
+                "outputTokens": 0,
+                "totalTokens": 0
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791071,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "stop"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "desktop-prompt-capture",
+                  "model": "desktop-prompt-capture-model",
+                  "responseId": "official-desktop-controlled-response",
+                  "stopReason": "stop"
+                },
+                "blocks": [
+                  {
+                    "type": "text"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 34,
+      "time": 1792983791071,
+      "data": {
+        "turn": 1,
+        "step": 3
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 35,
+      "time": 1792983791072,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 36,
+      "time": 1792983791362,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Background subagent e4dac470-2c3c-4d4b-9f19-148bf47d67de finished and will do no further work unless you send it more."
+              },
+              {
+                "type": "text",
+                "text": "Its closing message:"
+              },
+              {
+                "type": "text",
+                "text": "Read the result file at /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-result.txt."
+              }
+            ],
+            "source": {
+              "kind": "subagent-settled",
+              "form": "notice",
+              "summary": "Background subagent e4dac470-2c3c-4d4b-9f19-148bf47d67de finished and will do no further work unless you send it more.",
+              "senderSessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de"
+            },
+            "role": "user",
+            "id": "5d317548-8c7c-4fa9-82c0-9a66c3e42489"
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 37,
+      "time": 1792983791362,
+      "data": {
+        "turn": 2
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 38,
+      "time": 1792983791363,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 39,
+      "time": 1792983791369,
+      "data": {
+        "turn": 2,
+        "step": 1
+      }
+    },
+    {
+      "type": "user/message",
+      "seq": 40,
+      "time": 1792983791369,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Background subagent e4dac470-2c3c-4d4b-9f19-148bf47d67de finished and will do no further work unless you send it more."
+          },
+          {
+            "type": "text",
+            "text": "Its closing message:"
+          },
+          {
+            "type": "text",
+            "text": "Read the result file at /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-result.txt."
+          }
+        ],
+        "source": {
+          "kind": "subagent-settled",
+          "form": "notice",
+          "summary": "Background subagent e4dac470-2c3c-4d4b-9f19-148bf47d67de finished and will do no further work unless you send it more.",
+          "senderSessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de"
+        },
+        "role": "user",
+        "id": "5d317548-8c7c-4fa9-82c0-9a66c3e42489"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "assistant/message",
+      "seq": 41,
+      "time": 1792983791374,
+      "data": {
+        "turn": 2,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool-call",
+              "id": "native-result-read",
+              "name": "bash",
+              "arguments": "{\"description\":\"Read completed child task result\",\"command\":\"cat '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-result.txt'\"}"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "desktop-prompt-capture",
+                "model": "desktop-prompt-capture-model",
+                "responseId": "official-desktop-controlled-response",
+                "stopReason": "toolUse"
+              },
+              "blocks": [
+                {
+                  "type": "tool-call"
+                }
+              ]
+            }
+          },
+          "id": "1e26656d-04fa-45bb-88f4-08c2c644703d"
+        },
+        "usage": {
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792983791373,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "tool-call"
+            }
+          },
+          {
+            "type": "tool-call-chunks",
+            "time0": 1792983791374,
+            "index": 0,
+            "dt": [],
+            "id": "native-result-read",
+            "name": "bash",
+            "args": [
+              "{\"description\":\"Read completed child task result\",\"command\":\"cat '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-result.txt'\"}"
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791374,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "tool-call",
+                "id": "native-result-read",
+                "name": "bash",
+                "arguments": "{\"description\":\"Read completed child task result\",\"command\":\"cat '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-result.txt'\"}"
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791374,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 0,
+                "outputTokens": 0,
+                "totalTokens": 0
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791374,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "tool-calls"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "desktop-prompt-capture",
+                  "model": "desktop-prompt-capture-model",
+                  "responseId": "official-desktop-controlled-response",
+                  "stopReason": "toolUse"
+                },
+                "blocks": [
+                  {
+                    "type": "tool-call"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 42,
+      "time": 1792983791374,
+      "data": {
+        "turn": 2,
+        "step": 1,
+        "callId": "native-result-read",
+        "name": "bash",
+        "arguments": "{\"description\":\"Read completed child task result\",\"command\":\"cat '/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-result.txt'\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 43,
+      "time": 1792983791394,
+      "data": {
+        "turn": 2,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "native-result-read"
+          },
+          "toolCallId": "native-result-read",
+          "content": [
+            {
+              "type": "text",
+              "text": "OFFICIAL_NATIVE_CHILD_RESULT\n"
+            }
+          ],
+          "isError": false,
+          "id": "ca9bdbac-633f-4712-8bfd-eb096750730b"
+        },
+        "meta": {
+          "cwd": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-parent-directory"
+        }
+      },
+      "sourceEventSeqs": [
+        42
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 44,
+      "time": 1792983791394,
+      "data": {
+        "turn": 2,
+        "step": 1
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 45,
+      "time": 1792983791402,
+      "data": {
+        "turn": 2,
+        "step": 2
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 46,
+      "time": 1792983791408,
+      "data": {
+        "turn": 2,
+        "step": 2,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "Controlled generation accepted."
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model",
+            "replayState": {
+              "response": {
+                "kind": "pi-ai",
+                "version": 2,
+                "api": "openai-completions",
+                "provider": "desktop-prompt-capture",
+                "model": "desktop-prompt-capture-model",
+                "responseId": "official-desktop-controlled-response",
+                "stopReason": "stop"
+              },
+              "blocks": [
+                {
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "id": "2261ffaa-1e80-4ad3-b14e-270bd1e49fde"
+        },
+        "usage": {
+          "inputTokens": 0,
+          "outputTokens": 0,
+          "totalTokens": 0
+        },
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792983791407,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "text"
+            }
+          },
+          {
+            "type": "text-chunks",
+            "time0": 1792983791407,
+            "index": 0,
+            "dt": [],
+            "texts": [
+              "Controlled generation accepted."
+            ]
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791407,
+            "chunk": {
+              "type": "block-end",
+              "index": 0,
+              "block": {
+                "type": "text",
+                "text": "Controlled generation accepted."
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791407,
+            "chunk": {
+              "type": "usage",
+              "usage": {
+                "inputTokens": 0,
+                "outputTokens": 0,
+                "totalTokens": 0
+              }
+            }
+          },
+          {
+            "type": "chunk",
+            "time": 1792983791407,
+            "chunk": {
+              "type": "finish",
+              "reason": {
+                "kind": "stop"
+              },
+              "replayState": {
+                "response": {
+                  "kind": "pi-ai",
+                  "version": 2,
+                  "api": "openai-completions",
+                  "provider": "desktop-prompt-capture",
+                  "model": "desktop-prompt-capture-model",
+                  "responseId": "official-desktop-controlled-response",
+                  "stopReason": "stop"
+                },
+                "blocks": [
+                  {
+                    "type": "text"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 47,
+      "time": 1792983791408,
+      "data": {
+        "turn": 2,
+        "step": 2
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 48,
+      "time": 1792983791408,
+      "data": {
+        "turn": 2,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 49,
+      "time": 1792983793666,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "inserted": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "Capture the controlled MCP tool scope."
+              }
+            ],
+            "source": {
+              "kind": "user",
+              "rpcId": "de7f7590-3afe-47ec-b5d7-b15ef14b823b",
+              "clientTimeZone": "Asia/Shanghai"
+            },
+            "role": "user",
+            "id": "60318864-9a48-4cc7-a3fd-689b4d7109ff"
+          }
+        ]
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 50,
+      "time": 1792983793666,
+      "data": {
+        "turn": 3
+      }
+    },
+    {
+      "type": "agent/inbox/spliced",
+      "seq": 51,
+      "time": 1792983793667,
+      "data": {
+        "target": "next-turn",
+        "start": 0,
+        "removedCount": 1,
+        "inserted": []
+      }
+    },
+    {
+      "type": "step/start",
+      "seq": 52,
+      "time": 1792983793676,
+      "data": {
+        "turn": 3,
+        "step": 1
+      }
+    },
+    {
+      "type": "user/message",
+      "seq": 53,
+      "time": 1792983793676,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Capture the controlled MCP tool scope."
+          }
+        ],
+        "source": {
+          "kind": "user",
+          "rpcId": "de7f7590-3afe-47ec-b5d7-b15ef14b823b",
+          "clientTimeZone": "Asia/Shanghai"
+        },
+        "role": "user",
+        "id": "60318864-9a48-4cc7-a3fd-689b4d7109ff"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "assistant/message",
+      "seq": 54,
+      "time": 1792983793802,
+      "data": {
+        "turn": 3,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "Controlled generation accepted."
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model"
+          },
+          "id": "34596e73-e42e-4be8-a793-adfa318d1b02"
+        },
+        "interrupted": true,
+        "stream": [
+          {
+            "type": "chunk",
+            "time": 1792983793682,
+            "chunk": {
+              "type": "block-start",
+              "index": 0,
+              "blockType": "text"
+            }
+          },
+          {
+            "type": "text-chunks",
+            "time0": 1792983793682,
+            "index": 0,
+            "dt": [],
+            "texts": [
+              "Controlled generation accepted."
+            ]
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "step/end",
+      "seq": 55,
+      "time": 1792983793802,
+      "data": {
+        "turn": 3,
+        "step": 1
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 56,
+      "time": 1792983793803,
+      "data": {
+        "turn": 3,
+        "reason": {
+          "kind": "aborted",
+          "reason": {
+            "kind": "user"
+          }
+        }
+      }
+    }
+  ]
+}

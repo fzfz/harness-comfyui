@@ -1,0 +1,58 @@
+{
+  "recordedAt": "2026-10-26T03:38:17.768Z",
+  "method": "Bash set -- expands the observed command into positional arguments using inert paths; printf reports tokens. The document CLI and executable are not invoked.",
+  "documentCliInvocations": 0,
+  "cases": [
+    {
+      "artifactPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/native-first-result.json",
+      "parsedCommand": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --stdin",
+      "containsBackslashCharacter": false,
+      "quoteCodePoints": [
+        34,
+        34,
+        34,
+        34
+      ],
+      "positionalArguments": [
+        "ELECTRON_RUN_AS_NODE=1",
+        "/nonexecuted/harness-node",
+        "--expose-internals",
+        "/nonexecuted/harness-cli",
+        "--quiet",
+        "generation",
+        "run-inputs",
+        "--stdin"
+      ],
+      "executableToken": "/nonexecuted/harness-node",
+      "scriptToken": "/nonexecuted/harness-cli",
+      "executableMatchesInertPath": true,
+      "scriptMatchesInertPath": true
+    },
+    {
+      "artifactPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/native-supplement-result.json",
+      "parsedCommand": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation inspect-template-parameters --stdin",
+      "containsBackslashCharacter": false,
+      "quoteCodePoints": [
+        34,
+        34,
+        34,
+        34
+      ],
+      "positionalArguments": [
+        "ELECTRON_RUN_AS_NODE=1",
+        "/nonexecuted/harness-node",
+        "--expose-internals",
+        "/nonexecuted/harness-cli",
+        "--quiet",
+        "generation",
+        "inspect-template-parameters",
+        "--stdin"
+      ],
+      "executableToken": "/nonexecuted/harness-node",
+      "scriptToken": "/nonexecuted/harness-cli",
+      "executableMatchesInertPath": true,
+      "scriptMatchesInertPath": true
+    }
+  ],
+  "conclusion": "Both parsed JSON command strings contain ordinary double quotes and no backslash characters. Shell argument expansion removes the quoting characters and produces the intended executable and script paths."
+}

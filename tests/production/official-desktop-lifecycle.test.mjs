@@ -313,6 +313,37 @@ describe('official Desktop lifecycle fixture configuration', () => {
   })
 })
 
+describe('retired Preset history fixture', () => {
+  it('stages a missing Preset identity while retaining every historical event byte', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'retired-preset-history-'))
+    temporaryRoots.add(root)
+    const sessionId = `session-${randomUUID()}`
+    const logPath = join(root, 'session.v4.jsonl')
+    const projectionCachePath = join(root, `${sessionId}.json`)
+    const siblingCachePath = join(root, `session-${randomUUID()}.json`)
+    const siblingCache = JSON.stringify({ unrelated: 'retained checkpoint' })
+    await writeFile(siblingCachePath, siblingCache)
+    await writeFile(projectionCachePath, JSON.stringify({ version: 7, record: { rows: { agentPreset: {
+      ver: 1, seq: 0, val: 'harness-comfyui-cli-candidate',
+    } } } }))
+    const header = { type: 'session', version: 4, id: sessionId, createdAt: 1,
+      cwd: root, isSeeded: false, delegationDepth: 0, agentPreset: 'harness-comfyui-cli-candidate' }
+    const events = `${JSON.stringify({ type: 'user/message', seq: 0, data: { text: 'historical task' } })}\n`
+    await writeFile(logPath, `${JSON.stringify(header)}\n${events}`)
+    const { stageRetiredPresetHistory } = await import('../desktop/fixtures/official-lifecycle-services.mjs')
+    const staged = await stageRetiredPresetHistory({ logPath, projectionCachePath, sessionId, retiredPresetId: 'harness-comfyui-iteration' })
+    const contents = await readFile(logPath, 'utf8')
+    expect(JSON.parse(contents.slice(0, contents.indexOf('\n')))).toEqual({ ...header, agentPreset: 'harness-comfyui-iteration' })
+    expect(contents.slice(contents.indexOf('\n') + 1)).toBe(events)
+    await expect(readFile(projectionCachePath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await readFile(siblingCachePath, 'utf8')).toBe(siblingCache)
+    expect(staged).toEqual({ logPath, projectionCachePath, sessionId, retiredPresetId: 'harness-comfyui-iteration' })
+    await expect(stageRetiredPresetHistory({ logPath, projectionCachePath, sessionId: `session-${randomUUID()}`, retiredPresetId: 'harness-comfyui-iteration' }))
+      .rejects.toThrow(/session identity/u)
+    expect(await readFile(logPath, 'utf8')).toBe(contents)
+  })
+})
+
 describe('official Desktop lifecycle environment builder', () => {
   it('waits for the official asynchronous Session cache file and returns its complete JSON record', async () => {
     const missing = Object.assign(new Error('not persisted yet'), { code: 'ENOENT' })
@@ -628,14 +659,11 @@ describe('official Desktop lifecycle environment builder', () => {
     const fixtureId = randomUUID()
     const runA = randomUUID()
     const runB = randomUUID()
-    const workspaceA = `/tmp/${fixtureId}/workspace-a`
-    const workspaceB = `/tmp/${fixtureId}/workspace-b`
     const environmentFilePath = `/tmp/${fixtureId}/test.env`
     const configA = createLifecycleDesktopConfig(desktopE2EConfig, {
       fixture: lifecycleFixtureJson,
       fixtureId,
       runId: runA,
-      workspacePath: workspaceA,
       environmentFilePath,
       providers: providerFixture,
     })
@@ -643,7 +671,6 @@ describe('official Desktop lifecycle environment builder', () => {
       fixture: lifecycleFixtureJson,
       fixtureId,
       runId: runB,
-      workspacePath: workspaceB,
       environmentFilePath,
       providers: providerFixture,
     })
@@ -660,7 +687,13 @@ describe('official Desktop lifecycle environment builder', () => {
     expect(configA.modes.development.requiredEnvironmentNames)
       .toEqual([lifecycleFixtureJson.credentials.testKeyEnvironmentName])
     expect(configA.modes.development.initialProfilePatches.find(row => row.id === 'harness-comfyui-core').config)
-      .toMatchObject({ startupWorkspacePath: workspaceA })
+      .toEqual({
+        configurationProfile: lifecycleFixtureJson.profileEntries.configurationProfile,
+        configuration: {
+          url: lifecycleFixtureJson.profileEntries.sourceUrl,
+          port: lifecycleFixtureJson.profileEntries.sourcePort,
+        },
+      })
     expect(configA.modes.development.initialProfilePatches.find(row => row.id === 'llm-pi-ai')
       .config.providers.siliconflow.apiKeyEnv).toBe(lifecycleFixtureJson.credentials.testKeyEnvironmentName)
   })
@@ -712,12 +745,10 @@ describe('official Desktop lifecycle environment builder', () => {
     await writeLifecycleTestEnvironmentFile(environmentFilePath, lifecycleFixtureJson)
     const baseConfig = await loadDesktopE2EConfig()
     const dshHome = join(root, 'isolated-dsh-home')
-    const workspacePath = join(root, 'workspace')
     const config = createLifecycleDesktopConfig(baseConfig, {
       fixture: lifecycleFixtureJson,
       fixtureId,
       runId,
-      workspacePath,
       environmentFilePath,
       providers: providerFixture,
     })

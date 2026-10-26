@@ -36,16 +36,7 @@ function writeBundle(root: string, update: (entries: BundleEntry[]) => void = ()
 
 function fixture(otherSource = ''): string {
   const root = mkdtempSync(join(tmpdir(), 'harness-boundary-'))
-  for (const directory of [
-    'src/host/tools',
-    'src/host/core',
-    'src/host/image-reader',
-  ]) {
-    mkdirSync(join(root, directory), { recursive: true })
-  }
-  writeFileSync(join(root, 'src/host/tools/register-project-tools.ts'), 'ctx.tools.register(definition)\n')
-  writeFileSync(join(root, 'src/host/core/plugin.ts'), 'registerProjectTools(ctx, definitions)\n')
-  writeFileSync(join(root, 'src/host/image-reader/plugin.ts'), 'registerProjectTools(ctx, definitions)\n')
+  mkdirSync(join(root, 'src'), { recursive: true })
   if (otherSource) writeFileSync(join(root, 'src/other.ts'), otherSource)
   writeFileSync(join(root, 'package.json'), `${JSON.stringify({
     name: 'harness-comfyui',
@@ -86,6 +77,39 @@ describe('Harness source boundary', () => {
   it('accepts public Agent model selection and Session identity exports', () => {
     const root = fixture("import { installModelSelection } from '@deepseek-ai/dsh-agent'\nimport { SessionId } from '@deepseek-ai/dsh-session'\n")
     try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts public SubagentRuntime type-only imports for descendant queries', () => {
+    const root = fixture("import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'\n")
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('requires a type-only SubagentRuntime import', () => {
+    const root = fixture("import { SubagentRuntime } from '@deepseek-ai/dsh-subagent'\n")
+    try {
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain("must import '@deepseek-ai/dsh-subagent' as a type-only specifier")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts multiple direct Tool registrations in Core and Image Reader plugins', () => {
+    const root = fixture()
+    try {
+      for (const directory of ['src/host/core', 'src/host/image-reader']) {
+        mkdirSync(join(root, directory), { recursive: true })
+        writeFileSync(join(root, directory, 'plugin.ts'), 'ctx.tools.register(first)\nctx.tools.register(second)\n')
+      }
       expect(run(root)).toMatchObject({ status: 0, stderr: '' })
     } finally {
       rmSync(root, { recursive: true, force: true })

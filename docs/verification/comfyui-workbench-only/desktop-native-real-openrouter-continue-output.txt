@@ -1,0 +1,2 @@
+{"phase":"continue","running":true,"asOfSeq":50,"lastEvents":[{"type":"agent/inbox/spliced","seq":48},{"type":"step/start","seq":49},{"type":"user/message","seq":50}]}
+{"phase":"continue","ended":{"type":"turn/end","seq":53,"time":1792984782566,"data":{"turn":4,"reason":{"kind":"error","error":{"message":"400: {\"message\":\"Reasoning is mandatory for this endpoint and cannot be disabled.\",\"code\":400,\"metadata\":{\"provider_name\":null}}","code":"INVALID_REQUEST"}}}}}

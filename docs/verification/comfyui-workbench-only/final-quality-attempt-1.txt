@@ -1,0 +1,81 @@
+$ pnpm run quality:preinstall && pnpm run quality:fast && pnpm run test:desktop
+$ pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts
+$ node scripts/security/check-manifest-lock.mjs
+package.json, pnpm-lock.yaml, and pnpm-workspace.yaml are consistent: /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+$ node scripts/security/audit-lockfile.mjs
+full: critical=0 high=0 moderate=0 low=0
+production: critical=0 high=0 moderate=0 low=0
+$ node scripts/security/check-build-scripts.mjs
+reviewed build scripts: @google/genai@1.52.0, koffi@3.1.5, node-pty@1.2.0-beta.15, protobufjs@7.6.5
+$ pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype
+$ node scripts/security/check-harness-boundary.mjs
+Harness project Tool registry boundary is valid: /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+$ tsc --noEmit && tsc -p tsconfig.agent-presets.json
+$ vitest run tests/unit tests/integration tests/skills --coverage --testTimeout=30000
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+      Coverage enabled with v8
+
+(node:50517) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/unit/plugin-resources.test.ts (52 tests | 10 failed) 36ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 3ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+     × reports a missing packaged role Preset resource with its path and reinstall action 0ms
+ ❯ tests/integration/image-reader-plugin.test.ts (6 tests | 2 failed) 127ms
+     × cancels active inspection on caller disposal and releases the Tool 12ms
+     × cancels active inspection on plugin disposal and releases the Tool 12ms
+[1/1] Workflow template 43: Matrix fixture
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 12 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/image-reader-plugin.test.ts > independent image reader plugin > cancels active inspection on caller disposal and releases the Tool
+ FAIL  tests/integration/image-reader-plugin.test.ts > independent image reader plugin > cancels active inspection on plugin disposal and releases the Tool
+AssertionError: expected "vi.fn()" to be called once, but got 0 times
+ ❯ tests/integration/image-reader-plugin.test.ts:122:26
+    120|     await assertion
+    121|     if (cause === 'caller') await f.fiber.dispose()
+    122|     expect(f.unregister).toHaveBeenCalledOnce()
+       |                          ^
+    123|     expect(f.ctx.get('imageReader')).toBeUndefined()
+    124|     await expect(service.inspect(f.file)).rejects.toMatchObject({ name…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/12]⎯
+
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+ FAIL  tests/unit/plugin-resources.test.ts > installed plugin runtime resource validation > reports a missing packaged role Preset resource with its path and reinstall action
+AssertionError: expected function to throw an error, but it didn't
+ ❯ tests/unit/plugin-resources.test.ts:255:9
+    253|       resolvePath: path => resolve(root, path),
+    254|       fileSystem,
+    255|     })).toThrow(expect.objectContaining({
+       |         ^
+    256|       code: 'PLUGIN_PACKAGE_RESOURCES_UNAVAILABLE',
+    257|       detail: expect.stringContaining(target),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/12]⎯
+
+
+ Test Files  2 failed | 73 passed (75)
+      Tests  12 failed | 1437 passed (1449)
+   Start at  11:04:48
+   Duration  11.74s (transform 7.71s, setup 0ms, import 8.84s, tests 39.21s, environment 7ms)
+
+[ELIFECYCLE] Command failed with exit code 1.
+[ELIFECYCLE] Command failed with exit code 1.
+[ELIFECYCLE] Command failed with exit code 1.

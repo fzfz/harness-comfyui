@@ -16,9 +16,9 @@ export async function startOfficialBusinessServices(fixture) {
   const skillToolCalls = []
   const jobPollCounts = new Map()
   let submittedPrompt = null
-  let mcpObservationImages = []
   const waiters = []
   const responsePauses = []
+  const modelResponses = []
   const server = createServer((request, response) => {
     const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
     if (request.method === 'GET' && pathname === '/internal/comfyui-source') {
@@ -189,12 +189,6 @@ export async function startOfficialBusinessServices(fixture) {
           ? hasUserSkillResult ? null : fixture.skills.userName
           : fixture.skills.uniqueWorkspaceName
         const skillToolCall = skillMarkerTask && nextSkillName !== null && skillToolAvailable
-        if (skillToolCall) {
-          skillToolCalls.push({
-            name: 'skill',
-            arguments: { name: nextSkillName },
-          })
-        }
         const toolResultPresent = body.messages?.some(message => message.role === 'tool') === true
         const generationToolAvailable = (body.tools ?? []).some(tool =>
           (tool.function?.name ?? tool.name) === 'generate_with_comfyui')
@@ -207,19 +201,13 @@ export async function startOfficialBusinessServices(fixture) {
         const nextMcpTool = mcpWorkflowRequested && !mcpDetailDone
           ? mcpToolNames.find(name => name?.endsWith(mcpSearchDone ? 'get_catalog_resource' : 'search_workflows'))
           : null
-        const requestedChildTool = mcpToolNames.find(name => typeof name === 'string'
-          && name.startsWith('subagent_') && promptText.includes(`${OFFICIAL_MCP_FIXTURE.childPrompt} ${name}`))
-          ?? (mcpToolNames.includes('subagent_task') ? 'subagent_task' : null)
-        const childCall = promptText.includes(OFFICIAL_MCP_FIXTURE.childPrompt)
-          && !mcpWorkflowRequested && !toolResultPresent && requestedChildTool !== null
         const mcpCall = nextMcpTool ? {
           name: nextMcpTool,
           arguments: mcpSearchDone ? { ref: OFFICIAL_MCP_FIXTURE.responses.get_catalog_resource.item.ref } : { query: '', limit: 5, page: 1 },
-        } : childCall ? {
-          name: requestedChildTool,
-          arguments: controlledMcpChildArguments(requestedChildTool, mcpObservationImages),
         } : null
-        const delta = mcpCall ? {
+        const scriptedIndex = modelResponses.findIndex(entry => entry.predicate(captured))
+        const scriptedResponse = scriptedIndex < 0 ? null : modelResponses.splice(scriptedIndex, 1)[0].delta
+        const delta = scriptedResponse ?? (mcpCall ? {
           role: 'assistant',
           tool_calls: [{ index: 0, id: `official_desktop_mcp_${requestLog.length}`, type: 'function',
             function: { name: mcpCall.name, arguments: JSON.stringify(mcpCall.arguments) } }],
@@ -267,10 +255,13 @@ export async function startOfficialBusinessServices(fixture) {
                   ? `${fixture.skills.workspaceMarker}\n${fixture.skills.userMarker}`
                   : 'The requested verification Skills were not loaded through the skill tool.'
                 : toolResultPresent ? 'Controlled generation accepted.' : 'captured',
-            }
+            })
+        for (const call of delta.tool_calls ?? []) {
+          if (call.function.name === 'skill') skillToolCalls.push({ name: 'skill', arguments: JSON.parse(call.function.arguments) })
+        }
         const chunks = [
           { id: 'official-desktop-controlled-response', object: 'chat.completion.chunk', created: 1, model, choices: [{ index: 0, delta, finish_reason: null }] },
-          { id: 'official-desktop-controlled-response', object: 'chat.completion.chunk', created: 1, model, choices: [{ index: 0, delta: {}, finish_reason: mcpCall || generationCall || skillToolCall ? 'tool_calls' : 'stop' }] },
+          { id: 'official-desktop-controlled-response', object: 'chat.completion.chunk', created: 1, model, choices: [{ index: 0, delta: {}, finish_reason: delta.tool_calls ? 'tool_calls' : 'stop' }] },
         ]
         response.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' })
         const pauseIndex = responsePauses.findIndex(pause => pause.predicate(captured))
@@ -309,7 +300,10 @@ export async function startOfficialBusinessServices(fixture) {
   return {
     origin,
     baseURL: `${origin}/v1`,
-    setMcpObservationImages(images) { mcpObservationImages = structuredClone(images) },
+    enqueueModelResponse(predicate, delta) {
+      if (typeof predicate !== 'function') throw new TypeError('controlled model response predicate must be a function')
+      modelResponses.push({ predicate, delta: structuredClone(delta) })
+    },
     pauseNextModelResponse(predicate) {
       let onStarted
       let onClosed
@@ -492,21 +486,6 @@ function controlledOutputDescriptor(fixture) {
     filename: fixture.generation.filename,
     subfolder: fixture.generation.subfolder,
     type: 'output',
-  }
-}
-
-function controlledMcpChildArguments(toolName, observationImages) {
-  const description = `${OFFICIAL_MCP_FIXTURE.childPrompt} ${toolName}`
-  if (toolName === 'subagent_task') return {
-    description, task: `${OFFICIAL_MCP_FIXTURE.workflowPrompt}\n${description}`,
-  }
-  const shared = { description, output_files: [] }
-  if (toolName === 'subagent_observation') return {
-    ...shared, images: observationImages,
-    observation: { mode: 'supplement', missing_facts: [OFFICIAL_MCP_FIXTURE.workflowPrompt] },
-  }
-  return {
-    ...shared, requirements: [OFFICIAL_MCP_FIXTURE.workflowPrompt], input_files: [], reference_files: [],
   }
 }
 

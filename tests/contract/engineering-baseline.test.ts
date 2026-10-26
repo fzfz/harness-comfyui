@@ -29,8 +29,6 @@ describe('source workspace engineering contract', () => {
       './image-reader': { types: './src/host/image-reader/plugin.ts', default: './.local/source-host/image-reader.js' },
       './cli': { types: './src/host/cli/plugin.ts', default: './.local/source-host/cli.js' },
       './web': { types: './src/host/web/plugin.ts', default: './.local/source-host/web.js' },
-      './cli-workspace': { types: './src/host/cli/workspace.ts', default: './.local/source-host/cli-workspace.js' },
-
     })
     expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
     expect(runtimeArtifacts).toMatchObject({

@@ -1,0 +1,2 @@
+{"phase":"started","runId":"e0a2e64c-3409-4caa-ab32-cdb0786a596a","workspace":"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace","ports":{"host":55008,"rendererCdp":55009,"hostInspector":55010}}
+{"phase":"openrouter-selected","runId":"e0a2e64c-3409-4caa-ab32-cdb0786a596a","sessionId":"session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff","selected":{"ok":true,"value":{"selected":{"provider":"openrouter","model":"openrouter/free"}}}}

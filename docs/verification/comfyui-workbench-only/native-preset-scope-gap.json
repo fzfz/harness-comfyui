@@ -1,0 +1,392 @@
+{
+  "schemaVersion": 1,
+  "status": "host_capability_gap",
+  "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+  "originalReports": {
+    "desktopRequests": "docs/verification/comfyui-workbench-only/desktop-native-attempt-2-model-requests.json",
+    "desktopTestResult": "docs/verification/comfyui-workbench-only/desktop-native-attempt-2.json",
+    "desktopCommand": "docs/verification/comfyui-workbench-only/desktop-native-command.json",
+    "desktopCleanup": "docs/verification/comfyui-workbench-only/desktop-native-attempt-2-cleanup.json",
+    "restrictedLog": ".local/comfyui-native-cleanup/native-preset-scope-red.log",
+    "unrestrictedLog": ".local/comfyui-native-cleanup/native-preset-scope-unrestricted.log",
+    "regressionTestReport": ".local/comfyui-native-cleanup/native-preset-scope-tests.json",
+    "regressionTestLog": ".local/comfyui-native-cleanup/native-preset-scope-tests.log"
+  },
+  "reproductions": [
+    {
+      "command": [
+        "node",
+        "tests/production/fixtures/native-preset-scope-runtime.mjs",
+        "restricted"
+      ],
+      "exitCode": 1,
+      "result": {
+        "restriction": true,
+        "standing": [
+          "preset_tool"
+        ],
+        "parent": [],
+        "child": [],
+        "parentAssembly": [],
+        "childAssembly": []
+      },
+      "rawOutput": "{\"restriction\":true,\"standing\":[\"preset_tool\"],\"parent\":[],\"child\":[],\"parentAssembly\":[],\"childAssembly\":[]}\nnode:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ []\n- [\n-   'preset_tool'\n- ]\n\n    at file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-preset-scope-runtime.mjs:72:10 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [],\n  expected: [ 'preset_tool' ],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v25.8.2\n"
+    },
+    {
+      "command": [
+        "node",
+        "tests/production/fixtures/native-preset-scope-runtime.mjs",
+        "unrestricted"
+      ],
+      "exitCode": 0,
+      "result": {
+        "restriction": false,
+        "standing": [
+          "host_global",
+          "preset_tool"
+        ],
+        "parent": [
+          "host_global",
+          "preset_tool"
+        ],
+        "child": [
+          "host_global",
+          "preset_tool"
+        ],
+        "parentAssembly": [
+          "host_global",
+          "preset_tool"
+        ],
+        "childAssembly": [
+          "host_global",
+          "preset_tool"
+        ]
+      },
+      "rawOutput": "{\"restriction\":false,\"standing\":[\"host_global\",\"preset_tool\"],\"parent\":[\"host_global\",\"preset_tool\"],\"child\":[\"host_global\",\"preset_tool\"],\"parentAssembly\":[\"host_global\",\"preset_tool\"],\"childAssembly\":[\"host_global\",\"preset_tool\"]}\n"
+    }
+  ],
+  "singleVariable": {
+    "field": "Include entry visibility.disabled",
+    "restrictedValue": false,
+    "unrestrictedValue": true,
+    "productSourceMutation": false
+  },
+  "regressionTest": {
+    "command": [
+      "pnpm",
+      "exec",
+      "vitest",
+      "run",
+      "tests/production/native-workbench-scope.test.mjs",
+      "--reporter=json",
+      "--outputFile=.local/comfyui-native-cleanup/native-preset-scope-tests.json"
+    ],
+    "exitCode": 1,
+    "passedTests": 6,
+    "failedTests": 1,
+    "report": {
+      "numTotalTestSuites": 2,
+      "numPassedTestSuites": 0,
+      "numFailedTestSuites": 2,
+      "numPendingTestSuites": 0,
+      "numTotalTests": 7,
+      "numPassedTests": 6,
+      "numFailedTests": 1,
+      "numPendingTests": 0,
+      "numTodoTests": 0,
+      "snapshot": {
+        "added": 0,
+        "failure": false,
+        "filesAdded": 0,
+        "filesRemoved": 0,
+        "filesRemovedList": [],
+        "filesUnmatched": 0,
+        "filesUpdated": 0,
+        "matched": 0,
+        "total": 0,
+        "unchecked": 0,
+        "uncheckedKeysByFile": [],
+        "unmatched": 0,
+        "updated": 0,
+        "didUpdate": false
+      },
+      "startTime": 1792948691774,
+      "success": false,
+      "testResults": [
+        {
+          "assertionResults": [
+            {
+              "ancestorTitles": [
+                "native workbench tool scope"
+              ],
+              "fullName": "native workbench tool scope dynamic: keeps later global tools outside the workbench and preserves local tools and other scopes",
+              "status": "passed",
+              "title": "dynamic: keeps later global tools outside the workbench and preserves local tools and other scopes",
+              "duration": 97.976125,
+              "failureMessages": [],
+              "meta": {},
+              "tags": []
+            },
+            {
+              "ancestorTitles": [
+                "native workbench tool scope"
+              ],
+              "fullName": "native workbench tool scope restrictionLifecycle: releases and reapplies restrictions through plugin unload and reload",
+              "status": "passed",
+              "title": "restrictionLifecycle: releases and reapplies restrictions through plugin unload and reload",
+              "duration": 89.63999999999999,
+              "failureMessages": [],
+              "meta": {},
+              "tags": []
+            },
+            {
+              "ancestorTitles": [
+                "native workbench tool scope"
+              ],
+              "fullName": "native workbench tool scope toolLifecycle: releases tool registrations through plugin unload and reload",
+              "status": "passed",
+              "title": "toolLifecycle: releases tool registrations through plugin unload and reload",
+              "duration": 86.24829199999999,
+              "failureMessages": [],
+              "meta": {},
+              "tags": []
+            },
+            {
+              "ancestorTitles": [
+                "native workbench tool scope"
+              ],
+              "fullName": "native workbench tool scope failedActivation: releases restrictions and tools after plugin startup fails",
+              "status": "passed",
+              "title": "failedActivation: releases restrictions and tools after plugin startup fails",
+              "duration": 87.272041,
+              "failureMessages": [],
+              "meta": {},
+              "tags": []
+            },
+            {
+              "ancestorTitles": [
+                "native workbench tool scope"
+              ],
+              "fullName": "native workbench tool scope prompt: preserves Host prompt sections, runtime context, variables, and scoped tools",
+              "status": "passed",
+              "title": "prompt: preserves Host prompt sections, runtime context, variables, and scoped tools",
+              "duration": 87.20595900000001,
+              "failureMessages": [],
+              "meta": {},
+              "tags": []
+            },
+            {
+              "ancestorTitles": [
+                "native workbench tool scope"
+              ],
+              "fullName": "native workbench tool scope keeps preset tools available to parent and child Agents through official Registry and Include mounts",
+              "status": "failed",
+              "title": "keeps preset tools available to parent and child Agents through official Registry and Include mounts",
+              "duration": 166.42208400000004,
+              "failureMessages": [
+                "Error: Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-preset-scope-runtime.mjs restricted\nnode:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ []\n- [\n-   'preset_tool'\n- ]\n\n    at file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-preset-scope-runtime.mjs:72:10 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: [],\n  expected: [ 'preset_tool' ],\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v25.8.2\n\n    at genericNodeError (node:internal/errors:998:15)\n    at wrappedFn (node:internal/errors:543:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:508:20)\n    at maybeClose (node:internal/child_process:1108:16)\n    at Process.ChildProcess._handle.onexit (node:internal/child_process:305:5)"
+              ],
+              "meta": {},
+              "tags": []
+            },
+            {
+              "ancestorTitles": [
+                "native workbench tool scope"
+              ],
+              "fullName": "native workbench tool scope shows inherited preset tools when the same restriction declaration is disabled",
+              "status": "passed",
+              "title": "shows inherited preset tools when the same restriction declaration is disabled",
+              "duration": 145.530125,
+              "failureMessages": [],
+              "meta": {},
+              "tags": []
+            }
+          ],
+          "startTime": 1792948691927,
+          "endTime": 1792948692687.53,
+          "status": "failed",
+          "message": "",
+          "name": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/native-workbench-scope.test.mjs"
+        }
+      ]
+    }
+  },
+  "fixtureBoundary": {
+    "runtime": "Installed official 0.2.1-rc.3 public packages; native Node process",
+    "assembly": [
+      "AgentPresetRegistry.register",
+      "Loader EntryTree",
+      "official Include",
+      "AgentPresetRegistry.mount",
+      "AgentPresetRegistry.composeFrom",
+      "SystemPrompt.assemble"
+    ],
+    "agentContext": "The fixture mints caller contexts through public createScope; mount and composeFrom bind them to the actual registry-owned standing generation.",
+    "previousFixtureGap": "The previous primitive fixture registered tools and restriction into the same scope that it observed. It omitted the standing preset generation and the actual Agent child scope."
+  },
+  "source": {
+    "repository": "/Volumes/4Tdisk/work/AI2/deepseek-harness",
+    "tag": "dsh-v0.2.1-rc.3",
+    "commit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+    "inspection": "Read-only git show of the exact tag; the source checkout HEAD differs from the tag.",
+    "references": [
+      {
+        "path": "packages/preset/agent-preset-registry/src/index.ts",
+        "lines": [
+          103,
+          110
+        ],
+        "finding": "activate creates a registry-owned standing scope and mounts the configured plugin tree into it."
+      },
+      {
+        "path": "packages/preset/agent-preset-registry/src/index.ts",
+        "lines": [
+          265,
+          266,
+          281,
+          297,
+          309
+        ],
+        "finding": "mount and composeFrom parent actual Agent scope keys to the standing generation key."
+      },
+      {
+        "path": "packages/preset/agent-preset-registry/src/mount.ts",
+        "lines": [
+          204,
+          205,
+          207,
+          209,
+          214
+        ],
+        "finding": "mountPreset uses the scoped context to construct and load the Loader tree."
+      },
+      {
+        "path": "vendor/loader/src/config/entry.ts",
+        "lines": [
+          101,
+          108
+        ],
+        "finding": "Entry context refresh inherits its parent context; it does not mint an Agent scope."
+      },
+      {
+        "path": "vendor/include/src/index.ts",
+        "lines": [
+          178,
+          188,
+          262
+        ],
+        "finding": "Include adds a file-backed EntryTree and changes resolution base; its children retain the standing scope."
+      },
+      {
+        "path": "packages/core/scope/src/store.ts",
+        "lines": [
+          192,
+          198,
+          226,
+          232
+        ],
+        "finding": "ScopedLayers reads the complete ancestry chain and places registrations into scopeOf(ctx)."
+      },
+      {
+        "path": "packages/core/tools/src/index.ts",
+        "lines": [
+          1105,
+          1127,
+          1186,
+          1192,
+          1195,
+          1197,
+          1208,
+          1213
+        ],
+        "finding": "view treats standing-preset tools as inherited for the actual Agent, applies every ancestor restriction, and exempts only the exact viewing scope own registrations."
+      },
+      {
+        "path": "packages/core/agent-loop/src/agent.ts",
+        "lines": [
+          130
+        ],
+        "finding": "ReactLoopAgent mints its own scope with createScope before preset binding."
+      },
+      {
+        "path": "packages/core/agent-loop/src/index.ts",
+        "lines": [
+          810,
+          814
+        ],
+        "finding": "The Agent factory executes setup with the newly created Agent context before publication."
+      }
+    ]
+  },
+  "publicInterfaceAudit": [
+    {
+      "path": "packages/preset/agent-preset-registry/src/definition.ts",
+      "lines": [
+        5,
+        11
+      ],
+      "surface": "PresetDefinition",
+      "result": "Only identity, display metadata and plugins are declared; no Host-global tool-origin selector exists."
+    },
+    {
+      "path": "packages/preset/agent-preset-registry/src/index.ts",
+      "lines": [
+        281,
+        309
+      ],
+      "surface": "mount and composeFrom",
+      "result": "These public paths bind or inherit a standing generation. They do not accept a tool-origin restriction option."
+    },
+    {
+      "path": "packages/core/tools/src/index.ts",
+      "lines": [
+        675,
+        701,
+        706
+      ],
+      "surface": "Tools Config and ToolRestriction",
+      "result": "Config controls presentation and parallel subcalls; ToolRestriction contains only tool-name allow and deny lists."
+    },
+    {
+      "path": "vendor/loader/src/config/isolate.ts",
+      "lines": [
+        6,
+        8,
+        70,
+        79,
+        96
+      ],
+      "surface": "Loader isolate",
+      "result": "isolate selects service realms; it does not select global versus standing-preset tool registrations."
+    },
+    {
+      "path": "packages/subagent/tool-subagent/src/index.ts",
+      "lines": [
+        146,
+        150
+      ],
+      "surface": "Official subagent tool",
+      "result": "The tool rejects toolFilter configuration and directs capability composition to Presets."
+    }
+  ],
+  "causalConclusion": "The standing generation owns both the Preset tools and allow:[] restriction. Actual Agents inherit that generation. Tools.view applies the standing restriction to those inherited Preset tools, producing the observed empty model tool list.",
+  "integrationConclusion": "The inspected official public interfaces cannot express the required dynamic Host-global-only mask at the standing Preset boundary while preserving that Preset tools for actual parent and child Agents.",
+  "choices": [
+    {
+      "id": "host_capability",
+      "recommended": true,
+      "action": "Complete the official host restriction contract for registration origin/layer, publish that host capability, then verify the existing single declaration through the retained failing regression and Desktop."
+    },
+    {
+      "id": "requirement_change",
+      "recommended": false,
+      "action": "Obtain an explicit requirement change to permit inherited Host-global tools before removing the restriction. The control output confirms both Host-global and Preset tools become visible."
+    }
+  ],
+  "productChangesDuringInvestigation": [],
+  "testFilesChangedDuringInvestigation": [
+    "tests/production/native-workbench-scope.test.mjs",
+    "tests/production/fixtures/native-preset-scope-runtime.mjs",
+    "tests/production/fixtures/native-preset-tool.mjs"
+  ]
+}

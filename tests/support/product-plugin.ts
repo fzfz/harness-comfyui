@@ -5,7 +5,7 @@ import * as cli from '../../src/host/cli/plugin.ts'
 import * as web from '../../src/host/web/plugin.ts'
 
 export const name = 'harness-comfyui'
-export const inject = ['tools', 'webServer', 'workspaceRegistry', 'shellEnv', 'attachments', 'llm', 'settings', 'credentials', 'sessionPersistence']
+export const inject = ['tools', 'webServer', 'workspaceRegistry', 'shellEnv', 'attachments', 'llm', 'settings', 'credentials', 'sessionPersistence', 'subagents']
 export const Config = core.Config
 type ProductConfigInput = NonNullable<Parameters<typeof core.Config>[0]> & NonNullable<Parameters<typeof imageReader.Config>[0]>
 function childConfig(config: ProductConfigInput) {

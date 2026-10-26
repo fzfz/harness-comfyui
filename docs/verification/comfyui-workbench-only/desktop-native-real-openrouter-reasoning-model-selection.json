@@ -1,0 +1,27 @@
+{
+  "requested": {
+    "provider": "openrouter",
+    "model": "openrouter/free",
+    "reasoningEffort": "medium"
+  },
+  "selected": {
+    "ok": true,
+    "value": {
+      "selected": {
+        "provider": "openrouter",
+        "model": "openrouter/free",
+        "reasoningEffort": "medium"
+      }
+    }
+  },
+  "configuredModel": {
+    "id": "openrouter/free",
+    "name": "Free Models Router",
+    "contextWindow": 200000,
+    "maxTokens": 4096,
+    "input": [
+      "text",
+      "image"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "workspace": {
+    "ok": true,
+    "value": {
+      "workspace": {
+        "workspaceId": "6e546216-b505-42d0-9c0d-b89d5878dd69",
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+        "title": "workspace",
+        "sessionIds": [],
+        "createdAt": "2026-10-26T02:48:34.679Z",
+        "updatedAt": "2026-10-26T02:48:34.679Z"
+      },
+      "created": true
+    }
+  },
+  "session": {
+    "ok": true,
+    "value": {
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "agentPreset": "harness-comfyui-cli-candidate"
+    }
+  }
+}

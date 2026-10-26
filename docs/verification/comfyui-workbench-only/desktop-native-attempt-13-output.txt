@@ -1,0 +1,11 @@
+$ node scripts/build/cli.mjs build
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/index.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/core.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/image-reader.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/cli.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/web.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/comfy-frontend-worker.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-cli/harness-comfyui.mjs
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-client/client.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.47.2.tgz
+JSON report written to /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/docs/verification/comfyui-workbench-only/desktop-native-attempt-13.json

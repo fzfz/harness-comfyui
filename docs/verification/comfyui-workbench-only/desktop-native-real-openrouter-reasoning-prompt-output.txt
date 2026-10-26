@@ -1,0 +1,5 @@
+{"phase":"prompt","running":true,"asOfSeq":15,"lastEvents":[{"type":"request/context","seq":13},{"type":"session/title","seq":14},{"type":"session/title-llm-request","seq":15}]}
+{"phase":"prompt","running":true,"asOfSeq":25,"lastEvents":[{"type":"assistant/message","seq":23},{"type":"step/end","seq":24},{"type":"turn/end","seq":25}]}
+{"phase":"prompt","running":true,"asOfSeq":30,"lastEvents":[{"type":"agent/inbox/spliced","seq":28},{"type":"step/start","seq":29},{"type":"user/message","seq":30}]}
+{"phase":"prompt","running":true,"asOfSeq":43,"lastEvents":[{"type":"agent/inbox/spliced","seq":41},{"type":"step/start","seq":42},{"type":"user/message","seq":43}]}
+{"phase":"prompt","ended":{"type":"turn/end","seq":46,"time":1792985494416,"data":{"turn":2,"reason":{"kind":"completed"}}}}

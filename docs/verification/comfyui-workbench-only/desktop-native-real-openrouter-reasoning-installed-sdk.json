@@ -1,0 +1,58 @@
+{
+  "package": {
+    "name": "@earendil-works/pi-ai",
+    "version": "1.1.0",
+    "root": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@earendil-works/pi-ai"
+  },
+  "builtinModel": {
+    "type": "chat",
+    "id": "openrouter/free",
+    "name": "Free Models Router",
+    "api": "openai-completions",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "provider": "openrouter",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 200000,
+    "maxTokens": 4096,
+    "compat": {
+      "supportsDeveloperRole": false,
+      "thinkingFormat": "openrouter",
+      "supportsStrictMode": true,
+      "sendSessionAffinityHeaders": true
+    },
+    "inputLimits": {
+      "images": {
+        "resize": {
+          "maxWidth": 2000,
+          "maxHeight": 2000,
+          "maxBytes": 4718592,
+          "jpegQuality": 80
+        }
+      }
+    }
+  },
+  "wireMapping": [
+    {
+      "path": "dist/api/openai-completions.js",
+      "startLine": 517,
+      "endLine": 530,
+      "source": "export const streamSimple = (model, context, options) => {\n    getClientApiKey(model.provider, options?.apiKey, options?.headers);\n    const base = {\n        ...buildBaseOptions(model, context, options, options?.apiKey),\n        toolChoice: options?.toolChoice,\n    };\n    const clampedReasoning = options?.reasoning ? clampThinkingLevel(model, options.reasoning) : undefined;\n    const reasoningEffort = clampedReasoning === \"off\" ? undefined : clampedReasoning;\n    return stream(model, context, {\n        ...base,\n        reasoningEffort,\n        thinkingBudgets: options?.thinkingBudgets,\n    });\n};"
+    },
+    {
+      "path": "dist/api/openai-completions.js",
+      "startLine": 679,
+      "endLine": 690,
+      "source": "    else if (compat.thinkingFormat === \"openrouter\" && model.reasoning) {\n        // OpenRouter normalizes reasoning across providers via a nested reasoning object.\n        const openRouterParams = params;\n        if (options?.reasoningEffort) {\n            openRouterParams.reasoning = {\n                effort: model.thinkingLevelMap?.[options.reasoningEffort] ?? options.reasoningEffort,\n            };\n        }\n        else if (model.thinkingLevelMap?.off !== null) {\n            openRouterParams.reasoning = { effort: model.thinkingLevelMap?.off ?? \"none\" };\n        }\n    }"
+    }
+  ]
+}

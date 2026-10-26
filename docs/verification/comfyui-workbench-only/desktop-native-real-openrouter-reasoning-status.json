@@ -1,0 +1,233 @@
+{
+  "recordedAt": "2026-10-26T03:38:17.770Z",
+  "status": "passed-with-official-trace-limitations",
+  "runId": "a6d278ed-26f1-4280-b3d2-1b933d756b1c",
+  "parentSessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+  "childSessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+  "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+  "configuredModel": {
+    "provider": "openrouter",
+    "model": "openrouter/free",
+    "reasoningEffort": "medium"
+  },
+  "providerDefaultReasoning": "medium",
+  "originalPromptsPreservedApartFromResultPaths": true,
+  "candidate": {
+    "archivePath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.47.2.tgz",
+    "installedPackageRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+    "comparedFileCount": 60,
+    "allComparedFilesMatch": true
+  },
+  "acceptance": {
+    "parentAndChildRequestHeadersMedium": true,
+    "childDescriptorMedium": true,
+    "nativeSubagentDispatch": {
+      "passed": true,
+      "parentCallSeq": 17,
+      "parentResultSeq": 19
+    },
+    "skillRead": {
+      "passed": true,
+      "childCallSeqs": [
+        15,
+        45
+      ]
+    },
+    "fullReferenceReads": [
+      {
+        "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+        "resultSeq": 21,
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/.agents/skills/comfyui-generate/references/generation-cli.md",
+        "sourceCharacters": 8643,
+        "resultCharacters": 8643,
+        "completeTextMatches": true
+      },
+      {
+        "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+        "resultSeq": 51,
+        "sourcePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+        "sourceCharacters": 8891,
+        "resultCharacters": 8891,
+        "completeTextMatches": true
+      }
+    ],
+    "firstResultFile": {
+      "passed": true,
+      "childWriteCallSeq": 25,
+      "childWriteResultSeq": 26,
+      "parentRelaySeq": 30,
+      "parentReadCallSeq": 38,
+      "parentReadResultSeq": 39,
+      "parentSettledSeq": 43
+    },
+    "sameChildContinuation": {
+      "passed": true,
+      "parentCallSeq": 53,
+      "parentResultSeq": 54,
+      "childSessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98"
+    },
+    "supplementResultFile": {
+      "passed": true,
+      "childWriteCallSeq": 55,
+      "childWriteResultSeq": 56,
+      "parentRelaySeq": 64,
+      "parentReadCallSeq": 67,
+      "parentReadResultSeq": 68,
+      "parentSettledSeq": 72
+    },
+    "naturalCompletion": {
+      "parentEndSeq": 75,
+      "childEndSeq": 66,
+      "passed": true
+    },
+    "zeroComfyuiRuns": true
+  },
+  "observations": [
+    {
+      "kind": "model-tool-arguments-self-corrected",
+      "parentCallSeq": 32,
+      "errorResultSeq": 33,
+      "successfulRetryCallSeq": 38,
+      "successfulRetryResultSeq": 39,
+      "detail": "The first parent bash read omitted required description; the model corrected it after the official tool error."
+    },
+    {
+      "kind": "artifact-command-quoting-verified",
+      "detail": "Both parsed JSON command strings contain ordinary double quotes and no backslash characters. Shell argument expansion removes the quoting characters and produces the intended executable and script paths.",
+      "documentCliInvocations": 0,
+      "evidence": "docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-command-quoting.json"
+    },
+    {
+      "kind": "notification-order",
+      "detail": "Each parent result read followed an official agent-message relay reporting completion. The separate subagent-settled notice arrived after that read; the parent final report followed the settled notice."
+    }
+  ],
+  "trace": {
+    "indexPath": "docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-trace/trace-index.json",
+    "sessions": [
+      {
+        "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+        "eventCount": 76,
+        "coverage": {
+          "firstSeq": 0,
+          "lastSeq": 75,
+          "complete": true
+        }
+      },
+      {
+        "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+        "eventCount": 67,
+        "coverage": {
+          "firstSeq": 0,
+          "lastSeq": 66,
+          "complete": true
+        }
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      },
+      {
+        "source": "model-request",
+        "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ],
+    "complete": false,
+    "originalProviderRequestCaptured": false
+  },
+  "models": [
+    {
+      "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+      "actualResponseModels": [
+        "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "xingchen-agi/xing4.0-29b-a4b:free",
+        "recursive/flint-v1.0:free",
+        "cohere/north-mini-code:free",
+        "thinkingmachines/inkling-small:free",
+        "nvidia/nemotron-3.5-lightning:free"
+      ],
+      "reasoningMessageCount": 9
+    },
+    {
+      "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+      "actualResponseModels": [
+        "cohere/north-mini-code:free",
+        "thinkingmachines/inkling-small:free",
+        "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "poolside/laguna-xs-2.1:free",
+        "thinkingmachines/inkling:free",
+        "nvidia/nemotron-3.5-lightning:free",
+        "recursive/flint-v1.0:free"
+      ],
+      "reasoningMessageCount": 9
+    }
+  ],
+  "originalUserDefaultModel": {
+    "checkedAt": "2026-10-26T03:34:19.495Z",
+    "source": "/Users/fzfz/.dsh/profiles/desktop/cordis.patch.yml",
+    "defaultModel": {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "max"
+    }
+  },
+  "cleanup": {
+    "state": "stopped",
+    "processGroup": null,
+    "ports": [
+      {
+        "port": 58740,
+        "pids": []
+      },
+      {
+        "port": 58741,
+        "pids": []
+      },
+      {
+        "port": 58742,
+        "pids": []
+      }
+    ],
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-26T03:34:25.295Z",
+      "portsReleased": true
+    }
+  },
+  "previousFailuresPreserved": [
+    "desktop-native-real-status.json",
+    "desktop-native-real-openrouter-status.json"
+  ],
+  "nativeChainStatus": "passed",
+  "artifactCommandStatus": "passed",
+  "artifactCommandQuotingEvidence": "docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-command-quoting.json",
+  "userDefaultUnchanged": true,
+  "artifactCommandQuoting": {
+    "backslashCounts": [
+      0,
+      0
+    ],
+    "doubleQuoteCounts": [
+      4,
+      4
+    ],
+    "shellArgumentsVerified": true,
+    "documentCliInvocations": 0,
+    "evidence": "docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-command-quoting.json"
+  }
+}

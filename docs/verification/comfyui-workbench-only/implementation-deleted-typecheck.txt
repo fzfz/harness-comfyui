@@ -1,0 +1,24 @@
+$ tsc --noEmit && tsc -p tsconfig.agent-presets.json
+src/host/generation/generation-service.ts(15,8): error TS2307: Cannot find module './workspace-access.ts' or its corresponding type declarations.
+src/host/generation/generation-service.ts(56,58): error TS7006: Parameter 'sessionId' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(61,24): error TS7006: Parameter 'left' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(61,30): error TS7006: Parameter 'right' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(66,35): error TS7006: Parameter 'run' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(78,60): error TS7006: Parameter 'sessionId' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(83,26): error TS7006: Parameter 'left' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(83,32): error TS7006: Parameter 'right' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(88,38): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/host/generation/generation-service.ts(104,32): error TS7006: Parameter 'run' implicitly has an 'any' type.
+src/host/generation/media-routes.ts(20,8): error TS2307: Cannot find module './workspace-access.ts' or its corresponding type declarations.
+src/host/generation/media-routes.ts(147,64): error TS7006: Parameter 'relatedSessionId' implicitly has an 'any' type.
+src/host/generation/media-routes.ts(151,30): error TS7006: Parameter 'left' implicitly has an 'any' type.
+src/host/generation/media-routes.ts(151,36): error TS7006: Parameter 'right' implicitly has an 'any' type.
+src/host/generation/media-routes.ts(157,42): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/host/generation/media-routes.ts(158,74): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+src/host/generation/media-routes.ts(160,80): error TS7006: Parameter 'item' implicitly has an 'any' type.
+tests/contract/profile-skill-ownership.test.ts(25,76): error TS2339: Property 'additionalManagedPresetIds' does not exist on type '{ id: string; sourceRootRelativePath: string; }'.
+tests/integration/host-plugin.test.ts(200,64): error TS2339: Property 'resolveObservationMedia' does not exist on type 'CoreServices'.
+tests/unit/cli-workspace.test.ts(3,23): error TS2307: Cannot find module '../../src/host/cli/workspace.ts' or its corresponding type declarations.
+tests/unit/fixtures/observation-media-runtime.ts(9,41): error TS2307: Cannot find module '../../../src/host/generation/observation-media.ts' or its corresponding type declarations.
+tests/unit/register-project-tools.test.ts(4,38): error TS2307: Cannot find module '../../src/host/tools/register-project-tools.ts' or its corresponding type declarations.
+[ELIFECYCLE] Command failed with exit code 2.

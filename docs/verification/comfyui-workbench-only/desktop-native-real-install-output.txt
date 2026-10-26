@@ -1,0 +1,3 @@
+{"phase":"started","runId":"2b2c37ae-73ab-431d-8759-2ce2ca05d6e2","workspace":"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace","ports":{"host":57857,"rendererCdp":57858,"hostInspector":57859}}
+{"phase":"started","runId":"8741e24a-7f09-4d29-9221-45e2a51390ab","workspace":"/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace","ports":{"host":58049,"rendererCdp":58050,"hostInspector":58051}}
+{"phase":"session-created","runId":"8741e24a-7f09-4d29-9221-45e2a51390ab","sessionId":"session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff"}

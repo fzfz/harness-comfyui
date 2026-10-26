@@ -1,0 +1,27 @@
+$ node scripts/build/cli.mjs build
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/index.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/core.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/image-reader.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/cli.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/web.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-host/comfy-frontend-worker.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-cli/harness-comfyui.mjs
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/source-client/client.js
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.47.2.tgz
+JSON report written to /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/docs/verification/comfyui-workbench-only/desktop-native-attempt-5.json
+file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/desktop/run-desktop-tests.mjs:382
+  const error = cause === undefined ? new Error(message) : new Error(message, { cause })
+                                      ^
+
+Error [DesktopTestRunnerError]: Desktop test runner tests command exited with code 1
+    at createRunnerError (file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/desktop/run-desktop-tests.mjs:382:39)
+    at ChildProcess.onClose (file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/desktop/run-desktop-tests.mjs:354:33)
+    at Object.onceWrapper (node:events:623:12)
+    at ChildProcess.emit (node:events:508:20)
+    at maybeClose (node:internal/child_process:1108:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5) {
+  phase: 'tests',
+  exitCode: 1
+}
+
+Node.js v25.8.2

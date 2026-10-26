@@ -12,6 +12,7 @@ import type { GenerationRuntime } from './generation-runtime.ts'
 import {
   workspaceSessionScopeForSession,
   type WorkspaceRegistryProjection,
+  type SubagentQueryProjection,
 } from './workspace-access.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -27,6 +28,7 @@ export class GenerationRemoteService extends TypertRemoteService {
   private readonly refreshAfterMs: number
   private readonly workspaceRegistry: WorkspaceRegistryProjection
   private readonly sessionPersistence: Pick<SessionPersistence, 'stat'>
+  private readonly subagents: SubagentQueryProjection
 
   constructor(
     ctx: Context,
@@ -39,6 +41,7 @@ export class GenerationRemoteService extends TypertRemoteService {
     this.refreshAfterMs = refreshAfterMs
     this.workspaceRegistry = workspaceRegistry
     this.sessionPersistence = ctx.sessionPersistence
+    this.subagents = ctx.subagents
     if (!Number.isSafeInteger(refreshAfterMs) || refreshAfterMs < 1) throw new TypeError('Generation refresh interval is invalid.')
     for (const initialize of generationRemoteInitializers) initialize(this)
   }
@@ -48,6 +51,7 @@ export class GenerationRemoteService extends TypertRemoteService {
     const sessionScope = await workspaceSessionScopeForSession(
       this.workspaceRegistry,
       this.sessionPersistence,
+      this.subagents,
       request.sessionId,
       signal,
     )

@@ -1,0 +1,23 @@
+{
+  "selected": {
+    "ok": true,
+    "value": {
+      "selected": {
+        "provider": "openrouter",
+        "model": "openrouter/free"
+      }
+    }
+  },
+  "configuredModel": {
+    "id": "openrouter/free",
+    "name": "Free Models Router",
+    "contextWindow": 200000,
+    "maxTokens": 4096,
+    "input": [
+      "text",
+      "image"
+    ]
+  },
+  "credentialEnvironmentName": "OPENROUTER_API_KEY",
+  "credentialSource": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env"
+}

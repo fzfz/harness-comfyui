@@ -12,6 +12,21 @@ import { registerGenerationMediaRoutes } from '../../src/host/generation/media-r
 
 const temporaryDirectories: string[] = []
 
+function nativeAccess(
+  directories: Record<string, string> = { session_1: '/workspace', session_2: '/other' },
+  descendants: Record<string, readonly string[]> = {},
+): Pick<Parameters<typeof registerGenerationMediaRoutes>[0], 'workspaceRegistry' | 'sessionPersistence' | 'subagents'> {
+  return {
+    workspaceRegistry: { resolveByPath: async path => ({ id: path === '/workspace' ? 'workspace_1' : 'workspace_2' }) },
+    sessionPersistence: { stat: async id => directories[id] === undefined ? undefined : {
+      header: { id, cwd: directories[id] }, revision: id,
+    } as never },
+    subagents: { listDescendants: async id => (descendants[id] ?? []).map(childId => ({
+      kind: 'child', id: childId, mode: 'continuable', parentId: id, depth: 1, activity: 'inactive', hasChildren: false, label: childId,
+    })) as never },
+  }
+}
+
 function viewerData(html: string): unknown {
   const match = html.match(/<script id="media-viewer-data" type="application\/json">(?<data>[^<]*)<\/script>/u)
   if (match?.groups?.data === undefined) throw new Error('media viewer startup data is missing')
@@ -61,8 +76,7 @@ describe('Generation media HTTP routes', () => {
         mediaRunId: () => { throw new Error('Run lookup is not used by the viewer') },
         actualWorkflowPath: () => { throw new Error('Workflow path is not used by the viewer') },
       },
-      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
-      sessionPersistence: { stat: async () => undefined },
+      ...nativeAccess(),
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -129,8 +143,7 @@ describe('Generation media HTTP routes', () => {
         }),
         mediaContentPath: () => mediaPath,
       } as never,
-      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
-      sessionPersistence: { stat: async () => undefined },
+      ...nativeAccess(),
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -175,13 +188,7 @@ describe('Generation media HTTP routes', () => {
         },
         mediaContentPath: () => missingMediaPath,
       } as never,
-      workspaceRegistry: {
-        list: () => [
-          { id: 'workspace_1', sessionIds: ['session_1', 'session_wrong_same_workspace'] },
-          { id: 'workspace_2', sessionIds: ['session_other_workspace'] },
-        ],
-      },
-      sessionPersistence: { stat: async () => undefined },
+      ...nativeAccess({ session_1: '/workspace', session_wrong_same_workspace: '/workspace', session_other_workspace: '/other' }),
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -273,8 +280,7 @@ describe('Generation media HTTP routes', () => {
         }),
         mediaContentPath: () => mediaPath,
       } as never,
-      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_1'] }] },
-      sessionPersistence: { stat: async () => undefined },
+      ...nativeAccess(),
     })
     const response = new FailingResponse()
     const request = Object.assign(new EventEmitter(), {
@@ -337,13 +343,7 @@ describe('Generation media HTTP routes', () => {
           return paths[runId as 'run_a' | 'run_b' | 'missing_workflow']
         },
       } as never,
-      workspaceRegistry: {
-        list: () => [
-          { id: 'workspace_1', sessionIds: ['session_1'] },
-          { id: 'workspace_2', sessionIds: ['session_2'] },
-        ],
-      },
-      sessionPersistence: { stat: async () => undefined },
+      ...nativeAccess(),
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -424,13 +424,6 @@ describe('Generation media HTTP routes', () => {
       ['session_unrelated', [media.media_unrelated]],
       ['session_foreign', [media.media_foreign]],
     ])
-    const sessionHeaders = new Map([
-      ['session_root', { header: { id: 'session_root' }, revision: 'rev_root' }],
-      ['session_child', { header: { id: 'session_child', parentSession: 'session_root' }, revision: 'rev_child' }],
-      ['session_grandchild', { header: { id: 'session_grandchild', parentSession: 'session_child' }, revision: 'rev_grandchild' }],
-      ['session_unrelated', { header: { id: 'session_unrelated' }, revision: 'rev_unrelated' }],
-      ['session_foreign', { header: { id: 'session_foreign', parentSession: 'session_root' }, revision: 'rev_foreign' }],
-    ])
     let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
     registerGenerationMediaRoutes({
       webServer: {
@@ -447,13 +440,10 @@ describe('Generation media HTTP routes', () => {
         mediaRunId: (mediaId: string) => media[mediaId as keyof typeof media].runId,
         actualWorkflowPath: () => paths.childWorkflow,
       } as never,
-      workspaceRegistry: {
-        list: () => [
-          { id: 'workspace_1', sessionIds: ['session_root', 'session_child', 'session_grandchild', 'session_unrelated', 'session_unpersisted'] },
-          { id: 'workspace_2', sessionIds: ['session_foreign'] },
-        ],
-      },
-      sessionPersistence: { stat: async (sessionId: string) => sessionHeaders.get(sessionId) } as never,
+      ...nativeAccess({
+        session_root: '/workspace', session_child: '/workspace', session_grandchild: '/workspace',
+        session_unrelated: '/workspace', session_foreign: '/other',
+      }, { session_root: ['session_child', 'session_grandchild', 'session_foreign'] }),
     })
     const server = createServer((request, response) => void handler!(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -484,7 +474,31 @@ describe('Generation media HTTP routes', () => {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
-  it('cancels a pending durable ancestry read when the media client disconnects', async () => {
+  it('reports the unreadable native descendant branch before accessing media', async () => {
+    let handler: Parameters<Parameters<typeof registerGenerationMediaRoutes>[0]['webServer']['register']>[0]['handler']
+    const access = nativeAccess({ session_root: '/workspace' })
+    let mediaLookups = 0
+    registerGenerationMediaRoutes({
+      ...access,
+      subagents: { listDescendants: async () => [{ kind: 'diagnostic', id: 'child-unavailable', reason: 'unavailable', parentId: 'session_root', depth: 1 }] as never },
+      webServer: { register: route => { handler = route.handler; return () => undefined } },
+      runtime: { getMedia: () => { mediaLookups++; throw new Error('media should not be accessed') } } as never,
+    })
+    const server = createServer((request, response) => void handler(request, response))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('test server address is unavailable')
+    try {
+      const response = await fetch(`http://127.0.0.1:${address.port}/api/harness-comfyui/media/media_child/content?session_id=session_root`)
+      expect(response.status).toBe(503)
+      expect(await response.json()).toMatchObject({ code: 'GENERATION_SESSION_UNAVAILABLE', message: expect.stringContaining('child-unavailable') })
+      expect(mediaLookups).toBe(0)
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+    }
+  })
+
+  it('cancels a pending durable Session read when the media client disconnects', async () => {
     let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
     let resolveStarted!: (signal: AbortSignal) => void
     let resolveAborted!: () => void
@@ -508,7 +522,7 @@ describe('Generation media HTTP routes', () => {
           return { mediaId: 'media_child', runId: 'run_child', workspaceId: 'workspace_1', sessionId: 'session_child' }
         },
       } as never,
-      workspaceRegistry: { list: () => [{ id: 'workspace_1', sessionIds: ['session_root', 'session_child'] }] },
+      ...nativeAccess({ session_root: '/workspace' }),
       sessionPersistence: {
         stat: (_sessionId: string, options?: { signal?: AbortSignal }) => {
           const signal = options!.signal!

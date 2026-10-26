@@ -1,5 +1,6 @@
 import { createTestCredentialProvider } from '../support/credential-provider.ts'
 import { Context } from '@deepseek-ai/cordis'
+import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -7,6 +8,7 @@ import sharp from 'sharp'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import imageReaderRuntime from '../../config/image-reader-runtime.json' with { type: 'json' }
 import * as imageReader from '../../src/host/image-reader/plugin.ts'
+import { INSPECT_IMAGE_TOOL_NAME } from '../../src/host/image-reader/image-reader-tool.ts'
 import { createImageReaderProfile, IMAGE_READER_PROFILE_ENTRY_ID, type ImageReaderSettingsSection } from '../../src/image-reader/settings.ts'
 import { startCliServer } from '../../src/host/cli/server.ts'
 
@@ -22,10 +24,10 @@ async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtim
   }
   const ctx = new Context()
   ctx.provide('credentials' as never, createTestCredentialProvider() as never)
-  const unregister = vi.fn()
-  const register = vi.fn(() => unregister)
+  cleanup.push(() => ctx.fiber.dispose())
+  ctx.provide('systemPrompt', { tools: vi.fn() } as never)
+  await ctx.plugin(ToolRuntime)
   const stream = vi.fn(async function*(_request: any) { yield { type: 'text-delta', index: 0, text: '红色' }; yield { type: 'finish', reason: { kind: 'stop' } } })
-  ctx.provide('tools', { register } as never)
   ctx.provide('attachments', {
     imageLimits: { maxImageBytes: 1_000_000, maxImagesPerMessage: 1, maxMessageImageBytes: 1_000_000, maxImagePixels: 1_000_000, maxImageDimension: 4096, mediaTypes: ['image/png'] },
     saveImage: async () => ({ attachmentId: 'test-image', mediaType: 'image/png', bytes: 100, width: 10, height: 10 }),
@@ -43,14 +45,13 @@ async function fixture(connectionType: 'runtime' | 'openai-compatible' = 'runtim
   } as never)
   const fiber = ctx.plugin(imageReader, config)
   await fiber
-  cleanup.push(() => fiber.dispose())
-  return { ctx, fiber, file, stream, register, unregister, settings: () => settings }
+  return { ctx, fiber, file, stream, settings: () => settings }
 }
 
 describe('independent image reader plugin', () => {
   it('reads through DSH LLM with the documented Host services', async () => {
     const f = await fixture()
-    expect(f.register).toHaveBeenCalledOnce()
+    expect(f.ctx.tools.schemas().map(tool => tool.name)).toEqual([INSPECT_IMAGE_TOOL_NAME])
     expect(await f.ctx.imageReader.inspect(f.file, { sessionId: 'real-session' })).toMatchObject({ observation: '红色', provider: 'test' })
     expect(f.stream.mock.calls[0]![0]).toMatchObject({ sessionId: 'real-session' })
     const records = f.ctx.logger.buffer.filter(entry => entry.name === 'harness-comfyui-image-reader')
@@ -119,7 +120,7 @@ describe('independent image reader plugin', () => {
     else await f.fiber.dispose()
     await assertion
     if (cause === 'caller') await f.fiber.dispose()
-    expect(f.unregister).toHaveBeenCalledOnce()
+    expect(f.ctx.tools.schemas()).toEqual([])
     expect(f.ctx.get('imageReader')).toBeUndefined()
     await expect(service.inspect(f.file)).rejects.toMatchObject({ name: 'AbortError' })
   })

@@ -1,0 +1,140 @@
+{
+  "runs": [
+    {
+      "runId": "108e4eee-5889-4c99-be70-4f8bb7101a3d",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:26:41.056Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 63950,
+        "rendererCdp": 63951,
+        "hostInspector": 63952
+      },
+      "pid": 71080,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/108e4eee-5889-4c99-be70-4f8bb7101a3d/run.json"
+    },
+    {
+      "runId": "5d6ff147-67ba-4a40-81ff-1de0112212fc",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:26:20.299Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 63800,
+        "rendererCdp": 63801,
+        "hostInspector": 63802
+      },
+      "pid": 60447,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/5d6ff147-67ba-4a40-81ff-1de0112212fc/run.json"
+    },
+    {
+      "runId": "67db2371-4906-4747-96a7-45821aa6eb67",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:27:28.251Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 64312,
+        "rendererCdp": 64313,
+        "hostInspector": 64314
+      },
+      "pid": 92295,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/67db2371-4906-4747-96a7-45821aa6eb67/run.json"
+    },
+    {
+      "runId": "9f00ea64-a32c-4449-9586-7031b50151c6",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:26:51.953Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 64031,
+        "rendererCdp": 64032,
+        "hostInspector": 64033
+      },
+      "pid": 76352,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/9f00ea64-a32c-4449-9586-7031b50151c6/run.json"
+    },
+    {
+      "runId": "a12d8bd7-af4d-4e0d-817d-1ae2646a153a",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:27:02.155Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 64148,
+        "rendererCdp": 64149,
+        "hostInspector": 64150
+      },
+      "pid": 81691,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/a12d8bd7-af4d-4e0d-817d-1ae2646a153a/run.json"
+    },
+    {
+      "runId": "e837feb5-2053-4d18-b125-7a480ac9959c",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:26:30.841Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 63880,
+        "rendererCdp": 63881,
+        "hostInspector": 63882
+      },
+      "pid": 65787,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/e837feb5-2053-4d18-b125-7a480ac9959c/run.json"
+    },
+    {
+      "runId": "ec56dedd-a043-4258-8efe-378cb77bb8b3",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:26:10.023Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 63585,
+        "rendererCdp": 63586,
+        "hostInspector": 63587
+      },
+      "pid": 54412,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/ec56dedd-a043-4258-8efe-378cb77bb8b3/run.json"
+    },
+    {
+      "runId": "f2d8db78-7186-411d-95fe-6e19610ca4a3",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:27:12.656Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 64222,
+        "rendererCdp": 64223,
+        "hostInspector": 64224
+      },
+      "pid": 86965,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-wmsMut/.local/desktop-e2e/f2d8db78-7186-411d-95fe-6e19610ca4a3/run.json"
+    }
+  ]
+}

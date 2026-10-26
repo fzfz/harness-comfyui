@@ -1,0 +1,4 @@
+{
+  "command": "printf '%s\\n' '{\"run_ids\":[\"controlled-run\"]}'",
+  "stdout": "{\"run_ids\":[\"controlled-run\"]}\n"
+}

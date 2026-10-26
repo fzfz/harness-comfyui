@@ -35,16 +35,11 @@ describe('official installed Preset declarations', () => {
     expect(patch).not.toContain('process.env.HARNESS_COMFYUI_CONFIGURATION_PROFILE')
   })
 
-  it('declares the product and role Presets using the Host Skills service', async () => {
+  it('declares the workbench Preset using the Host Skills service', async () => {
     const entries = await readYaml(resolve(repositoryRoot, 'agent-presets/presets.cordis.yml'))
-    expect(entries.map(row => row.config.id)).toEqual([
-      'harness-comfyui-cli-candidate', 'harness-comfyui-iteration', 'harness-comfyui-task',
-      'harness-comfyui-composition', 'harness-comfyui-generation', 'harness-comfyui-observation', 'harness-comfyui-comparison',
-    ])
+    expect(entries.map(row => row.config.id)).toEqual(['harness-comfyui-cli-candidate'])
     expect(findRow(entries, 'preset-harness-comfyui-cli-candidate').config)
       .toMatchObject({ name: 'ComfyUI工作台预设', order: 91 })
-    expect(findRow(entries, 'preset-harness-comfyui-iteration').config)
-      .toMatchObject({ name: 'ComfyUI迭代预设', order: 92 })
     for (const row of entries) {
       expect(row.name).toBe('@deepseek-ai/dsh-agent-preset')
       expect(await entryListProblemFor(row.config.plugins)).toBeUndefined()
@@ -61,10 +56,7 @@ describe('official installed Preset declarations', () => {
       resolve(repositoryRoot, 'tests/unit/fixtures/installed-presets-runtime.mjs'),
     ], { cwd: repositoryRoot, env: { NODE_ENV: 'test' }, encoding: 'utf8' })
     expect(JSON.parse(stdout.trim())).toEqual({
-      defaultPresetIds: [
-        'harness-comfyui-cli-candidate', 'harness-comfyui-comparison', 'harness-comfyui-composition',
-        'harness-comfyui-generation', 'harness-comfyui-iteration', 'harness-comfyui-observation', 'harness-comfyui-task',
-      ],
+      defaultPresetIds: ['harness-comfyui-cli-candidate'],
       patchedOrder: 193,
       nestedExpressionPreserved: true,
       reloadedOrder: 91,

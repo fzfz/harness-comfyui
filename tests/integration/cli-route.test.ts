@@ -339,7 +339,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     }
   })
 
-  it('derives all durable Run ownership columns from the shell capability', async () => {
+  it('derives Run ownership for an ungrouped child from its original-project shell capability', async () => {
     const runtime = createRuntime({
       async prepare(request) {
         return {
@@ -366,7 +366,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       imageReader: unusedImageReader(),
       workspaceRegistry: {
         resolveByPath: vi.fn(async path => path === '/workspace/current'
-          ? { id: 'workspace_1', sessionIds: ['session_7'] }
+          ? { id: 'workspace_1', sessionIds: [] }
           : undefined),
       },
     }))
@@ -807,7 +807,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       ok: false,
       error: {
         code: 'GENERATION_WORKSPACE_REQUIRED',
-        message: 'The current Session is not attached to a Harness Workspace.',
+        message: 'Harness 未找到当前会话创建时的项目目录对应的 Workspace。 请在官方 Desktop 中选择或创建该目录对应的 Workspace，再重试。',
       },
     })
     expect(runtime.acceptGeneration).not.toHaveBeenCalled()

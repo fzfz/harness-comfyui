@@ -1,0 +1,29 @@
+{
+  "identifier": "1",
+  "loadedClientSource": {
+    "scriptId": "44",
+    "scriptUrl": "dsh-app://app/plugins/??@deepseek-ai/dsh-client-ui-plan/client.js,@deepseek-ai/dsh-client-ui-user-questions/client.js,@deepseek-ai/dsh-client-ui-trajectory/client.js,@deepseek-ai/dsh-api-remote-access/client.js,@deepseek-ai/dsh-session-log-export/client.js,@deepseek-ai/dsh-client-file-upload/client.js,@deepseek-ai/dsh-api-remotes/client.js,@deepseek-ai/dsh-client-ui-deliverables/client.js,harness-comfyui/client.js,@deepseek-ai/dsh-typert-registry/client.js,@deepseek-ai/dsh-client-product-analytics/client.js,@deepseek-ai/dsh-client-connection/client.js,@deepseek-ai/dsh-api-workspace-controller/client.js,@deepseek-ai/dsh-api-session-controller/client.js,@deepseek-ai/dsh-client-ui-directory-picker-native/client.js&rev=b721e41e30be",
+    "sourceMapUrl": "??@deepseek-ai/dsh-client-ui-plan/client.js.map,@deepseek-ai/dsh-client-ui-user-questions/client.js.map,@deepseek-ai/dsh-client-ui-trajectory/client.js.map,@deepseek-ai/dsh-api-remote-access/client.js.map,@deepseek-ai/dsh-session-log-export/client.js.map,@deepseek-ai/dsh-client-file-upload/client.js.map,@deepseek-ai/dsh-api-remotes/client.js.map,@deepseek-ai/dsh-client-ui-deliverables/client.js.map,harness-comfyui/client.js.map,@deepseek-ai/dsh-typert-registry/client.js.map,@deepseek-ai/dsh-client-product-analytics/client.js.map,@deepseek-ai/dsh-client-connection/client.js.map,@deepseek-ai/dsh-api-workspace-controller/client.js.map,@deepseek-ai/dsh-api-session-controller/client.js.map,@deepseek-ai/dsh-client-ui-directory-picker-native/client.js.map&rev=b721e41e30be",
+    "moduleRoutes": [
+      "@deepseek-ai/dsh-client-ui-plan/client.js",
+      "@deepseek-ai/dsh-client-ui-user-questions/client.js",
+      "@deepseek-ai/dsh-client-ui-trajectory/client.js",
+      "@deepseek-ai/dsh-api-remote-access/client.js",
+      "@deepseek-ai/dsh-session-log-export/client.js",
+      "@deepseek-ai/dsh-client-file-upload/client.js",
+      "@deepseek-ai/dsh-api-remotes/client.js",
+      "@deepseek-ai/dsh-client-ui-deliverables/client.js",
+      "harness-comfyui/client.js",
+      "@deepseek-ai/dsh-typert-registry/client.js",
+      "@deepseek-ai/dsh-client-product-analytics/client.js",
+      "@deepseek-ai/dsh-client-connection/client.js",
+      "@deepseek-ai/dsh-api-workspace-controller/client.js",
+      "@deepseek-ai/dsh-api-session-controller/client.js",
+      "@deepseek-ai/dsh-client-ui-directory-picker-native/client.js"
+    ],
+    "candidateModuleIndex": 8,
+    "sectionOffsetLine": 38417,
+    "sectionOffsetColumn": 0,
+    "matchesCandidate": true
+  }
+}

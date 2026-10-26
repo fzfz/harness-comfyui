@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "repositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+  "runs": [
+    {
+      "id": "product-schema-red",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "-t",
+        "uses the configured source root and Preset ID",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/product-schema-red.json"
+      ],
+      "exitCode": 1,
+      "reportPath": "product-schema-red.json",
+      "logPath": "product-schema-red.txt",
+      "passedTests": 0,
+      "failedTests": 1
+    },
+    {
+      "id": "product-schema-green",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/product-schema-green.json"
+      ],
+      "exitCode": 0,
+      "reportPath": "product-schema-green.json",
+      "logPath": "product-schema-green.txt",
+      "passedTests": 21,
+      "failedTests": 0
+    },
+    {
+      "id": "native-scope-red",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/native-workbench-scope.test.mjs",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/native-scope-red.json"
+      ],
+      "exitCode": 1,
+      "reportPath": "native-scope-red.json",
+      "logPath": "native-scope-red.txt",
+      "passedTests": 0,
+      "failedTests": 5
+    },
+    {
+      "id": "native-scope-green",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/native-workbench-scope.test.mjs",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/native-scope-green.json"
+      ],
+      "exitCode": 0,
+      "reportPath": "native-scope-green.json",
+      "logPath": "native-scope-green.txt",
+      "passedTests": 5,
+      "failedTests": 0
+    },
+    {
+      "id": "native-composition-red",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "-t",
+        "loads native delegation",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/native-composition-red.json"
+      ],
+      "exitCode": 1,
+      "reportPath": "native-composition-red.json",
+      "logPath": "native-composition-red.txt",
+      "passedTests": 0,
+      "failedTests": 1
+    },
+    {
+      "id": "native-composition-green",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "tests/production/native-workbench-scope.test.mjs",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/native-composition-green.json"
+      ],
+      "exitCode": 0,
+      "reportPath": "native-composition-green.json",
+      "logPath": "native-composition-green.txt",
+      "passedTests": 27,
+      "failedTests": 0
+    },
+    {
+      "id": "native-boundary-red",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/security/check-harness-boundary.test.ts",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/native-boundary-red.json"
+      ],
+      "exitCode": 1,
+      "reportPath": "native-boundary-red.json",
+      "logPath": "native-boundary-red.txt",
+      "passedTests": 18,
+      "failedTests": 3
+    },
+    {
+      "id": "native-boundary-green",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/security/check-harness-boundary.test.ts",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/native-boundary-green.json"
+      ],
+      "exitCode": 0,
+      "reportPath": "native-boundary-green.json",
+      "logPath": "native-boundary-green.txt",
+      "passedTests": 21,
+      "failedTests": 0
+    },
+    {
+      "id": "native-config-targeted",
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/unit/installed-presets.test.mjs",
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "tests/production/plugin-build-presets.test.mjs",
+        "tests/production/plugin-package.test.mjs",
+        "tests/production/official-candidate-identity.test.mjs",
+        "tests/contract/profile-skill-ownership.test.ts",
+        "tests/contract/engineering-baseline.test.ts",
+        "tests/security/check-harness-boundary.test.ts",
+        "tests/production/native-workbench-scope.test.mjs",
+        "--reporter=json",
+        "--outputFile=.local/comfyui-native-cleanup/native-config-targeted.json"
+      ],
+      "exitCode": 0,
+      "reportPath": "native-config-targeted.json",
+      "logPath": "native-config-targeted.txt",
+      "passedTests": 98,
+      "failedTests": 0
+    },
+    {
+      "id": "preset-typecheck",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "tsconfig.agent-presets.json"
+      ],
+      "exitCode": 0,
+      "logPath": "preset-typecheck.txt"
+    },
+    {
+      "id": "native-boundary-source",
+      "command": [
+        "pnpm",
+        "check:harness-boundary"
+      ],
+      "exitCode": 0,
+      "logPath": "native-boundary-source.txt"
+    },
+    {
+      "id": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0
+    }
+  ]
+}

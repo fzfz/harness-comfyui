@@ -24,12 +24,10 @@ import {
   type GenerationRunInputLookupErrorReport,
 } from '../generation/generation-runtime.ts'
 import { generationToolForContext } from '../generation/generation-tool.ts'
-import { resolveObservationMedia } from '../generation/observation-media.ts'
 import { OfficialApiWorkflowCompiler } from '../generation/official-api-workflow.ts'
 import { GenerationSourceClient } from '../generation/source-client.ts'
 import { SourceGenerationPreparer } from '../generation/source-preparer.ts'
 import { ComfyWorkflowCompiler } from '../generation/workflow-compiler.ts'
-import { registerProjectTools } from '../tools/register-project-tools.ts'
 
 import { assertPluginRuntimeResourcesAvailable } from '../plugin-resources.ts'
 import { assertPluginStorageWritable } from './plugin-storage.ts'
@@ -74,7 +72,6 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const runtimeResources = assertPluginRuntimeResourcesAvailable()
   const {
     HARNESS_COMFYUI_CONFIGURATION_PROFILE: _profileSelector,
-    HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH: _startupWorkspacePath,
     ...environment
   } = process.env
   const homeContext = ctx as Context & { dshHomePath(...segments: string[]): string }
@@ -96,9 +93,6 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     },
   }
   assertPluginStorageWritable(effectiveProfile.paths)
-  if (config.startupWorkspacePath !== undefined) {
-    await ctx.workspaceRegistry.create(config.startupWorkspacePath)
-  }
   const sourceSettings = {
     get(): SourceAddress {
       return configuredSourceAddress(config.configuration, effectiveProfile.source.catalogPort)
@@ -150,18 +144,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   }, 'Generation coordinator')
   new ComfyuiCoreService(ctx, {
     catalog, runtime, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings),
-    resolveObservationMedia: (exec, toolName, images) => resolveObservationMedia(
-      { runtime, workspaceRegistry: ctx.workspaceRegistry }, exec, toolName, images,
-    ),
   })
-  ctx.effect(() => registerProjectTools(ctx, [
-    createTemplateResolverTool(catalog),
-    createLoraResolverTool(catalog),
-    createGenerationModelResolverTool(catalog),
-    createComfyuiInstanceQueryTool(catalog),
-    generationToolForContext(ctx, runtime),
-    generationRunInputToolForContext(ctx, runtime),
-    createGenerationRunMediaTool({ runtime, workspaceRegistry: ctx.workspaceRegistry }),
-  ]), 'project Tool registry')
+  ctx.tools.register(createTemplateResolverTool(catalog))
+  ctx.tools.register(createLoraResolverTool(catalog))
+  ctx.tools.register(createGenerationModelResolverTool(catalog))
+  ctx.tools.register(createComfyuiInstanceQueryTool(catalog))
+  ctx.tools.register(generationToolForContext(ctx, runtime))
+  ctx.tools.register(generationRunInputToolForContext(ctx, runtime))
+  ctx.tools.register(createGenerationRunMediaTool({ runtime, workspaceRegistry: ctx.workspaceRegistry }))
 
 }

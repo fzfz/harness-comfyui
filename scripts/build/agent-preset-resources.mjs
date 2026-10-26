@@ -43,7 +43,7 @@ async function loadProductPresetConfiguration(repositoryRoot) {
     throw new Error(`product Agent configuration is invalid JSON at ${configPath}`, { cause: error })
   }
   const configuration = parseProductAgentConfiguration(sourceConfiguration)
-  const presetIds = [configuration.preset.id, ...configuration.preset.additionalManagedPresetIds]
+  const presetIds = [configuration.preset.id]
 
   return {
     presetIds,

@@ -22,7 +22,7 @@ describe('ComfyUI Workbench Skill plugin ownership', () => {
     expect(bundleRows.filter(row => row.name === 'harness-comfyui/presets'))
       .toHaveLength(1)
 
-    for (const presetId of [productAgent.preset.id, ...productAgent.preset.additionalManagedPresetIds]) {
+    for (const presetId of [productAgent.preset.id]) {
       const { composition } = await readProjectComposition(repositoryRoot, presetId)
       expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-skill')).toHaveLength(1)
       expect(composition.some(row => row.name === '@deepseek-ai/dsh-skill')).toBe(false)

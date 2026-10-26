@@ -1,79 +1,70 @@
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
+import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 
-import { GenerationRuntimeError } from './generation-runtime.ts'
-
-export interface WorkspaceProjection {
-  readonly id: string
-  readonly sessionIds: readonly string[]
-}
+import { ERROR_CATALOG } from '../../../config/error-catalog-schema.ts'
+import { GenerationRuntimeError } from './generation-error.ts'
 
 export interface WorkspaceRegistryProjection {
-  list(): readonly WorkspaceProjection[]
+  resolveByPath(path: string): Promise<{ readonly id: string | number } | undefined>
 }
 
 export type SessionPersistenceProjection = Pick<SessionPersistence, 'stat'>
-
-interface SessionAncestryProjection {
-  readonly parentSession?: string
-}
+export type SubagentQueryProjection = Pick<SubagentRuntime, 'listDescendants'>
 
 export interface WorkspaceSessionScope {
   readonly workspaceId: string
   readonly sessionIds: readonly string[]
 }
 
-function workspaceForSession(registry: WorkspaceRegistryProjection, sessionId: string): WorkspaceProjection {
-  const matches = registry.list().filter(workspace => workspace.sessionIds.includes(sessionId))
-  if (matches.length !== 1) {
-    throw new GenerationRuntimeError('GENERATION_SESSION_NOT_FOUND', 'The Harness Session is not attached to one Workspace.')
+export async function resolveGenerationWorkspaceId(
+  workspaceRegistry: WorkspaceRegistryProjection,
+  originalProjectDirectory: string | undefined,
+): Promise<string> {
+  const workspace = originalProjectDirectory
+    ? await workspaceRegistry.resolveByPath(originalProjectDirectory)
+    : undefined
+  if (workspace === undefined) {
+    const error = ERROR_CATALOG.GENERATION_WORKSPACE_REQUIRED
+    throw new GenerationRuntimeError(error.code, `${error.reason} ${error.next_step}`)
   }
-  return matches[0]!
+  return String(workspace.id)
+}
+
+function sessionUnavailable(sessionId: string, reason: string): never {
+  const error = ERROR_CATALOG.GENERATION_SESSION_UNAVAILABLE
+  throw new GenerationRuntimeError(error.code, error.diagnostic_template
+    .replace('{session_id}', sessionId).replace('{reason}', reason))
 }
 
 export async function workspaceSessionScopeForSession(
   workspaceRegistry: WorkspaceRegistryProjection,
   sessionPersistence: SessionPersistenceProjection,
+  subagents: SubagentQueryProjection,
   sessionId: string,
   signal: AbortSignal,
 ): Promise<WorkspaceSessionScope> {
   signal.throwIfAborted()
-  const workspace = workspaceForSession(workspaceRegistry, sessionId)
-  const workspaceSessionIds = new Set(workspace.sessionIds)
-  const sessionRecords = new Map<string, Promise<SessionAncestryProjection | undefined>>()
-  const sessionRecord = async (id: string): Promise<SessionAncestryProjection | undefined> => {
-    let record = sessionRecords.get(id)
-    if (record === undefined) {
-      record = sessionPersistence.stat(SessionId(id), { signal }).then(snapshot => {
-        signal.throwIfAborted()
-        if (snapshot === undefined || snapshot.header.id !== id) return undefined
-        return { parentSession: snapshot.header.parentSession }
-      })
-      sessionRecords.set(id, record)
-    }
-    return record
+  const root = await sessionPersistence.stat(SessionId(sessionId), { signal })
+  signal.throwIfAborted()
+  if (root === undefined) {
+    const error = ERROR_CATALOG.GENERATION_SESSION_NOT_FOUND
+    throw new GenerationRuntimeError(error.code, `${error.reason} ${error.next_step}`)
   }
-
-  const scopedSessionIds = new Set([sessionId])
-  for (const candidateId of workspaceSessionIds) {
-    if (candidateId === sessionId) continue
-    let parentSessionId = (await sessionRecord(candidateId))?.parentSession
+  const workspaceId = await resolveGenerationWorkspaceId(workspaceRegistry, root.header.cwd)
+  signal.throwIfAborted()
+  const descendants = await subagents.listDescendants(SessionId(sessionId), signal)
+  signal.throwIfAborted()
+  const sessionIds = [sessionId]
+  for (const descendant of descendants) {
+    if (descendant.kind === 'diagnostic') sessionUnavailable(descendant.id, descendant.reason)
+    if (descendant.mode === 'external') continue
+    const snapshot = await sessionPersistence.stat(descendant.id, { signal })
     signal.throwIfAborted()
-    const visited = new Set([candidateId])
-    while (typeof parentSessionId === 'string' && parentSessionId.length > 0) {
-      if (parentSessionId === sessionId) {
-        scopedSessionIds.add(candidateId)
-        break
-      }
-      if (!workspaceSessionIds.has(parentSessionId) || visited.has(parentSessionId)) break
-      visited.add(parentSessionId)
-      parentSessionId = (await sessionRecord(parentSessionId))?.parentSession
-      signal.throwIfAborted()
-    }
+    if (!snapshot?.header.cwd) sessionUnavailable(descendant.id, 'unavailable')
+    const workspace = await workspaceRegistry.resolveByPath(snapshot.header.cwd)
+    signal.throwIfAborted()
+    if (workspace !== undefined && String(workspace.id) === workspaceId) sessionIds.push(descendant.id)
   }
-
-  return Object.freeze({
-    workspaceId: workspace.id,
-    sessionIds: Object.freeze([...scopedSessionIds]),
-  })
+  return Object.freeze({ workspaceId, sessionIds: Object.freeze(sessionIds) })
 }

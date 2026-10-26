@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-10-26T02:12:55.414Z",
+  "profile": "/Users/fzfz/.dsh/profiles/desktop/cordis.patch.yml",
+  "defaultModel": {
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "reasoningEffort": "max"
+  },
+  "provider": {
+    "id": "opencode-go",
+    "displayName": "OpenCode Go",
+    "api": "openai-completions",
+    "baseURL": "https://opencode.ai/zen/go/v1",
+    "apiKeyEnv": "OPENCODE_GO_API_KEY",
+    "model": {
+      "id": "deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "contextWindow": 1000000,
+      "maxTokens": 384000,
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  "revalidatedAt": "2026-10-26T02:47:54.851Z",
+  "revalidatedDefaultModel": {
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "reasoningEffort": "max"
+  },
+  "matchesPrepared": true
+}

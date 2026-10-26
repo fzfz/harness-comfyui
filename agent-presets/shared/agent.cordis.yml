@@ -2,18 +2,8 @@
   name: cordis:include
   config:
     path: ../noobai-mcp.cordis.yml
-- id: project-tool-visibility
-  name: ../project-tool-visibility.mjs
-  config:
-    mode: local-only
-- id: project-system-prompt-visibility
-  name: ../project-system-prompt-visibility.mjs
-  config:
-    hiddenSectionNames:
-      - harness:identity
-      - harness:source
-      - app:web-surface
-      - ui:deliverable-file-references
+- id: tool-working-directory
+  name: '@deepseek-ai/dsh-tool-working-directory'
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'
   config:
@@ -36,8 +26,6 @@
   name: '@deepseek-ai/dsh-skill-filesystem'
 - id: tool-skill
   name: '@deepseek-ai/dsh-tool-skill'
-- id: project-subagent-workspace
-  name: ../project-subagent-workspace.mjs
 - id: tool-subagent-list
   name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
 - id: compaction

@@ -1,0 +1,2 @@
+{"phase":"prompt","running":true,"asOfSeq":14,"lastEvents":[{"type":"request/context","seq":12},{"type":"session/title","seq":13},{"type":"session/title-llm-request","seq":14}]}
+{"phase":"prompt","ended":{"type":"turn/end","seq":17,"time":1792982931346,"data":{"turn":1,"reason":{"kind":"error","error":{"message":"401: {\"type\":\"authentication_error\",\"code\":\"api_key_expired\",\"message\":\"This API key has expired. Create a new API key in OpenCode Console and replace it in your client or secret store. Signing in again will not renew this key.\"}","code":"AUTH"}}}}}
