@@ -1,4 +1,4 @@
-import { copyFile, lstat, mkdir, open, readFile, realpath, stat } from 'node:fs/promises'
+import { copyFile, lstat, mkdir, open, readFile, realpath, rm, stat, writeFile } from 'node:fs/promises'
 import { mkdirSync } from 'node:fs'
 import { execFile, spawn } from 'node:child_process'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
@@ -173,7 +173,6 @@ export function createLifecycleDesktopConfig(baseConfigValue, options) {
   const fixture = parseOfficialLifecycleFixture(options?.fixture)
   const fixtureId = requireUuid(options?.fixtureId, 'fixtureId')
   const runId = requireUuid(options?.runId, 'runId')
-  const workspacePath = requireAbsolutePath(options?.workspacePath, 'workspacePath')
   const environmentFilePath = requireAbsolutePath(options?.environmentFilePath, 'environmentFilePath')
   const providers = record(options?.providers, 'providers')
   const configuredProviders = structuredClone(providers)
@@ -215,7 +214,6 @@ export function createLifecycleDesktopConfig(baseConfigValue, options) {
       id: fixture.profileEntries.pluginSettings,
       config: {
         configurationProfile: fixture.profileEntries.configurationProfile,
-        startupWorkspacePath: workspacePath,
         configuration: { url: fixture.profileEntries.sourceUrl, port: fixture.profileEntries.sourcePort },
       },
     },
@@ -404,6 +402,20 @@ export function createOfficialLifecycleEvidence({
       verifiedAt: recordedAt,
     },
   })
+}
+
+export async function stageRetiredPresetHistory({ logPath, projectionCachePath, sessionId, retiredPresetId }) {
+  requireAbsolutePath(logPath, 'logPath')
+  requireAbsolutePath(projectionCachePath, 'projectionCachePath')
+  if (!logPath.endsWith('.jsonl')) throw new TypeError('retired Preset fixture requires a plaintext JSONL session log')
+  if (typeof retiredPresetId !== 'string' || retiredPresetId.length === 0) throw new TypeError('retired Preset identity is required')
+  const contents = await readFile(logPath, 'utf8')
+  const headerEnd = contents.indexOf('\n')
+  const header = JSON.parse(contents.slice(0, headerEnd))
+  if (header.type !== 'session' || header.id !== sessionId) throw new TypeError('retired Preset fixture session identity does not match')
+  await writeFile(logPath, `${JSON.stringify({ ...header, agentPreset: retiredPresetId })}${contents.slice(headerEnd)}`, { mode: 0o600 })
+  await rm(projectionCachePath, { force: true })
+  return { logPath, projectionCachePath, sessionId, retiredPresetId }
 }
 
 export async function stageLifecycleTarball({ sourcePath, artifactRoot, repositoryRoot, packageName, packageVersion, fixture: fixtureValue } = {}) {

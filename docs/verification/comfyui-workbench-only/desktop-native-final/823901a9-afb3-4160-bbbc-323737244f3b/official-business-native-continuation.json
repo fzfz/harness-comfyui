@@ -1,0 +1,41 @@
+{
+  "observations": [
+    {
+      "phase": "finished",
+      "parentSessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+      "childSessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+      "cliResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-1cKGnB/result.json",
+      "runId": "run_e11ee198-63b9-40b9-ac38-255c6cf40242",
+      "parentEndedAt": 87,
+      "childEndedAt": 87,
+      "notificationRequestSequence": 51,
+      "parentReadRequestSequence": 52,
+      "phaseResultPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-finished-result.txt"
+    },
+    {
+      "phase": "active",
+      "parentSessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+      "childSessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+      "cliResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-H0njvQ/result.json",
+      "runId": "run_e11ee198-63b9-40b9-ac38-255c6cf40242",
+      "parentEndedAt": 123,
+      "childEndedAt": 105,
+      "notificationRequestSequence": 59,
+      "parentReadRequestSequence": 60,
+      "phaseResultPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-active-result.txt",
+      "activeMessageRequestSequence": 58
+    },
+    {
+      "phase": "interrupted",
+      "parentSessionId": "session-80748980-04ed-4d6a-8a9e-299b8ca7e149",
+      "childSessionId": "e4dac470-2c3c-4d4b-9f19-148bf47d67de",
+      "cliResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-1jlfvT/result.json",
+      "runId": "run_e11ee198-63b9-40b9-ac38-255c6cf40242",
+      "parentEndedAt": 167,
+      "childEndedAt": 130,
+      "notificationRequestSequence": 69,
+      "parentReadRequestSequence": 70,
+      "phaseResultPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-pRYGOQ/.local/desktop-e2e/eef3d6fe-e220-481e-88f7-3e610e129f56/official-environment/workspace/native-child-interrupted-result.txt"
+    }
+  ]
+}

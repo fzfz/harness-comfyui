@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "status": "default_host_inheritance_restored",
+  "historicalEvidence": {
+    "path": "docs/verification/comfyui-workbench-only/native-preset-scope-gap.json",
+    "contentUnchanged": true
+  },
+  "requirementCorrection": {
+    "authorizedGoal": "Remove project wrappers that duplicate Host capabilities and retain the official workbench composition.",
+    "extraRequirementRemoved": "Hide Host-global tools and expose only tools registered by the selected project Preset.",
+    "currentBehavior": "Parent and child Agents inherit Host tools and the selected Preset tools through the official Registry scope chain.",
+    "resolution": "Delete the filtering declaration and implementation. The retained Host version provides the required default behavior."
+  },
+  "productionFiles": {
+    "deleted": [
+      "agent-presets/project-tool-visibility.mjs"
+    ],
+    "referencesRemoved": [
+      "agent-presets/shared/agent.cordis.yml",
+      "config/plugin-runtime-resources.json",
+      "tsconfig.agent-presets.json"
+    ]
+  },
+  "testCleanup": {
+    "changed": [
+      "tests/production/official-agent-preset-resources.test.mjs",
+      "tests/production/plugin-build-presets.test.mjs",
+      "tests/production/native-workbench-scope.test.mjs",
+      "tests/production/fixtures/native-preset-tool.mjs"
+    ],
+    "deletedFixtures": [
+      "tests/production/fixtures/native-preset-scope-runtime.mjs",
+      "tests/production/fixtures/native-workbench-scope-runtime.mjs",
+      "tests/production/fixtures/tool-registry-runtime.mjs"
+    ],
+    "newFixture": "tests/production/fixtures/native-workbench-preset-runtime.mjs",
+    "retainedCoverage": [
+      "Official Registry registration and Include loading",
+      "mount and composeFrom parent-child tool availability",
+      "Host tools registered before and after Preset activation",
+      "Separate Preset tool contributions",
+      "Retained active generations, final-user disposal and reload",
+      "Failed activation followed by successful registration of the same Preset",
+      "Host prompt sections, runtime context, variables and parent-child tool assembly"
+    ],
+    "configurationModes": [
+      "Host default inheritance"
+    ]
+  },
+  "executionOrder": [
+    {
+      "step": 1,
+      "action": "Delete filtering implementation and production references while preserving existing tests."
+    },
+    {
+      "step": 2,
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/unit/installed-presets.test.mjs",
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "tests/production/plugin-build-presets.test.mjs",
+        "tests/production/plugin-package.test.mjs",
+        "tests/production/official-candidate-identity.test.mjs",
+        "tests/contract/profile-skill-ownership.test.ts",
+        "tests/contract/engineering-baseline.test.ts",
+        "tests/security/check-harness-boundary.test.ts",
+        "tests/production/native-workbench-scope.test.mjs",
+        "--reporter=json",
+        "--outputFile=docs/verification/comfyui-workbench-only/native-filter-implementation-deleted-tests.json"
+      ],
+      "exitCode": 1,
+      "reportPath": "docs/verification/comfyui-workbench-only/native-filter-implementation-deleted-tests.json",
+      "logPath": ".local/comfyui-native-cleanup/native-filter-implementation-deleted-tests.log",
+      "totalTests": 100,
+      "passedTests": 92,
+      "failedTests": 8,
+      "failedAssertions": [
+        {
+          "file": "tests/production/native-workbench-scope.test.mjs",
+          "title": "dynamic: keeps later global tools outside the workbench and preserves local tools and other scopes",
+          "failureMessages": [
+            "Error: Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs dynamic\nnode:internal/modules/esm/resolve:271\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs' imported from /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs\n    at finalizeResolution (node:internal/modules/esm/resolve:271:11)\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\n    at defaultResolve (node:internal/modules/esm/resolve:988:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)\n    at #resolve (node:internal/modules/esm/loader:679:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs'\n}\n\nNode.js v25.8.2\n\n    at genericNodeError (node:internal/errors:998:15)\n    at wrappedFn (node:internal/errors:543:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:508:20)\n    at maybeClose (node:internal/child_process:1108:16)\n    at Socket.<anonymous> (node:internal/child_process:480:11)\n    at Socket.emit (node:events:508:20)\n    at Pipe.<anonymous> (node:net:350:12)"
+          ]
+        },
+        {
+          "file": "tests/production/native-workbench-scope.test.mjs",
+          "title": "restrictionLifecycle: releases and reapplies restrictions through plugin unload and reload",
+          "failureMessages": [
+            "Error: Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs restrictionLifecycle\nnode:internal/modules/esm/resolve:271\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs' imported from /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs\n    at finalizeResolution (node:internal/modules/esm/resolve:271:11)\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\n    at defaultResolve (node:internal/modules/esm/resolve:988:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)\n    at #resolve (node:internal/modules/esm/loader:679:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs'\n}\n\nNode.js v25.8.2\n\n    at genericNodeError (node:internal/errors:998:15)\n    at wrappedFn (node:internal/errors:543:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:508:20)\n    at maybeClose (node:internal/child_process:1108:16)\n    at Process.ChildProcess._handle.onexit (node:internal/child_process:305:5)"
+          ]
+        },
+        {
+          "file": "tests/production/native-workbench-scope.test.mjs",
+          "title": "toolLifecycle: releases tool registrations through plugin unload and reload",
+          "failureMessages": [
+            "Error: Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs toolLifecycle\nnode:internal/modules/esm/resolve:271\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs' imported from /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs\n    at finalizeResolution (node:internal/modules/esm/resolve:271:11)\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\n    at defaultResolve (node:internal/modules/esm/resolve:988:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)\n    at #resolve (node:internal/modules/esm/loader:679:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs'\n}\n\nNode.js v25.8.2\n\n    at genericNodeError (node:internal/errors:998:15)\n    at wrappedFn (node:internal/errors:543:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:508:20)\n    at maybeClose (node:internal/child_process:1108:16)\n    at Socket.<anonymous> (node:internal/child_process:480:11)\n    at Socket.emit (node:events:508:20)\n    at Pipe.<anonymous> (node:net:350:12)"
+          ]
+        },
+        {
+          "file": "tests/production/native-workbench-scope.test.mjs",
+          "title": "failedActivation: releases restrictions and tools after plugin startup fails",
+          "failureMessages": [
+            "Error: Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs failedActivation\nnode:internal/modules/esm/resolve:271\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs' imported from /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs\n    at finalizeResolution (node:internal/modules/esm/resolve:271:11)\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\n    at defaultResolve (node:internal/modules/esm/resolve:988:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)\n    at #resolve (node:internal/modules/esm/loader:679:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs'\n}\n\nNode.js v25.8.2\n\n    at genericNodeError (node:internal/errors:998:15)\n    at wrappedFn (node:internal/errors:543:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:508:20)\n    at maybeClose (node:internal/child_process:1108:16)\n    at Socket.<anonymous> (node:internal/child_process:480:11)\n    at Socket.emit (node:events:508:20)\n    at Pipe.<anonymous> (node:net:350:12)"
+          ]
+        },
+        {
+          "file": "tests/production/native-workbench-scope.test.mjs",
+          "title": "prompt: preserves Host prompt sections, runtime context, variables, and scoped tools",
+          "failureMessages": [
+            "Error: Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs prompt\nnode:internal/modules/esm/resolve:271\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs' imported from /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-workbench-scope-runtime.mjs\n    at finalizeResolution (node:internal/modules/esm/resolve:271:11)\n    at moduleResolve (node:internal/modules/esm/resolve:861:10)\n    at defaultResolve (node:internal/modules/esm/resolve:988:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)\n    at #resolve (node:internal/modules/esm/loader:679:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs'\n}\n\nNode.js v25.8.2\n\n    at genericNodeError (node:internal/errors:998:15)\n    at wrappedFn (node:internal/errors:543:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:508:20)\n    at maybeClose (node:internal/child_process:1108:16)\n    at Process.ChildProcess._handle.onexit (node:internal/child_process:305:5)"
+          ]
+        },
+        {
+          "file": "tests/production/native-workbench-scope.test.mjs",
+          "title": "keeps preset tools available to parent and child Agents through official Registry and Include mounts",
+          "failureMessages": [
+            "Error: Command failed: /opt/homebrew/Cellar/node/25.8.2/bin/node /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-preset-scope-runtime.mjs restricted\nnode:internal/modules/run_main:107\n    triggerUncaughtException(\n    ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   broken: 'visibility (file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs): never started',\n    id: 'workbench'\n  }\n\n    at file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/fixtures/native-preset-scope-runtime.mjs:49:10 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: {\n    id: 'workbench',\n    broken: 'visibility (file:///Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/agent-presets/project-tool-visibility.mjs): never started'\n  },\n  expected: { id: 'workbench' },\n  operator: 'deepStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v25.8.2\n\n    at genericNodeError (node:internal/errors:998:15)\n    at wrappedFn (node:internal/errors:543:14)\n    at ChildProcess.exithandler (node:child_process:417:12)\n    at ChildProcess.emit (node:events:508:20)\n    at maybeClose (node:internal/child_process:1108:16)\n    at Socket.<anonymous> (node:internal/child_process:480:11)\n    at Socket.emit (node:events:508:20)\n    at Pipe.<anonymous> (node:net:350:12)"
+          ]
+        },
+        {
+          "file": "tests/production/official-agent-preset-resources.test.mjs",
+          "title": "loads native delegation, control, working directory, and scope components for the workbench",
+          "failureMessages": [
+            "AssertionError: expected [] to deeply equal [ { …(2) } ]\n    at /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/official-agent-preset-resources.test.mjs:100:77\n    at file:///Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/node_modules/.pnpm/@vitest+runner@4.1.12/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        },
+        {
+          "file": "tests/production/plugin-build-presets.test.mjs",
+          "title": "packages the shared MCP configuration for the workbench Preset",
+          "failureMessages": [
+            "Error: ENOENT: no such file or directory, open '/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/plugin-package-mcp-GekIY4/package/agent-presets/project-tool-visibility.mjs'\n    at open (node:internal/fs/promises:639:25)\n    at readFile (node:internal/fs/promises:1287:14)\n    at /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/tests/production/plugin-build-presets.test.mjs:59:14\n    at file:///Users/fzfz/.codex/worktrees/host-0-2-1-rc-2/harness-comfyui/node_modules/.pnpm/@vitest+runner@4.1.12/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20"
+          ]
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "action": "Remove filtering-only assertions and fixtures, and preserve business coverage through the real official Preset assembly path."
+    },
+    {
+      "step": 4,
+      "command": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/unit/installed-presets.test.mjs",
+        "tests/production/official-agent-preset-resources.test.mjs",
+        "tests/contract/profile-skill-ownership.test.ts",
+        "tests/contract/engineering-baseline.test.ts",
+        "tests/security/check-harness-boundary.test.ts",
+        "tests/production/native-workbench-scope.test.mjs",
+        "--reporter=json",
+        "--outputFile=docs/verification/comfyui-workbench-only/native-filter-default-inheritance-tests.json"
+      ],
+      "exitCode": 0,
+      "reportPath": "docs/verification/comfyui-workbench-only/native-filter-default-inheritance-tests.json",
+      "logPath": ".local/comfyui-native-cleanup/native-filter-default-inheritance-tests.log",
+      "totalTests": 57,
+      "passedTests": 57,
+      "failedTests": 0
+    }
+  ],
+  "additionalChecks": [
+    {
+      "command": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "tsconfig.agent-presets.json"
+      ],
+      "exitCode": 0,
+      "logPath": ".local/comfyui-native-cleanup/native-filter-preset-typecheck.log"
+    },
+    {
+      "command": [
+        "pnpm",
+        "check:harness-boundary"
+      ],
+      "exitCode": 0,
+      "logPath": ".local/comfyui-native-cleanup/native-filter-boundary.log"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0
+    },
+    {
+      "command": [
+        "cmp",
+        "docs/verification/comfyui-workbench-only/native-preset-scope-gap.json",
+        "/tmp/comfyui-native-preset-scope-gap-before-resolution.json"
+      ],
+      "exitCode": 0
+    }
+  ],
+  "desktopCoordination": {
+    "ready": true,
+    "nativeAndResourceTestReport": ".local/comfyui-native-cleanup/native-filter-native-tests.json",
+    "nativeAndResourcePassedTests": 26,
+    "notifiedAgent": "/root/desktop_acceptance_finish",
+    "buildAndPackOwner": "Desktop acceptance agent after the ready notification",
+    "verificationBoundary": "Post-cleanup verification excludes build and pack while Desktop acceptance owns those operations. The implementation-deleted report retains the preceding artifact-test executions."
+  }
+}

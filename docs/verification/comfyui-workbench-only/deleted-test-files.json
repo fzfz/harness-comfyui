@@ -1,0 +1,16 @@
+[
+  "tests/production/native-workbench-subagent.test.mjs",
+  "tests/production/native-subagent-completion.test.mjs",
+  "tests/production/native-subagent-control.test.mjs",
+  "tests/production/native-iteration-roles.test.mjs",
+  "tests/production/project-subagent-control.test.mjs",
+  "tests/unit/cli-workspace.test.ts",
+  "tests/unit/register-project-tools.test.ts",
+  "tests/unit/observation-media.test.ts",
+  "tests/unit/fixtures/observation-media-runtime.ts",
+  "tests/production/fixtures/project-subagent-control-runtime.mjs",
+  "tests/fixtures/agent-presets/project-tool-visibility.mjs",
+  "tests/fixtures/agent-presets/project-system-prompt-visibility.mjs",
+  "tests/fixtures/agent-presets/harness-comfyui-schema-control/agent.cordis.yml",
+  "tests/skills/comfyui-iterate-generation/evals.json"
+]

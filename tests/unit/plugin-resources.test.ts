@@ -235,9 +235,6 @@ describe('installed plugin runtime resource validation', () => {
   it.each([
     ['Preset configuration', 'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml'],
     ['shared composition', 'agent-presets/shared/agent.cordis.yml'],
-    ...['task', 'composition', 'generation', 'observation', 'comparison'].flatMap(role =>
-      ['preset.yml', 'agent.cordis.yml'].map(file => ['role Preset resource', `agent-presets/harness-comfyui-${role}/${file}`])),
-
   ])('reports a missing packaged %s with its path and reinstall action', (_resource, relativePath) => {
     const root = temporaryPackageRoot()
     const target = resolve(root, relativePath)

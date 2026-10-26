@@ -1,0 +1,1 @@
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-first-trace/trace-index.json

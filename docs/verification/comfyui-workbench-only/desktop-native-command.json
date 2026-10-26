@@ -1,0 +1,12 @@
+{
+  "cwd": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+  "command": [
+    "node",
+    "--input-type=module"
+  ],
+  "stdinScript": "import { spawn } from 'node:child_process'\nimport { runDesktopTests } from './tests/desktop/run-desktop-tests.mjs'\nawait runDesktopTests({ spawnCommand(command, args, options) {\n  return spawn(command, args[0] === 'exec' && args[1] === 'vitest'\n    ? ['exec', 'vitest', 'run', 'tests/desktop/official-desktop-live.test.mjs', '--maxWorkers=1', '--no-file-parallelism', '--testTimeout=120000', '--reporter=json', '--outputFile=/tmp/comfyui-native-desktop-live.json'] : args, options)\n} })\n",
+  "exitCodes": [
+    1,
+    1
+  ]
+}

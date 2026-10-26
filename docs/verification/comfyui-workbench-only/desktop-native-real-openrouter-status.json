@@ -1,0 +1,130 @@
+{
+  "recordedAt": "2026-10-26T03:22:04.512Z",
+  "status": "failed",
+  "provider": "openrouter",
+  "model": "openrouter/free",
+  "runId": "e0a2e64c-3409-4caa-ab32-cdb0786a596a",
+  "parentSessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+  "childSessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+  "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+  "candidateEvidence": "desktop-native-real-openrouter-candidate-identity.json",
+  "modelSelectionEvidence": "desktop-native-real-openrouter-model-selection.json",
+  "firstObservationEvidence": "desktop-native-real-openrouter-first-observation.json",
+  "traceIndex": "desktop-native-real-openrouter-trace/trace-index.json",
+  "sessionCoverage": [
+    {
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "eventCount": 54,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 53,
+        "complete": true
+      }
+    },
+    {
+      "sessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+      "eventCount": 32,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 31,
+        "complete": true
+      }
+    }
+  ],
+  "traceMissing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    },
+    {
+      "source": "model-request",
+      "sessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "actualResponseModels": [
+    "thinkingmachines/inkling:free",
+    "dots-studio/dots-3-note-preview:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "xingchen-agi/xing4.0-29b-a4b:free"
+  ],
+  "acceptance": {
+    "nativeSubagentDispatch": true,
+    "skillRead": true,
+    "requiredReferenceRead": true,
+    "resultFileCreated": false,
+    "parentReceivedCompletionNotice": true,
+    "parentReadResultFile": false,
+    "sameChildSendMessage": false,
+    "supplementaryResultCreated": false
+  },
+  "artifacts": [
+    {
+      "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace/native-first-result.json",
+      "type": "directory",
+      "entries": []
+    },
+    {
+      "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace/native-supplement-result.json",
+      "type": "absent"
+    }
+  ],
+  "continuationEnd": {
+    "type": "turn/end",
+    "seq": 53,
+    "time": 1792984782566,
+    "data": {
+      "turn": 4,
+      "reason": {
+        "kind": "error",
+        "error": {
+          "message": "400: {\"message\":\"Reasoning is mandatory for this endpoint and cannot be disabled.\",\"code\":400,\"metadata\":{\"provider_name\":null}}",
+          "code": "INVALID_REQUEST"
+        }
+      }
+    }
+  },
+  "generationRunCount": 0,
+  "generationEvidence": "desktop-native-real-openrouter-generation-count.json",
+  "userProfileDefaultAfter": {
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "reasoningEffort": "max"
+  },
+  "cleanup": {
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-26T03:21:49.527Z",
+      "portsReleased": true
+    },
+    "processGroup": null,
+    "ports": [
+      {
+        "port": 55008,
+        "pids": []
+      },
+      {
+        "port": 55009,
+        "pids": []
+      },
+      {
+        "port": 55010,
+        "pids": []
+      }
+    ]
+  }
+}

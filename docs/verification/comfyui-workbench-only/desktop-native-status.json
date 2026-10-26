@@ -1,0 +1,56 @@
+{
+  "phase": "native-desktop-integration",
+  "implementation": {
+    "files": [
+      "tests/desktop/official-desktop-live.test.mjs",
+      "tests/desktop/fixtures/official-business-services.mjs",
+      "tests/desktop/fixtures/official-business-fixture.test.mjs",
+      "tests/desktop/fixtures/official-lifecycle-services.mjs",
+      "tests/production/official-desktop-lifecycle.test.mjs"
+    ],
+    "behaviors": [
+      "native subagent activation and model inheritance",
+      "finished, active, interrupted and cold send_message continuation",
+      "interrupt_agent and list_agents",
+      "host settlement notice followed by parent result-file read",
+      "parent and child working-directory independence",
+      "child CLI Run identity across registered Workspaces without Workspace session membership",
+      "parent descendant Run/media access and unrelated Workspace exclusion",
+      "workspace, user and source-symlink Skill reads and workspace name priority",
+      "host depth rejection",
+      "isolated missing-Preset cold restoration with historical log and Run/media preservation"
+    ]
+  },
+  "checks": [
+    {
+      "name": "fixture-and-production",
+      "total": 34,
+      "passed": 34,
+      "failed": 0,
+      "evidence": "desktop-native-fixtures-production-final.json"
+    },
+    {
+      "name": "retired-history-cache-boundary",
+      "passed": 1,
+      "failed": 0,
+      "evidence": "desktop-native-retired-fixture-green.json"
+    }
+  ],
+  "live": {
+    "attempts": 11,
+    "passedAttempt": 11,
+    "status": "passed",
+    "evidence": "desktop-native-attempt-11.json",
+    "nativeEvidenceIndex": "desktop-native-controlled/index.json",
+    "cleanupEvidence": "desktop-native-attempt-11-cleanup.json",
+    "sourceReview": "parent owns follow-up review fixes"
+  },
+  "realModel": {
+    "status": "blocked-api-key-expired",
+    "evidence": "desktop-native-real-status.json",
+    "traceIndex": "desktop-native-real-trace/trace-index.json",
+    "cleanupEvidence": "desktop-native-real-final-status.json"
+  },
+  "dependenciesInstalled": false,
+  "committed": false
+}

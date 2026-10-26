@@ -1,0 +1,2 @@
+$ node scripts/security/check-harness-boundary.mjs
+Harness project Tool registry boundary is valid: /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui

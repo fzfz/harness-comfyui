@@ -6,7 +6,7 @@
 
 ## 官方插件配置与存储校验
 
-1. 官方 Harness 按 bundle、Profile、home、invocation 的顺序合并插件配置，后续层覆盖较早层的同名字段。Profile 条目的 `config` 会整体替换该条目此前的配置对象。Host 插件收到官方应用合并后的配置，再加载项目 Configuration Profile。
+1. 官方 Harness 按插件包（bundle）、官方 Profile、宿主数据目录（home）、启动参数（invocation）的顺序合并插件配置，后续层覆盖较早层的同名字段。官方 Profile 保存插件条目，其中的 `config` 会整体替换该条目此前的配置对象。Host 插件收到合并后的配置，再按 `configurationProfile` 字段选择项目 Configuration Profile。两类配置的定义见[领域上下文](../../CONTEXT.md#官方-profile)。
 
 2. Core 的官方插件配置字段如下。
 
@@ -25,8 +25,8 @@
    1. 深度合并 `config/base.json` 与所选 `config/profiles/<name>.json`。
    2. 按 `config/environment-overrides.json` 应用已声明环境变量。
    3. 把相对存储路径解析到当前官方 Harness home。
-   4. 保存了 `dataDirectory` 时，按 `config/base.json` 中各存储路径相对 `dataDir` 的位置统一重算存储路径。
-   5. 保存了 `browserExecutablePath` 时，使用该值作为实际浏览器路径。
+   4. 官方插件配置包含 `dataDirectory` 时，按 `config/base.json` 中各存储路径相对 `dataDir` 的位置统一重算存储路径。
+   5. 官方插件配置包含 `browserExecutablePath` 时，使用该值作为实际浏览器路径。
 
 2. `config/environment-overrides.json` 唯一定义环境变量名称、目标字段与值类型。`target` 声明把解析值写入指定字段，number 声明解析为数值，string 声明保留字符串；`passThrough` 声明接受调用环境值。`loadProfile()` 校验实际传入的 Host 环境，未声明的 `HARNESS_COMFYUI_*` 变量会触发配置错误；维护者依据报错变量与该配置文件修正 Host 环境。
 
@@ -44,7 +44,7 @@
    | `paths.logDirectory` | 插件 Host 日志目录。 |
    | `comfyui.defaultInstanceId` | 请求省略实例 ID 时使用的默认 ComfyUI 实例 ID。 |
    | `comfyui.frontendCompiler.browserExecutablePath` | 官方前端导出使用的本机 Chrome 或 Chromium 绝对可执行文件路径。 |
-   | `comfyui.frontendCompiler.instanceCacheEpoch` | Host 级非空缓存代次，变化后使全部已登记实例的此前缓存失效。 |
+   | `comfyui.frontendCompiler.instanceCacheEpoch` | Host 级缓存版本标识；修改该值后，全部已登记实例此前的缓存失效。 |
    | `comfyui.frontendCompiler.timeoutMs` | 单次浏览器会话从启动、前端初始化到 `graphToPrompt()` 导出的总时限，单位为毫秒。 |
    | `comfyui.frontendCompiler.preReadiness.devToolsPortMs` | 浏览器发布 `DevToolsActivePort` 的阶段时限，单位为毫秒。 |
    | `comfyui.frontendCompiler.preReadiness.targetCreateMs` | Chrome DevTools HTTP 接口创建页面目标的阶段时限，单位为毫秒。 |
@@ -62,7 +62,7 @@
 
 1. Host 在激活时读取 Configuration Profile；用户修改 bundle 或 Profile 的加载配置后，完全退出并重新打开官方应用。数据源、图片读取与浏览器路径设置通过各自 Remote 保存，按后续章节的规则生效。
 
-2. 任一实例升级前端、安装或升级影响 Workflow 序列化的自定义节点，或改变前端导出行为后，维护者递增 `instanceCacheEpoch`，再完全退出并重新打开官方应用。
+2. 任一实例升级前端、安装或升级影响 Workflow 序列化的自定义节点，或改变前端导出行为后，维护者修改 `instanceCacheEpoch`，再完全退出并重新打开官方应用。
 
 3. `COMFYUI_API_WORKFLOW_CACHE_INVALID` 表示错误消息指向的缓存文件存在 JSON、identity 或 API Workflow 结构问题。维护者关闭官方应用、删除该文件，再重新打开应用并重试；文件缺失时，Host 执行官方前端导出并写入缓存。缓存 identity、校验和并发导出由 [OfficialApiWorkflowCompiler](../../src/host/generation/official-api-workflow.ts) 维护。
 
@@ -81,7 +81,7 @@
 
 ## NoobAI MCP 服务
 
-1. 7 个项目 Preset 通过共享组合加载 [agent-presets/noobai-mcp.cordis.yml](../../agent-presets/noobai-mcp.cordis.yml)，由 DSH 原生 MCP 客户端连接 NoobAI MCP 服务。该文件定义服务名、传输方式、地址、请求头、Tool 调用期限和启动失败行为；维护者在官方 DSH home 的 `.env` 文件中设置 `NOOBAI_MCP_TOKEN`，由官方应用启动时加载并提供 Bearer 凭据；本机默认文件为 `~/.dsh/.env`。修改后，维护者完全退出并重新打开官方应用。
+1. 工作台通过[共享组合](../../agent-presets/shared/agent.cordis.yml)加载 [agent-presets/noobai-mcp.cordis.yml](../../agent-presets/noobai-mcp.cordis.yml)，由 DSH 原生 MCP 客户端连接 NoobAI MCP 服务。该文件定义服务名、传输方式、地址、请求头、Tool 调用期限和启动失败行为；维护者在官方 DSH home 的 `.env` 文件中设置 `NOOBAI_MCP_TOKEN`，由官方应用启动时加载并提供 Bearer 凭据；本机默认文件为 `~/.dsh/.env`。修改后，维护者完全退出并重新打开官方应用。
 
 2. NoobAI MCP 服务与 Host 内部数据源客户端必须连接同一目录数据。维护者分别配置 MCP 声明和“数据源服务”设置，确保 Agent 选择的目录 ID 能由 Host 读取。
 
@@ -109,15 +109,15 @@
 
 ### 配置保存、激活与删除合同
 
-1. 保存请求包含 `operation: create | update`、`profile` 与最终 `activateProfileId`。`create` 新增尚不存在的 ID，`update` 修改仍然存在的同 ID 配置；最终激活目标必须存在。Host 在一次 Settings 写入中保存配置与激活目标，“保存 A 并切换 B”直接以 B 作为生效配置。
+1. 保存请求包含 `operation: create | update`、`profile` 与最终 `activateProfileId`。`create` 新增尚不存在的 ID，`update` 修改仍然存在的同 ID 配置；最终激活目标必须存在。“保存 A 并切换 B”成功后，B 成为生效配置。
 
 2. OpenAI 兼容配置的保存请求必须包含 `credential`。`{ action: "keep" }` 保留凭据，`{ action: "clear" }` 清除凭据，`{ action: "replace", apiKey: <值> }` 替换凭据；API Key 只随替换请求发送。runtime 配置使用第 1 项的请求字段，保存后清除对应 API Key。读取、保存、激活和删除响应返回 `hasApiKey` 状态。
 
-3. 凭据替换使用独立引用，引用前缀由 `config/image-reader-runtime.json` 定义。[ImageReaderConfigurationService](../../src/host/image-reader/configuration-service.ts) 负责 Settings 写入确认、凭据提交与清理；只读凭据来源阻止替换、清除、删除及转为 runtime 配置。保存结果不明或凭据清理失败时，Host 返回 `config/error-catalog.json` 中对应的 `IMAGE_READER_CREDENTIAL_*` 错误。
+3. [ImageReaderConfigurationService](../../src/host/image-reader/configuration-service.ts) 负责配置与凭据的保存和清理。只读凭据来源阻止替换、清除、删除及转为 runtime 配置。保存结果不明或凭据清理失败时，Host 返回 `config/error-catalog.json` 中对应的 `IMAGE_READER_CREDENTIAL_*` 错误。
 
 4. 激活操作修改活动 ID；删除操作保留至少一份配置。删除活动配置后，Host 优先激活删除前列表中的后一项，缺少后一项时激活前一项。Host 按调用顺序串行处理配置写操作，并在成功后返回完整 `configuration`。
 
-5. Client 区分已保存配置与编辑草稿，未保存草稿在离开设置页后丢弃。选择已保存配置会立即激活该配置；普通保存采用实际生效的激活目标。草稿、外部配置变化、取消和成功响应的状态处理由 [image-reader-settings.tsx](../../src/client/image-reader/image-reader-settings.tsx) 维护。
+5. Client 的配置选择和编辑草稿处理见 [image-reader-settings.tsx](../../src/client/image-reader/image-reader-settings.tsx)。
 
 6. Host 与 Client 使用 [src/image-reader/settings.ts](../../src/image-reader/settings.ts) 的保存校验合同，设置页在对应字段与保存按钮附近显示具体错误。保存、激活与删除持久化失败分别使用 `IMAGE_READER_SETTINGS_SAVE_FAILED`、`IMAGE_READER_SETTINGS_ACTIVATE_FAILED` 与 `IMAGE_READER_SETTINGS_DELETE_FAILED`。成功保存或激活后，下一次图片读取立即使用生效配置。
 
@@ -135,25 +135,20 @@
 
 3. 阶段字段、耗时和 request ID 合同由 [src/image-reader/diagnostics-schema.ts](../../src/image-reader/diagnostics-schema.ts) 定义，日志产生入口为 [ImageReaderService](../../src/host/image-reader/image-reader-service.ts)。`response_complete` 表示正文读完，`completed` 表示响应解析与完成原因检查成功。
 
-4. Runtime Provider 失败使用 `IMAGE_READER_PROVIDER_FAILED`，诊断包含本次配置名称与 ID、Provider、模型、温度、输出上限、finish kind、`LlmFailure.code`，以及 Provider 提供的状态码和 request ID。用户据此核对配置和凭据；返回 `providerRetryAfterMs` 时按该时长重试。OpenAI 兼容响应的 `finish_reason=length` 使用 `IMAGE_READER_OUTPUT_LIMIT`，操作指引由 `config/error-catalog.json` 提供。
+4. Runtime Provider 调用失败时，Host 返回 `IMAGE_READER_PROVIDER_FAILED`。用户根据调用诊断核对配置和凭据；响应包含 `providerRetryAfterMs` 时，等待指定时长后重试。OpenAI 兼容响应的 `finish_reason=length` 使用 `IMAGE_READER_OUTPUT_LIMIT`，操作指引由 `config/error-catalog.json` 提供。
 
 ## 子 Agent 派发配置
 
-1. 工作台的 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 定义 `task-agent`；迭代预设的 [agent.cordis.yml](../../agent-presets/harness-comfyui-iteration/agent.cordis.yml) 定义构图、生成、观察和比较的派发工具。字段用途如下。
+1. 工作台的 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 加载 `@deepseek-ai/dsh-tool-subagent` 与 `@deepseek-ai/dsh-tool-subagent-control`。共享组合加载官方 `list-agents` 组件。派发组件字段如下。
 
    | 字段 | 用途与规则 |
    | --- | --- |
-   | `toolName`、`description` | 角色工具名称与调用说明。 |
-   | `agentPreset` | 子 Agent 使用的角色 Preset ID；角色入口见[系统架构](architecture.md#项目-presetskills-与目录访问)。 |
-   | `agentOptions.provider`、`agentOptions.model`、`agentOptions.reasoningEffort` | 模型供应商、模型与推理设置。 |
    | `provider` | 使用 `spawn` 创建独立子会话。 |
    | `maxDepth` | 使用 `1` 限定子 Agent 的派发深度。 |
-   | `parameters` | 角色工具的模型可见参数 JSON Schema。 |
-   | `taskTemplate.title`、`taskTemplate.sections[]` | 任务消息标题，以及按顺序呈现参数的分组标题与字段。 |
 
-2. 每个角色 Preset 的 `agent.cordis.yml` 定义自身 persona，并通过 [shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) 加载公共组合。工具能力由该 Preset 加载的组件确定；产品 Preset 加载派发与中断工具，迭代产品 Preset 另加载 Goal 工具。
+2. 派发组件省略 `agentPreset` 与 `agentOptions`，由宿主继承工作台组合与父 Agent 模型配置。
 
-3. 派发合同见[系统架构](architecture.md#项目-presetskills-与目录访问)，输出文件合同见 [references/records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md)。
+3. 工具参数、返回值和使用说明以运行时官方工具声明为准。会话与生命周期职责见[系统架构](architecture.md#项目-presetskills-与目录访问)。
 
 ## 受管 CLI 配置
 
@@ -167,4 +162,4 @@
    | `cliServer.port` | listener 端口，固定为 `0`，由操作系统分配实际端口。 |
    | `cliServer.shutdownTimeoutMs` | 插件卸载时等待已接纳请求退出的期限，默认 `5000` 毫秒。 |
 
-3. 受管 CLI 的结果文件使用 `os.tmpdir()` 选择的系统临时目录。该目录由 [result-file.mjs](../../scripts/cli/result-file.mjs) 读取。公共输出与文件错误见 [CLI 帮助配置](../../config/managed-cli-help.json)。
+3. 受管 CLI 通过 [result-file.mjs](../../scripts/cli/result-file.mjs) 在 `os.tmpdir()` 返回的目录中保存结果文件。公共输出与文件错误见 [CLI 帮助配置](../../config/managed-cli-help.json)。

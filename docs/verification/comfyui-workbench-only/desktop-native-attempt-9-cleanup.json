@@ -1,0 +1,175 @@
+{
+  "runs": [
+    {
+      "runId": "0f29db99-bf5a-4587-acb2-39e27fe0b99c",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:33:45.827Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51059,
+        "rendererCdp": 51060,
+        "hostInspector": 51061
+      },
+      "pid": 92562,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/0f29db99-bf5a-4587-acb2-39e27fe0b99c/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/0f29db99-bf5a-4587-acb2-39e27fe0b99c/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/0f29db99-bf5a-4587-acb2-39e27fe0b99c/logs"
+    },
+    {
+      "runId": "1bb1a40c-e909-4878-a947-6555f9e58918",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:34:17.271Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51591,
+        "rendererCdp": 51592,
+        "hostInspector": 51593
+      },
+      "pid": 8851,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/1bb1a40c-e909-4878-a947-6555f9e58918/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/1bb1a40c-e909-4878-a947-6555f9e58918/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/1bb1a40c-e909-4878-a947-6555f9e58918/logs"
+    },
+    {
+      "runId": "242260cf-0615-45d0-a6c4-ddd546b7f46d",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:34:27.646Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51673,
+        "rendererCdp": 51674,
+        "hostInspector": 51675
+      },
+      "pid": 14175,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/242260cf-0615-45d0-a6c4-ddd546b7f46d/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/242260cf-0615-45d0-a6c4-ddd546b7f46d/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/242260cf-0615-45d0-a6c4-ddd546b7f46d/logs"
+    },
+    {
+      "runId": "6ff01154-09b0-470c-80e4-027271e64c84",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:33:35.615Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 50886,
+        "rendererCdp": 50887,
+        "hostInspector": 50888
+      },
+      "pid": 86509,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/6ff01154-09b0-470c-80e4-027271e64c84/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/6ff01154-09b0-470c-80e4-027271e64c84/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/6ff01154-09b0-470c-80e4-027271e64c84/logs"
+    },
+    {
+      "runId": "74779a1e-067e-4820-81c0-ec8891251b7b",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:34:38.523Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51725,
+        "rendererCdp": 51726,
+        "hostInspector": 51727
+      },
+      "pid": 19512,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/74779a1e-067e-4820-81c0-ec8891251b7b/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/74779a1e-067e-4820-81c0-ec8891251b7b/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/74779a1e-067e-4820-81c0-ec8891251b7b/logs"
+    },
+    {
+      "runId": "a456a3d0-324d-4429-8c0f-56971e6afdbd",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:35:06.537Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51802,
+        "rendererCdp": 51803,
+        "hostInspector": 51804
+      },
+      "pid": 24832,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/a456a3d0-324d-4429-8c0f-56971e6afdbd/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/a456a3d0-324d-4429-8c0f-56971e6afdbd/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/a456a3d0-324d-4429-8c0f-56971e6afdbd/logs"
+    },
+    {
+      "runId": "a50919bb-a98e-4eb5-b30d-1b0b9bdbc8d6",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:35:17.077Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51969,
+        "rendererCdp": 51970,
+        "hostInspector": 51971
+      },
+      "pid": 30907,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/a50919bb-a98e-4eb5-b30d-1b0b9bdbc8d6/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/a50919bb-a98e-4eb5-b30d-1b0b9bdbc8d6/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/a50919bb-a98e-4eb5-b30d-1b0b9bdbc8d6/logs"
+    },
+    {
+      "runId": "b044082f-a8eb-4081-8069-6c4dc1e949a7",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:34:06.829Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51481,
+        "rendererCdp": 51482,
+        "hostInspector": 51483
+      },
+      "pid": 3488,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/b044082f-a8eb-4081-8069-6c4dc1e949a7/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/b044082f-a8eb-4081-8069-6c4dc1e949a7/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/b044082f-a8eb-4081-8069-6c4dc1e949a7/logs"
+    },
+    {
+      "runId": "ebb99c52-fa3d-4a8e-95e4-6c4dc41a1169",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:33:56.462Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 51111,
+        "rendererCdp": 51112,
+        "hostInspector": 51113
+      },
+      "pid": 97870,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/ebb99c52-fa3d-4a8e-95e4-6c4dc41a1169/run.json",
+      "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/ebb99c52-fa3d-4a8e-95e4-6c4dc41a1169/evidence",
+      "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-iErIDc/.local/desktop-e2e/ebb99c52-fa3d-4a8e-95e4-6c4dc41a1169/logs"
+    }
+  ]
+}

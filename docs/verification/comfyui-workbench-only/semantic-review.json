@@ -1,0 +1,467 @@
+{
+  "schemaVersion": 1,
+  "reviews": [
+    {
+      "file": "docs/system/architecture.md",
+      "reviewer": "/root/semantic_architecture",
+      "context": "clean",
+      "readScope": [
+        "docs/system/architecture.md"
+      ],
+      "coveredLines": [
+        1,
+        114
+      ],
+      "findingsGroups": 9,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "README.md",
+      "reviewer": "/root/semantic_readme",
+      "context": "clean",
+      "readScope": [
+        "README.md"
+      ],
+      "coveredLines": [
+        1,
+        172
+      ],
+      "findingsGroups": 7,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "CONTEXT.md",
+      "reviewer": "/root/semantic_context",
+      "context": "clean",
+      "readScope": [
+        "CONTEXT.md"
+      ],
+      "coveredLines": [
+        1,
+        95
+      ],
+      "findingsGroups": 3,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "docs/user/install-update.md",
+      "reviewer": "/root/semantic_install",
+      "context": "clean",
+      "readScope": [
+        "docs/user/install-update.md"
+      ],
+      "coveredLines": [
+        1,
+        90
+      ],
+      "findingsGroups": 8,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "reviewer": "/root/semantic_preset_dev",
+      "context": "clean",
+      "readScope": [
+        "docs/agents/comfyui-workbench-preset-and-skill-development.md"
+      ],
+      "coveredLines": [
+        1,
+        115
+      ],
+      "findingsGroups": 7,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "docs/agents/worktree-development.md",
+      "reviewer": "/root/semantic_worktree",
+      "context": "clean",
+      "readScope": [
+        "docs/agents/worktree-development.md"
+      ],
+      "coveredLines": [
+        1,
+        62
+      ],
+      "findingsGroups": 6,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "docs/system/configuration.md",
+      "reviewer": "/root/semantic_config",
+      "context": "clean",
+      "readScope": [
+        "docs/system/configuration.md"
+      ],
+      "coveredLines": [
+        1,
+        165
+      ],
+      "findingsGroups": 9,
+      "disposition": "parent applied wording and structure corrections",
+      "retainedFindings": [
+        "The ordering guarantee for concurrent configuration writes remains part of the caller-visible contract."
+      ]
+    },
+    {
+      "file": "docs/system/directory-structure.md",
+      "reviewer": "/root/semantic_directory",
+      "context": "clean",
+      "readScope": [
+        "docs/system/directory-structure.md"
+      ],
+      "coveredLines": [
+        1,
+        110
+      ],
+      "findingsGroups": 3,
+      "disposition": "parent applied wording and structure corrections",
+      "retainedFindings": [
+        "The repository uses 合同 consistently for interface contracts; a global rename to 契约 is outside this change."
+      ]
+    },
+    {
+      "file": "docs/system/technology-stack.md",
+      "reviewer": "/root/semantic_technology",
+      "context": "clean",
+      "readScope": [
+        "docs/system/technology-stack.md"
+      ],
+      "coveredLines": [
+        1,
+        38
+      ],
+      "findingsGroups": 3,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "docs/system/testing.md",
+      "reviewer": "/root/semantic_testing",
+      "context": "clean",
+      "readScope": [
+        "docs/system/testing.md"
+      ],
+      "coveredLines": [
+        1,
+        64
+      ],
+      "findingsGroups": 7,
+      "disposition": "parent applied wording and structure corrections",
+      "retainedFindings": [
+        "Existing contract terminology is retained consistently across repository documents."
+      ]
+    },
+    {
+      "file": "docs/adr/0016-official-desktop-plugin-delivery.md",
+      "reviewer": "/root/semantic_adr",
+      "context": "clean",
+      "readScope": [
+        "docs/adr/0016-official-desktop-plugin-delivery.md"
+      ],
+      "coveredLines": [
+        1,
+        33
+      ],
+      "findingsGroups": 3,
+      "disposition": "parent applied wording and structure corrections"
+    },
+    {
+      "file": "config/error-catalog.json",
+      "reviewer": "/root/semantic_errors",
+      "context": "clean",
+      "readScope": [
+        "config/error-catalog.json"
+      ],
+      "coveredLines": [
+        57,
+        60
+      ],
+      "findingsGroups": 2,
+      "disposition": "parent applied actionable messages and retained original-project identity as the directory recorded when the Session was created"
+    },
+    {
+      "file": "docs/system/architecture.md",
+      "reviewer": "/root/semantic_architecture_final",
+      "context": "clean",
+      "readScope": [
+        "docs/system/architecture.md"
+      ],
+      "coveredLines": [
+        1,
+        110
+      ],
+      "findingsGroups": 4,
+      "disposition": "parent applied precise Host and descendant terminology and removed duplicated compiler validation details"
+    },
+    {
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "reviewer": "/root/semantic_preset_default_tools",
+      "context": "clean",
+      "readScope": [
+        "docs/agents/comfyui-workbench-preset-and-skill-development.md"
+      ],
+      "coveredLines": [
+        1,
+        115
+      ],
+      "findingsGroups": 4,
+      "disposition": "Applied explicit preset configuration references, removed a repeated scope sentence, and centralized CLI reading and repository semantic rules."
+    },
+    {
+      "file": "docs/system/directory-structure.md",
+      "reviewer": "/root/semantic_directory_default",
+      "context": "clean",
+      "readScope": [
+        "docs/system/directory-structure.md"
+      ],
+      "coveredLines": [
+        1,
+        109
+      ],
+      "findingsGroups": 0,
+      "disposition": "Passed without findings."
+    },
+    {
+      "file": "docs/system/testing.md",
+      "reviewer": "/root/semantic_testing_default",
+      "context": "clean",
+      "readScope": [
+        "docs/system/testing.md"
+      ],
+      "coveredLines": [
+        1,
+        68
+      ],
+      "findingsGroups": 2,
+      "disposition": "Clarified the pre-start Profile comparison point and the Desktop test as the verification actor."
+    },
+    {
+      "file": "docs/system/technology-stack.md",
+      "reviewer": "/root/semantic_technology_default",
+      "context": "clean",
+      "readScope": [
+        "docs/system/technology-stack.md"
+      ],
+      "coveredLines": [
+        1,
+        38
+      ],
+      "findingsGroups": 2,
+      "disposition": "Removed repeated package-version and exports listings; identified exported plugin runtime files as the required tarball contents."
+    },
+    {
+      "file": "docs/plans/comfyui-workbench-only-20261025.md",
+      "reviewer": "/root/semantic_plan_default",
+      "context": "clean",
+      "readScope": [
+        "docs/plans/comfyui-workbench-only-20261025.md"
+      ],
+      "coveredLines": [
+        1,
+        324
+      ],
+      "findingsGroups": 4,
+      "disposition": "Applied ordered-table structure, removed a repeated goal, expanded ambiguous document paths, and clarified parent-child original directory inheritance against tagged official childSessionMeta source."
+    },
+    {
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "reviewer": "/root/semantic_preset_final_default",
+      "context": "clean",
+      "readScope": [
+        "docs/agents/comfyui-workbench-preset-and-skill-development.md"
+      ],
+      "coveredLines": [
+        1,
+        111
+      ],
+      "findingsGroups": 0,
+      "disposition": "Final single-file semantic review passed."
+    },
+    {
+      "file": "docs/plans/comfyui-workbench-only-20261025.md",
+      "reviewer": "/root/semantic_plan_final_default",
+      "context": "clean",
+      "readScope": [
+        "docs/plans/comfyui-workbench-only-20261025.md"
+      ],
+      "coveredLines": [
+        1,
+        325
+      ],
+      "findingsGroups": 3,
+      "disposition": "Removed a duplicate Run-ownership rule from terminology, allowed unrelated baseline failures without an R id, and made retired-preset cold-restore acceptance explicit."
+    },
+    {
+      "file": "docs/system/testing.md",
+      "reviewer": "/root/semantic_testing_finish",
+      "context": "clean",
+      "readScope": [
+        "docs/system/testing.md"
+      ],
+      "coveredLines": [
+        1,
+        68
+      ],
+      "findingsGroups": 1,
+      "disposition": "Clarified that the runtime record retains evidence for failure, cancellation, timeout, and port conflicts."
+    },
+    {
+      "file": "docs/system/technology-stack.md",
+      "reviewer": "/root/semantic_technology_finish",
+      "context": "clean",
+      "readScope": [
+        "docs/system/technology-stack.md"
+      ],
+      "coveredLines": [
+        1,
+        38
+      ],
+      "findingsGroups": 0,
+      "disposition": "Final single-file semantic review passed."
+    },
+    {
+      "file": "docs/plans/comfyui-workbench-only-20261025.md",
+      "reviewer": "/root/semantic_plan_close",
+      "context": "clean",
+      "readScope": [
+        "docs/plans/comfyui-workbench-only-20261025.md"
+      ],
+      "coveredLineRanges": [
+        [
+          10,
+          20
+        ],
+        [
+          235,
+          241
+        ],
+        [
+          287,
+          300
+        ]
+      ],
+      "findingsGroups": 3,
+      "disposition": "Defined evidence for baseline/environment failures, referenced the result-access contract from acceptance, and made official Desktop restart the cold-restore trigger."
+    }
+  ],
+  "discardedReviews": [
+    "/root/semantic_docs_user",
+    "/root/semantic_docs_system"
+  ],
+  "discardReason": "Multiple-file briefs were interrupted; only single-file reviews are used.",
+  "stc": [
+    {
+      "file": "README.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 20
+    },
+    {
+      "file": "CONTEXT.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 7
+    },
+    {
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 10
+    },
+    {
+      "file": "docs/agents/worktree-development.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "docs/system/architecture.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 6
+    },
+    {
+      "file": "docs/system/configuration.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 2
+    },
+    {
+      "file": "docs/system/directory-structure.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "docs/system/testing.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 6
+    },
+    {
+      "file": "docs/system/technology-stack.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "docs/user/install-update.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 7
+    },
+    {
+      "file": "docs/adr/0016-official-desktop-plugin-delivery.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 4
+    }
+  ],
+  "warningDisposition": {
+    "G19": "UI preset names remain exact; Markdown link boundaries retain rendered spacing.",
+    "G12": "Long source identifiers, linked entries and user-request examples retain context needed by their consumers.",
+    "G4": "实现 identifies source entry points and implementation ownership; these matches are not verb-plus-empty-noun constructions.",
+    "G5": "Warning matches were checked against concrete conditions and examples."
+  },
+  "localLinkCheck": {
+    "missing": []
+  },
+  "stcDefaultToolFollowup": [
+    {
+      "file": "docs/agents/comfyui-workbench-preset-and-skill-development.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 10
+    },
+    {
+      "file": "docs/system/directory-structure.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 1
+    },
+    {
+      "file": "docs/system/testing.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 6
+    },
+    {
+      "file": "docs/system/technology-stack.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "file": "docs/plans/comfyui-workbench-only-20261025.md",
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 18
+    }
+  ],
+  "modelAuthorizationReview": {
+    "reviewer": "/root/model_authorization_semantic",
+    "context": "clean",
+    "file": "docs/plans/comfyui-workbench-only-20261025.md",
+    "findings": [],
+    "stcExitCode": 0
+  }
+}

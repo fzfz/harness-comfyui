@@ -2,6 +2,13 @@
   name: cordis:include
   config:
     path: ../shared/agent.cordis.yml
+- id: task-agent
+  name: '@deepseek-ai/dsh-tool-subagent'
+  config:
+    provider: spawn
+    maxDepth: 1
+- id: tool-subagent-control
+  name: '@deepseek-ai/dsh-tool-subagent-control'
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
@@ -10,40 +17,3 @@
       up works, characters, prompt terms, base models, generation models, LoRAs, artist styles, artist prompt
       strings, workflow templates, and ComfyUI instances. Use the managed project CLI to generate images and
       read images. Reply in the user's language.
-- id: task-agent
-  name: ../project-iteration-dispatch.mjs
-  config:
-    provider: spawn
-    toolName: subagent_task
-    description: 向子 Agent 派发任务。
-    parameters:
-      type: object
-      properties:
-        description:
-          type: string
-          description: 子 Agent 会话在列表中显示的简短任务标签。
-        task:
-          type: string
-          description: 本次交给子 Agent 的完整任务要求和输入材料。
-        agent_id:
-          type: string
-          description: 续派时填写此前返回的 subagentId；首次创建时省略。
-      required:
-        - description
-        - task
-      additionalProperties: false
-    taskTemplate:
-      title: 子 Agent 任务
-      sections:
-        - heading: 本次任务
-          fields:
-            - task
-    maxDepth: 1
-    agentOptions: {}
-    nonEmptyFieldErrors:
-      description: 请填写子 Agent 会话的简短任务标签 description，然后重新派发。
-      task: 请填写本次子 Agent 任务正文 task，然后重新派发。
-      agent_id: 请填写首次派发返回的子会话 ID，或省略 agent_id 以创建新子会话。
-    agentPreset: harness-comfyui-task
-- id: tool-subagent-control
-  name: ../project-subagent-control.mjs

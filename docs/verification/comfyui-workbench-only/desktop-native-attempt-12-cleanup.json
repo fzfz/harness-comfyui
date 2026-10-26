@@ -1,0 +1,132 @@
+{
+  "runs": [
+    {
+      "runId": "2f8efe8c-75e3-4595-af26-298601657db2",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:58:57.586Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61779,
+        "rendererCdp": 61780,
+        "hostInspector": 61781
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/2f8efe8c-75e3-4595-af26-298601657db2/run.json"
+    },
+    {
+      "runId": "3fa004ff-5e10-4d09-a148-1fa6ae3aa8ff",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:58:47.103Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61579,
+        "rendererCdp": 61580,
+        "hostInspector": 61581
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/3fa004ff-5e10-4d09-a148-1fa6ae3aa8ff/run.json"
+    },
+    {
+      "runId": "7a880f61-eb05-4b5b-8370-8358adb2bacb",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:00:18.389Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 62185,
+        "rendererCdp": 62186,
+        "hostInspector": 62187
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/7a880f61-eb05-4b5b-8370-8358adb2bacb/run.json"
+    },
+    {
+      "runId": "cbfadaa4-32d8-405a-a367-74040a64a930",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:58:36.317Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61349,
+        "rendererCdp": 61350,
+        "hostInspector": 61351
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/cbfadaa4-32d8-405a-a367-74040a64a930/run.json"
+    },
+    {
+      "runId": "8eef69ef-21ae-484a-b62b-b5c16c0da557",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:59:29.595Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 62094,
+        "rendererCdp": 62095,
+        "hostInspector": 62096
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/8eef69ef-21ae-484a-b62b-b5c16c0da557/run.json"
+    },
+    {
+      "runId": "95fb5566-5725-46f0-a0f4-1f27df09fc38",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:59:08.194Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61926,
+        "rendererCdp": 61927,
+        "hostInspector": 61928
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/95fb5566-5725-46f0-a0f4-1f27df09fc38/run.json"
+    },
+    {
+      "runId": "748fcd72-952b-40eb-83c1-9d523b904acf",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:58:25.720Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 61174,
+        "rendererCdp": 61175,
+        "hostInspector": 61176
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/748fcd72-952b-40eb-83c1-9d523b904acf/run.json"
+    },
+    {
+      "runId": "9df4a2dc-5d71-41f1-9fea-d249df0e6934",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:59:18.849Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 62005,
+        "rendererCdp": 62006,
+        "hostInspector": 62007
+      },
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-gIs5BG/.local/desktop-e2e/9df4a2dc-5d71-41f1-9fea-d249df0e6934/run.json"
+    }
+  ]
+}

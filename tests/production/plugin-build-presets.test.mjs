@@ -3,7 +3,6 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { execFile as execFileCallback } from 'node:child_process'
 import { promisify } from 'node:util'
-import { pathToFileURL } from 'node:url'
 
 import { expect, it } from 'vitest'
 
@@ -19,10 +18,9 @@ it('rejects an invalid project Preset before writing plugin build outputs', asyn
     await mkdir(join(root, 'config'))
     await mkdir(presetDirectory, { recursive: true })
     await writeFile(join(root, 'config', 'product-agent.json'), JSON.stringify({
-      schemaVersion: 3,
+      schemaVersion: 4,
       preset: {
         id: 'invalid-preset',
-        additionalManagedPresetIds: [],
         sourceRootRelativePath: 'agent-presets',
       },
     }))
@@ -37,7 +35,7 @@ it('rejects an invalid project Preset before writing plugin build outputs', asyn
   }
 })
 
-it('packages the shared MCP configuration for every managed Preset and the product control tool', async () => {
+it('packages the shared MCP configuration for the workbench Preset', async () => {
   const repositoryRoot = resolve(import.meta.dirname, '../..')
   const root = await mkdtemp(join(tmpdir(), 'plugin-package-mcp-'))
   const execFile = promisify(execFileCallback)
@@ -46,23 +44,21 @@ it('packages the shared MCP configuration for every managed Preset and the produ
     const { archivePath } = await packPlugin({ repositoryRoot, artifactRoot: root, outputFile: join(root, 'plugin.tgz') })
     await execFile('tar', ['-xzf', archivePath, '-C', root])
     await symlink(join(repositoryRoot, 'node_modules'), join(root, 'package/node_modules'), 'dir')
-    for (const presetId of [productAgent.preset.id, ...productAgent.preset.additionalManagedPresetIds]) {
+    for (const presetId of [productAgent.preset.id]) {
       const directory = join(root, 'package', 'agent-presets', presetId)
       const { composition } = await readProjectComposition(join(root, 'package'), presetId)
+      expect(composition.find(row => row.id === 'task-agent')).toEqual({
+        id: 'task-agent', name: '@deepseek-ai/dsh-tool-subagent', config: { provider: 'spawn', maxDepth: 1 },
+      })
+      for (const name of [
+        '@deepseek-ai/dsh-tool-subagent-control',
+        '@deepseek-ai/dsh-tool-subagent-control/list-agents',
+        '@deepseek-ai/dsh-tool-working-directory',
+      ]) expect(composition.filter(row => row.name === name)).toHaveLength(1)
       const includes = composition.filter(row => row.name === 'cordis:include' && row.config?.path === '../noobai-mcp.cordis.yml')
       expect(includes).toHaveLength(1)
       const source = await readFile(resolve(directory, includes[0].config.path), 'utf8')
       expect(source).toBe(await readFile(join(repositoryRoot, 'agent-presets/noobai-mcp.cordis.yml'), 'utf8'))
-      if (![productAgent.preset.id, 'harness-comfyui-iteration'].includes(presetId)) continue
-      const control = composition.filter(row => row.id === 'tool-subagent-control')
-      expect(control).toHaveLength(1)
-      expect(control[0].name).toBe('../project-subagent-control.mjs')
-      const module = await import(pathToFileURL(resolve(directory, control[0].name)).href)
-      const registered = []
-      module.apply({ tools: { register: tool => registered.push(tool) }, subagents: {} })
-      expect(registered.map(tool => tool.name)).toEqual(['interrupt_agent'])
-      expect(await readFile(resolve(directory, '../project-subagent-control.json'), 'utf8'))
-        .toBe(await readFile(join(repositoryRoot, 'agent-presets/project-subagent-control.json'), 'utf8'))
     }
   } finally {
     await rm(root, { recursive: true, force: true })

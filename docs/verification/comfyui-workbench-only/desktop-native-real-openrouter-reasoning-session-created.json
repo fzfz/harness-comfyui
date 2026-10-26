@@ -1,0 +1,23 @@
+{
+  "workspace": {
+    "ok": true,
+    "value": {
+      "workspace": {
+        "workspaceId": "8f056260-5d1b-4044-baee-33652ff50636",
+        "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning",
+        "title": "workspace-openrouter-reasoning",
+        "sessionIds": [],
+        "createdAt": "2026-10-26T03:30:22.787Z",
+        "updatedAt": "2026-10-26T03:30:22.787Z"
+      },
+      "created": true
+    }
+  },
+  "session": {
+    "ok": true,
+    "value": {
+      "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+      "agentPreset": "harness-comfyui-cli-candidate"
+    }
+  }
+}

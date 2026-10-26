@@ -1,0 +1,28 @@
+{
+  "artifacts": [
+    {
+      "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/native-first-result.json",
+      "evidence": "docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-first-result.json",
+      "isFile": true,
+      "bytes": 689,
+      "parsed": {
+        "skill_name": "comfyui-generate",
+        "reference_file_path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/.agents/skills/comfyui-generate/references/generation-cli.md",
+        "query_history_command": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --stdin",
+        "purpose": "This command queries the saved generation parameters (arguments) and Actual Workflow for one or more Generation Run IDs, allowing users to inspect or reuse historical run data including seeds and prompts."
+      }
+    },
+    {
+      "path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/native-supplement-result.json",
+      "evidence": "docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-supplement-result.json",
+      "isFile": true,
+      "bytes": 831,
+      "parsed": {
+        "skill_name": "comfyui-generate",
+        "reference_file_path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace-openrouter-reasoning/.agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+        "query_workflow_parameter_command": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation inspect-template-parameters --stdin",
+        "purpose": "This command queries the generation parameters accepted by a specified Workflow template on a specified ComfyUI instance, returning parameter details including IDs, kinds, value types, current values, and constraints like minimums, maximums, and allowed values, as well as size candidate dimensions."
+      }
+    }
+  ]
+}

@@ -229,10 +229,6 @@
       "types": "./src/host/web/plugin.ts",
       "default": "./.local/source-host/web.js"
     },
-    "./cli-workspace": {
-      "types": "./src/host/cli/workspace.ts",
-      "default": "./.local/source-host/cli-workspace.js"
-    },
     "./presets": "./agent-presets/project-installed-presets.mjs",
     "./locale/en.json": "./locales/workbench/en.json",
     "./locale/zh.json": "./locales/workbench/zh.json",
@@ -245,8 +241,6 @@
     "./presets/locale/en.json": "./locales/presets/en.json",
     "./presets/locale/zh.json": "./locales/presets/zh.json",
     "./web/locale/en.json": "./locales/web/en.json",
-    "./web/locale/zh.json": "./locales/web/zh.json",
-    "./cli-workspace/locale/en.json": "./locales/cli-workspace/en.json",
-    "./cli-workspace/locale/zh.json": "./locales/cli-workspace/zh.json"
+    "./web/locale/zh.json": "./locales/web/zh.json"
   }
 }

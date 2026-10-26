@@ -1,0 +1,62 @@
+{
+  "status": "blocked-api-key-expired",
+  "defaultModel": {
+    "provider": "opencode-go",
+    "model": "deepseek-v4.1-flash",
+    "reasoningEffort": "max"
+  },
+  "application": "0.2.1-rc.3",
+  "packageVersion": "0.47.2",
+  "runId": "8741e24a-7f09-4d29-9221-45e2a51390ab",
+  "parentSessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+  "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/comfyui-native-real-Ue7ocF/.local/desktop-development/native-real-model/workspace",
+  "requestConfigurations": [
+    {
+      "provider": "opencode-go",
+      "model": "deepseek-v4.1-flash",
+      "reasoningEffort": "max",
+      "maxTokens": 384000
+    }
+  ],
+  "toolCallCount": 0,
+  "subagentCount": 0,
+  "turnEnd": {
+    "type": "turn/end",
+    "seq": 17,
+    "time": 1792982931346,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "error",
+        "error": {
+          "message": "401: {\"type\":\"authentication_error\",\"code\":\"api_key_expired\",\"message\":\"This API key has expired. Create a new API key in OpenCode Console and replace it in your client or secret store. Signing in again will not renew this key.\"}",
+          "code": "AUTH"
+        }
+      }
+    }
+  },
+  "generationRunCount": 0,
+  "traceIndex": "desktop-native-real-trace/trace-index.json",
+  "traceMissing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "cleanup": {
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-26T02:49:55.700Z",
+      "portsReleased": true
+    },
+    "processGroupMatchesRun": false
+  }
+}

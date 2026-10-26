@@ -13,31 +13,10 @@
   "requiredFiles": [
     "agent-presets/presets.cordis.yml",
     "agent-presets/shared/agent.cordis.yml",
-    "agent-presets/harness-comfyui-task/preset.yml",
-    "agent-presets/harness-comfyui-task/agent.cordis.yml",
-    "agent-presets/harness-comfyui-composition/preset.yml",
-    "agent-presets/harness-comfyui-composition/agent.cordis.yml",
-    "agent-presets/harness-comfyui-generation/preset.yml",
-    "agent-presets/harness-comfyui-generation/agent.cordis.yml",
-    "agent-presets/harness-comfyui-observation/preset.yml",
-    "agent-presets/harness-comfyui-observation/agent.cordis.yml",
-    "agent-presets/harness-comfyui-comparison/preset.yml",
-    "agent-presets/harness-comfyui-comparison/agent.cordis.yml",
     "agent-presets/noobai-mcp.cordis.yml",
     "agent-presets/project-installed-presets.mjs",
-    "agent-presets/project-dispatch.json",
-    "agent-presets/project-observation.json",
-    "agent-presets/project-iteration-dispatch.mjs",
-    "agent-presets/project-observation-dispatch.mjs",
-    "agent-presets/project-subagent-workspace.mjs",
-    "agent-presets/project-subagent-control.mjs",
-    "agent-presets/project-subagent-control.json",
-    "agent-presets/project-system-prompt-visibility.mjs",
-    "agent-presets/project-tool-visibility.mjs",
     "agent-presets/harness-comfyui-cli-candidate/preset.yml",
-    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
-    "agent-presets/harness-comfyui-iteration/preset.yml",
-    "agent-presets/harness-comfyui-iteration/agent.cordis.yml"
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml"
   ],
   "failureDetailsTemplate": "以下插件包运行资源缺失、不是普通文件或无法读取；本次激活在初始化业务数据前停止，现有配置和业务数据保持原样：\n{resources}"
 }

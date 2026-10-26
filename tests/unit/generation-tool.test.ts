@@ -41,12 +41,12 @@ const toolArguments = {
 }
 
 describe('generate_with_comfyui Tool', () => {
-  it('derives Run ownership from the current Tool call without a user-triggered Skill invocation', async () => {
+  it('derives Run ownership for an ungrouped Session from its original project and current Tool call', async () => {
     const acceptGeneration = vi.fn(async () => ({ runId: 'run_1' }))
     const tool = createGenerationTool({
       runtime: { acceptGeneration } as never,
       workspaceRegistry: {
-        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: [] })),
       } as never,
     })
     const events = [
@@ -141,7 +141,7 @@ describe('generate_with_comfyui Tool', () => {
     const tool = createGenerationTool({
       runtime: { acceptGeneration } as never,
       workspaceRegistry: {
-        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: [] })),
       } as never,
     })
     const events = [
@@ -166,7 +166,7 @@ describe('generate_with_comfyui Tool', () => {
     const tool = createGenerationTool({
       runtime: { acceptGeneration } as never,
       workspaceRegistry: {
-        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: [] })),
       } as never,
     })
     const events = [

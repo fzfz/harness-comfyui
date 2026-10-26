@@ -1,0 +1,1 @@
+{"phase":"stopped","state":"stopped","result":{"exitCode":null,"error":null,"completedAt":"2026-10-26T03:21:49.527Z","portsReleased":true}}

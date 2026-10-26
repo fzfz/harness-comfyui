@@ -22,12 +22,11 @@ async function readEntries(path) {
   return rows
 }
 
-export async function createOfficialPresetProfilePatch({ installedPackageRoot, mcpUrl, roleAgentOptions = {} }) {
+export async function createOfficialPresetProfilePatch({ installedPackageRoot, mcpUrl }) {
   const product = JSON.parse(await readFile(resolve(installedPackageRoot, 'config/product-agent.json'), 'utf8'))
   const presetsPath = resolve(installedPackageRoot, product.preset.sourceRootRelativePath, 'presets.cordis.yml')
   const presets = await readEntries(presetsPath)
-  const presetIds = [product.preset.id, ...product.preset.additionalManagedPresetIds]
-  const unmatchedRoles = new Set(Object.keys(roleAgentOptions))
+  const presetIds = [product.preset.id]
   const patches = []
   for (const presetId of presetIds) {
     const targets = presets.filter(row => row.config?.id === presetId)
@@ -53,19 +52,9 @@ export async function createOfficialPresetProfilePatch({ installedPackageRoot, m
         } }],
       } })
     }
-    if (presetId !== product.preset.id) {
-      for (const [id, agentOptions] of Object.entries(roleAgentOptions)) {
-        if (entriesWithId(rows, id).length === 0) continue
-        const role = unique(rows, id, compositionPath)
-        if (!unmatchedRoles.has(id)) throw new Error(`expected exactly one role ${id} across installed Presets`)
-        compositionPatches.push({ id, config: { ...structuredClone(role.config), agentOptions: structuredClone(agentOptions) } })
-        unmatchedRoles.delete(id)
-      }
-    }
     if (compositionPatches.length > 0) composition.config.patches = compositionPatches
     patches.push({ id: preset.id, config: preset.config })
   }
-  if (unmatchedRoles.size > 0) throw new Error(`expected exactly one entry for each requested role; missing: ${[...unmatchedRoles].join(', ')}`)
   return { id: 'harness-comfyui-presets', config: { patches } }
 }
 

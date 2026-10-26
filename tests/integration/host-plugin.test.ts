@@ -10,7 +10,6 @@ import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { observationExecution, observationMediaFixture } from '../unit/fixtures/observation-media-runtime.ts'
 
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import pluginRuntimeResources from '../../config/plugin-runtime-resources.json' with { type: 'json' }
@@ -97,7 +96,6 @@ function provideHostServices(ctx: Context) {
     readonly name: string
     resolve(execution: never): Readonly<Record<string, string>>
   }) => disposeShellEnvironment)
-  const createWorkspace = vi.fn(async () => ({ id: 'workspace_1', sessionIds: [] }))
   ctx.provide('tools', { register: registerTool })
   ctx.provide('webServer', { host: '127.0.0.1', port: 43199, register: registerRoute })
   ctx.provide('shellEnv' as never, { register: registerShellEnvironment } as never)
@@ -126,14 +124,13 @@ function provideHostServices(ctx: Context) {
     replace: replaceSettings,
   } as never)
   ctx.provide('workspaceRegistry', {
-    create: createWorkspace,
     resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
   })
   ctx.provide('sessionPersistence' as never, { stat: vi.fn(async () => undefined) } as never)
+  ctx.provide('subagents' as never, { listDescendants: vi.fn(async () => []) } as never)
   return {
     harnessHome,
     dshHomePath,
-    createWorkspace,
     disposeShellEnvironment,
     registerRoute,
     describeSettings,
@@ -181,35 +178,6 @@ function createBrowserSettingsForms() {
 }
 
 describe('Harness ComfyUI Host plugin', () => {
-  it('binds observation media resolution to the Core Runtime and current Tool Workspace', async () => {
-    stubTestProfileEnvironment()
-    const media = observationMediaFixture()
-    temporaryDirectories.push(media.root)
-    const runId = await media.accept()
-    const foreignRunId = await media.accept('workspace-2')
-    media.runtime.close()
-    const context = new Context()
-    provideHostServices(context)
-    vi.mocked(context.workspaceRegistry.resolveByPath).mockResolvedValue({
-      id: 'workspace-1', sessionIds: ['parent-1'],
-    } as never)
-    const core = await import('../../src/host/core/plugin.ts')
-    await context.plugin(core, { configurationProfile: 'production', dataDirectory: media.root })
-    try {
-      const exec = observationExecution() as unknown as ToolRunContext
-      const resolveMedia = context.harnessComfyuiCore.services.resolveObservationMedia
-      await expect(resolveMedia(exec, 'subagent_observation', [{ run_id: runId, media_id: 'media_aa_bb_2' }])).resolves.toEqual([
-        { run_id: runId, media_id: 'media_aa_bb_2', path: join(media.root, 'media/aa/bb/media_aa_bb_2.png') },
-      ])
-      await expect(resolveMedia(exec, 'subagent_observation', [{ run_id: foreignRunId, media_id: 'media_aa_bb_4' }]))
-        .rejects.toMatchObject({ code: 'GENERATION_RUN_NOT_FOUND' })
-      await expect(resolveMedia({ ...exec, callId: 'forged' } as never, 'subagent_observation', [{ run_id: runId, media_id: 'media_aa_bb_2' }]))
-        .rejects.toMatchObject({ code: 'GENERATION_TOOL_CONTEXT_INVALID' })
-    } finally {
-      await context.fiber.dispose()
-    }
-  })
-
   it('stores default business files under the official Harness home across Host restarts', async () => {
     const root = mkdtempSync(join(tmpdir(), 'official harness home with spaces-'))
     temporaryDirectories.push(root)
@@ -315,7 +283,7 @@ describe('Harness ComfyUI Host plugin', () => {
     }
   })
 
-  it('reports missing installed package resources before workspace or business data initialization', async () => {
+  it('reports missing installed package resources before business data initialization', async () => {
     const profileRoot = stubTestProfileEnvironment()
     const media = join(profileRoot, 'media')
     mkdirSync(media)
@@ -324,17 +292,15 @@ describe('Harness ComfyUI Host plugin', () => {
     const output = await materializeTestHostModule({ omitResource: 'frontendCompilerWorker' })
     const packaged = await harnessComfyui.packagedProduct(output)
     const ctx = new Context()
-    const { createWorkspace, registerRoute, registerTool } = provideHostServices(ctx)
+    const { registerRoute, registerTool } = provideHostServices(ctx)
 
     try {
       await expect(ctx.plugin(packaged, {
         configurationProfile: 'production',
-        startupWorkspacePath: '/test/workspace',
       })).rejects.toMatchObject({
         code: 'PLUGIN_PACKAGE_RESOURCES_UNAVAILABLE',
         detail: expect.stringContaining(resolve(dirname(dirname(dirname(output))), PLUGIN_RUNTIME_RESOURCE_PATHS.frontendCompilerWorker)),
       })
-      expect(createWorkspace).not.toHaveBeenCalled()
       expect(registerRoute).not.toHaveBeenCalled()
       expect(registerTool).not.toHaveBeenCalled()
       expect(existsSync(process.env.HARNESS_COMFYUI_RUN_REPOSITORY_FILE!)).toBe(false)
@@ -357,18 +323,16 @@ describe('Harness ComfyUI Host plugin', () => {
     const target = resolve(packageRoot, relativePath)
     const packaged = await harnessComfyui.packagedProduct(output)
     const ctx = new Context()
-    const { createWorkspace, registerRoute, registerTool } = provideHostServices(ctx)
+    const { registerRoute, registerTool } = provideHostServices(ctx)
 
     try {
       await expect(ctx.plugin(packaged, {
         configurationProfile: 'production',
-        startupWorkspacePath: '/test/workspace',
       })).rejects.toMatchObject({
         code: 'PLUGIN_PACKAGE_RESOURCES_UNAVAILABLE',
         detail: expect.stringContaining(target),
         message: expect.stringContaining(errorCatalog.PLUGIN_PACKAGE_RESOURCES_UNAVAILABLE.next_step),
       })
-      expect(createWorkspace).not.toHaveBeenCalled()
       expect(registerRoute).not.toHaveBeenCalled()
       expect(registerTool).not.toHaveBeenCalled()
       expect(existsSync(process.env.HARNESS_COMFYUI_RUN_REPOSITORY_FILE!)).toBe(false)
@@ -426,7 +390,7 @@ describe('Harness ComfyUI Host plugin', () => {
   it('exports the Loader plugin shape and Standard Schema configuration', () => {
     expect(harnessComfyui.name).toBe('harness-comfyui')
     expect(harnessComfyui.inject).toEqual([
-      'tools', 'webServer', 'workspaceRegistry', 'shellEnv', 'attachments', 'llm', 'settings', 'credentials', 'sessionPersistence',
+      'tools', 'webServer', 'workspaceRegistry', 'shellEnv', 'attachments', 'llm', 'settings', 'credentials', 'sessionPersistence', 'subagents',
     ])
     expect(typeof harnessComfyui.apply).toBe('function')
     expect(typeof harnessComfyui.Config?.['~standard'].validate).toBe('function')
@@ -439,7 +403,6 @@ describe('Harness ComfyUI Host plugin', () => {
     const packaged = await harnessComfyui.packagedProduct(output)
     const ctx = new Context()
     const {
-      createWorkspace,
       disposeShellEnvironment,
       registerRoute,
       registerShellEnvironment,
@@ -447,7 +410,6 @@ describe('Harness ComfyUI Host plugin', () => {
     } = provideHostServices(ctx)
     const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
 
-    expect(createWorkspace).not.toHaveBeenCalled()
     expect(registerTool.mock.calls.map(([definition]) => definition.name)).toEqual([
       'query_semantic_comfyui_templates',
       'query_semantic_loras',
@@ -610,28 +572,6 @@ describe('Harness ComfyUI Host plugin', () => {
     await ctx.fiber.dispose()
   })
 
-  it('registers the configured startup workspace before exposing Host capabilities', async () => {
-    stubTestProfileEnvironment()
-    const output = await materializeTestHostModule()
-    const packaged = await harnessComfyui.packagedProduct(output)
-    const ctx = new Context()
-    const { createWorkspace, registerRoute, registerTool } = provideHostServices(ctx)
-    const startupWorkspacePath = '/Volumes/4Tdisk/work/AI2/run-comfyui-workflows-harness'
-    vi.stubEnv('HARNESS_COMFYUI_STARTUP_WORKSPACE_PATH', startupWorkspacePath)
-
-    const fiber = await ctx.plugin(packaged, {
-      configurationProfile: 'production',
-      startupWorkspacePath,
-    })
-
-    expect(createWorkspace).toHaveBeenCalledOnce()
-    expect(createWorkspace).toHaveBeenCalledWith(startupWorkspacePath)
-    expect(createWorkspace.mock.invocationCallOrder[0]).toBeLessThan(registerTool.mock.invocationCallOrder[0]!)
-    expect(createWorkspace.mock.invocationCallOrder[0]).toBeLessThan(registerRoute.mock.invocationCallOrder[0]!)
-    await fiber.dispose()
-    await ctx.fiber.dispose()
-  })
-
   it('registers the configured visual model as the image-reader base', async () => {
     stubTestProfileEnvironment()
     const output = await materializeTestHostModule()
@@ -658,24 +598,6 @@ describe('Harness ComfyUI Host plugin', () => {
     await ctx.fiber.dispose()
   })
 
-  it('rejects Host activation when the configured startup workspace cannot be registered', async () => {
-    stubTestProfileEnvironment()
-    const output = await materializeTestHostModule()
-    const packaged = await harnessComfyui.packagedProduct(output)
-    const ctx = new Context()
-    const { createWorkspace, registerRoute, registerTool } = provideHostServices(ctx)
-    createWorkspace.mockRejectedValueOnce(new Error('workspace directory is unavailable'))
-
-    await expect(ctx.plugin(packaged, {
-      configurationProfile: 'production',
-      startupWorkspacePath: '/missing/workspace',
-    })).rejects.toThrow('workspace directory is unavailable')
-
-    expect(registerTool).not.toHaveBeenCalled()
-    expect(registerRoute).not.toHaveBeenCalled()
-    await ctx.fiber.dispose()
-  })
-
   it.each([undefined, null])('uses the packaged production profile for an unset Host selection %j', async configurationProfile => {
     const result = await harnessComfyui.Config['~standard'].validate({ configurationProfile })
     expect(result).toMatchObject({ value: { configurationProfile: 'production' } })
@@ -684,14 +606,6 @@ describe('Harness ComfyUI Host plugin', () => {
 
   it.each(['invalid', ''])('rejects profile %j before Host startup completes', async configurationProfile => {
     const result = await harnessComfyui.Config['~standard'].validate({ configurationProfile })
-    expect(result).toHaveProperty('issues')
-  })
-
-  it.each(['', '   '])('rejects a blank startup workspace path %j', async startupWorkspacePath => {
-    const result = await harnessComfyui.Config['~standard'].validate({
-      configurationProfile: 'production',
-      startupWorkspacePath,
-    })
     expect(result).toHaveProperty('issues')
   })
 })

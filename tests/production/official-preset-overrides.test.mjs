@@ -70,7 +70,6 @@ describe('installed Preset Profile overrides', () => {
       ['agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml', 'project-common'],
       ['agent-presets/shared/agent.cordis.yml', 'noobai-mcp'],
       ['agent-presets/noobai-mcp.cordis.yml', 'mcp-noobai'],
-      ['agent-presets/harness-comfyui-iteration/agent.cordis.yml', 'composition-agent'],
     ]) {
       const root = await installedRoot()
       const path = join(root, relativePath)
@@ -78,21 +77,18 @@ describe('installed Preset Profile overrides', () => {
       const target = original.find(row => row.id === id)
       const modified = kind === 'missing' ? original.filter(row => row.id !== id) : [...original, structuredClone(target)]
       await writeFile(path, yaml.dump(modified, { schema: entryListSchema }))
-      await expect(createOfficialPresetProfilePatch({ installedPackageRoot: root, mcpUrl: 'http://127.0.0.1:12345/mcp',
-        roleAgentOptions: { 'composition-agent': { provider: 'fixture', model: 'role' } } })).rejects.toThrow(/expected exactly one/)
+      await expect(createOfficialPresetProfilePatch({ installedPackageRoot: root,
+        mcpUrl: 'http://127.0.0.1:12345/mcp' })).rejects.toThrow(/expected exactly one/)
     }
   })
 
-  it('supports independent MCP and role overlays, and restores installed defaults when both are omitted', async () => {
+  it('restores installed defaults when the MCP overlay is omitted', async () => {
     const root = await installedRoot()
     const defaults = await resolvePatched(root, await createOfficialPresetProfilePatch({ installedPackageRoot: root }))
     for (const entry of defaults.result) {
       expect(entry.composed).toEqual(entry.originalComposition)
       expect(entry.mcp).toEqual(entry.originalMcp)
     }
-    const roleOnly = await resolvePatched(root, await createOfficialPresetProfilePatch({ installedPackageRoot: root,
-      roleAgentOptions: { 'generation-agent': { provider: 'fixture', model: 'generation' } } }))
-    for (const entry of roleOnly.result) expect(entry.mcp).toEqual(entry.originalMcp)
     const mcpOnly = await resolvePatched(root, await createOfficialPresetProfilePatch({ installedPackageRoot: root,
       mcpUrl: 'http://127.0.0.1:12345/mcp' }))
     for (const entry of mcpOnly.result) {
@@ -100,10 +96,9 @@ describe('installed Preset Profile overrides', () => {
     }
   })
 
-  it('derives MCP and role overrides from installed resources while retaining every other field and expression', async () => {
+  it('derives MCP overrides from installed resources while retaining every other field and expression', async () => {
     const root = await installedRoot()
-    const roleAgentOptions = { 'composition-agent': { provider: 'fixture', model: 'composition', reasoningEffort: 'high' } }
-    const patch = await createOfficialPresetProfilePatch({ installedPackageRoot: root, mcpUrl: 'http://127.0.0.1:31234/mcp', roleAgentOptions })
+    const patch = await createOfficialPresetProfilePatch({ installedPackageRoot: root, mcpUrl: 'http://127.0.0.1:31234/mcp' })
     expect(patch.id).toBe('harness-comfyui-presets')
     const { original, rows, result } = await resolvePatched(root, patch)
     const pluginIdentities = entries => entries.map(row => row.config.plugins.map(({ id, name }) => ({ id, name })))
@@ -113,12 +108,9 @@ describe('installed Preset Profile overrides', () => {
       expect(entry.mcp[0].config.headers.Authorization).toEqual({ __jsExpr: '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`' })
       for (const composed of entry.composed.filter(row => row.id !== 'project-common')) {
         const before = entry.originalComposition.find(row => row.id === composed.id)
-        expect(composed).toEqual(composed.id === 'composition-agent'
-          ? { ...before, config: { ...before.config, agentOptions: roleAgentOptions['composition-agent'] } }
-          : before)
+        expect(composed).toEqual(before)
       }
     }
-    expect(roleAgentOptions).toEqual({ 'composition-agent': { provider: 'fixture', model: 'composition', reasoningEffort: 'high' } })
     expect(await readRows(join(root, 'agent-presets/presets.cordis.yml'))).toEqual(original)
     expect(apply(original, [])).toEqual(original)
   })

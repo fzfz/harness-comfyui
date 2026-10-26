@@ -1,0 +1,592 @@
+{
+  "observedAt": "2026-10-25T17:20:16.141Z",
+  "command": "getProbeStatus for every run in both native Desktop invocations",
+  "observations": [
+    {
+      "invocationId": "fe6602bb-3a6d-4df4-b940-1f597775a1ab",
+      "runId": "15d72dfb-873c-473b-9eae-db3b920a1016",
+      "status": {
+        "record": {
+          "schemaVersion": 1,
+          "runId": "15d72dfb-873c-473b-9eae-db3b920a1016",
+          "mode": "development",
+          "state": "stopped",
+          "createdAt": "2026-10-25T17:07:15.263Z",
+          "updatedAt": "2026-10-25T17:07:55.468Z",
+          "application": {
+            "bundlePath": "/Applications/DeepSeek Harness.app",
+            "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+            "version": "0.2.1-rc.3",
+            "bundleId": "com.deepseek.dsh"
+          },
+          "directories": {
+            "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/15d72dfb-873c-473b-9eae-db3b920a1016",
+            "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+            "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+            "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+            "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/15d72dfb-873c-473b-9eae-db3b920a1016/logs",
+            "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/15d72dfb-873c-473b-9eae-db3b920a1016/evidence",
+            "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home/profiles/desktop",
+            "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/15d72dfb-873c-473b-9eae-db3b920a1016/logs/diagnostic.log"
+          },
+          "environment": {
+            "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment",
+            "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/active-probe.json"
+          },
+          "ports": {
+            "host": 61990,
+            "rendererCdp": 61991,
+            "hostInspector": 61992
+          },
+          "launch": {
+            "arguments": [
+              "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+              "--remote-debugging-port=61991",
+              "--remote-debugging-address=127.0.0.1"
+            ],
+            "environment": {
+              "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+              "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+              "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/15d72dfb-873c-473b-9eae-db3b920a1016/logs/diagnostic.log",
+              "DSH_DESKTOP_HOST_INSPECT_PORT": "61992"
+            },
+            "unsetEnvironmentNames": [
+              "ELECTRON_RUN_AS_NODE"
+            ]
+          },
+          "process": {
+            "pid": 73932,
+            "processGroupId": 73932,
+            "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data --remote-debugging-port=61991 --remote-debugging-address=127.0.0.1",
+            "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+            "listeningPorts": [
+              61990,
+              61991,
+              62002
+            ],
+            "observedAt": "2026-10-25T17:07:17.476Z"
+          },
+          "result": {
+            "exitCode": null,
+            "error": null,
+            "completedAt": "2026-10-25T17:07:55.468Z",
+            "portsReleased": true
+          }
+        },
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/15d72dfb-873c-473b-9eae-db3b920a1016/run.json",
+        "developmentEnvironment": {
+          "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+          "environmentExists": true,
+          "initializationStatus": "unverified"
+        },
+        "processGroupMatchesRun": false,
+        "processGroup": null,
+        "ports": [
+          {
+            "port": 61990,
+            "pids": []
+          },
+          {
+            "port": 61991,
+            "pids": []
+          },
+          {
+            "port": 61992,
+            "pids": []
+          }
+        ]
+      }
+    },
+    {
+      "invocationId": "fe6602bb-3a6d-4df4-b940-1f597775a1ab",
+      "runId": "e9d59a8e-7727-4ba4-8431-add3d259590e",
+      "status": {
+        "record": {
+          "schemaVersion": 1,
+          "runId": "e9d59a8e-7727-4ba4-8431-add3d259590e",
+          "mode": "development",
+          "state": "stopped",
+          "createdAt": "2026-10-25T17:07:05.235Z",
+          "updatedAt": "2026-10-25T17:07:15.251Z",
+          "application": {
+            "bundlePath": "/Applications/DeepSeek Harness.app",
+            "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+            "version": "0.2.1-rc.3",
+            "bundleId": "com.deepseek.dsh"
+          },
+          "directories": {
+            "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/e9d59a8e-7727-4ba4-8431-add3d259590e",
+            "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+            "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+            "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+            "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/e9d59a8e-7727-4ba4-8431-add3d259590e/logs",
+            "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/e9d59a8e-7727-4ba4-8431-add3d259590e/evidence",
+            "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home/profiles/desktop",
+            "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/e9d59a8e-7727-4ba4-8431-add3d259590e/logs/diagnostic.log"
+          },
+          "environment": {
+            "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment",
+            "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/active-probe.json"
+          },
+          "ports": {
+            "host": 61929,
+            "rendererCdp": 61930,
+            "hostInspector": 61931
+          },
+          "launch": {
+            "arguments": [
+              "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+              "--remote-debugging-port=61930",
+              "--remote-debugging-address=127.0.0.1"
+            ],
+            "environment": {
+              "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+              "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+              "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/e9d59a8e-7727-4ba4-8431-add3d259590e/logs/diagnostic.log",
+              "DSH_DESKTOP_HOST_INSPECT_PORT": "61931"
+            },
+            "unsetEnvironmentNames": [
+              "ELECTRON_RUN_AS_NODE"
+            ]
+          },
+          "process": {
+            "pid": 68639,
+            "processGroupId": 68639,
+            "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data --remote-debugging-port=61930 --remote-debugging-address=127.0.0.1",
+            "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+            "listeningPorts": [
+              61929,
+              61930,
+              61943
+            ],
+            "observedAt": "2026-10-25T17:07:07.457Z"
+          },
+          "result": {
+            "exitCode": null,
+            "error": null,
+            "completedAt": "2026-10-25T17:07:15.251Z",
+            "portsReleased": true
+          }
+        },
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/e9d59a8e-7727-4ba4-8431-add3d259590e/run.json",
+        "developmentEnvironment": {
+          "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+          "environmentExists": true,
+          "initializationStatus": "unverified"
+        },
+        "processGroupMatchesRun": false,
+        "processGroup": null,
+        "ports": [
+          {
+            "port": 61929,
+            "pids": []
+          },
+          {
+            "port": 61930,
+            "pids": []
+          },
+          {
+            "port": 61931,
+            "pids": []
+          }
+        ]
+      }
+    },
+    {
+      "invocationId": "fe6602bb-3a6d-4df4-b940-1f597775a1ab",
+      "runId": "ed5172f8-1aae-463b-b8f0-fd7ba97a4121",
+      "status": {
+        "record": {
+          "schemaVersion": 1,
+          "runId": "ed5172f8-1aae-463b-b8f0-fd7ba97a4121",
+          "mode": "development",
+          "state": "stopped",
+          "createdAt": "2026-10-25T17:06:50.863Z",
+          "updatedAt": "2026-10-25T17:07:05.215Z",
+          "application": {
+            "bundlePath": "/Applications/DeepSeek Harness.app",
+            "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+            "version": "0.2.1-rc.3",
+            "bundleId": "com.deepseek.dsh"
+          },
+          "directories": {
+            "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/ed5172f8-1aae-463b-b8f0-fd7ba97a4121",
+            "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+            "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+            "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+            "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/ed5172f8-1aae-463b-b8f0-fd7ba97a4121/logs",
+            "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/ed5172f8-1aae-463b-b8f0-fd7ba97a4121/evidence",
+            "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home/profiles/desktop",
+            "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/ed5172f8-1aae-463b-b8f0-fd7ba97a4121/logs/diagnostic.log"
+          },
+          "environment": {
+            "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment",
+            "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/active-probe.json"
+          },
+          "ports": {
+            "host": 61742,
+            "rendererCdp": 61743,
+            "hostInspector": 61744
+          },
+          "launch": {
+            "arguments": [
+              "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+              "--remote-debugging-port=61743",
+              "--remote-debugging-address=127.0.0.1"
+            ],
+            "environment": {
+              "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+              "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+              "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/ed5172f8-1aae-463b-b8f0-fd7ba97a4121/logs/diagnostic.log",
+              "DSH_DESKTOP_HOST_INSPECT_PORT": "61744"
+            },
+            "unsetEnvironmentNames": [
+              "ELECTRON_RUN_AS_NODE"
+            ]
+          },
+          "process": {
+            "pid": 62438,
+            "processGroupId": 62438,
+            "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data --remote-debugging-port=61743 --remote-debugging-address=127.0.0.1",
+            "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+            "listeningPorts": [
+              61742,
+              61743
+            ],
+            "observedAt": "2026-10-25T17:06:53.556Z"
+          },
+          "result": {
+            "exitCode": null,
+            "error": null,
+            "completedAt": "2026-10-25T17:07:05.215Z",
+            "portsReleased": true
+          }
+        },
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/ed5172f8-1aae-463b-b8f0-fd7ba97a4121/run.json",
+        "developmentEnvironment": {
+          "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-uEmF5W/.local/desktop-e2e/a188dd00-1dd9-4a6d-b4f7-ab17cff9033f/official-environment/workspace",
+          "environmentExists": true,
+          "initializationStatus": "unverified"
+        },
+        "processGroupMatchesRun": false,
+        "processGroup": null,
+        "ports": [
+          {
+            "port": 61742,
+            "pids": []
+          },
+          {
+            "port": 61743,
+            "pids": []
+          },
+          {
+            "port": 61744,
+            "pids": []
+          }
+        ]
+      }
+    },
+    {
+      "invocationId": "89e32498-b2c8-4c83-b452-2330f156ef42",
+      "runId": "0a2af65d-dc54-407f-a795-d4bd3d561995",
+      "status": {
+        "record": {
+          "schemaVersion": 1,
+          "runId": "0a2af65d-dc54-407f-a795-d4bd3d561995",
+          "mode": "development",
+          "state": "stopped",
+          "createdAt": "2026-10-25T17:10:04.667Z",
+          "updatedAt": "2026-10-25T17:10:18.224Z",
+          "application": {
+            "bundlePath": "/Applications/DeepSeek Harness.app",
+            "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+            "version": "0.2.1-rc.3",
+            "bundleId": "com.deepseek.dsh"
+          },
+          "directories": {
+            "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/0a2af65d-dc54-407f-a795-d4bd3d561995",
+            "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+            "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+            "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+            "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/0a2af65d-dc54-407f-a795-d4bd3d561995/logs",
+            "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/0a2af65d-dc54-407f-a795-d4bd3d561995/evidence",
+            "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home/profiles/desktop",
+            "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/0a2af65d-dc54-407f-a795-d4bd3d561995/logs/diagnostic.log"
+          },
+          "environment": {
+            "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment",
+            "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/active-probe.json"
+          },
+          "ports": {
+            "host": 63503,
+            "rendererCdp": 63504,
+            "hostInspector": 63505
+          },
+          "launch": {
+            "arguments": [
+              "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+              "--remote-debugging-port=63504",
+              "--remote-debugging-address=127.0.0.1"
+            ],
+            "environment": {
+              "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+              "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+              "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/0a2af65d-dc54-407f-a795-d4bd3d561995/logs/diagnostic.log",
+              "DSH_DESKTOP_HOST_INSPECT_PORT": "63505"
+            },
+            "unsetEnvironmentNames": [
+              "ELECTRON_RUN_AS_NODE"
+            ]
+          },
+          "process": {
+            "pid": 81578,
+            "processGroupId": 81578,
+            "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data --remote-debugging-port=63504 --remote-debugging-address=127.0.0.1",
+            "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+            "listeningPorts": [
+              63503,
+              63504
+            ],
+            "observedAt": "2026-10-25T17:10:07.126Z"
+          },
+          "result": {
+            "exitCode": null,
+            "error": null,
+            "completedAt": "2026-10-25T17:10:18.224Z",
+            "portsReleased": true
+          }
+        },
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/0a2af65d-dc54-407f-a795-d4bd3d561995/run.json",
+        "developmentEnvironment": {
+          "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+          "environmentExists": true,
+          "initializationStatus": "unverified"
+        },
+        "processGroupMatchesRun": false,
+        "processGroup": null,
+        "ports": [
+          {
+            "port": 63503,
+            "pids": []
+          },
+          {
+            "port": 63504,
+            "pids": []
+          },
+          {
+            "port": 63505,
+            "pids": []
+          }
+        ]
+      }
+    },
+    {
+      "invocationId": "89e32498-b2c8-4c83-b452-2330f156ef42",
+      "runId": "1920be3b-eb45-47d3-be17-09d29a9b2bb7",
+      "status": {
+        "record": {
+          "schemaVersion": 1,
+          "runId": "1920be3b-eb45-47d3-be17-09d29a9b2bb7",
+          "mode": "development",
+          "state": "stopped",
+          "createdAt": "2026-10-25T17:10:18.242Z",
+          "updatedAt": "2026-10-25T17:10:28.371Z",
+          "application": {
+            "bundlePath": "/Applications/DeepSeek Harness.app",
+            "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+            "version": "0.2.1-rc.3",
+            "bundleId": "com.deepseek.dsh"
+          },
+          "directories": {
+            "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/1920be3b-eb45-47d3-be17-09d29a9b2bb7",
+            "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+            "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+            "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+            "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/1920be3b-eb45-47d3-be17-09d29a9b2bb7/logs",
+            "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/1920be3b-eb45-47d3-be17-09d29a9b2bb7/evidence",
+            "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home/profiles/desktop",
+            "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/1920be3b-eb45-47d3-be17-09d29a9b2bb7/logs/diagnostic.log"
+          },
+          "environment": {
+            "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment",
+            "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/active-probe.json"
+          },
+          "ports": {
+            "host": 63717,
+            "rendererCdp": 63718,
+            "hostInspector": 63719
+          },
+          "launch": {
+            "arguments": [
+              "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+              "--remote-debugging-port=63718",
+              "--remote-debugging-address=127.0.0.1"
+            ],
+            "environment": {
+              "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+              "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+              "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/1920be3b-eb45-47d3-be17-09d29a9b2bb7/logs/diagnostic.log",
+              "DSH_DESKTOP_HOST_INSPECT_PORT": "63719"
+            },
+            "unsetEnvironmentNames": [
+              "ELECTRON_RUN_AS_NODE"
+            ]
+          },
+          "process": {
+            "pid": 87693,
+            "processGroupId": 87693,
+            "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data --remote-debugging-port=63718 --remote-debugging-address=127.0.0.1",
+            "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+            "listeningPorts": [
+              63717,
+              63718,
+              63732
+            ],
+            "observedAt": "2026-10-25T17:10:20.586Z"
+          },
+          "result": {
+            "exitCode": null,
+            "error": null,
+            "completedAt": "2026-10-25T17:10:28.371Z",
+            "portsReleased": true
+          }
+        },
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/1920be3b-eb45-47d3-be17-09d29a9b2bb7/run.json",
+        "developmentEnvironment": {
+          "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+          "environmentExists": true,
+          "initializationStatus": "unverified"
+        },
+        "processGroupMatchesRun": false,
+        "processGroup": null,
+        "ports": [
+          {
+            "port": 63717,
+            "pids": []
+          },
+          {
+            "port": 63718,
+            "pids": []
+          },
+          {
+            "port": 63719,
+            "pids": []
+          }
+        ]
+      }
+    },
+    {
+      "invocationId": "89e32498-b2c8-4c83-b452-2330f156ef42",
+      "runId": "9e108fb7-fbf1-4a9d-84c7-dc756c537f68",
+      "status": {
+        "record": {
+          "schemaVersion": 1,
+          "runId": "9e108fb7-fbf1-4a9d-84c7-dc756c537f68",
+          "mode": "development",
+          "state": "stopped",
+          "createdAt": "2026-10-25T17:10:28.386Z",
+          "updatedAt": "2026-10-25T17:11:08.643Z",
+          "application": {
+            "bundlePath": "/Applications/DeepSeek Harness.app",
+            "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+            "version": "0.2.1-rc.3",
+            "bundleId": "com.deepseek.dsh"
+          },
+          "directories": {
+            "run": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/9e108fb7-fbf1-4a9d-84c7-dc756c537f68",
+            "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+            "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+            "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+            "logs": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/9e108fb7-fbf1-4a9d-84c7-dc756c537f68/logs",
+            "evidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/9e108fb7-fbf1-4a9d-84c7-dc756c537f68/evidence",
+            "profile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home/profiles/desktop",
+            "diagnosticFile": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/9e108fb7-fbf1-4a9d-84c7-dc756c537f68/logs/diagnostic.log"
+          },
+          "environment": {
+            "root": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment",
+            "leasePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/active-probe.json"
+          },
+          "ports": {
+            "host": 63773,
+            "rendererCdp": 63774,
+            "hostInspector": 63775
+          },
+          "launch": {
+            "arguments": [
+              "--user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+              "--remote-debugging-port=63774",
+              "--remote-debugging-address=127.0.0.1"
+            ],
+            "environment": {
+              "DSH_HOME": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+              "DSH_DESKTOP_USER_DATA_DIR": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+              "DSH_DESKTOP_DIAGNOSTIC_FILE": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/9e108fb7-fbf1-4a9d-84c7-dc756c537f68/logs/diagnostic.log",
+              "DSH_DESKTOP_HOST_INSPECT_PORT": "63775"
+            },
+            "unsetEnvironmentNames": [
+              "ELECTRON_RUN_AS_NODE"
+            ]
+          },
+          "process": {
+            "pid": 93035,
+            "processGroupId": 93035,
+            "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data --remote-debugging-port=63774 --remote-debugging-address=127.0.0.1",
+            "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+            "listeningPorts": [
+              63773,
+              63774,
+              63833
+            ],
+            "observedAt": "2026-10-25T17:10:30.674Z"
+          },
+          "result": {
+            "exitCode": null,
+            "error": null,
+            "completedAt": "2026-10-25T17:11:08.643Z",
+            "portsReleased": true
+          }
+        },
+        "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/9e108fb7-fbf1-4a9d-84c7-dc756c537f68/run.json",
+        "developmentEnvironment": {
+          "environmentRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment",
+          "dshHome": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/dsh-home",
+          "electronUserData": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/user-data",
+          "workspace": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-7n0gSf/.local/desktop-e2e/e665c7d1-e089-4392-8aab-d141eff18029/official-environment/workspace",
+          "environmentExists": true,
+          "initializationStatus": "unverified"
+        },
+        "processGroupMatchesRun": false,
+        "processGroup": null,
+        "ports": [
+          {
+            "port": 63773,
+            "pids": []
+          },
+          {
+            "port": 63774,
+            "pids": []
+          },
+          {
+            "port": 63775,
+            "pids": []
+          }
+        ]
+      }
+    }
+  ]
+}

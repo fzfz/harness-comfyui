@@ -5,8 +5,8 @@ import { load as loadYaml } from 'js-yaml'
 import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const registryPath = 'src/host/tools/register-project-tools.ts'
-const pluginPaths = ['src/host/core/plugin.ts', 'src/host/image-reader/plugin.ts']
+const toolRegistrationPaths = new Set(['src/host/core/plugin.ts', 'src/host/image-reader/plugin.ts'])
+
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
   ['@deepseek-ai/dsh-agent', 'value-or-type'],
@@ -25,6 +25,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-llm', 'value-or-type'],
   ['@deepseek-ai/dsh-session', 'value-or-type'],
   ['@deepseek-ai/dsh-session-persistence', 'type-only'],
+  ['@deepseek-ai/dsh-subagent', 'type-only'],
   ['@deepseek-ai/dsh-settings', 'value-or-type'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
   ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
@@ -97,12 +98,6 @@ function isDirectRegisterCall(node) {
   if (register.name.text !== 'register' || !ts.isPropertyAccessExpression(register.expression)) return false
   const tools = register.expression
   return tools.name.text === 'tools' && ts.isIdentifier(tools.expression) && tools.expression.text === 'ctx'
-}
-
-function isRegistryCall(node) {
-  return ts.isCallExpression(node)
-    && ts.isIdentifier(node.expression)
-    && node.expression.text === 'registerProjectTools'
 }
 
 function isAbsoluteSpecifier(specifier) {
@@ -386,8 +381,6 @@ function validateStructuredHarnessBoundary(root) {
 function scan(root) {
   const sourceRoot = resolve(root, 'src')
   const sourceFiles = collectSourceFiles(sourceRoot)
-  const directRegistrations = []
-  const registryCalls = []
 
   for (const filePath of sourceFiles) {
     const source = readFileSync(filePath, 'utf8')
@@ -396,30 +389,14 @@ function scan(root) {
     const relativePath = relative(root, filePath).replaceAll('\\', '/')
     scanImportDeclarations(sourceFile, filePath, root)
     function visit(node) {
-      if (isDirectRegisterCall(node)) directRegistrations.push({ relativePath, node })
-      if (isRegistryCall(node)) registryCalls.push({ relativePath, node })
+      if (isDirectRegisterCall(node) && !toolRegistrationPaths.has(relativePath)) {
+        throw new Error(`${relativePath} calls ctx.tools.register outside the Core and Image Reader plugin entries`)
+      }
       ts.forEachChild(node, visit)
     }
     visit(sourceFile)
   }
 
-  for (const entry of directRegistrations) {
-    if (entry.relativePath !== registryPath) {
-      throw new Error(`ctx.tools.register() is only allowed in ${registryPath}; found ${entry.relativePath}`)
-    }
-  }
-  if (directRegistrations.length !== 1) {
-    throw new Error(`expected exactly one ctx.tools.register() call in ${registryPath}; found ${directRegistrations.length}`)
-  }
-
-  for (const entry of registryCalls) {
-    if (!pluginPaths.includes(entry.relativePath)) {
-      throw new Error(`registerProjectTools() is only allowed in ${pluginPaths.join(', ')}; found ${entry.relativePath}`)
-    }
-  }
-  if (registryCalls.length !== pluginPaths.length || pluginPaths.some(path => registryCalls.filter(entry => entry.relativePath === path).length !== 1)) {
-    throw new Error(`expected one registerProjectTools() call per plugin in ${pluginPaths.join(', ')}; found ${registryCalls.length}`)
-  }
   validateStructuredHarnessBoundary(root)
 }
 

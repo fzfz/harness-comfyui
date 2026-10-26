@@ -1,0 +1,46 @@
+{
+  "commands": [
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/desktop/fixtures/official-business-fixture.test.mjs",
+        "--reporter=json",
+        "--outputFile=/tmp/comfyui-native-fixture-red.json"
+      ],
+      "exitCode": 1
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/official-desktop-lifecycle.test.mjs",
+        "--testNamePattern=retired Preset history fixture",
+        "--reporter=json",
+        "--outputFile=/tmp/comfyui-retired-preset-red.json"
+      ],
+      "exitCode": 1
+    },
+    {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "tests/production/official-desktop-lifecycle.test.mjs",
+        "tests/production/official-preset-overrides.test.mjs",
+        "tests/production/official-mcp-acceptance.test.mjs",
+        "tests/desktop/fixtures/official-business-fixture.test.mjs",
+        "--maxWorkers=1",
+        "--no-file-parallelism",
+        "--reporter=json",
+        "--outputFile=/tmp/comfyui-native-fixtures-production.json"
+      ],
+      "exitCode": 0
+    }
+  ]
+}

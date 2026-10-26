@@ -23,10 +23,6 @@
     "web": {
       "sourceEntryRelativePath": "src/host/web/plugin.ts",
       "outputEntryRelativePath": ".local/source-host/web.js"
-    },
-    "cli-workspace": {
-      "sourceEntryRelativePath": "src/host/cli/workspace.ts",
-      "outputEntryRelativePath": ".local/source-host/cli-workspace.js"
     }
   },
   "client": {

@@ -1,15 +1,7 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "preset": {
     "id": "harness-comfyui-cli-candidate",
-    "additionalManagedPresetIds": [
-      "harness-comfyui-iteration",
-      "harness-comfyui-task",
-      "harness-comfyui-composition",
-      "harness-comfyui-generation",
-      "harness-comfyui-observation",
-      "harness-comfyui-comparison"
-    ],
     "sourceRootRelativePath": "agent-presets"
   }
 }

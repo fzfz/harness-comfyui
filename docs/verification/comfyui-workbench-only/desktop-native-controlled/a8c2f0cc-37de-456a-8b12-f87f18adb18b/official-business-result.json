@@ -1,0 +1,714 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceClaim": false,
+  "package": {
+    "name": "harness-comfyui",
+    "version": "0.47.2",
+    "sourceIdentity": {
+      "schemaVersion": 1,
+      "packageName": "harness-comfyui",
+      "packageVersion": "0.47.2",
+      "archivePath": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.47.2.tgz",
+      "sourceCommit": "2bb302449a0a1580e8322b3db2837d854bff9f67",
+      "dirty": true,
+      "runtimeFiles": [
+        ".local/source-cli/harness-comfyui.mjs",
+        ".local/source-client/client.js",
+        ".local/source-host/browser-settings-schema-IoLmnDX6.js",
+        ".local/source-host/cli.js",
+        ".local/source-host/comfy-frontend-worker.js",
+        ".local/source-host/core.js",
+        ".local/source-host/error-catalog-BaOsZ4EZ.js",
+        ".local/source-host/errors-CkknegYz.js",
+        ".local/source-host/generation-error-s7pDSYyC.js",
+        ".local/source-host/generation-runtime-DZeTvnkP.js",
+        ".local/source-host/image-reader.js",
+        ".local/source-host/index.js",
+        ".local/source-host/pending-requests-BrC9NqCi.js",
+        ".local/source-host/plugin-CeLmXNTb.js",
+        ".local/source-host/resource-path-BvAGoQ1l.js",
+        ".local/source-host/settings-CodLfhu6.js",
+        ".local/source-host/web.js",
+        "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "agent-presets/harness-comfyui-cli-candidate/preset.yml",
+        "agent-presets/noobai-mcp.cordis.yml",
+        "agent-presets/presets.cordis.yml",
+        "agent-presets/project-installed-presets.mjs",
+        "agent-presets/shared/agent.cordis.yml",
+        "config/base.json",
+        "config/browser-settings.json",
+        "config/environment-overrides.json",
+        "config/error-catalog.json",
+        "config/image-reader-processing.json",
+        "config/image-reader-profiles.json",
+        "config/image-reader-runtime.json",
+        "config/managed-cli-environment.json",
+        "config/managed-cli-help.json",
+        "config/node-script-runtime.json",
+        "config/plugin-package-schema.mjs",
+        "config/plugin-package.json",
+        "config/plugin-runtime-resources-schema.ts",
+        "config/plugin-runtime-resources.json",
+        "config/plugin-storage.json",
+        "config/product-agent-schema.mjs",
+        "config/product-agent.json",
+        "config/profiles/production.json",
+        "config/runtime-artifacts.json",
+        "config/schema.ts",
+        "config/settings-entry-ids.json",
+        "config/source-client.json",
+        "cordis.patch.yml",
+        "locales/cli/en.json",
+        "locales/cli/zh.json",
+        "locales/core/en.json",
+        "locales/core/zh.json",
+        "locales/image-reader/en.json",
+        "locales/image-reader/zh.json",
+        "locales/presets/en.json",
+        "locales/presets/zh.json",
+        "locales/web/en.json",
+        "locales/web/zh.json",
+        "locales/workbench/en.json",
+        "locales/workbench/zh.json",
+        "scripts/cli/help-schema.mjs",
+        "scripts/cli/help.mjs"
+      ]
+    }
+  },
+  "application": {
+    "version": "0.2.1-rc.3"
+  },
+  "installation": {
+    "status": "installed",
+    "enabled": true,
+    "evidenceComplete": true,
+    "packageVersion": "0.47.2",
+    "packagePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-ONOIpu/.local/desktop-e2e/89ae0c39-25cb-46ae-8307-b8072656aed9/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/package.json",
+    "artifactComparisons": [
+      {
+        "relativePath": ".local/source-cli/harness-comfyui.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-client/client.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/browser-settings-schema-IoLmnDX6.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/cli.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/comfy-frontend-worker.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/core.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/error-catalog-BaOsZ4EZ.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/errors-CkknegYz.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/generation-error-s7pDSYyC.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/generation-runtime-DZeTvnkP.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/image-reader.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/index.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/pending-requests-BrC9NqCi.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/plugin-CeLmXNTb.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/resource-path-BvAGoQ1l.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/settings-CodLfhu6.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/web.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/harness-comfyui-cli-candidate/preset.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/noobai-mcp.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/presets.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/project-installed-presets.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/shared/agent.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/base.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/browser-settings.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/environment-overrides.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/error-catalog.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-processing.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-profiles.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-runtime.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/managed-cli-environment.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/managed-cli-help.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/node-script-runtime.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-package-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-package.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-runtime-resources-schema.ts",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-runtime-resources.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-storage.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/product-agent-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/product-agent.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/profiles/production.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/runtime-artifacts.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/schema.ts",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/settings-entry-ids.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/source-client.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "cordis.patch.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/cli/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/cli/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/core/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/core/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/image-reader/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/image-reader/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/presets/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/presets/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/web/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/web/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/workbench/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/workbench/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "scripts/cli/help-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "scripts/cli/help.mjs",
+        "matchesCandidate": true
+      }
+    ],
+    "artifactComparisonsAfterRestart": [
+      {
+        "relativePath": ".local/source-cli/harness-comfyui.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-client/client.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/browser-settings-schema-IoLmnDX6.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/cli.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/comfy-frontend-worker.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/core.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/error-catalog-BaOsZ4EZ.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/errors-CkknegYz.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/generation-error-s7pDSYyC.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/generation-runtime-DZeTvnkP.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/image-reader.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/index.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/pending-requests-BrC9NqCi.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/plugin-CeLmXNTb.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/resource-path-BvAGoQ1l.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/settings-CodLfhu6.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/web.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/harness-comfyui-cli-candidate/preset.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/noobai-mcp.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/presets.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/project-installed-presets.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/shared/agent.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/base.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/browser-settings.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/environment-overrides.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/error-catalog.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-processing.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-profiles.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-runtime.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/managed-cli-environment.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/managed-cli-help.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/node-script-runtime.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-package-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-package.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-runtime-resources-schema.ts",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-runtime-resources.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-storage.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/product-agent-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/product-agent.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/profiles/production.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/runtime-artifacts.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/schema.ts",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/settings-entry-ids.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/source-client.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "cordis.patch.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/cli/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/cli/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/core/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/core/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/image-reader/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/image-reader/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/presets/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/presets/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/web/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/web/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/workbench/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/workbench/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "scripts/cli/help-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "scripts/cli/help.mjs",
+        "matchesCandidate": true
+      }
+    ],
+    "loadedClientSource": {
+      "scriptId": "46",
+      "scriptUrl": "dsh-app://app/plugins/??@deepseek-ai/dsh-client-ui-plan/client.js,@deepseek-ai/dsh-client-ui-user-questions/client.js,@deepseek-ai/dsh-client-ui-trajectory/client.js,@deepseek-ai/dsh-api-remote-access/client.js,@deepseek-ai/dsh-session-log-export/client.js,@deepseek-ai/dsh-client-file-upload/client.js,@deepseek-ai/dsh-api-remotes/client.js,@deepseek-ai/dsh-client-ui-deliverables/client.js,harness-comfyui/client.js,@deepseek-ai/dsh-typert-registry/client.js,@deepseek-ai/dsh-client-product-analytics/client.js,@deepseek-ai/dsh-client-connection/client.js,@deepseek-ai/dsh-api-workspace-controller/client.js,@deepseek-ai/dsh-api-session-controller/client.js,@deepseek-ai/dsh-client-ui-directory-picker-native/client.js&rev=dce1282a5334",
+      "sourceMapUrl": "??@deepseek-ai/dsh-client-ui-plan/client.js.map,@deepseek-ai/dsh-client-ui-user-questions/client.js.map,@deepseek-ai/dsh-client-ui-trajectory/client.js.map,@deepseek-ai/dsh-api-remote-access/client.js.map,@deepseek-ai/dsh-session-log-export/client.js.map,@deepseek-ai/dsh-client-file-upload/client.js.map,@deepseek-ai/dsh-api-remotes/client.js.map,@deepseek-ai/dsh-client-ui-deliverables/client.js.map,harness-comfyui/client.js.map,@deepseek-ai/dsh-typert-registry/client.js.map,@deepseek-ai/dsh-client-product-analytics/client.js.map,@deepseek-ai/dsh-client-connection/client.js.map,@deepseek-ai/dsh-api-workspace-controller/client.js.map,@deepseek-ai/dsh-api-session-controller/client.js.map,@deepseek-ai/dsh-client-ui-directory-picker-native/client.js.map&rev=dce1282a5334",
+      "moduleRoutes": [
+        "@deepseek-ai/dsh-client-ui-plan/client.js",
+        "@deepseek-ai/dsh-client-ui-user-questions/client.js",
+        "@deepseek-ai/dsh-client-ui-trajectory/client.js",
+        "@deepseek-ai/dsh-api-remote-access/client.js",
+        "@deepseek-ai/dsh-session-log-export/client.js",
+        "@deepseek-ai/dsh-client-file-upload/client.js",
+        "@deepseek-ai/dsh-api-remotes/client.js",
+        "@deepseek-ai/dsh-client-ui-deliverables/client.js",
+        "harness-comfyui/client.js",
+        "@deepseek-ai/dsh-typert-registry/client.js",
+        "@deepseek-ai/dsh-client-product-analytics/client.js",
+        "@deepseek-ai/dsh-client-connection/client.js",
+        "@deepseek-ai/dsh-api-workspace-controller/client.js",
+        "@deepseek-ai/dsh-api-session-controller/client.js",
+        "@deepseek-ai/dsh-client-ui-directory-picker-native/client.js"
+      ],
+      "candidateModuleIndex": 8,
+      "sectionOffsetLine": 38417,
+      "sectionOffsetColumn": 0,
+      "matchesCandidate": true
+    },
+    "loadedClientSourceAfterRestart": {
+      "scriptId": "47",
+      "scriptUrl": "dsh-app://app/plugins/??@deepseek-ai/dsh-client-ui-plan/client.js,@deepseek-ai/dsh-client-ui-user-questions/client.js,@deepseek-ai/dsh-client-ui-trajectory/client.js,@deepseek-ai/dsh-api-remote-access/client.js,@deepseek-ai/dsh-session-log-export/client.js,@deepseek-ai/dsh-client-file-upload/client.js,@deepseek-ai/dsh-api-remotes/client.js,@deepseek-ai/dsh-client-ui-deliverables/client.js,harness-comfyui/client.js,@deepseek-ai/dsh-typert-registry/client.js,@deepseek-ai/dsh-client-product-analytics/client.js,@deepseek-ai/dsh-client-connection/client.js,@deepseek-ai/dsh-api-workspace-controller/client.js,@deepseek-ai/dsh-api-session-controller/client.js,@deepseek-ai/dsh-client-ui-directory-picker-native/client.js&rev=911a4f80c5d3",
+      "sourceMapUrl": "??@deepseek-ai/dsh-client-ui-plan/client.js.map,@deepseek-ai/dsh-client-ui-user-questions/client.js.map,@deepseek-ai/dsh-client-ui-trajectory/client.js.map,@deepseek-ai/dsh-api-remote-access/client.js.map,@deepseek-ai/dsh-session-log-export/client.js.map,@deepseek-ai/dsh-client-file-upload/client.js.map,@deepseek-ai/dsh-api-remotes/client.js.map,@deepseek-ai/dsh-client-ui-deliverables/client.js.map,harness-comfyui/client.js.map,@deepseek-ai/dsh-typert-registry/client.js.map,@deepseek-ai/dsh-client-product-analytics/client.js.map,@deepseek-ai/dsh-client-connection/client.js.map,@deepseek-ai/dsh-api-workspace-controller/client.js.map,@deepseek-ai/dsh-api-session-controller/client.js.map,@deepseek-ai/dsh-client-ui-directory-picker-native/client.js.map&rev=911a4f80c5d3",
+      "moduleRoutes": [
+        "@deepseek-ai/dsh-client-ui-plan/client.js",
+        "@deepseek-ai/dsh-client-ui-user-questions/client.js",
+        "@deepseek-ai/dsh-client-ui-trajectory/client.js",
+        "@deepseek-ai/dsh-api-remote-access/client.js",
+        "@deepseek-ai/dsh-session-log-export/client.js",
+        "@deepseek-ai/dsh-client-file-upload/client.js",
+        "@deepseek-ai/dsh-api-remotes/client.js",
+        "@deepseek-ai/dsh-client-ui-deliverables/client.js",
+        "harness-comfyui/client.js",
+        "@deepseek-ai/dsh-typert-registry/client.js",
+        "@deepseek-ai/dsh-client-product-analytics/client.js",
+        "@deepseek-ai/dsh-client-connection/client.js",
+        "@deepseek-ai/dsh-api-workspace-controller/client.js",
+        "@deepseek-ai/dsh-api-session-controller/client.js",
+        "@deepseek-ai/dsh-client-ui-directory-picker-native/client.js"
+      ],
+      "candidateModuleIndex": 8,
+      "sectionOffsetLine": 38417,
+      "sectionOffsetColumn": 0,
+      "matchesCandidate": true
+    }
+  },
+  "restart": {
+    "installationRunStopped": true,
+    "generationRunStopped": true,
+    "finalRunRunning": true,
+    "generationHistoryRecovered": true
+  },
+  "workspaceBoundary": {
+    "schemaVersion": 1,
+    "classification": "automated-regression",
+    "acceptanceClaim": false,
+    "sourceRepositoryRoot": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui",
+    "probeRepositoryRoot": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-ONOIpu",
+    "configuredWorkspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-ONOIpu/.local/desktop-e2e/89ae0c39-25cb-46ae-8307-b8072656aed9/official-environment/workspace",
+    "workspacePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-ONOIpu/.local/desktop-e2e/89ae0c39-25cb-46ae-8307-b8072656aed9/official-environment/workspace",
+    "environmentIsOutsideSourceRepository": true,
+    "workspaceIsOutsideSourceRepository": true,
+    "probeRepositoryHasGitMarker": false
+  },
+  "businessAssertions": [
+    "preset-and-skill-scope",
+    "workspace-and-user-skill-marker-retrieval",
+    "disabled-kimi-ppt-model-request",
+    "catalog-and-base-model-settings",
+    "image-reader-settings-and-secret-storage",
+    "workflow-browser-invalid-path-draft-save-and-restart",
+    "saved-media-history-viewer-download-copy-responsive-layout",
+    "context-dialog",
+    "controlled-official-generation-through-frontend-worker-runtime-and-media-ui"
+  ],
+  "generation": {
+    "schemaVersion": 1,
+    "classification": "automated-regression",
+    "acceptanceClaim": false,
+    "sessionTitle": "Desktop controlled generation session",
+    "sessionId": "session-a5018a2a-08b4-4ee5-a37d-29f9477c186e",
+    "promptId": "4e8dff8f-0feb-4541-91e6-7ab828dc96c5",
+    "runId": "run_fb03e9b5-49ed-4dfb-9052-bc1b3f45bef9",
+    "runTitle": "Controlled official Desktop generation",
+    "runStatus": "succeeded",
+    "output": {
+      "mediaId": "media_294f64c1-9f0a-485d-b1ae-ad105bfac732",
+      "filename": "official-desktop-controlled.png",
+      "mediaType": "image/png",
+      "byteSize": 70
+    },
+    "frontend": {
+      "publicMethodsObserved": [
+        "graph",
+        "loadGraphData",
+        "graphToPrompt"
+      ],
+      "nodeTypesRegistered": true,
+      "workflowLoaded": true,
+      "graphExported": true
+    },
+    "transport": {
+      "objectInfoRequests": 1,
+      "promptSubmissions": 1,
+      "jobPolls": 2,
+      "mediaDownloads": 1,
+      "historyShapeVerified": true,
+      "productHistoryPolls": 0
+    },
+    "modelToolCalls": {
+      "generationToolAvailable": true,
+      "toolResultReturned": true
+    }
+  },
+  "generationAfterRestart": {
+    "schemaVersion": 1,
+    "classification": "automated-regression",
+    "acceptanceClaim": false,
+    "sessionId": "session-a5018a2a-08b4-4ee5-a37d-29f9477c186e",
+    "runId": "run_fb03e9b5-49ed-4dfb-9052-bc1b3f45bef9",
+    "runStatus": "succeeded",
+    "mediaFilename": "official-desktop-controlled.png",
+    "uiRunAndMediaVisible": true
+  },
+  "nativeSubagent": {
+    "initialDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-ONOIpu/.local/desktop-e2e/89ae0c39-25cb-46ae-8307-b8072656aed9/official-environment/workspace/native-parent-directory",
+    "childDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-ONOIpu/.local/desktop-e2e/89ae0c39-25cb-46ae-8307-b8072656aed9/official-environment/native-child-directory",
+    "resultPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-ONOIpu/.local/desktop-e2e/89ae0c39-25cb-46ae-8307-b8072656aed9/official-environment/workspace/native-child-result.txt",
+    "resultText": "OFFICIAL_NATIVE_CHILD_RESULT",
+    "repositorySkill": "anima-prompt-builder",
+    "unrelatedSessionId": "session-5bdde6fa-3386-466c-a17d-47cb316218fd",
+    "parentSessionId": "session-549765a6-2e2d-4757-a5d0-7035c97554f7",
+    "childSessionId": "1ae84576-9915-4222-a051-7208f0b151e0",
+    "childRunId": "run_a0bc03f7-e47b-4093-9549-815838aac528"
+  }
+}

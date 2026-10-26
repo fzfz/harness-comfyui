@@ -1,5 +1,5 @@
 import { toGenerationRequest, type CliRequest } from '../../cli/contract.ts'
-import { GenerationRuntimeError } from '../generation/generation-runtime.ts'
+import { resolveGenerationWorkspaceId } from '../generation/workspace-access.ts'
 import type { CliHandlerOptions } from './schema.ts'
 import type { CliExecutionIdentity } from './shell-capability.ts'
 const RANDOM_SEED_MAX_EXCLUSIVE = 2_147_483_648
@@ -13,18 +13,9 @@ async function generationIdentity(
   options: CliHandlerOptions,
   identity: CliExecutionIdentity,
 ) {
-  const workspace = await options.workspaceRegistry.resolveByPath(identity.cwd)
-  if (
-    workspace === undefined
-    || !workspace.sessionIds.some(sessionId => String(sessionId) === identity.sessionId)
-  ) {
-    throw new GenerationRuntimeError(
-      'GENERATION_WORKSPACE_REQUIRED',
-      'The current Session is not attached to a Harness Workspace.',
-    )
-  }
+  const workspaceId = await resolveGenerationWorkspaceId(options.workspaceRegistry, identity.cwd)
   return Object.freeze({
-    workspaceId: String(workspace.id),
+    workspaceId,
     sessionId: identity.sessionId,
     turn: identity.turn,
     callId: identity.callId,

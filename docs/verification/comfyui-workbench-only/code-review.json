@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "baseline": "2bb302449a0a1580e8322b3db2837d854bff9f67",
+  "comparison": "git diff 2bb302449a0a1580e8322b3db2837d854bff9f67 -- plus new source, tests and evidence files",
+  "sourceChangedDuringReview": false,
+  "axes": [
+    {
+      "axis": "Standards",
+      "reviewer": "/root/review_standards",
+      "context": "clean",
+      "findings": [
+        {
+          "priority": "P1",
+          "file": "agent-presets/project-tool-visibility.mjs",
+          "line": 5,
+          "finding": "The empty allow declaration filters inherited standing-preset tools from mounted parent and child Agent scopes.",
+          "evidence": "native-preset-scope-gap.json",
+          "disposition": "Resolved by deleting the unrequested filtering requirement and implementation; see native-preset-scope-resolution.json."
+        }
+      ],
+      "otherMaterialFindings": 0,
+      "localTests": {
+        "passed": 24,
+        "failed": 1,
+        "nodeVersion": "25.8.2"
+      },
+      "simplificationFindings": 0
+    },
+    {
+      "axis": "Spec",
+      "reviewer": "/root/review_spec",
+      "context": "clean",
+      "findings": [
+        {
+          "priority": "P1",
+          "file": "agent-presets/project-tool-visibility.mjs",
+          "line": 5,
+          "spec": "docs/plans/comfyui-workbench-only-20261025.md",
+          "specLines": [
+            182,
+            261,
+            291,
+            299
+          ],
+          "finding": "Empty parent and child tool lists violate the usable workbench tool composition and native dispatch acceptance requirements.",
+          "evidence": "native-preset-scope-gap.json",
+          "disposition": "Resolved by deleting the unrequested filtering requirement and implementation; see native-preset-scope-resolution.json."
+        }
+      ],
+      "otherMaterialFindings": 0,
+      "localTests": {
+        "passed": 26,
+        "failed": 0
+      },
+      "deletionScope": "No other clear deviations found in R1-R11 or the recorded deletion sequence."
+    }
+  ],
+  "runtimeNote": "The minimal Node reproduction used the existing Node 25.8.2; the same empty-tool behavior is captured in the installed official Desktop 0.2.1-rc.3.",
+  "finalProductReview": {
+    "status": "passed",
+    "excludedScope": [
+      "tests/desktop/**",
+      "tests/production/official-desktop-lifecycle.test.mjs",
+      "docs/verification/**"
+    ],
+    "sourceChangedDuringReview": false,
+    "axes": [
+      {
+        "axis": "Standards",
+        "reviewer": "/root/final_standards_product",
+        "context": "clean",
+        "findings": [],
+        "localTests": {
+          "files": 6,
+          "passed": 54,
+          "failed": 0
+        }
+      },
+      {
+        "axis": "Spec",
+        "reviewer": "/root/final_spec_product",
+        "context": "clean",
+        "findings": [],
+        "localTests": {
+          "files": 8,
+          "passed": 70,
+          "failed": 0
+        }
+      }
+    ],
+    "desktopFollowup": "passed"
+  },
+  "desktopFollowup": {
+    "status": "passed",
+    "previousFindings": [
+      {
+        "axis": "Standards and Spec",
+        "priority": "P2",
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "finding": "Active continuation did not assert successful appended-message delivery and receipt in a child model request.",
+        "resolution": "Assert official send_message success and wait for the exact appended text in a child request; persist the request sequence."
+      },
+      {
+        "axis": "Spec",
+        "priority": "P2",
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "finding": "Historical media acceptance only compared identifiers.",
+        "resolution": "Read bytes through the public media content URL before restart and after rejected restore; compare status, content type and all bytes."
+      },
+      {
+        "axis": "Spec",
+        "priority": "P2",
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "finding": "Continuation phases did not require the parent to receive the current completion notification and read the current result file.",
+        "resolution": "Each phase writes a distinct result, requires the child completion event and parent notification, and checks the parent bash result."
+      },
+      {
+        "axis": "Standards",
+        "priority": "P1",
+        "file": "tests/desktop/official-desktop-live.test.mjs",
+        "finding": "The consuming request queue could require the same child request twice.",
+        "resolution": "Read the captured CLI and notification evidence from the append-only request log after completion."
+      }
+    ],
+    "reviewers": [
+      "/root/desktop_final_standards_fix",
+      "/root/desktop_final_spec_fix"
+    ],
+    "sourceChangedDuringReview": false,
+    "validationFailure": {
+      "report": "desktop-native-attempt-12.json",
+      "cause": "The test used a session address to page a continuable child; the official API requires the subagent address.",
+      "resolution": "Pass the official subagent address to the existing end-state helper."
+    },
+    "intermediateReviews": [
+      {
+        "reviewer": "/root/desktop_final_standards_fix",
+        "axis": "Standards",
+        "findings": 0
+      },
+      {
+        "reviewer": "/root/desktop_final_spec_fix",
+        "axis": "Spec",
+        "findings": 1
+      },
+      {
+        "reviewer": "/root/continuation_final_standards",
+        "axis": "Standards",
+        "findings": 1
+      },
+      {
+        "reviewer": "/root/continuation_final_spec",
+        "axis": "Spec",
+        "findings": 0
+      }
+    ],
+    "finalValidation": "desktop-native-attempt-13.json",
+    "axes": [
+      {
+        "axis": "Standards",
+        "reviewer": "/root/continuation_handoff_standards",
+        "context": "clean",
+        "findings": []
+      },
+      {
+        "axis": "Spec",
+        "reviewer": "/root/continuation_handoff_spec",
+        "context": "clean",
+        "findings": []
+      }
+    ],
+    "finalReviewScope": "Changed continuation and official end-state helpers; unchanged Desktop scope retains prior independent reviews."
+  },
+  "lateTestCleanupReview": {
+    "status": "passed",
+    "sourceChangedDuringReview": false,
+    "files": [
+      "tests/unit/plugin-resources.test.ts",
+      "tests/integration/image-reader-plugin.test.ts"
+    ],
+    "axes": [
+      {
+        "axis": "Standards",
+        "reviewer": "/root/retired_tests_standards",
+        "context": "clean",
+        "findings": []
+      },
+      {
+        "axis": "Spec",
+        "reviewer": "/root/retired_tests_spec",
+        "context": "clean",
+        "findings": []
+      }
+    ],
+    "targetedResult": "final-test-cleanup.json"
+  }
+}

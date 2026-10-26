@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "runId": "a6d278ed-26f1-4280-b3d2-1b933d756b1c",
+  "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+  "source": {
+    "kind": "official-session-export",
+    "route": "api/session.export"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+      "parentSessionId": null,
+      "entry": "session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-first-trace/sessions/session-session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225/session.json",
+      "eventCount": 47,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 46,
+        "complete": true
+      }
+    },
+    {
+      "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+      "parentSessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+      "entry": "subagents/83d5bbad-f92f-4744-a9e0-43a5273b2d98/session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/docs/verification/comfyui-workbench-only/desktop-native-real-openrouter-reasoning-first-trace/sessions/session-83d5bbad-f92f-4744-a9e0-43a5273b2d98/session.json",
+      "eventCount": 37,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 36,
+        "complete": true
+      }
+    }
+  ],
+  "missing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-ad38e3c4-4aab-4240-9f1c-95bae4fbe225",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    },
+    {
+      "source": "model-request",
+      "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "83d5bbad-f92f-4744-a9e0-43a5273b2d98",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "complete": false
+}

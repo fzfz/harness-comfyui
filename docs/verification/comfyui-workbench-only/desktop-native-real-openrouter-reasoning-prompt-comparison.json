@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-10-26T03:33:51.299Z",
+  "rows": [
+    {
+      "command": "prompt",
+      "unchangedApartFromResultPath": true
+    },
+    {
+      "command": "continue",
+      "unchangedApartFromResultPath": true
+    }
+  ]
+}

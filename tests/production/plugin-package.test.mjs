@@ -239,7 +239,7 @@ describe('plugin build and package entry points', () => {
     ].filter(value => typeof value === 'string')
 
     expect(manifest.name).toBe('harness-comfyui')
-    for (const entry of ['', '/core', '/image-reader', '/cli', '/presets', '/web', '/cli-workspace']) {
+    for (const entry of ['', '/core', '/image-reader', '/cli', '/presets', '/web']) {
       for (const language of ['en', 'zh']) {
         const target = manifest.exports[`.${entry}/locale/${language}.json`]
         expect(target, `${entry} exposes ${language} plugin metadata`).toBeTypeOf('string')

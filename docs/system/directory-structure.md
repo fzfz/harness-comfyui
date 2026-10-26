@@ -15,11 +15,10 @@
    | [src/host/core/](../../src/host/core/) | Core 插件装配、Host 配置加载与存储初始化。 |
    | [src/host/source-client/](../../src/host/source-client/) | Host 内部数据源客户端与目录协议校验。 |
    | [src/host/catalog/](../../src/host/catalog/) | Catalog 查询适配、展示投影、查询 Tools 与 Remote。 |
-   | [src/host/cli/](../../src/host/cli/) | 受管 CLI listener、Tool Call capability、请求分发与 Workspace 登记。 |
+   | [src/host/cli/](../../src/host/cli/) | 受管 CLI listener、Tool Call capability、请求分发与业务身份读取。 |
    | [src/host/web/](../../src/host/web/) | Host Remote 与媒体路由装配。 |
    | [src/host/generation/](../../src/host/generation/) | Generation Runtime、Workflow 参数化、官方前端导出、缓存、Comfy transport、coordinator 与媒体服务。 |
    | [src/host/image-reader/](../../src/host/image-reader/) | 图片读取配置、模型目录、输入处理、Provider 适配与单图读取 Tool。 |
-   | [src/host/tools/](../../src/host/tools/) | 项目 Tool 注册入口。 |
    | [src/host/resource-path.ts](../../src/host/resource-path.ts) | 已安装包内资源的定位入口。 |
    | [src/host/node-script-environment.ts](../../src/host/node-script-environment.ts) | Electron Node 脚本环境入口。 |
    | [src/source-settings.ts](../../src/source-settings.ts) | 数据源地址与端口合同。 |
@@ -38,17 +37,9 @@
    | --- | --- |
    | [agent-presets/presets.cordis.yml](../../agent-presets/presets.cordis.yml) | 项目 Preset registry 声明。 |
    | [agent-presets/harness-comfyui-cli-candidate/](../../agent-presets/harness-comfyui-cli-candidate/) | ComfyUI工作台预设的资源。 |
-   | [agent-presets/harness-comfyui-iteration/](../../agent-presets/harness-comfyui-iteration/) | ComfyUI迭代预设的主 Agent 与四种角色派发配置。 |
-   | [agent-presets/harness-comfyui-task/](../../agent-presets/harness-comfyui-task/) | 工作台任务角色的 persona 与工具组合。 |
-   | [agent-presets/harness-comfyui-composition/](../../agent-presets/harness-comfyui-composition/)、[agent-presets/harness-comfyui-generation/](../../agent-presets/harness-comfyui-generation/)、[agent-presets/harness-comfyui-observation/](../../agent-presets/harness-comfyui-observation/)、[agent-presets/harness-comfyui-comparison/](../../agent-presets/harness-comfyui-comparison/) | 构图、生成、观察和比较角色的 persona 与工具组合。 |
-   | [agent-presets/shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) | 7 个项目 Preset 共用的工具、提示词可见性、Workspace 和 compaction 组合。 |
-   | [agent-presets/noobai-mcp.cordis.yml](../../agent-presets/noobai-mcp.cordis.yml) | 项目 Preset 共用的 NoobAI MCP 服务配置。 |
+   | [agent-presets/shared/agent.cordis.yml](../../agent-presets/shared/agent.cordis.yml) | 工作台公共工具与 compaction 组合。 |
+   | [agent-presets/noobai-mcp.cordis.yml](../../agent-presets/noobai-mcp.cordis.yml) | 工作台的 NoobAI MCP 服务配置。 |
    | [agent-presets/project-installed-presets.mjs](../../agent-presets/project-installed-presets.mjs) | 已安装 Preset 资源入口。 |
-   | [agent-presets/project-iteration-dispatch.mjs](../../agent-presets/project-iteration-dispatch.mjs) | 工作台与迭代角色的子会话首次派发与后续派发接口。 |
-   | [agent-presets/project-observation-dispatch.mjs](../../agent-presets/project-observation-dispatch.mjs) | 观察任务的 Run 媒体解析与派发适配。 |
-   | [agent-presets/project-subagent-control.mjs](../../agent-presets/project-subagent-control.mjs) | 产品 Preset 的子任务中断工具。 |
-   | [agent-presets/project-subagent-workspace.mjs](../../agent-presets/project-subagent-workspace.mjs) | 父子 Session 的 Workspace 关联。 |
-   | [agent-presets/project-tool-visibility.mjs](../../agent-presets/project-tool-visibility.mjs)、[agent-presets/project-system-prompt-visibility.mjs](../../agent-presets/project-system-prompt-visibility.mjs) | Preset 的 Tool 与系统提示词可见范围。 |
 
 2. 项目 Skill 的唯一源码目录如下；执行入口为各目录的 `SKILL.md`。
 
@@ -56,9 +47,8 @@
    | --- | --- |
    | [.agents/skills/anima-prompt-builder/](../../.agents/skills/anima-prompt-builder/) | ANIMA3 Prompt 与历史 Generation Run 查询。 |
    | [.agents/skills/character-portrait-prompt-designer/](../../.agents/skills/character-portrait-prompt-designer/) | 角色立绘 Prompt 与历史 Generation Run 查询。 |
-   | [.agents/skills/comfyui-generate/](../../.agents/skills/comfyui-generate/) | 接收 Prompt Builder 的输出、检查模板参数、分配 Seed 并调用 ComfyUI 生成图片。 |
+   | [.agents/skills/comfyui-generate/](../../.agents/skills/comfyui-generate/) | ComfyUI 图片生成。 |
    | [.agents/skills/comfyui-image-review/](../../.agents/skills/comfyui-image-review/) | Run 图片读取、参数比较与 Prompt 改进。 |
-   | [.agents/skills/comfyui-iterate-generation/](../../.agents/skills/comfyui-iterate-generation/) | 图片迭代调度；文件交接约定见 [records.md](../../.agents/skills/comfyui-iterate-generation/references/records.md)。 |
    | [.agents/skills/krea2-anime-prompt-builder/](../../.agents/skills/krea2-anime-prompt-builder/) | Krea2 动漫 Prompt 与历史 Generation Run 查询。 |
    | [.agents/skills/moss-prompt-builder/](../../.agents/skills/moss-prompt-builder/) | MOSS-Image Caption 与像素 Layout 提示词。 |
    | [.agents/skills/local-image-reader/](../../.agents/skills/local-image-reader/) | 用户提供本地图片路径时的视觉读取。 |
@@ -87,7 +77,7 @@
    | [config/managed-cli-environment.json](../../config/managed-cli-environment.json) | 受管 CLI 环境字段。 |
    | [config/node-script-runtime.json](../../config/node-script-runtime.json) | Electron Node 脚本环境字段。 |
    | [config/desktop-e2e.json](../../config/desktop-e2e.json)、[config/desktop-e2e-schema.mjs](../../config/desktop-e2e-schema.mjs) | 官方 Desktop 验收配置与运行记录合同。 |
-   | [tsconfig.agent-presets.json](../../tsconfig.agent-presets.json) | Preset 派发与生命周期适配文件的 `checkJs` 类型检查配置。 |
+   | [tsconfig.agent-presets.json](../../tsconfig.agent-presets.json) | Preset 资源入口的 `checkJs` 类型检查配置。 |
    | [scripts/build/](../../scripts/build/) | 插件构建与 tarball 打包入口。 |
    | [scripts/cli/](../../scripts/cli/) | 受管 CLI 入口、帮助、参数解析与结果文件管理模块。 |
 
@@ -99,7 +89,7 @@
 
 ## 开发验收目录
 
-1. 官方 Desktop 验收目录由 [config/desktop-e2e.json](../../config/desktop-e2e.json) 定义。`.local/desktop-e2e/<run-id>/` 保存每轮日志、证据与运行记录；`.local/desktop-development/official-environment/` 保存持久开发 Harness home、user-data 与 Workspace。实例操作见[worktree 规范](../agents/worktree-development.md)。
+1. 官方 Desktop 验收目录由 [config/desktop-e2e.json](../../config/desktop-e2e.json) 定义。`.local/desktop-e2e/<run-id>/` 保存每轮日志、证据与运行记录；`.local/desktop-development/official-environment/` 保存开发实例持久使用的 Harness home、user-data 与 Workspace。实例操作见[worktree 规范](../agents/worktree-development.md)。
 
 2. 测试代码与验收证据按以下职责组织，执行入口和通过条件见[测试规范](testing.md)。
 

@@ -1,0 +1,21 @@
+{
+  "runId": "25b452a0-06dd-44f6-8d67-c794872a201f",
+  "state": "stopped",
+  "error": null,
+  "portsReleased": true,
+  "portOwners": [
+    {
+      "port": 56590,
+      "pids": []
+    },
+    {
+      "port": 56591,
+      "pids": []
+    },
+    {
+      "port": 56592,
+      "pids": []
+    }
+  ],
+  "recordedAt": "2026-10-26T02:46:29.734Z"
+}

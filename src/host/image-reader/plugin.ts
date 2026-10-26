@@ -3,7 +3,6 @@ import { drainPendingRequests } from '../pending-requests.ts'
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { createImageReaderSettingsDefaults } from '../../image-reader/settings.ts'
 import type { ImageReaderConfiguration } from '../../image-reader/settings.ts'
-import { registerProjectTools } from '../tools/register-project-tools.ts'
 import { ImageReaderConfigurationService } from './configuration-service.ts'
 import { ImageReaderService, type ImageInspectionOptions } from './image-reader-service.ts'
 import { imageReaderCredentialStore } from './credential-store.ts'
@@ -59,5 +58,5 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const credentials = imageReaderCredentialStore(ctx.credentials)
   const logger = ctx.logger('harness-comfyui-image-reader')
   const service = new ImageReaderPluginService(ctx, new ImageReaderConfigurationService(ctx.llm, scope, credentials), new ImageReaderService({ scope, credentials, attachments: ctx.attachments, llm: ctx.llm, onDiagnostic: record => logger.info(runtime.diagnosticLogFormat, JSON.stringify(record)) }), config.shutdownTimeoutMs ?? runtime.shutdownTimeoutMs)
-  ctx.effect(() => registerProjectTools(ctx, [createInspectImageTool(service)]), 'Image inspection Tool')
+  ctx.tools.register(createInspectImageTool(service))
 }

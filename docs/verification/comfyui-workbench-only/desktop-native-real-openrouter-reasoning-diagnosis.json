@@ -1,0 +1,167 @@
+{
+  "recordedAt": "2026-10-26T03:26:22.035Z",
+  "status": "native-configuration-path-identified; original-wire-payload-not-observed",
+  "persistedRequestHeaders": [
+    {
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "headers": [
+        {
+          "seq": 27,
+          "config": {
+            "provider": "openrouter",
+            "model": "openrouter/free",
+            "maxTokens": 4096
+          }
+        }
+      ]
+    },
+    {
+      "sessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+      "headers": [
+        {
+          "seq": 11,
+          "config": {
+            "provider": "openrouter",
+            "model": "openrouter/free",
+            "maxTokens": 4096
+          }
+        }
+      ]
+    }
+  ],
+  "profile": {
+    "provider": "openrouter",
+    "defaultReasoning": null,
+    "model": {
+      "id": "openrouter/free",
+      "name": "Free Models Router",
+      "contextWindow": 200000,
+      "maxTokens": 4096,
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  "upstreamError": {
+    "type": "turn/end",
+    "seq": 53,
+    "time": 1792984782566,
+    "data": {
+      "turn": 4,
+      "reason": {
+        "kind": "error",
+        "error": {
+          "message": "400: {\"message\":\"Reasoning is mandatory for this endpoint and cannot be disabled.\",\"code\":400,\"metadata\":{\"provider_name\":null}}",
+          "code": "INVALID_REQUEST"
+        }
+      }
+    }
+  },
+  "installedSdkEvidence": "desktop-native-real-openrouter-reasoning-installed-sdk.json",
+  "nativeSource": [
+    {
+      "tag": "dsh-v0.2.1-rc.3",
+      "path": "packages/llm/llm-pi-ai/src/adapter.ts",
+      "startLine": 126,
+      "endLine": 141,
+      "source": "/** Copy profile stream knobs into pi-ai's common option vocabulary. */\nfunction profileOptions(\n  profile: ResolvedPiAiProviderProfile,\n  reasoning: ModelThinkingLevel | undefined,\n  apiKey: string | undefined,\n): SimpleStreamOptions {\n  const enabledReasoning: ThinkingLevel | undefined = reasoning === 'off' ? undefined : reasoning\n  return {\n    ...apiKey === undefined ? {} : { apiKey },\n    ...enabledReasoning === undefined ? {} : { reasoning: enabledReasoning },\n    ...profile.thinkingBudgets === undefined ? {} : { thinkingBudgets: profile.thinkingBudgets },\n    ...profile.cacheRetention === undefined ? {} : { cacheRetention: profile.cacheRetention },\n    ...profile.transport === undefined ? {} : { transport: profile.transport },\n    ...profile.timeoutMs === undefined ? {} : { timeoutMs: profile.timeoutMs },\n    ...profile.websocketConnectTimeoutMs === undefined ? {} : { websocketConnectTimeoutMs: profile.websocketConnectTimeoutMs },\n    // The agent recovery layer owns visible attempts; one adapter call is one SDK attempt."
+    },
+    {
+      "tag": "dsh-v0.2.1-rc.3",
+      "path": "packages/llm/llm-pi-ai/src/adapter.ts",
+      "startLine": 166,
+      "endLine": 180,
+      "source": "    : undefined\n}\n\n/** Validate an explicit Harness/profile effort without invoking pi-ai's clamp. */\nfunction resolveReasoningLevel(\n  model: Model<Api>,\n  effort: ReasoningEffortIdType | ModelThinkingLevel | undefined,\n): ModelThinkingLevel | undefined {\n  if (effort === undefined) return undefined\n  const supported = getSupportedThinkingLevels(model)\n  if (supported.some(level => level === effort)) return effort as ModelThinkingLevel\n  throw new LlmError(\n    `pi-ai provider \"${model.provider}\" model \"${model.id}\" does not support reasoning effort \"${effort}\"`,\n    'UNSUPPORTED_REASONING_EFFORT',\n  )"
+    },
+    {
+      "tag": "dsh-v0.2.1-rc.3",
+      "path": "packages/llm/llm-pi-ai/src/adapter.ts",
+      "startLine": 380,
+      "endLine": 383,
+      "source": "    const reasoning = resolveReasoningLevel(\n      model,\n      options.reasoningEffort ?? profile.reasoning,\n    )"
+    },
+    {
+      "tag": "dsh-v0.2.1-rc.3",
+      "path": "packages/llm/llm-pi-ai/src/catalog.ts",
+      "startLine": 717,
+      "endLine": 736,
+      "source": " * @returns the reasoning fields the materialized model carries.\n */\nfunction resolveModelReasoning(\n  provider: string,\n  entry: PiAiModelProfile,\n  base: Model<Api> | undefined,\n): ModelReasoning {\n  const efforts = entry.reasoningEfforts\n  if (efforts === undefined) {\n    // Reasoning rides the installed entry or is absent: a bare capability flag\n    // would make pi-ai advertise effort levels with no `thinkingLevelMap` to\n    // spell them, and no listing endpoint reports a model's reasoning\n    // protocol. The entry's map (when any) arrives through the `...base`\n    // spread in the model literal.\n    return { reasoning: base?.reasoning ?? false }\n  }\n  // The installed entry's map may ride along through `...base`; pi-ai never\n  // reads it on a non-reasoning model, so stripping it is not worth a field\n  // enumeration here.\n  if (efforts === false) return { reasoning: false }"
+    },
+    {
+      "tag": "dsh-v0.2.1-rc.3",
+      "path": "packages/llm/llm-pi-ai/src/models.ts",
+      "startLine": 56,
+      "endLine": 68,
+      "source": " * Resolve selectable reasoning levels from pi-ai's public model metadata.\n * @param model - model descriptor carrying reasoning support and wire mappings.\n * @returns supported levels in pi-ai's escalation order.\n */\nexport function getSupportedThinkingLevels(model: Model<Api>): ModelThinkingLevel[] {\n  if (!model.reasoning) return ['off']\n  return THINKING_LEVELS.filter((level) => {\n    const mapped = model.thinkingLevelMap?.[level]\n    if (mapped === null) return false\n    if (level === 'xhigh' || level === 'max') return mapped !== undefined\n    return true\n  })\n}"
+    },
+    {
+      "tag": "dsh-v0.2.1-rc.3",
+      "path": "packages/api/session-controller/src/commands.ts",
+      "startLine": 157,
+      "endLine": 179,
+      "source": "  async selectModel(request: SessionSelectModelRequest): Promise<SessionSelectModelValue> {\n    const agent = await this.resolveAgent(request.sessionId)\n    return this.agents.serializeImageAdmission(agent, async () => {\n      try {\n        await this.requireModel(request)\n        const resolved = await this.ctx.llm.resolveCallConfig({\n          provider: request.provider,\n          model: request.model,\n          ...(request.reasoningEffort === undefined\n            ? {}\n            : { reasoningEffort: ReasoningEffortId(request.reasoningEffort) }),\n        })\n        const selected: AgentModelSelection = {\n          provider: resolved.provider,\n          model: resolved.model,\n          ...(resolved.reasoningEffort === undefined\n            ? {}\n            : { reasoningEffort: resolved.reasoningEffort }),\n        }\n        this.agents.selectForNextRequest(agent, selected)\n        void this.ctx.agentDefaultModel.saveSelection(selected).catch((error: unknown) => {\n          this.ctx.logger.warn(\n            `session-controller: model selection changed for the Session but the default was not saved: ${String(error)}`,"
+    }
+  ],
+  "inference": {
+    "basis": "The persisted call omits reasoningEffort; the configured provider omits reasoning; the model inherits installed reasoning=true and openrouter thinkingFormat; installed streamSimple leaves reasoningEffort undefined, and its OpenRouter branch assigns reasoning.effort=none.",
+    "predictedWire": {
+      "reasoning": {
+        "effort": "none"
+      }
+    },
+    "originalWirePayloadCaptured": false
+  },
+  "minimumNativeConfiguration": {
+    "remote": "remote.session.selectModel",
+    "request": {
+      "sessionId": "<new-isolated-session-id>",
+      "provider": "openrouter",
+      "model": "openrouter/free",
+      "reasoningEffort": "medium"
+    },
+    "providerConfigurationChangeRequired": false,
+    "expectedWire": {
+      "reasoning": {
+        "effort": "medium"
+      }
+    },
+    "applied": false,
+    "liveVerified": false
+  },
+  "officialContract": {
+    "url": "https://openrouter.ai/docs/guides/best-practices/reasoning-tokens",
+    "facts": [
+      "The request accepts reasoning.effort or reasoning.enabled=true.",
+      "A mandatory reasoning endpoint rejects effort=none.",
+      "Dynamic routers including openrouter/free omit per-model reasoning metadata."
+    ]
+  },
+  "remainingEvidence": [
+    "The original HTTP request payload and raw provider stream were not persisted by official session export.",
+    "No single-variable live comparison has run with explicit medium effort.",
+    "The native effort setting addresses the observed reasoning-parameter rejection; result-file writing and parent reading remain independent failed acceptance items."
+  ],
+  "sessionTraceMissing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-d7856d1d-7bb0-4b7e-b40e-4e9fd8c8d7ff",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    },
+    {
+      "source": "model-request",
+      "sessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "7e3d5680-7507-46fd-9bf6-866ec4c7790a",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ]
+}

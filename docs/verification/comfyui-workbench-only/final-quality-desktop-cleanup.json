@@ -1,0 +1,552 @@
+{
+  "invocationId": "9b8d7a9b-6c96-4937-b621-5c9fc8486f0c",
+  "allProcessesAndPortsReleased": true,
+  "runs": [
+    {
+      "runId": "001fc236-612f-49ba-ba8e-4fd88301f093",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:10:49.186Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 51839,
+          "pids": []
+        },
+        {
+          "port": 51840,
+          "pids": []
+        },
+        {
+          "port": 51841,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "27914388-a6db-4f8d-b752-7d0f07fbeec5",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:10:31.448Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 51688,
+          "pids": []
+        },
+        {
+          "port": 51689,
+          "pids": []
+        },
+        {
+          "port": 51690,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "2f2e13fc-62b6-4347-979c-b158174b8bdb",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:09:56.637Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 50971,
+          "pids": []
+        },
+        {
+          "port": 50973,
+          "pids": []
+        },
+        {
+          "port": 50975,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "49db5326-9707-4ff5-b409-91cdf897fbc8",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:10:43.128Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 51783,
+          "pids": []
+        },
+        {
+          "port": 51784,
+          "pids": []
+        },
+        {
+          "port": 51785,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "5d19cd29-f4dc-418e-b54c-9e65e157bd63",
+      "state": "failed",
+      "result": {
+        "exitCode": null,
+        "error": "PROBE_FAILED: controlled lifecycle failure at renderer readiness boundary",
+        "completedAt": "2026-10-26T03:11:06.715Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 51975,
+          "pids": []
+        },
+        {
+          "port": 51976,
+          "pids": []
+        },
+        {
+          "port": 51977,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "62235929-3618-4e9b-88a6-045b51c765b4",
+      "state": "failed",
+      "result": {
+        "exitCode": null,
+        "error": "STARTUP_TIMEOUT: STARTUP_TIMEOUT: Host and Renderer UI were not ready within 10127ms (port deadline 5000ms, startup deadline 10000ms); observed 52180:[34976], 52181:[34683], 52182:[]",
+        "completedAt": "2026-10-26T03:11:31.954Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52180,
+          "pids": []
+        },
+        {
+          "port": 52181,
+          "pids": []
+        },
+        {
+          "port": 52182,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "64863978-a762-473a-a263-a92b74f819b9",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:10:06.785Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 50970,
+          "pids": []
+        },
+        {
+          "port": 50972,
+          "pids": []
+        },
+        {
+          "port": 50974,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "6857a383-0cc1-4445-b422-8b9504dee26d",
+      "state": "failed",
+      "result": {
+        "exitCode": null,
+        "error": "PORT_CONFLICT: PORT_CONFLICT: assigned ports are already listening: 52257:[55818], 52258:[], 52259:[]",
+        "completedAt": "2026-10-26T03:11:32.498Z",
+        "portsReleased": false
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52257,
+          "pids": []
+        },
+        {
+          "port": 52258,
+          "pids": []
+        },
+        {
+          "port": 52259,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "6b25c77a-35f2-4da5-84e6-13514edf6ac9",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:11:42.208Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52262,
+          "pids": []
+        },
+        {
+          "port": 52263,
+          "pids": []
+        },
+        {
+          "port": 52264,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "932eb079-1489-425f-8a0f-ceef33b7b632",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:12:51.285Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52917,
+          "pids": []
+        },
+        {
+          "port": 52918,
+          "pids": []
+        },
+        {
+          "port": 52919,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "af09fdd5-f573-49f8-806c-9404f39ec3bc",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:13:01.811Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52994,
+          "pids": []
+        },
+        {
+          "port": 52995,
+          "pids": []
+        },
+        {
+          "port": 52996,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "c55e3bc2-de38-477a-b31c-f4b947f66921",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:10:58.991Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 51921,
+          "pids": []
+        },
+        {
+          "port": 51922,
+          "pids": []
+        },
+        {
+          "port": 51923,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "c795d150-9844-4902-9df3-77c5ce73e3ef",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:11:58.163Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52306,
+          "pids": []
+        },
+        {
+          "port": 52307,
+          "pids": []
+        },
+        {
+          "port": 52308,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "cb0cfb53-1b69-4ee1-99aa-5fc33448d52c",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:12:29.430Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52626,
+          "pids": []
+        },
+        {
+          "port": 52627,
+          "pids": []
+        },
+        {
+          "port": 52628,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "e1091a7e-ffcb-41c6-9b7b-557d968ddf97",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:12:41.032Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52679,
+          "pids": []
+        },
+        {
+          "port": 52680,
+          "pids": []
+        },
+        {
+          "port": 52681,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "e3e89256-67eb-4dca-8632-c30f78714a6a",
+      "state": "cancelled",
+      "result": {
+        "exitCode": null,
+        "error": "CANCELLED: official Desktop probe preparation was cancelled",
+        "completedAt": "2026-10-26T03:11:15.426Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52026,
+          "pids": []
+        },
+        {
+          "port": 52027,
+          "pids": []
+        },
+        {
+          "port": 52028,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "e59d954a-a2d7-4f8d-97ed-1c0c254198c0",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:10:19.475Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 51637,
+          "pids": []
+        },
+        {
+          "port": 51638,
+          "pids": []
+        },
+        {
+          "port": 51639,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "f3b49ae4-4356-4c21-9e0c-95495fae8a10",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:13:31.359Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 53056,
+          "pids": []
+        },
+        {
+          "port": 53057,
+          "pids": []
+        },
+        {
+          "port": 53058,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "f5d68470-abe7-4304-87c6-fcffbf2f3b22",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:13:44.334Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 53341,
+          "pids": []
+        },
+        {
+          "port": 53342,
+          "pids": []
+        },
+        {
+          "port": 53343,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "fd6f28b8-93c7-4c5f-a94a-0645c853efaf",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:12:19.067Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52567,
+          "pids": []
+        },
+        {
+          "port": 52568,
+          "pids": []
+        },
+        {
+          "port": 52569,
+          "pids": []
+        }
+      ]
+    },
+    {
+      "runId": "ff71a127-59d7-4a20-9f9a-a4bbea4c23f8",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T03:12:08.537Z",
+        "portsReleased": true
+      },
+      "processGroupMatchesRun": false,
+      "processGroup": null,
+      "ports": [
+        {
+          "port": 52515,
+          "pids": []
+        },
+        {
+          "port": 52516,
+          "pids": []
+        },
+        {
+          "port": 52517,
+          "pids": []
+        }
+      ]
+    }
+  ]
+}

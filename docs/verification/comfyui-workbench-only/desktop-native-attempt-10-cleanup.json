@@ -1,0 +1,157 @@
+{
+  "runs": [
+    {
+      "runId": "027ba0aa-e768-41f6-816c-6c6ed6032f9c",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:42:54.802Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 54761,
+        "rendererCdp": 54762,
+        "hostInspector": 54763
+      },
+      "pid": 69351,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/027ba0aa-e768-41f6-816c-6c6ed6032f9c/run.json"
+    },
+    {
+      "runId": "4043d544-e1ae-4ddb-8c38-1d68b48524bc",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:42:12.349Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 54447,
+        "rendererCdp": 54448,
+        "hostInspector": 54449
+      },
+      "pid": 48499,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/4043d544-e1ae-4ddb-8c38-1d68b48524bc/run.json"
+    },
+    {
+      "runId": "4c65d4cc-c8d0-4f8a-a59f-1619754fd1ea",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:42:22.739Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 54544,
+        "rendererCdp": 54545,
+        "hostInspector": 54546
+      },
+      "pid": 53792,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/4c65d4cc-c8d0-4f8a-a59f-1619754fd1ea/run.json"
+    },
+    {
+      "runId": "53cb6760-fb96-4e77-beef-bbcdccdba5a8",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:42:33.309Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 54623,
+        "rendererCdp": 54624,
+        "hostInspector": 54625
+      },
+      "pid": 58772,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/53cb6760-fb96-4e77-beef-bbcdccdba5a8/run.json"
+    },
+    {
+      "runId": "54bd0688-615c-46d9-af90-82c64d1a2cdb",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:41:51.368Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 53901,
+        "rendererCdp": 53902,
+        "hostInspector": 53903
+      },
+      "pid": 37229,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/54bd0688-615c-46d9-af90-82c64d1a2cdb/run.json"
+    },
+    {
+      "runId": "8376002b-5621-4c11-83a5-39890f42c3c5",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:43:33.482Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 55003,
+        "rendererCdp": 55004,
+        "hostInspector": 55005
+      },
+      "pid": 80719,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/8376002b-5621-4c11-83a5-39890f42c3c5/run.json"
+    },
+    {
+      "runId": "8ccdc1ce-691f-44dd-8703-79d4df118097",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:42:01.730Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 54102,
+        "rendererCdp": 54103,
+        "hostInspector": 54104
+      },
+      "pid": 43209,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/8ccdc1ce-691f-44dd-8703-79d4df118097/run.json"
+    },
+    {
+      "runId": "9eef650d-4887-4bbf-a0f7-3f199f08ce19",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:42:44.220Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 54692,
+        "rendererCdp": 54693,
+        "hostInspector": 54694
+      },
+      "pid": 64052,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/9eef650d-4887-4bbf-a0f7-3f199f08ce19/run.json"
+    },
+    {
+      "runId": "e50551f9-8ac7-430e-8fa6-1a10542568f8",
+      "state": "stopped",
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-26T02:43:23.111Z",
+        "portsReleased": true
+      },
+      "ports": {
+        "host": 54850,
+        "rendererCdp": 54851,
+        "hostInspector": 54852
+      },
+      "pid": 74655,
+      "recordPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4UoKYz/.local/desktop-e2e/e50551f9-8ac7-430e-8fa6-1a10542568f8/run.json"
+    }
+  ]
+}

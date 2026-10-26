@@ -1,5 +1,5 @@
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
-import type { WorkspaceRegistry } from '@deepseek-ai/dsh-workspace'
+import { resolveGenerationWorkspaceId, type WorkspaceRegistryProjection } from './workspace-access.ts'
 
 import {
   GenerationRuntimeError,
@@ -14,7 +14,7 @@ function toolContextInvalid(toolName: string): never {
 }
 
 export async function deriveGenerationToolExecutionIdentity(
-  workspaceRegistry: Pick<WorkspaceRegistry, 'resolveByPath'>,
+  workspaceRegistry: WorkspaceRegistryProjection,
   exec: ToolRunContext,
   toolName: string,
 ): Promise<GenerationIdentity> {
@@ -26,22 +26,9 @@ export async function deriveGenerationToolExecutionIdentity(
   if (calls.length !== 1) toolContextInvalid(toolName)
   const call = calls[0]!
   if (call.data.name !== toolName) toolContextInvalid(toolName)
-  const cwd = session.header.cwd
-  if (typeof cwd !== 'string' || cwd.length === 0) {
-    throw new GenerationRuntimeError(
-      'GENERATION_WORKSPACE_REQUIRED',
-      'The current Session does not declare a Workspace directory.',
-    )
-  }
-  const workspace = await workspaceRegistry.resolveByPath(cwd)
-  if (workspace === undefined || !workspace.sessionIds.some(sessionId => String(sessionId) === String(session.id))) {
-    throw new GenerationRuntimeError(
-      'GENERATION_WORKSPACE_REQUIRED',
-      'The current Session is not attached to a Harness Workspace.',
-    )
-  }
+  const workspaceId = await resolveGenerationWorkspaceId(workspaceRegistry, session.header.cwd)
   return Object.freeze({
-    workspaceId: String(workspace.id),
+    workspaceId,
     sessionId: String(session.id),
     turn: call.data.turn,
     callId: String(exec.callId),

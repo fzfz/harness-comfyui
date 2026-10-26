@@ -1,0 +1,6 @@
+{"phase":"continue","running":true,"asOfSeq":51,"lastEvents":[{"type":"agent/inbox/spliced","seq":49},{"type":"step/start","seq":50},{"type":"user/message","seq":51}]}
+{"phase":"continue","running":true,"asOfSeq":59,"lastEvents":[{"type":"assistant/message","seq":57},{"type":"step/end","seq":58},{"type":"turn/end","seq":59}]}
+{"phase":"continue","running":true,"asOfSeq":59,"lastEvents":[{"type":"assistant/message","seq":57},{"type":"step/end","seq":58},{"type":"turn/end","seq":59}]}
+{"phase":"continue","running":true,"asOfSeq":72,"lastEvents":[{"type":"agent/inbox/spliced","seq":70},{"type":"step/start","seq":71},{"type":"user/message","seq":72}]}
+{"phase":"continue","running":true,"asOfSeq":72,"lastEvents":[{"type":"agent/inbox/spliced","seq":70},{"type":"step/start","seq":71},{"type":"user/message","seq":72}]}
+{"phase":"continue","ended":{"type":"turn/end","seq":75,"time":1792985621906,"data":{"turn":4,"reason":{"kind":"completed"}}}}

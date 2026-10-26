@@ -1,0 +1,93 @@
+{
+  "sourceReport": "desktop-native-attempt-11.json",
+  "saved": [
+    {
+      "runId": "05d64d38-ecfd-4557-b2b1-028d41fbdbb9",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/05d64d38-ecfd-4557-b2b1-028d41fbdbb9/official-business-mcp-scope.json"
+    },
+    {
+      "runId": "05d64d38-ecfd-4557-b2b1-028d41fbdbb9",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/05d64d38-ecfd-4557-b2b1-028d41fbdbb9/official-business-mcp.json"
+    },
+    {
+      "runId": "05d64d38-ecfd-4557-b2b1-028d41fbdbb9",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/05d64d38-ecfd-4557-b2b1-028d41fbdbb9/official-business-native-continuation.json"
+    },
+    {
+      "runId": "05d64d38-ecfd-4557-b2b1-028d41fbdbb9",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/05d64d38-ecfd-4557-b2b1-028d41fbdbb9/session-trace"
+    },
+    {
+      "runId": "05d64d38-ecfd-4557-b2b1-028d41fbdbb9",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/05d64d38-ecfd-4557-b2b1-028d41fbdbb9/stop-result.json"
+    },
+    {
+      "runId": "0dcc8ad9-a0ea-4c78-b4b8-d220a8cb2ae6",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/0dcc8ad9-a0ea-4c78-b4b8-d220a8cb2ae6/official-business-mcp-activation.json"
+    },
+    {
+      "runId": "0dcc8ad9-a0ea-4c78-b4b8-d220a8cb2ae6",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/0dcc8ad9-a0ea-4c78-b4b8-d220a8cb2ae6/stop-result.json"
+    },
+    {
+      "runId": "1f08f393-57d5-470c-ba19-f15bb5150696",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/1f08f393-57d5-470c-ba19-f15bb5150696/official-business-mcp-activation.json"
+    },
+    {
+      "runId": "1f08f393-57d5-470c-ba19-f15bb5150696",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/1f08f393-57d5-470c-ba19-f15bb5150696/stop-result.json"
+    },
+    {
+      "runId": "25b452a0-06dd-44f6-8d67-c794872a201f",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/25b452a0-06dd-44f6-8d67-c794872a201f/official-business-mcp-activation.json"
+    },
+    {
+      "runId": "25b452a0-06dd-44f6-8d67-c794872a201f",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/25b452a0-06dd-44f6-8d67-c794872a201f/stop-result.json"
+    },
+    {
+      "runId": "4736cd17-ac1b-4737-b6f0-9d5c6bbe6970",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/4736cd17-ac1b-4737-b6f0-9d5c6bbe6970/stop-result.json"
+    },
+    {
+      "runId": "611fbcf5-6bad-42f8-99d0-d594b133793b",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/611fbcf5-6bad-42f8-99d0-d594b133793b/official-business-mcp-activation.json"
+    },
+    {
+      "runId": "611fbcf5-6bad-42f8-99d0-d594b133793b",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/611fbcf5-6bad-42f8-99d0-d594b133793b/stop-result.json"
+    },
+    {
+      "runId": "8c194f5e-836b-4dd0-8cd6-084a83ad2d28",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/8c194f5e-836b-4dd0-8cd6-084a83ad2d28/official-business-mcp-activation.json"
+    },
+    {
+      "runId": "8c194f5e-836b-4dd0-8cd6-084a83ad2d28",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/8c194f5e-836b-4dd0-8cd6-084a83ad2d28/stop-result.json"
+    },
+    {
+      "runId": "a8c2f0cc-37de-456a-8b12-f87f18adb18b",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/a8c2f0cc-37de-456a-8b12-f87f18adb18b/official-business-native-cold-resume.json"
+    },
+    {
+      "runId": "a8c2f0cc-37de-456a-8b12-f87f18adb18b",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/a8c2f0cc-37de-456a-8b12-f87f18adb18b/official-business-result.json"
+    },
+    {
+      "runId": "a8c2f0cc-37de-456a-8b12-f87f18adb18b",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/a8c2f0cc-37de-456a-8b12-f87f18adb18b/official-business-retired-preset.json"
+    },
+    {
+      "runId": "a8c2f0cc-37de-456a-8b12-f87f18adb18b",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/a8c2f0cc-37de-456a-8b12-f87f18adb18b/stop-result.json"
+    },
+    {
+      "runId": "e850dea6-88b6-413b-961f-c96fc50031ec",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/e850dea6-88b6-413b-961f-c96fc50031ec/official-business-mcp-activation.json"
+    },
+    {
+      "runId": "e850dea6-88b6-413b-961f-c96fc50031ec",
+      "path": "docs/verification/comfyui-workbench-only/desktop-native-controlled/e850dea6-88b6-413b-961f-c96fc50031ec/stop-result.json"
+    }
+  ]
+}

@@ -1,17 +1,11 @@
-import { rmSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope, isOfficialMcpChildRequest } from '../desktop/fixtures/official-mcp-acceptance.mjs'
 import { startOfficialBusinessServices } from '../desktop/fixtures/official-business-services.mjs'
 import businessFixture from '../desktop/fixtures/official-business-fixture.json' with { type: 'json' }
 import { OFFICIAL_MCP_FIXTURE } from '../desktop/fixtures/official-mcp-services.mjs'
-import { readProjectAgentPresetResources } from '../../scripts/build/agent-preset-resources.mjs'
-import { validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
-import { observationExecution, observationMediaFixture } from '../unit/fixtures/observation-media-runtime.ts'
-import { apply as applyDispatch } from '../../agent-presets/project-iteration-dispatch.mjs'
-import { apply as applyObservation } from '../../agent-presets/project-observation-dispatch.mjs'
 
-const presetIds = ['workbench', 'iteration']
+const presetIds = ['workbench']
 const activated = presetId => ({ presetId, result: { ok: true, value: { sessionId: `${presetId}-session` } } })
 const failed = presetId => ({ presetId, result: { ok: false, error: { code: 'agent-preset/invalid' } } })
 
@@ -51,72 +45,10 @@ describe('official MCP acceptance assertions', () => {
     }
   })
 
-  it('dispatches each actual iteration role with valid structured inputs for child scope capture', async () => {
-    const { composition } = await readProjectAgentPresetResources(process.cwd(), 'harness-comfyui-iteration')
-    const roles = composition.filter(entry => ['../project-iteration-dispatch.mjs', '../project-observation-dispatch.mjs'].includes(entry.name))
-    expect(roles).toHaveLength(4)
-    const services = await startOfficialBusinessServices(businessFixture)
-    const media = observationMediaFixture()
-    try {
-      const runId = await media.accept()
-      const saved = await media.runtime.readGenerationRunMedia({ workspaceId: 'workspace-1', runIds: [runId] })
-      const images = [{ run_id: runId, media_id: saved.runs[0].images[0].media_id }]
-      services.setMcpObservationImages(images)
-      for (const role of roles) {
-        const tool = role.config.toolName
-        const response = await fetch(`${services.baseURL}/chat/completions`, {
-          method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            model: businessFixture.provider.modelId, stream: true,
-            messages: [{ role: 'user', content: `${OFFICIAL_MCP_FIXTURE.childPrompt} ${tool}` }],
-            tools: [{ type: 'function', function: { name: tool, parameters: role.config.parameters } }],
-          }),
-        })
-        expect(response.status).toBe(200)
-        const chunks = (await response.text()).split('\n').filter(line => line.startsWith('data: {'))
-          .map(line => JSON.parse(line.slice('data: '.length)))
-        const calls = chunks.flatMap(chunk => chunk.choices?.[0]?.delta?.tool_calls ?? [])
-        expect(calls).toHaveLength(1)
-        expect(calls[0].function.name).toBe(tool)
-        const args = JSON.parse(calls[0].function.arguments)
-        expect(validateJsonSchemaValue(role.config.parameters, args, '')).toEqual([])
-        expect(JSON.stringify(args)).toContain(OFFICIAL_MCP_FIXTURE.workflowPrompt)
-        expect(args.description).toBe(`${OFFICIAL_MCP_FIXTURE.childPrompt} ${tool}`)
-        if (tool === 'subagent_observation') {
-          expect(args.images).toEqual(images)
-          expect(await media.resolve(args.images)).toEqual([
-            expect.objectContaining({ ...images[0], path: expect.any(String) }),
-          ])
-        }
-        let registered
-        let activation
-        const apply = role.name === '../project-observation-dispatch.mjs' ? applyObservation : applyDispatch
-        apply({
-          tools: { register: value => { registered = value } },
-          subagents: { startActivation: async value => {
-            activation = value
-            return { childId: 'child-1', messageId: 'message-1' }
-          } },
-          harnessComfyuiCore: { services: { resolveObservationMedia: media.resolveMedia } },
-        }, role.config)
-        await registered.execute(args, { ...observationExecution(), deferContext() {} })
-        const childRequest = { sequence: 3, body: { messages: [{ role: 'user', content: activation.request.prompt }] } }
-        expect(isOfficialMcpChildRequest(childRequest, 3)).toBe(true)
-        expect(isOfficialMcpChildRequest({ ...childRequest, sequence: 2 }, 3)).toBe(false)
-        expect(isOfficialMcpChildRequest({ sequence: 3,
-          body: { messages: [{ role: 'user', content: args.description }] } }, 3)).toBe(false)
-      }
-    } finally {
-      await services.close()
-      media.runtime.close()
-      rmSync(media.root, { recursive: true, force: true })
-    }
-  })
   it('requires successful reactivation of every project Preset', () => {
     const sessions = presetIds.map(activated)
     expect(assertSuccessfulProjectActivations(sessions, presetIds)).toEqual(sessions)
-    for (const sessions of [presetIds.map(failed), [activated('workbench'), failed('iteration')],
-      [activated('workbench')], [activated('workbench'), activated('workbench')]]) {
+    for (const sessions of [presetIds.map(failed), [activated('unregistered-preset')], [], [activated('workbench'), activated('workbench')]]) {
       expect(() => assertSuccessfulProjectActivations(sessions, presetIds)).toThrow()
     }
   })
@@ -130,18 +62,17 @@ describe('official MCP acceptance assertions', () => {
       })),
     }))
     expect(assertSuccessfulProjectWorkflows(workflows, presetIds, toolNames)).toEqual(workflows)
-    const changed = patch => [workflows[0], { ...workflows[1], ...patch }]
+    const changed = patch => [{ ...workflows[0], ...patch }]
     for (const results of [
       [],
-      [workflows[0]],
       [workflows[0], workflows[0]],
       changed({ calls: [] }),
-      changed({ calls: [workflows[1].calls[0]] }),
-      changed({ calls: [...workflows[1].calls].reverse() }),
-      changed({ calls: [...workflows[1].calls, workflows[1].calls[1]] }),
-      changed({ calls: workflows[1].calls.map(call => ({ ...call, method: 'tools/list' })) }),
-      changed({ calls: workflows[1].calls.map(call => ({ ...call, status: 401 })) }),
-      changed({ calls: workflows[1].calls.map(call => ({ ...call, result: { result: { isError: true } } })) }),
+      changed({ calls: [workflows[0].calls[0]] }),
+      changed({ calls: [...workflows[0].calls].reverse() }),
+      changed({ calls: [...workflows[0].calls, workflows[0].calls[1]] }),
+      changed({ calls: workflows[0].calls.map(call => ({ ...call, method: 'tools/list' })) }),
+      changed({ calls: workflows[0].calls.map(call => ({ ...call, status: 401 })) }),
+      changed({ calls: workflows[0].calls.map(call => ({ ...call, result: { result: { isError: true } } })) }),
       changed({ resultReceivedByModel: false }),
     ]) {
       expect(() => assertSuccessfulProjectWorkflows(results, presetIds, toolNames)).toThrow()

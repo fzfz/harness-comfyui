@@ -1,0 +1,1489 @@
+{
+  "failure": "missing-credential",
+  "phase": "recovered",
+  "runId": "611fbcf5-6bad-42f8-99d0-d594b133793b",
+  "sessions": [
+    {
+      "presetId": "harness-comfyui-cli-candidate",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-3b5d3ea6-154f-44ad-9d6f-145853b7861c",
+          "agentPreset": "harness-comfyui-cli-candidate"
+        }
+      }
+    },
+    {
+      "presetId": "standard",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-6b69a90e-aa31-4556-a47c-cde0c2fd1015",
+          "agentPreset": "standard"
+        }
+      }
+    },
+    {
+      "presetId": "minimal",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-21a4ae43-c5b0-4c9b-a56b-e0f9af683ee6",
+          "agentPreset": "minimal"
+        }
+      }
+    },
+    {
+      "presetId": "cordis",
+      "result": {
+        "ok": true,
+        "value": {
+          "sessionId": "session-8112bf4a-b910-4625-a48c-de9d95d7d6c3",
+          "agentPreset": "cordis"
+        }
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "presetId": "harness-comfyui-cli-candidate",
+      "sessionId": "session-3b5d3ea6-154f-44ad-9d6f-145853b7861c",
+      "model": "desktop-prompt-capture-model",
+      "tools": [
+        "bash",
+        "generate_with_comfyui",
+        "get_generation_run_media",
+        "inspect_image",
+        "interrupt_agent",
+        "list_agents",
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "load_workspace_dependencies",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__search_workflows",
+        "query_semantic_comfyui_instances",
+        "query_semantic_comfyui_templates",
+        "query_semantic_generation_models",
+        "query_semantic_loras",
+        "read_comfyui_run_inputs",
+        "read_mcp_resource",
+        "send_message",
+        "skill",
+        "subagent",
+        "working_directory"
+      ],
+      "calls": [
+        {
+          "httpMethod": "POST",
+          "authenticationMatches": true,
+          "method": "tools/call",
+          "params": {
+            "name": "search_workflows",
+            "arguments": {
+              "query": "",
+              "limit": 5,
+              "page": 1
+            }
+          },
+          "status": 200,
+          "result": {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"results\":[{\"ref\":{\"kind\":\"workflow\",\"id\":\"9001\"},\"name\":\"Controlled MCP Workflow\",\"base_model\":null,\"model\":null,\"lora\":null,\"workflow_type\":\"text_to_image\"}],\"next\":null}"
+                }
+              ],
+              "structuredContent": {
+                "results": [
+                  {
+                    "ref": {
+                      "kind": "workflow",
+                      "id": "9001"
+                    },
+                    "name": "Controlled MCP Workflow",
+                    "base_model": null,
+                    "model": null,
+                    "lora": null,
+                    "workflow_type": "text_to_image"
+                  }
+                ],
+                "next": null
+              },
+              "isError": false
+            }
+          }
+        },
+        {
+          "httpMethod": "POST",
+          "authenticationMatches": true,
+          "method": "tools/call",
+          "params": {
+            "name": "get_catalog_resource",
+            "arguments": {
+              "ref": {
+                "kind": "workflow",
+                "id": "9001"
+              }
+            }
+          },
+          "status": 200,
+          "result": {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"item\":{\"ref\":{\"kind\":\"workflow\",\"id\":\"9001\"},\"name\":\"Controlled MCP Workflow\",\"base_model\":null,\"model\":null,\"lora\":null,\"workflow_type\":\"text_to_image\",\"workflow_json\":{\"nodes\":[],\"links\":[]}}}"
+                }
+              ],
+              "structuredContent": {
+                "item": {
+                  "ref": {
+                    "kind": "workflow",
+                    "id": "9001"
+                  },
+                  "name": "Controlled MCP Workflow",
+                  "base_model": null,
+                  "model": null,
+                  "lora": null,
+                  "workflow_type": "text_to_image",
+                  "workflow_json": {
+                    "nodes": [],
+                    "links": []
+                  }
+                }
+              },
+              "isError": false
+            }
+          }
+        }
+      ],
+      "resultReceivedByModel": true
+    }
+  ],
+  "recoveryMode": "application-restart",
+  "requests": [
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": false,
+      "method": null,
+      "params": null,
+      "status": 401,
+      "result": {
+        "error": "Controlled MCP credential does not match"
+      }
+    },
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": true,
+      "method": "server/discover",
+      "params": {
+        "_meta": {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientInfo": {
+            "name": "dsh-mcp-client",
+            "version": "0.0.1"
+          },
+          "io.modelcontextprotocol/clientCapabilities": {}
+        }
+      },
+      "status": 200,
+      "result": {
+        "jsonrpc": "2.0",
+        "id": "server-discover-probe-1",
+        "error": {
+          "code": -32601,
+          "message": "Unknown controlled MCP method or tool"
+        }
+      }
+    },
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": true,
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2025-11-25",
+        "capabilities": {},
+        "clientInfo": {
+          "name": "dsh-mcp-client",
+          "version": "0.0.1"
+        }
+      },
+      "status": 200,
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 0,
+        "result": {
+          "protocolVersion": "2025-03-26",
+          "capabilities": {
+            "tools": {}
+          },
+          "serverInfo": {
+            "name": "official-desktop-controlled-mcp",
+            "version": "1.0.0"
+          }
+        }
+      }
+    },
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": true,
+      "method": "notifications/initialized",
+      "params": null,
+      "status": 202
+    },
+    {
+      "httpMethod": "GET",
+      "authenticationMatches": true,
+      "method": null,
+      "params": null,
+      "status": 405
+    },
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": true,
+      "method": "tools/list",
+      "params": null,
+      "status": 200,
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "tools": [
+            {
+              "name": "search_workflows",
+              "description": "## 查询用途\n\n1. 查找指定底模、模型或 LoRA 关联的工作流，或按视觉描述搜索工作流候选；可直接使用关联名称或文件名。需要完整节点配置时，将候选 ref 传入 get_catalog_resource。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n12. results[].lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n13. results[].workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。\n22. results[].model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].model.name：资源定位；始终提供。核对资源名称。\n24. results[].lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].lora.name：资源定位；始终提供。核对资源名称。",
+              "inputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+                    "default": "",
+                    "maxLength": 200
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+                    "default": 5,
+                    "maximum": 20
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "default": 1,
+                    "maximum": 100000
+                  },
+                  "base_model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "model": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "lora": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源 ID，使用正整数十进制字符串。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "id"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "name"
+                        ]
+                      }
+                    ],
+                    "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+                  },
+                  "workflow_type": {
+                    "type": "string",
+                    "enum": [
+                      "text_to_image",
+                      "text_to_image_lora",
+                      "text_to_image_hires_fix",
+                      "text_to_image_second_pass",
+                      "text_to_video",
+                      "image_to_image",
+                      "image_to_video",
+                      "video_to_video",
+                      "style_transfer",
+                      "controlnet",
+                      "inpainting",
+                      "outpainting",
+                      "upscale",
+                      "face_detailer",
+                      "other"
+                    ]
+                  }
+                },
+                "required": []
+              },
+              "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "results": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "ref": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "workflow",
+                              "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[1-9][0-9]{0,19}$",
+                              "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id"
+                          ],
+                          "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        },
+                        "base_model": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[1-9][0-9]{0,19}$",
+                                  "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                        },
+                        "model": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[1-9][0-9]{0,19}$",
+                                  "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "关联筛选；返回完整字段值；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。"
+                        },
+                        "lora": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[1-9][0-9]{0,19}$",
+                                  "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "关联筛选；返回完整字段值；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。"
+                        },
+                        "workflow_type": {
+                          "type": "string",
+                          "enum": [
+                            "text_to_image",
+                            "text_to_image_lora",
+                            "text_to_image_hires_fix",
+                            "text_to_image_second_pass",
+                            "text_to_video",
+                            "image_to_image",
+                            "image_to_video",
+                            "video_to_video",
+                            "style_transfer",
+                            "controlnet",
+                            "inpainting",
+                            "outpainting",
+                            "upscale",
+                            "face_detailer",
+                            "other"
+                          ],
+                          "description": "生成配置；返回完整字段值；始终提供。识别 Workflow 生成目的。"
+                        }
+                      },
+                      "required": [
+                        "ref",
+                        "name",
+                        "base_model",
+                        "model",
+                        "lora",
+                        "workflow_type"
+                      ]
+                    },
+                    "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+                  },
+                  "next": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "tool": {
+                            "type": "string",
+                            "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                          },
+                          "arguments": {
+                            "type": "object",
+                            "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                          }
+                        },
+                        "required": [
+                          "tool",
+                          "arguments"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+                  },
+                  "suggested_call": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "tool": {
+                        "type": "string",
+                        "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                      }
+                    },
+                    "required": [
+                      "tool",
+                      "arguments"
+                    ],
+                    "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+                  }
+                },
+                "required": [
+                  "results",
+                  "next"
+                ]
+              },
+              "annotations": {
+                "readOnlyHint": true,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false
+              }
+            },
+            {
+              "name": "get_catalog_resource",
+              "description": "## 查询用途\n\n1. 按已知资源类别和 ID 直接读取完整记录，取得完整说明、使用方法、提示词素材或节点配置。实例凭据通过 get_instance_connection 读取。\n\n## 输入参数\n\n1. ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. item：查询结果；始终提供。读取对应资源的完整字段。\n5. item.ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n6. item.name：资源定位；始终提供。核对资源名称。\n7. item.ref.kind：资源定位；始终提供。识别资源类别。\n8. item.ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n\n### item.ref.kind 为 model 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.file_name：生成配置；始终提供。将该文件名用于模型加载节点的文件名参数。\n3. item.file_format：资源定位；始终提供。核对模型文件格式。\n4. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n5. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n6. item.version：资源定位；null 表示未填写版本。核对资源版本。\n7. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n8. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n9. item.skill_name：Skill 选择；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。\n10. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 lora 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。\n3. item.file_name：生成配置；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。\n4. item.file_format：资源定位；始终提供。核对模型文件格式。\n5. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n6. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n7. item.version：资源定位；null 表示未填写版本。核对资源版本。\n8. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n9. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n10. item.trigger_words：Prompt 素材；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。\n11. item.weight：生成配置；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。\n12. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n13. item.base_model.name：资源定位；始终提供。核对资源名称。\n14. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n15. item.model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 style 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.aliases：资源定位；空数组表示没有别名。辅助识别画风。\n3. item.style_description：资源选择与使用指导；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。\n4. item.prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 artist_prompt_string 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.styles：关联筛选；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。\n3. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n4. item.artist_string：Prompt 素材；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n7. item.styles[].id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n8. item.styles[].name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 workflow 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n3. item.lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n4. item.workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n5. item.workflow_json：生成配置；始终提供完整对象。调用者读取全部节点与连接，并根据生成目标设置节点中的提示词。\n6. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n7. item.base_model.name：资源定位；始终提供。核对资源名称。\n8. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n9. item.model.name：资源定位；始终提供。核对资源名称。\n10. item.lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.lora.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 instance 时的字段\n\n1. item.url：实例连接；始终提供。连接已登记的实例服务地址。\n2. item.credential_type：实例连接；none 表示无需认证。据此识别连接认证方式。\n3. item.enabled：登记状态；始终提供布尔值。识别管理员保存的启用配置。\n4. item.validation_passed：登记状态；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。",
+              "inputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "enum": [
+                          "base_model",
+                          "model",
+                          "lora",
+                          "style",
+                          "artist_prompt_string",
+                          "workflow",
+                          "instance"
+                        ],
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。"
+                  }
+                },
+                "required": [
+                  "ref"
+                ]
+              },
+              "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "item": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "base_model",
+                                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id"
+                            ],
+                            "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "model",
+                                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id"
+                            ],
+                            "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          },
+                          "base_model": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                          },
+                          "file_name": {
+                            "type": "string",
+                            "description": "生成配置；返回完整字段值；始终提供。将该文件名用于模型加载节点的文件名参数。"
+                          },
+                          "file_format": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对模型文件格式。"
+                          },
+                          "precision_or_quantization": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对数值精度或量化方式。"
+                          },
+                          "author": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源定位；返回完整字段值；null 表示未填写作者。核对作者或构造作者筛选。"
+                          },
+                          "version": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源定位；返回完整字段值；null 表示未填写版本。核对资源版本。"
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源选择与使用指导；返回完整字段值；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。"
+                          },
+                          "usage": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源选择与使用指导；返回完整字段值；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。"
+                          },
+                          "skill_name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Skill 选择；返回完整字段值；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "name",
+                          "base_model",
+                          "file_name",
+                          "file_format",
+                          "precision_or_quantization",
+                          "author",
+                          "version",
+                          "description",
+                          "usage",
+                          "skill_name"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "lora",
+                                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id"
+                            ],
+                            "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          },
+                          "base_model": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                          },
+                          "model": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。"
+                          },
+                          "file_name": {
+                            "type": "string",
+                            "description": "生成配置；返回完整字段值；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。"
+                          },
+                          "file_format": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对模型文件格式。"
+                          },
+                          "precision_or_quantization": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对数值精度或量化方式。"
+                          },
+                          "author": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源定位；返回完整字段值；null 表示未填写作者。核对作者或构造作者筛选。"
+                          },
+                          "version": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源定位；返回完整字段值；null 表示未填写版本。核对资源版本。"
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源选择与使用指导；返回完整字段值；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。"
+                          },
+                          "usage": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源选择与使用指导；返回完整字段值；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。"
+                          },
+                          "trigger_words": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Prompt 素材；返回完整字段值；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。"
+                          },
+                          "weight": {
+                            "type": "number",
+                            "description": "生成配置；返回完整字段值；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "name",
+                          "base_model",
+                          "model",
+                          "file_name",
+                          "file_format",
+                          "precision_or_quantization",
+                          "author",
+                          "version",
+                          "description",
+                          "usage",
+                          "trigger_words",
+                          "weight"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "style",
+                                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id"
+                            ],
+                            "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          },
+                          "base_model": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "资源定位；返回完整字段值；空数组表示没有别名。辅助识别画风。"
+                          },
+                          "style_description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源选择与使用指导；返回完整字段值；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。"
+                          },
+                          "prompt_text": {
+                            "type": "string",
+                            "description": "Prompt 素材；返回完整字段值；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "name",
+                          "base_model",
+                          "aliases",
+                          "style_description",
+                          "prompt_text"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "artist_prompt_string",
+                                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id"
+                            ],
+                            "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          },
+                          "base_model": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                          },
+                          "styles": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[1-9][0-9]{0,19}$",
+                                  "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ]
+                            },
+                            "description": "关联筛选；返回完整字段值；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。"
+                          },
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "资源选择与使用指导；返回完整字段值；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。"
+                          },
+                          "artist_string": {
+                            "type": "string",
+                            "description": "Prompt 素材；返回完整字段值；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "name",
+                          "base_model",
+                          "styles",
+                          "description",
+                          "artist_string"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "workflow",
+                                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id"
+                            ],
+                            "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          },
+                          "base_model": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                          },
+                          "model": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。"
+                          },
+                          "lora": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[1-9][0-9]{0,19}$",
+                                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "关联筛选；返回完整字段值；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。"
+                          },
+                          "workflow_type": {
+                            "type": "string",
+                            "enum": [
+                              "text_to_image",
+                              "text_to_image_lora",
+                              "text_to_image_hires_fix",
+                              "text_to_image_second_pass",
+                              "text_to_video",
+                              "image_to_image",
+                              "image_to_video",
+                              "video_to_video",
+                              "style_transfer",
+                              "controlnet",
+                              "inpainting",
+                              "outpainting",
+                              "upscale",
+                              "face_detailer",
+                              "other"
+                            ],
+                            "description": "生成配置；返回完整字段值；始终提供。识别 Workflow 生成目的。"
+                          },
+                          "workflow_json": {
+                            "type": "object",
+                            "description": "生成配置；返回完整字段值；始终提供完整对象。调用者读取全部节点与连接，并根据生成目标设置节点中的提示词。"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "name",
+                          "base_model",
+                          "model",
+                          "lora",
+                          "workflow_type",
+                          "workflow_json"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "ref": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "const": "instance",
+                                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                              },
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[1-9][0-9]{0,19}$",
+                                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "id"
+                            ],
+                            "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          },
+                          "url": {
+                            "type": "string",
+                            "format": "uri",
+                            "description": "实例连接；返回完整字段值；始终提供。连接已登记的实例服务地址。"
+                          },
+                          "credential_type": {
+                            "enum": [
+                              "none",
+                              "http_basic",
+                              "bearer"
+                            ],
+                            "description": "实例连接；返回完整字段值；none 表示无需认证。据此识别连接认证方式。"
+                          },
+                          "enabled": {
+                            "type": "boolean",
+                            "description": "登记状态；返回完整字段值；始终提供布尔值。识别管理员保存的启用配置。"
+                          },
+                          "validation_passed": {
+                            "type": "boolean",
+                            "description": "登记状态；返回完整字段值；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。"
+                          }
+                        },
+                        "required": [
+                          "ref",
+                          "name",
+                          "url",
+                          "credential_type",
+                          "enabled",
+                          "validation_passed"
+                        ]
+                      }
+                    ],
+                    "description": "查询结果；返回完整字段值；始终提供。读取对应资源的完整字段。"
+                  }
+                },
+                "required": [
+                  "item"
+                ]
+              },
+              "annotations": {
+                "readOnlyHint": true,
+                "destructiveHint": false,
+                "idempotentHint": true,
+                "openWorldHint": false
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": true,
+      "method": "tools/call",
+      "params": {
+        "name": "search_workflows",
+        "arguments": {
+          "query": "",
+          "limit": 5,
+          "page": 1
+        }
+      },
+      "status": 200,
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"results\":[{\"ref\":{\"kind\":\"workflow\",\"id\":\"9001\"},\"name\":\"Controlled MCP Workflow\",\"base_model\":null,\"model\":null,\"lora\":null,\"workflow_type\":\"text_to_image\"}],\"next\":null}"
+            }
+          ],
+          "structuredContent": {
+            "results": [
+              {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "9001"
+                },
+                "name": "Controlled MCP Workflow",
+                "base_model": null,
+                "model": null,
+                "lora": null,
+                "workflow_type": "text_to_image"
+              }
+            ],
+            "next": null
+          },
+          "isError": false
+        }
+      }
+    },
+    {
+      "httpMethod": "POST",
+      "authenticationMatches": true,
+      "method": "tools/call",
+      "params": {
+        "name": "get_catalog_resource",
+        "arguments": {
+          "ref": {
+            "kind": "workflow",
+            "id": "9001"
+          }
+        }
+      },
+      "status": 200,
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"item\":{\"ref\":{\"kind\":\"workflow\",\"id\":\"9001\"},\"name\":\"Controlled MCP Workflow\",\"base_model\":null,\"model\":null,\"lora\":null,\"workflow_type\":\"text_to_image\",\"workflow_json\":{\"nodes\":[],\"links\":[]}}}"
+            }
+          ],
+          "structuredContent": {
+            "item": {
+              "ref": {
+                "kind": "workflow",
+                "id": "9001"
+              },
+              "name": "Controlled MCP Workflow",
+              "base_model": null,
+              "model": null,
+              "lora": null,
+              "workflow_type": "text_to_image",
+              "workflow_json": {
+                "nodes": [],
+                "links": []
+              }
+            }
+          },
+          "isError": false
+        }
+      }
+    }
+  ]
+}
