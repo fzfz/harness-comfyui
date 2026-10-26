@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "candidate": {
+    "baseline": "6dd17a464e6b0697e6fada66629a2502a5f0e320",
+    "branch": "codex/comfyui-workbench-0-48-0",
+    "pluginVersion": "0.48.0",
+    "desktopVersion": "0.2.1-rc.3",
+    "identitySource": "commit-containing-this-record",
+    "scope": "Release metadata and the source-manifest version contract."
+  },
+  "status": "passed",
+  "reviews": "reviews.json",
+  "gates": {
+    "build": {
+      "command": [
+        "pnpm",
+        "build"
+      ],
+      "exitCode": 0,
+      "log": "build.txt"
+    },
+    "pack": {
+      "command": [
+        "pnpm",
+        "pack:plugin"
+      ],
+      "exitCode": 0,
+      "log": "pack.txt"
+    },
+    "quality": {
+      "command": [
+        "pnpm",
+        "quality"
+      ],
+      "exitCode": 0,
+      "log": "quality.txt",
+      "tests": {
+        "coverage": 1439,
+        "contractAndSecurity": 76,
+        "production": 360,
+        "prototype": 32,
+        "desktop": 291,
+        "total": 2198
+      },
+      "coverage": {
+        "statements": 93.98,
+        "branches": 87.35,
+        "functions": 100,
+        "lines": 96.57
+      },
+      "dependencyAdvisories": {
+        "full": {
+          "critical": 0,
+          "high": 0,
+          "moderate": 0,
+          "low": 0
+        },
+        "production": {
+          "critical": 0,
+          "high": 0,
+          "moderate": 0,
+          "low": 0
+        }
+      }
+    },
+    "diffCheck": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "log": "diff-check.txt"
+    },
+    "initialQualityFailure": {
+      "log": "quality-attempt-1.txt",
+      "reason": "The source-manifest test duplicated the prior release version.",
+      "correctionReview": "reviews.json",
+      "desktopCleanup": "quality-attempt-1-desktop-cleanup.json"
+    }
+  },
+  "artifact": {
+    "candidateArchive": ".local/plugin-packages/harness-comfyui-0.48.0.tgz",
+    "desktopArchive": ".local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.48.0.tgz",
+    "inspection": "package-inspection.json",
+    "releaseRequirement": "Rebuild from the final release commit before publishing its Release attachment."
+  },
+  "desktop": {
+    "cleanup": "desktop-cleanup.json",
+    "probeRuns": 21,
+    "portsChecked": 63,
+    "allProcessesAndPortsReleased": true,
+    "installation": "desktop/installation-summary.json",
+    "controlledGeneration": "desktop/official-business-controlled-generation.json",
+    "generationAfterRestart": "desktop/official-business-generation-after-restart.json",
+    "nativeContinuation": "desktop/official-business-native-continuation.json",
+    "nativeColdResume": "desktop/official-business-native-cold-resume.json",
+    "retiredPreset": "desktop/official-business-retired-preset.json"
+  },
+  "realModel": "real-model-reuse.json",
+  "stc": "stc.json",
+  "scopeCheck": "scope-check.json",
+  "sensitiveValueCheck": "sensitive-value-check.json",
+  "productFilesUnchangedAfterReview": true,
+  "dependenciesInstalled": false,
+  "productionModified": false,
+  "commitCreated": false
+}

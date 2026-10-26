@@ -1,0 +1,2 @@
+$ node scripts/build/cli.mjs pack
+/Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui/.local/plugin-packages/harness-comfyui-0.48.0.tgz

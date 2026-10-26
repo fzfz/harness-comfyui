@@ -1,0 +1,262 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceClaim": false,
+  "package": {
+    "name": "harness-comfyui",
+    "version": "0.48.0"
+  },
+  "application": {
+    "version": "0.2.1-rc.3"
+  },
+  "installation": {
+    "status": "installed",
+    "enabled": true,
+    "evidenceComplete": true,
+    "packageVersion": "0.48.0",
+    "packagePath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/184d6d31-986b-465b-8cf6-fffeeeeee181/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/package.json",
+    "artifactComparisons": [
+      {
+        "relativePath": ".local/source-cli/harness-comfyui.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-client/client.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/browser-settings-schema-IoLmnDX6.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/cli.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/comfy-frontend-worker.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/core.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/error-catalog-BaOsZ4EZ.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/errors-CkknegYz.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/generation-error-s7pDSYyC.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/generation-runtime-DZeTvnkP.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/image-reader.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/index.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/pending-requests-BrC9NqCi.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/plugin-CeLmXNTb.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/resource-path-BvAGoQ1l.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/settings-CodLfhu6.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": ".local/source-host/web.js",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/harness-comfyui-cli-candidate/preset.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/noobai-mcp.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/presets.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/project-installed-presets.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "agent-presets/shared/agent.cordis.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/base.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/browser-settings.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/environment-overrides.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/error-catalog.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-processing.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-profiles.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/image-reader-runtime.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/managed-cli-environment.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/managed-cli-help.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/node-script-runtime.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-package-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-package.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-runtime-resources-schema.ts",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-runtime-resources.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/plugin-storage.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/product-agent-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/product-agent.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/profiles/production.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/runtime-artifacts.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/schema.ts",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/settings-entry-ids.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "config/source-client.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "cordis.patch.yml",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/cli/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/cli/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/core/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/core/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/image-reader/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/image-reader/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/presets/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/presets/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/web/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/web/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/workbench/en.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "locales/workbench/zh.json",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "scripts/cli/help-schema.mjs",
+        "matchesCandidate": true
+      },
+      {
+        "relativePath": "scripts/cli/help.mjs",
+        "matchesCandidate": true
+      }
+    ]
+  },
+  "sourceEvidence": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/884fa8f2-5d75-45fb-8ab8-553a832c97dc/evidence/official-business-result.json"
+}

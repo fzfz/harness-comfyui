@@ -1,0 +1,153 @@
+{
+  "sessionId": "session-f38a9e60-2d58-49c1-9191-725b0030bedd",
+  "retiredPresetId": "harness-comfyui-iteration",
+  "resumeResponse": {
+    "ok": false,
+    "error": {
+      "code": "gateway/internal",
+      "details": {},
+      "isDSHRemoteError": true,
+      "name": "RemoteError"
+    }
+  },
+  "sessionProjection": {
+    "ok": true,
+    "value": {
+      "kind": "sequenced",
+      "asOfSeq": 23,
+      "values": {
+        "title": "captured",
+        "goal": null,
+        "tokenUsage": {
+          "uncachedInputTokens": 0,
+          "outputTokens": 0,
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "contextPressure": {
+          "pressureTokens": 0,
+          "projectedTokens": 16,
+          "contextWindow": 16384
+        },
+        "contextBreakdown": {
+          "systemTokens": 858,
+          "toolsTokens": 5368,
+          "messageTokens": 1281
+        },
+        "inbox": {
+          "next-turn": [],
+          "next-step": []
+        },
+        "sessionStats": {
+          "turns": 1,
+          "steps": 2,
+          "llmMs": 18,
+          "toolMs": 141,
+          "ttftMs": 18,
+          "ttftSteps": 2,
+          "decodeMs": 0,
+          "decodeTokens": 0
+        },
+        "turnOutline": [
+          {
+            "turn": 1,
+            "seq": 4,
+            "prompt": "Create the controlled historical Preset task.",
+            "response": "Controlled generation accepted."
+          }
+        ],
+        "agentPreset": "harness-comfyui-iteration",
+        "userQuestions": {
+          "active": [],
+          "settled": []
+        },
+        "permissions": {
+          "currentValue": "workspace-write"
+        },
+        "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/184d6d31-986b-465b-8cf6-fffeeeeee181/official-environment/workspace",
+        "subagentCatalog": [],
+        "subagentTiming": {
+          "settledMs": 0
+        },
+        "subagent": null,
+        "todos": null,
+        "plan": {
+          "active": false,
+          "pending": false
+        },
+        "modelSelection": {
+          "lastUsed": {
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model"
+          },
+          "next": {
+            "provider": "desktop-prompt-capture",
+            "model": "desktop-prompt-capture-model"
+          }
+        },
+        "sessionListMetadata": {
+          "blank": false,
+          "lastPromptAt": 1792988230098
+        },
+        "imageLimits": {
+          "maxImageBytes": 20971520,
+          "maxImagesPerMessage": 20,
+          "maxMessageImageBytes": 209715200,
+          "maxImagePixels": 64000000,
+          "maxImageDimension": 8192,
+          "mediaTypes": [
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/gif"
+          ]
+        }
+      }
+    }
+  },
+  "presets": {
+    "ok": true,
+    "value": {
+      "presets": [
+        {
+          "id": "standard",
+          "order": 1,
+          "isDefault": true
+        },
+        {
+          "id": "ptc",
+          "order": 2,
+          "isDefault": false
+        },
+        {
+          "id": "minimal",
+          "order": 3,
+          "isDefault": false
+        },
+        {
+          "id": "cordis",
+          "order": 4,
+          "isDefault": false
+        },
+        {
+          "id": "harness-comfyui-cli-candidate",
+          "name": "ComfyUI工作台预设",
+          "order": 91,
+          "isDefault": false
+        }
+      ]
+    }
+  },
+  "modelRequestCount": 0,
+  "runId": "run_1bf51545-cc8f-49c4-920f-8de71d04925f",
+  "mediaIds": [
+    "media_e2d35630-e5d4-42fb-84c0-b8b0c446163c"
+  ],
+  "logPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/184d6d31-986b-465b-8cf6-fffeeeeee181/official-environment/dsh-home/sessions/--private-var-folders-td-trvrwv_d2bxb0ns9qgpmmlqm0000gn-T-official-desktop-e2e-eOzy0h-.local-desktop-e2e-184d6d31-986b-465b-8cf6-fffeeeeee181-official-environment-workspace--/session-f38a9e60-2d58-49c1-9191-725b0030bedd/session.v4.jsonl",
+  "artifactPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/184d6d31-986b-465b-8cf6-fffeeeeee181/official-environment/workspace/retired-preset-result.txt",
+  "historyReadable": true,
+  "historicalLogPreserved": true,
+  "artifactPreserved": true,
+  "mediaContentPreserved": true,
+  "mediaByteLength": 70
+}

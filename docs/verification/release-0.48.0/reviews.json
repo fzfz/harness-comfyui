@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "baseline": "6dd17a464e6b0697e6fada66629a2502a5f0e320",
+  "candidate": "release-metadata-and-version-contract",
+  "diffCommand": "git diff 6dd17a464e6b0697e6fada66629a2502a5f0e320 -- package.json README.md docs/user/install-update.md docs/releasenotes.md",
+  "semantic": {
+    "cleanContext": true,
+    "scope": "Each reviewer received one target and the writing rules.",
+    "targets": [
+      {
+        "path": "README.md",
+        "scope": "Applicable version and release-note anchor",
+        "result": "passed",
+        "reviewer": "release_readme_semantic"
+      },
+      {
+        "path": "docs/user/install-update.md",
+        "scope": "Applicable version",
+        "result": "passed",
+        "reviewer": "release_install_semantic"
+      },
+      {
+        "path": "docs/releasenotes.md",
+        "scope": "Top v0.48.0 section; historical sections preserved",
+        "result": "passed",
+        "reviewer": "release_notes_semantic"
+      }
+    ]
+  },
+  "standards": {
+    "result": "passed",
+    "hardViolations": 0,
+    "judgementCalls": 0,
+    "sources": [
+      "AGENTS.md",
+      "docs/system/releasing.md",
+      "docs/system/testing.md"
+    ],
+    "smellBaseline": "code-review Skill",
+    "reviewer": "release_0480_standards"
+  },
+  "spec": {
+    "result": "passed",
+    "findings": 0,
+    "sources": [
+      "Parent release-candidate assignment",
+      "docs/system/releasing.md"
+    ],
+    "reviewer": "release_0480_spec"
+  },
+  "reportedBy": "parent-agent",
+  "productFilesChangedAfterReview": false,
+  "testContractCorrection": {
+    "path": "tests/contract/engineering-baseline.test.ts",
+    "change": "Use the existing exactVersion expression for the manifest version instead of a release-specific literal.",
+    "targetedTests": {
+      "passed": 6,
+      "failed": 0,
+      "reportedBy": "parent-agent",
+      "log": "engineering-baseline-test.txt"
+    },
+    "standards": {
+      "reviewer": "release_version_test_review",
+      "result": "passed",
+      "scope": "Standards and simplification"
+    },
+    "spec": {
+      "reviewer": "release_version_test_spec",
+      "result": "passed"
+    },
+    "reportedBy": "parent-agent",
+    "diffCommand": "git diff 6dd17a464e6b0697e6fada66629a2502a5f0e320 -- tests/contract/engineering-baseline.test.ts"
+  }
+}

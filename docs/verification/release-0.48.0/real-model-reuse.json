@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "scope": "Release metadata only; business implementation is unchanged from baseline 6dd17a464e6b0697e6fada66629a2502a5f0e320.",
+  "mode": "reuse-baseline-evidence",
+  "provider": "openrouter",
+  "model": "openrouter/free",
+  "reasoningEffort": "medium",
+  "verified": [
+    "Parent dispatches a native child session",
+    "Child reads Skill and reference documents",
+    "Child writes result files",
+    "Parent reads result files",
+    "Parent continues the same child session"
+  ],
+  "newRealModelCalls": 0,
+  "newComfyuiRuns": 0,
+  "evidence": [
+    "../comfyui-workbench-only/index.json",
+    "../comfyui-workbench-only/desktop-native-real-openrouter-reasoning-status.json",
+    "../comfyui-workbench-only/desktop-native-real-openrouter-reasoning-parent-child-headers.json",
+    "../comfyui-workbench-only/desktop-native-real-openrouter-reasoning-trace/trace-index.json"
+  ],
+  "limitations": [
+    "The official persisted trace does not contain the original Provider request or response stream."
+  ],
+  "baselineCleanup": "../comfyui-workbench-only/desktop-native-real-openrouter-reasoning-final-status.json"
+}

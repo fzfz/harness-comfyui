@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "acceptanceClaim": false,
+  "sessionTitle": "Desktop controlled generation session",
+  "sessionId": "session-e169cf13-de5e-4ef4-94eb-197e6e3c811b",
+  "promptId": "e6e7267b-936d-497f-9433-5c1c6b2481b6",
+  "runId": "run_ee2cd919-1bf4-4317-b58e-7721f84b6e9e",
+  "runTitle": "Controlled official Desktop generation",
+  "runStatus": "succeeded",
+  "output": {
+    "mediaId": "media_6f02ca8b-ab13-470d-af92-7f40bdcfbdcc",
+    "filename": "official-desktop-controlled.png",
+    "mediaType": "image/png",
+    "byteSize": 70
+  },
+  "frontend": {
+    "publicMethodsObserved": [
+      "graph",
+      "loadGraphData",
+      "graphToPrompt"
+    ],
+    "nodeTypesRegistered": true,
+    "workflowLoaded": true,
+    "graphExported": true
+  },
+  "transport": {
+    "objectInfoRequests": 1,
+    "promptSubmissions": 1,
+    "jobPolls": 2,
+    "mediaDownloads": 1,
+    "historyShapeVerified": true,
+    "productHistoryPolls": 0
+  },
+  "modelToolCalls": {
+    "generationToolAvailable": true,
+    "toolResultReturned": true
+  }
+}

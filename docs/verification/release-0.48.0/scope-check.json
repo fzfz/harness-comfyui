@@ -1,0 +1,8 @@
+{
+  "baseline": "6dd17a464e6b0697e6fada66629a2502a5f0e320",
+  "historicalReleaseNotesPreserved": true,
+  "packageFieldsChanged": [
+    "version"
+  ],
+  "version": "0.48.0"
+}

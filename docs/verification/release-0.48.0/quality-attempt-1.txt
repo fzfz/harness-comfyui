@@ -1,0 +1,155 @@
+$ pnpm run quality:preinstall && pnpm run quality:fast && pnpm run test:desktop
+$ pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts
+$ node scripts/security/check-manifest-lock.mjs
+package.json, pnpm-lock.yaml, and pnpm-workspace.yaml are consistent: /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+$ node scripts/security/audit-lockfile.mjs
+full: critical=0 high=0 moderate=0 low=0
+production: critical=0 high=0 moderate=0 low=0
+$ node scripts/security/check-build-scripts.mjs
+reviewed build scripts: @google/genai@1.52.0, koffi@3.1.5, node-pty@1.2.0-beta.15, protobufjs@7.6.5
+$ pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype
+$ node scripts/security/check-harness-boundary.mjs
+Harness project Tool registry boundary is valid: /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+$ tsc --noEmit && tsc -p tsconfig.agent-presets.json
+$ vitest run tests/unit tests/integration tests/skills --coverage --testTimeout=30000
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+      Coverage enabled with v8
+
+(node:56003) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/1] Workflow template 43: Matrix fixture
+
+ Test Files  75 passed (75)
+      Tests  1439 passed (1439)
+   Start at  12:10:07
+   Duration  11.50s (transform 8.58s, setup 0ms, import 9.25s, tests 36.41s, environment 6ms)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   93.98 |    87.35 |     100 |   96.57 |
+ src               |   92.39 |     92.3 |     100 |   95.45 |
+  ...ngs-schema.ts |      96 |    96.87 |     100 |      96 | 67
+  ...age-schema.ts |   77.77 |       50 |     100 |    87.5 | 21
+  ...e-settings.ts |      92 |    92.85 |     100 |   95.74 | 55,103
+ src/catalog       |   95.96 |    94.25 |     100 |   96.77 |
+  contract.ts      |   94.31 |    90.69 |     100 |   95.75 | ...25,438,588-592
+ src/cli           |   91.04 |    93.22 |     100 |   91.73 |
+  contract.ts      |   91.04 |    93.22 |     100 |   91.73 | ...26,241,252,263
+ src/client        |   95.62 |    83.33 |     100 |     100 |
+  index.tsx        |   95.62 |    83.33 |     100 |     100 | ...49-159,180,230
+ ...t/image-reader |    95.5 |    87.45 |     100 |   99.41 |
+  ...-settings.tsx |    95.5 |    87.45 |     100 |   99.41 | 175,208
+ ...lient/settings |   97.84 |    89.67 |     100 |   99.56 |
+  ...-settings.tsx |   96.62 |    88.73 |     100 |     100 | ...58-60,86,94-98
+  ...-settings.tsx |    96.7 |    87.69 |     100 |   98.79 | 132
+  ...tings-form.ts |     100 |    94.44 |     100 |     100 | 34
+  ...reset-tip.tsx |     100 |    92.85 |     100 |     100 | 34
+  ...tings-form.ts |     100 |    93.75 |     100 |     100 | 34
+ ...ient/workbench |   97.43 |    93.01 |     100 |   99.28 |
+  ...navigation.ts |   97.87 |    94.73 |     100 |   97.61 | 72
+  contract.ts      |   97.14 |    92.85 |     100 |     100 | 54,72
+  controller.ts    |    98.3 |       90 |     100 |     100 | 51,70
+  ...-surfaces.tsx |   96.56 |    93.92 |     100 |     100 | ...93,370,456,600
+  ...s-contract.ts |     100 |       50 |     100 |     100 | 47
+  ...ts-drawer.tsx |   96.96 |    88.57 |     100 |   98.15 | 216,224,233
+ src/config        |    87.5 |    80.48 |     100 |   92.56 |
+  load-profile.ts  |    87.5 |    80.48 |     100 |   92.56 | ...35,157-159,241
+ src/host          |     100 |    95.65 |     100 |     100 |
+  ...-resources.ts |     100 |    91.66 |     100 |     100 | 55
+ src/host/catalog  |   89.23 |    83.04 |     100 |    90.6 |
+  ...log-client.ts |   84.32 |    83.22 |     100 |    86.5 | ...99,310,338-339
+  catalog-tool.ts  |     100 |       50 |     100 |     100 | 71-154
+ src/host/cli      |   96.89 |    89.69 |     100 |   96.87 |
+  route.ts         |   93.42 |       80 |     100 |   93.24 | 54,70,78,141-142
+  server.ts        |     100 |    66.66 |     100 |     100 | 22
+  ...capability.ts |   98.18 |    97.91 |     100 |     100 | 46
+ src/host/core     |   98.92 |    88.88 |     100 |     100 |
+  ...r-settings.ts |     100 |       75 |     100 |     100 | 26
+  ...in-storage.ts |   95.45 |     87.5 |     100 |     100 | 12
+ ...ost/generation |   92.43 |    84.65 |     100 |   95.42 |
+  ...nd-browser.ts |   91.82 |    80.55 |     100 |   96.13 | ...07,917,956,962
+  ...ker-client.ts |   85.82 |    74.24 |     100 |    93.1 | ...27,131,171,188
+  ...end-worker.ts |    87.3 |    78.57 |     100 |   89.47 | ...90,100,138,212
+  ...-transport.ts |   84.91 |    75.39 |     100 |   88.31 | ...64,276,296-298
+  ...oordinator.ts |   90.32 |    63.63 |     100 |   95.83 | 37
+  ...on-runtime.ts |   91.68 |     86.7 |     100 |   93.85 | ...1411,1439-1440
+  ...on-service.ts |   97.05 |       35 |     100 |     100 | 45,66-90
+  ...ation-tool.ts |     100 |    66.66 |     100 |     100 | 80,87
+  media-routes.ts  |   97.89 |    86.53 |     100 |   98.88 | 95
+  ...i-workflow.ts |   92.22 |     87.3 |     100 |   95.59 | ...46,256,353-354
+  source-client.ts |   90.27 |    83.87 |     100 |   88.33 | ...77,84,87,91,94
+  ...e-preparer.ts |   78.26 |    58.33 |     100 |      90 | 128,131
+  ...n-identity.ts |    92.3 |       90 |     100 |     100 | 21
+  ...w-compiler.ts |   94.08 |    88.83 |     100 |   96.96 | ...2077-2082,2240
+ ...t/image-reader |   95.03 |    90.26 |     100 |   97.36 |
+  ...on-service.ts |   92.76 |    87.31 |     100 |   95.52 | ...06,419-420,473
+  ...tial-store.ts |    92.3 |       75 |     100 |     100 | 33
+  errors.ts        |   97.29 |    95.45 |     100 |   97.05 | 110
+  ...eader-host.ts |   97.14 |    85.71 |     100 |   96.42 | 37
+  ...ader-input.ts |   95.94 |    93.18 |     100 |   98.33 | 37
+  ...er-service.ts |   96.95 |     92.5 |     100 |   98.63 | 120,163
+  plugin.ts        |     100 |    71.42 |     100 |     100 | 56-60
+  ...gistration.ts |   86.36 |       80 |     100 |     100 | 37-42
+ .../source-client |   93.82 |       84 |     100 |     100 |
+  http-client.ts   |   95.52 |    84.21 |     100 |     100 | 35-36,81,88-91,98
+  source-client.ts |   77.77 |       80 |     100 |     100 | 16,25
+ src/image-reader  |   94.07 |    91.78 |     100 |   97.78 |
+  contract.ts      |   89.65 |    81.63 |     100 |   97.36 | 205,219
+  ...ngs-errors.ts |   98.43 |    98.61 |     100 |     100 | 75
+  settings.ts      |   93.61 |    91.66 |     100 |   96.42 | 206,286,334
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 93.98% ( 6298/6701 )
+Branches     : 87.35% ( 4282/4902 )
+Functions    : 100% ( 1435/1435 )
+Lines        : 96.57% ( 5575/5773 )
+================================================================================
+$ vitest run tests/contract tests/security
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/comfyui-native-cleanup/harness-comfyui
+
+ ❯ tests/contract/engineering-baseline.test.ts (6 tests | 1 failed) 12ms
+     × uses one private source package with source exports 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/contract/engineering-baseline.test.ts > source workspace engineering contract > uses one private source package with source exports
+AssertionError: expected { name: 'harness-comfyui', …(12) } to match object { name: 'harness-comfyui', …(5) }
+(127 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -5,7 +5,7 @@
+    },
+    "name": "harness-comfyui",
+    "packageManager": "pnpm@11.11.0",
+    "private": true,
+    "type": "module",
+-   "version": "0.47.2",
++   "version": "0.48.0",
+  }
+
+ ❯ tests/contract/engineering-baseline.test.ts:13:22
+     11|     const manifest = readJson('package.json')
+     12|     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
+     13|     expect(manifest).toMatchObject({
+       |                      ^
+     14|       name: 'harness-comfyui',
+     15|       version: '0.47.2',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 11 passed (12)
+      Tests  1 failed | 75 passed (76)
+   Start at  12:10:19
+   Duration  7.57s (transform 513ms, setup 0ms, import 923ms, tests 15.60s, environment 1ms)
+
+[ELIFECYCLE] Command failed with exit code 1.
+[ELIFECYCLE] Command failed with exit code 1.
+[ELIFECYCLE] Command failed with exit code 1.

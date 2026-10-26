@@ -1,0 +1,16 @@
+{
+  "observations": [
+    {
+      "phase": "cold",
+      "parentSessionId": "session-7c3bff96-0754-47d2-8df2-90c24fa61024",
+      "childSessionId": "7a25f980-3551-4c9b-a2b3-0317219f6956",
+      "cliResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-Cd35Jd/result.json",
+      "runId": "run_250a4c4a-6455-4fb6-adff-8da8b8a41180",
+      "parentEndedAt": 201,
+      "childEndedAt": 146,
+      "notificationRequestSequence": 79,
+      "parentReadRequestSequence": 80,
+      "phaseResultPath": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-eOzy0h/.local/desktop-e2e/184d6d31-986b-465b-8cf6-fffeeeeee181/official-environment/workspace/native-child-cold-result.txt"
+    }
+  ]
+}

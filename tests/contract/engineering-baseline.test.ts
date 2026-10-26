@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const root = resolve(import.meta.dirname, '../..')
+const exactVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/u
 const readJson = (path: string): Record<string, any> => JSON.parse(readFileSync(resolve(root, path), 'utf8')) as Record<string, any>
 
 describe('source workspace engineering contract', () => {
@@ -12,7 +13,7 @@ describe('source workspace engineering contract', () => {
     const runtimeArtifacts = readJson('config/runtime-artifacts.json')
     expect(manifest).toMatchObject({
       name: 'harness-comfyui',
-      version: '0.47.2',
+      version: expect.stringMatching(exactVersion),
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.11.0',
@@ -63,7 +64,6 @@ describe('source workspace engineering contract', () => {
 
   it('pins installed dependencies and official Harness SDK peer versions', () => {
     const manifest = readJson('package.json')
-    const exactVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/u
     for (const [name, version] of Object.entries(manifest.dependencies as Record<string, string>)) {
       expect(version, `dependencies.${name}`).toMatch(exactVersion)
     }
