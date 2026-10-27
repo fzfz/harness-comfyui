@@ -248,7 +248,7 @@ describe('plugin build and package entry points', () => {
         expect(metadata.meta.title.length).toBeGreaterThan(0)
       }
     }
-    expect(manifest.files).not.toContain('.agents/skills')
+    expect(manifest.files).toContain('.agents/skills')
     expect(manifest.files).toContain('agent-presets')
     expect(manifest.files).not.toContain('scripts/build')
     expect(manifest.files).not.toContain('scripts/production')
@@ -268,7 +268,13 @@ describe('plugin build and package entry points', () => {
       expect(details.mode & 0o222, `${reference} must resolve inside a read-only package`).toBe(0)
       await readFile(resource)
     }
-    await expect(stat(join(packageRoot, '.agents'))).rejects.toMatchObject({ code: 'ENOENT' })
+    const skillDirectories = (await readdir(join(repositoryRoot, '.agents/skills'), { withFileTypes: true }))
+      .filter(entry => entry.isDirectory()).map(entry => entry.name)
+    expect(await readdir(join(packageRoot, '.agents/skills'))).toEqual(skillDirectories)
+    for (const name of skillDirectories) {
+      expect(await readFile(join(packageRoot, '.agents/skills', name, 'SKILL.md'), 'utf8'))
+        .toBe(await readFile(join(repositoryRoot, '.agents/skills', name, 'SKILL.md'), 'utf8'))
+    }
     const packageConfig = JSON.parse(await readFile(join(repositoryRoot, 'config/plugin-package.json'), 'utf8'))
     await assertConfiguredResourcesPresent(packageRoot, repositoryRoot, artifactRoot, packageConfig)
     for (const artifactPath of packageConfig.artifacts) {
@@ -379,7 +385,7 @@ async function assertConfiguredResourcesPresent(packageRoot, repositoryRoot, art
       if (sourceInfo.isDirectory()) {
         for (const file of await listFiles(sourcePath)) {
           const baseName = file.split('/').at(-1)
-          if (baseName === '.gitignore' || baseName === '.npmignore') continue
+          if (baseName === '.gitignore' || baseName === '.npmignore' || baseName === '.DS_Store') continue
           await stat(join(packageRoot, resourcePath, file))
         }
       } else {

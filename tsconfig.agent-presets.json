@@ -5,6 +5,6 @@
     "checkJs": true
   },
   "include": [
-    "agent-presets/project-installed-presets.mjs"
+    "agent-presets/*.mjs"
   ]
 }

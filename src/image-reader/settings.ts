@@ -135,11 +135,11 @@ const connectionTypeSchema = Schema.union(IMAGE_READER_CONNECTION_TYPES.map(valu
 const imageReaderProfileSchema = Schema.object({
   id: Schema.string().min(1).max(IMAGE_READER_PROFILE_ID_MAX_LENGTH).required(),
   name: Schema.string().min(1).max(IMAGE_READER_PROFILE_NAME_MAX_LENGTH).required(),
-  connectionType: connectionTypeSchema.required(),
+  connectionType: connectionTypeSchema,
   provider: Schema.string().max(IMAGE_READER_PROVIDER_MAX_LENGTH).required(),
-  endpoint: Schema.string().max(IMAGE_READER_ENDPOINT_MAX_LENGTH).required(),
+  endpoint: Schema.string().max(IMAGE_READER_ENDPOINT_MAX_LENGTH),
   model: Schema.string().max(IMAGE_READER_MODEL_MAX_LENGTH).required(),
-  hasApiKey: Schema.boolean().required(),
+  hasApiKey: Schema.boolean(),
   defaultPrompt: Schema.string().min(1).max(IMAGE_READER_PROMPT_MAX_LENGTH).required(),
   temperature: Schema.number().min(IMAGE_READER_TEMPERATURE_MIN).max(IMAGE_READER_TEMPERATURE_MAX).required(),
   maxTokens: Schema.natural().min(IMAGE_READER_MAX_TOKENS_MIN).max(IMAGE_READER_MAX_TOKENS_MAX).required(),
@@ -242,6 +242,15 @@ export function decodeImageReaderConfiguration(value: unknown): ImageReaderConfi
   })
 }
 
+export function decodeStoredImageReaderConfiguration(value: unknown): ImageReaderConfiguration | undefined {
+  const source = record(value)
+  if (source === undefined || !Array.isArray(source.profiles)) return undefined
+  return decodeImageReaderConfiguration({ ...source, profiles: source.profiles.map(value => {
+    const profile = record(value)
+    return profile === undefined ? value : { connectionType: 'runtime', endpoint: '', hasApiKey: false, ...profile }
+  }) })
+}
+
 export function decodeImageReaderSettingsView(value: unknown): ImageReaderSettingsView | undefined {
   const source = record(value)
   const configuration = decodeImageReaderConfiguration(source?.configuration)
@@ -309,7 +318,10 @@ export function validateImageReaderConfiguration(configuration: ImageReaderConfi
   }
 }
 
-export function validateImageReaderSettingsSection(section: ImageReaderSettingsSection): void {
+export function validateImageReaderSettingsSection(
+  section: ImageReaderSettingsSection,
+  validateReference: (value: unknown) => boolean = isImageReaderCredentialRef,
+): void {
   const configuration = decodeImageReaderConfiguration(section.configuration)
   if (configuration === undefined) throw new TypeError('Image reader settings are invalid.')
   const profileById = new Map(configuration.profiles.map(profile => [profile.id, profile]))
@@ -319,7 +331,7 @@ export function validateImageReaderSettingsSection(section: ImageReaderSettingsS
     if (
       profile === undefined
       || profile.connectionType !== 'openai-compatible'
-      || !isImageReaderCredentialRef(reference)
+      || !validateReference(reference)
       || references.has(reference)
     ) {
       throw new TypeError('Image reader credentials are invalid.')

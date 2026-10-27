@@ -574,15 +574,15 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
   const credentialDraft = credentialAction.action === 'replace' ? credentialAction.apiKey : ''
   const credentialState = credentialAction.action === 'clear'
     ? editorDraft.hasApiKey
-      ? '保存后清除已保存的 API Key。'
-      : '这份配置没有保存 API Key；本地免鉴权接口可以留空。'
+      ? '保存后，这份配置不再使用当前 API Key。'
+      : '这份配置尚未设置 API Key。填写图片服务的 API Key 后再读取图片。'
     : credentialAction.action === 'replace'
       ? editorDraft.hasApiKey
         ? '保存后替换这份配置的 API Key。'
         : '保存后首次设置这份配置的 API Key。'
       : editorDraft.hasApiKey
         ? '这份配置已经保存 API Key；留空不会修改。'
-        : '这份配置没有保存 API Key；本地免鉴权接口可以留空。'
+        : '这份配置尚未设置 API Key。填写图片服务的 API Key 后再读取图片。'
   const errorField = operationErrorCode === null
     ? null
     : IMAGE_READER_SETTINGS_FIELD_BY_CODE[operationErrorCode as keyof typeof IMAGE_READER_SETTINGS_FIELD_BY_CODE] ?? null
@@ -615,7 +615,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
       <header className="harness-comfyui-image-reader-header">
         <div>
           <h2 id="harness-comfyui-image-reader-title">图片读取</h2>
-          <p>保存多份独立读图配置，并切换 inspect_image 当前使用的配置。图片读取不会跟随当前会话或生图模型。</p>
+          <p>保存多份图片读取配置，并选择当前使用的配置。每份配置可单独选择视觉模型。</p>
         </div>
         <button type="button" onClick={() => setCatalogVersion(value => value + 1)} disabled={catalogStatus === 'loading'}>
           {catalogStatus === 'loading' ? '正在读取模型…' : '刷新系统模型'}
@@ -740,7 +740,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
                 setCredentialAction(Object.freeze({ action: 'clear' }))
               }}
             />
-            <span><strong>OpenAI 兼容接口</strong><small>向自定义 Chat Completions 地址发送单张本地图片和读图提示词。</small></span>
+            <span><strong>OpenAI 兼容接口</strong><small>填写服务地址和模型 ID，使用该服务读取本地图片。</small></span>
           </label>
         </fieldset>
 
@@ -806,11 +806,11 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
             </label>
 
             <label>
-              <span>API Key（可选）</span>
+              <span>API Key</span>
               <input
                 type="password"
                 autoComplete="new-password"
-                placeholder={editorDraft.hasApiKey ? '已保存；输入新值可以替换' : '本地免鉴权接口可以留空'}
+                placeholder={editorDraft.hasApiKey ? '已保存；输入新值可以替换' : '输入图片服务的 API Key'}
                 value={credentialDraft}
                 disabled={mutationControlsDisabled}
                 onChange={event => updateCredential(event.target.value.length > 0
@@ -822,7 +822,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
               <small>{credentialState}</small>
               {renderFieldError('credential')}
               {editorDraft.hasApiKey && credentialAction.action !== 'clear' ? (
-                <button type="button" className="harness-comfyui-image-reader-inline-action" disabled={mutationControlsDisabled} onClick={() => updateCredential({ action: 'clear' })}>清除已保存的 API Key</button>
+                <button type="button" className="harness-comfyui-image-reader-inline-action" disabled={mutationControlsDisabled} onClick={() => updateCredential({ action: 'clear' })}>停止使用此 API Key</button>
               ) : null}
               {editorDraft.hasApiKey && credentialAction.action === 'clear' ? (
                 <button type="button" className="harness-comfyui-image-reader-inline-action" disabled={mutationControlsDisabled} onClick={() => updateCredential({ action: 'keep' })}>保留已保存的 API Key</button>
@@ -840,7 +840,7 @@ export function ImageReaderSettingsPage({ scope, api }: ImageReaderSettingsPageP
             onChange={event => updateEditorDraft(profile => ({ ...profile, defaultPrompt: event.target.value }))}
             disabled={mutationControlsDisabled}
           />
-          <small>inspect_image 或受管 CLI 省略 prompt 时使用该默认提示词；任一调用提供 prompt 时只覆盖本次调用。</small>
+          <small>图片读取使用这里保存的默认提示词。请求中提供的提示词仅覆盖该次请求的默认提示词。</small>
           {renderFieldError('defaultPrompt')}
         </label>
 

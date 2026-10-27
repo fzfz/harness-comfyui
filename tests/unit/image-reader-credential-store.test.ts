@@ -45,7 +45,7 @@ describe('image reader credential store', () => {
     expect(provider.unset).toHaveBeenCalledWith(reference)
   })
 
-  it('rejects external SDK references before they reach the provider', async () => {
+  it('reads native SDK references while limiting secret writes to plugin-owned references', async () => {
     const provider = {
       describe: vi.fn(async () => ({ configured: false, writable: true })),
       resolve: vi.fn(async () => undefined),
@@ -55,10 +55,10 @@ describe('image reader credential store', () => {
     const store = imageReaderCredentialStore(provider as never)
     const externalReference = credentialRef('OPENAI_API_KEY') as never
 
-    await expect(store.describe(externalReference)).rejects.toThrow('Image reader credential reference is invalid.')
-    expect(provider.describe).not.toHaveBeenCalled()
-    await expect(store.resolve(externalReference)).rejects.toThrow('Image reader credential reference is invalid.')
-    expect(provider.resolve).not.toHaveBeenCalled()
+    await expect(store.describe(externalReference)).resolves.toEqual({ configured: false, writable: true })
+    expect(provider.describe).toHaveBeenCalledWith(externalReference)
+    await expect(store.resolve(externalReference)).resolves.toBeUndefined()
+    expect(provider.resolve).toHaveBeenCalledWith(externalReference)
     await expect(store.set(externalReference, 'secret')).rejects.toThrow('Image reader credential reference is invalid.')
     expect(provider.set).not.toHaveBeenCalled()
     await expect(store.unset(externalReference)).rejects.toThrow('Image reader credential reference is invalid.')

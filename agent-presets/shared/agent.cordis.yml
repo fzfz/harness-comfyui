@@ -4,10 +4,14 @@
     path: ../noobai-mcp.cordis.yml
 - id: tool-working-directory
   name: '@deepseek-ai/dsh-tool-working-directory'
-- id: agent-instructions
-  name: '@deepseek-ai/dsh-agent-instructions'
+- id: workbench-composition
+  name: ../workbench-composition.mjs
   config:
-    maxBytes: 65536
+    omittedRuntimeContexts:
+      - harness:source
+      - app:web-surface
+    deniedTools:
+      - load_workspace_dependencies
 - id: tool-bash
   name: '@deepseek-ai/dsh-tool-bash'
   disabled: !!js process.platform === 'win32'
@@ -22,10 +26,22 @@
   name: '@deepseek-ai/dsh-agent-tool-presentation'
   config:
     mode: native
-- id: skill-filesystem
-  name: '@deepseek-ai/dsh-skill-filesystem'
-- id: tool-skill
-  name: '@deepseek-ai/dsh-tool-skill'
+- id: workbench-skills
+  name: cordis:group
+  group: true
+  isolate:
+    skills: true
+  config:
+    - id: skills
+      name: '@deepseek-ai/dsh-skill'
+    - id: skill-filesystem
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        includeDefaultRoots: false
+        bundledSkillDir: !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('harness-comfyui/package.json')), '.agents', 'skills')
+        customSkillDirs: []
+    - id: tool-skill
+      name: '@deepseek-ai/dsh-tool-skill'
 - id: tool-subagent-list
   name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
 - id: compaction

@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
@@ -24,10 +25,16 @@ describe('ComfyUI Workbench Skill plugin ownership', () => {
 
     for (const presetId of [productAgent.preset.id]) {
       const { composition } = await readProjectComposition(repositoryRoot, presetId)
-      expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-skill')).toHaveLength(1)
-      expect(composition.some(row => row.name === '@deepseek-ai/dsh-skill')).toBe(false)
-      expect(composition.filter(row => row.name === '@deepseek-ai/dsh-skill-filesystem'))
-        .toEqual([{ id: 'skill-filesystem', name: '@deepseek-ai/dsh-skill-filesystem' }])
+      const skillScope = composition.find(row => row.id === 'workbench-skills')
+      expect(skillScope).toMatchObject({ name: 'cordis:group', group: true, isolate: { skills: true } })
+      const skillRows = skillScope?.config
+      assert.ok(Array.isArray(skillRows))
+      for (const name of ['@deepseek-ai/dsh-skill', '@deepseek-ai/dsh-tool-skill', '@deepseek-ai/dsh-skill-filesystem']) {
+        expect(skillRows.filter(row => row.name === name)).toHaveLength(1)
+        expect(composition.some(row => row.name === name)).toBe(false)
+      }
+      expect(skillRows.find(row => row.name === '@deepseek-ai/dsh-skill-filesystem')?.config)
+        .toMatchObject({ includeDefaultRoots: false, customSkillDirs: [], bundledSkillDir: { __jsExpr: expect.any(String) } })
     }
   })
 })

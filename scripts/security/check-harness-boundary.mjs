@@ -5,7 +5,6 @@ import { load as loadYaml } from 'js-yaml'
 import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
-const toolRegistrationPaths = new Set(['src/host/core/plugin.ts', 'src/host/image-reader/plugin.ts'])
 
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
@@ -389,8 +388,8 @@ function scan(root) {
     const relativePath = relative(root, filePath).replaceAll('\\', '/')
     scanImportDeclarations(sourceFile, filePath, root)
     function visit(node) {
-      if (isDirectRegisterCall(node) && !toolRegistrationPaths.has(relativePath)) {
-        throw new Error(`${relativePath} calls ctx.tools.register outside the Core and Image Reader plugin entries`)
+      if (isDirectRegisterCall(node)) {
+        throw new Error(`${relativePath} calls ctx.tools.register; plugin business services are exposed through MCP and the managed CLI`)
       }
       ts.forEachChild(node, visit)
     }

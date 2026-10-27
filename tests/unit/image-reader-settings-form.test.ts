@@ -34,22 +34,39 @@ function currentForm(configuration?: { activeProfileId: string; profiles: readon
 describe('ImageReader Settings Host default projection', () => {
   const actual = { activeProfileId: 'default', profiles: [{ ...createImageReaderProfile('default'), provider: 'actual', model: 'vision' }] }
 
-  it('shows the Host configuration until a saved form value arrives', async () => {
+  it('reloads the Host view after the persisted settings change', async () => {
     const current = currentForm()
-    const projected = withImageReaderConfiguration(current, async () => actual)
-    await vi.waitFor(() => { expect(projected.form.getSnapshot().value).toEqual({ configuration: actual }) })
     const saved = { activeProfileId: 'saved', profiles: [createImageReaderProfile('saved')] }
-    current.update(saved)
-    expect(projected.form.getSnapshot().value).toEqual({ configuration: saved })
+    const load = vi.fn().mockResolvedValueOnce(actual).mockResolvedValueOnce(saved)
+    const projected = withImageReaderConfiguration(current, load)
+    await vi.waitFor(() => { expect(projected.form.getSnapshot().value).toEqual({ configuration: actual }) })
+    current.update(actual)
+    await vi.waitFor(() => { expect(projected.form.getSnapshot().value).toEqual({ configuration: saved }) })
+    expect(load).toHaveBeenCalledTimes(2)
     projected.dispose()
   })
 
-  it('keeps a saved form value when the Host result arrives', async () => {
-    const saved = { activeProfileId: 'saved', profiles: [createImageReaderProfile('saved')] }
-    const current = currentForm(saved)
+  it('uses the Host view when persisted profiles omit connection and credential view fields', async () => {
+    const { connectionType, endpoint, hasApiKey, ...stored } = actual.profiles[0]!
+    const saved = { activeProfileId: actual.activeProfileId, profiles: [stored] }
+    const current = currentForm(saved as never)
     const projected = withImageReaderConfiguration(current, async () => actual)
+    expect(projected.form.getSnapshot().value).toBeUndefined()
+    await vi.waitFor(() => { expect(projected.form.getSnapshot().value).toEqual({ configuration: actual }) })
+    projected.dispose()
+  })
+
+  it('ignores a stale Host response after a newer settings refresh has completed', async () => {
+    const current = currentForm()
+    let resolveFirst!: (configuration: typeof actual) => void
+    const load = vi.fn().mockImplementationOnce(() => new Promise(resolve => { resolveFirst = resolve }))
+      .mockResolvedValueOnce(actual)
+    const projected = withImageReaderConfiguration(current, load)
+    current.update(actual)
+    await vi.waitFor(() => { expect(projected.form.getSnapshot().value).toEqual({ configuration: actual }) })
+    resolveFirst({ activeProfileId: 'stale', profiles: [{ ...actual.profiles[0]!, id: 'stale' }] })
     await Promise.resolve()
-    expect(projected.form.getSnapshot().value).toEqual({ configuration: saved })
+    expect(projected.form.getSnapshot().value).toEqual({ configuration: actual })
     projected.dispose()
   })
 
@@ -102,7 +119,7 @@ describe('ImageReader Settings Host default projection', () => {
 
     const saved = { activeProfileId: 'saved', profiles: [createImageReaderProfile('saved')] }
     current.update(saved)
-    expect(listener).toHaveBeenCalledTimes(2)
+    await vi.waitFor(() => { expect(listener).toHaveBeenCalledTimes(3) })
     expect(await projected.form.mutate([{ op: 'set', path: ['configuration', 'activeProfileId'], value: 'saved' }], 7)).toBe(true)
     expect(current.mutate).toHaveBeenCalledWith([{ op: 'set', path: ['configuration', 'activeProfileId'], value: 'saved' }], 7)
     expect(await projected.form.set('configuration', saved)).toBe(true)
@@ -112,7 +129,7 @@ describe('ImageReader Settings Host default projection', () => {
 
     unsubscribe()
     current.update(actual)
-    expect(listener).toHaveBeenCalledTimes(2)
+    expect(listener).toHaveBeenCalledTimes(3)
     expect(projected.form.getSnapshot().value).toEqual({ configuration: actual })
     projected.dispose()
   })
@@ -135,6 +152,6 @@ describe('ImageReader Settings Host default projection', () => {
     reject(new Error('Host unavailable'))
     await Promise.resolve()
     await Promise.resolve()
-    expect(delayedFailure.form.getSnapshot().status).toBe('ready')
+    expect(delayedFailure.form.getSnapshot().status).toBe('loading')
   })
 })

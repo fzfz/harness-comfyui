@@ -89,7 +89,13 @@ describe('image reader Host settings and model catalog', () => {
     const replace = vi.fn(async () => undefined)
     const store = imageReaderSettingsStore({ settings: { describe: () => [], replace } } as never)
     await store.replace(IMAGE_READER_SETTINGS_DEFAULTS)
-    expect(replace).toHaveBeenCalledWith(IMAGE_READER_PROFILE_ENTRY_ID, IMAGE_READER_SETTINGS_DEFAULTS)
+    expect(replace).toHaveBeenCalledWith(IMAGE_READER_PROFILE_ENTRY_ID, {
+      configuration: { activeProfileId: 'default', profiles: [{
+        id: 'default', name: '默认配置', provider: '', model: '',
+        defaultPrompt: IMAGE_READER_SETTINGS_DEFAULTS.configuration.profiles[0]!.defaultPrompt,
+        temperature: 0.2, maxTokens: 2048,
+      }] }, credentialRefs: {},
+    }, undefined)
   })
 
   it('marks persisted Settings observation unreadable when user is absent or describe throws', () => {

@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "classification": "automated-regression",
+  "capturedAt": "2026-10-26T17:34:34.651Z",
+  "application": {
+    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "executableRelativePath": "Contents/MacOS/DeepSeek Harness",
+    "bundleId": "com.deepseek.dsh",
+    "version": "0.2.1-rc.3",
+    "applicationVersion": "0.2.1-rc.3",
+    "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+    "buildDirty": false,
+    "nodeVersion": "24.21.0",
+    "electronVersion": "44.7.0",
+    "providerVersion": "0.2.1-rc.3"
+  },
+  "sourceReviewCommit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+  "results": [
+    {
+      "scenario": "success",
+      "settingsConfigured": true,
+      "requestCount": 1,
+      "runtime": {
+        "applicationVersion": "0.2.1-rc.3",
+        "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+        "buildDirty": false,
+        "nodeVersion": "24.21.0",
+        "electronVersion": "44.7.0",
+        "providerVersion": "0.2.1-rc.3"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "url": "http://127.0.0.1:59982/v1/chat/completions",
+        "authorizationMatches": true,
+        "body": {
+          "model": "fixture-vision",
+          "stream": true,
+          "temperature": 0.35,
+          "max_completion_tokens": 256
+        },
+        "images": [
+          {
+            "mediaType": "image/png",
+            "width": 2,
+            "height": 2,
+            "bytes": 95
+          }
+        ]
+      },
+      "finish": {
+        "kind": "stop"
+      },
+      "text": "Native image observation",
+      "responseClosed": true,
+      "portReleased": true
+    },
+    {
+      "scenario": "max-tokens",
+      "settingsConfigured": true,
+      "requestCount": 1,
+      "runtime": {
+        "applicationVersion": "0.2.1-rc.3",
+        "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+        "buildDirty": false,
+        "nodeVersion": "24.21.0",
+        "electronVersion": "44.7.0",
+        "providerVersion": "0.2.1-rc.3"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "url": "http://127.0.0.1:59986/v1/chat/completions",
+        "authorizationMatches": true,
+        "body": {
+          "model": "fixture-vision",
+          "stream": true,
+          "temperature": 0.35,
+          "max_completion_tokens": 256
+        },
+        "images": [
+          {
+            "mediaType": "image/png",
+            "width": 2,
+            "height": 2,
+            "bytes": 95
+          }
+        ]
+      },
+      "finish": {
+        "kind": "max-tokens"
+      },
+      "text": "Truncated image observation",
+      "responseClosed": true,
+      "portReleased": true
+    },
+    {
+      "scenario": "cancel",
+      "settingsConfigured": true,
+      "requestCount": 1,
+      "runtime": {
+        "applicationVersion": "0.2.1-rc.3",
+        "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+        "buildDirty": false,
+        "nodeVersion": "24.21.0",
+        "electronVersion": "44.7.0",
+        "providerVersion": "0.2.1-rc.3"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "url": "http://127.0.0.1:59988/v1/chat/completions",
+        "authorizationMatches": true,
+        "body": {
+          "model": "fixture-vision",
+          "stream": true,
+          "temperature": 0.35,
+          "max_completion_tokens": 256
+        },
+        "images": [
+          {
+            "mediaType": "image/png",
+            "width": 2,
+            "height": 2,
+            "bytes": 95
+          }
+        ]
+      },
+      "finish": {
+        "kind": "aborted",
+        "failure": {
+          "message": "Request was aborted",
+          "code": "ABORTED"
+        }
+      },
+      "text": "Native image observation",
+      "responseClosed": true,
+      "portReleased": true
+    },
+    {
+      "scenario": "auth",
+      "settingsConfigured": true,
+      "requestCount": 1,
+      "runtime": {
+        "applicationVersion": "0.2.1-rc.3",
+        "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+        "buildDirty": false,
+        "nodeVersion": "24.21.0",
+        "electronVersion": "44.7.0",
+        "providerVersion": "0.2.1-rc.3"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "url": "http://127.0.0.1:59992/v1/chat/completions",
+        "authorizationMatches": true,
+        "body": {
+          "model": "fixture-vision",
+          "stream": true,
+          "temperature": 0.35,
+          "max_completion_tokens": 256
+        },
+        "images": [
+          {
+            "mediaType": "image/png",
+            "width": 2,
+            "height": 2,
+            "bytes": 95
+          }
+        ]
+      },
+      "finish": {
+        "kind": "error",
+        "failure": {
+          "message": "401: {\"message\":\"Controlled invalid API key\",\"type\":\"authentication_error\"}",
+          "code": "AUTH"
+        }
+      },
+      "text": "",
+      "responseClosed": true,
+      "portReleased": true
+    },
+    {
+      "scenario": "interrupted",
+      "settingsConfigured": true,
+      "requestCount": 1,
+      "runtime": {
+        "applicationVersion": "0.2.1-rc.3",
+        "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+        "buildDirty": false,
+        "nodeVersion": "24.21.0",
+        "electronVersion": "44.7.0",
+        "providerVersion": "0.2.1-rc.3"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "url": "http://127.0.0.1:59995/v1/chat/completions",
+        "authorizationMatches": true,
+        "body": {
+          "model": "fixture-vision",
+          "stream": true,
+          "temperature": 0.35,
+          "max_completion_tokens": 256
+        },
+        "images": [
+          {
+            "mediaType": "image/png",
+            "width": 2,
+            "height": 2,
+            "bytes": 95
+          }
+        ]
+      },
+      "finish": {
+        "kind": "error",
+        "failure": {
+          "message": "Stream ended without finish_reason",
+          "code": "TRANSPORT"
+        }
+      },
+      "text": "Native image observation",
+      "responseClosed": true,
+      "portReleased": true
+    },
+    {
+      "scenario": "disconnected",
+      "settingsConfigured": true,
+      "requestCount": 1,
+      "runtime": {
+        "applicationVersion": "0.2.1-rc.3",
+        "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+        "buildDirty": false,
+        "nodeVersion": "24.21.0",
+        "electronVersion": "44.7.0",
+        "providerVersion": "0.2.1-rc.3"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "url": "http://127.0.0.1:59997/v1/chat/completions",
+        "authorizationMatches": true,
+        "body": {
+          "model": "fixture-vision",
+          "stream": true,
+          "temperature": 0.35,
+          "max_completion_tokens": 256
+        },
+        "images": [
+          {
+            "mediaType": "image/png",
+            "width": 2,
+            "height": 2,
+            "bytes": 95
+          }
+        ]
+      },
+      "finish": {
+        "kind": "error",
+        "failure": {
+          "message": "terminated",
+          "code": "TRANSPORT"
+        }
+      },
+      "text": "Native image observation",
+      "responseClosed": true,
+      "portReleased": true
+    }
+  ]
+}

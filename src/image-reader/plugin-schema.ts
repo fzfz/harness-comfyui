@@ -6,6 +6,9 @@ import { imageReaderConfigurationSchema, imageReaderCredentialsSchema, type Imag
 export const imageReaderRuntimeSchema = Schema.object({
   shutdownTimeoutMs: Schema.natural().min(1).required(),
   diagnosticLogFormat: Schema.string().min(1).required(),
+  providerSettingsNamespace: Schema.string().min(1).required(),
+  providerRoutePrefix: Schema.string().min(1).required(),
+  providerRouteSeparator: Schema.string().min(1).max(1).pattern(/^[.:]$/u).required(),
   credentialReferencePrefix: Schema.string().min(1).pattern(/^[A-Za-z_][A-Za-z0-9_]*$/u).required(),
 })
 imageReaderRuntimeSchema(runtime)

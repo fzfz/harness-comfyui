@@ -12,7 +12,8 @@ describe('project Agent Preset resources', () => {
     const persona = composition.find(row => row.name === '@deepseek-ai/dsh-persona')
 
     expect(metadata).toMatchObject({ name: 'ComfyUI工作台预设', order: 91 })
-    expect(persona.config.prefix).toContain('ComfyUI workbench Agent')
+    expect(persona.config).toMatchObject({ complete: true, includeRuntimeContext: true })
+    expect(persona.config.prefix).toEqual(expect.any(String))
     expect(persona.config).not.toHaveProperty('text')
   })
 

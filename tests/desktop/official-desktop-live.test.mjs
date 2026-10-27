@@ -5,14 +5,18 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
+import { runInNewContext } from 'node:vm'
 
 import { afterEach, describe, expect, it } from 'vitest'
+import yaml from 'js-yaml'
+import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
 
 import repositorySkillCatalogFixture from '../fixtures/repository-skill-catalog.json' with { type: 'json' }
 import officialBusinessFixtureJson from './fixtures/official-business-fixture.json' with { type: 'json' }
 import productAgentConfig from '../../config/product-agent.json' with { type: 'json' }
 import managedCliHelp from '../../config/managed-cli-help.json' with { type: 'json' }
 import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
+import imageReaderRuntime from '../../config/image-reader-runtime.json' with { type: 'json' }
 import browserSettings from '../../config/browser-settings.json' with { type: 'json' }
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import lifecycleFixtureJson from './fixtures/official-lifecycle-fixture.json' with { type: 'json' }
@@ -46,10 +50,6 @@ import { generationMediaContentUrl } from '../../src/generation/contract.ts'
 
 import { startOfficialMcpServices, OFFICIAL_MCP_FIXTURE } from './fixtures/official-mcp-services.mjs'
 import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope, isOfficialMcpChildRequest, requestMessageText } from './fixtures/official-mcp-acceptance.mjs'
-import {
-  COMFYUI_INSTANCE_QUERY_TOOL_NAME, GENERATION_MODEL_RESOLVER_TOOL_NAME,
-  LORA_RESOLVER_TOOL_NAME, TEMPLATE_RESOLVER_TOOL_NAME,
-} from '../../src/host/catalog/catalog-tool.ts'
 import { writeOfficialPresetProfilePatch } from './fixtures/official-preset-overrides.mjs'
 import { collectOfficialSessionTrace } from '../../scripts/verification/collect-session-trace.mjs'
 
@@ -68,6 +68,9 @@ const USER_SKILL_NAME = OFFICIAL_BUSINESS_FIXTURE.skills.userName
 const USER_SKILL_DESCRIPTION = OFFICIAL_BUSINESS_FIXTURE.skills.userDescription
 const USER_SKILL_MARKER = OFFICIAL_BUSINESS_FIXTURE.skills.userMarker
 const HOST_BUNDLED_SKILL_NAMES = new Set(['office', 'office-docx', 'office-export-pdf', 'office-pptx', 'office-recalculate', 'office-render', 'office-xlsx'])
+const RETIRED_BUSINESS_TOOL_NAMES = ['query_semantic_comfyui_instances', 'query_semantic_comfyui_templates',
+  'query_semantic_generation_models', 'query_semantic_loras', 'generate_with_comfyui',
+  'get_generation_run_media', 'inspect_image', 'read_comfyui_run_inputs']
 const CORDIS_SKILL_NAMES = ['agent-experience', 'cordis-composition-reference', 'cordis-plugin-development', 'editing-cordis-compositions']
 const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'startup-ready.json',
@@ -250,13 +253,14 @@ async function desktopPageTargetCount(port) {
   return (await response.json()).filter(target => target.type === 'page').length
 }
 
-async function waitForValue(page, expression, accept, timeoutMs = 60_000) {
+async function waitForValue(page, expression, accept, timeoutMs = 60_000, { retryEvaluationErrors = true } = {}) {
   const deadline = Date.now() + timeoutMs
   let value
   while (Date.now() < deadline) {
     try {
       value = await page.evaluate(expression)
-    } catch {
+    } catch (error) {
+      if (!retryEvaluationErrors) throw error
       await delay(100)
       continue
     }
@@ -472,7 +476,7 @@ async function verifyWorkflowBrowserSettings(page, context, desktopConfig, profi
 }
 
 async function setImageReaderField(page, label, value) {
-  const changed = await page.evaluate(`(() => {
+  await waitForValue(page, `(() => {
     const section = document.querySelector('.harness-comfyui-image-reader-settings')
     const field = [...(section?.querySelectorAll('label') ?? [])]
       .find(candidate => candidate.querySelector(':scope > span')?.textContent?.trim() === ${JSON.stringify(label)})
@@ -480,6 +484,9 @@ async function setImageReaderField(page, label, value) {
     if (!(control instanceof HTMLInputElement)
       && !(control instanceof HTMLTextAreaElement)
       && !(control instanceof HTMLSelectElement)) return false
+    if (control.disabled) return false
+    if (control instanceof HTMLSelectElement
+      && ![...control.options].some(option => option.value === ${JSON.stringify(value)})) return false
     const prototype = control instanceof HTMLInputElement
       ? HTMLInputElement.prototype
       : control instanceof HTMLTextAreaElement
@@ -489,12 +496,11 @@ async function setImageReaderField(page, label, value) {
     setter?.call(control, ${JSON.stringify(value)})
     control.dispatchEvent(new Event(control instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }))
     return true
-  })()`)
-  if (!changed) throw new Error(`Image reader field is unavailable: ${label}`)
+  })()`, value => value === true, undefined, { retryEvaluationErrors: false })
 }
 
 async function clickImageReaderButton(page, label) {
-  const clicked = await page.evaluate(`(() => {
+  await waitForValue(page, `(() => {
     const section = document.querySelector('.harness-comfyui-image-reader-settings')
     const button = [...(section?.querySelectorAll('button') ?? [])]
       .find(candidate => {
@@ -506,38 +512,173 @@ async function clickImageReaderButton(page, label) {
         if (${JSON.stringify(label)} === '继续编辑当前配置') return text.startsWith('继续编辑配置“')
         return false
       })
-    button?.click()
-    return button !== undefined
-  })()`)
-  if (!clicked) throw new Error(`Image reader button is unavailable: ${label}`)
+    if (!button || button.disabled) return false
+    button.click()
+    return true
+  })()`, value => value === true, undefined, { retryEvaluationErrors: false })
 }
 
 async function selectImageReaderConnection(page, label) {
-  const selected = await page.evaluate(`(() => {
+  await waitForValue(page, `(() => {
     const section = document.querySelector('.harness-comfyui-image-reader-settings')
     const option = [...(section?.querySelectorAll('label') ?? [])]
       .find(candidate => candidate.textContent?.includes(${JSON.stringify(label)}))
     const input = option?.querySelector('input[type="radio"]')
-    input?.click()
-    return input !== undefined
-  })()`)
-  if (!selected) throw new Error(`Image reader connection is unavailable: ${label}`)
+    if (!input || input.disabled) return false
+    input.click()
+    return true
+  })()`, value => value === true, undefined, { retryEvaluationErrors: false })
 }
 
 async function selectImageReaderProfile(page, profileId) {
-  const selected = await page.evaluate(`(() => {
+  await waitForValue(page, `(() => {
     const section = document.querySelector('.harness-comfyui-image-reader-settings')
     const field = [...(section?.querySelectorAll('label') ?? [])]
       .find(candidate => candidate.querySelector(':scope > span')?.textContent?.trim() === '当前生效配置')
     const select = field?.querySelector('select')
-    if (!(select instanceof HTMLSelectElement)) return false
+    if (!(select instanceof HTMLSelectElement) || select.disabled) return false
+    if (![...select.options].some(option => option.value === ${JSON.stringify(profileId)})) return false
     const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set
     setter?.call(select, ${JSON.stringify(profileId)})
     select.dispatchEvent(new Event('change', { bubbles: true }))
     return true
-  })()`)
-  if (!selected) throw new Error(`Image reader profile is unavailable: ${profileId}`)
+  })()`, value => value === true, undefined, { retryEvaluationErrors: false })
 }
+
+function createImageReaderActionPage({ label, type = 'select', value = 'native', optionValues = ['native', 'openai'] }) {
+  class HTMLInputElement extends EventTarget {}
+  class HTMLTextAreaElement extends EventTarget {}
+  class HTMLSelectElement extends EventTarget {}
+  const constructors = { input: HTMLInputElement, textarea: HTMLTextAreaElement, select: HTMLSelectElement, button: EventTarget }
+  for (const constructor of [HTMLInputElement, HTMLTextAreaElement, HTMLSelectElement]) {
+    Object.defineProperty(constructor.prototype, 'value', {
+      get() { return this.currentValue },
+      set(next) {
+        this.currentValue = this instanceof HTMLSelectElement && !this.options.some(option => option.value === next)
+          ? ''
+          : next
+      },
+    })
+  }
+  const control = new constructors[type]()
+  control.currentValue = value
+  control.disabled = true
+  control.options = optionValues.map(value => ({ value }))
+  control.textContent = label
+  control.click = () => {
+    if (!control.disabled) control.dispatchEvent(new Event('click'))
+  }
+  const events = []
+  for (const type of ['input', 'change', 'click']) {
+    control.addEventListener(type, () => events.push({ type, value: control.value, disabled: control.disabled }))
+  }
+  const field = {
+    textContent: label,
+    querySelector(selector) {
+      return selector === ':scope > span' ? { textContent: label } : control
+    },
+  }
+  const section = {
+    querySelectorAll(selector) { return selector === 'button' ? [control] : [field] },
+  }
+  const document = { querySelector() { return section } }
+  const page = {
+    async evaluate(expression) {
+      return runInNewContext(expression, { document, HTMLInputElement, HTMLTextAreaElement, HTMLSelectElement, Event })
+    },
+  }
+  return { page, control, events }
+}
+
+describe('image reader settings actions', () => {
+  it.each([
+    { name: 'profile selector', type: 'select', label: '当前生效配置', event: 'change', expected: 'openai',
+      run: page => selectImageReaderProfile(page, 'openai') },
+    { name: 'input field', type: 'input', label: '配置名称', event: 'input', expected: 'openai',
+      run: page => setImageReaderField(page, '配置名称', 'openai') },
+    { name: 'textarea field', type: 'textarea', label: '读图提示词', event: 'input', expected: 'openai',
+      run: page => setImageReaderField(page, '读图提示词', 'openai') },
+    { name: 'select field', type: 'select', label: '模型', event: 'change', expected: 'openai',
+      run: page => setImageReaderField(page, '模型', 'openai') },
+    { name: 'save button', type: 'button', label: '保存配置“受控配置”', event: 'click', expected: undefined,
+      run: page => clickImageReaderButton(page, '保存当前配置') },
+    { name: 'connection radio', type: 'input', label: 'OpenAI 兼容接口', event: 'click', expected: 'native',
+      run: page => selectImageReaderConnection(page, 'OpenAI 兼容接口') },
+  ])('waits for the $name to become enabled before dispatching once', async ({ type, label, event, expected, run }) => {
+    const { page, control, events } = createImageReaderActionPage({ type, label })
+    let completed = false
+    const action = run(page).then(() => { completed = true })
+    await delay(0)
+    expect(events).toEqual([])
+    expect(control.value).toBe(type === 'button' ? undefined : 'native')
+    expect(completed).toBe(false)
+
+    control.disabled = false
+    await action
+    expect(events).toEqual([{ type: event, value: expected, disabled: false }])
+  })
+
+  it.each([
+    { name: 'profile selector', type: 'select', label: '当前生效配置',
+      run: page => selectImageReaderProfile(page, 'openai') },
+    { name: 'input field', type: 'input', label: '配置名称',
+      run: page => setImageReaderField(page, '配置名称', 'openai') },
+    { name: 'save button', type: 'button', label: '保存配置“受控配置”',
+      run: page => clickImageReaderButton(page, '保存当前配置') },
+    { name: 'connection radio', type: 'input', label: 'OpenAI 兼容接口',
+      run: page => selectImageReaderConnection(page, 'OpenAI 兼容接口') },
+  ])('returns the evaluation error after the $name dispatches once', async ({ type, label, run }) => {
+    const { page, control, events } = createImageReaderActionPage({ type, label })
+    control.disabled = false
+    const failure = new Error('Renderer response failed after dispatch')
+    const evaluate = page.evaluate
+    let failed = false
+    page.evaluate = async expression => {
+      const value = await evaluate(expression)
+      if (value === true && !failed) {
+        failed = true
+        throw failure
+      }
+      return value
+    }
+
+    const result = await run(page).then(() => null, error => error)
+    expect(events).toHaveLength(1)
+    expect(result).toBe(failure)
+  })
+
+  it('retries evaluation errors by default while waiting for page state', async () => {
+    let first = true
+    const page = {
+      async evaluate() {
+        if (first) {
+          first = false
+          throw new Error('Renderer page is loading')
+        }
+        return 'ready'
+      },
+    }
+    await expect(waitForValue(page, 'page state', value => value === 'ready')).resolves.toBe('ready')
+  })
+
+  it.each([
+    { label: '当前生效配置', run: page => selectImageReaderProfile(page, 'openai') },
+    { label: '模型', run: page => setImageReaderField(page, '模型', 'openai') },
+  ])('waits for the target option in $label before changing the select once', async ({ label, run }) => {
+    const { page, control, events } = createImageReaderActionPage({ label, optionValues: ['native'] })
+    control.disabled = false
+    let completed = false
+    const action = run(page).then(() => { completed = true })
+    await delay(0)
+    expect(events).toEqual([])
+    expect(control.value).toBe('native')
+    expect(completed).toBe(false)
+
+    control.options.push({ value: 'openai' })
+    await action
+    expect(events).toEqual([{ type: 'change', value: 'openai', disabled: false }])
+  })
+})
 
 async function seedOfficialBusinessSessions(page, workspacePath) {
   const sessions = OFFICIAL_BUSINESS_FIXTURE.sessions
@@ -557,7 +698,7 @@ async function seedOfficialBusinessSessions(page, workspacePath) {
         for (const entry of entries) {
           const session = await sessionRemote.create({
             workspaceId,
-            agentPreset: 'harness-comfyui-cli-candidate'
+            agentPreset: ${JSON.stringify(PRODUCT_PRESET_ID)}
           })
           if (!session.ok) {
             created.push({ entry, session, sessionId: null, renamed: null })
@@ -956,10 +1097,7 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
   const observations = []
   const children = []
   const mcpToolNames = OFFICIAL_MCP_FIXTURE.tools.map(tool => tool.name)
-  const globalCatalogToolNames = [
-    TEMPLATE_RESOLVER_TOOL_NAME, LORA_RESOLVER_TOOL_NAME,
-    GENERATION_MODEL_RESOLVER_TOOL_NAME, COMFYUI_INSTANCE_QUERY_TOOL_NAME,
-  ]
+  const forbiddenBusinessTools = RETIRED_BUSINESS_TOOL_NAMES
   for (const presetId of [...PROJECT_PRESET_IDS, 'standard', 'minimal', 'cordis']) {
     const created = await page.evaluate(`(async () => window.__runPanelTestContext.get('remote.session').create({
       workspaceId: ${JSON.stringify(workspaceId)}, agentPreset: ${JSON.stringify(presetId)}
@@ -989,7 +1127,7 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
         systemMessages: (request.body.messages ?? []).filter(message => message.role === 'system'),
       }
       assertToolScope(observation.tools, { forbidden: mcpToolNames })
-      assertToolScope(observation.tools, { required: globalCatalogToolNames })
+      assertToolScope(observation.tools, { forbidden: forbiddenBusinessTools })
     }
     observations.push({ presetId, ...observation })
   }
@@ -1037,7 +1175,7 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
         description: 'Controlled MCP child', prompt: `${OFFICIAL_MCP_FIXTURE.workflowPrompt}\n${parentPrompt}`,
       } }]))
     services.enqueueModelResponse(isChildRequest, controlledToolResponse([
-      OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, UNIQUE_WORKSPACE_SKILL_NAME, USER_SKILL_NAME, native.repositorySkill,
+      OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, native.repositorySkill,
     ].map((name, index) => ({ id: `native-skill-${index}`, name: 'skill', arguments: { name } }))))
     services.enqueueModelResponse(request => isChildRequest(request) && (request.body.messages ?? []).some(message =>
       message.role === 'tool' && requestMessageText(message).includes('workflow_json')),
@@ -1048,7 +1186,25 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       controlledToolResponse([{ id: 'native-child-cwd', name: 'working_directory', arguments: {} }]))
     services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-cwd'),
       controlledToolResponse([{ id: 'native-child-cd', name: 'working_directory', arguments: { cd: native.childDirectory } }]))
+    const nativeReference = join(traceContext.installedPluginSkillDirectory, 'comfyui-generate/references/generation-cli.md')
     services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-cd'),
+      controlledToolResponse([{ id: 'native-child-reference', name: 'bash', arguments: {
+        description: 'Read packaged child generation reference', command: `cat ${shellQuoteArgument(nativeReference)}`,
+      } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-reference'),
+      controlledToolResponse([{ id: 'native-child-inspect', name: 'bash', arguments: {
+        description: 'Inspect controlled child template parameters',
+        command: managedCliCommand('generation inspect-template-parameters', {
+          template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId,
+          instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
+        }),
+      } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-inspect'),
+      request => controlledToolResponse([{ id: 'native-child-inspect-read', name: 'bash', arguments: {
+        description: 'Read child template parameters',
+        command: `cat ${shellQuoteArgument(controlledToolResult(request, 'native-child-inspect').split('\n', 1)[0])}`,
+      } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-inspect-read'),
       controlledToolResponse([{ id: 'native-child-generation', name: 'bash', arguments: {
         description: 'Submit controlled native child generation',
         command: managedCliCommand('generation submit', {
@@ -1060,6 +1216,11 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
         }),
       } }]))
     services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-generation'),
+      request => controlledToolResponse([{ id: 'native-child-generation-read', name: 'bash', arguments: {
+        description: 'Read the accepted child Run',
+        command: `cat ${shellQuoteArgument(controlledToolResult(request, 'native-child-generation').split('\n', 1)[0])}`,
+      } }]))
+    services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-generation-read'),
       controlledToolResponse([{ id: 'native-result-write', name: 'bash', arguments: {
         description: 'Write controlled child task result',
         command: `printf '%s\\n' ${shellQuoteArgument(native.resultText)} > ${shellQuoteArgument(native.resultPath)}`,
@@ -1096,6 +1257,8 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     assertToolScope(childTools, {
       required: [...mcpToolNames, 'subagent', 'send_message', 'interrupt_agent', 'list_agents', 'working_directory', 'skill', 'bash'],
     })
+    assertWorkbenchModelRequest(childModelRequest, services.personaPrefix)
+    assertWorkbenchModelRequest(parentResultRequest, services.personaPrefix)
     expect(childModelRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
     const completed = await services.requestWhere(request => isChildRequest(request)
       && (request.body.messages ?? []).some(message => message.role === 'tool'
@@ -1127,14 +1290,23 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       && hasControlledToolResult(request, 'native-child-cd'))
     expect(controlledToolResult(childDirectoryChanged, 'native-child-cd')).toBe(native.childDirectory)
     const childSkillRequest = services.requestLog.find(request => isChildRequest(request)
-      && hasControlledToolResult(request, 'native-skill-3'))
-    for (const [index, name] of [OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, UNIQUE_WORKSPACE_SKILL_NAME,
-      USER_SKILL_NAME, native.repositorySkill].entries()) {
-      expect(requestMessageText(childSkillRequest.body.messages.find(message => message.tool_call_id === `native-skill-${index}`)))
-        .toContain(`<skill_content name=\"${name}\">`)
+      && hasControlledToolResult(request, 'native-skill-1'))
+    for (const [index, name] of [OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, native.repositorySkill].entries()) {
+      expect(controlledToolResult(childSkillRequest, `native-skill-${index}`)).toContain(name)
     }
-    expect(requestMessageText(childSkillRequest.body.messages.find(message => message.tool_call_id === 'native-skill-0')))
-      .toContain('OFFICIAL_WORKSPACE_PRIORITY_MARKER')
+    expect(controlledToolResult(childSkillRequest, 'native-skill-0')).toContain('references/generation-cli.md')
+    expect(JSON.stringify(childSkillRequest.body.messages)).not.toContain('OFFICIAL_WORKSPACE_PRIORITY_MARKER')
+    const childReference = services.requestLog.find(request => isChildRequest(request)
+      && hasControlledToolResult(request, 'native-child-reference'))
+    expect(controlledToolResult(childReference, 'native-child-reference'))
+      .toContain((await readFile(nativeReference, 'utf8')).trim())
+    const childSkills = await page.evaluate(`window.__runPanelTestContext.get('remote.skills').list({ sessionId: ${JSON.stringify(native.childSessionId)} })`)
+    expect(childSkills).toMatchObject({ ok: true })
+    native.endedChildSkillCatalog = {
+      sessionId: native.childSessionId,
+      skills: childSkills.value.skills,
+      installedPluginSkillDirectory: traceContext.installedPluginSkillDirectory,
+    }
     await waitForOfficialSessionEnd(page, parentSessionId, 'completed')
     const workspaceStorage = JSON.parse(await readFile(join(traceContext.dshHome, 'storages/workspace.json'), 'utf8'))
     expect(workspaceStorage.tables.workspaces[workspaceId].sessionIds).not.toContain(native.childSessionId)
@@ -1156,7 +1328,10 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       presetId, dispatchTool, parentSessionId,
       parentToolResults: parentResultRequest.body.messages.filter(message => message.role === 'tool'),
       parentTools, childTools, childModel: childModelRequest.body.model,
-      childToolDeclarations: childModelRequest.body.tools ?? [], calls,
+      childToolDeclarations: childModelRequest.body.tools ?? [],
+      parentSystemMessages: parentResultRequest.body.messages.filter(message => message.role === 'system'),
+      childSystemMessages: childModelRequest.body.messages.filter(message => message.role === 'system'),
+      childSkills: childSkills.value.skills, calls,
       resultReceivedByModel: completed.body.messages.some(message => message.role === 'tool'
         && JSON.stringify(message.content).includes('workflow_json')),
     })
@@ -1166,7 +1341,7 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
   expect(mcp.requests.slice(callStart).filter(request => request.method === 'tools/call' && request.status === 200))
     .toHaveLength(2 * (PROJECT_PRESET_IDS.length + childCases.length))
   await writeFile(join(evidenceDirectory, 'official-business-mcp-scope.json'), JSON.stringify({
-    observations, children, globalCatalogToolNames, requests: mcp.requests, native,
+    observations, children, forbiddenBusinessTools, requests: mcp.requests, native,
   }, null, 2))
   return native
 }
@@ -1367,6 +1542,8 @@ async function verifyNativeSubagentContinuation(page, services, native, evidence
       const cliRequest = services.requestLog.find(request => childRequest(request)
         && hasControlledToolResult(request, `${phase}-cli`))
       expect(cliRequest).toBeDefined()
+      assertWorkbenchModelRequest(cliRequest, services.personaPrefix)
+      assertWorkbenchModelRequest(resultRead, services.personaPrefix)
       expect(cliRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
       const resultPath = controlledToolResult(cliRequest, `${phase}-cli`).split('\n', 1)[0]
       const result = JSON.parse(await readFile(resultPath, 'utf8'))
@@ -1377,6 +1554,9 @@ async function verifyNativeSubagentContinuation(page, services, native, evidence
         cliResultPath: resultPath, runId: native.childRunId, parentEndedAt: ended.seq,
         childEndedAt: childEnded.seq, notificationRequestSequence: notified.sequence,
         parentReadRequestSequence: resultRead.sequence, phaseResultPath,
+        parentSystemMessages: resultRead.body.messages.filter(message => message.role === 'system'),
+        childSystemMessages: cliRequest.body.messages.filter(message => message.role === 'system'),
+        parentToolDeclarations: resultRead.body.tools, childToolDeclarations: cliRequest.body.tools,
         ...(activeMessageRequestSequence === undefined ? {} : { activeMessageRequestSequence }) })
     } finally {
       parentPause?.release()
@@ -1653,7 +1833,7 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   ]
   const standardSkills = sessions.get('standard').skills.value.skills
     .map(({ name, description }) => ({ name, description }))
-  for (const id of ['standard', 'ptc', 'cordis', ...PROJECT_PRESET_IDS]) {
+  for (const id of ['standard', 'ptc', 'cordis']) {
     const visibleSkills = sessions.get(id).skills.value.skills
     const sources = visibleSkills.map(skill => classifySkillSource({
       name: skill.name,
@@ -1681,6 +1861,12 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
       expect(extraSkills.every(skill => isPathWithin(skill.path, presetSkills))).toBe(true)
     }
   }
+  const workbenchSkills = sessions.get(PRODUCT_PRESET_ID).skills.value.skills
+  expect(workbenchSkills.map(({ name, description }) => ({ name, description }))
+    .sort((left, right) => left.name.localeCompare(right.name)))
+    .toEqual(expectedRepositorySkills.sort((left, right) => left.name.localeCompare(right.name)))
+  expect(workbenchSkills.every(skill => classifySkillSource({ name: skill.name, pathFields: pathFields(skill) }, configuredRoots)
+    === 'installed-project')).toBe(true)
   const minimalOfficeSkills = [...HOST_BUNDLED_SKILL_NAMES].sort()
   for (const id of ['minimal']) {
     const visibleSkills = sessions.get(id).skills.value.skills
@@ -1698,6 +1884,7 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   const standardSkillRecords = sessions.get('standard').skills.value.skills
   const skillRecordFor = name => standardSkillRecords.find(skill => skill.name === name)
   const skillPaths = {
+    installed: Object.fromEntries(workbenchSkills.map(skill => [skill.name, pathFields(skill).path])),
     workspace: pathFields(skillRecordFor(UNIQUE_WORKSPACE_SKILL_NAME) ?? {}).path,
     user: pathFields(skillRecordFor(USER_SKILL_NAME) ?? {}).path,
   }
@@ -1715,7 +1902,7 @@ async function verifyKimiPptHostRequestDisabled(page, capture, workspaceId) {
       try {
         const created = await injected.remote.session.create({
           workspaceId: ${JSON.stringify(workspaceId)},
-          agentPreset: 'harness-comfyui-cli-candidate'
+          agentPreset: ${JSON.stringify(PRODUCT_PRESET_ID)}
         })
         const sessionId = created.ok ? created.value.sessionId : null
         const selected = created.ok ? await injected.remote.session.selectModel({
@@ -1770,6 +1957,7 @@ async function verifyKimiPptHostRequestDisabled(page, capture, workspaceId) {
     .join('\n')
   const toolNames = (request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name ?? '')
 
+  assertWorkbenchModelRequest(request, capture.personaPrefix)
   expect(systemPrompt).not.toMatch(/kimi-ppt|Kimi-compatible PPT|PPT composer|pptd_/iu)
   expect(toolNames.filter(name => /^ppt(?:d)?_/u.test(name))).toEqual([])
 }
@@ -1863,172 +2051,78 @@ async function submitComposerPrompt(page, prompt) {
   })
 }
 
-async function verifyWorkspaceAndUserSkillMarkers(page, services, sessionId, skillPaths, evidenceDirectory) {
-  const sessionJson = JSON.stringify(sessionId)
-  const titleJson = JSON.stringify(OFFICIAL_BUSINESS_FIXTURE.sessions.skillMarkerTitle)
-  const selection = await page.evaluate(`new Promise((resolve, reject) => {
-    window.__runPanelTestContext.inject(['remote.session'], async injected => {
-      try {
-        const remote = injected.remote.session
-        const renamed = await remote.rename({ sessionId: ${sessionJson}, title: ${titleJson} })
-        const selected = renamed.ok ? await remote.selectModel({
-          sessionId: ${sessionJson},
-          provider: ${JSON.stringify(OFFICIAL_BUSINESS_FIXTURE.provider.id)},
-          model: ${JSON.stringify(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)},
-        }) : null
-        resolve({ renamed, selected })
-      } catch (error) { reject(error) }
-    })
-  })`)
-  expect(selection.renamed).toEqual(expect.objectContaining({ ok: true }))
-  expect(selection.selected).toEqual(expect.objectContaining({ ok: true }))
-
-  await page.evaluate(`(() => {
-    window.__runPanelTestContext.get('uiWorkspace').openSession(${sessionJson})
-    return true
-  })()`)
-  const mainView = await waitForValue(page, `(() => window.__runPanelTestContext
-    .get('sessions').retainInfo(${sessionJson}).getSnapshot())()`, value => value?.retainedBy?.mainView === 1, 10_000)
-  expect(mainView).toMatchObject({ retainedBy: { mainView: 1 } })
-
-  const markerRequest = OFFICIAL_BUSINESS_FIXTURE.skills.markerRequest
-  await waitForValue(page, `(() => {
-    const composer = [...document.querySelectorAll('textarea, [contenteditable="true"]')]
-      .find(element => /描述你想要构建的内容|发消息或创建任务/u.test([
-        element.getAttribute('placeholder'), element.getAttribute('data-placeholder'), element.getAttribute('aria-label'),
-      ].filter(Boolean).join(' ')))
-    return composer !== undefined && !composer.matches(':disabled, [aria-disabled="true"]')
-  })()`, value => value === true)
-  const repositorySkill = REPOSITORY_SKILL_CATALOG.find(skill => skill.name !== OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName).name
-  services.enqueueModelResponse(request => (request.body.messages ?? []).some(message => message.role === 'user'
-    && requestMessageText(message) === markerRequest) && (request.body.messages ?? []).some(message => message.role === 'tool'
-    && requestMessageText(message).includes(USER_SKILL_MARKER)),
-  controlledToolResponse([OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, repositorySkill].map((name, index) => ({
-    id: `parent-source-skill-${index}`, name: 'skill', arguments: { name },
-  }))))
-  await submitComposerPrompt(page, markerRequest)
-  const firstRequest = await services.requestWhere(request =>
-    (request.body.messages ?? []).some(message => message.role === 'user'
-      && requestMessageText(message).includes(markerRequest)), 30_000)
-  const firstRequestText = JSON.stringify({ messages: firstRequest.body.messages ?? [], tools: firstRequest.body.tools ?? [] })
-  expect(firstRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
-  expect((firstRequest.body.messages ?? []).some(message => requestMessageText(message).includes(markerRequest))).toBe(true)
-  expect((firstRequest.body.tools ?? []).some(tool => (tool.function?.name ?? tool.name) === 'skill')).toBe(true)
-  expect(firstRequestText).not.toContain(WORKSPACE_SKILL_MARKER)
-  expect(firstRequestText).not.toContain(USER_SKILL_MARKER)
-
-  const workspaceSkillRequest = await services.requestWhere(request =>
-    (request.body.messages ?? []).some(message => message.role === 'tool'
-      && requestMessageText(message).includes(WORKSPACE_SKILL_MARKER)), 30_000)
-  const workspaceSkillToolResult = (workspaceSkillRequest.body.messages ?? [])
-    .filter(message => message.role === 'tool')
-    .map(message => requestMessageText(message))
-    .find(content => content.includes(WORKSPACE_SKILL_MARKER))
-  expect(workspaceSkillToolResult).toContain(`<skill_content name="${UNIQUE_WORKSPACE_SKILL_NAME}">`)
-  const userSkillRequest = await services.requestWhere(request =>
-    (request.body.messages ?? []).some(message => message.role === 'tool'
-      && requestMessageText(message).includes(USER_SKILL_MARKER)), 30_000)
-  const userSkillToolResult = (userSkillRequest.body.messages ?? [])
-    .filter(message => message.role === 'tool')
-    .map(message => requestMessageText(message))
-    .find(content => content.includes(USER_SKILL_MARKER))
-  expect(userSkillToolResult).toContain(`<skill_content name="${USER_SKILL_NAME}">`)
-  expect(userSkillRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
-  expect(services.skillToolCalls).toEqual([
-    { name: 'skill', arguments: { name: UNIQUE_WORKSPACE_SKILL_NAME } },
-    { name: 'skill', arguments: { name: USER_SKILL_NAME } },
-    { name: 'skill', arguments: { name: OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName } },
-    { name: 'skill', arguments: { name: repositorySkill } },
-  ])
-  const sourceSkillRequest = await services.requestWhere(request => hasControlledToolResult(request, 'parent-source-skill-1'), 30_000)
-  expect(requestMessageText(sourceSkillRequest.body.messages.find(message => message.tool_call_id === 'parent-source-skill-0')))
-    .toContain('OFFICIAL_WORKSPACE_PRIORITY_MARKER')
-  expect(requestMessageText(sourceSkillRequest.body.messages.find(message => message.tool_call_id === 'parent-source-skill-1')))
-    .toContain(`<skill_content name=\"${repositorySkill}\">`)
-  const workspaceSkillPath = await realpath(skillPaths.workspace)
-  const userSkillPath = await realpath(skillPaths.user)
-  const [workspaceSkillSource, userSkillSource] = await Promise.all([
-    readFile(workspaceSkillPath, 'utf8'),
-    readFile(userSkillPath, 'utf8'),
-  ])
-  expect(isAbsolute(workspaceSkillPath)).toBe(true)
-  expect(isAbsolute(userSkillPath)).toBe(true)
-  expect(workspaceSkillPath).toMatch(/\/SKILL\.md$/u)
-  expect(userSkillPath).toMatch(/\/SKILL\.md$/u)
-  expect(workspaceSkillSource).toContain(WORKSPACE_SKILL_MARKER)
-  expect(workspaceSkillSource).not.toContain(USER_SKILL_MARKER)
-  expect(userSkillSource).toContain(USER_SKILL_MARKER)
-  expect(userSkillSource).not.toContain(WORKSPACE_SKILL_MARKER)
-
-  await waitForValue(page, `document.body.innerText.includes(${JSON.stringify(WORKSPACE_SKILL_MARKER)})
-    && document.body.innerText.includes(${JSON.stringify(USER_SKILL_MARKER)})`, value => value === true, 30_000)
-  await waitForValue(page, `(() => [...document.querySelectorAll('[role="treeitem"]')]
-    .some(node => node.textContent?.includes(${titleJson})))()`, value => value === true, 10_000)
-
-  const historyText = await waitForValue(page, `(async () => {
-    const remote = window.__runPanelTestContext.get('remote.session')
-    const projection = await remote.projections({ sessionId: ${sessionJson} })
-    if (!projection.ok) return null
-    const history = await remote.page({
-      address: { kind: 'session', sessionId: ${sessionJson} },
-      throughSeq: projection.value.asOfSeq,
-    })
-    return history.ok ? JSON.stringify(history.value.records) : null
-  })()`, value => typeof value === 'string'
-    && value.includes(markerRequest)
-    && value.includes(WORKSPACE_SKILL_MARKER)
-    && value.includes(USER_SKILL_MARKER), 30_000)
-  expect(historyText).toContain(markerRequest)
-  expect(historyText).toContain(WORKSPACE_SKILL_MARKER)
-  expect(historyText).toContain(USER_SKILL_MARKER)
-
-  const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
-  await writeFile(join(evidenceDirectory, 'official-business-skill-markers.png'), Buffer.from(screenshot.data, 'base64'), {
-    encoding: 'binary', mode: 0o600,
+function assertWorkbenchModelRequest(request, personaPrefix) {
+  const systemMessages = (request.body.messages ?? []).filter(message => message.role === 'system')
+  expect(systemMessages.map(requestMessageText)).toContain(personaPrefix)
+  const tools = (request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
+  assertToolScope(tools, {
+    required: ['skill', 'bash'],
+    forbidden: [...RETIRED_BUSINESS_TOOL_NAMES, 'load_workspace_dependencies'],
   })
+  const messages = JSON.stringify(request.body.messages ?? [])
+  for (const marker of [WORKSPACE_SKILL_MARKER, USER_SKILL_MARKER, 'OFFICIAL_WORKSPACE_PRIORITY_MARKER',
+    'OFFICIAL_WORKSPACE_DEVELOPMENT_INSTRUCTIONS']) expect(messages).not.toContain(marker)
+  for (const name of HOST_BUNDLED_SKILL_NAMES) {
+    expect(messages).not.toContain(`<skill name="${name}"`)
+    expect(messages).not.toContain(`<skill_content name="${name}"`)
+  }
+}
+
+async function verifyPackagedSkillReads(page, services, sessionId, skillPaths, evidenceDirectory) {
+  const provider = OFFICIAL_BUSINESS_FIXTURE.provider
+  const selected = await page.evaluate(`window.__runPanelTestContext.get('remote.session').selectModel({
+    sessionId: ${JSON.stringify(sessionId)}, provider: ${JSON.stringify(provider.id)}, model: ${JSON.stringify(provider.modelId)}
+  })`)
+  expect(selected).toMatchObject({ ok: true })
+  await openBusinessSession(page, sessionId)
+  const names = ['comfyui-generate', 'wai-sdxl-prompt-builder']
+  const referencePath = join(dirname(skillPaths.installed[names[0]]), 'references/generation-cli.md')
+  const referenceSource = await readFile(referencePath, 'utf8')
+  const prompt = 'Read the packaged comfyui-generate and wai-sdxl-prompt-builder Skills, then read the generation CLI reference.'
+  const requestStart = services.requestLog.length
+  const matches = request => request.sequence >= requestStart && (request.body.messages ?? []).some(message =>
+    message.role === 'user' && requestMessageText(message) === prompt)
+  services.enqueueModelResponse(matches, controlledToolResponse(names.map((name, index) => ({
+    id: `packaged-skill-${index}`, name: 'skill', arguments: { name },
+  }))))
+  services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'packaged-skill-1'),
+    controlledToolResponse([{ id: 'packaged-reference', name: 'bash', arguments: {
+      description: 'Read the packaged generation CLI reference', command: `cat ${shellQuoteArgument(referencePath)}`,
+    } }]))
+  services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'packaged-reference'),
+    { role: 'assistant', content: 'OFFICIAL_PACKAGED_SKILLS_READ' })
+  await submitComposerPrompt(page, prompt)
+  const firstRequest = await services.requestWhere(matches, 30_000)
+  assertWorkbenchModelRequest(firstRequest, services.personaPrefix)
+  const skillRequest = await services.requestWhere(request => matches(request)
+    && hasControlledToolResult(request, 'packaged-skill-1'), 30_000)
+  for (const [index, name] of names.entries()) {
+    expect(controlledToolResult(skillRequest, `packaged-skill-${index}`)).toContain(name)
+    expect(isAbsolute(skillPaths.installed[name])).toBe(true)
+    expect(await readFile(skillPaths.installed[name], 'utf8')).toContain(`name: ${name}`)
+  }
+  expect(controlledToolResult(skillRequest, 'packaged-skill-0')).toContain('references/generation-cli.md')
+  const referenceRequest = await services.requestWhere(request => matches(request)
+    && hasControlledToolResult(request, 'packaged-reference'), 30_000)
+  expect(controlledToolResult(referenceRequest, 'packaged-reference')).toContain(referenceSource.trim())
+  const requestText = JSON.stringify([firstRequest.body, skillRequest.body, referenceRequest.body])
+  for (const marker of [WORKSPACE_SKILL_MARKER, USER_SKILL_MARKER, 'OFFICIAL_WORKSPACE_PRIORITY_MARKER']) {
+    expect(requestText).not.toContain(marker)
+  }
+  for (const name of [UNIQUE_WORKSPACE_SKILL_NAME, USER_SKILL_NAME, ...HOST_BUNDLED_SKILL_NAMES]) {
+    expect(JSON.stringify(firstRequest.body.messages)).not.toContain(name)
+  }
+  await waitForOfficialSessionEnd(page, sessionId, 'completed')
+  const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
+  await writeFile(join(evidenceDirectory, 'official-business-skill-markers.png'), Buffer.from(screenshot.data, 'base64'))
   const evidence = {
-    schemaVersion: 1,
-    classification: 'automated-regression',
-    acceptanceClaim: false,
-    sessionId,
-    selectedPreset: PRODUCT_PRESET_ID,
-    model: firstRequest.body.model,
-    userRequest: markerRequest,
-    skillToolCalls: services.skillToolCalls,
-    skillToolResults: [
-      {
-        skillName: UNIQUE_WORKSPACE_SKILL_NAME,
-        skillPath: workspaceSkillPath,
-        sourceFileContainsMarker: workspaceSkillSource.includes(WORKSPACE_SKILL_MARKER),
-        content: workspaceSkillToolResult,
-      },
-      {
-        skillName: USER_SKILL_NAME,
-        skillPath: userSkillPath,
-        sourceFileContainsMarker: userSkillSource.includes(USER_SKILL_MARKER),
-        content: userSkillToolResult,
-      },
-    ],
-    markerSources: {
-      workspace: {
-        skillName: UNIQUE_WORKSPACE_SKILL_NAME,
-        skillPath: workspaceSkillPath,
-        marker: WORKSPACE_SKILL_MARKER,
-        sourceFileContainsMarker: workspaceSkillSource.includes(WORKSPACE_SKILL_MARKER),
-        loadedBySkillTool: true,
-        repeatedInAssistantResponse: true,
-      },
-      user: {
-        skillName: USER_SKILL_NAME,
-        skillPath: userSkillPath,
-        marker: USER_SKILL_MARKER,
-        sourceFileContainsMarker: userSkillSource.includes(USER_SKILL_MARKER),
-        loadedBySkillTool: true,
-        repeatedInAssistantResponse: true,
-      },
-    },
-    cliCall: 'none',
-    coldHistoryContainsPromptAndMarkers: true,
+    schemaVersion: 2, classification: 'automated-regression', acceptanceClaim: false,
+    sessionId, selectedPreset: PRODUCT_PRESET_ID, model: firstRequest.body.model, userRequest: prompt,
+    skillSources: names.map(name => ({ name, path: skillPaths.installed[name], source: 'installed-project' })),
+    skillToolResults: names.map((name, index) => ({ name, content: controlledToolResult(skillRequest, `packaged-skill-${index}`) })),
+    reference: { path: referencePath, content: controlledToolResult(referenceRequest, 'packaged-reference') },
+    systemMessages: firstRequest.body.messages.filter(message => message.role === 'system'),
+    toolDeclarations: firstRequest.body.tools,
   }
   await writeFile(join(evidenceDirectory, 'official-business-skill-markers.json'),
     `${JSON.stringify(evidence, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 })
@@ -2042,7 +2136,7 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
     window.__runPanelTestContext.inject(['remote.session'], async injected => {
       try {
         const remote = injected.remote.session
-        const created = await remote.create({ workspaceId: ${JSON.stringify(workspaceId)}, agentPreset: 'standard' })
+        const created = await remote.create({ workspaceId: ${JSON.stringify(workspaceId)}, agentPreset: ${JSON.stringify(PRODUCT_PRESET_ID)} })
         if (!created.ok) { resolve({ created, renamed: null, selected: null, prompted: null }); return }
         const sessionId = created.value.sessionId
         const renamed = await remote.rename({ sessionId, title: ${sessionJson} })
@@ -2101,14 +2195,19 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
   const firstModelRequest = await services.requestWhere(request =>
     (request.body.messages ?? []).some(message => message.role === 'user'
       && requestMessageText(message).includes(generation.triggerPrompt))
-      && (request.body.tools ?? []).some(tool =>
-        (tool.function?.name ?? tool.name) === 'generate_with_comfyui'), 30_000)
-  expect(firstModelRequest.body.messages.some(message => requestMessageText(message).includes(generation.triggerPrompt))).toBe(true)
-  expect((firstModelRequest.body.tools ?? []).some(tool =>
-    (tool.function?.name ?? tool.name) === 'generate_with_comfyui')).toBe(true)
+      && (request.body.tools ?? []).some(tool => (tool.function?.name ?? tool.name) === 'bash'), 30_000)
+  assertWorkbenchModelRequest(firstModelRequest, services.personaPrefix)
   const followupModelRequest = await services.requestWhere(request =>
-    (request.body.messages ?? []).some(message => message.role === 'tool'), 30_000)
-  expect(followupModelRequest.body.messages.some(message => message.role === 'tool')).toBe(true)
+    (request.body.messages ?? []).some(message => message.role === 'user'
+      && requestMessageText(message).includes(generation.triggerPrompt))
+      && hasControlledToolResult(request, 'official-generation-submit-read'), 30_000)
+  const cliResultPath = controlledToolResult(followupModelRequest, 'official-generation-submit').split('\n', 1)[0]
+  expect(isAbsolute(cliResultPath)).toBe(true)
+  const cliResult = JSON.parse(await readFile(cliResultPath, 'utf8'))
+  expect(controlledToolResult(followupModelRequest, 'official-generation-submit-read')).toContain(cliResult.run_id)
+  const inspectPath = controlledToolResult(followupModelRequest, 'official-generation-inspect').split('\n', 1)[0]
+  expect(isAbsolute(inspectPath)).toBe(true)
+  expect(JSON.parse(await readFile(inspectPath, 'utf8'))).toMatchObject({ parameters: expect.any(Array) })
 
   const projectionExpression = `(async () => window.__runPanelTestContext
     .get('remote.harnessComfyuiGeneration').list({ sessionId: ${sessionIdJson}, turn: null }))()`
@@ -2118,6 +2217,7 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
     && value.value.media.length === 1, 180_000)
   const run = projection.value.runs[0]
   const media = projection.value.media[0]
+  expect(run.runId).toBe(cliResult.run_id)
   expect(run).toMatchObject({
     title: generation.runTitle,
     instanceTitle: 'Controlled Desktop Comfy Service',
@@ -2210,8 +2310,14 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
       productHistoryPolls: 0,
     },
     modelToolCalls: {
-      generationToolAvailable: true,
+      managedCli: true,
+      inspectResultPath: inspectPath,
+      submitResultPath: cliResultPath,
       toolResultReturned: true,
+      systemMessages: firstModelRequest.body.messages.filter(message => message.role === 'system'),
+      declarations: firstModelRequest.body.tools,
+      calls: followupModelRequest.body.messages.filter(message => message.role === 'assistant' && message.tool_calls),
+      results: followupModelRequest.body.messages.filter(message => message.role === 'tool'),
     },
   }
   await writeFile(join(evidenceDirectory, 'official-business-controlled-generation.json'), JSON.stringify(evidence, null, 2) + '\n', {
@@ -2306,6 +2412,7 @@ describe('official Desktop plugin regression', () => {
     await mkdir(resolve(fixtureRoot, 'artifacts'), { recursive: true, mode: 0o700 })
     await mkdir(workspacePath, { recursive: true, mode: 0o700 })
     await mkdir(agentsHome, { recursive: true, mode: 0o700 })
+    await writeFile(join(workspacePath, 'AGENTS.md'), '---\n文档用途: 提供 Desktop 测试标记。\n读取时机: 读取工作区指令时。\n---\n# Workspace fixture\n\n1. OFFICIAL_WORKSPACE_DEVELOPMENT_INSTRUCTIONS\n', { encoding: 'utf8', mode: 0o600 })
     const mcp = await startOfficialMcpServices()
     fixture.close = () => mcp.close()
     const testApiKey = randomBytes(24).toString('hex')
@@ -2568,7 +2675,14 @@ description: ${USER_SKILL_DESCRIPTION}
         '.agents',
         'skills',
       )
-      await expect(lstat(installedPluginSkillDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
+      expect((await lstat(installedPluginSkillDirectory)).isDirectory()).toBe(true)
+      const workbenchComposition = yaml.load(await readFile(join(dirname(installation.installedPackagePath),
+        'agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml'), 'utf8'), { schema: entryListSchema })
+      const persona = workbenchComposition.find(row => row.id === 'persona').config
+      expect(persona.complete).toBe(true)
+      promptCapture.personaPrefix = persona.prefix
+      traceContext.personaPrefix = persona.prefix
+      traceContext.installedPluginSkillDirectory = installedPluginSkillDirectory
       expect(mcp.requests.some(request => request.method === 'tools/list' && request.status === 200)).toBe(true)
       await writeFile(join(context.businessEvidenceDirectory, 'official-business-mcp.json'), JSON.stringify({
         installedPackageRoot: dirname(installation.installedPackagePath),
@@ -2581,7 +2695,7 @@ description: ${USER_SKILL_DESCRIPTION}
         agentsHome: canonicalAgentsHome,
         installedPluginSkillDirectory,
       })
-      await verifyWorkspaceAndUserSkillMarkers(
+      await verifyPackagedSkillReads(
         page,
         promptCapture,
         presetSessions.productSessionId,
@@ -2787,7 +2901,7 @@ description: ${USER_SKILL_DESCRIPTION}
       await setImageReaderField(page, '配置名称', 'Desktop OpenAI 视觉')
       await setImageReaderField(page, 'Chat Completions 地址', 'http://127.0.0.1:11434/v1/chat/completions')
       await setImageReaderField(page, '模型 ID', 'desktop-qwen-vl')
-      await setImageReaderField(page, 'API Key（可选）', 'desktop-write-only-key')
+      await setImageReaderField(page, 'API Key', 'desktop-write-only-key')
       await setImageReaderField(page, '读图提示词', 'Desktop 已保存的默认读图提示词')
       await setImageReaderField(page, '温度', '0.65')
       await setImageReaderField(page, '最大输出 Token 数', '4096')
@@ -2850,22 +2964,30 @@ description: ${USER_SKILL_DESCRIPTION}
       expect(storedImageSettings?.configuration?.activeProfileId).toBe(openAiProfile.id)
       expect(storedRuntimeProfile).toMatchObject({
         id: firstProfile.id,
-        connectionType: 'runtime',
         provider: alternateImageReaderProvider.id,
         model: alternateImageReaderModel.id,
       })
       expect(storedOpenAiProfile).toMatchObject({
         id: openAiProfile.id,
         name: 'Desktop OpenAI 视觉',
-        connectionType: 'openai-compatible',
-        endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+        provider: `${imageReaderRuntime.providerRoutePrefix}${openAiProfile.id}${imageReaderRuntime.providerRouteSeparator}1`,
         model: 'desktop-qwen-vl',
         defaultPrompt: 'Desktop 已保存的默认读图提示词',
         temperature: 0.65,
         maxTokens: 4096,
-        hasApiKey: true,
       })
-      expect(storedImageSettings?.credentialRefs?.[openAiProfile.id]).toMatch(/^DSH_HARNESS_COMFYUI_IMAGE_READER_/u)
+      for (const profile of [storedRuntimeProfile, storedOpenAiProfile]) {
+        expect(profile).not.toHaveProperty('connectionType')
+        expect(profile).not.toHaveProperty('endpoint')
+        expect(profile).not.toHaveProperty('hasApiKey')
+      }
+      const nativeImageProvider = findProfileEntry(profilePatch, 'llm-pi-ai')?.config?.providers?.[storedOpenAiProfile.provider]
+      expect(nativeImageProvider).toMatchObject({
+        api: 'openai-completions', baseURL: 'http://127.0.0.1:11434/v1',
+        models: [expect.objectContaining({ id: 'desktop-qwen-vl', input: ['text', 'image'] })],
+        apiKeyEnv: expect.stringMatching(/^DSH_HARNESS_COMFYUI_IMAGE_READER_/u),
+      })
+      expect(storedImageSettings?.credentialRefs).toEqual({})
       expect(storedImageSettings).not.toHaveProperty('credentials')
       expect(JSON.stringify(storedImageSettings)).not.toContain('desktop-write-only-key')
 
@@ -2934,7 +3056,7 @@ description: ${USER_SKILL_DESCRIPTION}
           const labels = [...document.querySelectorAll('.harness-comfyui-image-reader-settings label')]
           const valueFor = text => labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === text)
             ?.querySelector('input, textarea')?.value
-          const credential = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === 'API Key（可选）')
+          const credential = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === 'API Key')
           const password = credential?.querySelector('input')
           return valueFor('配置名称') === 'Desktop OpenAI 视觉' ? {
             endpoint: valueFor('Chat Completions 地址'),
@@ -3066,7 +3188,7 @@ description: ${USER_SKILL_DESCRIPTION}
             ?.querySelector('select')
           const name = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === '配置名称')
             ?.querySelector('input')
-          const credential = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === 'API Key（可选）')
+          const credential = labels.find(label => label.querySelector(':scope > span')?.textContent?.trim() === 'API Key')
           const password = credential?.querySelector('input')
           return profile instanceof HTMLSelectElement && profile.options.length === 2 && name?.value.endsWith(' 副本') ? {
             activeId: profile.value,
@@ -3079,7 +3201,7 @@ description: ${USER_SKILL_DESCRIPTION}
       expect(copiedProfile).toEqual({
         activeId: openAiProfile.id,
         name: 'Desktop OpenAI 视觉 副本',
-        placeholder: '本地免鉴权接口可以留空',
+        placeholder: '输入图片服务的 API Key',
       })
       await closePluginSettings(page)
       await openPluginSettings(page)
@@ -3566,7 +3688,7 @@ description: ${USER_SKILL_DESCRIPTION}
         workspaceBoundary: outsideRepoWorkspaceProof,
         businessAssertions: [
           'preset-and-skill-scope',
-          'workspace-and-user-skill-marker-retrieval',
+          'packaged-skill-and-reference-reading',
           'disabled-kimi-ppt-model-request',
           'catalog-and-base-model-settings',
           'image-reader-settings-and-secret-storage',
@@ -3579,6 +3701,11 @@ description: ${USER_SKILL_DESCRIPTION}
         generationAfterRestart: generationRestartEvidence,
         nativeSubagent: nativeSubagentEvidence,
       }, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 })
+      const endedChildSkillCatalog = nativeSubagentEvidence.endedChildSkillCatalog
+      expect(endedChildSkillCatalog.skills.map(skill => skill.name).sort())
+        .toEqual(REPOSITORY_SKILL_CATALOG.map(skill => skill.name).sort())
+      expect(endedChildSkillCatalog.skills.every(skill =>
+        isPathWithin(skill.path, endedChildSkillCatalog.installedPluginSkillDirectory))).toBe(true)
     } catch (error) {
       const pageState = await page.evaluate(`({
         text: document.body.innerText,

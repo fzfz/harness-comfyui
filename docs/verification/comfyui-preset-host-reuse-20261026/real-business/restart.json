@@ -1,0 +1,266 @@
+{
+  "runs": {
+    "ok": true,
+    "value": {
+      "sessionId": "session-908d6371-55ac-443c-a79e-fb759fb3eabc",
+      "runs": [
+        {
+          "runId": "run_b4c37139-92d0-4b4d-b302-d17e01a556b1",
+          "turn": 1,
+          "title": "图片 1",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793103110190,
+          "updatedAt": 1793103117274
+        },
+        {
+          "runId": "run_b17be13c-fbed-4c52-9662-ed06d54a984e",
+          "turn": 1,
+          "title": "图片 1",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793102915628,
+          "updatedAt": 1793102922387
+        }
+      ],
+      "media": [
+        {
+          "mediaId": "media_02c756e3-343e-4f89-b6b2-87e07a256716",
+          "runId": "run_b4c37139-92d0-4b4d-b302-d17e01a556b1",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00254_.png",
+          "mediaType": "image/png",
+          "byteSize": 192027,
+          "createdAt": 1793103117272
+        },
+        {
+          "mediaId": "media_dbae01d5-28ec-4ca9-bbc1-326a47a49f89",
+          "runId": "run_b17be13c-fbed-4c52-9662-ed06d54a984e",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00253_.png",
+          "mediaType": "image/png",
+          "byteSize": 305163,
+          "createdAt": 1793102922384
+        }
+      ],
+      "hasActiveRuns": false,
+      "refreshAfterMs": 1000
+    }
+  },
+  "ui": {
+    "visible": true,
+    "summary": "2 个运行 · 2 个媒体",
+    "runs": [
+      "图片 1run_b4c37139-92d0-4b4d-b302-d17e01a556b1已完成实例win3080工作流moss4步加速cfg大于1模板",
+      "图片 1run_b17be13c-fbed-4c52-9662-ed06d54a984e已完成实例win3080工作流moss4步加速cfg大于1模板"
+    ],
+    "media": [
+      "图片moss-4step_00254_.png第 1 轮2026/10/27 20:11:57 · 输出 0run_b4c37139-92d0-4b4d-b302-d17e01a556b1",
+      "图片moss-4step_00253_.png第 1 轮2026/10/27 20:08:42 · 输出 0run_b17be13c-fbed-4c52-9662-ed06d54a984e"
+    ],
+    "buttons": [
+      {
+        "text": "",
+        "title": ""
+      },
+      {
+        "text": "本会话媒体",
+        "title": ""
+      },
+      {
+        "text": "运行状态",
+        "title": ""
+      },
+      {
+        "text": "图片 1run_b4c37139-92d0-4b4d-b302-d17e01a556b1已完成实例win3080工作流moss4步加速cfg大于1模板",
+        "title": ""
+      },
+      {
+        "text": "图片 1run_b17be13c-fbed-4c52-9662-ed06d54a984e已完成实例win3080工作流moss4步加速cfg大于1模板",
+        "title": ""
+      },
+      {
+        "text": "全部聊天轮次",
+        "title": ""
+      },
+      {
+        "text": "全部媒体",
+        "title": ""
+      },
+      {
+        "text": "",
+        "title": ""
+      },
+      {
+        "text": "",
+        "title": "下载所属运行的 Workflow"
+      },
+      {
+        "text": "",
+        "title": ""
+      },
+      {
+        "text": "",
+        "title": "下载所属运行的 Workflow"
+      },
+      {
+        "text": "",
+        "title": ""
+      },
+      {
+        "text": "",
+        "title": ""
+      }
+    ]
+  },
+  "inspectionCleanup": {
+    "record": {
+      "schemaVersion": 1,
+      "runId": "e03176f6-4ec6-4b97-ae78-7a9426ac1ae8",
+      "mode": "development",
+      "state": "stopped",
+      "createdAt": "2026-10-27T12:15:25.459Z",
+      "updatedAt": "2026-10-27T12:15:40.961Z",
+      "application": {
+        "bundlePath": "/Applications/DeepSeek Harness.app",
+        "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+        "version": "0.2.1-rc.3",
+        "bundleId": "com.deepseek.dsh"
+      },
+      "directories": {
+        "run": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/e03176f6-4ec6-4b97-ae78-7a9426ac1ae8",
+        "dshHome": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home",
+        "electronUserData": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+        "workspace": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/workspace",
+        "logs": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/e03176f6-4ec6-4b97-ae78-7a9426ac1ae8/logs",
+        "evidence": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/e03176f6-4ec6-4b97-ae78-7a9426ac1ae8/evidence",
+        "profile": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home/profiles/desktop",
+        "diagnosticFile": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/e03176f6-4ec6-4b97-ae78-7a9426ac1ae8/logs/diagnostic.log"
+      },
+      "environment": {
+        "root": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment",
+        "leasePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/active-probe.json"
+      },
+      "ports": {
+        "host": 50009,
+        "rendererCdp": 50010,
+        "hostInspector": 50011
+      },
+      "launch": {
+        "arguments": [
+          "--user-data-dir=/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+          "--remote-debugging-port=50010",
+          "--remote-debugging-address=127.0.0.1"
+        ],
+        "environment": {
+          "DSH_HOME": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home",
+          "DSH_DESKTOP_USER_DATA_DIR": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+          "DSH_DESKTOP_DIAGNOSTIC_FILE": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/e03176f6-4ec6-4b97-ae78-7a9426ac1ae8/logs/diagnostic.log",
+          "DSH_DESKTOP_HOST_INSPECT_PORT": "50011"
+        },
+        "unsetEnvironmentNames": [
+          "ELECTRON_RUN_AS_NODE"
+        ]
+      },
+      "process": {
+        "pid": 40066,
+        "processGroupId": 40066,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data --remote-debugging-port=50010 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/workspace",
+        "listeningPorts": [
+          50009,
+          50010,
+          50034
+        ],
+        "observedAt": "2026-10-27T12:15:28.969Z"
+      },
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-27T12:15:40.961Z",
+        "portsReleased": true
+      }
+    },
+    "recordPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/e03176f6-4ec6-4b97-ae78-7a9426ac1ae8/run.json"
+  },
+  "uiCleanup": {
+    "record": {
+      "schemaVersion": 1,
+      "runId": "612b2d16-08cd-4b93-b4c2-8b93cba10c1c",
+      "mode": "development",
+      "state": "stopped",
+      "createdAt": "2026-10-27T12:16:58.710Z",
+      "updatedAt": "2026-10-27T12:17:12.803Z",
+      "application": {
+        "bundlePath": "/Applications/DeepSeek Harness.app",
+        "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+        "version": "0.2.1-rc.3",
+        "bundleId": "com.deepseek.dsh"
+      },
+      "directories": {
+        "run": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/612b2d16-08cd-4b93-b4c2-8b93cba10c1c",
+        "dshHome": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home",
+        "electronUserData": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+        "workspace": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/workspace",
+        "logs": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/612b2d16-08cd-4b93-b4c2-8b93cba10c1c/logs",
+        "evidence": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/612b2d16-08cd-4b93-b4c2-8b93cba10c1c/evidence",
+        "profile": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home/profiles/desktop",
+        "diagnosticFile": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/612b2d16-08cd-4b93-b4c2-8b93cba10c1c/logs/diagnostic.log"
+      },
+      "environment": {
+        "root": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment",
+        "leasePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/active-probe.json"
+      },
+      "ports": {
+        "host": 50756,
+        "rendererCdp": 50757,
+        "hostInspector": 50758
+      },
+      "launch": {
+        "arguments": [
+          "--user-data-dir=/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+          "--remote-debugging-port=50757",
+          "--remote-debugging-address=127.0.0.1"
+        ],
+        "environment": {
+          "DSH_HOME": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home",
+          "DSH_DESKTOP_USER_DATA_DIR": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+          "DSH_DESKTOP_DIAGNOSTIC_FILE": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/612b2d16-08cd-4b93-b4c2-8b93cba10c1c/logs/diagnostic.log",
+          "DSH_DESKTOP_HOST_INSPECT_PORT": "50758"
+        },
+        "unsetEnvironmentNames": [
+          "ELECTRON_RUN_AS_NODE"
+        ]
+      },
+      "process": {
+        "pid": 50364,
+        "processGroupId": 50364,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data --remote-debugging-port=50757 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/workspace",
+        "listeningPorts": [
+          50756,
+          50757,
+          50787
+        ],
+        "observedAt": "2026-10-27T12:17:02.265Z"
+      },
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-27T12:17:12.803Z",
+        "portsReleased": true
+      }
+    },
+    "recordPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/612b2d16-08cd-4b93-b4c2-8b93cba10c1c/run.json"
+  }
+}

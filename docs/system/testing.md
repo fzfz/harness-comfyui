@@ -16,42 +16,55 @@
 8. `pnpm quality`：依赖、类型、覆盖率、合同、安全、production 回归、原型与官方 Desktop E2E 完整门禁。
 9. `pnpm verify:comfyui-workflows -- --source-url <数据源服务URL> --source-port <端口> --instance-id <数据源服务实例ID> --output <结果JSON路径>`：验证 Workflow 参数编译与官方页面导出；省略 URL 或端口时使用程序配置的本机默认值。
 
-10. 测试命令与 `pnpm quality` 的执行顺序见 [package.json](../../package.json)。
-11. `pnpm test:desktop` 的构建包写入 `.local/desktop-e2e/desktop-test-runner/artifacts/`。该命令按 `fresh` 模式隔离 Harness home 与 user-data。
+10. 测试命令与 `pnpm quality` 的执行顺序见 [package.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/package.json>)。
+11. `pnpm test:desktop` 的构建包写入[构建产物目录](</Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/>)。该命令按 `fresh` 模式隔离 Harness home 与 user-data。
 
 ## 官方 Desktop E2E 通过条件
 
-1. `config/desktop-e2e.json` 定义官方应用身份、隔离目录、端口、Profile patch 和运行证据的保存配置。`tests/desktop/fixtures/` 按该配置准备环境并执行验收。
+1. [config/desktop-e2e.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/desktop-e2e.json>) 定义官方应用身份、隔离目录、端口、Profile patch 和运行证据的保存配置。[tests/desktop/fixtures/](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/desktop/fixtures>) 按该配置准备环境并执行验收。
 
 2. E2E 通过条件包括：
 
    1. 当前官方应用版本和 bundle identity 与配置一致；
    2. 当前 probe PID 与进程组归属本轮运行记录，Host 与 Renderer CDP 端口由该进程组持有；
    3. Renderer 页面属于官方应用，URL 使用 `dsh-app://`，文档加载完成并包含可见内容；
-   4. 官方插件管理器安装并启用本轮打包的 `harness-comfyui` 版本，Profile 中的插件记录和实际安装路径与当前候选包一致；
-   5. Live 测试通过真实 UI 安装、启用和配置插件，并执行会话操作，核对 managed CLI 返回值、Controlled Generation 结果以及应用重启后的持久化数据；
+   4. 官方插件管理器安装并启用本轮打包的 `harness-comfyui` 版本。Profile 插件记录和实际安装路径与当前候选包一致；
+   5. Live 测试通过真实 UI 完成插件安装、启用、配置和会话操作。验收同时核对 managed CLI 返回值、受控生成结果及重启后的持久化数据；
    6. 测试结束后，本轮应用进程和端口全部释放，运行记录保留清理结果；测试失败、取消、超时或发生端口冲突时，运行记录保留对应事件的证据。
 
 3. 业务 E2E 使用测试夹具启动受控服务并核对请求、响应和业务持久化结果。验收者按当前发布任务的验收要求，独立完成真实模型及目标 ComfyUI 实例上的生成验收。
 
 ## Agent 调用轨迹验收
 
-1. 开发调用方法见 [worktree 开发文档的“Agent 调用轨迹”](../agents/worktree-development.md#agent-调用轨迹)。开发者在任务结束后导出官方已有会话记录，并按索引核对覆盖范围与缺失项。
-2. `tests/production/collect-session-trace.test.mjs` 验证结束状态、父子关系、官方导出包读取及缺失记录。[official-trace-evidence.test.mjs](../../tests/production/official-trace-evidence.test.mjs) 验证离线脱敏及文件写入；[official-desktop-probe.test.mjs](../../tests/production/official-desktop-probe.test.mjs) 验证启动流程保留启动前的 Profile 配置。
-3. `tests/desktop/official-desktop-live.test.mjs` 复用受控父子任务，验证正常结束及取消后的会话导出、工具调用与返回和已持久化的中断消息；该测试由 `pnpm test:desktop` 执行。
-4. 调查者分别记录应用清理结果与会话结束状态，将官方记录未保存的信息标为缺失，并将依赖这些信息的验收项标为证据不足。
+1. 开发调用方法见 [worktree 开发文档的“Agent 调用轨迹”](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/agents/worktree-development.md#agent-调用轨迹>)。开发者在任务结束后导出官方已有会话记录，并按索引核对覆盖范围与缺失项。
+2. [tests/production/collect-session-trace.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/collect-session-trace.test.mjs>) 验证结束状态、父子关系、官方导出包读取及缺失记录。[official-trace-evidence.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/official-trace-evidence.test.mjs>) 验证离线脱敏及文件写入；[official-desktop-probe.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/official-desktop-probe.test.mjs>) 验证启动流程保留启动前的 Profile 配置。
+3. [tests/desktop/official-desktop-live.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/desktop/official-desktop-live.test.mjs>) 复用受控父子任务，验证正常结束及取消后的会话导出。验证内容包括工具调用、返回值和已持久化的中断消息。测试由 `pnpm test:desktop` 执行。
+4. 调查者分别记录应用清理结果与会话结束状态。官方记录未保存的信息标为缺失；依赖缺失信息的验收项标为证据不足。
 
 ## Preset 与子 Agent 合同
 
-1. [installed-presets.test.mjs](../../tests/unit/installed-presets.test.mjs) 与 [source-agent-preset.test.mjs](../../tests/production/source-agent-preset.test.mjs) 验证工作台注册、官方组件配置和宿主 Skill service 复用。[plugin-package.test.mjs](../../tests/production/plugin-package.test.mjs) 验证包内资源及测试设施的排除规则。
-2. [官方 Desktop 业务 E2E](../../tests/desktop/official-desktop-live.test.mjs) 验证宿主首次派发子任务、续派、中断、查询、发送结束通知及冷恢复的行为。公共行为见[系统架构](architecture.md#项目-presetskills-与目录访问)。
-3. [host-plugin.test.ts](../../tests/integration/host-plugin.test.ts) 验证业务工具的直接注册与 Cordis 生命周期；[generation-service.test.ts](../../tests/unit/generation-service.test.ts) 验证当前会话和后代结果的访问范围、诊断与取消。
-4. `pnpm typecheck` 同时检查 TypeScript 源码与 [tsconfig.agent-presets.json](../../tsconfig.agent-presets.json) 声明的 Preset 资源入口。
+1. [installed-presets.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/unit/installed-presets.test.mjs>) 与 [source-agent-preset.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/source-agent-preset.test.mjs>) 验证工作台注册与官方组件配置。[plugin-package.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/plugin-package.test.mjs>) 验证预设、8 个业务 Skill 及其参考和脚本随包交付。
+2. [官方 Desktop 业务 E2E](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/desktop/official-desktop-live.test.mjs>) 验证宿主首次派发子任务、续派、中断、查询、发送结束通知及冷恢复的行为。公共行为见[系统架构](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#项目-presetskills-与目录访问>)。
+3. [host-plugin.test.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/integration/host-plugin.test.ts>) 验证常驻业务服务、CLI、Remote 与 Cordis 生命周期；[generation-service.test.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/unit/generation-service.test.ts>) 验证当前会话和后代结果的访问范围、诊断与取消。
+4. `pnpm typecheck` 同时检查 TypeScript 源码与 [tsconfig.agent-presets.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/tsconfig.agent-presets.json>) 声明的 Preset 资源入口。
+
+5. [native-workbench-scope.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/native-workbench-scope.test.mjs>)通过[原生装配夹具](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/fixtures/native-workbench-preset-runtime.mjs>)验证主会话与子会话中的 persona 内容、运行时上下文、工具限制及各自的 Skill 来源，并验证其他预设的 Skill 来源符合各自配置。
+
+6. 修改工作台装配后，验收者必须覆盖以下生命周期行为。
+
+   1. 首次派发。
+   2. 续派。
+   3. 中断。
+   4. 子任务派发深度达到配置上限。
+   5. 预设切换。
+   6. 冷恢复。
+
+7. 验收者保存实际提示词、上下文、工具声明及 Skill 来源和读取记录。业务证据包括 MCP 与 CLI 的请求和返回结果、Run 记录及生成图片。
 
 ## 目录边界测试
 
-1. [official-catalog-boundary.test.mjs](../../tests/production/official-catalog-boundary.test.mjs) 验证 MCP 与内部 HTTP 对同一目录场景的响应一致性，覆盖无默认模型、空实例、请求校验、鉴权、取消、证据生成和端口释放。
-2. 夹具调用方法见 [worktree 开发文档的“目录边界夹具”](../agents/worktree-development.md#目录边界夹具)。真实模型的停止行为由对应任务的调用轨迹单独验收。
+1. [official-catalog-boundary.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/official-catalog-boundary.test.mjs>) 验证 MCP 与内部 HTTP 对同一目录场景的响应一致性。覆盖场景包括无默认模型、空实例、请求校验、鉴权与取消。测试同时验证证据生成与端口释放。
+2. 夹具调用方法见 [worktree 开发文档的“目录边界夹具”](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/agents/worktree-development.md#目录边界夹具>)。真实模型的停止行为由对应任务的调用轨迹单独验收。
 
 ## 测试覆盖要求
 
@@ -59,10 +72,12 @@
 
 ## 其他业务验证
 
-1. 数据源设置与图片读取配置由 [source-settings.test.ts](../../tests/unit/source-settings.test.ts)、[image-reader-settings.test.ts](../../tests/unit/image-reader-settings.test.ts) 和 [host-plugin.test.ts](../../tests/integration/host-plugin.test.ts) 覆盖。
+1. 数据源设置与图片读取配置由 [source-settings.test.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/unit/source-settings.test.ts>)、[image-reader-settings.test.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/unit/image-reader-settings.test.ts>) 和 [host-plugin.test.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/integration/host-plugin.test.ts>) 覆盖。
 
-2. [Desktop Skill 测试](../../tests/desktop/official-desktop-live.test.mjs)使用 checkout 外的 Workspace。测试验证父子会话访问工作区 Skills、用户级 Skills 和源码软链接，以及工作区同名 Skill 的选择优先级。
+2. [Desktop Skill 测试](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/desktop/official-desktop-live.test.mjs>)使用 checkout 外的 Workspace。测试验证父子 Agent 通过官方 Skill 服务发现并读取包内业务 Skill，并通过 Bash 读取 Skill 指定的参考文件。测试还验证父子 Agent 能读取预设配置的额外 Skill 目录中的 Skill。
 
-3. managed CLI 的[进程测试](../../tests/integration/cli-command.test.ts)验证业务命令的结果文件与错误报告；[独立包测试](../../tests/production/plugin-package.test.mjs)验证安装入口返回的路径及对应文件内容。官方 Desktop 测试通过前台 Bash Tool Call 核对[短期调用凭证](architecture.md#host-node-与受管-cli-身份)、请求身份、返回路径与后续文件读取结果。
+3. [image-reader-native.test.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/unit/image-reader-native.test.ts>)与 [image-reader-native-settings.test.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/unit/image-reader-native-settings.test.ts>)验证统一宿主模型调用和原生 Provider 设置。验收者核对独立视觉模型、自定义完整地址、各配置的默认提示词、当前激活的配置与凭据引用。迁移验收还须覆盖迁移失败后的重试，以及失败后的配置保留。
 
-4. Workflow 验证使用已经部署的数据源服务和目标 ComfyUI 实例。验收记录包含服务地址、端口、实例 ID、结果 JSON 路径、参数支持结果、官方前端导出，以及首次未命中与后续命中缓存时的结果比较。
+4. managed CLI 的[进程测试](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/integration/cli-command.test.ts>)验证业务命令的结果文件与错误报告；[独立包测试](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/plugin-package.test.mjs>)验证安装入口返回的路径及对应文件内容。官方 Desktop 测试通过前台 Bash Tool Call 核对[短期调用凭证](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#host-node-与受管-cli-身份>)、请求身份、返回路径与后续文件读取结果。
+
+5. Workflow 验证使用已经部署的数据源服务和目标 ComfyUI 实例。验收记录包含服务地址、端口、实例 ID 和结果 JSON 路径。验收者还须记录参数支持、官方前端导出及缓存命中前后的结果比较。

@@ -1,0 +1,20 @@
+{
+  "scenario": "cold-session-native-catalog-registry-selection",
+  "implementation": "installed official SessionSkillCatalog.list",
+  "observations": "deterministic session projection with correct preset; no live agent",
+  "changedVariable": "fallback Skill Registry instance; session identity, preset and directory unchanged",
+  "original": [
+    "office-example"
+  ],
+  "correctedRegistrySelection": [
+    "anima-prompt-builder",
+    "character-portrait-prompt-designer",
+    "comfyui-generate",
+    "comfyui-image-review",
+    "krea2-anime-prompt-builder",
+    "local-image-reader",
+    "moss-prompt-builder",
+    "wai-sdxl-prompt-builder"
+  ],
+  "officialApplicationModified": false
+}

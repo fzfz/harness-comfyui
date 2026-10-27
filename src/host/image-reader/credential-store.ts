@@ -19,11 +19,7 @@ export interface ImageReaderCredentialStore {
 }
 
 function toSdkReference(reference: ImageReaderCredentialRef): ReturnType<typeof credentialRef> {
-  const value = String(reference)
-  if (!isImageReaderCredentialRef(value)) {
-    throw new TypeError('Image reader credential reference is invalid.')
-  }
-  return credentialRef(value)
+  return credentialRef(String(reference))
 }
 
 export function imageReaderCredentialStore(provider: ImageReaderCredentialProvider): ImageReaderCredentialStore {
@@ -40,9 +36,11 @@ export function imageReaderCredentialStore(provider: ImageReaderCredentialProvid
       return provider.resolve(toSdkReference(reference))
     },
     async set(reference: ImageReaderCredentialRef, value: string) {
+      if (!isImageReaderCredentialRef(reference)) throw new TypeError('Image reader credential reference is invalid.')
       return provider.set(toSdkReference(reference), value)
     },
     async unset(reference: ImageReaderCredentialRef) {
+      if (!isImageReaderCredentialRef(reference)) throw new TypeError('Image reader credential reference is invalid.')
       return provider.unset(toSdkReference(reference))
     },
   })

@@ -1,0 +1,19 @@
+{
+  "mode": "isolated",
+  "installedNativeComponents": true,
+  "includeDefaultRoots": false,
+  "mountedScopeNames": [
+    "anima-prompt-builder",
+    "character-portrait-prompt-designer",
+    "comfyui-generate",
+    "comfyui-image-review",
+    "krea2-anime-prompt-builder",
+    "local-image-reader",
+    "moss-prompt-builder",
+    "wai-sdxl-prompt-builder"
+  ],
+  "coldNames": [
+    "office-example"
+  ],
+  "realModelCalls": 0
+}

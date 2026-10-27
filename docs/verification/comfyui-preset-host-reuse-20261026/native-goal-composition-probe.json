@@ -1,0 +1,569 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-26T16:37:15.168Z",
+  "scope": "In-memory Cordis and AgentLoop instances only; no Desktop window, network, real model call, dependency installation, or production mutation.",
+  "runtime": {
+    "appPath": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar",
+    "appVersion": "0.2.1-rc.3",
+    "installedBuildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+    "node": "v24.21.0"
+  },
+  "sourceBasis": {
+    "repository": "/Volumes/4Tdisk/work/AI2/deepseek-harness",
+    "commit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+    "installedCommitPresentInLocalGit": false,
+    "relationship": "Different reported commits. Installed commit is absent from the local Git object database; ancestry and full source equality are unverified. Source conclusions use git show at sourceBasis.commit. Runtime probes use installed app modules. Inspected relevant compiled methods agree with the cited source semantics."
+  },
+  "fixtures": {
+    "toolBodies": "All non-skill tool bodies are in-memory name-returning fixtures, including names resembling native shell, MCP, spawn and control tools.",
+    "skillTool": "Actual bundled dsh-tool-skill definition executed through actual bundled dsh-tools.",
+    "childComposition": "Actual AgentLoop Agent created with agentPresets.composeFrom(childCtx,parent.ctx), the native applyChildComposition inherited-preset path. The spawn tool itself was not executed.",
+    "filesystem": "Skill registry provider isolation uses virtual runtime skills; filesystem provider configuration verified from pinned source, not filesystem scan.",
+    "workingDirectory": "In-memory ensure() stub returns /probe/workspace.",
+    "runtimeContexts": "All four context registrations in sharedPresetProbe are fixtures used to prove complete-persona preserves contexts. working-directory:current, sandbox:policy and approval:policy match native source names; mcp:noobai:status is only a synthetic fixture. Native MCP server instructions are a static section named mcp:noobai and are removed by complete=true."
+  },
+  "sharedPresetProbe": {
+    "configuration": {
+      "persona": {
+        "complete": true,
+        "includeRuntimeContext": true
+      },
+      "skillIsolation": {
+        "skills": true
+      },
+      "nativeRestriction": {
+        "deny": [
+          "load_workspace_dependencies",
+          "plugin_business_fixture"
+        ]
+      }
+    },
+    "agents": [
+      {
+        "agent": "probe-parent",
+        "sections": [
+          {
+            "name": "deployment:persona-prefix",
+            "text": "WORKBENCH_COMPLETE_PERSONA_FIXTURE"
+          }
+        ],
+        "contexts": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "mcp:noobai:status"
+        ],
+        "tools": [
+          "bash",
+          "interrupt_agent",
+          "list_agents",
+          "mcp__noobai__lookup",
+          "send_message",
+          "skill",
+          "subagent",
+          "working_directory"
+        ],
+        "skill": {
+          "name": "project-image",
+          "provider": "runtime",
+          "content": "PROJECT"
+        },
+        "excludedSkillError": "skill \"office-example\" is unknown or no longer available",
+        "deniedToolError": "unknown tool \"load_workspace_dependencies\"",
+        "presetSkillNames": [
+          "project-image"
+        ],
+        "scopeChainLength": 2
+      },
+      {
+        "agent": "probe-child",
+        "sections": [
+          {
+            "name": "deployment:persona-prefix",
+            "text": "WORKBENCH_COMPLETE_PERSONA_FIXTURE"
+          }
+        ],
+        "contexts": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "mcp:noobai:status"
+        ],
+        "tools": [
+          "bash",
+          "interrupt_agent",
+          "list_agents",
+          "mcp__noobai__lookup",
+          "send_message",
+          "skill",
+          "subagent",
+          "working_directory"
+        ],
+        "skill": {
+          "name": "project-image",
+          "provider": "runtime",
+          "content": "PROJECT"
+        },
+        "excludedSkillError": "skill \"office-example\" is unknown or no longer available",
+        "deniedToolError": "unknown tool \"load_workspace_dependencies\"",
+        "presetSkillNames": [
+          "project-image"
+        ],
+        "scopeChainLength": 2
+      }
+    ],
+    "rootTools": [
+      "plugin_business_fixture",
+      "late_unrelated_root",
+      "load_workspace_dependencies"
+    ],
+    "rootSkills": [
+      "office-example"
+    ]
+  },
+  "restrictionBoundaries": {
+    "samePresetScopeMcpDenyError": "tools.restrict() names unknown global tool \"mcp__noobai__lookup\"; known global tools: load_workspace_dependencies, plugin_business_fixture",
+    "unknownFutureNameDenyError": "tools.restrict() names unknown global tool \"unregistered_future_tool\"; known global tools: load_workspace_dependencies, plugin_business_fixture",
+    "lateRegistration": [
+      {
+        "agent": "probe-parent",
+        "tools": [
+          "late_unrelated_root",
+          "bash",
+          "working_directory",
+          "subagent",
+          "send_message",
+          "interrupt_agent",
+          "list_agents",
+          "mcp__noobai__lookup",
+          "skill",
+          "late_unrelated_preset"
+        ],
+        "deniedAgain": "unknown tool \"load_workspace_dependencies\""
+      },
+      {
+        "agent": "probe-child",
+        "tools": [
+          "late_unrelated_root",
+          "bash",
+          "working_directory",
+          "subagent",
+          "send_message",
+          "interrupt_agent",
+          "list_agents",
+          "mcp__noobai__lookup",
+          "skill",
+          "late_unrelated_preset",
+          "child_report_fixture"
+        ],
+        "deniedAgain": "unknown tool \"load_workspace_dependencies\""
+      }
+    ],
+    "semantics": "A deny list excludes exactly its configured inherited names, including later re-registration under the same names. Unlisted late global and preset tools remain visible. Agent-own reporting tools remain visible."
+  },
+  "isolateAllProbe": {
+    "rootAssemblySections": [
+      "harness:identity",
+      "deployment:persona-prefix",
+      "file-delivery-fixture",
+      "deployment:persona-suffix"
+    ],
+    "rootAssemblyTools": [
+      "late_unrelated_root",
+      "load_workspace_dependencies",
+      "plugin_business_fixture"
+    ],
+    "isolatedAssemblySections": [
+      "deployment:persona-prefix",
+      "isolated-fixture",
+      "deployment:persona-suffix"
+    ],
+    "isolatedRegistryTools": [
+      "isolated_tool_fixture"
+    ],
+    "rootExecutionOfIsolatedTool": "unknown tool \"isolated_tool_fixture\"",
+    "conclusion": "The isolated services mount successfully, but the root loop service does not adopt them. Skill-only isolation works because the preset skill tool captures the isolated skills service while registering into the root tools service."
+  },
+  "sourceReferences": [
+    {
+      "path": "packages/core/tools/src/index.ts",
+      "lines": [
+        1098,
+        1226
+      ]
+    },
+    {
+      "path": "packages/core/system-prompt/src/index.ts",
+      "lines": [
+        614,
+        687
+      ]
+    },
+    {
+      "path": "packages/preset/persona/src/index.ts",
+      "lines": [
+        48,
+        74
+      ]
+    },
+    {
+      "path": "packages/core/agent-loop/src/agent.ts",
+      "lines": [
+        122,
+        137,
+        272
+      ]
+    },
+    {
+      "path": "packages/core/agent-loop/src/index.ts",
+      "lines": [
+        362,
+        388
+      ]
+    },
+    {
+      "path": "packages/preset/agent-preset-registry/src/index.ts",
+      "lines": [
+        265,
+        326
+      ]
+    },
+    {
+      "path": "packages/skill/tool-skill/src/index.ts",
+      "lines": [
+        128,
+        163,
+        215,
+        225
+      ]
+    },
+    {
+      "path": "packages/skill/skill-filesystem/src/index.ts",
+      "lines": [
+        75,
+        88,
+        164,
+        176,
+        244,
+        263
+      ]
+    },
+    {
+      "path": "vendor/loader/src/config/isolate.ts",
+      "lines": [
+        5,
+        9,
+        91,
+        101
+      ]
+    },
+    {
+      "path": "packages/subagent/subagent/src/child-agent.ts",
+      "lines": [
+        186,
+        217
+      ]
+    }
+  ],
+  "lifecycleSourceInspection": {
+    "commit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+    "unifiedPresetComposedEvent": false,
+    "mount": "agent-preset-registry/src/index.ts:281-289 retains and binds the preset without a public composed event.",
+    "composeFrom": "agent-preset-registry/src/index.ts:297-310 joins the retained generation without a public composed event.",
+    "recompose": "agent-preset-registry/src/index.ts:334-338 mounts then emits tools/change.",
+    "select": "agent-preset-registry/src/index.ts:358-359 appends agent-preset/selected after recompose. Lines 69-70 forward that durable event as agent-preset/selected.",
+    "agentCreated": "agent/src/index.ts:552-556 serially dispatches agent/created after setup; agent-loop/src/index.ts:660 awaits it before publication completes.",
+    "preStep": "agent-loop/src/agent.ts:272 assembles first; lines 274-284 dispatch agent/pre-step afterward; line 287 returns the previously built assembly. A first-time restrict call in pre-step changes get/execute immediately but cannot remove schemas already captured for that first request.",
+    "conclusion": "No single native preset-initialization event covers mount, composeFrom, and recompose. Preset-scope native restrictions inherit across all those paths without Agent lifecycle synchronization."
+  },
+  "mcpSelectionSourceInspection": {
+    "configPath": "packages/mcp/mcp-client/src/index.ts:119-142",
+    "configHasToolAllowDeny": false,
+    "registrationPath": "packages/mcp/mcp-client/src/tools.ts:124-150 registers every returned tools/list entry in the caller scope.",
+    "instructionsPath": "packages/mcp/mcp-client/src/server-context.ts:32-38 registers static mcp:<server> section.",
+    "sameScopeSelection": "Preset-level restrict cannot name MCP tools registered in that same preset scope. An Agent-scope restriction can name these ancestor tools, but its installation lifecycle must precede schema assembly and track composition changes."
+  },
+  "preStepOrderingProbe": {
+    "fixture": "Actual bundled AgentLoop, native LlmAdapter implemented entirely in memory, no network or real model.",
+    "beforeFirstTurnTools": [
+      "unwanted"
+    ],
+    "requests": [
+      {
+        "requestTools": [
+          "unwanted"
+        ],
+        "registryTools": []
+      },
+      {
+        "requestTools": [],
+        "registryTools": []
+      }
+    ],
+    "conclusion": "First pre-step restriction changes registry immediately but the first model request still carries the already assembled unwanted schema; second request no longer carries it."
+  },
+  "runtimeContextSuppressionProbe": {
+    "runtime": "Installed app modules from the same runtime metadata as this evidence file.",
+    "nativePlugins": [
+      "dsh-working-directory",
+      "dsh-sandbox-policy",
+      "dsh-user-approval",
+      "dsh-harness-dev-context",
+      "dsh-system-prompt",
+      "dsh-persona",
+      "dsh-tools"
+    ],
+    "fixtures": {
+      "filesystem": "Empty in-memory fs service; assembly has no agent, so working-directory ensure() does not read the filesystem.",
+      "webApp": "In-memory getAdvertisedUrl() returns http://fixture.invalid/; no listener or server is started.",
+      "subagentContexts": "Source-matched optional context fixtures for subagent:delegation and tool:subagent:depth. Actual required flags independently verified in pinned child-agent.ts:205-209 and tool-subagent/src/index.ts:382-395."
+    },
+    "nativeRequiredFlags": {
+      "working-directory:current": true,
+      "sandbox:policy": false,
+      "approval:policy": false,
+      "harness:source": false,
+      "app:web-surface": false,
+      "subagent:delegation": false,
+      "tool:subagent:depth": false
+    },
+    "records": [
+      {
+        "includeRuntimeContext": true,
+        "sectionNames": [
+          "deployment:persona-prefix"
+        ],
+        "contextNames": [
+          "working-directory:current",
+          "subagent:delegation",
+          "tool:subagent:depth",
+          "sandbox:policy",
+          "approval:policy",
+          "harness:source",
+          "app:web-surface"
+        ],
+        "refreshedContextNames": [
+          "working-directory:current",
+          "subagent:delegation",
+          "tool:subagent:depth",
+          "sandbox:policy",
+          "approval:policy",
+          "harness:source",
+          "app:web-surface"
+        ],
+        "toolNames": [
+          "retained_tool"
+        ]
+      },
+      {
+        "includeRuntimeContext": false,
+        "sectionNames": [
+          "deployment:persona-prefix"
+        ],
+        "contextNames": [
+          "working-directory:current"
+        ],
+        "refreshedContextNames": [
+          "working-directory:current"
+        ],
+        "toolNames": [
+          "retained_tool"
+        ]
+      }
+    ],
+    "servicePoliciesAfterSuppression": {
+      "sandboxMode": "read-only",
+      "approvalPolicy": "never"
+    },
+    "conclusion": "includeRuntimeContext:false preserves working-directory:current and tools; removes the six optional contexts listed here. Underlying sandbox and approval policies remain installed. complete:true independently replaces all static sections."
+  },
+  "namedContextOverrideProbe": {
+    "runtime": "Installed app modules under evidence.runtime.",
+    "configuration": {
+      "persona": {
+        "complete": true,
+        "includeRuntimeContext": true
+      },
+      "adapter": {
+        "omittedRuntimeContexts": [
+          "harness:source",
+          "app:web-surface"
+        ],
+        "deniedTools": [
+          "load_workspace_dependencies"
+        ]
+      }
+    },
+    "registrationApi": "ctx.systemPrompt.context({ name, order: 0, interpolate: false, text: '' }); ctx.tools.restrict({ deny: config.deniedTools });",
+    "nativePlugins": [
+      "dsh-working-directory",
+      "dsh-sandbox-policy",
+      "dsh-user-approval",
+      "dsh-harness-dev-context",
+      "dsh-agent-loop",
+      "dsh-agent-preset-registry",
+      "dsh-persona",
+      "dsh-system-prompt",
+      "dsh-tools"
+    ],
+    "fixtures": {
+      "fs": "In-memory resolve/stat/processPath directory provider; no filesystem access by working-directory.",
+      "webApp": "In-memory getAdvertisedUrl(); no web server.",
+      "subagentContexts": "Source-shaped depth/delegation contexts with non-empty fixture text; optional flags and actual scope placement match pinned native source. Spawn itself is not executed.",
+      "toolBodies": "Name-returning fixtures."
+    },
+    "records": [
+      {
+        "agent": "override-parent",
+        "preset": "workbench",
+        "sectionNames": [
+          "deployment:persona-prefix"
+        ],
+        "rawTargetContexts": [
+          {
+            "name": "harness:source",
+            "text": "",
+            "interpolate": false
+          },
+          {
+            "name": "app:web-surface",
+            "text": "",
+            "interpolate": false
+          }
+        ],
+        "renderedContextNames": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "tool:subagent:depth",
+          "other:runtime"
+        ],
+        "renderedContextSnapshot": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: \"/probe/workspace\".\n\nCurrent DSH file policy: read-only. Any available operation enforced by the DSH file sandbox cannot modify files in the standing mode. Do not refuse a required modification from this policy alone: try an available tool normally and follow any denial and escalation guidance it returns.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically — do not request sandbox escalation (do not set `sandbox_permissions`).\n\nnative-shape depth fixture\n\nunrelated runtime fixture",
+        "refreshedRenderedContextNames": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "tool:subagent:depth",
+          "other:runtime"
+        ],
+        "tools": [
+          "retained_tool"
+        ]
+      },
+      {
+        "agent": "override-child",
+        "preset": "workbench",
+        "sectionNames": [
+          "deployment:persona-prefix"
+        ],
+        "rawTargetContexts": [
+          {
+            "name": "harness:source",
+            "text": "",
+            "interpolate": false
+          },
+          {
+            "name": "app:web-surface",
+            "text": "",
+            "interpolate": false
+          }
+        ],
+        "renderedContextNames": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "tool:subagent:depth",
+          "subagent:delegation",
+          "other:runtime"
+        ],
+        "renderedContextSnapshot": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: \"/probe/workspace\".\n\nCurrent DSH file policy: read-only. Any available operation enforced by the DSH file sandbox cannot modify files in the standing mode. Do not refuse a required modification from this policy alone: try an available tool normally and follow any denial and escalation guidance it returns.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically — do not request sandbox escalation (do not set `sandbox_permissions`).\n\nnative-shape depth fixture\n\nnative-shape child delegation fixture\n\nunrelated runtime fixture",
+        "refreshedRenderedContextNames": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "tool:subagent:depth",
+          "subagent:delegation",
+          "other:runtime"
+        ],
+        "tools": [
+          "retained_tool"
+        ]
+      },
+      {
+        "agent": "override-other",
+        "preset": "other-preset",
+        "sectionNames": [
+          "harness:identity",
+          "deployment:persona-prefix",
+          "harness:source",
+          "app:web-surface",
+          "deployment:persona-suffix"
+        ],
+        "rawTargetContexts": [
+          {
+            "name": "harness:source",
+            "text": "Current DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\".",
+            "interpolate": false
+          },
+          {
+            "name": "app:web-surface",
+            "text": "Current DeepSeek Harness Web GUI URL: \"http://fixture.invalid/\".",
+            "interpolate": false
+          }
+        ],
+        "renderedContextNames": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "other:runtime",
+          "harness:source",
+          "app:web-surface"
+        ],
+        "renderedContextSnapshot": "Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: \"/probe/workspace\".\n\nCurrent DSH file policy: read-only. Any available operation enforced by the DSH file sandbox cannot modify files in the standing mode. Do not refuse a required modification from this policy alone: try an available tool normally and follow any denial and escalation guidance it returns.\n\nApproval prompts are disabled in this session: actions that require approval are rejected automatically — do not request sandbox escalation (do not set `sandbox_permissions`).\n\nunrelated runtime fixture\n\nCurrent DeepSeek Harness implementation checkout: \"/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/\".\n\nCurrent DeepSeek Harness Web GUI URL: \"http://fixture.invalid/\".",
+        "refreshedRenderedContextNames": [
+          "working-directory:current",
+          "sandbox:policy",
+          "approval:policy",
+          "other:runtime",
+          "harness:source",
+          "app:web-surface"
+        ],
+        "tools": [
+          "load_workspace_dependencies",
+          "retained_tool"
+        ]
+      }
+    ],
+    "assertions": "Passed: main and child omit both target contexts from native rendered snapshot and native refresh; retain other runtime contexts; other preset retains original target contexts; tool restriction also applies to main and child.",
+    "rawAssemblyCaveat": "The two names remain in raw PromptAssembly.contexts with empty text. Native renderContextSections removes zero-length text, so model-facing runtime snapshots contain neither contribution. No custom assembly or string postprocessing is used.",
+    "sourceReferences": [
+      {
+        "path": "packages/core/scope/src/store.ts",
+        "lines": [
+          208,
+          216
+        ]
+      },
+      {
+        "path": "packages/core/system-prompt/src/index.ts",
+        "lines": [
+          330,
+          337,
+          507,
+          520,
+          582,
+          601,
+          631,
+          632
+        ]
+      },
+      {
+        "path": "packages/preset/agent-preset-registry/src/index.ts",
+        "lines": [
+          265,
+          310
+        ]
+      }
+    ]
+  }
+}

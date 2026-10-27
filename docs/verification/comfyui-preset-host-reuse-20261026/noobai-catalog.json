@@ -1,0 +1,4596 @@
+{
+  "time": "2026-10-26T17:26:51.721Z",
+  "initialize": {
+    "protocolVersion": "2025-03-26",
+    "capabilities": {
+      "tools": {},
+      "resources": {},
+      "extensions": {
+        "io.modelcontextprotocol/skills": {}
+      }
+    },
+    "serverInfo": {
+      "name": "noobai-catalog",
+      "version": "0.90.3"
+    }
+  },
+  "resources": {
+    "resources": [
+      {
+        "uri": "skill://catalog-query/SKILL.md",
+        "name": "catalog-query",
+        "description": "根据生图需求查询作品、角色和提示词。",
+        "mimeType": "text/markdown"
+      }
+    ]
+  },
+  "templates": {
+    "error": {
+      "code": -32601,
+      "message": "Method not found"
+    }
+  },
+  "tools": [
+    {
+      "name": "query_semantic_works",
+      "description": "## 查询用途\n\n1. 查找作品及其已有角色名称，或按已知作品 ID 直接读取作品记录。需要作品下的角色信息时，将作品 ID 转为字符串，填入 query_semantic_characters 的 work_id。\n\n## 输入参数\n\n1. mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。\n2. query：search 使用的作品名称、别名或类别线索；省略或空字符串时浏览可用作品，非空文字执行语义检索。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. page_size：每页记录数量；默认 20，最小 1，最大 100。\n5. id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。\n10. results[].id：记录定位；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。\n11. results[].name：记录定位；始终提供名称。核对作品名称。\n12. results[].aliases_json：记录定位；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。\n13. results[].category_name：作品分类；null 表示未填写作品类别。核对作品所属类别。\n14. results[].character_names：角色查找；空数组表示作品下没有可用角色。据此选择角色，再调用 query_semantic_characters 获取角色记录。",
+      "inputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode"
+                ],
+                "description": "Search branch for the work Catalog operation.",
+                "properties": {
+                  "mode": {
+                    "const": "search",
+                    "description": "Catalog request branch discriminator for semantic work search",
+                    "example": "search"
+                  },
+                  "query": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 200,
+                    "default": "",
+                    "description": "Work name, aliases, and category text sent to the fixed work semantic index",
+                    "example": "watercolor"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "One-based result page number",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "Maximum number of work items returned on one page",
+                    "example": 20
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "mode": {
+                    "const": "search",
+                    "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                    "example": "search"
+                  },
+                  "query": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 200,
+                    "default": "",
+                    "description": "query：search 使用的作品名称、别名或类别线索；省略或空字符串时浏览可用作品，非空文字执行语义检索。",
+                    "example": "watercolor"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                    "example": 20
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode",
+                  "id"
+                ],
+                "description": "Resolve branch for one work Catalog record.",
+                "properties": {
+                  "mode": {
+                    "const": "resolve",
+                    "description": "Catalog request branch discriminator for stable-ID resolution",
+                    "example": "resolve"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "Decimal works.id value represented as a stable string identifier",
+                    "example": "123"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "mode": {
+                    "const": "resolve",
+                    "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                    "example": "resolve"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。",
+                    "example": "123"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "allOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "message",
+              "results",
+              "page",
+              "page_size",
+              "total_count"
+            ],
+            "properties": {
+              "status": {
+                "const": "ok",
+                "description": "查询结果；返回完整字段值；始终为 ok。确认本次查询成功。",
+                "example": "ok"
+              },
+              "message": {
+                "type": "null",
+                "description": "查询结果；返回完整字段值；成功查询始终为 null。结合 results 与 total_count 判断查询结果。",
+                "example": null
+              },
+              "results": {
+                "type": "array",
+                "maxItems": 100,
+                "description": "查询结果；返回完整字段值；空数组表示当前页没有记录。按返回顺序读取当前页记录。",
+                "example": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "description": "One database result record. The service uses database column names as field names, preserves database value types except when parsing stored JSON text into JSON values, and qualifies same-name joined columns as table.column."
+                }
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "分页读取；返回完整字段值；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。",
+                "example": 1
+              },
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "分页读取；返回完整字段值；始终提供正整数。读取当前页的记录数量上限。",
+                "example": 20
+              },
+              "total_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "分页读取；返回完整字段值；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。",
+                "example": 0
+              }
+            }
+          },
+          {
+            "properties": {
+              "results": {
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "description": "记录定位；返回完整字段值；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。",
+                      "example": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "记录定位；返回完整字段值；始终提供名称。核对作品名称。"
+                    },
+                    "aliases_json": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "记录定位；返回完整字段值；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。"
+                    },
+                    "category_name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "作品分类；返回完整字段值；null 表示未填写作品类别。核对作品所属类别。"
+                    },
+                    "character_names": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "角色查找；返回完整字段值；空数组表示作品下没有可用角色。据此选择角色，再调用 query_semantic_characters 获取角色记录。"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "aliases_json",
+                    "category_name",
+                    "character_names"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_semantic_characters",
+      "description": "## 查询用途\n\n1. 查找角色和角色提示词素材，支持用已知作品 ID 限定作品；已知角色 ID 时可直接读取角色记录。\n\n## 输入参数\n\n1. mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。\n2. query：search 使用的角色名称、别名、作品名称或角色提示词线索；省略或空字符串时浏览可用角色，非空文字执行语义检索。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. page_size：每页记录数量；默认 20，最小 1，最大 100。\n5. work_id：search 可选的作品 ID 字符串；填写 query_semantic_works 返回的作品 ID，将整数转为字符串；省略时跨作品查询。\n6. id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。\n10. results[].id：记录定位；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。\n11. results[].work_id：作品归属；始终提供作品 ID 整数。将该整数转为十进制字符串，填入 query_semantic_characters 的 work_id 限定作品；读取作品记录时，在 query_semantic_works 中设置 mode 为 resolve，并将转换后的字符串填入 id。\n12. results[][\"works.name\"]：作品归属；null 表示当前记录没有提供作品名称。核对作品名称；记录中的键名是 works.name。\n13. results[].name：记录定位；始终提供名称。核对角色名称。\n14. results[].aliases_json：记录定位；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。\n15. results[].prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者保留素材内容，按目标生成模型的提示词语法组合。",
+      "inputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode"
+                ],
+                "description": "Search branch for the character Catalog operation.",
+                "properties": {
+                  "mode": {
+                    "const": "search",
+                    "description": "Catalog request branch discriminator for semantic character search",
+                    "example": "search"
+                  },
+                  "query": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 200,
+                    "default": "",
+                    "description": "Work name, character name, aliases, and prompt text sent to the fixed character semantic index",
+                    "example": "watercolor"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "One-based result page number",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "Maximum number of character items returned on one page",
+                    "example": 20
+                  },
+                  "work_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "Optional stable string identifier for the exact works parent record",
+                    "example": "123"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "mode": {
+                    "const": "search",
+                    "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                    "example": "search"
+                  },
+                  "query": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 200,
+                    "default": "",
+                    "description": "query：search 使用的角色名称、别名、作品名称或角色提示词线索；省略或空字符串时浏览可用角色，非空文字执行语义检索。",
+                    "example": "watercolor"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                    "example": 20
+                  },
+                  "work_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "work_id：search 可选的作品 ID 字符串；填写 query_semantic_works 返回的作品 ID，将整数转为字符串；省略时跨作品查询。",
+                    "example": "123"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode",
+                  "id"
+                ],
+                "description": "Resolve branch for one character Catalog record.",
+                "properties": {
+                  "mode": {
+                    "const": "resolve",
+                    "description": "Catalog request branch discriminator for stable-ID resolution",
+                    "example": "resolve"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "Decimal characters.id value represented as a stable string identifier",
+                    "example": "123"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "mode": {
+                    "const": "resolve",
+                    "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                    "example": "resolve"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。",
+                    "example": "123"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "allOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "message",
+              "results",
+              "page",
+              "page_size",
+              "total_count"
+            ],
+            "properties": {
+              "status": {
+                "const": "ok",
+                "description": "查询结果；返回完整字段值；始终为 ok。确认本次查询成功。",
+                "example": "ok"
+              },
+              "message": {
+                "type": "null",
+                "description": "查询结果；返回完整字段值；成功查询始终为 null。结合 results 与 total_count 判断查询结果。",
+                "example": null
+              },
+              "results": {
+                "type": "array",
+                "maxItems": 100,
+                "description": "查询结果；返回完整字段值；空数组表示当前页没有记录。按返回顺序读取当前页记录。",
+                "example": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "description": "One database result record. The service uses database column names as field names, preserves database value types except when parsing stored JSON text into JSON values, and qualifies same-name joined columns as table.column."
+                }
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "分页读取；返回完整字段值；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。",
+                "example": 1
+              },
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "分页读取；返回完整字段值；始终提供正整数。读取当前页的记录数量上限。",
+                "example": 20
+              },
+              "total_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "分页读取；返回完整字段值；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。",
+                "example": 0
+              }
+            }
+          },
+          {
+            "properties": {
+              "results": {
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "description": "记录定位；返回完整字段值；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。",
+                      "example": 1
+                    },
+                    "work_id": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "description": "作品归属；返回完整字段值；始终提供作品 ID 整数。将该整数转为十进制字符串，填入 query_semantic_characters 的 work_id 限定作品；读取作品记录时，在 query_semantic_works 中设置 mode 为 resolve，并将转换后的字符串填入 id。",
+                      "example": 1
+                    },
+                    "works.name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "作品归属；返回完整字段值；null 表示当前记录没有提供作品名称。核对作品名称；记录中的键名是 works.name。"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "记录定位；返回完整字段值；始终提供名称。核对角色名称。"
+                    },
+                    "aliases_json": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "记录定位；返回完整字段值；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。"
+                    },
+                    "prompt_text": {
+                      "type": "string",
+                      "description": "Prompt 素材；返回完整字段值；空字符串表示没有提示词素材。调用者保留素材内容，按目标生成模型的提示词语法组合。"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "work_id",
+                    "works.name",
+                    "name",
+                    "aliases_json",
+                    "prompt_text"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "query_semantic_prompt_terms",
+      "description": "## 查询用途\n\n1. 按画面描述查找提示词素材，或浏览指定分类范围的词条；已知词条 ID 时可直接读取词条及全部分类义项。需要分类 ID 时，调用 list_prompt_term_categories。\n\n## 输入参数\n\n1. mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。\n2. query：search 使用的画面描述；省略或空字符串时浏览筛选范围内的全部词条，非空文字在范围内执行语义检索。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. page_size：每页记录数量；默认 20，最小 1，最大 100。\n5. root_id：search 可选的一级入口 ID；填写 list_prompt_term_categories 在 level 为 roots 时返回的 ID。同一匹配义项至少有一个类别属于该入口，并同时满足 category_ids。\n6. category_ids：search 可选的二级类别 ID 数组；填写 list_prompt_term_categories 在 level 为 categories 时返回的 ID。不同画面要素分别查询；需要同一词条满足多种条件时组合类别。\n7. category_match：可省略，默认 all；提供该参数时必须同时提供 category_ids。all 要求同一义项包含全部指定类别，any 要求一个义项包含至少一个指定类别。\n8. classification_status：search 可选的分类状态；classified 表示已分类，evidence_gap 表示证据不足，coverage_gap 表示分类覆盖不足，unclassified 表示没有分类记录。状态与分类归属条件同时生效；unclassified 与 root_id 或 category_ids 组合时返回空页。\n9. id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。\n10. results[].id：记录定位；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。\n11. results[].canonical_tag：Prompt 素材；始终提供规范标签。调用者按目标生成模型的提示词语法使用标签。\n12. results[].aliases_json：记录定位；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。\n13. results[].category：来源类型；始终提供整数类型码。核对来源 Danbooru 的标签类型；提示词分类入口与类别由 classification 提供。\n14. results[].post_count：来源统计；0 表示来源记录的使用次数为零。读取来源使用次数，辅助比较词条。\n15. results[].matched_sense_ids：本次筛选结果；空数组表示本次查询没有使用入口或类别筛选。通过 sense_id 定位本次分类条件命中的义项；数组按 ID 排序。\n16. results[].classification：词条含义与分类；null 表示尚无分类记录。阅读 senses 中的 condition，判断词条在当前画面中的适用含义。\n17. results[].classification.status：分类状态；始终为 classified、evidence_gap 或 coverage_gap。状态含义见输入参数 classification_status 的说明。\n18. results[].classification.reason：分类依据；空字符串表示未填写分类理由。\n19. results[].classification.dataset_version：分类来源；始终提供来源版本。\n20. results[].classification.source_id：分类来源；始终提供来源记录 ID 整数。\n21. results[].classification.category_ids：词条分类；空数组表示全部义项均未关联类别。核对词条全部义项涉及的二级类别。\n22. results[].classification.root_ids：词条分类入口；空数组表示已保存的类别没有对应入口。核对已保存类别涉及的一级入口。\n23. results[].classification.senses：词条含义；始终提供词条的全部条件义项。阅读每个义项，依据 condition 选择适用含义。\n24. results[].classification.review：分类审阅；始终提供审阅状态、理由与建议类别。结合审阅内容评估分类依据。\n25. results[].classification.senses[].sense_id：义项定位；始终提供词条内唯一的字符串。用该值对应 matched_sense_ids，识别本次筛选命中的义项。\n26. results[].classification.senses[].condition：义项适用条件；始终提供条件文字。判断当前画面或语境是否符合该义项。\n27. results[].classification.senses[].category_ids：义项分类；空数组表示该义项尚无类别归属。通过类别 ID 核对当前义项的归属。\n28. results[].classification.review.status：分类审阅状态；始终提供已保存的状态。not_sampled 表示尚未抽样审阅；pass 表示审阅通过；missing_membership 表示归属遗漏；wrong_and_missing 表示归属错误且有遗漏；wrong_branch 表示分类分支错误；wrong_membership 表示归属错误；unresolved 表示尚未得出审阅结论。结合 reason 读取具体依据。\n29. results[].classification.review.reason：分类审阅依据；空字符串表示未填写审阅理由。\n30. results[].classification.review.correct_category_ids：分类审阅建议；空数组表示没有建议类别。核对审阅者建议的类别；当前查询筛选依据 senses 中已保存的类别归属。",
+      "inputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode"
+                ],
+                "description": "Search branch for the Prompt-term Catalog operation.",
+                "properties": {
+                  "mode": {
+                    "const": "search",
+                    "description": "Catalog request branch discriminator for prompt-term browsing and semantic search",
+                    "example": "search"
+                  },
+                  "query": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 200,
+                    "default": "",
+                    "description": "空文本按规范标签及 ID 浏览分类范围内全部词条；非空文本在范围内检索向量候选并重排，候选数量受配置上限限制。",
+                    "example": "watercolor"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "当前页，从 1 开始；page × page_size 小于 total_count 时继续读取下一页。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "每页最多返回的记录数。",
+                    "example": 20
+                  },
+                  "root_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "分类发现返回的真实一级入口 ID。同一匹配义项必须有至少一个类别属于该入口，并同时满足 category_ids。",
+                    "example": "clothing"
+                  },
+                  "category_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "description": "分类发现返回的真实二级类别 ID。不同画面要素分别查询；需要同一个词条满足多种条件时组合类别。",
+                    "example": [
+                      "skirts"
+                    ]
+                  },
+                  "category_match": {
+                    "type": "string",
+                    "enum": [
+                      "any",
+                      "all"
+                    ],
+                    "default": "all",
+                    "description": "仅与 category_ids 一起提供；默认 all 要求同一义项含全部指定类别，any 要求一个义项含至少一个指定类别。",
+                    "example": "any"
+                  },
+                  "classification_status": {
+                    "type": "string",
+                    "enum": [
+                      "classified",
+                      "evidence_gap",
+                      "coverage_gap",
+                      "unclassified"
+                    ],
+                    "description": "classified 已分类；evidence_gap 证据不足；coverage_gap 分类覆盖不足；unclassified 没有分类记录。状态与归属条件按 AND 组合；unclassified 与入口或类别组合返回空页。",
+                    "example": "classified"
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "required": [
+                        "category_match"
+                      ]
+                    },
+                    "then": {
+                      "required": [
+                        "category_ids"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "properties": {
+                  "mode": {
+                    "const": "search",
+                    "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                    "example": "search"
+                  },
+                  "query": {
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 200,
+                    "default": "",
+                    "description": "query：search 使用的画面描述；省略或空字符串时浏览筛选范围内的全部词条，非空文字在范围内执行语义检索。",
+                    "example": "watercolor"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                    "example": 20
+                  },
+                  "root_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "root_id：search 可选的一级入口 ID；填写 list_prompt_term_categories 在 level 为 roots 时返回的 ID。同一匹配义项至少有一个类别属于该入口，并同时满足 category_ids。",
+                    "example": "clothing"
+                  },
+                  "category_ids": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "description": "category_ids：search 可选的二级类别 ID 数组；填写 list_prompt_term_categories 在 level 为 categories 时返回的 ID。不同画面要素分别查询；需要同一词条满足多种条件时组合类别。",
+                    "example": [
+                      "skirts"
+                    ]
+                  },
+                  "category_match": {
+                    "type": "string",
+                    "enum": [
+                      "any",
+                      "all"
+                    ],
+                    "default": "all",
+                    "description": "category_match：可省略，默认 all；提供该参数时必须同时提供 category_ids。all 要求同一义项包含全部指定类别，any 要求一个义项包含至少一个指定类别。",
+                    "example": "any"
+                  },
+                  "classification_status": {
+                    "type": "string",
+                    "enum": [
+                      "classified",
+                      "evidence_gap",
+                      "coverage_gap",
+                      "unclassified"
+                    ],
+                    "description": "classification_status：search 可选的分类状态；classified 表示已分类，evidence_gap 表示证据不足，coverage_gap 表示分类覆盖不足，unclassified 表示没有分类记录。状态与分类归属条件同时生效；unclassified 与 root_id 或 category_ids 组合时返回空页。",
+                    "example": "classified"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode",
+                  "id"
+                ],
+                "description": "Resolve branch for one Prompt-term Catalog record.",
+                "properties": {
+                  "mode": {
+                    "const": "resolve",
+                    "description": "Catalog request branch discriminator for stable-ID resolution",
+                    "example": "resolve"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "Decimal prompt_terms.id value represented as a stable string identifier",
+                    "example": "123"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "mode": {
+                    "const": "resolve",
+                    "description": "mode：必填字符串；search 浏览或检索，resolve 根据 id 读取一条记录。",
+                    "example": "resolve"
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20,
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "id：resolve 时必填十进制字符串；使用当前工具返回的记录 ID，将整数转为字符串，例如 \"123\"。",
+                    "example": "123"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "allOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "message",
+              "results",
+              "page",
+              "page_size",
+              "total_count"
+            ],
+            "properties": {
+              "status": {
+                "const": "ok",
+                "description": "查询结果；返回完整字段值；始终为 ok。确认本次查询成功。",
+                "example": "ok"
+              },
+              "message": {
+                "type": "null",
+                "description": "查询结果；返回完整字段值；成功查询始终为 null。结合 results 与 total_count 判断查询结果。",
+                "example": null
+              },
+              "results": {
+                "type": "array",
+                "maxItems": 100,
+                "description": "查询结果；返回完整字段值；空数组表示当前页没有记录。按返回顺序读取当前页记录。",
+                "example": [],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "description": "One database result record. The service uses database column names as field names, preserves database value types except when parsing stored JSON text into JSON values, and qualifies same-name joined columns as table.column."
+                }
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "分页读取；返回完整字段值；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。",
+                "example": 1
+              },
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "description": "分页读取；返回完整字段值；始终提供正整数。读取当前页的记录数量上限。",
+                "example": 20
+              },
+              "total_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "分页读取；返回完整字段值；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。",
+                "example": 0
+              }
+            }
+          },
+          {
+            "properties": {
+              "results": {
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "canonical_tag",
+                    "aliases_json",
+                    "category",
+                    "post_count",
+                    "matched_sense_ids",
+                    "classification"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991,
+                      "description": "记录定位；返回完整字段值；始终提供正整数。调用 resolve 时，将该整数转为十进制字符串，填入当前工具的 id。",
+                      "example": 1
+                    },
+                    "canonical_tag": {
+                      "type": "string",
+                      "description": "Prompt 素材；返回完整字段值；始终提供规范标签。调用者按目标生成模型的提示词语法使用标签。",
+                      "example": "skirt"
+                    },
+                    "aliases_json": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "记录定位；返回完整字段值；空数组表示没有别名。按已保存的顺序读取别名，辅助识别记录。",
+                      "example": [
+                        "裙子"
+                      ]
+                    },
+                    "category": {
+                      "type": "integer",
+                      "description": "来源类型；返回完整字段值；始终提供整数类型码。核对来源 Danbooru 的标签类型；提示词分类入口与类别由 classification 提供。",
+                      "example": 0
+                    },
+                    "post_count": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "来源统计；返回完整字段值；0 表示来源记录的使用次数为零。读取来源使用次数，辅助比较词条。",
+                      "example": 1
+                    },
+                    "matched_sense_ids": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "本次筛选结果；返回完整字段值；空数组表示本次查询没有使用入口或类别筛选。通过 sense_id 定位本次分类条件命中的义项；数组按 ID 排序。",
+                      "example": []
+                    },
+                    "classification": {
+                      "allOf": [
+                        {
+                          "description": "完整已保存的分类与全部归属；缺少分类记录时为 null。结合匹配义项的 condition 判断适用含义。",
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "status",
+                                "reason",
+                                "senses",
+                                "dataset_version",
+                                "source_id",
+                                "review",
+                                "category_ids",
+                                "root_ids"
+                              ],
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "classified",
+                                    "evidence_gap",
+                                    "coverage_gap"
+                                  ],
+                                  "description": "词条的分类状态。",
+                                  "example": "classified"
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "description": "词条的分类理由。",
+                                  "example": "来源文字支持此含义。"
+                                },
+                                "senses": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                      "sense_id",
+                                      "condition",
+                                      "category_ids"
+                                    ],
+                                    "properties": {
+                                      "sense_id": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "pattern": "\\S",
+                                        "description": "词条内唯一的条件义项标识。",
+                                        "example": "garment"
+                                      },
+                                      "condition": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "pattern": "\\S",
+                                        "description": "该义项适用的画面或语境条件。",
+                                        "example": "指服装时。"
+                                      },
+                                      "category_ids": {
+                                        "type": "array",
+                                        "uniqueItems": true,
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[a-z][a-z0-9_]*$"
+                                        },
+                                        "description": "已保存的二级类别归属。",
+                                        "example": [
+                                          "skirts"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "description": "词条全部条件义项；阅读 condition 判断当前画面适用含义，再通过 matched_sense_ids 识别本次命中。",
+                                  "example": [
+                                    {
+                                      "sense_id": "garment",
+                                      "condition": "指服装时。",
+                                      "category_ids": [
+                                        "skirts"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "dataset_version": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "pattern": "\\S",
+                                  "description": "分类数据的来源版本。",
+                                  "example": "v1"
+                                },
+                                "source_id": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 9007199254740991,
+                                  "description": "Positive integer representable exactly by JavaScript Number",
+                                  "example": 1
+                                },
+                                "review": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "status",
+                                    "reason",
+                                    "correct_category_ids"
+                                  ],
+                                  "properties": {
+                                    "status": {
+                                      "enum": [
+                                        "not_sampled",
+                                        "pass",
+                                        "missing_membership",
+                                        "wrong_and_missing",
+                                        "wrong_branch",
+                                        "wrong_membership",
+                                        "unresolved"
+                                      ],
+                                      "description": "独立审阅的状态。",
+                                      "example": "not_sampled"
+                                    },
+                                    "reason": {
+                                      "type": "string",
+                                      "description": "独立审阅的理由。",
+                                      "example": "来源文字支持此含义。"
+                                    },
+                                    "correct_category_ids": {
+                                      "type": "array",
+                                      "minItems": 0,
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[a-z][a-z0-9_]*$"
+                                      },
+                                      "uniqueItems": true,
+                                      "description": "审阅者建议的类别；查询筛选使用已保存的义项归属。",
+                                      "example": []
+                                    }
+                                  },
+                                  "description": "独立审阅的状态、理由及建议。",
+                                  "example": {
+                                    "status": "not_sampled",
+                                    "reason": "尚未审阅。",
+                                    "correct_category_ids": []
+                                  }
+                                },
+                                "category_ids": {
+                                  "type": "array",
+                                  "uniqueItems": true,
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]*$"
+                                  },
+                                  "description": "已保存的二级类别归属。",
+                                  "example": [
+                                    "skirts"
+                                  ]
+                                },
+                                "root_ids": {
+                                  "type": "array",
+                                  "uniqueItems": true,
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z0-9_]*$"
+                                  },
+                                  "description": "已保存类别对应的全部一级入口。",
+                                  "example": [
+                                    "clothing"
+                                  ]
+                                }
+                              },
+                              "allOf": [
+                                {
+                                  "if": {
+                                    "properties": {
+                                      "status": {
+                                        "const": "classified"
+                                      }
+                                    }
+                                  },
+                                  "then": {
+                                    "properties": {
+                                      "senses": {
+                                        "items": {
+                                          "properties": {
+                                            "category_ids": {
+                                              "minItems": 1
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "properties": {
+                                      "reason": {
+                                        "pattern": "\\S"
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "example": null
+                        },
+                        {
+                          "properties": {
+                            "status": {
+                              "description": "分类状态；返回完整字段值；始终为 classified、evidence_gap 或 coverage_gap。状态含义见输入参数 classification_status 的说明。"
+                            },
+                            "reason": {
+                              "description": "分类依据；返回完整字段值；空字符串表示未填写分类理由。"
+                            },
+                            "dataset_version": {
+                              "description": "分类来源；返回完整字段值；始终提供来源版本。"
+                            },
+                            "source_id": {
+                              "description": "分类来源；返回完整字段值；始终提供来源记录 ID 整数。"
+                            },
+                            "category_ids": {
+                              "description": "词条分类；返回完整字段值；空数组表示全部义项均未关联类别。核对词条全部义项涉及的二级类别。"
+                            },
+                            "root_ids": {
+                              "description": "词条分类入口；返回完整字段值；空数组表示已保存的类别没有对应入口。核对已保存类别涉及的一级入口。"
+                            },
+                            "senses": {
+                              "items": {
+                                "properties": {
+                                  "sense_id": {
+                                    "description": "义项定位；返回完整字段值；始终提供词条内唯一的字符串。用该值对应 matched_sense_ids，识别本次筛选命中的义项。"
+                                  },
+                                  "condition": {
+                                    "description": "义项适用条件；返回完整字段值；始终提供条件文字。判断当前画面或语境是否符合该义项。"
+                                  },
+                                  "category_ids": {
+                                    "description": "义项分类；返回完整字段值；空数组表示该义项尚无类别归属。通过类别 ID 核对当前义项的归属。"
+                                  }
+                                }
+                              },
+                              "description": "词条含义；返回完整字段值；始终提供词条的全部条件义项。阅读每个义项，依据 condition 选择适用含义。"
+                            },
+                            "review": {
+                              "properties": {
+                                "status": {
+                                  "description": "分类审阅状态；返回完整字段值；始终提供已保存的状态。not_sampled 表示尚未抽样审阅；pass 表示审阅通过；missing_membership 表示归属遗漏；wrong_and_missing 表示归属错误且有遗漏；wrong_branch 表示分类分支错误；wrong_membership 表示归属错误；unresolved 表示尚未得出审阅结论。结合 reason 读取具体依据。"
+                                },
+                                "reason": {
+                                  "description": "分类审阅依据；返回完整字段值；空字符串表示未填写审阅理由。"
+                                },
+                                "correct_category_ids": {
+                                  "description": "分类审阅建议；返回完整字段值；空数组表示没有建议类别。核对审阅者建议的类别；当前查询筛选依据 senses 中已保存的类别归属。"
+                                }
+                              },
+                              "description": "分类审阅；返回完整字段值；始终提供审阅状态、理由与建议类别。结合审阅内容评估分类依据。"
+                            }
+                          },
+                          "description": "词条含义与分类；返回完整字段值；null 表示尚无分类记录。阅读 senses 中的 condition，判断词条在当前画面中的适用含义。"
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000,
+                "default": 1,
+                "description": "分页读取；返回完整字段值；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。",
+                "example": 1
+              },
+              "page_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100,
+                "default": 20,
+                "description": "分页读取；返回完整字段值；始终提供正整数。读取当前页的记录数量上限。",
+                "example": 20
+              },
+              "total_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "分页读取；返回完整字段值；0 表示当前查询范围内没有结果。空 query 的查询返回筛选范围内的记录总数；非空 query 的语义查询返回候选数量限制内、通过重排阈值的记录总数；resolve 返回 1。",
+                "example": 1
+              }
+            }
+          }
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_prompt_term_categories",
+      "description": "## 查询用途\n\n1. 取得提示词分类入口与类别的 ID、名称及用途。选中的一级入口 ID 可填入 query_semantic_prompt_terms 的 root_id，二级类别 ID 可填入 category_ids。\n\n## 输入参数\n\n1. level：必填字符串；roots 浏览一级入口，categories 读取二级类别。\n2. page：页码；默认 1，最小 1，最大 100000。\n3. page_size：每页记录数量；默认 20，最小 1，最大 100。\n4. root_id：level 为 categories 时可选的一级入口 ID；填写 roots 返回的 ID，限定该入口关联的二级类别；省略时读取全部二级类别。\n5. q：level 为 categories 时可选的搜索文字；按二级类别 ID、名称或用途进行文字搜索；省略或空字符串时浏览类别。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. status：查询结果；始终为 ok。确认本次查询成功。\n5. message：查询结果；成功查询始终为 null。结合 results 与 total_count 判断查询结果。\n6. results：查询结果；空数组表示当前页没有记录。按返回顺序读取当前页记录。\n7. page：分页读取；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。\n8. page_size：分页读取；始终提供正整数。读取当前页的记录数量上限。\n9. total_count：分页读取；0 表示当前条件下没有分类记录。读取当前 level、root_id 与 q 条件对应的记录总数。\n10. results[].id：分类筛选；始终提供字符串 ID。level 为 roots 时，将该 ID 用于 root_id；level 为 categories 时，将该 ID 用于 category_ids。\n11. results[].name：分类选择；始终提供名称。核对分类入口或类别名称。\n12. results[].intent：分类选择；始终提供用途文字。依据用途选择当前画面所需的入口或类别。\n13. results[].position：分类顺序；始终提供非负整数。读取管理员设置的展示顺序。\n14. results[].category_count：入口范围；仅在 level 为 roots 时提供；0 表示入口下没有类别。读取该入口关联的二级类别数量。\n15. results[].root_ids：类别归属；仅在 level 为 categories 时提供。通过字符串 ID 核对该类别关联的一级入口。\n16. results[].term_count：类别范围；仅在 level 为 categories 时提供；0 表示该类别下没有词条。读取该类别关联的去重词条数量。",
+      "inputSchema": {
+        "type": "object",
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "level"
+                ],
+                "properties": {
+                  "level": {
+                    "const": "roots",
+                    "description": "浏览一级入口及用途。",
+                    "example": "roots"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "当前页，从 1 开始；page × page_size 小于 total_count 时继续读取下一页。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "每页最多返回的记录数。",
+                    "example": 20
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "level": {
+                    "const": "roots",
+                    "description": "level：必填字符串；roots 浏览一级入口，categories 读取二级类别。",
+                    "example": "roots"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                    "example": 20
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "level"
+                ],
+                "properties": {
+                  "level": {
+                    "const": "categories",
+                    "description": "读取二级类别及用途。",
+                    "example": "categories"
+                  },
+                  "root_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "roots 返回的真实入口 ID，用于限定二级类别。",
+                    "example": "clothing"
+                  },
+                  "q": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "default": "",
+                    "description": "按二级类别 ID、名称或用途搜索；输入按已有搜索规则规范化。",
+                    "example": "裙"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "当前页，从 1 开始；page × page_size 小于 total_count 时继续读取下一页。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "每页最多返回的记录数。",
+                    "example": 20
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "level": {
+                    "const": "categories",
+                    "description": "level：必填字符串；roots 浏览一级入口，categories 读取二级类别。",
+                    "example": "categories"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "default": 1,
+                    "description": "page：页码；默认 1，最小 1，最大 100000。",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 20,
+                    "description": "page_size：每页记录数量；默认 20，最小 1，最大 100。",
+                    "example": 20
+                  },
+                  "root_id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]*$",
+                    "description": "root_id：level 为 categories 时可选的一级入口 ID；填写 roots 返回的 ID，限定该入口关联的二级类别；省略时读取全部二级类别。",
+                    "example": "clothing"
+                  },
+                  "q": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "default": "",
+                    "description": "q：level 为 categories 时可选的搜索文字；按二级类别 ID、名称或用途进行文字搜索；省略或空字符串时浏览类别。",
+                    "example": "裙"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "allOf": [
+          {
+            "allOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status",
+                  "message",
+                  "results",
+                  "page",
+                  "page_size",
+                  "total_count"
+                ],
+                "description": "Common successful Catalog or Host Source response.",
+                "properties": {
+                  "status": {
+                    "const": "ok",
+                    "description": "The request completed successfully.",
+                    "example": "ok"
+                  },
+                  "message": {
+                    "type": "null",
+                    "description": "Successful responses contain null.",
+                    "example": null
+                  },
+                  "results": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "description": "Database result records in the service-defined order.",
+                    "example": [],
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "description": "One database result record. The service uses database column names as field names, preserves database value types except when parsing stored JSON text into JSON values, and qualifies same-name joined columns as table.column."
+                    }
+                  },
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "One-based result page number.",
+                    "example": 1
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Number of result records requested or returned for this page.",
+                    "example": 20
+                  },
+                  "total_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Total matching database records before pagination.",
+                    "example": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "page": {
+                    "maximum": 100000
+                  }
+                },
+                "anyOf": [
+                  {
+                    "properties": {
+                      "results": {
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "name",
+                            "intent",
+                            "position",
+                            "category_count"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]*$"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "\\S"
+                            },
+                            "intent": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "\\S"
+                            },
+                            "position": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "category_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "results": {
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id",
+                            "name",
+                            "intent",
+                            "position",
+                            "root_ids",
+                            "term_count"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9_]*$"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "\\S"
+                            },
+                            "intent": {
+                              "type": "string",
+                              "minLength": 1,
+                              "pattern": "\\S"
+                            },
+                            "position": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "root_ids": {
+                              "type": "array",
+                              "uniqueItems": true,
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z0-9_]*$"
+                              },
+                              "minItems": 1
+                            },
+                            "term_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "properties": {
+              "status": {
+                "description": "查询结果；返回完整字段值；始终为 ok。确认本次查询成功。"
+              },
+              "message": {
+                "description": "查询结果；返回完整字段值；成功查询始终为 null。结合 results 与 total_count 判断查询结果。"
+              },
+              "results": {
+                "description": "查询结果；返回完整字段值；空数组表示当前页没有记录。按返回顺序读取当前页记录。"
+              },
+              "page": {
+                "description": "分页读取；返回完整字段值；始终提供从 1 开始的整数。保留当前查询条件；page × page_size 小于 total_count 时，将 page 加 1 继续调用当前工具。"
+              },
+              "page_size": {
+                "description": "分页读取；返回完整字段值；始终提供正整数。读取当前页的记录数量上限。"
+              },
+              "total_count": {
+                "description": "分页读取；返回完整字段值；0 表示当前条件下没有分类记录。读取当前 level、root_id 与 q 条件对应的记录总数。"
+              }
+            },
+            "anyOf": [
+              {
+                "properties": {
+                  "results": {
+                    "items": {
+                      "properties": {
+                        "id": {
+                          "description": "分类筛选；返回完整字段值；始终提供字符串 ID。level 为 roots 时，将该 ID 用于 root_id；level 为 categories 时，将该 ID 用于 category_ids。"
+                        },
+                        "name": {
+                          "description": "分类选择；返回完整字段值；始终提供名称。核对分类入口或类别名称。"
+                        },
+                        "intent": {
+                          "description": "分类选择；返回完整字段值；始终提供用途文字。依据用途选择当前画面所需的入口或类别。"
+                        },
+                        "position": {
+                          "description": "分类顺序；返回完整字段值；始终提供非负整数。读取管理员设置的展示顺序。"
+                        },
+                        "category_count": {
+                          "description": "入口范围；返回完整字段值；仅在 level 为 roots 时提供；0 表示入口下没有类别。读取该入口关联的二级类别数量。"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "results": {
+                    "items": {
+                      "properties": {
+                        "id": {
+                          "description": "分类筛选；返回完整字段值；始终提供字符串 ID。level 为 roots 时，将该 ID 用于 root_id；level 为 categories 时，将该 ID 用于 category_ids。"
+                        },
+                        "name": {
+                          "description": "分类选择；返回完整字段值；始终提供名称。核对分类入口或类别名称。"
+                        },
+                        "intent": {
+                          "description": "分类选择；返回完整字段值；始终提供用途文字。依据用途选择当前画面所需的入口或类别。"
+                        },
+                        "position": {
+                          "description": "分类顺序；返回完整字段值；始终提供非负整数。读取管理员设置的展示顺序。"
+                        },
+                        "root_ids": {
+                          "description": "类别归属；返回完整字段值；仅在 level 为 categories 时提供。通过字符串 ID 核对该类别关联的一级入口。"
+                        },
+                        "term_count": {
+                          "description": "类别范围；返回完整字段值；仅在 level 为 categories 时提供；0 表示该类别下没有词条。读取该类别关联的去重词条数量。"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_base_models",
+      "description": "## 查询用途\n\n1. 浏览或查找底模名称与 ID。查询已知底模下的资源时，直接调用目标资源的搜索工具并填写 base_model 条件。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. next.tool：查询控制；始终提供。选择对应工具。\n11. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n12. suggested_call.tool：查询控制；始终提供。选择对应工具。\n13. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n14. results[].ref.kind：资源定位；始终提供。识别资源类别。\n15. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "base_model",
+                      "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                }
+              },
+              "required": [
+                "ref",
+                "name"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          },
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "suggested_call": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+              },
+              "arguments": {
+                "type": "object",
+                "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+              }
+            },
+            "required": [
+              "tool",
+              "arguments"
+            ],
+            "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+          }
+        },
+        "required": [
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_models",
+      "description": "## 查询用途\n\n1. 按视觉效果查找生成模型候选，或浏览指定底模下的模型；可直接用已知底模名称筛选。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].file_name：生成配置；始终提供。将该文件名用于模型加载节点的文件名参数。\n11. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n12. results[].file_format：资源定位；始终提供。核对模型文件格式。\n13. results[].precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n14. results[].author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n15. results[].version：资源定位；null 表示未填写版本。核对资源版本。\n16. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。\n17. results[].skill_name：Skill 选择；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。\n18. next.tool：查询控制；始终提供。选择对应工具。\n19. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n20. suggested_call.tool：查询控制；始终提供。选择对应工具。\n21. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n22. results[].ref.kind：资源定位；始终提供。识别资源类别。\n23. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n24. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].base_model.name：资源定位；始终提供。核对资源名称。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          },
+          "base_model": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          },
+          "file_format": {
+            "type": "string"
+          },
+          "precision_or_quantization": {
+            "type": "string"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "model",
+                      "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                },
+                "file_name": {
+                  "type": "string",
+                  "description": "生成配置；返回完整字段值；始终提供。将该文件名用于模型加载节点的文件名参数。"
+                },
+                "base_model": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                },
+                "file_format": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对模型文件格式。"
+                },
+                "precision_or_quantization": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对数值精度或量化方式。"
+                },
+                "author": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "资源定位；返回完整字段值；null 表示未填写作者。核对作者或构造作者筛选。"
+                },
+                "version": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "资源定位；返回完整字段值；null 表示未填写版本。核对资源版本。"
+                },
+                "description_preview": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。"
+                },
+                "skill_name": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "Skill 选择；返回完整字段值；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。"
+                }
+              },
+              "required": [
+                "ref",
+                "name",
+                "file_name",
+                "base_model",
+                "file_format",
+                "precision_or_quantization",
+                "author",
+                "version",
+                "description_preview",
+                "skill_name"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          },
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "suggested_call": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+              },
+              "arguments": {
+                "type": "object",
+                "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+              }
+            },
+            "required": [
+              "tool",
+              "arguments"
+            ],
+            "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+          }
+        },
+        "required": [
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_loras",
+      "description": "## 查询用途\n\n1. 按视觉效果查找 LoRA 候选，或浏览指定底模、模型关联的 LoRA；可直接用底模名称或模型文件名筛选。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].file_name：生成配置；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。\n11. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n12. results[].model：关联筛选；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。\n13. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。\n14. results[].trigger_words：Prompt 素材；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。\n15. results[].weight：生成配置；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。\n16. next.tool：查询控制；始终提供。选择对应工具。\n17. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. suggested_call.tool：查询控制；始终提供。选择对应工具。\n19. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n20. results[].ref.kind：资源定位；始终提供。识别资源类别。\n21. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n22. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].base_model.name：资源定位；始终提供。核对资源名称。\n24. results[].model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].model.name：资源定位；始终提供。核对资源名称。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          },
+          "base_model": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          },
+          "model": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          },
+          "file_format": {
+            "type": "string"
+          },
+          "precision_or_quantization": {
+            "type": "string"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "lora",
+                      "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                },
+                "file_name": {
+                  "type": "string",
+                  "description": "生成配置；返回完整字段值；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。"
+                },
+                "base_model": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                },
+                "model": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。"
+                },
+                "description_preview": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。"
+                },
+                "trigger_words": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Prompt 素材；返回完整字段值；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。"
+                },
+                "weight": {
+                  "type": "number",
+                  "description": "生成配置；返回完整字段值；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。"
+                }
+              },
+              "required": [
+                "ref",
+                "name",
+                "file_name",
+                "base_model",
+                "model",
+                "description_preview",
+                "trigger_words",
+                "weight"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          },
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "suggested_call": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+              },
+              "arguments": {
+                "type": "object",
+                "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+              }
+            },
+            "required": [
+              "tool",
+              "arguments"
+            ],
+            "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+          }
+        },
+        "required": [
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_styles",
+      "description": "## 查询用途\n\n1. 按视觉效果查找画风候选，可直接用底模名称筛选。需要已知画风关联的画师串时，使用 search_artist_prompt_strings 的 style 条件。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].aliases：资源定位；空数组表示没有别名。辅助识别画风。\n12. results[].style_description：资源选择与使用指导；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。\n13. results[].prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          },
+          "base_model": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "style",
+                      "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                },
+                "base_model": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                },
+                "aliases": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "资源定位；返回完整字段值；空数组表示没有别名。辅助识别画风。"
+                },
+                "style_description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "资源选择与使用指导；返回完整字段值；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。"
+                },
+                "prompt_text": {
+                  "type": "string",
+                  "description": "Prompt 素材；返回完整字段值；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。"
+                }
+              },
+              "required": [
+                "ref",
+                "name",
+                "base_model",
+                "aliases",
+                "style_description",
+                "prompt_text"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          },
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "suggested_call": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+              },
+              "arguments": {
+                "type": "object",
+                "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+              }
+            },
+            "required": [
+              "tool",
+              "arguments"
+            ],
+            "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+          }
+        },
+        "required": [
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_artist_prompt_strings",
+      "description": "## 查询用途\n\n1. 查找指定画风关联的画师串，或按视觉效果搜索画师串候选；可直接用画风名称和底模名称筛选。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].styles：关联筛选；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。\n12. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。\n13. results[].artist_string：Prompt 素材；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。\n22. results[].styles[].id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].styles[].name：资源定位；始终提供。核对资源名称。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          },
+          "base_model": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          },
+          "style": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "artist_prompt_string",
+                      "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                },
+                "base_model": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                },
+                "styles": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ]
+                  },
+                  "description": "关联筛选；返回完整字段值；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。"
+                },
+                "description_preview": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "候选预览；返回前 240 个 Unicode 字符；null 表示来源说明为空。比较候选，需要完整依据时读取详情。"
+                },
+                "artist_string": {
+                  "type": "string",
+                  "description": "Prompt 素材；返回完整字段值；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。"
+                }
+              },
+              "required": [
+                "ref",
+                "name",
+                "base_model",
+                "styles",
+                "description_preview",
+                "artist_string"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          },
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "suggested_call": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+              },
+              "arguments": {
+                "type": "object",
+                "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+              }
+            },
+            "required": [
+              "tool",
+              "arguments"
+            ],
+            "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+          }
+        },
+        "required": [
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_workflows",
+      "description": "## 查询用途\n\n1. 查找指定底模、模型或 LoRA 关联的工作流，或按视觉描述搜索工作流候选；可直接使用关联名称或文件名。需要完整节点配置时，将候选 ref 传入 get_catalog_resource。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n4. 关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n11. results[].model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n12. results[].lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n13. results[].workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n14. next.tool：查询控制；始终提供。选择对应工具。\n15. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n16. suggested_call.tool：查询控制；始终提供。选择对应工具。\n17. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n18. results[].ref.kind：资源定位；始终提供。识别资源类别。\n19. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n20. results[].base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n21. results[].base_model.name：资源定位；始终提供。核对资源名称。\n22. results[].model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n23. results[].model.name：资源定位；始终提供。核对资源名称。\n24. results[].lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n25. results[].lora.name：资源定位；始终提供。核对资源名称。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          },
+          "base_model": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          },
+          "model": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          },
+          "lora": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源 ID，使用正整数十进制字符串。"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [],
+            "anyOf": [
+              {
+                "required": [
+                  "id"
+                ]
+              },
+              {
+                "required": [
+                  "name"
+                ]
+              }
+            ],
+            "description": "关联资源填写 id（十进制字符串）或 name（完整名称，模型与 LoRA 使用完整文件名）。已有名称或文件名时，直接填入对应筛选字段的 name。id 与 name 同时填写时须指向同一记录。"
+          },
+          "workflow_type": {
+            "type": "string",
+            "enum": [
+              "text_to_image",
+              "text_to_image_lora",
+              "text_to_image_hires_fix",
+              "text_to_image_second_pass",
+              "text_to_video",
+              "image_to_image",
+              "image_to_video",
+              "video_to_video",
+              "style_transfer",
+              "controlnet",
+              "inpainting",
+              "outpainting",
+              "upscale",
+              "face_detailer",
+              "other"
+            ]
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "workflow",
+                      "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                },
+                "base_model": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                },
+                "model": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。"
+                },
+                "lora": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "关联筛选；返回完整字段值；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。"
+                },
+                "workflow_type": {
+                  "type": "string",
+                  "enum": [
+                    "text_to_image",
+                    "text_to_image_lora",
+                    "text_to_image_hires_fix",
+                    "text_to_image_second_pass",
+                    "text_to_video",
+                    "image_to_image",
+                    "image_to_video",
+                    "video_to_video",
+                    "style_transfer",
+                    "controlnet",
+                    "inpainting",
+                    "outpainting",
+                    "upscale",
+                    "face_detailer",
+                    "other"
+                  ],
+                  "description": "生成配置；返回完整字段值；始终提供。识别 Workflow 生成目的。"
+                }
+              },
+              "required": [
+                "ref",
+                "name",
+                "base_model",
+                "model",
+                "lora",
+                "workflow_type"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          },
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "suggested_call": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+              },
+              "arguments": {
+                "type": "object",
+                "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+              }
+            },
+            "required": [
+              "tool",
+              "arguments"
+            ],
+            "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+          }
+        },
+        "required": [
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "search_instances",
+      "description": "## 查询用途\n\n1. 查询实例登记目录。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].url：实例连接；始终提供。连接已登记的实例服务地址。\n11. results[].enabled：登记状态；始终提供布尔值。识别管理员保存的启用配置。\n12. results[].validation_passed：登记状态；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。\n13. next.tool：查询控制；始终提供。选择对应工具。\n14. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n15. suggested_call.tool：查询控制；始终提供。选择对应工具。\n16. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n17. results[].ref.kind：资源定位；始终提供。识别资源类别。\n18. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "validation_passed": {
+            "type": "boolean"
+          }
+        },
+        "required": []
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "const": "instance",
+                      "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                    },
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$",
+                      "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "实例连接；返回完整字段值；始终提供。连接已登记的实例服务地址。"
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "登记状态；返回完整字段值；始终提供布尔值。识别管理员保存的启用配置。"
+                },
+                "validation_passed": {
+                  "type": "boolean",
+                  "description": "登记状态；返回完整字段值；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。"
+                }
+              },
+              "required": [
+                "ref",
+                "name",
+                "url",
+                "enabled",
+                "validation_passed"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          },
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "suggested_call": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "type": "string",
+                "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+              },
+              "arguments": {
+                "type": "object",
+                "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+              }
+            },
+            "required": [
+              "tool",
+              "arguments"
+            ],
+            "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+          }
+        },
+        "required": [
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_catalog_resource",
+      "description": "## 查询用途\n\n1. 按已知资源类别和 ID 直接读取完整记录，取得完整说明、使用方法、提示词素材或节点配置。实例凭据通过 get_instance_connection 读取。\n\n## 输入参数\n\n1. ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. item：查询结果；始终提供。读取对应资源的完整字段。\n5. item.ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n6. item.name：资源定位；始终提供。核对资源名称。\n7. item.ref.kind：资源定位；始终提供。识别资源类别。\n8. item.ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n\n### item.ref.kind 为 model 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.file_name：生成配置；始终提供。将该文件名用于模型加载节点的文件名参数。\n3. item.file_format：资源定位；始终提供。核对模型文件格式。\n4. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n5. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n6. item.version：资源定位；null 表示未填写版本。核对资源版本。\n7. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n8. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n9. item.skill_name：Skill 选择；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。\n10. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 lora 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。\n3. item.file_name：生成配置；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。\n4. item.file_format：资源定位；始终提供。核对模型文件格式。\n5. item.precision_or_quantization：资源定位；始终提供。核对数值精度或量化方式。\n6. item.author：资源定位；null 表示未填写作者。核对作者或构造作者筛选。\n7. item.version：资源定位；null 表示未填写版本。核对资源版本。\n8. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n9. item.usage：资源选择与使用指导；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。\n10. item.trigger_words：Prompt 素材；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。\n11. item.weight：生成配置；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。\n12. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n13. item.base_model.name：资源定位；始终提供。核对资源名称。\n14. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n15. item.model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 style 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.aliases：资源定位；空数组表示没有别名。辅助识别画风。\n3. item.style_description：资源选择与使用指导；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。\n4. item.prompt_text：Prompt 素材；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 artist_prompt_string 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.styles：关联筛选；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。\n3. item.description：资源选择与使用指导；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。\n4. item.artist_string：Prompt 素材；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。\n5. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n6. item.base_model.name：资源定位；始终提供。核对资源名称。\n7. item.styles[].id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n8. item.styles[].name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 workflow 时的字段\n\n1. item.base_model：关联筛选；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。\n2. item.model：关联筛选；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。\n3. item.lora：关联筛选；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。\n4. item.workflow_type：生成配置；始终提供。识别 Workflow 生成目的。\n5. item.workflow_json：生成配置；始终提供完整对象。调用者读取全部节点与连接，并根据生成目标设置节点中的提示词。\n6. item.base_model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n7. item.base_model.name：资源定位；始终提供。核对资源名称。\n8. item.model.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n9. item.model.name：资源定位；始终提供。核对资源名称。\n10. item.lora.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。\n11. item.lora.name：资源定位；始终提供。核对资源名称。\n\n### item.ref.kind 为 instance 时的字段\n\n1. item.url：实例连接；始终提供。连接已登记的实例服务地址。\n2. item.credential_type：实例连接；none 表示无需认证。据此识别连接认证方式。\n3. item.enabled：登记状态；始终提供布尔值。识别管理员保存的启用配置。\n4. item.validation_passed：登记状态；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "base_model",
+                  "model",
+                  "lora",
+                  "style",
+                  "artist_prompt_string",
+                  "workflow",
+                  "instance"
+                ],
+                "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]{0,19}$",
+                "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+              }
+            },
+            "required": [
+              "kind",
+              "id"
+            ],
+            "description": "ref 由 kind（资源类别）与 id（十进制字符串）组成。已知 ref，或已知资源类别与 ID 时，直接调用 get_catalog_resource 读取详情；也可复制搜索结果中的 ref。"
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "item": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "base_model",
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "model",
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                  },
+                  "base_model": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                  },
+                  "file_name": {
+                    "type": "string",
+                    "description": "生成配置；返回完整字段值；始终提供。将该文件名用于模型加载节点的文件名参数。"
+                  },
+                  "file_format": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对模型文件格式。"
+                  },
+                  "precision_or_quantization": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对数值精度或量化方式。"
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源定位；返回完整字段值；null 表示未填写作者。核对作者或构造作者筛选。"
+                  },
+                  "version": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源定位；返回完整字段值；null 表示未填写版本。核对资源版本。"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源选择与使用指导；返回完整字段值；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。"
+                  },
+                  "usage": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源选择与使用指导；返回完整字段值；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。"
+                  },
+                  "skill_name": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Skill 选择；返回完整字段值；null 表示未关联 Skill。按目标宿主规则选择提示词构建 Skill。"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "name",
+                  "base_model",
+                  "file_name",
+                  "file_format",
+                  "precision_or_quantization",
+                  "author",
+                  "version",
+                  "description",
+                  "usage",
+                  "skill_name"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "lora",
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                  },
+                  "base_model": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                  },
+                  "model": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未关联模型。通过对象中的 id 与 name 核对模型归属；该对象可复制到 model 条件。"
+                  },
+                  "file_name": {
+                    "type": "string",
+                    "description": "生成配置；返回完整字段值；始终提供。将该文件名用于 LoRA 加载节点的文件名参数。"
+                  },
+                  "file_format": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对模型文件格式。"
+                  },
+                  "precision_or_quantization": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对数值精度或量化方式。"
+                  },
+                  "author": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源定位；返回完整字段值；null 表示未填写作者。核对作者或构造作者筛选。"
+                  },
+                  "version": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源定位；返回完整字段值；null 表示未填写版本。核对资源版本。"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源选择与使用指导；返回完整字段值；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。"
+                  },
+                  "usage": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源选择与使用指导；返回完整字段值；null 表示未填写使用说明。按说明决定资源用法；禁止将说明全文直接追加到 Prompt。"
+                  },
+                  "trigger_words": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Prompt 素材；返回完整字段值；空数组表示没有触发词。调用者保留触发词内容和顺序，按目标生成模型的提示词语法加入正向 Prompt。"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "生成配置；返回完整字段值；始终提供数值。作为 LoRA 加载权重；禁止当作提示词权重。"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "name",
+                  "base_model",
+                  "model",
+                  "file_name",
+                  "file_format",
+                  "precision_or_quantization",
+                  "author",
+                  "version",
+                  "description",
+                  "usage",
+                  "trigger_words",
+                  "weight"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "style",
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                  },
+                  "base_model": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                  },
+                  "aliases": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "资源定位；返回完整字段值；空数组表示没有别名。辅助识别画风。"
+                  },
+                  "style_description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源选择与使用指导；返回完整字段值；null 表示未填写画风说明。据此选择和组合素材；禁止将说明全文直接追加到 Prompt。"
+                  },
+                  "prompt_text": {
+                    "type": "string",
+                    "description": "Prompt 素材；返回完整字段值；空字符串表示没有提示词素材。调用者按目标生成模型的提示词语法组合素材。"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "name",
+                  "base_model",
+                  "aliases",
+                  "style_description",
+                  "prompt_text"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "artist_prompt_string",
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                  },
+                  "base_model": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                  },
+                  "styles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[1-9][0-9]{0,19}$",
+                          "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ]
+                    },
+                    "description": "关联筛选；返回完整字段值；空数组表示未关联 Style。数组中的每个对象都包含 id 与 name，用于核对关联画风；单个对象可复制到 style 条件。"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "资源选择与使用指导；返回完整字段值；null 表示未填写说明。据此选择资源；禁止将说明全文直接追加到 Prompt。"
+                  },
+                  "artist_string": {
+                    "type": "string",
+                    "description": "Prompt 素材；返回完整字段值；始终提供。保留完整画师串和内部权重语法，按目标模型规则使用。"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "name",
+                  "base_model",
+                  "styles",
+                  "description",
+                  "artist_string"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "workflow",
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                  },
+                  "base_model": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未关联底模。通过对象中的 id 与 name 核对底模归属；该对象可复制到 base_model 条件。"
+                  },
+                  "model": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未保存默认生成模型。通过对象中的 id 与 name 核对模板默认生成模型；该对象可复制到 model 条件。"
+                  },
+                  "lora": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[1-9][0-9]{0,19}$",
+                            "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "关联筛选；返回完整字段值；null 表示未关联 LoRA。通过对象中的 id 与 name 核对关联 LoRA；该对象可复制到 lora 条件。"
+                  },
+                  "workflow_type": {
+                    "type": "string",
+                    "enum": [
+                      "text_to_image",
+                      "text_to_image_lora",
+                      "text_to_image_hires_fix",
+                      "text_to_image_second_pass",
+                      "text_to_video",
+                      "image_to_image",
+                      "image_to_video",
+                      "video_to_video",
+                      "style_transfer",
+                      "controlnet",
+                      "inpainting",
+                      "outpainting",
+                      "upscale",
+                      "face_detailer",
+                      "other"
+                    ],
+                    "description": "生成配置；返回完整字段值；始终提供。识别 Workflow 生成目的。"
+                  },
+                  "workflow_json": {
+                    "type": "object",
+                    "description": "生成配置；返回完整字段值；始终提供完整对象。调用者读取全部节点与连接，并根据生成目标设置节点中的提示词。"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "name",
+                  "base_model",
+                  "model",
+                  "lora",
+                  "workflow_type",
+                  "workflow_json"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "ref": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "const": "instance",
+                        "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                      },
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[1-9][0-9]{0,19}$",
+                        "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "实例连接；返回完整字段值；始终提供。连接已登记的实例服务地址。"
+                  },
+                  "credential_type": {
+                    "enum": [
+                      "none",
+                      "http_basic",
+                      "bearer"
+                    ],
+                    "description": "实例连接；返回完整字段值；none 表示无需认证。据此识别连接认证方式。"
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "description": "登记状态；返回完整字段值；始终提供布尔值。识别管理员保存的启用配置。"
+                  },
+                  "validation_passed": {
+                    "type": "boolean",
+                    "description": "登记状态；返回完整字段值；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。"
+                  }
+                },
+                "required": [
+                  "ref",
+                  "name",
+                  "url",
+                  "credential_type",
+                  "enabled",
+                  "validation_passed"
+                ]
+              }
+            ],
+            "description": "查询结果；返回完整字段值；始终提供。读取对应资源的完整字段。"
+          }
+        },
+        "required": [
+          "item"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_instance_connection",
+      "description": "## 查询用途\n\n1. 读取登记的实例地址与认证信息。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. instance_id：资源定位；始终提供。定位登记实例。\n4. name：资源定位；始终提供。核对资源名称。\n5. url：实例连接；始终提供。连接实例服务地址。\n6. credential_type：实例连接；none 表示无需认证。按类型配置连接认证。\n7. authorization：实例连接；null 表示无需认证头。仅用于连接该实例，禁止追加到 Prompt。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源 ID，使用正整数十进制字符串。"
+          }
+        },
+        "required": [
+          "instance_id"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源定位；返回完整字段值；始终提供。定位登记实例。"
+          },
+          "name": {
+            "type": "string",
+            "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "实例连接；返回完整字段值；始终提供。连接实例服务地址。"
+          },
+          "credential_type": {
+            "enum": [
+              "none",
+              "http_basic",
+              "bearer"
+            ],
+            "description": "实例连接；返回完整字段值；none 表示无需认证。按类型配置连接认证。"
+          },
+          "authorization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "实例连接；返回完整字段值；null 表示无需认证头。仅用于连接该实例，禁止追加到 Prompt。"
+          }
+        },
+        "required": [
+          "instance_id",
+          "name",
+          "url",
+          "credential_type",
+          "authorization"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "get_instance_status",
+      "description": "## 查询用途\n\n1. 查询实例当前连通性和系统设备信息。登记校验结果通过 search_instances 读取。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. instance_id：资源定位；始终提供。定位登记实例。\n4. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n5. reachable：实时状态；始终提供布尔值。判断本次连通性，独立于登记校验结果。\n6. http_status：实时状态；null 表示未取得 HTTP 响应。判断本次远端响应状态。\n7. latency_ms：实时状态；始终提供数值。读取本次请求耗时，单位为毫秒。\n8. system：运行信息；null 表示未取得系统信息。核对实例系统信息。\n9. devices：运行信息；空数组表示未取得设备信息。核对实例运行设备。\n10. error：查询诊断；null 表示本次读取没有错误。根据错误码和消息排查连接问题。\n11. error.request_id：查询诊断；错误定位时提供。向管理员提供请求标识以查找诊断记录。\n12. error.code：查询诊断；始终提供。识别失败类别。\n13. error.message：实例请求失败的具体原因；错误对象存在时始终提供。根据原因核对实例地址、运行状态或网络连接。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源 ID，使用正整数十进制字符串。"
+          }
+        },
+        "required": [
+          "instance_id"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源定位；返回完整字段值；始终提供。定位登记实例。"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "查询诊断；返回完整字段值；始终提供。判断本次远端读取时间。"
+          },
+          "reachable": {
+            "type": "boolean",
+            "description": "实时状态；返回完整字段值；始终提供布尔值。判断本次连通性，独立于登记校验结果。"
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "实时状态；返回完整字段值；null 表示未取得 HTTP 响应。判断本次远端响应状态。"
+          },
+          "latency_ms": {
+            "type": "number",
+            "minimum": 0,
+            "description": "实时状态；返回完整字段值；始终提供数值。读取本次请求耗时，单位为毫秒。"
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "运行信息；返回完整字段值；null 表示未取得系统信息。核对实例系统信息。"
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "运行信息；返回完整字段值；空数组表示未取得设备信息。核对实例运行设备。"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "request_id": {
+                    "type": "string",
+                    "description": "查询诊断；返回完整字段值；错误定位时提供。向管理员提供请求标识以查找诊断记录。"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "查询诊断；返回完整字段值；始终提供。识别失败类别。"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "实例请求失败的具体原因；返回完整字段值；错误对象存在时始终提供。根据原因核对实例地址、运行状态或网络连接。"
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询诊断；返回完整字段值；null 表示本次读取没有错误。根据错误码和消息排查连接问题。"
+          }
+        },
+        "required": [
+          "instance_id",
+          "checked_at",
+          "reachable",
+          "http_status",
+          "latency_ms",
+          "system",
+          "devices",
+          "error"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_instance_queue",
+      "description": "## 查询用途\n\n1. 读取实例当前运行中与等待中的队列。结果按状态和队列编号排序。\n\n## 输入参数\n\n1. limit：每页记录数量；默认 5，最小 1，最大 20。\n2. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. instance_id：资源定位；始终提供。定位登记实例。\n5. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n6. running_count：运行信息；0 表示没有运行中的任务。读取本次完整队列中的运行任务数量。\n7. pending_count：运行信息；0 表示没有等待中的任务。读取本次完整队列中的等待任务数量。\n8. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n9. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n10. results[].prompt_id：资源定位；始终提供。识别队列任务。\n11. results[].queue_number：运行信息；始终提供数值。按实例返回的队列序号比较顺序。\n12. results[].state：运行信息；始终提供。区分 running 与 pending。\n13. next.tool：查询控制；始终提供。选择对应工具。\n14. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源 ID，使用正整数十进制字符串。"
+          },
+          "state": {
+            "enum": [
+              "all",
+              "running",
+              "pending"
+            ],
+            "default": "all"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "instance_id"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源定位；返回完整字段值；始终提供。定位登记实例。"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "查询诊断；返回完整字段值；始终提供。判断本次远端读取时间。"
+          },
+          "running_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "运行信息；返回完整字段值；0 表示没有运行中的任务。读取本次完整队列中的运行任务数量。"
+          },
+          "pending_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "运行信息；返回完整字段值；0 表示没有等待中的任务。读取本次完整队列中的等待任务数量。"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "prompt_id": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。识别队列任务。"
+                },
+                "queue_number": {
+                  "type": "number",
+                  "description": "运行信息；返回完整字段值；始终提供数值。按实例返回的队列序号比较顺序。"
+                },
+                "state": {
+                  "enum": [
+                    "running",
+                    "pending"
+                  ],
+                  "description": "运行信息；返回完整字段值；始终提供。区分 running 与 pending。"
+                }
+              },
+              "required": [
+                "prompt_id",
+                "queue_number",
+                "state"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          }
+        },
+        "required": [
+          "instance_id",
+          "checked_at",
+          "running_count",
+          "pending_count",
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "search_instance_nodes",
+      "description": "## 查询用途\n\n1. 按类名、显示名称或说明文字查询实例当前节点。将 class_name 传给 get_instance_node 读取完整定义。\n\n## 输入参数\n\n1. query：填写节点类名、显示名称或说明中的搜索文字；空字符串或省略时浏览节点。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n5. instance_id：资源定位；始终提供。定位登记实例。\n6. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n7. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n8. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n9. results[].class_name：资源定位；始终提供。识别节点类别，并填写 Workflow 节点的 class_type。\n10. results[].display_name：资源定位；null 或空字符串表示远端未提供显示名称。展示远端节点名称；选择节点时使用 class_name。\n11. results[].category：资源定位；空字符串表示远端未提供分类。识别节点分类。\n12. results[].description_preview：候选预览；返回前 240 个 Unicode 字符；null 表示没有节点说明。比较节点，需要完整定义时读取详情。\n13. next.tool：查询控制；始终提供。选择对应工具。\n14. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源 ID，使用正整数十进制字符串。"
+          },
+          "query": {
+            "type": "string",
+            "description": "query：填写节点类名、显示名称或说明中的搜索文字；空字符串或省略时浏览节点。",
+            "default": "",
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+            "default": 5,
+            "maximum": 20
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "page：页码；默认 1，最小 1，最大 100000。",
+            "default": 1,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "instance_id"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+          },
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源定位；返回完整字段值；始终提供。定位登记实例。"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "查询诊断；返回完整字段值；始终提供。判断本次远端读取时间。"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "class_name": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；始终提供。识别节点类别，并填写 Workflow 节点的 class_type。"
+                },
+                "display_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "资源定位；返回完整字段值；null 或空字符串表示远端未提供显示名称。展示远端节点名称；选择节点时使用 class_name。"
+                },
+                "category": {
+                  "type": "string",
+                  "description": "资源定位；返回完整字段值；空字符串表示远端未提供分类。识别节点分类。"
+                },
+                "description_preview": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "候选预览；返回前 240 个 Unicode 字符；null 表示没有节点说明。比较节点，需要完整定义时读取详情。"
+                }
+              },
+              "required": [
+                "class_name",
+                "display_name",
+                "category",
+                "description_preview"
+              ]
+            },
+            "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                  },
+                  "arguments": {
+                    "type": "object",
+                    "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                  }
+                },
+                "required": [
+                  "tool",
+                  "arguments"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+          }
+        },
+        "required": [
+          "instance_id",
+          "checked_at",
+          "results",
+          "next"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "get_instance_node",
+      "description": "## 查询用途\n\n1. 按节点 class_name 精确读取实例当前完整节点定义，保留输入输出和配置内容。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. instance_id：资源定位；始终提供。定位登记实例。\n4. checked_at：查询诊断；始终提供。判断本次远端读取时间。\n5. class_name：资源定位；始终提供。识别节点类别，并填写 Workflow 节点的 class_type。\n6. definition：生成配置；始终提供对象。调用者据此填写节点参数并连接输入输出。",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源 ID，使用正整数十进制字符串。"
+          },
+          "class_name": {
+            "type": "string",
+            "minLength": 1,
+            "not": {
+              "enum": [
+                ".",
+                ".."
+              ]
+            }
+          }
+        },
+        "required": [
+          "instance_id",
+          "class_name"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$",
+            "description": "资源定位；返回完整字段值；始终提供。定位登记实例。"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "查询诊断；返回完整字段值；始终提供。判断本次远端读取时间。"
+          },
+          "class_name": {
+            "type": "string",
+            "description": "资源定位；返回完整字段值；始终提供。识别节点类别，并填写 Workflow 节点的 class_type。"
+          },
+          "definition": {
+            "type": "object",
+            "description": "生成配置；返回完整字段值；始终提供对象。调用者据此填写节点参数并连接输入输出。"
+          }
+        },
+        "required": [
+          "instance_id",
+          "checked_at",
+          "class_name",
+          "definition"
+        ]
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    }
+  ],
+  "resourceContents": {
+    "contents": [
+      {
+        "uri": "skill://catalog-query/SKILL.md",
+        "mimeType": "text/markdown",
+        "text": "---\nname: catalog-query\ndescription: 根据生图需求查询作品、角色和提示词。\n---\n\n# 生图素材查询\n\n## 任务输入\n\n你必须从用户的生图要求中提取作品或角色线索、服装、姿势、动作及已确认条件。缺少影响素材选择的信息时，你必须提出具体问题。\n\n## 可用查询能力\n\n- `query_semantic_works`：检索作品，或按真实作品 ID 读取记录及已有角色名称。\n- `query_semantic_characters`：检索角色，按真实作品 ID 筛选角色，或按真实角色 ID 读取记录。\n- `list_prompt_term_categories`：浏览提示词一级入口，或按入口及文字线索查找二级类别。\n- `query_semantic_prompt_terms`：按描述、分类或状态检索实际词条，或按真实条目 ID 读取记录。\n\n## 查询决策\n\n你必须根据画面要求选择作品、角色或提示词查询。已有真实记录 ID 时，你必须使用对应工具的 `resolve`；只有名称或描述时，你必须使用 `search`。\n\n用户从作品选择角色时，你必须先确认作品，再把返回的作品 ID 作为角色查询的 `work_id`。用户已经确认角色时，你必须保留该角色及其他已确认条件。\n\n需要按类别探索或缩小词条范围时，你必须调用 `list_prompt_term_categories`。范围尚不明确时，你必须先查看一级入口及用途，再查看相关二级类别；已有类别名称线索时，你必须直接搜索二级类别。你必须使用实际返回的分类 ID 调用 `query_semantic_prompt_terms`，取得实际词条。\n\n你必须将裙装、坐姿等不同画面要素分别查询。同一个词条需要同时满足多个类别时，你必须选择 `all`；多个类别均可接受时，你必须选择 `any`。\n\n需要规划跨页读取时，你可以参考[分页示例](references/query-workflow.md)。\n\n## 采用结果\n\n判断作品和角色候选时，你必须结合名称、别名和用户线索；判断提示词候选时，你必须结合 `canonical_tag`、`aliases_json` 和用户线索。采用角色记录时，你必须用其 `work_id` 解释作品归属。采用已分类词条时，你必须阅读匹配义项的条件，判断词义是否适合当前画面，并结合分类状态、理由及审阅信息说明采用依据。词条缺少分类记录时，你必须说明该状态，并依据规范标签和别名判断适用性。\n\n候选差异影响素材选择时，你必须列出区别并请用户选择，再继续依赖该选择的查询。查询成功且结果为空时，你必须说明查询对象、范围及无匹配结果；调用失败时，你必须说明失败步骤及可采取的操作。连续调整时，你必须只更新用户改变的要素；用户改变查询范围后，你必须按新条件查询。\n\n## 完成条件\n\n1. 处理生图或素材查找请求时，你必须按画面要素交付本次查得的实际记录、真实 ID 和选择依据。\n2. 返回提示词时，你必须列出规范标签 `canonical_tag` 和适用性判断；对于已分类词条，你必须同时列出所用义项和类别；对于未分类词条，你必须标明缺少分类记录。\n3. 用户单独要求浏览分类时，你必须交付所查分类的名称、真实 ID 和用途。\n4. 你必须说明本次查询的筛选条件及工具返回的 `total_count`。对于需要消歧或调用失败的部分，你必须明确标注待处理状态。\n"
+      }
+    ]
+  }
+}

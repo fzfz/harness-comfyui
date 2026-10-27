@@ -3,13 +3,16 @@ import type { Context } from '@deepseek-ai/cordis'
 import {
   IMAGE_READER_SETTINGS_DEFAULTS,
   IMAGE_READER_PROFILE_ENTRY_ID,
+  decodeStoredImageReaderConfiguration,
   validateImageReaderSettingsSection,
   type ImageReaderSettingsSection,
 } from '../../image-reader/settings.ts'
 
 export interface ImageReaderSettingsStore {
+  prepare?(signal?: AbortSignal): Promise<void>
+  credentialIsReferenced?(reference: import('../../image-reader/credential-schema.ts').ImageReaderCredentialRef): boolean
   get(): ImageReaderSettingsSection
-  replace(section: ImageReaderSettingsSection): Promise<void>
+  replace(section: ImageReaderSettingsSection, expectedRevision?: number, signal?: AbortSignal): Promise<void>
   readPersistedUserOverride(): { readonly kind: 'readable'; readonly value: unknown } | { readonly kind: 'unreadable' }
 }
 
@@ -21,15 +24,23 @@ export function imageReaderSettingsStore(
     get() {
       const value = ctx.settings.describe().find(row => row.ns === IMAGE_READER_PROFILE_ENTRY_ID)?.value as Partial<ImageReaderSettingsSection> | undefined
       const section = {
-        configuration: value?.configuration ?? defaults.configuration,
+        configuration: value?.configuration === undefined ? defaults.configuration : decodeStoredImageReaderConfiguration(value.configuration) ?? value.configuration,
         credentialRefs: value?.credentialRefs ?? defaults.credentialRefs,
       }
       validateImageReaderSettingsSection(section)
       return section
     },
-    async replace(section) {
+    async replace(section, expectedRevision, signal) {
+      signal?.throwIfAborted()
       validateImageReaderSettingsSection(section)
-      await ctx.settings.replace(IMAGE_READER_PROFILE_ENTRY_ID, section)
+      const profiles = section.configuration.profiles.map(profile => {
+        if (profile.connectionType !== 'runtime') return profile
+        const { connectionType: _connectionType, endpoint: _endpoint, hasApiKey: _hasApiKey, ...configuration } = profile
+        return configuration
+      })
+      await ctx.settings.replace(IMAGE_READER_PROFILE_ENTRY_ID, {
+        configuration: { ...section.configuration, profiles }, credentialRefs: section.credentialRefs,
+      }, expectedRevision)
     },
     readPersistedUserOverride() {
       try {

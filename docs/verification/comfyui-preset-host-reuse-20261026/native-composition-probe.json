@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-26",
+  "hostVersion": "0.2.1-rc.3",
+  "execution": "Installed official Electron binary in ELECTRON_RUN_AS_NODE mode; in-memory Cordis context; no Desktop window or model request.",
+  "setup": {
+    "globalSection": "ui:deliverable-file-references",
+    "globalTool": "host_fixture",
+    "scopedSection": "probe:tool-guidance",
+    "scopedTool": "preset_fixture",
+    "personaPrefix": "ComfyUI workbench probe"
+  },
+  "results": [
+    {
+      "complete": false,
+      "sections": [
+        "harness:identity",
+        "deployment:persona-prefix",
+        "ui:deliverable-file-references",
+        "probe:tool-guidance",
+        "deployment:persona-suffix"
+      ],
+      "tools": [
+        "host_fixture",
+        "preset_fixture"
+      ]
+    },
+    {
+      "complete": true,
+      "sections": [
+        "deployment:persona-prefix"
+      ],
+      "tools": [
+        "host_fixture",
+        "preset_fixture"
+      ]
+    },
+    {
+      "otherPresetTools": [
+        "host_fixture"
+      ]
+    }
+  ],
+  "cleanup": "All created scope and root fibers disposed before process exit; exit code 0."
+}
