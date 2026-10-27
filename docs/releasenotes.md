@@ -2,6 +2,26 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.48.1
+
+## 工作台预设与业务 Skill
+
+1. 工作台通过宿主原生配置装配绘图提示词、工具和 Skill。主、子会话保留各自的目录与运行状态上下文。
+2. 插件包提供 8 个业务 Skill。工作台通过宿主 Skill 发现机制读取包内目录和预设指定的额外目录。
+3. Agent 通过 NoobAI MCP 查询目录，通过受管 CLI 生成图片、查询 Run 和读取图片。插件移除了 8 项重复工具。
+4. 主代理等待子任务时结束当前回合。宿主收到子代理通知后恢复主代理执行。
+
+## 图片读取设置
+
+1. 图片读取通过宿主模型服务调用视觉模型。自定义接口使用宿主 Provider 设置和凭据存储。
+2. 插件迁移已有图片读取配置，并保留命名配置及活动配置选择。
+
+## 验收与宿主问题
+
+1. 真实业务验收完成了主、子代理各 1 次生成和读图。宿主恢复主代理后，主代理汇总了结果。重启后，界面保留 2 条生成记录和 2 张图片。详见[验收记录](<https://github.com/fzfz/harness-comfyui/blob/1db73cbd621ec400dc296b6b7f908bddb6f816ee/docs/verification/comfyui-preset-host-reuse-20261026/real-business/result.json>)。
+2. 模型汇总存在字段遗漏，逐项结果见[独立审阅](<https://github.com/fzfz/harness-comfyui/blob/1db73cbd621ec400dc296b6b7f908bddb6f816ee/docs/verification/comfyui-preset-host-reuse-20261026/real-business/independent-review.json>)。
+3. Desktop `0.2.1-rc.3` 查询已结束子会话的 Skill 目录时，会返回 Office Skill。该宿主问题按[批准方案](<https://github.com/fzfz/harness-comfyui/blob/1db73cbd621ec400dc296b6b7f908bddb6f816ee/docs/plans/comfyui-workbench-composition-20261027.md#94-宿主-skill-目录故障的等待与复验>)等待上游修复，回归测试保留失败断言。
+
 # Harness ComfyUI v0.48.0
 
 ## 工作台与原生宿主能力
