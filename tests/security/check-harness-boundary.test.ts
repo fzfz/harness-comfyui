@@ -103,14 +103,15 @@ describe('Harness source boundary', () => {
     }
   })
 
-  it('accepts multiple direct Tool registrations in Core and Image Reader plugins', () => {
+  it.each(['core', 'image-reader'])('rejects global business Tool registration in %s', entry => {
     const root = fixture()
     try {
-      for (const directory of ['src/host/core', 'src/host/image-reader']) {
-        mkdirSync(join(root, directory), { recursive: true })
-        writeFileSync(join(root, directory, 'plugin.ts'), 'ctx.tools.register(first)\nctx.tools.register(second)\n')
-      }
-      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+      const directory = join(root, 'src/host', entry)
+      mkdirSync(directory, { recursive: true })
+      writeFileSync(join(directory, 'plugin.ts'), 'ctx.tools.register(businessTool)\n')
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('ctx.tools.register')
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

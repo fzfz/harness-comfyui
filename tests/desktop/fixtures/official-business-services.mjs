@@ -1,4 +1,6 @@
 import { createServer } from 'node:http'
+import managedCliHelp from '../../../config/managed-cli-help.json' with { type: 'json' }
+import { requestMessageText } from './official-mcp-acceptance.mjs'
 
 const MAX_MODEL_REQUEST_BYTES = 1024 * 1024
 import { OFFICIAL_MCP_FIXTURE } from './official-mcp-services.mjs'
@@ -190,9 +192,7 @@ export async function startOfficialBusinessServices(fixture) {
           : fixture.skills.uniqueWorkspaceName
         const skillToolCall = skillMarkerTask && nextSkillName !== null && skillToolAvailable
         const toolResultPresent = body.messages?.some(message => message.role === 'tool') === true
-        const generationToolAvailable = (body.tools ?? []).some(tool =>
-          (tool.function?.name ?? tool.name) === 'generate_with_comfyui')
-        const generationCall = generationRequested && !toolResultPresent && generationToolAvailable
+        const generationResponse = generationRequested ? controlledGenerationResponse(body, fixture.generation) : null
         const mcpWorkflowRequested = promptText.includes(OFFICIAL_MCP_FIXTURE.workflowPrompt)
         const mcpToolNames = (body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
         const toolMessages = (body.messages ?? []).filter(message => message.role === 'tool')
@@ -206,35 +206,16 @@ export async function startOfficialBusinessServices(fixture) {
           arguments: mcpSearchDone ? { ref: OFFICIAL_MCP_FIXTURE.responses.get_catalog_resource.item.ref } : { query: '', limit: 5, page: 1 },
         } : null
         const scriptedIndex = modelResponses.findIndex(entry => entry.predicate(captured))
-        const scriptedResponse = scriptedIndex < 0 ? null : modelResponses.splice(scriptedIndex, 1)[0].delta
+        const script = scriptedIndex < 0 ? null : modelResponses.splice(scriptedIndex, 1)[0].delta
+        const scriptedResponse = typeof script === 'function' ? script(captured) : script
         const delta = scriptedResponse ?? (mcpCall ? {
           role: 'assistant',
           tool_calls: [{ index: 0, id: `official_desktop_mcp_${requestLog.length}`, type: 'function',
             function: { name: mcpCall.name, arguments: JSON.stringify(mcpCall.arguments) } }],
         } : mcpWorkflowRequested ? {
           role: 'assistant', content: OFFICIAL_MCP_FIXTURE.workflowCompleted,
-        } : generationCall
-          ? {
-              role: 'assistant',
-              tool_calls: [{
-                index: 0,
-                id: 'official_desktop_generation_call',
-                type: 'function',
-                function: {
-                  name: 'generate_with_comfyui',
-                  arguments: JSON.stringify({
-                    title: fixture.generation.runTitle,
-                    instance_id: fixture.generation.instanceId,
-                    template_id: fixture.generation.templateId,
-                    parameters: {
-                      positive_prompt: fixture.generation.positivePrompt,
-                      seed: fixture.generation.seed,
-                    },
-                    loras: [],
-                  }),
-              },
-              }],
-            }
+        } : generationResponse
+          ? generationResponse
           : skillToolCall
             ? {
                 role: 'assistant',
@@ -302,7 +283,7 @@ export async function startOfficialBusinessServices(fixture) {
     baseURL: `${origin}/v1`,
     enqueueModelResponse(predicate, delta) {
       if (typeof predicate !== 'function') throw new TypeError('controlled model response predicate must be a function')
-      modelResponses.push({ predicate, delta: structuredClone(delta) })
+      modelResponses.push({ predicate, delta: typeof delta === 'function' ? delta : structuredClone(delta) })
     },
     pauseNextModelResponse(predicate) {
       let onStarted
@@ -487,6 +468,39 @@ function controlledOutputDescriptor(fixture) {
     subfolder: fixture.generation.subfolder,
     type: 'output',
   }
+}
+
+function controlledGenerationResponse(body, generation) {
+  if (!(body.tools ?? []).some(tool => (tool.function?.name ?? tool.name) === 'bash')) return null
+  const resultFor = id => (body.messages ?? []).find(message => message.role === 'tool' && message.tool_call_id === id)
+  const quote = value => "'" + value.replaceAll("'", "'\\''") + "'"
+  const commandFor = (command, input) =>
+    `printf '%s\\n' ${quote(JSON.stringify(input))} | ${managedCliHelp.invocation} ${command} --stdin`
+  let id
+  let command
+  if (!resultFor('official-generation-inspect')) {
+    id = 'official-generation-inspect'
+    command = commandFor('generation inspect-template-parameters', {
+      template_id: generation.templateId, instance_id: generation.instanceId,
+    })
+  } else if (!resultFor('official-generation-inspect-read')) {
+    id = 'official-generation-inspect-read'
+    command = `cat ${quote(requestMessageText(resultFor('official-generation-inspect')).split('\n', 1)[0])}`
+  } else if (!resultFor('official-generation-submit')) {
+    id = 'official-generation-submit'
+    command = commandFor('generation submit', {
+      title: generation.runTitle, instance_id: generation.instanceId, template_id: generation.templateId,
+      model: null, parameters: { positive_prompt: generation.positivePrompt, seed: generation.seed }, loras: [],
+    })
+  } else if (!resultFor('official-generation-submit-read')) {
+    id = 'official-generation-submit-read'
+    command = `cat ${quote(requestMessageText(resultFor('official-generation-submit')).split('\n', 1)[0])}`
+  } else {
+    return { role: 'assistant', content: 'Controlled generation accepted.' }
+  }
+  return { role: 'assistant', tool_calls: [{ index: 0, id, type: 'function', function: {
+    name: 'bash', arguments: JSON.stringify({ description: 'Execute controlled generation through the managed CLI', command }),
+  } }] }
 }
 
 function requestPromptText(body) {

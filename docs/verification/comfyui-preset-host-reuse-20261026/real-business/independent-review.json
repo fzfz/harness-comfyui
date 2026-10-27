@@ -1,0 +1,126 @@
+{
+  "reviewer": "/root/review_real_acceptance_scope",
+  "businessExecution": "passed",
+  "pluginDefectsObserved": [],
+  "skillOutputAdherence": "deviations-recorded",
+  "evidence": {
+    "parentSessionId": "session-908d6371-55ac-443c-a79e-fb759fb3eabc",
+    "childSessionId": "7c59cb0b-ae2f-456c-814b-0b0be2ce5f33",
+    "parent": {
+      "references": [
+        38,
+        40,
+        42,
+        44,
+        46
+      ],
+      "mcp": [
+        29,
+        31,
+        33
+      ],
+      "submit": 85,
+      "media": 108,
+      "imageInspect": 118,
+      "observation": 124,
+      "yield": 139,
+      "resume": 141,
+      "childResult": 144,
+      "childSettled": 150,
+      "final": 151,
+      "end": 153
+    },
+    "child": {
+      "references": [
+        24,
+        26,
+        28,
+        30,
+        32
+      ],
+      "mcp": [
+        37,
+        39,
+        41
+      ],
+      "submit": 89,
+      "media": 104,
+      "imageInspect": 119,
+      "observation": 125,
+      "sendMessage": 129,
+      "end": 135
+    }
+  },
+  "modelDeviations": [
+    {
+      "code": "PARENT_REVIEW_OUTPUT_INCOMPLETE",
+      "seq": [
+        127,
+        137,
+        146,
+        151
+      ],
+      "missing": [
+        "improved_prompt",
+        "non_prompt_parameter_feedback"
+      ]
+    },
+    {
+      "code": "MISLABELED_CHILD_SESSION_ID",
+      "parentSeq": [
+        146,
+        151
+      ],
+      "childSeq": [
+        129
+      ],
+      "reported": "delegated-subagent",
+      "actual": "7c59cb0b-ae2f-456c-814b-0b0be2ce5f33",
+      "actualAgentIdAlsoProvided": true
+    },
+    {
+      "code": "UNSUPPORTED_OBSERVATION_CLASSIFICATION",
+      "parentSeq": [
+        146,
+        151
+      ],
+      "childSeq": [
+        128,
+        129
+      ],
+      "claims": [
+        "whole_vase_visible",
+        "curved_shape"
+      ]
+    },
+    {
+      "code": "WAIT_REPLY_SHAPE",
+      "parentSeq": [
+        132,
+        133,
+        137
+      ],
+      "duplicateReminder": true,
+      "multipleParagraphs": true,
+      "nativeYieldSucceeded": true
+    },
+    {
+      "code": "HELP_EXIT_STATUS_MASKED",
+      "parentSeq": [
+        53,
+        68,
+        70,
+        101,
+        103
+      ],
+      "helpReturned": true
+    },
+    {
+      "code": "ABBREVIATED_FINAL_IMAGE_PATHS",
+      "parentSeq": [
+        151
+      ],
+      "fullPathsProvidedAt": 146
+    }
+  ]
+}

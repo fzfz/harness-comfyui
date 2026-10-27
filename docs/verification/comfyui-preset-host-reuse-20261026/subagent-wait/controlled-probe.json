@@ -1,0 +1,376 @@
+{
+  "attempt": "attempt-50",
+  "runId": "1a690a5e-a916-429c-9277-e87d90594360",
+  "parentSessionId": "session-2f0e3dfb-5305-48cd-bd15-a64985393a31",
+  "model": {
+    "provider": "openrouter",
+    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "configuration": {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "input": [
+        "text"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 16384,
+      "reasoningEfforts": {
+        "high": "high"
+      }
+    }
+  },
+  "application": {
+    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+    "version": "0.2.1-rc.3",
+    "bundleId": "com.deepseek.dsh"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-2f0e3dfb-5305-48cd-bd15-a64985393a31",
+      "events": [
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 4,
+          "time": 1793099001214,
+          "data": {
+            "target": "next-turn",
+            "start": 0,
+            "inserted": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "请验证子代理协作。派发 1 个子代理，让它使用 bash 工具执行 `sleep 15 && printf 'child-ready\\n'`。子代理取得命令输出后，向你报告输出内容。你没有其他独立工作。收到子代理结果后，回复命令输出和子代理 ID。\n"
+                  }
+                ],
+                "source": {
+                  "kind": "user",
+                  "rpcId": "aeeee23e-82cb-49a1-b4a3-f868dfb749ba",
+                  "clientTimeZone": "Asia/Shanghai"
+                },
+                "role": "user",
+                "id": "631599b2-45f1-4a16-8007-13badb1344f4"
+              }
+            ]
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 5,
+          "time": 1793099001215,
+          "data": {
+            "turn": 1
+          }
+        },
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 6,
+          "time": 1793099001215,
+          "data": {
+            "target": "next-turn",
+            "start": 0,
+            "removedCount": 1,
+            "inserted": []
+          }
+        },
+        {
+          "type": "assistant/message",
+          "seq": 15,
+          "time": 1793099005953,
+          "data": {
+            "id": "23befcb3-3ea0-45bc-a839-74fec2135834",
+            "source": "model",
+            "text": []
+          }
+        },
+        {
+          "type": "tool/call",
+          "seq": 16,
+          "time": 1793099005956,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "call-47193d2a-9324-4cc1-8e87-2cf141f6cdfc",
+            "name": "subagent",
+            "arguments": "{\"description\":\"Verify subagent collaboration\",\"prompt\":\"Execute the following bash command and report the output: `sleep 15 && printf 'child-ready\\\\n'`\"}"
+          }
+        },
+        {
+          "type": "assistant/message",
+          "seq": 21,
+          "time": 1793099017412,
+          "data": {
+            "id": "67748fc3-04fe-44c5-9a0b-bbd5a02414dd",
+            "source": "model",
+            "text": [
+              "已派发子代理（ID: `508ed456-8ca6-46ca-a941-5fe2399e166c`），正在执行 `sleep 15 && printf 'child-ready\\n'`。等待子代理完成并返回输出。"
+            ]
+          }
+        },
+        {
+          "type": "turn/end",
+          "seq": 23,
+          "time": 1793099017481,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 24,
+          "time": 1793099039502,
+          "data": {
+            "target": "next-step",
+            "start": 0,
+            "inserted": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Agent 508ed456-8ca6-46ca-a941-5fe2399e166c sent a message: "
+                  },
+                  {
+                    "type": "text",
+                    "text": "child-ready"
+                  }
+                ],
+                "source": {
+                  "kind": "agent-message",
+                  "form": "relay",
+                  "senderSessionId": "508ed456-8ca6-46ca-a941-5fe2399e166c"
+                },
+                "role": "user",
+                "id": "22820308-7cb1-402c-a1f7-826e3d478f3e"
+              }
+            ]
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 25,
+          "time": 1793099039502,
+          "data": {
+            "turn": 2
+          }
+        },
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 26,
+          "time": 1793099039503,
+          "data": {
+            "target": "next-step",
+            "start": 0,
+            "removedCount": 1,
+            "inserted": []
+          }
+        },
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 29,
+          "time": 1793099042372,
+          "data": {
+            "target": "next-step",
+            "start": 0,
+            "inserted": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Background subagent 508ed456-8ca6-46ca-a941-5fe2399e166c finished and will do no further work unless you send it more."
+                  },
+                  {
+                    "type": "text",
+                    "text": "Its closing message:"
+                  },
+                  {
+                    "type": "text",
+                    "text": "The bash command executed successfully and the result \"child-ready\" has been sent to the parent agent."
+                  }
+                ],
+                "source": {
+                  "kind": "subagent-settled",
+                  "form": "notice",
+                  "summary": "Background subagent 508ed456-8ca6-46ca-a941-5fe2399e166c finished and will do no further work unless you send it more.",
+                  "senderSessionId": "508ed456-8ca6-46ca-a941-5fe2399e166c"
+                },
+                "role": "user",
+                "id": "43412121-4875-477d-8917-97c1a3fbe3f8"
+              }
+            ]
+          }
+        },
+        {
+          "type": "assistant/message",
+          "seq": 30,
+          "time": 1793099042394,
+          "data": {
+            "id": "85239581-2ab6-41ef-b2d1-279a282cf80f",
+            "source": "model",
+            "text": [
+              "子代理已完成并返回输出。\n\n**子代理 ID**: `508ed456-8ca6-46ca-a941-5fe2399e166c`  \n**命令输出**: `child-ready`"
+            ]
+          }
+        },
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 32,
+          "time": 1793099042395,
+          "data": {
+            "target": "next-step",
+            "start": 0,
+            "removedCount": 1,
+            "inserted": []
+          }
+        },
+        {
+          "type": "assistant/message",
+          "seq": 35,
+          "time": 1793099044872,
+          "data": {
+            "id": "4643dee0-ba9b-4ee6-a9d6-48c1c03c8fac",
+            "source": "model",
+            "text": [
+              "子代理任务已完成，结果已汇报。"
+            ]
+          }
+        },
+        {
+          "type": "turn/end",
+          "seq": 37,
+          "time": 1793099044874,
+          "data": {
+            "turn": 2,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "sessionId": "508ed456-8ca6-46ca-a941-5fe2399e166c",
+      "events": [
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 3,
+          "time": 1793099005986,
+          "data": {
+            "target": "next-turn",
+            "start": 0,
+            "inserted": [
+              {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Execute the following bash command and report the output: `sleep 15 && printf 'child-ready\\n'`"
+                  },
+                  {
+                    "type": "text",
+                    "text": "Your parent agent id is \"session-2f0e3dfb-5305-48cd-bd15-a64985393a31\". Before you finish, send your result to that agent with send_message({ agent_id: \"session-2f0e3dfb-5305-48cd-bd15-a64985393a31\", message: \"<self-contained result>\" }). The parent shares your workspace but does not automatically receive your transcript, tool output, or reasoning. Send earlier messages as well when a finding changes what the parent should do next; sending a message does not end your turn."
+                  }
+                ],
+                "source": {
+                  "kind": "user"
+                },
+                "role": "user",
+                "id": "1a8d12e8-c02f-4242-a30b-bfb3ba6a1190"
+              }
+            ]
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 4,
+          "time": 1793099005986,
+          "data": {
+            "turn": 1
+          }
+        },
+        {
+          "type": "agent/inbox/spliced",
+          "seq": 5,
+          "time": 1793099005986,
+          "data": {
+            "target": "next-turn",
+            "start": 0,
+            "removedCount": 1,
+            "inserted": []
+          }
+        },
+        {
+          "type": "assistant/message",
+          "seq": 14,
+          "time": 1793099021504,
+          "data": {
+            "id": "97bc5758-60fe-4c88-87e7-e686d6bbb452",
+            "source": "model",
+            "text": []
+          }
+        },
+        {
+          "type": "tool/call",
+          "seq": 15,
+          "time": 1793099021505,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "call-cdddbf73-7023-4fb1-9eed-36b919b3d540",
+            "name": "bash",
+            "arguments": "{\"description\":\"Execute sleep 15 and print child-ready\",\"command\":\"sleep 15 && printf 'child-ready\\\\n'\"}"
+          }
+        },
+        {
+          "type": "assistant/message",
+          "seq": 19,
+          "time": 1793099039498,
+          "data": {
+            "id": "2fd3c658-a099-4ee8-aff7-0878a424caa1",
+            "source": "model",
+            "text": []
+          }
+        },
+        {
+          "type": "tool/call",
+          "seq": 20,
+          "time": 1793099039498,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "callId": "call-3e377c39-5f66-4d23-ac68-2bc81289f02a",
+            "name": "send_message",
+            "arguments": "{\"message\":\"child-ready\",\"agent_id\":\"session-2f0e3dfb-5305-48cd-bd15-a64985393a31\"}"
+          }
+        },
+        {
+          "type": "assistant/message",
+          "seq": 24,
+          "time": 1793099042363,
+          "data": {
+            "id": "5ad5d057-40f6-4c4e-86cf-b59cbd7819c8",
+            "source": "model",
+            "text": [
+              "The bash command executed successfully and the result \"child-ready\" has been sent to the parent agent."
+            ]
+          }
+        },
+        {
+          "type": "turn/end",
+          "seq": 26,
+          "time": 1793099042363,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "cleanup": {
+    "state": "stopped",
+    "portsReleased": true
+  }
+}

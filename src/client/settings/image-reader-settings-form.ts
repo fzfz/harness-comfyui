@@ -12,42 +12,36 @@ export interface ImageReaderSettingsForm {
 }
 
 export function withImageReaderConfiguration(
-  current: ConfigForm<ImageReaderSettingsView>,
+  current: ConfigForm<unknown>,
   load: () => Promise<ImageReaderConfiguration>,
 ): ImageReaderSettingsForm {
   const listeners = new Set<() => void>()
-  let fallback: ImageReaderConfiguration | undefined
-  let fallbackFailed = false
   let disposed = false
-  let snapshot: ConfigFormSnapshot<ImageReaderSettingsView> = current.getSnapshot()
+  let loadGeneration = 0
+  let snapshot: ConfigFormSnapshot<ImageReaderSettingsView> = {
+    ...current.getSnapshot(), status: 'loading', value: undefined, writable: false,
+  }
 
-  const refresh = () => {
+  const publish = (status: ConfigFormSnapshot<ImageReaderSettingsView>['status'], value: ImageReaderSettingsView | undefined) => {
     const base = current.getSnapshot()
-    const next = base.value?.configuration !== undefined
-      ? base
-      : fallback !== undefined ? {
-        ...base,
-        status: 'ready' as const,
-        writable: base.status === 'ready' && base.writable,
-        value: { configuration: fallback },
-        base: base.base ?? { configuration: fallback },
-      } : fallbackFailed ? { ...base, status: 'unavailable' as const } : base
-    if (next === snapshot) return
-    snapshot = next
+    snapshot = { ...base, status, value, writable: status === 'ready' && base.status === 'ready' && base.writable }
     for (const listener of listeners) listener()
   }
+  const refresh = () => {
+    const generation = ++loadGeneration
+    publish('loading', snapshot.value)
+    void load().then(configuration => {
+      if (disposed || generation !== loadGeneration) return
+      const decoded = decodeImageReaderConfiguration(configuration)
+      if (decoded === undefined) throw new TypeError('Image reader configuration is invalid.')
+      publish('ready', { configuration: decoded })
+    }).catch(() => {
+      if (disposed || generation !== loadGeneration) return
+      publish('unavailable', undefined)
+    })
+  }
   const unsubscribe = current.subscribe(refresh)
-  void load().then(configuration => {
-    if (disposed) return
-    const decoded = decodeImageReaderConfiguration(configuration)
-    if (decoded === undefined) throw new TypeError('Image reader configuration is invalid.')
-    fallback = decoded
-    refresh()
-  }).catch(() => {
-    if (disposed) return
-    fallbackFailed = true
-    refresh()
-  })
+  refresh()
 
   return {
     form: {

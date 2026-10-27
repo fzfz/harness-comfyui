@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-27",
+  "scope": "parent-yield-and-host-resume",
+  "status": "passed",
+  "applicationBuild": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+  "pluginVersion": "0.48.0",
+  "baseCommit": "2d74f999f64eb2e0ddc9b05af699354be874e3ba",
+  "preset": "harness-comfyui-cli-candidate",
+  "source": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+  "sourceIdentity": ".local/workbench-wait-repair-20261027/explicit-turn-action/candidate-source-identity.json",
+  "installedFilesCompared": 203,
+  "installedFilesMatch": true,
+  "baseline": "baseline.json",
+  "controlledProbe": "controlled-probe.json",
+  "realBusinessWait": "business-wait.json",
+  "reviews": {
+    "personaSemanticAudit": {
+      "status": "passed",
+      "lines": [
+        18,
+        20,
+        22,
+        24,
+        26,
+        28,
+        30,
+        32
+      ]
+    },
+    "monitorIndependentReview": {
+      "status": "passed",
+      "fixtures": [
+        "attempt-49",
+        "attempt-50"
+      ],
+      "testsPassed": 16,
+      "controlledWaitSnapshots": 28,
+      "earlyCompletionCount": 0
+    },
+    "targetedPresetTests": {
+      "passed": 8,
+      "failed": 0
+    }
+  },
+  "fullBusinessAcceptance": {
+    "status": "failed",
+    "details": "business-wait.json#acceptance"
+  },
+  "testedPresetSource": "- id: project-common\n  name: cordis:include\n  config:\n    path: ../shared/agent.cordis.yml\n- id: task-agent\n  name: '@deepseek-ai/dsh-tool-subagent'\n  config:\n    provider: spawn\n    maxDepth: 1\n- id: tool-subagent-control\n  name: '@deepseek-ai/dsh-tool-subagent-control'\n- id: persona\n  name: '@deepseek-ai/dsh-persona'\n  config:\n    complete: true\n    includeRuntimeContext: true\n    prefix: |-\n      你是 ComfyUI 工作台助手，负责绘图素材查询、Prompt 设计、ComfyUI 生图和图片分析。你还根据 Run ID 查询保存的 Prompt、Seed、模型、LoRA 和工作流参数，并将这些数据用于用户指定的后续生成。\n\n      你先读取用户要求，以及工作台随消息提供的素材和 Workflow 上下文。缺少会改变执行结果的信息时，你向用户询问具体字段，并在用户补充后执行依赖这些字段的任务。\n\n      你根据任务和当前 Skill 摘要选择适用的 Skill，通过 skill 工具读取正文，再按正文要求读取参考文件。\n\n      你通过 NoobAI MCP 查询作品、角色、提示词术语、底模、生成模型、LoRA、画风、画师提示词、Workflow 和 ComfyUI 实例信息，按照各工具声明构造参数。\n\n      你按照所选 Skill 使用受管 CLI 检查生成输入、提交生成、查询 Run 参数、取得媒体和读取图片。你核对 shell 退出码及 CLI 返回结果；返回结果指出输入错误时，你修正对应输入；执行失败时，你向用户说明失败步骤及返回的错误。\n\n      你通过宿主子代理工具分配可独立完成的任务。你根据宿主提供的剩余派发深度决定是否创建子代理；剩余深度为 0 时，由当前 Agent 完成任务。\n\n      派发后，你继续处理不依赖子代理结果的工作。当剩余工作都依赖尚未返回的子代理结果时，你必须仅回复一段文字，说明待完成的子任务。这条回复不得包含工具调用。宿主随后结束你的当前回合，子代理继续执行。子代理发送消息或完成任务后，宿主会通知你；如果你已结束当前回合，宿主会恢复你的执行。收到通知后，你读取子代理消息或任务结果，再根据其中的信息继续工作或汇总交付。你不得使用 shell 休眠或反复查询状态来等待子代理。\n\n      你使用用户的语言回复，交付用户请求的 Prompt、生成结果及 Run ID、图片观察结论或具体错误。用户可在工作台结果界面查看生成的图片。\n"
+}

@@ -5115,7 +5115,7 @@ describe('ComfyWorkflowCompiler', () => {
       loras: [],
     })).rejects.toMatchObject({
       code: 'GENERATION_PARAMETER_INVALID',
-      message: `Generation parameter "sampler_name" for 41:KSampler.sampler_name received ${JSON.stringify(suppliedValue)}; allowed values ${JSON.stringify(choices)}. Correct the value and call generate_with_comfyui again.`,
+      message: `Generation parameter "sampler_name" for 41:KSampler.sampler_name received ${JSON.stringify(suppliedValue)}; allowed values ${JSON.stringify(choices)}.`,
     })
   })
 

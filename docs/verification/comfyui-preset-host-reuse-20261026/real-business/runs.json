@@ -1,0 +1,58 @@
+{
+  "ok": true,
+  "value": {
+    "sessionId": "session-908d6371-55ac-443c-a79e-fb759fb3eabc",
+    "runs": [
+      {
+        "runId": "run_b4c37139-92d0-4b4d-b302-d17e01a556b1",
+        "turn": 1,
+        "title": "图片 1",
+        "instanceTitle": "win3080",
+        "templateTitle": "moss4步加速cfg大于1模板",
+        "status": "succeeded",
+        "errorCode": null,
+        "errorMessage": null,
+        "createdAt": 1793103110190,
+        "updatedAt": 1793103117274
+      },
+      {
+        "runId": "run_b17be13c-fbed-4c52-9662-ed06d54a984e",
+        "turn": 1,
+        "title": "图片 1",
+        "instanceTitle": "win3080",
+        "templateTitle": "moss4步加速cfg大于1模板",
+        "status": "succeeded",
+        "errorCode": null,
+        "errorMessage": null,
+        "createdAt": 1793102915628,
+        "updatedAt": 1793102922387
+      }
+    ],
+    "media": [
+      {
+        "mediaId": "media_02c756e3-343e-4f89-b6b2-87e07a256716",
+        "runId": "run_b4c37139-92d0-4b4d-b302-d17e01a556b1",
+        "turn": 1,
+        "outputIndex": 0,
+        "mediaKind": "image",
+        "filename": "moss-4step_00254_.png",
+        "mediaType": "image/png",
+        "byteSize": 192027,
+        "createdAt": 1793103117272
+      },
+      {
+        "mediaId": "media_dbae01d5-28ec-4ca9-bbc1-326a47a49f89",
+        "runId": "run_b17be13c-fbed-4c52-9662-ed06d54a984e",
+        "turn": 1,
+        "outputIndex": 0,
+        "mediaKind": "image",
+        "filename": "moss-4step_00253_.png",
+        "mediaType": "image/png",
+        "byteSize": 305163,
+        "createdAt": 1793102922384
+      }
+    ],
+    "hasActiveRuns": false,
+    "refreshAfterMs": 1000
+  }
+}

@@ -1,5 +1,3 @@
-import errorCatalog from '../../../config/error-catalog.json' with { type: 'json' }
-import { Buffer } from 'node:buffer'
 import { imageReaderDiagnosticSchema, type ImageReaderDiagnostic } from '../../image-reader/diagnostics-schema.ts'
 
 import type { ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
@@ -25,9 +23,6 @@ import {
 } from './errors.ts'
 import { prepareImageReaderInput, type PreparedImageReaderInput } from './image-reader-input.ts'
 import type { ImageReaderSettingsStore } from './settings-registration.ts'
-import type { ImageReaderCredentialStore } from './credential-store.ts'
-
-const IMAGE_READER_MAX_RESPONSE_BYTES = 1_048_576
 
 export interface ImageInspection {
   readonly provider: string
@@ -43,8 +38,7 @@ export interface ImageInspectionOptions {
 }
 
 export interface ImageReaderServiceOptions {
-  readonly scope: Pick<ImageReaderSettingsStore, 'get'>
-  readonly credentials: Pick<ImageReaderCredentialStore, 'resolve'>
+  readonly scope: Pick<ImageReaderSettingsStore, 'get' | 'prepare'>
   readonly prepareInput?: typeof prepareImageReaderInput
   readonly attachments: {
     readonly imageLimits: ImageAttachmentLimits
@@ -54,7 +48,6 @@ export interface ImageReaderServiceOptions {
     prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>
   }
   readonly onDiagnostic?: (record: ImageReaderDiagnostic) => void
-  readonly fetch?: typeof globalThis.fetch
 }
 
 function abort(signal?: AbortSignal): never {
@@ -90,6 +83,9 @@ async function observation(
       const value = chunk as StreamChunk
       if (value.type === 'text-delta') deltas.push(value.text)
       if (value.type === 'block-end' && value.block.type === 'text') completed.push(value.block.text)
+      if (value.type === 'finish' && value.reason.kind === 'max-tokens') {
+        throw new ImageReaderError('IMAGE_READER_OUTPUT_LIMIT', 'The image observation reached the output limit. Increase maxTokens and retry.')
+      }
       if (value.type === 'finish' && (value.reason.kind === 'error' || value.reason.kind === 'aborted')) {
         if (value.reason.kind === 'aborted' && signal?.aborted === true) abort(signal)
         const failure = value.reason.failure
@@ -126,107 +122,18 @@ async function observation(
   return result
 }
 
-function responseRecord(value: unknown): Record<string, unknown> | undefined {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined
-}
-
-function chatCompletionText(value: unknown): string | undefined {
-  const body = responseRecord(value)
-  const choice = Array.isArray(body?.choices) ? responseRecord(body.choices[0]) : undefined
-  if (choice?.finish_reason === 'length') {
-    const entry = errorCatalog.IMAGE_READER_OUTPUT_LIMIT
-    throw new ImageReaderError('IMAGE_READER_OUTPUT_LIMIT', `${entry.reason} ${entry.next_step}`)
-  }
-  const message = responseRecord(choice?.message)
-  return typeof message?.content === 'string' ? message.content.trim() : undefined
-}
-
-function declaredResponseBytes(response: Response): number | undefined {
-  const value = response.headers.get('content-length')
-  if (value === null || !/^\d+$/.test(value)) return undefined
-  const bytes = Number(value)
-  return Number.isSafeInteger(bytes) ? bytes : undefined
-}
-
-async function limitedResponseJson(response: Response, signal?: AbortSignal, onComplete?: () => void): Promise<unknown> {
-  if ((declaredResponseBytes(response) ?? 0) > IMAGE_READER_MAX_RESPONSE_BYTES) {
-    throw new ImageReaderError(
-      'IMAGE_READER_PROVIDER_FAILED',
-      'The configured OpenAI-compatible endpoint returned a response larger than 1 MiB.',
-    )
-  }
-  signal?.throwIfAborted()
-  const reader = response.body?.getReader()
-  if (reader === undefined) {
-    throw new ImageReaderError(
-      'IMAGE_READER_PROVIDER_FAILED',
-      'The configured OpenAI-compatible endpoint returned invalid JSON.',
-    )
-  }
-  const chunks: Uint8Array[] = []
-  let bytes = 0
-  const cancelReader = () => { void reader.cancel(signal?.reason).catch(String) }
-  signal?.addEventListener('abort', cancelReader, { once: true })
-  try {
-    while (true) {
-      signal?.throwIfAborted()
-      const next = await reader.read()
-      signal?.throwIfAborted()
-      if (next.done) break
-      bytes += next.value.byteLength
-      if (bytes > IMAGE_READER_MAX_RESPONSE_BYTES) {
-        void reader.cancel().catch(String)
-        throw new ImageReaderError(
-          'IMAGE_READER_PROVIDER_FAILED',
-          'The configured OpenAI-compatible endpoint returned a response larger than 1 MiB.',
-        )
-      }
-      chunks.push(next.value)
-    }
-    onComplete?.()
-    const body = new Uint8Array(bytes)
-    let offset = 0
-    for (const chunk of chunks) {
-      body.set(chunk, offset)
-      offset += chunk.byteLength
-    }
-    const result = JSON.parse(new TextDecoder().decode(body)) as unknown
-    signal?.throwIfAborted()
-    return result
-  } catch (error) {
-    if (isAbortError(error, signal)) abort(signal)
-    if (error instanceof ImageReaderError) throw error
-    throw new ImageReaderError(
-      'IMAGE_READER_PROVIDER_FAILED',
-      'The configured OpenAI-compatible endpoint returned invalid JSON.',
-      { cause: error },
-    )
-  } finally {
-    signal?.removeEventListener('abort', cancelReader)
-    reader.releaseLock()
-  }
-}
-
 export class ImageReaderService {
   private readonly options: ImageReaderServiceOptions
-  private readonly fetch: typeof globalThis.fetch
 
   constructor(options: ImageReaderServiceOptions) {
     this.options = options
-    this.fetch = options.fetch ?? globalThis.fetch
   }
 
   async inspect(filePath: string, options: ImageInspectionOptions = {}): Promise<ImageInspection> {
     const { prompt, signal } = options
-    const settings = this.options.scope.get()
-    const profile = activeImageReaderProfile(settings.configuration)
-    if (
-      profile.model.trim().length === 0
-      || (profile.connectionType === 'runtime' && profile.provider.trim().length === 0)
-      || (profile.connectionType === 'openai-compatible' && profile.endpoint.trim().length === 0)
-    ) {
+    ensureNotAborted(signal)
+    let profile = activeImageReaderProfile(this.options.scope.get().configuration)
+    if (profile.model.trim().length === 0 || (profile.provider.trim().length === 0 && this.options.scope.prepare === undefined)) {
       throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
     }
     if (prompt !== undefined && prompt.trim().length === 0) {
@@ -238,7 +145,6 @@ export class ImageReaderService {
         `The per-call image reading prompt must contain at most ${IMAGE_READER_PROMPT_MAX_LENGTH} characters.`,
       )
     }
-    const inspectionPrompt = prompt ?? profile.defaultPrompt
     const started = performance.now()
     let previous = started
     let requestId: string | undefined
@@ -256,36 +162,19 @@ export class ImageReaderService {
     }
     emit('preparing')
     try {
-      let apiKey: string | undefined
-      const reference = settings.credentialRefs[profile.id]
-      if (profile.connectionType === 'openai-compatible' && reference !== undefined) {
-        let resolved: Awaited<ReturnType<ImageReaderCredentialStore['resolve']>>
-        try {
-          resolved = await this.options.credentials.resolve(reference)
-        } catch (error) {
-          if (isAbortError(error, signal)) abort(signal)
-          throw new ImageReaderError(
-            'IMAGE_READER_CREDENTIAL_PROVIDER_READ_FAILED',
-            'The official credential provider could not resolve the image reader credential for this inspection.',
-            { cause: error },
-          )
-        }
-        ensureNotAborted(signal)
-        if (resolved === undefined) {
-          throw new ImageReaderError(
-            'IMAGE_READER_CREDENTIAL_REFERENCE_MISSING',
-            'The active image reader profile references a credential that the official credential provider cannot resolve.',
-          )
-        }
-        apiKey = resolved.value
+      if (this.options.scope.prepare !== undefined) {
+        await this.options.scope.prepare(signal)
+        profile = activeImageReaderProfile(this.options.scope.get().configuration)
       }
+      if (profile.model.trim().length === 0 || profile.provider.trim().length === 0) {
+        throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
+      }
+      const inspectionPrompt = prompt ?? profile.defaultPrompt
       const input = await (this.options.prepareInput ?? prepareImageReaderInput)(
         filePath, this.options.attachments.imageLimits.maxImageBytes, signal,
       )
       emit('input_prepared')
-      const result = profile.connectionType === 'openai-compatible'
-        ? await this.inspectOpenAiCompatible(profile, apiKey, input, filePath, inspectionPrompt, emit, signal)
-        : await this.inspectRuntime(profile, input, filePath, inspectionPrompt, options.sessionId, emit, signal)
+      const result = await this.inspectRuntime(profile, input, filePath, inspectionPrompt, options.sessionId, emit, signal)
       emit('completed')
       return result
     } catch (error) {
@@ -346,69 +235,4 @@ export class ImageReaderService {
     })
   }
 
-  private async inspectOpenAiCompatible(
-    profile: ImageReaderProfile,
-    apiKey: string | undefined,
-    input: PreparedImageReaderInput,
-    filePath: string,
-    prompt: string,
-    emit: (stage: ImageReaderDiagnostic['stage'], requestId?: string) => void,
-    signal?: AbortSignal,
-  ): Promise<ImageInspection> {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (apiKey !== undefined) headers.Authorization = `Bearer ${apiKey}`
-    let response: Response
-    try {
-      ensureNotAborted(signal)
-      emit('request_sent')
-      response = await this.fetch(profile.endpoint, {
-        method: 'POST',
-        headers,
-        signal,
-        body: JSON.stringify({
-          model: profile.model,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              { type: 'image_url', image_url: { url: `data:${input.mediaType};base64,${Buffer.from(input.data).toString('base64')}` } },
-            ],
-          }],
-          temperature: profile.temperature,
-          max_tokens: profile.maxTokens,
-        }),
-      })
-    } catch (error) {
-      if (isAbortError(error, signal)) abort(signal)
-      throw new ImageReaderError(
-        'IMAGE_READER_PROVIDER_FAILED',
-        'The configured OpenAI-compatible endpoint could not be reached.',
-        { cause: error },
-      )
-    }
-    emit('response_headers', response.headers.get('x-request-id') ?? undefined)
-    if (!response.ok) {
-      throw new ImageReaderError(
-        'IMAGE_READER_PROVIDER_FAILED',
-        `The configured OpenAI-compatible endpoint returned HTTP ${response.status}.`,
-      )
-    }
-    const body = await limitedResponseJson(response, signal, () => emit('response_complete'))
-    const result = chatCompletionText(body)
-    if (result === undefined) {
-      throw new ImageReaderError(
-        'IMAGE_READER_PROVIDER_FAILED',
-        'The configured OpenAI-compatible endpoint returned an invalid Chat Completions response.',
-      )
-    }
-    if (result.length === 0) {
-      throw new ImageReaderError('IMAGE_READER_EMPTY_RESPONSE', 'The configured visual model returned no image observation.')
-    }
-    return Object.freeze({
-      provider: 'openai-compatible',
-      model: profile.model,
-      filePath,
-      observation: result,
-    })
-  }
 }

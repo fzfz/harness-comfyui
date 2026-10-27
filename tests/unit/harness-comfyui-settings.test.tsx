@@ -121,7 +121,7 @@ describe('Harness-ComfyUI unified settings page', () => {
     expect(button(renderer, '图片读取').props['aria-selected']).toBe(true)
     expect(button(renderer, '数据源服务').props['aria-selected']).toBe(false)
     expect(button(renderer, BROWSER_SETTINGS.ui.tabLabel).props['aria-selected']).toBe(false)
-    expect(JSON.stringify(renderer.toJSON())).toContain('保存多份独立读图配置')
+    expect(JSON.stringify(renderer.toJSON())).toContain('保存多份图片读取配置')
     expect(renderer.root.findAllByType('form')[0]!.props.noValidate).toBe(true)
 
     const profileName = renderer.root.findAllByType('input').find(candidate => candidate.props.type === 'text')!

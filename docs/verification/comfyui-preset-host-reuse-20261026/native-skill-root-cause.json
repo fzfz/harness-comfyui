@@ -1,0 +1,301 @@
+{
+  "scenario": "installed-native-skill-catalog-lifecycle",
+  "runtime": {
+    "electron": "44.7.0",
+    "controller": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-api-session-controller/lib/index.js",
+    "officeProvider": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-skill-office/lib/index.js"
+  },
+  "components": "installed preset registry, Skill registry, filesystem provider, Office provider, AgentRegistry and SessionSkillCatalog",
+  "controlledInputs": "session observation supplies fixed recorded preset and working directory; native AgentRegistry enter/detach controls Agent presence",
+  "officialApplicationModified": false,
+  "realModelCalls": 0,
+  "officeNames": [
+    "office",
+    "office-docx",
+    "office-export-pdf",
+    "office-pptx",
+    "office-recalculate",
+    "office-render",
+    "office-xlsx"
+  ],
+  "businessNames": [
+    "anima-prompt-builder",
+    "character-portrait-prompt-designer",
+    "comfyui-generate",
+    "comfyui-image-review",
+    "krea2-anime-prompt-builder",
+    "local-image-reader",
+    "moss-prompt-builder",
+    "wai-sdxl-prompt-builder"
+  ],
+  "observations": [
+    {
+      "phase": "child-live",
+      "sessionId": "child",
+      "recordedPreset": "workbench",
+      "liveAgent": true,
+      "names": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ]
+    },
+    {
+      "phase": "child-ended",
+      "sessionId": "child",
+      "recordedPreset": "workbench",
+      "liveAgent": false,
+      "names": [
+        "office",
+        "office-docx",
+        "office-export-pdf",
+        "office-pptx",
+        "office-recalculate",
+        "office-render",
+        "office-xlsx"
+      ]
+    },
+    {
+      "phase": "parent-still-live",
+      "sessionId": "parent",
+      "recordedPreset": "workbench",
+      "liveAgent": true,
+      "names": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ]
+    },
+    {
+      "phase": "preset-after-child-ended",
+      "names": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ],
+      "businessBodyReadable": true
+    },
+    {
+      "phase": "child-ended-change-service-only",
+      "sessionId": "child",
+      "recordedPreset": "workbench",
+      "liveAgent": false,
+      "names": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ]
+    },
+    {
+      "phase": "parent-ended",
+      "sessionId": "parent",
+      "recordedPreset": "workbench",
+      "liveAgent": false,
+      "names": [
+        "office",
+        "office-docx",
+        "office-export-pdf",
+        "office-pptx",
+        "office-recalculate",
+        "office-render",
+        "office-xlsx"
+      ]
+    },
+    {
+      "phase": "never-started-session",
+      "sessionId": "never-started",
+      "recordedPreset": "workbench",
+      "liveAgent": false,
+      "names": [
+        "office",
+        "office-docx",
+        "office-export-pdf",
+        "office-pptx",
+        "office-recalculate",
+        "office-render",
+        "office-xlsx"
+      ]
+    }
+  ],
+  "trace": [
+    {
+      "phase": "child-live",
+      "event": "serviceFor",
+      "sessionId": "child",
+      "service": "skills"
+    },
+    {
+      "phase": "child-live",
+      "event": "registry.list",
+      "selectedService": "preset",
+      "names": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ]
+    },
+    {
+      "phase": "child-ended",
+      "event": "acquireScope",
+      "presetId": "workbench",
+      "succeeded": true,
+      "returnsServiceAccessor": false
+    },
+    {
+      "phase": "child-ended",
+      "event": "registry.list",
+      "selectedService": "global",
+      "names": [
+        "office",
+        "office-docx",
+        "office-export-pdf",
+        "office-pptx",
+        "office-recalculate",
+        "office-render",
+        "office-xlsx"
+      ]
+    },
+    {
+      "phase": "parent-still-live",
+      "event": "serviceFor",
+      "sessionId": "parent",
+      "service": "skills"
+    },
+    {
+      "phase": "parent-still-live",
+      "event": "registry.list",
+      "selectedService": "preset",
+      "names": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ]
+    },
+    {
+      "phase": "child-ended-change-service-only",
+      "event": "acquireScope",
+      "presetId": "workbench",
+      "succeeded": true,
+      "returnsServiceAccessor": false
+    },
+    {
+      "phase": "child-ended-change-service-only",
+      "event": "registry.list",
+      "selectedService": "preset",
+      "names": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ]
+    },
+    {
+      "phase": "parent-ended",
+      "event": "acquireScope",
+      "presetId": "workbench",
+      "succeeded": true,
+      "returnsServiceAccessor": false
+    },
+    {
+      "phase": "parent-ended",
+      "event": "registry.list",
+      "selectedService": "global",
+      "names": [
+        "office",
+        "office-docx",
+        "office-export-pdf",
+        "office-pptx",
+        "office-recalculate",
+        "office-render",
+        "office-xlsx"
+      ]
+    },
+    {
+      "phase": "never-started-session",
+      "event": "acquireScope",
+      "presetId": "workbench",
+      "succeeded": true,
+      "returnsServiceAccessor": false
+    },
+    {
+      "phase": "never-started-session",
+      "event": "registry.list",
+      "selectedService": "global",
+      "names": [
+        "office",
+        "office-docx",
+        "office-export-pdf",
+        "office-pptx",
+        "office-recalculate",
+        "office-render",
+        "office-xlsx"
+      ]
+    }
+  ],
+  "originalDesktopFailure": {
+    "source": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/official-business-audit/d628731c-823c-45ed-b024-a967bdec9a9c/3ccb62b5-42dd-46ef-8695-6e5c58ab75a2/official-business-failure.json",
+    "error": "AssertionError: expected [ 'office', 'office-docx', …(5) ] to deeply equal [ 'anima-prompt-builder', …(7) ]",
+    "childSessionId": "66cd97dc-cbe7-41e4-9442-9e799054fcd0",
+    "projectionSource": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-fONxlu/.local/desktop-e2e/d628731c-823c-45ed-b024-a967bdec9a9c/official-environment/dsh-home/storages/session_projcache/sessions/66cd97dc-cbe7-41e4-9442-9e799054fcd0.json",
+    "persistedProjection": {
+      "agentPreset": {
+        "ver": 1,
+        "seq": 87,
+        "val": "harness-comfyui-cli-candidate"
+      },
+      "workingDirectory": {
+        "ver": 1,
+        "seq": 87,
+        "val": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-fONxlu/.local/desktop-e2e/d628731c-823c-45ed-b024-a967bdec9a9c/official-environment/native-child-directory"
+      },
+      "turnBoundary": {
+        "ver": 2,
+        "seq": 87,
+        "val": {
+          "openTurnStartSeq": null,
+          "lastStepStartSeq": 84,
+          "lastStepBoundary": {
+            "kind": "end",
+            "seq": 86
+          },
+          "lastTurn": 1
+        }
+      }
+    },
+    "parentCompletionNotice": "Background subagent 66cd97dc-cbe7-41e4-9442-9e799054fcd0 finished and will do no further work unless you send it more.Its closing message:Read the result file at /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-fONxlu/.local/desktop-e2e/d628731c-823c-45ed-b024-a967bdec9a9c/official-environment/workspace/native-child-result.txt."
+  }
+}

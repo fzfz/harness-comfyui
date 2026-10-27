@@ -1,8 +1,7 @@
 import Schema from '@deepseek-ai/schemastery'
 
 export const IMAGE_READER_DIAGNOSTIC_STAGES = [
-  'preparing', 'input_prepared', 'request_sent', 'response_headers',
-  'response_complete', 'completed', 'failed', 'cancelled',
+  'preparing', 'input_prepared', 'request_sent', 'completed', 'failed', 'cancelled',
 ] as const
 
 export interface ImageReaderDiagnostic {

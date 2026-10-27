@@ -1,0 +1,78 @@
+{
+  "date": "2026-10-27",
+  "status": "passed",
+  "scope": "plugin-real-parent-child-generation-image-read-and-native-resume",
+  "fullSkillAdherence": false,
+  "applicationVersion": "0.2.1-rc.3",
+  "applicationBuild": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+  "baseCommit": "2d74f999f64eb2e0ddc9b05af699354be874e3ba",
+  "pluginVersion": "0.48.0",
+  "preset": "harness-comfyui-cli-candidate",
+  "model": "nvidia/nemotron-3.5-super-vl:free",
+  "reasoningEffort": "high",
+  "instanceId": "2",
+  "templateId": "45",
+  "modelId": "18",
+  "parentSessionId": "session-908d6371-55ac-443c-a79e-fb759fb3eabc",
+  "childSessionId": "7c59cb0b-ae2f-456c-814b-0b0be2ce5f33",
+  "observedSteps": 43,
+  "toolResults": 60,
+  "installedFilesCompared": 203,
+  "installedFilesMatch": true,
+  "toolsPerAgent": 27,
+  "businessSkillsPerAgent": 8,
+  "generationRuns": [
+    {
+      "runId": "run_b4c37139-92d0-4b4d-b302-d17e01a556b1",
+      "status": "succeeded"
+    },
+    {
+      "runId": "run_b17be13c-fbed-4c52-9662-ed06d54a984e",
+      "status": "succeeded"
+    }
+  ],
+  "generatedImages": 2,
+  "imageInspections": 2,
+  "pixelDimensions": [
+    512,
+    512
+  ],
+  "parentWait": {
+    "sleepCalls": 0,
+    "stateQueries": 1,
+    "turnEndSeq": 139,
+    "resumeSeq": 141,
+    "finalTurnEndSeq": 153
+  },
+  "restart": {
+    "persistedRuns": 2,
+    "persistedMedia": 2,
+    "uiSummary": "2 个运行 · 2 个媒体",
+    "allProcessesStopped": true,
+    "portsReleased": true
+  },
+  "review": "independent-review.json",
+  "sessionEvidence": [
+    "parent-session.json",
+    "child-session.json"
+  ],
+  "businessEvidence": [
+    "business-results.json",
+    "runs.json",
+    "images.json"
+  ],
+  "images": [
+    "parent.png",
+    "child.png"
+  ],
+  "restartEvidence": "restart.json",
+  "restartScreenshot": "restart-ui.png",
+  "knownDeferredHostIssue": "ended-child Skill catalog returns Office Skills",
+  "quality": {
+    "exitCode": 1,
+    "passed": 2237,
+    "failed": 1,
+    "failure": "ended-child Skill catalog returns 7 Office Skills",
+    "location": "tests/desktop/official-desktop-live.test.mjs:3706"
+  }
+}

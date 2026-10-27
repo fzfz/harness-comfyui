@@ -34,6 +34,45 @@ describe('controlled model response scripts', () => {
       expect(created[1].choices[0].finish_reason).toBe('tool_calls')
       expect((await request('create child'))[0].choices[0].delta.content).toBe('captured')
       expect((await request('continue child'))[0].choices[0].delta.tool_calls[0].function.name).toBe('send_message')
+      services.enqueueModelResponse(() => true, captured => ({ role: 'assistant', content: captured.body.messages[0].content }))
+      expect((await request('dynamic result path'))[0].choices[0].delta.content).toBe('dynamic result path')
+    } finally {
+      await services.close()
+    }
+  })
+  it('checks template inputs and reads CLI result files before submitting and accepting a Run', async () => {
+    const fixture = parseOfficialBusinessFixture(officialBusinessFixtureJson)
+    const services = await startOfficialBusinessServices(fixture)
+    const messages = [{ role: 'user', content: fixture.generation.triggerPrompt }]
+    const request = async (tools = [{ type: 'function', function: { name: 'bash' } }]) => {
+      const response = await fetch(`${services.baseURL}/chat/completions`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ model: fixture.provider.modelId, messages, tools, stream: true }),
+      })
+      const events = (await response.text()).split('\n').filter(line => line.startsWith('data: {'))
+        .map(line => JSON.parse(line.slice(6)))
+      return events[0].choices[0].delta
+    }
+    const next = async (id, content) => {
+      messages.push({ role: 'tool', tool_call_id: id, content })
+      return request()
+    }
+    try {
+      const inspected = await request()
+      expect(inspected.tool_calls[0]).toMatchObject({ id: 'official-generation-inspect', function: { name: 'bash' } })
+      const readInspection = await next('official-generation-inspect', '/tmp/template inspection.json\n')
+      expect(JSON.parse(readInspection.tool_calls[0].function.arguments).command).toBe("cat '/tmp/template inspection.json'")
+      const submitted = await next('official-generation-inspect-read', '{"parameters":[{"name":"positive_prompt"},{"name":"seed"}]}')
+      const command = JSON.parse(submitted.tool_calls[0].function.arguments).command
+      expect(command).toContain('generation submit --stdin')
+      expect(command).toContain('"model":null')
+      expect(command).toContain('"positive_prompt":"official Desktop generation regression image","seed":424242')
+      const readRun = await next('official-generation-submit', '/tmp/accepted-run.json\n')
+      expect(JSON.parse(readRun.tool_calls[0].function.arguments).command).toBe("cat '/tmp/accepted-run.json'")
+      expect(await next('official-generation-submit-read', '{"run_id":"run_controlled"}'))
+        .toEqual({ role: 'assistant', content: 'Controlled generation accepted.' })
+      messages.splice(1)
+      expect((await request([{ type: 'function', function: { name: 'generate_with_comfyui' } }])).tool_calls).toBeUndefined()
     } finally {
       await services.close()
     }
@@ -227,7 +266,7 @@ describe('official Desktop business fixture schema', () => {
           model: fixture.provider.modelId,
           stream: true,
           messages: [{ role: 'user', content: fixture.generation.triggerPrompt }],
-          tools: [{ type: 'function', function: { name: 'generate_with_comfyui' } }],
+          tools: [{ type: 'function', function: { name: 'bash' } }],
         }),
       })
       expect(modelRequest.headers.get('content-type')).toContain('text/event-stream')
@@ -235,13 +274,11 @@ describe('official Desktop business fixture schema', () => {
         .filter(line => line.startsWith('data: ') && line !== 'data: [DONE]')
         .map(line => JSON.parse(line.slice('data: '.length)))
       const generationCall = modelEvents.flatMap(event => event.choices?.[0]?.delta?.tool_calls ?? [])
-        .find(call => call.function?.name === 'generate_with_comfyui')
-      expect(JSON.parse(generationCall.function.arguments)).toMatchObject({
-        title: fixture.generation.runTitle,
-        instance_id: fixture.generation.instanceId,
-        template_id: fixture.generation.templateId,
-        parameters: { positive_prompt: fixture.generation.positivePrompt, seed: fixture.generation.seed },
-      })
+        .find(call => call.function?.name === 'bash')
+      const generationArguments = JSON.parse(generationCall.function.arguments)
+      expect(generationArguments.command).toContain('generation inspect-template-parameters --stdin')
+      expect(generationArguments.command).toContain('"template_id":"1","instance_id":"1"')
+      expect(generationArguments.command).not.toContain('generation submit')
       expect((await services.nextRequest()).body.messages[0].content).toBe(fixture.generation.triggerPrompt)
       expect(services.requestLog).toHaveLength(1)
       expect(services.requestLog[0]).toMatchObject({

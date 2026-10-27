@@ -1,0 +1,16 @@
+{
+  "provider": "openrouter",
+  "model": "nvidia/nemotron-3.5-super-vl:free",
+  "configuration": {
+    "id": "nvidia/nemotron-3.5-super-vl:free",
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 1000000,
+    "maxTokens": 16384,
+    "reasoningEfforts": {
+      "high": "high"
+    }
+  }
+}

@@ -6,13 +6,13 @@ import type { ImageReaderConfiguration } from '../../image-reader/settings.ts'
 import { ImageReaderConfigurationService } from './configuration-service.ts'
 import { ImageReaderService, type ImageInspectionOptions } from './image-reader-service.ts'
 import { imageReaderCredentialStore } from './credential-store.ts'
-import { createInspectImageTool } from './image-reader-tool.ts'
+import { ImageReaderNativeSettings } from './native-settings.ts'
 import { imageReaderSettingsStore } from './settings-registration.ts'
 
 export { Config } from '../../image-reader/plugin-schema.ts'
 import type { Config } from '../../image-reader/plugin-schema.ts'
 export const name = 'harness-comfyui-image-reader'
-export const inject = ['settings', 'attachments', 'llm', 'tools', 'credentials'] as const
+export const inject = ['settings', 'attachments', 'llm', 'credentials'] as const
 
 declare module '@deepseek-ai/cordis' {
   interface Context { imageReader: ImageReaderPluginService }
@@ -36,7 +36,7 @@ export class ImageReaderPluginService extends Service {
     void pending.then(cleanup, cleanup)
     return pending
   }
-  configuration(): Promise<ImageReaderConfiguration> { return this.configurationService.configuration() }
+  configuration(): Promise<ImageReaderConfiguration> { return this.run(undefined, signal => this.configurationService.configuration(signal)) }
   models(signal: AbortSignal) { return this.run(signal, signal => this.configurationService.models(signal)) }
   saveProfile(request: Parameters<ImageReaderConfigurationService['saveProfile']>[0], signal: AbortSignal) {
     return this.run(signal, signal => this.configurationService.saveProfile(request, signal))
@@ -54,9 +54,14 @@ export class ImageReaderPluginService extends Service {
 
 export async function apply(ctx: Context, config: Config): Promise<void> {
   const defaults = config.imageReaderDefaultModel === undefined ? undefined : createImageReaderSettingsDefaults(config.imageReaderDefaultModel)
-  const scope = imageReaderSettingsStore(ctx, defaults)
+  const settings = imageReaderSettingsStore(ctx, defaults)
+  const scope = new ImageReaderNativeSettings(ctx, settings)
   const credentials = imageReaderCredentialStore(ctx.credentials)
   const logger = ctx.logger('harness-comfyui-image-reader')
-  const service = new ImageReaderPluginService(ctx, new ImageReaderConfigurationService(ctx.llm, scope, credentials), new ImageReaderService({ scope, credentials, attachments: ctx.attachments, llm: ctx.llm, onDiagnostic: record => logger.info(runtime.diagnosticLogFormat, JSON.stringify(record)) }), config.shutdownTimeoutMs ?? runtime.shutdownTimeoutMs)
-  ctx.tools.register(createInspectImageTool(service))
+  new ImageReaderPluginService(ctx, new ImageReaderConfigurationService(ctx.llm, scope, credentials), new ImageReaderService({
+    scope: { get: () => settings.get(), prepare: signal => scope.prepare(signal) },
+    attachments: ctx.attachments,
+    llm: ctx.llm,
+    onDiagnostic: record => logger.info(runtime.diagnosticLogFormat, JSON.stringify(record)),
+  }), config.shutdownTimeoutMs ?? runtime.shutdownTimeoutMs)
 }

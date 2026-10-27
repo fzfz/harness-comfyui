@@ -1,0 +1,78 @@
+{
+  "reason": "all-turns-ended",
+  "detail": {
+    "steps": 43
+  },
+  "response": {
+    "record": {
+      "schemaVersion": 1,
+      "runId": "a4b921ad-3954-4d28-809c-bd1620db6588",
+      "mode": "development",
+      "state": "stopped",
+      "createdAt": "2026-10-27T12:05:55.050Z",
+      "updatedAt": "2026-10-27T12:14:28.104Z",
+      "application": {
+        "bundlePath": "/Applications/DeepSeek Harness.app",
+        "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+        "version": "0.2.1-rc.3",
+        "bundleId": "com.deepseek.dsh"
+      },
+      "directories": {
+        "run": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/a4b921ad-3954-4d28-809c-bd1620db6588",
+        "dshHome": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home",
+        "electronUserData": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+        "workspace": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/workspace",
+        "logs": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/a4b921ad-3954-4d28-809c-bd1620db6588/logs",
+        "evidence": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/a4b921ad-3954-4d28-809c-bd1620db6588/evidence",
+        "profile": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home/profiles/desktop",
+        "diagnosticFile": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/a4b921ad-3954-4d28-809c-bd1620db6588/logs/diagnostic.log"
+      },
+      "environment": {
+        "root": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment",
+        "leasePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/active-probe.json"
+      },
+      "ports": {
+        "host": 63721,
+        "rendererCdp": 63722,
+        "hostInspector": 63723
+      },
+      "launch": {
+        "arguments": [
+          "--user-data-dir=/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+          "--remote-debugging-port=63722",
+          "--remote-debugging-address=127.0.0.1"
+        ],
+        "environment": {
+          "DSH_HOME": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/dsh-home",
+          "DSH_DESKTOP_USER_DATA_DIR": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data",
+          "DSH_DESKTOP_DIAGNOSTIC_FILE": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/a4b921ad-3954-4d28-809c-bd1620db6588/logs/diagnostic.log",
+          "DSH_DESKTOP_HOST_INSPECT_PORT": "63723"
+        },
+        "unsetEnvironmentNames": [
+          "ELECTRON_RUN_AS_NODE"
+        ]
+      },
+      "process": {
+        "pid": 71204,
+        "processGroupId": 71204,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/user-data --remote-debugging-port=63722 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/workbench-composition-acceptance-20261027/live-final-environment/workspace",
+        "listeningPorts": [
+          63721,
+          63722,
+          63739
+        ],
+        "observedAt": "2026-10-27T12:05:58.550Z"
+      },
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-10-27T12:14:28.104Z",
+        "portsReleased": true
+      }
+    },
+    "recordPath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.local/desktop-e2e/a4b921ad-3954-4d28-809c-bd1620db6588/run.json"
+  },
+  "runId": "a4b921ad-3954-4d28-809c-bd1620db6588",
+  "parentSessionId": "session-908d6371-55ac-443c-a79e-fb759fb3eabc"
+}

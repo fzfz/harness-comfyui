@@ -670,6 +670,7 @@ describe('image reader settings page behavior', () => {
       IMAGE_READER_PROFILE_NAME_TOO_LONG: 'name',
       IMAGE_READER_RUNTIME_PROVIDER_REQUIRED: 'provider',
       IMAGE_READER_RUNTIME_PROVIDER_TOO_LONG: 'provider',
+      IMAGE_READER_ENDPOINT_NATIVE_MAPPING_UNSUPPORTED: 'endpoint',
       IMAGE_READER_ENDPOINT_REQUIRED: 'endpoint',
       IMAGE_READER_ENDPOINT_TOO_LONG: 'endpoint',
       IMAGE_READER_ENDPOINT_WHITESPACE_INVALID: 'endpoint',
@@ -686,6 +687,7 @@ describe('image reader settings page behavior', () => {
       IMAGE_READER_MAX_TOKENS_INTEGER_INVALID: 'maxTokens',
       IMAGE_READER_MAX_TOKENS_RANGE_INVALID: 'maxTokens',
       IMAGE_READER_API_KEY_REQUIRED: 'credential',
+      IMAGE_READER_NATIVE_CREDENTIAL_REQUIRED: 'credential',
       IMAGE_READER_API_KEY_TOO_LONG: 'credential',
       IMAGE_READER_PROFILE_LIMIT_REACHED: 'profile',
     })
@@ -810,9 +812,9 @@ describe('image reader settings page behavior', () => {
     })
     expect(inputByType(renderer, 'password').props.placeholder).toContain('已保存')
     await act(async () => {
-      ;(buttonByText(renderer, '清除已保存的 API Key').props.onClick as () => void)()
+      ;(buttonByText(renderer, '停止使用此 API Key').props.onClick as () => void)()
     })
-    expect(JSON.stringify(renderer.toJSON())).toContain('保存后清除已保存的 API Key')
+    expect(JSON.stringify(renderer.toJSON())).toContain('保存后，这份配置不再使用当前 API Key')
     await act(async () => {
       ;(buttonByText(renderer, '保留已保存的 API Key').props.onClick as () => void)()
     })
@@ -885,7 +887,7 @@ describe('image reader settings page behavior', () => {
     await act(async () => {
       ;(buttonByText(renderer, '复制配置').props.onClick as () => void)()
     })
-    expect(JSON.stringify(renderer.toJSON())).toContain('这份配置没有保存 API Key')
+    expect(JSON.stringify(renderer.toJSON())).toContain('这份配置尚未设置 API Key')
     expect(inputByType(renderer, 'password').props.placeholder).not.toContain('已保存')
     renderer.unmount()
   })

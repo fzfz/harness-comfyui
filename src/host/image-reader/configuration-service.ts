@@ -1,3 +1,4 @@
+import { isCredentialRefName } from '@deepseek-ai/dsh-credentials'
 import type { LlmRuntime } from '@deepseek-ai/dsh-llm'
 import type { ImageReaderSettingsStore } from './settings-registration.ts'
 import type { ImageReaderCredentialStore } from './credential-store.ts'
@@ -25,6 +26,7 @@ import {
 } from '../../image-reader/settings.ts'
 import {
   createImageReaderCredentialFailure,
+  isImageReaderCredentialRef,
   type ImageReaderCredentialRef,
 } from '../../image-reader/credential-schema.ts'
 import { ImageReaderError } from './errors.ts'
@@ -83,7 +85,8 @@ export class ImageReaderConfigurationService {
     this.credentials = credentials
   }
 
-  async configuration(): Promise<ImageReaderConfiguration> {
+  async configuration(signal?: AbortSignal): Promise<ImageReaderConfiguration> {
+    signal?.throwIfAborted()
     return (await this.projectSection(this.settings.get())).configuration
   }
 
@@ -170,6 +173,7 @@ export class ImageReaderConfigurationService {
   }
 
   private async ensureWritableReference(reference: ImageReaderCredentialRef): Promise<void> {
+    if (!isImageReaderCredentialRef(reference) || this.settings.credentialIsReferenced?.(reference) === true) return
     let info
     try {
       info = await this.credentials.describe(reference)
@@ -188,6 +192,7 @@ export class ImageReaderConfigurationService {
     reference: ImageReaderCredentialRef,
     primary: unknown,
   ): Promise<void> {
+    if (this.settings.credentialIsReferenced?.(reference) === true) return
     try {
       await this.credentials.unset(reference)
     } catch (cleanup) {
@@ -206,7 +211,8 @@ export class ImageReaderConfigurationService {
     reference: ImageReaderCredentialRef | undefined,
     settingsFailure?: unknown,
   ): Promise<void> {
-    if (reference === undefined) return
+    if (reference === undefined || !isImageReaderCredentialRef(reference)) return
+    if (this.settings.credentialIsReferenced?.(reference) === true) return
     try {
       await this.credentials.unset(reference)
     } catch (cleanup) {
@@ -224,9 +230,10 @@ export class ImageReaderConfigurationService {
   private async replaceSettings(
     section: ImageReaderSettingsSection,
     previous: PersistedUserOverride,
+    signal: AbortSignal,
   ): Promise<SettingsWriteResult> {
     try {
-      await this.settings.replace(section)
+      await this.settings.replace(section, undefined, signal)
       return Object.freeze({ kind: 'committed' })
     } catch (cause) {
       const observed = this.settings.readPersistedUserOverride()
@@ -265,6 +272,7 @@ export class ImageReaderConfigurationService {
     code: 'IMAGE_READER_SETTINGS_SAVE_FAILED' | 'IMAGE_READER_SETTINGS_ACTIVATE_FAILED' | 'IMAGE_READER_SETTINGS_DELETE_FAILED',
     message: string,
   ): never {
+    if (result.cause instanceof ImageReaderError) throw result.cause
     throw new ImageReaderError(code, message, { cause: result.cause })
   }
 
@@ -303,7 +311,7 @@ export class ImageReaderConfigurationService {
       })
       signal.throwIfAborted()
       const previous = this.settings.readPersistedUserOverride()
-      const write = await this.replaceSettings(section, previous)
+      const write = await this.replaceSettings(section, previous, signal)
       if (write.kind === 'rejected-previous') {
         this.throwPreviousWriteFailure(
           write,
@@ -414,7 +422,7 @@ export class ImageReaderConfigurationService {
       })
       const section = Object.freeze({ configuration: storedConfiguration, credentialRefs: Object.freeze(credentialRefs) })
       try {
-        validateImageReaderSettingsSection(section)
+        validateImageReaderSettingsSection(section, value => typeof value === 'string' && isCredentialRefName(value))
       } catch (error) {
         if (stagedReference !== undefined) await this.cleanupStagedReference(stagedReference, error)
         throw new ImageReaderError(
@@ -441,7 +449,7 @@ export class ImageReaderConfigurationService {
         if (stagedReference !== undefined) await this.cleanupStagedReference(stagedReference, cause)
         throw cause
       }
-      const write = await this.replaceSettings(section, previous)
+      const write = await this.replaceSettings(section, previous, signal)
       if (write.kind === 'rejected-previous') {
         if (stagedReference !== undefined) await this.cleanupStagedReference(stagedReference, write.cause)
         if (signal.aborted) throw signal.reason
@@ -499,7 +507,7 @@ export class ImageReaderConfigurationService {
       })
       signal.throwIfAborted()
       const previous = this.settings.readPersistedUserOverride()
-      const write = await this.replaceSettings(section, previous)
+      const write = await this.replaceSettings(section, previous, signal)
       if (write.kind === 'rejected-previous') {
         this.throwPreviousWriteFailure(
           write,

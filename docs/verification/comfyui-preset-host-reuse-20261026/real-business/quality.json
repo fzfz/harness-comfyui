@@ -1,0 +1,54 @@
+{
+  "exitCode": 1,
+  "passed": 2237,
+  "failed": 1,
+  "knownHostFailure": "ended-child Skill catalog returns 7 Office Skills",
+  "location": "tests/desktop/official-desktop-live.test.mjs:3706",
+  "cleanup": [
+    {
+      "runId": "5a8b9cda-0f99-48cb-b761-6bb89d6f5165",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "3b193a40-88ce-4974-86d2-e61acebd94c4",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "c3710dc4-4413-4c70-abe6-db90957119dc",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "d6aab96b-a4b3-416b-a08f-545dfa467b27",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "b35e5cfe-793d-44c7-a902-0870b0899cab",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "f7fe971b-c41b-44c0-afb2-e64b8227d413",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "6902e2e0-3852-41d0-b5f2-807bfe47e15f",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "002aecfc-3a5a-444e-b994-845b02b35cf6",
+      "state": "stopped",
+      "portsReleased": true
+    },
+    {
+      "runId": "c74df03c-4c88-475d-be73-87b78394335e",
+      "state": "stopped",
+      "portsReleased": true
+    }
+  ]
+}

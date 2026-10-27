@@ -1,0 +1,93 @@
+{
+  "attempt": "attempt-45",
+  "parentSessionId": "session-04c65b14-9dca-4400-9a46-c9db9951579a",
+  "timeline": [
+    {
+      "seq": 144,
+      "type": "tool/call",
+      "time": 1793096957303,
+      "name": "bash",
+      "arguments": {
+        "command": "sleep 60 && echo \"waited 60s\"",
+        "description": "Wait longer for subagent"
+      }
+    },
+    {
+      "seq": 145,
+      "type": "agent/inbox/spliced",
+      "time": 1793096998021,
+      "target": "next-step",
+      "inserted": [
+        {
+          "id": "a137b925-b805-47d5-8300-16df1970881f",
+          "source": {
+            "kind": "agent-message",
+            "form": "relay",
+            "senderSessionId": "5f701a97-8551-44d1-bc0f-81a117de0518"
+          }
+        }
+      ]
+    },
+    {
+      "seq": 146,
+      "type": "agent/inbox/spliced",
+      "time": 1793097008818,
+      "target": "next-step",
+      "inserted": [
+        {
+          "id": "e0d9186c-5817-4824-9d65-70aa4e7b5fa1",
+          "source": {
+            "kind": "subagent-settled",
+            "form": "notice",
+            "summary": "Background subagent 5f701a97-8551-44d1-bc0f-81a117de0518 finished and will do no further work unless you send it more.",
+            "senderSessionId": "5f701a97-8551-44d1-bc0f-81a117de0518"
+          }
+        }
+      ]
+    },
+    {
+      "seq": 147,
+      "type": "tool/result",
+      "time": 1793097017314,
+      "result": {
+        "role": "tool",
+        "source": {
+          "kind": "tool",
+          "callId": "call-d0fb86f5-e80c-4f39-a442-dca7b7d6f704"
+        },
+        "toolCallId": "call-d0fb86f5-e80c-4f39-a442-dca7b7d6f704",
+        "content": [
+          {
+            "type": "text",
+            "text": "(no output)\n[timed out after 60000ms]\n[killed by signal: SIGTERM]"
+          }
+        ],
+        "isError": false,
+        "id": "43102fa9-1eb4-4ed4-8399-1c937a931d33"
+      }
+    },
+    {
+      "seq": 151,
+      "type": "user/message",
+      "time": 1793097017320,
+      "id": "a137b925-b805-47d5-8300-16df1970881f",
+      "source": {
+        "kind": "agent-message",
+        "form": "relay",
+        "senderSessionId": "5f701a97-8551-44d1-bc0f-81a117de0518"
+      }
+    },
+    {
+      "seq": 152,
+      "type": "user/message",
+      "time": 1793097017320,
+      "id": "e0d9186c-5817-4824-9d65-70aa4e7b5fa1",
+      "source": {
+        "kind": "subagent-settled",
+        "form": "notice",
+        "summary": "Background subagent 5f701a97-8551-44d1-bc0f-81a117de0518 finished and will do no further work unless you send it more.",
+        "senderSessionId": "5f701a97-8551-44d1-bc0f-81a117de0518"
+      }
+    }
+  ]
+}

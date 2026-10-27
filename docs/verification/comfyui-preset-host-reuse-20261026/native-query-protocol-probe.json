@@ -1,0 +1,1411 @@
+{
+  "schemaVersion": 1,
+  "addressMapping": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-10-26T17:56:09.421Z",
+    "results": [
+      {
+        "inputBaseUrlSuffix": "/v1",
+        "scenario": "success",
+        "settingsConfigured": true,
+        "requestCount": 1,
+        "runtime": {
+          "applicationVersion": "0.2.1-rc.3",
+          "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+          "buildDirty": false,
+          "nodeVersion": "24.21.0",
+          "electronVersion": "44.7.0",
+          "providerVersion": "0.2.1-rc.3"
+        },
+        "request": {
+          "method": "POST",
+          "path": "/v1/chat/completions",
+          "url": "http://127.0.0.1:51791/v1/chat/completions",
+          "authorizationMatches": true,
+          "body": {
+            "model": "fixture-vision",
+            "stream": true,
+            "temperature": 0.35,
+            "max_completion_tokens": 256
+          },
+          "images": [
+            {
+              "mediaType": "image/png",
+              "width": 2,
+              "height": 2,
+              "bytes": 95
+            }
+          ]
+        },
+        "finish": {
+          "kind": "stop"
+        },
+        "text": "Native image observation",
+        "responseClosed": true,
+        "portReleased": true
+      },
+      {
+        "inputBaseUrlSuffix": "/v1?api-version=2026-10-01&mode=vision",
+        "scenario": "success",
+        "settingsConfigured": true,
+        "requestCount": 1,
+        "runtime": {
+          "applicationVersion": "0.2.1-rc.3",
+          "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+          "buildDirty": false,
+          "nodeVersion": "24.21.0",
+          "electronVersion": "44.7.0",
+          "providerVersion": "0.2.1-rc.3"
+        },
+        "request": {
+          "method": "POST",
+          "path": "/v1?api-version=2026-10-01&mode=vision%2Fchat%2Fcompletions",
+          "url": "http://127.0.0.1:51798/v1?api-version=2026-10-01&mode=vision%2Fchat%2Fcompletions",
+          "authorizationMatches": true,
+          "body": {
+            "model": "fixture-vision",
+            "stream": true,
+            "temperature": 0.35,
+            "max_completion_tokens": 256
+          },
+          "images": [
+            {
+              "mediaType": "image/png",
+              "width": 2,
+              "height": 2,
+              "bytes": 95
+            }
+          ]
+        },
+        "finish": {
+          "kind": "stop"
+        },
+        "text": "Native image observation",
+        "responseClosed": true,
+        "portReleased": true
+      },
+      {
+        "inputBaseUrlSuffix": "/v1/chat/completions?api-version=2026-10-01&mode=vision",
+        "scenario": "success",
+        "settingsConfigured": true,
+        "requestCount": 1,
+        "runtime": {
+          "applicationVersion": "0.2.1-rc.3",
+          "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+          "buildDirty": false,
+          "nodeVersion": "24.21.0",
+          "electronVersion": "44.7.0",
+          "providerVersion": "0.2.1-rc.3"
+        },
+        "request": {
+          "method": "POST",
+          "path": "/v1/chat/completions?api-version=2026-10-01&mode=vision%2Fchat%2Fcompletions",
+          "url": "http://127.0.0.1:51800/v1/chat/completions?api-version=2026-10-01&mode=vision%2Fchat%2Fcompletions",
+          "authorizationMatches": true,
+          "body": {
+            "model": "fixture-vision",
+            "stream": true,
+            "temperature": 0.35,
+            "max_completion_tokens": 256
+          },
+          "images": [
+            {
+              "mediaType": "image/png",
+              "width": 2,
+              "height": 2,
+              "bytes": 95
+            }
+          ]
+        },
+        "finish": {
+          "kind": "stop"
+        },
+        "text": "Native image observation",
+        "responseClosed": true,
+        "portReleased": true
+      },
+      {
+        "inputBaseUrlSuffix": "/v1/chat/completions?api-version=2026-10-01&mode=vision#",
+        "scenario": "success",
+        "settingsConfigured": true,
+        "requestCount": 1,
+        "runtime": {
+          "applicationVersion": "0.2.1-rc.3",
+          "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+          "buildDirty": false,
+          "nodeVersion": "24.21.0",
+          "electronVersion": "44.7.0",
+          "providerVersion": "0.2.1-rc.3"
+        },
+        "request": {
+          "method": "POST",
+          "path": "/v1/chat/completions?api-version=2026-10-01&mode=vision",
+          "url": "http://127.0.0.1:51803/v1/chat/completions?api-version=2026-10-01&mode=vision",
+          "authorizationMatches": true,
+          "body": {
+            "model": "fixture-vision",
+            "stream": true,
+            "temperature": 0.35,
+            "max_completion_tokens": 256
+          },
+          "images": [
+            {
+              "mediaType": "image/png",
+              "width": 2,
+              "height": 2,
+              "bytes": 95
+            }
+          ]
+        },
+        "finish": {
+          "kind": "stop"
+        },
+        "text": "Native image observation",
+        "responseClosed": true,
+        "portReleased": true
+      },
+      {
+        "inputBaseUrlSuffix": "/v1/chat/completions?tag=a&tag=b#",
+        "scenario": "success",
+        "settingsConfigured": true,
+        "requestCount": 1,
+        "runtime": {
+          "applicationVersion": "0.2.1-rc.3",
+          "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+          "buildDirty": false,
+          "nodeVersion": "24.21.0",
+          "electronVersion": "44.7.0",
+          "providerVersion": "0.2.1-rc.3"
+        },
+        "request": {
+          "method": "POST",
+          "path": "/v1/chat/completions?tag=b",
+          "url": "http://127.0.0.1:51809/v1/chat/completions?tag=b",
+          "authorizationMatches": true,
+          "body": {
+            "model": "fixture-vision",
+            "stream": true,
+            "temperature": 0.35,
+            "max_completion_tokens": 256
+          },
+          "images": [
+            {
+              "mediaType": "image/png",
+              "width": 2,
+              "height": 2,
+              "bytes": 95
+            }
+          ]
+        },
+        "finish": {
+          "kind": "stop"
+        },
+        "text": "Native image observation",
+        "responseClosed": true,
+        "portReleased": true
+      }
+    ]
+  },
+  "publicConfiguration": {
+    "field": "providers.<route>.defaultQuery",
+    "settingsMutationAccepted": true,
+    "requestedQuery": {
+      "api-version": "2026-10-01"
+    },
+    "scenario": "success",
+    "settingsConfigured": true,
+    "providerSettingsKeys": [
+      "apiKeyEnv",
+      "displayName",
+      "api",
+      "baseURL",
+      "models",
+      "modelOverrides",
+      "compat",
+      "defaultContextWindow",
+      "defaultMaxTokens",
+      "defaultInput",
+      "headers",
+      "thinkingBudgets",
+      "streamIdleTimeoutMs",
+      "maxRequestImageBytes",
+      "requestImagePixelBudget",
+      "requestImageMaxBytes",
+      "defaultQuery"
+    ],
+    "settingsSchema": {
+      "uid": 1303,
+      "refs": {
+        "1160": {
+          "type": "number",
+          "meta": {
+            "max": 2147483647,
+            "default": 500
+          }
+        },
+        "1161": {
+          "type": "number",
+          "meta": {
+            "max": 2147483647,
+            "default": 10000
+          }
+        },
+        "1162": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 1,
+            "default": 0.1
+          }
+        },
+        "1163": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "initialDelayMs": 1160,
+            "maxDelayMs": 1161,
+            "jitterRatio": 1162
+          }
+        },
+        "1164": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "normal"
+        },
+        "1165": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 0,
+            "max": 9007199254740991,
+            "default": 5
+          }
+        },
+        "1166": {
+          "type": "string",
+          "meta": {}
+        },
+        "1167": {
+          "type": "array",
+          "meta": {
+            "default": [
+              "EMPTY_RESPONSE",
+              "RATE_LIMIT",
+              "SERVER",
+              "TIMEOUT",
+              "TRANSPORT"
+            ]
+          },
+          "inner": 1166
+        },
+        "1168": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "mode": 1164,
+            "maxRetries": 1165,
+            "retryableCodes": 1167,
+            "backoff": 1163
+          }
+        },
+        "1169": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "always"
+        },
+        "1170": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "mode": 1169,
+            "backoff": 1163
+          }
+        },
+        "1171": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1168,
+            1170
+          ]
+        },
+        "1172": {
+          "type": "number",
+          "meta": {}
+        },
+        "1173": {
+          "type": "number",
+          "meta": {}
+        },
+        "1174": {
+          "type": "number",
+          "meta": {}
+        },
+        "1175": {
+          "type": "number",
+          "meta": {}
+        },
+        "1176": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "minimal": 1172,
+            "low": 1173,
+            "medium": 1174,
+            "high": 1175
+          }
+        },
+        "1177": {
+          "type": "string",
+          "meta": {}
+        },
+        "1178": {
+          "type": "number",
+          "meta": {}
+        },
+        "1179": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1180": {
+          "type": "const",
+          "meta": {},
+          "value": null
+        },
+        "1181": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "thinking.enabled"
+        },
+        "1182": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "thinking.effort"
+        },
+        "1183": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "thinking.budget"
+        },
+        "1184": {
+          "type": "union",
+          "meta": {
+            "required": true
+          },
+          "list": [
+            1181,
+            1182,
+            1183
+          ]
+        },
+        "1185": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1186": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "$var": 1184,
+            "omitWhenOff": 1185
+          }
+        },
+        "1187": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1177,
+            1178,
+            1179,
+            1180,
+            1186
+          ]
+        },
+        "1188": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1189": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1190": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1191": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1192": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1193": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1194,
+            1195
+          ]
+        },
+        "1194": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "max_completion_tokens"
+        },
+        "1195": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "max_tokens"
+        },
+        "1196": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1197": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1198": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1199": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1200": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1201,
+            1202,
+            1203,
+            1204,
+            1205,
+            1206,
+            1207,
+            1208,
+            1209,
+            1210,
+            1211
+          ]
+        },
+        "1201": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "openai"
+        },
+        "1202": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "deepseek"
+        },
+        "1203": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "openrouter"
+        },
+        "1204": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "together"
+        },
+        "1205": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "baseten"
+        },
+        "1206": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "zai"
+        },
+        "1207": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "qwen"
+        },
+        "1208": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "chat-template"
+        },
+        "1209": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "qwen-chat-template"
+        },
+        "1210": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "string-thinking"
+        },
+        "1211": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "ant-ling"
+        },
+        "1212": {
+          "type": "dict",
+          "meta": {
+            "default": {}
+          },
+          "inner": 1187,
+          "sKey": 1213
+        },
+        "1213": {
+          "type": "string",
+          "meta": {}
+        },
+        "1214": {
+          "type": "dict",
+          "meta": {
+            "default": {}
+          },
+          "inner": 1187,
+          "sKey": 1215
+        },
+        "1215": {
+          "type": "string",
+          "meta": {}
+        },
+        "1216": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1217": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1218,
+            1219,
+            1220
+          ]
+        },
+        "1218": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "thinking_token_budget"
+        },
+        "1219": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "thinking_budget"
+        },
+        "1220": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "thinking_budget_tokens"
+        },
+        "1221": {
+          "type": "number",
+          "meta": {
+            "step": 1
+          }
+        },
+        "1222": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1223": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1224": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1225
+          ]
+        },
+        "1225": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "anthropic"
+        },
+        "1226": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1227": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1228": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1229": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1230": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1231": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1232": {
+          "type": "boolean",
+          "meta": {}
+        },
+        "1233": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "supportsStore": 1188,
+            "supportsDeveloperRole": 1189,
+            "supportsReasoningEffort": 1190,
+            "supportsUsageInStreaming": 1191,
+            "supportsFinishReason": 1192,
+            "maxTokensField": 1193,
+            "requiresToolResultName": 1196,
+            "requiresAssistantAfterToolResult": 1197,
+            "requiresThinkingAsText": 1198,
+            "requiresReasoningContentOnAssistantMessages": 1199,
+            "thinkingFormat": 1200,
+            "chatTemplateKwargs": 1212,
+            "chatTemplateArgs": 1214,
+            "supportsThinkingTokenBudget": 1216,
+            "thinkingTokenBudgetField": 1217,
+            "vllmPriority": 1221,
+            "supportsMaxOutputTokens": 1222,
+            "supportsStrictMode": 1223,
+            "cacheControlFormat": 1224,
+            "supportsLongCacheRetention": 1226,
+            "supportsEagerToolInputStreaming": 1227,
+            "supportsCacheControlOnTools": 1228,
+            "supportsTemperature": 1229,
+            "forceAdaptiveThinking": 1230,
+            "allowEmptySignature": 1231,
+            "supportsStrictTools": 1232
+          }
+        },
+        "1234": {
+          "type": "string",
+          "meta": {}
+        },
+        "1235": {
+          "type": "const",
+          "meta": {},
+          "value": null
+        },
+        "1236": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1234,
+            1235
+          ]
+        },
+        "1237": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1238,
+            1239,
+            1240,
+            1241,
+            1242,
+            1243,
+            1244
+          ]
+        },
+        "1238": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "off"
+        },
+        "1239": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "minimal"
+        },
+        "1240": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "low"
+        },
+        "1241": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "medium"
+        },
+        "1242": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "high"
+        },
+        "1243": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "xhigh"
+        },
+        "1244": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "max"
+        },
+        "1245": {
+          "type": "dict",
+          "meta": {
+            "default": {}
+          },
+          "inner": 1236,
+          "sKey": 1237
+        },
+        "1246": {
+          "type": "string",
+          "meta": {}
+        },
+        "1247": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 1
+          }
+        },
+        "1248": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 1
+          }
+        },
+        "1249": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1250,
+            1251
+          ]
+        },
+        "1250": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "text"
+        },
+        "1251": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "image"
+        },
+        "1252": {
+          "type": "array",
+          "meta": {
+            "default": []
+          },
+          "inner": 1249
+        },
+        "1253": {
+          "type": "const",
+          "meta": {},
+          "value": false
+        },
+        "1254": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1253,
+            1245
+          ]
+        },
+        "1255": {
+          "type": "string",
+          "meta": {
+            "required": true
+          }
+        },
+        "1256": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "id": 1255,
+            "name": 1246,
+            "contextWindow": 1247,
+            "maxTokens": 1248,
+            "input": 1252,
+            "reasoningEfforts": 1254,
+            "compat": 1233
+          }
+        },
+        "1257": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "name": 1246,
+            "contextWindow": 1247,
+            "maxTokens": 1248,
+            "input": 1252,
+            "reasoningEfforts": 1254,
+            "compat": 1233
+          }
+        },
+        "1258": {
+          "type": "string",
+          "meta": {
+            "role": "credential-ref"
+          }
+        },
+        "1259": {
+          "type": "string",
+          "meta": {}
+        },
+        "1260": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1261,
+            1262,
+            1263
+          ]
+        },
+        "1261": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "openai-completions"
+        },
+        "1262": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "openai-responses"
+        },
+        "1263": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "anthropic-messages"
+        },
+        "1264": {
+          "type": "string",
+          "meta": {}
+        },
+        "1265": {
+          "type": "array",
+          "meta": {
+            "default": []
+          },
+          "inner": 1256
+        },
+        "1266": {
+          "type": "dict",
+          "meta": {
+            "default": {}
+          },
+          "inner": 1257,
+          "sKey": 1267
+        },
+        "1267": {
+          "type": "string",
+          "meta": {}
+        },
+        "1268": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 1,
+            "default": 262144
+          }
+        },
+        "1269": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 1,
+            "default": 32768
+          }
+        },
+        "1270": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1271,
+            1272
+          ]
+        },
+        "1271": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "text"
+        },
+        "1272": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "image"
+        },
+        "1273": {
+          "type": "array",
+          "meta": {
+            "default": [
+              "text"
+            ]
+          },
+          "inner": 1270
+        },
+        "1274": {
+          "type": "string",
+          "meta": {}
+        },
+        "1275": {
+          "type": "dict",
+          "meta": {
+            "default": {}
+          },
+          "inner": 1274,
+          "sKey": 1276
+        },
+        "1276": {
+          "type": "string",
+          "meta": {}
+        },
+        "1277": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1278,
+            1279,
+            1280,
+            1281,
+            1282,
+            1283,
+            1284
+          ]
+        },
+        "1278": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "off"
+        },
+        "1279": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "minimal"
+        },
+        "1280": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "low"
+        },
+        "1281": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "medium"
+        },
+        "1282": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "high"
+        },
+        "1283": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "xhigh"
+        },
+        "1284": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "max"
+        },
+        "1285": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1286,
+            1287,
+            1288
+          ]
+        },
+        "1286": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "none"
+        },
+        "1287": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "short"
+        },
+        "1288": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "long"
+        },
+        "1289": {
+          "type": "union",
+          "meta": {},
+          "list": [
+            1290,
+            1291,
+            1292,
+            1293
+          ]
+        },
+        "1290": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "sse"
+        },
+        "1291": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "websocket"
+        },
+        "1292": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "websocket-cached"
+        },
+        "1293": {
+          "type": "const",
+          "meta": {
+            "required": true
+          },
+          "value": "auto"
+        },
+        "1294": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 0
+          }
+        },
+        "1295": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 0
+          }
+        },
+        "1296": {
+          "type": "number",
+          "meta": {
+            "min": 5e-324,
+            "max": 2147483647,
+            "default": 300000
+          }
+        },
+        "1297": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 1,
+            "default": 20971520
+          }
+        },
+        "1298": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 1,
+            "default": 4194304
+          }
+        },
+        "1299": {
+          "type": "number",
+          "meta": {
+            "step": 1,
+            "min": 1,
+            "default": 1048576
+          }
+        },
+        "1300": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "apiKeyEnv": 1258,
+            "displayName": 1259,
+            "api": 1260,
+            "baseURL": 1264,
+            "models": 1265,
+            "modelOverrides": 1266,
+            "compat": 1233,
+            "defaultContextWindow": 1268,
+            "defaultMaxTokens": 1269,
+            "defaultInput": 1273,
+            "headers": 1275,
+            "reasoning": 1277,
+            "thinkingBudgets": 1176,
+            "cacheRetention": 1285,
+            "transport": 1289,
+            "timeoutMs": 1294,
+            "websocketConnectTimeoutMs": 1295,
+            "streamIdleTimeoutMs": 1296,
+            "maxRequestImageBytes": 1297,
+            "requestImagePixelBudget": 1298,
+            "requestImageMaxBytes": 1299,
+            "retryPolicy": 1171
+          }
+        },
+        "1301": {
+          "type": "string",
+          "meta": {}
+        },
+        "1302": {
+          "type": "dict",
+          "meta": {
+            "default": {}
+          },
+          "inner": 1300,
+          "sKey": 1301
+        },
+        "1303": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "providers": 1302
+          }
+        }
+      }
+    },
+    "requestCount": 1,
+    "runtime": {
+      "applicationVersion": "0.2.1-rc.3",
+      "buildCommit": "be72761ee1a6736ebcdf4f3739363b083ae53c98",
+      "buildDirty": false,
+      "nodeVersion": "24.21.0",
+      "electronVersion": "44.7.0",
+      "providerVersion": "0.2.1-rc.3"
+    },
+    "request": {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "url": "http://127.0.0.1:52504/v1/chat/completions",
+      "authorizationMatches": true,
+      "body": {
+        "model": "fixture-vision",
+        "stream": true,
+        "temperature": 0.35,
+        "max_completion_tokens": 256
+      },
+      "images": [
+        {
+          "mediaType": "image/png",
+          "width": 2,
+          "height": 2,
+          "bytes": 95
+        }
+      ]
+    },
+    "finish": {
+      "kind": "stop"
+    },
+    "text": "Native image observation",
+    "responseClosed": true,
+    "portReleased": true
+  },
+  "source": {
+    "piVersion": "1.1.0",
+    "openaiVersion": "7.19.0",
+    "hostEntry": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js",
+    "result": [
+      {
+        "path": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@earendil-works/pi-ai/dist/api/openai-completions.js",
+        "spans": [
+          {
+            "firstLine": 531,
+            "source": "function createClient(model, context, apiKey, optionsHeaders, fetch, sessionId, compat = getCompat(model)) {\n    const headers = { \"User-Agent\": getPiUserAgent(), ...model.headers };\n    if (model.provider === \"github-copilot\") {\n        const hasImages = hasCopilotVisionInput(context.messages);\n        const copilotHeaders = buildCopilotDynamicHeaders({\n            messages: context.messages,\n            hasImages,\n        });\n        Object.assign(headers, copilotHeaders);\n    }\n    if (sessionId && compat.sendSessionAffinityHeaders) {\n        if (compat.sessionAffinityFormat === \"openrouter\") {"
+          },
+          {
+            "firstLine": 557,
+            "source": "    return new OpenAI({\n        apiKey,\n        baseURL: model.baseUrl,\n        dangerouslyAllowBrowser: true,\n        fetch,\n        defaultHeaders: headers,\n    });\n}\nfunction buildParams(model, context, options, compat = getCompat(model), cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env), grammarToolInputProperties = createGrammarToolInputProperties(getDeclaredTools(context.messages), compat.supportsOpenAIGrammarTools)) {\n    const transcriptTools = resolveTranscriptTools(context.messages, compat.supportsMidConvoSystemMessages === true && compat.supportsMidConvoToolAdditions === true);\n    const messages = convertMessages(model, context, compat, {\n        grammarToolInputProperties,"
+          }
+        ]
+      },
+      {
+        "path": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/openai/client.js",
+        "spans": [
+          {
+            "firstLine": 337,
+            "source": "    defaultQuery() {\n        return this._options.defaultQuery;\n    }\n    /** @internal Client request headers for each new WebSocket handshake. */\n    _buildWebSocketHeaders(authHeaders) {\n        return Object.fromEntries((0, headers_1.buildHeaders)([\n            {\n                'User-Agent': this.getUserAgent(),\n                'OpenAI-Organization': this.organization,\n                'OpenAI-Project': this.project,\n            },\n            authHeaders,\n            this._options.defaultHeaders,\n        ]).values);\n    }\n    validateHeaders({ values, nulls }, schemes = {\n        bearerAuth: true,\n        adminAPIKeyAuth: true,"
+          },
+          {
+            "firstLine": 471,
+            "source": "    buildURL(path, query, defaultBaseURL) {\n        const baseURL = (!tslib_1.__classPrivateFieldGet(this, _OpenAI_instances, \"m\", _OpenAI_baseURLOverridden).call(this) && defaultBaseURL) || this.baseURL;\n        const url = (0, values_1.isAbsoluteURL)(path)\n            ? new URL(path)\n            : new URL(baseURL + (baseURL.endsWith('/') && path.startsWith('/') ? path.slice(1) : path));\n        const defaultQuery = this.defaultQuery();\n        const pathQuery = Object.fromEntries(url.searchParams);\n        if (!(0, values_2.isEmptyObj)(defaultQuery) || !(0, values_2.isEmptyObj)(pathQuery)) {\n            query = { ...pathQuery, ...defaultQuery, ...query };\n        }\n        if (typeof query === 'object' && query && !Array.isArray(query)) {\n            url.search = this.stringifyQuery(query);\n        }\n        return url.toString();\n    }\n    /**\n     * Used as a callback for mutating the given `FinalRequestOptions` object.\n     * Function-based credentials are resolved later, when building authentication"
+          },
+          {
+            "firstLine": 476,
+            "source": "        const defaultQuery = this.defaultQuery();\n        const pathQuery = Object.fromEntries(url.searchParams);\n        if (!(0, values_2.isEmptyObj)(defaultQuery) || !(0, values_2.isEmptyObj)(pathQuery)) {\n            query = { ...pathQuery, ...defaultQuery, ...query };\n        }\n        if (typeof query === 'object' && query && !Array.isArray(query)) {\n            url.search = this.stringifyQuery(query);\n        }\n        return url.toString();\n    }\n    /**\n     * Used as a callback for mutating the given `FinalRequestOptions` object.\n     * Function-based credentials are resolved later, when building authentication\n     * headers, including for direct `buildRequest()` calls. Overriding this hook\n     * does not bypass that resolution.\n     */\n    async prepareOptions(options) { }\n    /**"
+          },
+          {
+            "firstLine": 1142,
+            "source": "        const url = this.buildURL(path, query, defaultBaseURL);\n        x509Authentication?.snapshotAPIURL(url);\n        const explicitTimeout = 'timeout' in options;\n        if (explicitTimeout)\n            (0, values_1.validatePositiveInteger)('timeout', options.timeout);\n        options.timeout = options.timeout ?? this.timeout;\n        if (x509Authentication && x509RequestFetchOptions) {\n            x509Authentication.snapshotRequest(options.signal, options.timeout, x509RequestFetchOptions);\n        }\n        if (x509Authentication) {\n            const snapshot = x509Authentication.requestSnapshot();\n            options.timeout = snapshot.timeout;\n            if (snapshot.signal === undefined) {\n                delete options.signal;\n            }\n            else {\n                options.signal = snapshot.signal;\n            }"
+          }
+        ]
+      },
+      {
+        "path": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js",
+        "spans": [
+          {
+            "firstLine": 1049,
+            "source": "const profile = z.object({\n\tapiKeyEnv: z.string().role(\"credential-ref\"),\n\tdisplayName: z.string(),\n\tapi: z.union(supportedProtocols()),\n\tbaseURL: z.string(),\n\tmodels: z.array(modelProfile),\n\tmodelOverrides: z.dict(modelOverride),\n\tcompat: compatProfile,\n\tdefaultContextWindow: z.number().step(1).min(1).default(DEFAULT_CONTEXT_WINDOW),\n\tdefaultMaxTokens: z.number().step(1).min(1).default(DEFAULT_MAX_TOKENS),\n\tdefaultInput: z.array(z.union(MODALITIES)).default([...DEFAULT_INPUT]),\n\theaders: z.dict(z.string()),\n\treasoning: z.union(THINKING_LEVELS),\n\tthinkingBudgets,\n\tcacheRetention: z.union([\n\t\t\"none\",\n\t\t\"short\",\n\t\t\"long\""
+          },
+          {
+            "firstLine": 1053,
+            "source": "\tbaseURL: z.string(),\n\tmodels: z.array(modelProfile),\n\tmodelOverrides: z.dict(modelOverride),\n\tcompat: compatProfile,\n\tdefaultContextWindow: z.number().step(1).min(1).default(DEFAULT_CONTEXT_WINDOW),\n\tdefaultMaxTokens: z.number().step(1).min(1).default(DEFAULT_MAX_TOKENS),\n\tdefaultInput: z.array(z.union(MODALITIES)).default([...DEFAULT_INPUT]),\n\theaders: z.dict(z.string()),\n\treasoning: z.union(THINKING_LEVELS),\n\tthinkingBudgets,\n\tcacheRetention: z.union([\n\t\t\"none\",\n\t\t\"short\",\n\t\t\"long\"\n\t]),\n\ttransport: z.union([\n\t\t\"sse\",\n\t\t\"websocket\","
+          },
+          {
+            "firstLine": 1060,
+            "source": "\theaders: z.dict(z.string()),\n\treasoning: z.union(THINKING_LEVELS),\n\tthinkingBudgets,\n\tcacheRetention: z.union([\n\t\t\"none\",\n\t\t\"short\",\n\t\t\"long\"\n\t]),\n\ttransport: z.union([\n\t\t\"sse\",\n\t\t\"websocket\",\n\t\t\"websocket-cached\",\n\t\t\"auto\"\n\t]),\n\ttimeoutMs: z.natural(),\n\twebsocketConnectTimeoutMs: z.natural(),\n\tstreamIdleTimeoutMs: z.number().min(Number.MIN_VALUE).max(MAX_TIMER_DELAY_MS).default(DEFAULT_STREAM_IDLE_TIMEOUT_MS),\n\tmaxRequestImageBytes: z.number().step(1).min(1).default(DEFAULT_MAX_REQUEST_IMAGE_BYTES),"
+          },
+          {
+            "firstLine": 1145,
+            "source": "\t\t\t\t...source.baseURL === void 0 ? {} : { baseURL: source.baseURL },\n\t\t\t\t...source.models === void 0 ? {} : { models: source.models },\n\t\t\t\t...source.modelOverrides === void 0 ? {} : { modelOverrides: source.modelOverrides },\n\t\t\t\t...source.compat === void 0 ? {} : { compat: source.compat },\n\t\t\t\tdefaultInput,\n\t\t\t\tdefaultContextWindow: source.defaultContextWindow ?? 262144,\n\t\t\t\tdefaultMaxTokens: source.defaultMaxTokens ?? 32768\n\t\t\t}, validation);\n\t\t\tcatalogError = catalog.modelErrors.values().next().value;\n\t\t\tpiProvider = buildProvider({\n\t\t\t\tprovider,\n\t\t\t\tdisplayName,\n\t\t\t\t...source.api === void 0 ? {} : { api: source.api },\n\t\t\t\t...source.baseURL === void 0 ? {} : { baseURL: source.baseURL },\n\t\t\t\tmodels: catalog.models,\n\t\t\t\tnamesCredential: source.apiKeyEnv !== void 0\n\t\t\t});\n\t\t} catch (error) {"
+          },
+          {
+            "firstLine": 1158,
+            "source": "\t\t\t\t...source.baseURL === void 0 ? {} : { baseURL: source.baseURL },\n\t\t\t\tmodels: catalog.models,\n\t\t\t\tnamesCredential: source.apiKeyEnv !== void 0\n\t\t\t});\n\t\t} catch (error) {\n\t\t\tif (validation === \"strict\" || !(error instanceof PiAiCatalogError)) throw error;\n\t\t\tcatalogError ??= error.message;\n\t\t}\n\t\tconst { apiKeyEnv, retryPolicy, models: _models, displayName: _displayName, ...rest } = source;\n\t\tresolved.set(provider, {\n\t\t\t...rest,\n\t\t\tprovider,\n\t\t\tdisplayName,\n\t\t\t...apiKeyEnv === void 0 ? {} : { apiKeyEnv: credentialRef(apiKeyEnv) },\n\t\t\tstreamIdleTimeoutMs,\n\t\t\tmaxRequestImageBytes,\n\t\t\trequestImagePixelBudget,\n\t\t\trequestImageMaxBytes,"
+          },
+          {
+            "firstLine": 1840,
+            "source": "\t\tconst profile = this.profileOf(snapshot, provider);\n\t\treturn requestImageTarget(image, {\n\t\t\tmaxPixels: profile.requestImagePixelBudget,\n\t\t\tmaxBytes: profile.requestImageMaxBytes\n\t\t});\n\t}\n\t/**\n\t* The snapshot for the current profiles. Resolution memoizes its result, so\n\t* an unchanged configuration is recognized by identity; a changed one gets a\n\t* brand-new collection, leaving any snapshot an operation already captured\n\t* untouched for as long as that operation holds it.\n\t*/\n\tcurrent() {\n\t\tconst profiles = this.config.profiles();\n\t\tif (this.snapshot?.profiles === profiles) return this.snapshot;\n\t\tconst models = createModels(this.config.auth);\n\t\tfor (const profile of profiles.values()) if (profile.piProvider !== void 0) models.setProvider(profile.piProvider);\n\t\tthis.snapshot = {"
+          },
+          {
+            "firstLine": 1865,
+            "source": "\t\tconst profile = snapshot.profiles.get(provider);\n\t\tif (profile === void 0) throw new LlmError(`pi-ai adapter does not own provider \"${provider}\"`, \"NO_ADAPTER\");\n\t\treturn profile;\n\t}\n\t/** The configured descriptor for one exact route/model pair within one snapshot. */\n\tmodelOf(snapshot, provider, model) {\n\t\tconst profile = this.profileOf(snapshot, provider);\n\t\tconst failure = profile.modelErrors.get(model) ?? (profile.piProvider === void 0 ? profile.catalogError : void 0);\n\t\tif (failure !== void 0) throw new LlmError(failure, \"INVALID_CONFIG\");\n\t\tconst resolved = snapshot.models.getModel(provider, model);\n\t\tif (resolved === void 0) throw new LlmError(`pi-ai provider \"${provider}\" has no configured model \"${model}\"`, \"UNKNOWN_MODEL\");\n\t\treturn resolved;\n\t}\n\tproviderInfo(provider) {\n\t\treturn {\n\t\t\tid: provider,\n\t\t\tname: this.current().profiles.get(provider)?.displayName ?? provider\n\t\t};"
+          },
+          {
+            "firstLine": 1871,
+            "source": "\t\tconst profile = this.profileOf(snapshot, provider);\n\t\tconst failure = profile.modelErrors.get(model) ?? (profile.piProvider === void 0 ? profile.catalogError : void 0);\n\t\tif (failure !== void 0) throw new LlmError(failure, \"INVALID_CONFIG\");\n\t\tconst resolved = snapshot.models.getModel(provider, model);\n\t\tif (resolved === void 0) throw new LlmError(`pi-ai provider \"${provider}\" has no configured model \"${model}\"`, \"UNKNOWN_MODEL\");\n\t\treturn resolved;\n\t}\n\tproviderInfo(provider) {\n\t\treturn {\n\t\t\tid: provider,\n\t\t\tname: this.current().profiles.get(provider)?.displayName ?? provider\n\t\t};\n\t}\n\tproviderRetryPolicy(provider) {\n\t\treturn this.current().profiles.get(provider)?.retryPolicy;\n\t}\n\tlistModels(provider) {\n\t\treturn Promise.resolve().then(async () => {"
+          },
+          {
+            "firstLine": 1890,
+            "source": "\t\t\tconst profile = this.profileOf(snapshot, provider);\n\t\t\ttry {\n\t\t\t\tawait this.config.resolveApiKey(provider, profile);\n\t\t\t} catch (error) {\n\t\t\t\tif (error instanceof LlmError && error.code === \"MISSING_CREDENTIAL\") return [];\n\t\t\t\tthrow error;\n\t\t\t}\n\t\t\treturn snapshot.models.getModels(provider).map((model) => ({\n\t\t\t\tprovider,\n\t\t\t\tid: model.id,\n\t\t\t\tname: model.name,\n\t\t\t\tinputModalities: [...model.input]\n\t\t\t}));\n\t\t});\n\t}\n\tresolveModel(provider, model, _signal) {\n\t\treturn Promise.resolve().then(() => {\n\t\t\tconst snapshot = this.current();"
+          },
+          {
+            "firstLine": 1912,
+            "source": "\t\tconst profile = this.profileOf(snapshot, provider);\n\t\tconst resolvedModel = this.modelOf(snapshot, provider, model);\n\t\tconst defaultLevel = describableReasoningLevel(resolvedModel, profile.reasoning);\n\t\tconst configuredMaxTokens = profile.configuredMaxTokens.get(model);\n\t\treturn {\n\t\t\tprovider,\n\t\t\tid: model,\n\t\t\tname: resolvedModel.name,\n\t\t\tinputModalities: [...resolvedModel.input],\n\t\t\tcontext: { contextWindow: resolvedModel.contextWindow },\n\t\t\t...configuredMaxTokens === void 0 ? {} : { defaultMaxTokens: configuredMaxTokens },\n\t\t\t...reasoningInfo(resolvedModel, defaultLevel),\n\t\t\t...conversationUpdates(resolvedModel)\n\t\t};\n\t}\n\tprepareCall(provider, model, _signal) {\n\t\tconst snapshot = this.current();\n\t\treturn Promise.resolve({"
+          },
+          {
+            "firstLine": 1945,
+            "source": "\t\t\tconst profile = this.profileOf(snapshot, options.provider);\n\t\t\tconst model = this.modelOf(snapshot, options.provider, options.model);\n\t\t\tconst updates = conversationUpdates(model);\n\t\t\tconst tools = options.tools ?? [];\n\t\t\tconst request = model.api === \"anthropic-messages\" && updates.toolUpdate === \"in-history\" && tools.every((tool) => tool.deferLoading === true) && options.messages.some((message) => message.role === \"developer\" && message.content.some((block) => block.type === \"tool-addition\" || block.type === \"tool-removal\")) ? {\n\t\t\t\t...options,\n\t\t\t\ttools: [ANTHROPIC_TOOL_UPDATE_PLACEHOLDER, ...tools]\n\t\t\t} : options;\n\t\t\tconst reasoning = resolveReasoningLevel(model, options.reasoningEffort ?? profile.reasoning);\n\t\t\tconst apiKey = await this.config.resolveApiKey(options.provider, profile);\n\t\t\tconst consumer = new AbortController();\n\t\t\tconst upstream = options.signal === void 0 ? consumer.signal : AbortSignal.any([options.signal, consumer.signal]);\n\t\t\tconst streamIdleTimeoutMs = profile.streamIdleTimeoutMs;\n\t\t\tconst watchdog = __addDisposableResource(env_1, idleWatchdog(upstream, streamIdleTimeoutMs, \"LLM_STREAM_IDLE_TIMEOUT\"), false);\n\t\t\ttry {\n\t\t\t\tconst containsImage = options.messages.some((message) => contentHasImage(message.content));\n\t\t\t\tif (containsImage && !model.input.includes(\"image\")) throw new LlmError(`pi-ai model \"${model.id}\" does not support image input`, \"UNSUPPORTED_CONTENT\");\n\t\t\t\tconst attachments = containsImage ? this.config.resolveAttachments?.() : void 0;"
+          },
+          {
+            "firstLine": 2930,
+            "source": "\t\tconst profile = profiles().get(provider);\n\t\tif (profile === void 0) return void 0;\n\t\treturn {\n\t\t\theaders: profile.headers,\n\t\t\tresolveApiKey: () => resolveApiKey(provider, profile)\n\t\t};\n\t};\n\tctx.llm.registerModelDiscovery(settingsNs, (request, signal) => discoverModels({\n\t\t...request,\n\t\t...signal === void 0 ? {} : { signal }\n\t}, () => storedDiscoveryProfile(request.provider)));\n\tlet registration;\n\tlet registeredFacts;\n\tconst ensureRegistrationFacts = () => {\n\t\tconst facts = registrationFacts(profiles());\n\t\tif (deepEqualJson(facts, registeredFacts)) return;\n\t\tconst routes = [...profiles().keys()];\n\t\tif (registration === void 0) {"
+          }
+        ]
+      }
+    ]
+  }
+}

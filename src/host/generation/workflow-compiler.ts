@@ -1259,7 +1259,7 @@ function liveRuntimeParameterValue(
     parameterError(
       'GENERATION_PARAMETER_INVALID',
       assignment.parameterId,
-      `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected a string. Correct the value and call generate_with_comfyui again.`,
+      `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected a string.`,
     )
   }
   if (target.contract.kind === 'boolean') {
@@ -1267,7 +1267,7 @@ function liveRuntimeParameterValue(
     parameterError(
       'GENERATION_PARAMETER_INVALID',
       assignment.parameterId,
-      `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected a boolean. Correct the value and call generate_with_comfyui again.`,
+      `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected a boolean.`,
     )
   }
   if (target.contract.kind === 'number') {
@@ -1276,7 +1276,7 @@ function liveRuntimeParameterValue(
       parameterError(
         'GENERATION_PARAMETER_INVALID',
         assignment.parameterId,
-        `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected ${expected}. Correct the value and call generate_with_comfyui again.`,
+        `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; expected ${expected}.`,
       )
     }
     const source = JSON.stringify(suppliedValue)
@@ -1288,14 +1288,14 @@ function liveRuntimeParameterValue(
       parameterError(
         'GENERATION_PARAMETER_INVALID',
         assignment.parameterId,
-        `for ${targetLabel(target)} received ${source}; minimum ${target.contract.minimum.source}. Correct the value and call generate_with_comfyui again.`,
+        `for ${targetLabel(target)} received ${source}; minimum ${target.contract.minimum.source}.`,
       )
     }
     if (target.contract.maximum !== undefined && compareExactDecimal(exact, target.contract.maximum.value) > 0) {
       parameterError(
         'GENERATION_PARAMETER_INVALID',
         assignment.parameterId,
-        `for ${targetLabel(target)} received ${source}; maximum ${target.contract.maximum.source}. Correct the value and call generate_with_comfyui again.`,
+        `for ${targetLabel(target)} received ${source}; maximum ${target.contract.maximum.source}.`,
       )
     }
     return suppliedValue
@@ -1316,7 +1316,7 @@ function liveRuntimeParameterValue(
   parameterError(
     'GENERATION_PARAMETER_INVALID',
     assignment.parameterId,
-    `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; allowed values ${JSON.stringify(allowedValues)}. Correct the value and call generate_with_comfyui again.`,
+    `for ${targetLabel(target)} received ${JSON.stringify(suppliedValue)}; allowed values ${JSON.stringify(allowedValues)}.`,
   )
 }
 

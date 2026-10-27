@@ -25,6 +25,7 @@
     "config/schema.ts",
     "config/settings-entry-ids.json",
     "agent-presets",
+    ".agents/skills",
     "scripts/cli/help.mjs",
     "scripts/cli/help-schema.mjs",
     "config/source-client.json",

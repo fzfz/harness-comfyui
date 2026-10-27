@@ -1,3 +1,4 @@
+import type {} from '@deepseek-ai/dsh-workspace'
 import type { Context } from '@deepseek-ai/cordis'
 import { CatalogRemoteService } from '../catalog/catalog-service.ts'
 import type { } from '../core/plugin.ts'

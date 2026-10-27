@@ -1,5 +1,8 @@
 {
   "shutdownTimeoutMs": 5000,
   "diagnosticLogFormat": "Image inspection stage: %s",
+  "providerSettingsNamespace": "llm-pi-ai",
+  "providerRoutePrefix": "harness-comfyui-image-reader-",
+  "providerRouteSeparator": ".",
   "credentialReferencePrefix": "DSH_HARNESS_COMFYUI_IMAGE_READER_"
 }

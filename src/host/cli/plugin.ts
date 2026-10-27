@@ -1,3 +1,4 @@
+import type {} from '@deepseek-ai/dsh-workspace'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import runtimeArtifacts from '../../../config/runtime-artifacts.json' with { type: 'json' }

@@ -7,23 +7,14 @@ import {
   type SourceAddress,
 } from '../../source-settings.ts'
 import { CatalogClient } from '../catalog/catalog-client.ts'
-import {
-  createComfyuiInstanceQueryTool,
-  createGenerationModelResolverTool,
-  createLoraResolverTool,
-  createTemplateResolverTool,
-} from '../catalog/catalog-tool.ts'
 import type { FrontendAttemptDiagnostic } from '../generation/comfy-frontend-browser.ts'
 import { NodeWorkerComfyFrontend } from '../generation/comfy-frontend-worker-client.ts'
 import { ComfyHttpTransport } from '../generation/comfy-http-transport.ts'
 import { GenerationCoordinator } from '../generation/generation-coordinator.ts'
-import { createGenerationRunMediaTool } from '../generation/generation-media-tool.ts'
-import { generationRunInputToolForContext } from '../generation/generation-run-input-tool.ts'
 import {
   GenerationRuntime,
   type GenerationRunInputLookupErrorReport,
 } from '../generation/generation-runtime.ts'
-import { generationToolForContext } from '../generation/generation-tool.ts'
 import { OfficialApiWorkflowCompiler } from '../generation/official-api-workflow.ts'
 import { GenerationSourceClient } from '../generation/source-client.ts'
 import { SourceGenerationPreparer } from '../generation/source-preparer.ts'
@@ -35,7 +26,7 @@ export { Config } from './schema.ts'
 import { Config, type CoreServices } from './schema.ts'
 
 export const name = 'harness-comfyui-core'
-export const inject = ['tools', 'workspaceRegistry', 'dshHomePath'] as const
+export const inject = ['dshHomePath'] as const
 
 
 declare module '@deepseek-ai/cordis' { interface Context { harnessComfyuiCore: ComfyuiCoreService } }
@@ -145,12 +136,4 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   new ComfyuiCoreService(ctx, {
     catalog, runtime, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings),
   })
-  ctx.tools.register(createTemplateResolverTool(catalog))
-  ctx.tools.register(createLoraResolverTool(catalog))
-  ctx.tools.register(createGenerationModelResolverTool(catalog))
-  ctx.tools.register(createComfyuiInstanceQueryTool(catalog))
-  ctx.tools.register(generationToolForContext(ctx, runtime))
-  ctx.tools.register(generationRunInputToolForContext(ctx, runtime))
-  ctx.tools.register(createGenerationRunMediaTool({ runtime, workspaceRegistry: ctx.workspaceRegistry }))
-
 }

@@ -57,6 +57,8 @@ export function validatePluginPackagePath(value, label = 'package path') {
     || value.startsWith('config/')
     || value === 'locales'
     || value.startsWith('locales/')
+    || value === '.agents/skills'
+    || value.startsWith('.agents/skills/')
     || value === 'agent-presets'
     || value.startsWith('agent-presets/')
     || ['scripts/cli/help.mjs', 'scripts/cli/help-schema.mjs'].includes(value)

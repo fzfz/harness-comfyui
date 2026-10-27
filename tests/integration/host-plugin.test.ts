@@ -6,7 +6,6 @@ import { pathToFileURL } from 'node:url'
 
 import { Context } from '@deepseek-ai/cordis'
 import { SettingsForms, type SettingsPathOp } from '@deepseek-ai/dsh-settings'
-import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -410,16 +409,7 @@ describe('Harness ComfyUI Host plugin', () => {
     } = provideHostServices(ctx)
     const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
 
-    expect(registerTool.mock.calls.map(([definition]) => definition.name)).toEqual([
-      'query_semantic_comfyui_templates',
-      'query_semantic_loras',
-      'query_semantic_generation_models',
-      'query_semantic_comfyui_instances',
-      'generate_with_comfyui',
-      'read_comfyui_run_inputs',
-      'get_generation_run_media',
-      'inspect_image',
-    ])
+    expect(registerTool).not.toHaveBeenCalled()
     expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
       kind: 'prefix',
       path: '/api/harness-comfyui/media',
@@ -481,7 +471,7 @@ describe('Harness ComfyUI Host plugin', () => {
     await ctx.fiber.dispose()
   })
 
-  it('keeps forbidden Provider sources out of a mounted Host Tool error and Cordis logger sink', async () => {
+  it('keeps forbidden Provider sources out of the mounted CLI response and Cordis logger sink', async () => {
     stubTestProfileEnvironment()
     const output = await materializeTestHostModule()
     const packaged = await harnessComfyui.packagedProduct(output)
@@ -489,7 +479,7 @@ describe('Harness ComfyUI Host plugin', () => {
     const ctx = new Context()
     const logger = { error: vi.fn(), info: vi.fn() }
     vi.spyOn(ctx, 'logger').mockReturnValue(logger as never)
-    const { prepareCall, describeSettings, registerTool, saveImage } = provideHostServices(ctx)
+    const { prepareCall, describeSettings, registerShellEnvironment, saveImage } = provideHostServices(ctx)
     describeSettings.mockImplementation(() => [{
       ns: IMAGE_READER_PROFILE_ENTRY_ID,
       value: { ...failureFixture.scope.get(), credentialRefs: {} },
@@ -498,29 +488,21 @@ describe('Harness ComfyUI Host plugin', () => {
     prepareCall.mockImplementation(failureFixture.prepareCall)
     const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
     try {
-      const inspectImage = registerTool.mock.calls
-        .map(([definition]) => definition)
-        .find(definition => definition.name === 'inspect_image') as unknown as {
-          execute(args: unknown, execution: unknown): Promise<unknown>
-        } | undefined
-      if (inspectImage === undefined) throw new Error('Mounted Host did not register inspect_image.')
-      const error = await inspectImage.execute({
-        file_path: failureFixture.filePath,
-        prompt: IMAGE_READER_SENTINEL_PROMPT,
-      }, {
-        callId: 'call_inspect',
-        rootCallId: 'call_inspect',
-        name: 'inspect_image',
-        arguments: {},
-        signal: new AbortController().signal,
-        token: Symbol('execution'),
-        deferContext: vi.fn(),
-        concludeTurn: vi.fn(),
-        agent: { id: 'session_1', session: { id: 'session_1', header: { cwd: '/workspace' }, snapshotEvents: () => [] } },
-      }).catch(cause => cause) as Error
-
-      expect(error).toMatchObject({ code: 'IMAGE_READER_PROVIDER_FAILED' })
-      const toolError = JSON.stringify(error)
+      const contributor = registerShellEnvironment.mock.calls[0]![0]
+      const variables = contributor.resolve({
+        token: Symbol('host-image-shell'), callId: 'call_image_1', name: 'bash',
+        arguments: {}, signal: new AbortController().signal,
+        agent: { session: { id: 'session_1', header: { cwd: '/workspace' },
+          snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'call_image_1', name: 'bash', turn: 1 } }] } },
+      } as never)
+      const response = await fetch(variables.DSH_HARNESS_COMFYUI_CLI_API!, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${variables.DSH_HARNESS_COMFYUI_CLI_CAPABILITY}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ command: 'image.inspect', file_path: failureFixture.filePath, prompt: IMAGE_READER_SENTINEL_PROMPT }),
+      })
+      const result = await response.json()
+      expect(result).toMatchObject({ ok: false, error: { code: 'IMAGE_READER_PROVIDER_FAILED' } })
+      const toolError = JSON.stringify(result)
       const hostLog = JSON.stringify([...logger.error.mock.calls, ...logger.info.mock.calls])
       for (const source of IMAGE_READER_FORBIDDEN_SOURCE_SENTINELS) {
         expect(toolError).not.toContain(source)
