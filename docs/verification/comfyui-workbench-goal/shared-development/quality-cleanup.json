@@ -1,0 +1,246 @@
+{
+  "recordedAt": "2026-10-28T06:55:35.696Z",
+  "runs": [
+    {
+      "runId": "29b33f89-a948-4000-bbbe-8bdf523e2b68",
+      "state": "failed",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 59514,
+          "pids": []
+        },
+        {
+          "port": 59515,
+          "pids": []
+        },
+        {
+          "port": 59516,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "444c42d8-4bdb-4cdb-bd61-5c47186bca55",
+      "state": "cancelled",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 59231,
+          "pids": []
+        },
+        {
+          "port": 59232,
+          "pids": []
+        },
+        {
+          "port": 59233,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "55969e3e-8ada-4889-af36-39ac7f12fcf4",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 55683,
+          "pids": []
+        },
+        {
+          "port": 55684,
+          "pids": []
+        },
+        {
+          "port": 55685,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "5bd2ff66-8932-4955-93a3-0d2b5e54b053",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 57280,
+          "pids": []
+        },
+        {
+          "port": 57281,
+          "pids": []
+        },
+        {
+          "port": 57282,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "8213c6c5-f531-454f-92dc-41563920a8fc",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 53976,
+          "pids": []
+        },
+        {
+          "port": 53977,
+          "pids": []
+        },
+        {
+          "port": 53978,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "c33b88fc-ad6e-47c6-ad4c-fb74eea6ac8f",
+      "state": "failed",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 59764,
+          "pids": []
+        },
+        {
+          "port": 59765,
+          "pids": []
+        },
+        {
+          "port": 59766,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "d4205598-2e41-43cc-9902-9d3503c152cb",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 56294,
+          "pids": []
+        },
+        {
+          "port": 56295,
+          "pids": []
+        },
+        {
+          "port": 56296,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "dc49b71e-2c2e-49ec-b548-5dab22c326d6",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 55425,
+          "pids": []
+        },
+        {
+          "port": 55426,
+          "pids": []
+        },
+        {
+          "port": 55427,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "e4e87be9-bc96-487b-8845-b3356e07430f",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 59845,
+          "pids": []
+        },
+        {
+          "port": 59846,
+          "pids": []
+        },
+        {
+          "port": 59847,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "e7c47c15-c60d-42d0-bec6-ec7c135eadd7",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 53973,
+          "pids": []
+        },
+        {
+          "port": 53974,
+          "pids": []
+        },
+        {
+          "port": 53975,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "fe779d40-ee89-426a-9656-4a74531a2a91",
+      "state": "failed",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 59016,
+          "pids": []
+        },
+        {
+          "port": 59017,
+          "pids": []
+        },
+        {
+          "port": 59018,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    },
+    {
+      "runId": "ff8a8ccc-2c2b-4e53-ac26-1d06c4d08e90",
+      "state": "stopped",
+      "processGroupPresent": false,
+      "portOwners": [
+        {
+          "port": 58193,
+          "pids": []
+        },
+        {
+          "port": 58194,
+          "pids": []
+        },
+        {
+          "port": 58195,
+          "pids": []
+        }
+      ],
+      "leasePresent": false
+    }
+  ],
+  "allReleased": true
+}

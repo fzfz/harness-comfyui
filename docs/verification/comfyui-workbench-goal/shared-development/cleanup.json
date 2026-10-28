@@ -1,0 +1,41 @@
+{
+  "recordedAt": "2026-10-28T06:38:17.959Z",
+  "runs": [
+    {
+      "runId": "b0ba2b15-464d-42a0-8ba7-42e7f4937cb2",
+      "state": "stopped",
+      "processId": 41359,
+      "ports": {
+        "host": 49500,
+        "rendererCdp": 49501,
+        "hostInspector": 49502
+      },
+      "portsReleased": true,
+      "leasePresent": false
+    },
+    {
+      "runId": "46fdf3f8-4451-48c7-8ad3-84579dbe8c05",
+      "state": "stopped",
+      "processId": 56582,
+      "ports": {
+        "host": 50363,
+        "rendererCdp": 50364,
+        "hostInspector": 50365
+      },
+      "portsReleased": true,
+      "leasePresent": false
+    },
+    {
+      "runId": "c8afb0d0-b488-4e6c-8f27-43b2e9dc93bc",
+      "state": "stopped",
+      "processId": 71347,
+      "ports": {
+        "host": 50723,
+        "rendererCdp": 50724,
+        "hostInspector": 50725
+      },
+      "portsReleased": true,
+      "leasePresent": false
+    }
+  ]
+}

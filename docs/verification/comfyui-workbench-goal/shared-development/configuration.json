@@ -1,0 +1,74 @@
+{
+  "recordedAt": "2026-10-28T06:36:26.841Z",
+  "sharedEnvironmentFile": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env",
+  "credentialName": "LAN_GPT_API_KEY",
+  "credentialPresent": true,
+  "fileMode": "600",
+  "worktrees": [
+    {
+      "root": "/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui",
+      "defaultModel": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "provider": {
+        "displayName": "LAN GPT",
+        "api": "openai-completions",
+        "baseURL": "http://192.168.110.16:8317/v1",
+        "apiKeyEnv": "LAN_GPT_API_KEY",
+        "reasoning": "high",
+        "models": [
+          {
+            "id": "gpt-6.1-sol",
+            "input": [
+              "text",
+              "image"
+            ],
+            "reasoningEfforts": {
+              "high": "high"
+            }
+          }
+        ]
+      },
+      "storedCredentialOverride": false,
+      "hasLocalEnv": false
+    },
+    {
+      "root": "/Users/fzfz/.codex/worktrees/development-model-reuse/harness-comfyui",
+      "defaultModel": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "provider": {
+        "displayName": "LAN GPT",
+        "api": "openai-completions",
+        "baseURL": "http://192.168.110.16:8317/v1",
+        "apiKeyEnv": "LAN_GPT_API_KEY",
+        "reasoning": "high",
+        "models": [
+          {
+            "id": "gpt-6.1-sol",
+            "input": [
+              "text",
+              "image"
+            ],
+            "reasoningEfforts": {
+              "high": "high"
+            }
+          }
+        ]
+      },
+      "storedCredentialOverride": false,
+      "hasLocalEnv": false
+    }
+  ],
+  "restart": {
+    "runId": "c8afb0d0-b488-4e6c-8f27-43b2e9dc93bc",
+    "ui": {
+      "text": "新会话\n⌘\nN\n插件\n自动化任务\n更多\n工作区\n默认工作区\n确认共享开发模型可用\n2分钟\n更多\n确认共享开发模型可用\n标准模式\n对话\n轨迹\n只回复“共享开发模型可用”。\n14:32\n已完成\n已完成，用时 4秒\n\n共享开发模型可用\n\n用量 7.8K tok\n14:32\n发消息或创建任务, / 调用指令, @ 文件或对话\n工作区内修改\ngpt-6.1-sol\nHigh\n1 轮 1 步·31 tok/s\n7.8K tok·缓存命中 0%\n3%",
+      "model": "选择模型，当前 gpt-6.1-sol，推理等级 High"
+    }
+  }
+}

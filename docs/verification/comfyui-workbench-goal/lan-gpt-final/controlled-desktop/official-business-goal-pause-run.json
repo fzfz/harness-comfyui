@@ -1,0 +1,49 @@
+{
+  "sessionId": "session-3572fe7d-119e-48fb-876e-7b453e65c2f6",
+  "goal": {
+    "id": "goal-60f2a904-b589-4c22-a89f-1c37fe70db42",
+    "revision": 2,
+    "objective": "Create a Goal, submit a Run, then pause the Goal while the Run finishes.",
+    "phase": "paused",
+    "roundsStarted": 0,
+    "maxGoalRounds": 256
+  },
+  "runId": "run_b2a12b52-b864-41a3-b409-11102cfcb24b",
+  "pending": {
+    "runId": "run_b2a12b52-b864-41a3-b409-11102cfcb24b",
+    "turn": 13,
+    "title": "Goal pause keeps accepted generation",
+    "instanceTitle": "Controlled Desktop Comfy Service",
+    "templateTitle": "Controlled frontend workflow",
+    "status": "remote_pending",
+    "errorCode": null,
+    "errorMessage": null,
+    "createdAt": 1793168201004,
+    "updatedAt": 1793168201323
+  },
+  "completed": {
+    "runId": "run_b2a12b52-b864-41a3-b409-11102cfcb24b",
+    "turn": 13,
+    "title": "Goal pause keeps accepted generation",
+    "instanceTitle": "Controlled Desktop Comfy Service",
+    "templateTitle": "Controlled frontend workflow",
+    "status": "succeeded",
+    "errorCode": null,
+    "errorMessage": null,
+    "createdAt": 1793168201004,
+    "updatedAt": 1793168202832
+  },
+  "media": [
+    {
+      "mediaId": "media_7e20d4ef-d5c3-4751-8432-1caef61ca431",
+      "runId": "run_b2a12b52-b864-41a3-b409-11102cfcb24b",
+      "turn": 13,
+      "outputIndex": 0,
+      "mediaKind": "image",
+      "filename": "official-desktop-controlled.png",
+      "mediaType": "image/png",
+      "byteSize": 70,
+      "createdAt": 1793168202831
+    }
+  ]
+}

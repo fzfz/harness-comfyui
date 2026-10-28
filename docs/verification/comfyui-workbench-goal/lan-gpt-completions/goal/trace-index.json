@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "runId": "bf6cf18c-1b3e-4925-8cc6-b16b76778bce",
+  "sessionId": "session-41652b59-9877-402f-9d05-90a3a3252a3a",
+  "source": {
+    "kind": "official-session-export",
+    "route": "api/session.export"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-41652b59-9877-402f-9d05-90a3a3252a3a",
+      "parentSessionId": null,
+      "entry": "session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/docs/verification/comfyui-workbench-goal/lan-gpt-completions/goal/sessions/session-session-41652b59-9877-402f-9d05-90a3a3252a3a/session.json",
+      "eventCount": 99,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 98,
+        "complete": true
+      }
+    },
+    {
+      "sessionId": "a1dd336f-4eba-41c4-a18e-d0a35d7bf6f0",
+      "parentSessionId": "session-41652b59-9877-402f-9d05-90a3a3252a3a",
+      "entry": "subagents/a1dd336f-4eba-41c4-a18e-d0a35d7bf6f0/session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/docs/verification/comfyui-workbench-goal/lan-gpt-completions/goal/sessions/session-a1dd336f-4eba-41c4-a18e-d0a35d7bf6f0/session.json",
+      "eventCount": 32,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 31,
+        "complete": true
+      }
+    }
+  ],
+  "missing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-41652b59-9877-402f-9d05-90a3a3252a3a",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-41652b59-9877-402f-9d05-90a3a3252a3a",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    },
+    {
+      "source": "model-request",
+      "sessionId": "a1dd336f-4eba-41c4-a18e-d0a35d7bf6f0",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "a1dd336f-4eba-41c4-a18e-d0a35d7bf6f0",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "complete": false
+}

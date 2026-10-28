@@ -16,5 +16,12 @@ describe('project Agent Preset resources', () => {
     expect(persona.config.prefix).toEqual(expect.any(String))
     expect(persona.config).not.toHaveProperty('text')
   })
+  it('mounts native Goal commands and tools with host defaults', async () => {
+    const { composition } = await readProjectAgentPresetResources(repositoryRoot, PRODUCT_PRESET_ID)
 
+    expect(composition.filter(row => ['command-goal', 'tool-goal'].includes(row.id))).toEqual([
+      { id: 'command-goal', name: '@deepseek-ai/dsh-command-goal' },
+      { id: 'tool-goal', name: '@deepseek-ai/dsh-tool-goal' },
+    ])
+  })
 })

@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "value": {
+    "id": "goal-b3daabd1-7e2d-4595-9411-8380d2f4f2e0",
+    "revision": 2,
+    "objective": "仅梳理 ComfyUI 生图与结果复核的准备材料：主代理亲自读取 comfyui-generate Skill，子代理读取 comfyui-image-review Skill 并独立总结复核所需输入；完成后汇总两份简短清单，验证交付齐全并确认 Goal 完成，不执行生图或图片复核。",
+    "phase": "complete",
+    "maxGoalRounds": 256,
+    "roundsStarted": 1,
+    "createdAt": 1793167936563,
+    "updatedAt": 1793168039716,
+    "activation": "disarmed"
+  }
+}

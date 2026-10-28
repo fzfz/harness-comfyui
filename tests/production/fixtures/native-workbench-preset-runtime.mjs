@@ -8,12 +8,15 @@ import { pathToFileURL } from 'node:url'
 import { fixtureTool } from './native-preset-tool.mjs'
 
 const sdkRequire = createRequire(process.argv[3])
-const [cordis, loader, include, presets, sessions, projections, prompt, tools, scope, group, skillRegistry] = [
+const [cordis, loader, include, presets, sessions, projections, prompt, tools, scope, group, skillRegistry,
+  agents, goals, commands, agentLoop, llm] = [
   '@deepseek-ai/cordis', '@deepseek-ai/cordis-plugin-loader',
   '@deepseek-ai/cordis-plugin-include', '@deepseek-ai/dsh-agent-preset-registry',
   '@deepseek-ai/dsh-session', '@deepseek-ai/dsh-session-projection',
   '@deepseek-ai/dsh-system-prompt', '@deepseek-ai/dsh-tools', '@deepseek-ai/dsh-scope',
   '@deepseek-ai/cordis-plugin-group', '@deepseek-ai/dsh-skill',
+  '@deepseek-ai/dsh-agent', '@deepseek-ai/dsh-goal', '@deepseek-ai/dsh-commands',
+  '@deepseek-ai/dsh-agent-loop', '@deepseek-ai/dsh-llm',
 ].map(name => sdkRequire(name))
 
 const directory = await mkdtemp(join(tmpdir(), 'native-workbench-preset-'))
@@ -85,6 +88,93 @@ async function assertTools(key, expected) {
 }
 
 const scenarios = {
+  async goal() {
+    const unregister = await declare()
+    const parent = await mountAgent('goal-parent')
+    const child = composeChild('goal-child', parent)
+    for (const mounted of [parent, child]) {
+      Object.assign(mounted.agent, {
+        session: root.sessions.create(mounted.agent.id), options: {}, status: 'running',
+        ctx: mounted.scope.ctx,
+      })
+      registrations.push(root.agents.enter(mounted.agent, mounted === child ? parent.agent : undefined))
+      await root.agents.announce(mounted.agent, 'startup')
+      mounted.agent.session.append('turn/start', { turn: 1 })
+      mounted.agent.session.append('user/message', llm.createUserMessage({
+        content: [{ type: 'text', text: 'Create a goal to verify the selected Run.' }],
+        source: mounted === parent ? { kind: 'user' } : { kind: 'subagent', agentId: parent.agent.id },
+      }), { surfaceOp: 'append' })
+    }
+    const execute = (mounted, name, args = {}) => root.agents.withInitiator(mounted.agent,
+      () => root.tools.execute({ name, arguments: args, agent: mounted.agent,
+        callId: name, signal: new AbortController().signal }))
+    const read = async (mounted, name, args) => {
+      const result = await execute(mounted, name, args)
+      assert.equal(result.isError, false, JSON.stringify(result))
+      return result.value
+    }
+    assert.deepEqual(await read(parent, 'get_goal'), { goal: null })
+    const created = await read(parent, 'create_goal', { objective: 'Verify the selected Run', max_goal_rounds: 2 })
+    assert.equal(created.goal.phase, 'active')
+    assert.equal(created.activation, 'armed')
+    assert.equal(created.goal.maxGoalRounds, 2)
+    assert.deepEqual(await read(child, 'get_goal'), { goal: null })
+    const denied = await execute(child, 'create_goal', { objective: 'Delegated goal' })
+    assert.equal(denied.isError, true)
+    assert.match(JSON.stringify(denied), /direct human turn/u)
+    const blocked = await read(parent, 'update_goal', {
+      goal_id: created.goal.id, revision: created.goal.revision, action: 'blocked',
+      blocked_reason: 'Select a Workflow before generation.',
+    })
+    assert.equal(blocked.goal.phase, 'blocked')
+    const resumed = await read(parent, 'update_goal', {
+      goal_id: blocked.goal.id, revision: blocked.goal.revision, action: 'resume',
+    })
+    assert.equal(resumed.activation, 'armed')
+    const ref = { goal_id: resumed.goal.id, revision: resumed.goal.revision }
+    const paused = await read(parent, 'update_goal', { ...ref, action: 'pause' })
+    assert.equal(paused.goal.phase, 'paused')
+    assert.equal(paused.activation, 'disarmed')
+    const stale = await execute(parent, 'update_goal', { ...ref, action: 'complete' })
+    assert.equal(stale.isError, true)
+    const resume = await execute(parent, 'update_goal', {
+      ...ref, revision: paused.goal.revision, action: 'resume',
+    })
+    assert.equal(resume.isError, true)
+    assert.match(JSON.stringify(resume), /paused/u)
+    parent.agent.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+    parent.agent.status = 'idle'
+    const command = await root.commands.execute(parent.agent, '/goal resume', [], new AbortController().signal)
+    assert.equal(command.result.kind, 'success')
+    assert.equal(root.goals.get(parent.agent).activation, 'armed')
+    await unregister()
+    await child.scope.dispose()
+    await parent.scope.dispose()
+    assert.equal(root.commands.find(parent.agent, 'goal'), undefined)
+    assert.equal(root.tools.get('get_goal', parent.agent), undefined)
+    await declare()
+    const reloaded = await mountAgent('goal-reloaded')
+    Object.assign(reloaded.agent, {
+      session: root.sessions.create(reloaded.agent.id), options: {}, status: 'idle', ctx: reloaded.scope.ctx,
+    })
+    await root.agents.register(reloaded.agent)
+    const createdByCommand = await root.commands.execute(reloaded.agent, '/goal Verify reloaded preset',
+      [], new AbortController().signal)
+    assert.equal(createdByCommand.result.kind, 'success')
+    assert.equal(root.goals.get(reloaded.agent).objective, 'Verify reloaded preset')
+    reloaded.agent.status = 'running'
+    reloaded.agent.session.append('turn/start', { turn: 2 })
+    reloaded.agent.session.append('user/message', llm.createUserMessage({
+      content: [{ type: 'text', text: 'Read the reloaded Goal.' }], source: { kind: 'user' },
+    }), { surfaceOp: 'append' })
+    const reloadedGoal = await read(reloaded, 'get_goal')
+    assert.equal(reloadedGoal.goal.objective, 'Verify reloaded preset')
+    const complete = await read(reloaded, 'update_goal', {
+      goal_id: reloadedGoal.goal.id, revision: reloadedGoal.goal.revision, action: 'complete',
+    })
+    assert.equal(complete.goal.phase, 'complete')
+  },
+
   async lateRegistration() {
     removeDependencies()
     const unregister = await declare()
@@ -94,7 +184,7 @@ const scenarios = {
     await declare('other', { toolName: 'other_preset_tool' })
     const other = await mountAgent('other-parent', 'other')
     for (const key of [parent.agent, child.agent, standing.key]) {
-      await assertTools(key, ['host_global', 'preset_tool', 'skill'])
+      await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
     }
     for (let registration = 0; registration < 2; registration++) {
       removeDependencies = root.tools.register(fixtureTool('load_workspace_dependencies'))
@@ -104,7 +194,7 @@ const scenarios = {
           agent: key, callId: 'late-denied-dependencies', signal: new AbortController().signal })
         assert.ok(result.error, JSON.stringify(result))
         assert.match(JSON.stringify(result), /unknown tool/u)
-        await assertTools(key, ['host_global', 'preset_tool', 'skill'])
+        await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
       }
       await assertTools(other.agent, ['host_global', 'load_workspace_dependencies', 'other_preset_tool'])
       removeDependencies()
@@ -132,10 +222,10 @@ const scenarios = {
       assert.ok(result.error, JSON.stringify(result))
       assert.match(JSON.stringify(result), /unknown tool/u)
     }
-    await assertTools(parent.agent, ['host_global', 'host_late', 'preset_tool', 'skill'])
-    await assertTools(child.agent, ['host_global', 'host_late', 'preset_tool', 'skill'])
+    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'preset_tool', 'skill', 'update_goal'])
     const standing = await root.agentPresets.acquireScope('workbench')
-    await assertTools(standing.key, ['host_global', 'host_late', 'preset_tool', 'skill'])
+    await assertTools(standing.key, ['create_goal', 'get_goal', 'host_global', 'host_late', 'preset_tool', 'skill', 'update_goal'])
     await standing[Symbol.asyncDispose]()
     await declare('other', { toolName: 'other_preset_tool' })
     const other = await mountAgent('other-parent', 'other')
@@ -152,14 +242,14 @@ const scenarios = {
     await standing[Symbol.asyncDispose]()
     await unregister()
     await assert.rejects(root.agentPresets.resolve('workbench'), /Unknown agent preset/u)
-    await assertTools(parent.agent, ['host_global', 'preset_tool', 'skill'])
-    await assertTools(child.agent, ['host_global', 'preset_tool', 'skill'])
+    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
     await child.scope.dispose()
     await parent.scope.dispose()
     await assertTools(retiredKey, ['host_global', 'load_workspace_dependencies'])
     await declare()
     const reloaded = await mountAgent('reloaded-parent')
-    await assertTools(reloaded.agent, ['host_global', 'preset_tool', 'skill'])
+    await assertTools(reloaded.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
   },
 
   async failure() {
@@ -173,9 +263,9 @@ const scenarios = {
     await unregister()
     await declare()
     await root.agentPresets.mount(rejected.scope.ctx, 'workbench')
-    await assertTools(rejected.agent, ['host_global', 'preset_tool', 'skill'])
+    await assertTools(rejected.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
     const child = composeChild('recovered-child', rejected)
-    await assertTools(child.agent, ['host_global', 'preset_tool', 'skill'])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
   },
 
   async prompt() {
@@ -207,7 +297,7 @@ const scenarios = {
       assert.deepEqual(prompt.renderContextSections(assembly).map(entry => entry.name), expected)
       assert.deepEqual(prompt.renderContextSections(root.systemPrompt.refreshContext(assembly,
         { scope: mounted.agent })).map(entry => entry.name), expected)
-      await assertTools(mounted.agent, ['host_global', 'preset_tool', 'skill'])
+      await assertTools(mounted.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
     }
     await declare('other')
     const other = await mountAgent('other-parent', 'other')
@@ -267,12 +357,15 @@ try {
   root.loader.builtins.group = group.default
   root.loader.internal = { import: (name, baseUrl) => name.startsWith('@deepseek-ai/')
     ? sdkRequire(name) : import(new URL(name, baseUrl).href) }
-  root.provide('agents', {})
   root.provide('workingDirectory', { ensure: async () => directory })
   await root.plugin(skillRegistry.default)
   root.skills.register({ name: 'office-example', description: 'Global Office fixture', source: 'bundled', content: 'OFFICE' })
   await root.plugin(sessions.default)
   await root.plugin(projections.default)
+  await root.plugin(agents.default)
+  root.sessionProjections.register(agentLoop.turnBoundaryProjectionDefinition)
+  await root.plugin(goals.default)
+  await root.plugin(commands.default)
   await root.plugin(prompt.default)
   await root.plugin(tools.default)
   await root.plugin(presets.default, { default: 'workbench' })

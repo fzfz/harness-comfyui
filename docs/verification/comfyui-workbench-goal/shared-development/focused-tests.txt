@@ -1,0 +1,8 @@
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui
+
+
+ Test Files  2 passed (2)
+      Tests  81 passed (81)
+   Start at  14:31:34
+   Duration  4.20s (transform 350ms, setup 0ms, import 430ms, tests 3.26s, environment 9ms)

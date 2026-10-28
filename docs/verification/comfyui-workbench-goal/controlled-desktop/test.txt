@@ -1,0 +1,74 @@
+$ node scripts/build/cli.mjs build
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-host/index.js
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-host/core.js
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-host/image-reader.js
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-host/cli.js
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-host/web.js
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-host/comfy-frontend-worker.js
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-cli/harness-comfyui.mjs
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/source-client/client.js
+/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.48.1.tgz
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui
+
+ ❯ tests/desktop/official-desktop-live.test.mjs (14 tests | 1 failed) 514496ms
+     × installs the packed candidate through Desktop, restarts the app, and verifies workbench behavior 513571ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/desktop/official-desktop-live.test.mjs > official Desktop plugin regression > installs the packed candidate through Desktop, restarts the app, and verifies workbench behavior
+AssertionError: expected [ 'office', 'office-docx', …(5) ] to deeply equal [ 'anima-prompt-builder', …(7) ]
+
+- Expected
++ Received
+
+  [
+-   "anima-prompt-builder",
+-   "character-portrait-prompt-designer",
+-   "comfyui-generate",
+-   "comfyui-image-review",
+-   "krea2-anime-prompt-builder",
+-   "local-image-reader",
+-   "moss-prompt-builder",
+-   "wai-sdxl-prompt-builder",
++   "office",
++   "office-docx",
++   "office-export-pdf",
++   "office-pptx",
++   "office-recalculate",
++   "office-render",
++   "office-xlsx",
+  ]
+
+ ❯ tests/desktop/official-desktop-live.test.mjs:3953:10
+    3951|       const endedChildSkillCatalog = nativeSubagentEvidence.endedChild…
+    3952|       expect(endedChildSkillCatalog.skills.map(skill => skill.name).so…
+    3953|         .toEqual(REPOSITORY_SKILL_CATALOG.map(skill => skill.name).sor…
+       |          ^
+    3954|       expect(endedChildSkillCatalog.skills.every(skill =>
+    3955|         isPathWithin(skill.path, endedChildSkillCatalog.installedPlugi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 13 passed (14)
+   Start at  13:18:08
+   Duration  515.68s (transform 344ms, setup 0ms, import 552ms, tests 514.50s, environment 0ms)
+
+file:///Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/tests/desktop/run-desktop-tests.mjs:382
+  const error = cause === undefined ? new Error(message) : new Error(message, { cause })
+                                      ^
+
+Error [DesktopTestRunnerError]: Desktop test runner tests command exited with code 1
+    at createRunnerError (file:///Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/tests/desktop/run-desktop-tests.mjs:382:39)
+    at ChildProcess.onClose (file:///Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/tests/desktop/run-desktop-tests.mjs:354:33)
+    at Object.onceWrapper (node:events:623:12)
+    at ChildProcess.emit (node:events:508:20)
+    at maybeClose (node:internal/child_process:1108:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5) {
+  phase: 'tests',
+  exitCode: 1
+}
+
+Node.js v25.8.2

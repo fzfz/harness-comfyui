@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "value": {
+    "id": "goal-8365dd27-2281-49ae-b4b1-ba5ed011128b",
+    "revision": 2,
+    "objective": "梳理 ComfyUI 生图与结果复核的准备材料清单：生成侧（comfyui-generate）与复核侧（comfyui-image-review）各一份简短清单，确认完成后交付。只梳理材料，不执行实际生成或复核。",
+    "phase": "complete",
+    "maxGoalRounds": 10,
+    "roundsStarted": 0,
+    "createdAt": 1793164935848,
+    "updatedAt": 1793164974748,
+    "activation": "disarmed"
+  }
+}

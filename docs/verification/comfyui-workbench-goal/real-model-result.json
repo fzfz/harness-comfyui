@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "provider": "openrouter",
+  "model": "thinkingmachines/inkling:free",
+  "executionRunId": "bb784852-e371-4cfa-a402-54e42f6f5907",
+  "installedPersonaEqualsSource": true,
+  "scenarios": [
+    {
+      "name": "ordinary",
+      "prompt": "用一句话说明你能帮助我完成哪些 ComfyUI 工作。",
+      "sessionId": "session-f92760d1-543e-4150-8dc5-df7aea4acc29",
+      "goal": null,
+      "goalToolCalls": [],
+      "toolErrors": [],
+      "turnEnds": [
+        {
+          "seq": 18,
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ],
+      "traceIndex": "real-model/ordinary/trace-index.json"
+    },
+    {
+      "name": "goal",
+      "prompt": "请建立一个持续 Goal：梳理 ComfyUI 生图与结果复核的准备材料。你亲自读取 comfyui-generate Skill；同时派一个子代理读取 comfyui-image-review Skill，由子代理独立总结复核需要的输入。两部分完成后汇总为两份简短清单，并确认目标完成。这次只梳理材料清单。",
+      "sessionId": "session-d70385af-13ea-4ac6-b259-1880f0a33c59",
+      "goal": {
+        "id": "goal-8365dd27-2281-49ae-b4b1-ba5ed011128b",
+        "revision": 2,
+        "objective": "梳理 ComfyUI 生图与结果复核的准备材料清单：生成侧（comfyui-generate）与复核侧（comfyui-image-review）各一份简短清单，确认完成后交付。只梳理材料，不执行实际生成或复核。",
+        "phase": "complete",
+        "maxGoalRounds": 10,
+        "roundsStarted": 0,
+        "createdAt": 1793164935848,
+        "updatedAt": 1793164974748,
+        "activation": "disarmed"
+      },
+      "goalToolCalls": [
+        {
+          "seq": 79,
+          "turn": 1,
+          "name": "create_goal",
+          "arguments": {
+            "objective": "梳理 ComfyUI 生图与结果复核的准备材料清单：生成侧（comfyui-generate）与复核侧（comfyui-image-review）各一份简短清单，确认完成后交付。只梳理材料，不执行实际生成或复核。",
+            "max_goal_rounds": 10
+          }
+        },
+        {
+          "seq": 95,
+          "turn": 1,
+          "name": "get_goal",
+          "arguments": {}
+        },
+        {
+          "seq": 124,
+          "turn": 1,
+          "name": "update_goal",
+          "arguments": {
+            "action": "complete",
+            "goal_id": "goal-8365dd27-2281-49ae-b4b1-ba5ed011128b",
+            "revision": 1
+          }
+        }
+      ],
+      "toolErrors": [
+        {
+          "seq": 70,
+          "callId": "call_b18dafb92af74465abb90d31",
+          "text": [
+            "Error: 请求的 MCP 资源尚未发布。请读取资源列表并选择其中的 URI。"
+          ],
+          "error": null
+        }
+      ],
+      "turnEnds": [
+        {
+          "seq": 131,
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ],
+      "traceIndex": "real-model/goal/trace-index.json"
+    },
+    {
+      "name": "blocked",
+      "prompt": "请建立一个持续 Goal：用我当前选中的 Workflow 生成一张图片，交付生成结果后完成目标。",
+      "sessionId": "session-0fa5daab-39f6-41cd-9205-7f2441bd0534",
+      "goal": {
+        "id": "goal-9da55102-8009-434c-91c1-32b63e8e8b52",
+        "revision": 2,
+        "objective": "使用用户当前选中的 Workflow 生成一张图片，交付生成结果后完成目标。",
+        "phase": "blocked",
+        "maxGoalRounds": 5,
+        "blockedReason": {
+          "code": "model-reported",
+          "message": "连续 3 轮缺失相同必需信息：未提供当前选中的 Workflow 模板标识（template_id）、未提供 Prompt Builder 结果 JSON（positive_prompt / negative_mode）、未指定生成模型/LoRA 或历史 Seed 复用。已识别可用实例 2（win3080）和多个 Workflow 候选（如 45/44/43/42），需用户确认具体选择和提示词输入才能执行生成。"
+        },
+        "roundsStarted": 3,
+        "createdAt": 1793164905437,
+        "updatedAt": 1793164958531,
+        "activation": "disarmed"
+      },
+      "goalToolCalls": [
+        {
+          "seq": 34,
+          "turn": 1,
+          "name": "get_goal",
+          "arguments": {}
+        },
+        {
+          "seq": 39,
+          "turn": 1,
+          "name": "create_goal",
+          "arguments": {
+            "max_goal_rounds": 5,
+            "objective": "使用用户当前选中的 Workflow 生成一张图片，交付生成结果后完成目标。"
+          }
+        },
+        {
+          "seq": 54,
+          "turn": 2,
+          "name": "get_goal",
+          "arguments": {}
+        },
+        {
+          "seq": 78,
+          "turn": 3,
+          "name": "update_goal",
+          "arguments": {
+            "action": "blocked",
+            "blocked_reason": "缺少当前选中的 Workflow 模板标识（template_id），缺少用于创建图片的 Prompt Builder 结果 JSON（positive_prompt / negative_mode），且用户未指定生成模型、LoRA 或复用历史 Seed。已发现实例 2（win3080）和多个候选 Workflow（如 45、44、43、42、41），需用户确认具体选择和提示词内容后才能执行生成。",
+            "goal_id": "goal-9da55102-8009-434c-91c1-32b63e8e8b52",
+            "revision": 1
+          }
+        },
+        {
+          "seq": 97,
+          "turn": 4,
+          "name": "get_goal",
+          "arguments": {}
+        },
+        {
+          "seq": 102,
+          "turn": 4,
+          "name": "update_goal",
+          "arguments": {
+            "action": "blocked",
+            "blocked_reason": "连续 3 轮缺失相同必需信息：未提供当前选中的 Workflow 模板标识（template_id）、未提供 Prompt Builder 结果 JSON（positive_prompt / negative_mode）、未指定生成模型/LoRA 或历史 Seed 复用。已识别可用实例 2（win3080）和多个 Workflow 候选（如 45/44/43/42），需用户确认具体选择和提示词输入才能执行生成。",
+            "goal_id": "goal-9da55102-8009-434c-91c1-32b63e8e8b52",
+            "revision": 1
+          }
+        }
+      ],
+      "toolErrors": [
+        {
+          "seq": 23,
+          "callId": "call_4c89ee9fb7e54e52a8c1adbb",
+          "text": [
+            "Error: unknown tool \"workdir\""
+          ],
+          "error": {
+            "name": "ToolNotFoundError",
+            "code": "UNKNOWN_TOOL"
+          }
+        },
+        {
+          "seq": 25,
+          "callId": "call_a856c7b5e29d469ebf425c8e",
+          "text": [
+            "Error: invalid arguments: missing required property \"description\""
+          ],
+          "error": {
+            "name": "ToolArgsError",
+            "code": "INVALID_ARGS"
+          }
+        },
+        {
+          "seq": 79,
+          "callId": "call_67decd429580498bb01cbe76",
+          "text": [
+            "Error: blocked requires at least 3 consecutive goal rounds; current round is 2"
+          ],
+          "error": {
+            "name": "HarnessError",
+            "code": "GOAL_TOOL_BLOCK_THRESHOLD"
+          }
+        }
+      ],
+      "turnEnds": [
+        {
+          "seq": 46,
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        },
+        {
+          "seq": 60,
+          "turn": 2,
+          "reason": {
+            "kind": "completed"
+          }
+        },
+        {
+          "seq": 89,
+          "turn": 3,
+          "reason": {
+            "kind": "completed"
+          }
+        },
+        {
+          "seq": 112,
+          "turn": 4,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      ],
+      "traceIndex": "real-model/blocked/trace-index.json"
+    }
+  ],
+  "acceptance": {
+    "ordinaryRequestLeavesGoalAbsent": true,
+    "explicitGoalReachesComplete": true,
+    "missingInputReachesBlocked": true,
+    "omitsUnrequestedMaxGoalRounds": false,
+    "waitsForThirdAutomaticRoundBeforeBlockedCall": false
+  }
+}

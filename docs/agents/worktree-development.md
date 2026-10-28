@@ -23,9 +23,9 @@
 
 3. `development` 模式共享当前 worktree 下的持久 Harness home、Electron user-data 和 Workspace，位置由 `config/desktop-e2e.json` 定义。本轮记录和证据分别保存，目录用途见“完整验收”的目录入口。同一 worktree 的持久环境已被使用时，probe 会拒绝另一轮并发启动。
 
-4. 开发者首次使用持久目录时，通过官方应用初始化 Profile、Provider 和模型。probe 的初始配置见 `config/desktop-e2e.json` 的 `initialProfilePatches`。后续调试复用已保存的设置、Workspace 和业务数据；probe 更新本轮 Host 端口。
+4. 首次启动持久开发环境时，probe 按 `config/desktop-e2e.json` 的 `initialProfilePatches` 初始化模型配置。后续启动保留已保存的模型设置、Workspace 和业务数据，并更新本轮 Host 端口。
 
-5. 开发环境凭据由 `config/desktop-e2e.json` 的 `environmentFilePath`、`credentialEnvironmentNames` 和 `requiredEnvironmentNames` 控制。probe 只从 main checkout `.env` 读取已声明的凭据名，并把相应变量传给本轮应用进程。
+5. 开发环境凭据由 `config/desktop-e2e.json` 的 `environmentFilePath`、`credentialEnvironmentNames` 和 `requiredEnvironmentNames` 控制。开发者在 main checkout `.env` 中维护已声明的凭据；各 worktree 的 probe 从该文件读取，并传给本轮应用进程。开发者不得在 worktree 的宿主凭据库重复保存共享凭据；宿主优先读取凭据库，同名记录会覆盖启动环境变量。
 
 6. NoobAI MCP 凭据用于工作台的目录查询。
 

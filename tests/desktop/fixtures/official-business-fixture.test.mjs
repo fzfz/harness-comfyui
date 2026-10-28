@@ -7,6 +7,18 @@ import { parseOfficialBusinessFixture } from './official-business-schema.mjs'
 import { startOfficialBusinessServices } from './official-business-services.mjs'
 
 describe('controlled model response scripts', () => {
+  it('holds accepted generation jobs pending until explicitly released', async () => {
+    const services = await startOfficialBusinessServices(parseOfficialBusinessFixture(officialBusinessFixtureJson))
+    try {
+      const release = services.holdGenerationCompletion()
+      const poll = async () => (await fetch(`${services.origin}/api/jobs/held-goal-run`)).json()
+      expect((await poll()).status).toBe('pending')
+      expect((await poll()).status).toBe('pending')
+      release()
+      expect((await poll()).status).toBe('completed')
+    } finally { await services.close() }
+  })
+
   it('delivers a matching native tool call once and preserves unrelated queued responses', async () => {
     const services = await startOfficialBusinessServices(parseOfficialBusinessFixture(officialBusinessFixtureJson))
     const request = async content => {

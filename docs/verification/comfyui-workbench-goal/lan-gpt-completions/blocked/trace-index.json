@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "runId": "bf6cf18c-1b3e-4925-8cc6-b16b76778bce",
+  "sessionId": "session-c6c331a1-9536-42e0-8b99-7985ab3fd305",
+  "source": {
+    "kind": "official-session-export",
+    "route": "api/session.export"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-c6c331a1-9536-42e0-8b99-7985ab3fd305",
+      "parentSessionId": null,
+      "entry": "session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/docs/verification/comfyui-workbench-goal/lan-gpt-completions/blocked/sessions/session-session-c6c331a1-9536-42e0-8b99-7985ab3fd305/session.json",
+      "eventCount": 47,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 46,
+        "complete": true
+      }
+    }
+  ],
+  "missing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-c6c331a1-9536-42e0-8b99-7985ab3fd305",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-c6c331a1-9536-42e0-8b99-7985ab3fd305",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "complete": false
+}

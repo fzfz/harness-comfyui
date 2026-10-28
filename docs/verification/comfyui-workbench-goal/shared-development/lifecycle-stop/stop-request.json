@@ -1,0 +1,12 @@
+{
+  "runId": "d4205598-2e41-43cc-9902-9d3503c152cb",
+  "pid": 20209,
+  "processGroupId": 20209,
+  "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/desktop-e2e/lifecycle-environments/7fa8c736-ba30-448c-92f3-dadd005816c2/8213c6c5-f531-454f-92dc-41563920a8fc/user-data --remote-debugging-port=56295 --remote-debugging-address=127.0.0.1",
+  "listeningPorts": [
+    56295,
+    56294,
+    56362
+  ],
+  "recordedAt": "2026-10-28T06:46:25.827Z"
+}

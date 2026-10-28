@@ -1,0 +1,33 @@
+{
+  "endpoint": "http://192.168.110.16:8317/v1",
+  "defaultSelection": {
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "high"
+  },
+  "provider": {
+    "displayName": "LAN GPT",
+    "api": "openai-completions",
+    "baseURL": "http://192.168.110.16:8317/v1",
+    "apiKeyEnv": "LAN_GPT_API_KEY",
+    "reasoning": "high",
+    "models": [
+      {
+        "id": "gpt-6.1-sol",
+        "input": [
+          "text",
+          "image"
+        ],
+        "reasoningEfforts": {
+          "high": "high"
+        }
+      }
+    ]
+  },
+  "credential": {
+    "ref": "LAN_GPT_API_KEY",
+    "configured": true,
+    "mode": "0o600"
+  },
+  "installedPersonaEqualsSource": true
+}

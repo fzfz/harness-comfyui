@@ -1,0 +1,61 @@
+{
+  "baselineSha": "d50af91b4205809e2dc307edcc59b8f3ecfde469",
+  "worktreeDiffEmpty": true,
+  "error": "AssertionError: expected [ 'office', 'office-docx', …(5) ] to deeply equal [ 'anima-prompt-builder', …(7) ]",
+  "testLocation": "tests/desktop/official-desktop-live.test.mjs:3706",
+  "evidencePath": "/Users/fzfz/.codex/worktrees/comfyui-goal-design/harness-comfyui/.local/goal-real/baseline-audit/20e421a6-70d3-4794-9db9-1df80d07487b/6c3a4ee7-f859-4fc0-8858-9650ec2e1286/official-business-failure.json",
+  "application": {
+    "version": "0.2.1-rc.3"
+  },
+  "plugin": {
+    "name": "harness-comfyui",
+    "version": "0.48.1",
+    "sourceCommit": "d50af91b4205809e2dc307edcc59b8f3ecfde469",
+    "dirty": false
+  },
+  "actualEndedChildSkillCatalog": {
+    "sessionId": "77b2d390-6523-43b3-9e5e-06e29b53142d",
+    "skills": [
+      {
+        "name": "office",
+        "description": "Create, edit, inspect, or convert Office documents, spreadsheets, presentations, and PDFs. Load to choose the relevant workflow.",
+        "modelInvocable": true
+      },
+      {
+        "name": "office-docx",
+        "description": "Create, read, edit, and validate Word documents (.docx).",
+        "modelInvocable": true
+      },
+      {
+        "name": "office-export-pdf",
+        "description": "Convert an Office document to a requested PDF with LibreOffice Kit.",
+        "modelInvocable": true
+      },
+      {
+        "name": "office-pptx",
+        "description": "Create, read, edit, and validate PowerPoint presentations (.pptx).",
+        "modelInvocable": true
+      },
+      {
+        "name": "office-recalculate",
+        "description": "Refresh spreadsheet formula caches and verify calculated values with LibreOffice Kit.",
+        "modelInvocable": true
+      },
+      {
+        "name": "office-render",
+        "description": "Render requested document images or inspect visual layout with LibreOffice Kit.",
+        "modelInvocable": true
+      },
+      {
+        "name": "office-xlsx",
+        "description": "Read, create, edit, and validate Excel workbooks, data, and formulas (.xlsx).",
+        "modelInvocable": true
+      }
+    ],
+    "installedPluginSkillDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-Tp1aB0/.local/desktop-e2e/20e421a6-70d3-4794-9db9-1df80d07487b/official-environment/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills"
+  },
+  "testResult": {
+    "passed": 13,
+    "failed": 1
+  }
+}

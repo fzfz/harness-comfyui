@@ -11,6 +11,7 @@ const { application } = JSON.parse(await readFile(resolve(repositoryRoot, 'confi
 
 describe('official workbench Preset assembly', () => {
   it.each([
+    ['goal', 'executes native Goal tools and commands within the workbench lifecycle'],
     ['inheritance', 'applies native tool selection in standing, parent, and child scopes'],
     ['lateRegistration', 'activates before optional global tools and restricts their later registrations'],
     ['lifecycle', 'retains active generations and releases them before reload'],

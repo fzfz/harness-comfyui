@@ -1,0 +1,180 @@
+{
+  "sessionId": "session-87ee6046-1f35-4217-92c8-bda926a6cf9d",
+  "before": {
+    "id": "goal-2401bebd-8e90-4941-af1f-03e3a2cd253b",
+    "revision": 6,
+    "objective": "Resume the persisted Goal and verify the existing Run.",
+    "phase": "active",
+    "maxGoalRounds": 3,
+    "roundsStarted": 2,
+    "createdAt": 1793165782278,
+    "updatedAt": 1793165800260,
+    "activation": "disarmed"
+  },
+  "after": {
+    "id": "goal-2401bebd-8e90-4941-af1f-03e3a2cd253b",
+    "revision": 8,
+    "objective": "Resume the persisted Goal and verify the existing Run.",
+    "phase": "complete",
+    "maxGoalRounds": 3,
+    "roundsStarted": 3,
+    "createdAt": 1793165782278,
+    "updatedAt": 1793165849426,
+    "activation": "disarmed"
+  },
+  "runId": "run_e20ec714-a0c9-4f64-acb7-fd013190d274",
+  "requestSequence": 109,
+  "runInputs": {
+    "runs": [
+      {
+        "run_id": "run_e20ec714-a0c9-4f64-acb7-fd013190d274",
+        "lookup_status": "available",
+        "arguments": {
+          "title": "Controlled native child generation",
+          "instance_id": "1",
+          "template_id": "1",
+          "parameters": {
+            "positive_prompt": "official Desktop generation regression image",
+            "seed": 424242
+          },
+          "loras": []
+        },
+        "workflow_status": "available",
+        "workflow": {
+          "version": 0.4,
+          "nodes": [
+            {
+              "id": 1,
+              "type": "FixturePrompt",
+              "inputs": [
+                {
+                  "name": "prompt",
+                  "type": "STRING",
+                  "link": null,
+                  "widget": {
+                    "name": "prompt"
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "links": [
+                    10
+                  ]
+                }
+              ],
+              "widgets_values": [
+                "official Desktop generation regression image"
+              ]
+            },
+            {
+              "id": 2,
+              "type": "FixtureImage",
+              "inputs": [
+                {
+                  "name": "conditioning",
+                  "type": "CONDITIONING",
+                  "link": 10
+                },
+                {
+                  "name": "seed",
+                  "type": "INT",
+                  "link": null,
+                  "widget": {
+                    "name": "seed"
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "IMAGE",
+                  "type": "IMAGE",
+                  "links": [
+                    11
+                  ]
+                }
+              ],
+              "widgets_values": [
+                424242
+              ]
+            },
+            {
+              "id": 3,
+              "type": "SaveImage",
+              "inputs": [
+                {
+                  "name": "images",
+                  "type": "IMAGE",
+                  "link": 11
+                },
+                {
+                  "name": "filename_prefix",
+                  "type": "STRING",
+                  "link": null,
+                  "widget": {
+                    "name": "filename_prefix"
+                  }
+                }
+              ],
+              "outputs": [],
+              "widgets_values": [
+                "official-desktop-controlled"
+              ]
+            }
+          ],
+          "links": [
+            [
+              10,
+              1,
+              0,
+              2,
+              0,
+              "CONDITIONING"
+            ],
+            [
+              11,
+              2,
+              0,
+              3,
+              0,
+              "IMAGE"
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "runMedia": {
+    "run_id": "run_e20ec714-a0c9-4f64-acb7-fd013190d274",
+    "lookup_status": "available",
+    "title": "Controlled native child generation",
+    "parameters": {
+      "positive_prompt": "official Desktop generation regression image",
+      "seed": 424242
+    },
+    "images": [
+      {
+        "media_id": "media_fab91a41-fbf6-4f97-9ae2-bb4774075553",
+        "node_id": "3",
+        "output_index": 0,
+        "filename": "official-desktop-controlled.png",
+        "media_type": "image/png",
+        "file_path": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/official-desktop-e2e-4dMBqI/.local/desktop-e2e/82a27c4c-bae8-4fb1-889c-89c054449361/official-environment/dsh-home/data/plugins/harness-comfyui/media/fa/b9/media_fab91a41-fbf6-4f97-9ae2-bb4774075553.png"
+      }
+    ]
+  },
+  "generation": {
+    "runId": "run_e20ec714-a0c9-4f64-acb7-fd013190d274",
+    "turn": 1,
+    "title": "Controlled native child generation",
+    "instanceTitle": "Controlled Desktop Comfy Service",
+    "templateTitle": "Controlled frontend workflow",
+    "status": "succeeded",
+    "errorCode": null,
+    "errorMessage": null,
+    "createdAt": 1793165769542,
+    "updatedAt": 1793165771530
+  }
+}

@@ -61,6 +61,12 @@
 
 7. 验收者保存实际提示词、上下文、工具声明及 Skill 来源和读取记录。业务证据包括 MCP 与 CLI 的请求和返回结果、Run 记录及生成图片。
 
+## Goal 接入验收
+
+1. 原生装配夹具验证 Goal 工具实际调用、子会话权限、修订校验、命令恢复及预设释放与重挂载。
+2. 官方 Desktop 业务 E2E 的 `verifyWorkbenchGoal()` 验证 GoalBar、子任务等待、自动完成和轮次耗尽。相关用例分别验证暂停 Goal 后 Run 继续完成，以及活跃 Goal 重启后由用户恢复并读取已有 Run。
+3. 验收者通过真实模型分别验证普通请求、明确 Goal 请求及缺少输入的目标。验收者按[worktree 开发文档](../agents/worktree-development.md#agent-调用轨迹)导出主子会话轨迹，并核对 persona 中的使用约定。
+
 ## 目录边界测试
 
 1. [official-catalog-boundary.test.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/tests/production/official-catalog-boundary.test.mjs>) 验证 MCP 与内部 HTTP 对同一目录场景的响应一致性。覆盖场景包括无默认模型、空实例、请求校验、鉴权与取消。测试同时验证证据生成与端口释放。

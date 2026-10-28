@@ -1,0 +1,14 @@
+{
+  "sessionId": "session-87ee6046-1f35-4217-92c8-bda926a6cf9d",
+  "goal": {
+    "id": "goal-2401bebd-8e90-4941-af1f-03e3a2cd253b",
+    "revision": 6,
+    "objective": "Resume the persisted Goal and verify the existing Run.",
+    "phase": "active",
+    "maxGoalRounds": 3,
+    "roundsStarted": 2,
+    "createdAt": 1793165782278,
+    "updatedAt": 1793165800260,
+    "activation": "armed"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "value": {
+    "id": "goal-9da55102-8009-434c-91c1-32b63e8e8b52",
+    "revision": 2,
+    "objective": "使用用户当前选中的 Workflow 生成一张图片，交付生成结果后完成目标。",
+    "phase": "blocked",
+    "maxGoalRounds": 5,
+    "blockedReason": {
+      "code": "model-reported",
+      "message": "连续 3 轮缺失相同必需信息：未提供当前选中的 Workflow 模板标识（template_id）、未提供 Prompt Builder 结果 JSON（positive_prompt / negative_mode）、未指定生成模型/LoRA 或历史 Seed 复用。已识别可用实例 2（win3080）和多个 Workflow 候选（如 45/44/43/42），需用户确认具体选择和提示词输入才能执行生成。"
+    },
+    "roundsStarted": 3,
+    "createdAt": 1793164905437,
+    "updatedAt": 1793164958531,
+    "activation": "disarmed"
+  }
+}

@@ -99,19 +99,20 @@ describe('official Desktop probe configuration and records', () => {
     expect(config.invocation.unsetEnvironmentNames).toContain('ELECTRON_RUN_AS_NODE')
     const initialProfilePatches = Object.fromEntries(config.modes.development.initialProfilePatches.map(row => [row.id, row.config]))
     expect(initialProfilePatches['agent-default-model']).toEqual({
-      provider: 'openrouter',
-      model: 'thinkingmachines/inkling:free',
+      provider: 'lan-gpt',
+      model: 'gpt-6.1-sol',
+      reasoningEffort: 'high',
     })
-    expect(initialProfilePatches['llm-pi-ai'].providers.openrouter).toEqual({
-      displayName: 'OpenRouter',
+    expect(initialProfilePatches['llm-pi-ai'].providers['lan-gpt']).toEqual({
+      displayName: 'LAN GPT',
       api: 'openai-completions',
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKeyEnv: 'OPENROUTER_API_KEY',
+      baseURL: 'http://192.168.110.16:8317/v1',
+      apiKeyEnv: 'LAN_GPT_API_KEY',
+      reasoning: 'high',
       models: [{
-        id: 'thinkingmachines/inkling:free',
+        id: 'gpt-6.1-sol',
         input: ['text', 'image'],
-        contextWindow: 1048576,
-        maxTokens: 8192,
+        reasoningEfforts: { high: 'high' },
       }],
     })
     expect(config.capabilities).toMatchObject({
@@ -1292,10 +1293,10 @@ describe('official Desktop probe preparation and lifecycle', () => {
       ...harness.options,
       config,
       mode: 'development',
-      readEnvironmentFile: async () => `OPENROUTER_API_KEY=${injectedValue}\nUNRELATED_SETTING=omit-this\n`,
+      readEnvironmentFile: async () => `LAN_GPT_API_KEY=${injectedValue}\nUNRELATED_SETTING=omit-this\n`,
     })
     try {
-      expect(harness.spawnEnvironment.OPENROUTER_API_KEY).toBe(injectedValue)
+      expect(harness.spawnEnvironment.LAN_GPT_API_KEY).toBe(injectedValue)
       expect(harness.spawnEnvironment.UNRELATED_SETTING).toBeUndefined()
       const recordJson = await readFile(started.recordPath, 'utf8')
       const readyEvidence = await readFile(join(
@@ -1304,7 +1305,7 @@ describe('official Desktop probe preparation and lifecycle', () => {
       ), 'utf8')
       expect(recordJson).not.toContain(injectedValue)
       expect(readyEvidence).not.toContain(injectedValue)
-      expect(started.record.launch.environment.OPENROUTER_API_KEY).toBeUndefined()
+      expect(started.record.launch.environment.LAN_GPT_API_KEY).toBeUndefined()
     } finally {
       await stopProbe({ repositoryRoot, runId: started.record.runId, ...harness.statusOptions })
     }

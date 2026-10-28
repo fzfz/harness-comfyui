@@ -1,0 +1,16 @@
+{
+  "runId": "5fb19ff2-db68-4576-a0bf-d783447cbd4e",
+  "state": "stopped",
+  "result": {
+    "exitCode": null,
+    "error": null,
+    "completedAt": "2026-10-28T05:55:36.321Z",
+    "portsReleased": true
+  },
+  "ports": {
+    "host": 63283,
+    "rendererCdp": 63284,
+    "hostInspector": 63285
+  },
+  "processGroupId": null
+}

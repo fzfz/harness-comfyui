@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "value": {
+    "id": "goal-a1db4a01-980f-4d92-a5da-b9eb43be42d3",
+    "revision": 2,
+    "objective": "使用用户当前选中的 ComfyUI Workflow 生成一张图片，交付生成结果和 Run ID；确认交付完成后将目标标记为完成。",
+    "phase": "blocked",
+    "maxGoalRounds": 256,
+    "blockedReason": {
+      "code": "model-reported",
+      "message": "当前用户消息未附带选中的 Workflow comfyui-context 或 template_id，且缺少创建图片所需的 Prompt Builder 结果 JSON，无法确定模板与生成内容；等待用户补充。"
+    },
+    "roundsStarted": 0,
+    "createdAt": 1793167025487,
+    "updatedAt": 1793167046873,
+    "activation": "disarmed"
+  }
+}

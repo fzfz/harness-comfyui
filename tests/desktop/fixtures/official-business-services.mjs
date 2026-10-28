@@ -17,6 +17,7 @@ export async function startOfficialBusinessServices(fixture) {
   const frontendEvents = []
   const skillToolCalls = []
   const jobPollCounts = new Map()
+  let generationCompletionHeld = false
   let submittedPrompt = null
   const waiters = []
   const responsePauses = []
@@ -76,7 +77,7 @@ export async function startOfficialBusinessServices(fixture) {
       comfyRequests.push({ method: request.method, pathname, promptId, poll: count })
       writeJson(response, {
         id: promptId,
-        status: count === 1 ? 'pending' : 'completed',
+        status: generationCompletionHeld || count === 1 ? 'pending' : 'completed',
         outputs: { [fixture.generation.outputNodeId]: { images: [controlledOutputDescriptor(fixture)] } },
       })
       return
@@ -306,6 +307,10 @@ export async function startOfficialBusinessServices(fixture) {
     get comfyRequests() { return [...comfyRequests] },
     get frontendEvents() { return [...frontendEvents] },
     get skillToolCalls() { return structuredClone(skillToolCalls) },
+    holdGenerationCompletion() {
+      generationCompletionHeld = true
+      return () => { generationCompletionHeld = false }
+    },
     get promptSubmission() { return submittedPrompt === null ? null : structuredClone(submittedPrompt) },
     get controlledPngByteLength() { return CONTROLLED_PNG.length },
     get historyRequestCount() { return comfyRequests.filter(item => item.pathname.startsWith('/history/')).length },

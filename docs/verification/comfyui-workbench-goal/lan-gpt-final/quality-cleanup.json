@@ -1,0 +1,244 @@
+{
+  "runs": [
+    {
+      "runId": "9d290b10-cf66-410b-aba8-1782d65fe1f7",
+      "state": "failed",
+      "portsReleased": false,
+      "ports": {
+        "host": 60859,
+        "rendererCdp": 60860,
+        "hostInspector": 60861
+      },
+      "processGroupId": null,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "953540fd-b385-4169-95a2-fba702e86512",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 55319,
+        "rendererCdp": 55320,
+        "hostInspector": 55321
+      },
+      "processGroupId": 90685,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "c75deb0d-dd4c-4295-b66e-1067ba592390",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 60910,
+        "rendererCdp": 60911,
+        "hostInspector": 60912
+      },
+      "processGroupId": 18480,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "52ffd2e7-ea3e-49ff-9d53-63b13056c580",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 56994,
+        "rendererCdp": 56995,
+        "hostInspector": 56996
+      },
+      "processGroupId": 2061,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "bd5efaf5-dbd5-4b6d-a63f-402e6d585165",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 55316,
+        "rendererCdp": 55317,
+        "hostInspector": 55318
+      },
+      "processGroupId": 90604,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "f152d0be-fcb8-484a-aa44-2284ca816e33",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 56958,
+        "rendererCdp": 56959,
+        "hostInspector": 56960
+      },
+      "processGroupId": 99892,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "cc239fbb-f359-4f1e-ab83-7d34508de48b",
+      "state": "failed",
+      "portsReleased": true,
+      "ports": {
+        "host": 59848,
+        "rendererCdp": 59849,
+        "hostInspector": 59850
+      },
+      "processGroupId": 75702,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "eacb611f-1c69-431d-b264-85ae0a33a2e7",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 56465,
+        "rendererCdp": 56466,
+        "hostInspector": 56467
+      },
+      "processGroupId": 68409,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "66149624-9497-4c8c-96f1-9153b65b6b8a",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 58476,
+        "rendererCdp": 58477,
+        "hostInspector": 58478
+      },
+      "processGroupId": 88615,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "bc9fb7bc-ab06-41eb-8054-1fd343d67949",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 55566,
+        "rendererCdp": 55567,
+        "hostInspector": 55568
+      },
+      "processGroupId": 18325,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "899df0a5-a92e-4914-b68d-f4a21cd39542",
+      "state": "cancelled",
+      "portsReleased": true,
+      "ports": {
+        "host": 60286,
+        "rendererCdp": 60287,
+        "hostInspector": 60288
+      },
+      "processGroupId": 86270,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "23f2b47c-d5de-43b4-814a-244b6a11a852",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 59320,
+        "rendererCdp": 59321,
+        "hostInspector": 59322
+      },
+      "processGroupId": 44576,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "1dbb9da0-5ae2-43c7-ac78-c6167ec15bff",
+      "state": "stopped",
+      "portsReleased": true,
+      "ports": {
+        "host": 57711,
+        "rendererCdp": 57712,
+        "hostInspector": 57713
+      },
+      "processGroupId": 48616,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    },
+    {
+      "runId": "03936751-9151-4f78-bdd2-1027f17d821b",
+      "state": "failed",
+      "portsReleased": true,
+      "ports": {
+        "host": 60616,
+        "rendererCdp": 60617,
+        "hostInspector": 60618
+      },
+      "processGroupId": 97551,
+      "remainingPids": [],
+      "listeningPids": {
+        "host": [],
+        "rendererCdp": [],
+        "hostInspector": []
+      }
+    }
+  ],
+  "allReleased": true,
+  "developmentLeasePresent": false
+}

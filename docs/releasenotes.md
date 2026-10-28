@@ -2,6 +2,25 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.49.0
+
+## 工作台 Goal
+
+1. 工作台预设接入宿主原生 Goal 工具和命令。用户明确要求持续完成目标时，Agent 创建 Goal，并根据执行结果更新状态。
+2. 用户可通过 Goal 界面暂停和恢复目标。宿主管理轮次预算、自动续跑与状态保存。
+
+## 开发模型配置
+
+1. 独立开发环境默认使用内网模型 `gpt-6.1-sol`，推理强度为 `high`。各 worktree 从开发主目录的 `.env` 读取模型凭据，配置入口见[开发配置](agents/worktree-development.md#交互调试)。
+
+## 验收记录
+
+1. Goal 的原生装配、官方 Desktop 和真实模型验收结果见[Goal 验收记录](verification/comfyui-workbench-goal/README.md)。
+2. 用户已批准以下两项发布门禁例外。故障证据与清理结果见[验收未通过项](verification/comfyui-workbench-goal/README.md#4-提交未通过项)。
+
+   1. 查询已结束子会话的 Skill 目录时，宿主返回 Office Skill。
+   2. 官方 Desktop 生命周期测试停止应用时，进程身份变化触发 `PROCESS_IDENTITY_CHANGED` 保护报错。
+
 # Harness ComfyUI v0.48.1
 
 ## 工作台预设与业务 Skill

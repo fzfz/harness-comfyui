@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "value": {
+    "id": "goal-0a60db8b-f77c-436a-9e78-4a18b385e71c",
+    "revision": 2,
+    "objective": "使用用户当前选中的 Workflow 生成一张图片，交付生成结果并验证完成后结束目标。缺少必要的 Workflow 选择或生成输入时，向用户请求补充，不擅自选择。",
+    "phase": "blocked",
+    "maxGoalRounds": 3,
+    "blockedReason": {
+      "code": "model-reported",
+      "message": "缺少选中 Workflow 的 template_id 或 comfyui-context，以及用于创建图片的 Prompt Builder 结果 JSON。"
+    },
+    "roundsStarted": 0,
+    "createdAt": 1793166689419,
+    "updatedAt": 1793166730929,
+    "activation": "disarmed"
+  }
+}

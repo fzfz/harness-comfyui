@@ -10,25 +10,46 @@
       "environmentRootRelativePath": ".local/desktop-development/official-environment",
       "environmentFilePath": "/Volumes/4Tdisk/work/AI2/harness-comfyui/.env",
       "credentialEnvironmentNames": [
+        "LAN_GPT_API_KEY",
         "OPENROUTER_API_KEY",
         "OPENCODE_GO_API_KEY",
         "NOOBAI_MCP_TOKEN"
       ],
       "requiredEnvironmentNames": [
-        "OPENROUTER_API_KEY"
+        "LAN_GPT_API_KEY"
       ],
       "initialProfilePatches": [
         {
           "id": "agent-default-model",
           "config": {
-            "provider": "openrouter",
-            "model": "thinkingmachines/inkling:free"
+            "provider": "lan-gpt",
+            "model": "gpt-6.1-sol",
+            "reasoningEffort": "high"
           }
         },
         {
           "id": "llm-pi-ai",
           "config": {
             "providers": {
+              "lan-gpt": {
+                "displayName": "LAN GPT",
+                "api": "openai-completions",
+                "baseURL": "http://192.168.110.16:8317/v1",
+                "apiKeyEnv": "LAN_GPT_API_KEY",
+                "reasoning": "high",
+                "models": [
+                  {
+                    "id": "gpt-6.1-sol",
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "reasoningEfforts": {
+                      "high": "high"
+                    }
+                  }
+                ]
+              },
               "openrouter": {
                 "displayName": "OpenRouter",
                 "api": "openai-completions",

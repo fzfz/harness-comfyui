@@ -18,10 +18,11 @@
 5. **自动调用工作流，支持多个 ComfyUI 实例。** 助手把组合好的提示词和参数交给工作流，再将生成任务发送到目标实例。你可以在同一个界面里查看进度、浏览结果和下载原图。
 6. **独立选择图片读取模型，分析生成结果。** 用户可选择宿主视觉模型，也可填写自定义 OpenAI 兼容接口。每份命名配置分别保存模型和默认读图提示词。助手既能描述本地图片，也能对照生图要求指出画面偏差、提出修改建议。
 7. **查询并复用生成参数。** 每次生成都会保存描述和绘图设置，供用户查询、复用和调整。
+8. **持续推进明确目标。** 用户要求持续完成目标时，工作台使用宿主 Goal 管理进度。用户可在会话中查看、暂停和恢复目标。
 
 ## 适用版本
 
-1. 插件 `0.48.1` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0481>)。
+1. 插件 `0.49.0` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0490>)。
 
 ## CLI 帮助与图片读取
 

@@ -94,7 +94,9 @@
    | `skill-filesystem.config.bundledSkillDir` | 定位当前安装包的业务 Skill 目录。 |
    | `skill-filesystem.config.customSkillDirs` | 默认 `[]`；维护者在此明确配置用户自有 Skill 的额外目录。 |
 
-3. 包内资源范围由 [config/plugin-package.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/plugin-package.json>) 定义。开发验收时，Profile patch 可将 `bundledSkillDir` 指向候选 checkout 的业务 Skill 目录。
+3. 共享组合通过 `command-goal` 和 `tool-goal` 接入宿主原生 Goal，组件配置沿用宿主默认值。工作台 Agent 的使用约定集中在工作台配置的 persona 中。
+
+4. 包内资源范围由 [config/plugin-package.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/plugin-package.json>) 定义。开发验收时，Profile patch 可将 `bundledSkillDir` 指向候选 checkout 的业务 Skill 目录。
 
 ## 图片读取设置
 

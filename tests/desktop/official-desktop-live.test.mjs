@@ -99,6 +99,10 @@ const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'official-business-mcp-activation.json',
   'official-business-native-continuation.json',
   'official-business-native-cold-resume.json',
+  'official-business-goal.json',
+  'official-business-goal-pause-run.json',
+  'official-business-goal-before-restart.json',
+  'official-business-goal-after-restart.json',
   'official-business-retired-preset.json',
 ]
 
@@ -236,6 +240,7 @@ async function startModelRequestCaptureServer() {
     get frontendEvents() { return services.frontendEvents },
     get skillToolCalls() { return services.skillToolCalls },
     get promptSubmission() { return services.promptSubmission },
+    holdGenerationCompletion() { return services.holdGenerationCompletion() },
     get controlledPngByteLength() { return services.controlledPngByteLength },
     get historyRequestCount() { return services.historyRequestCount },
     async request(timeoutMs = 10_000) { return services.nextRequest(timeoutMs) },
@@ -1443,6 +1448,235 @@ async function verifyRetiredPresetFixture(page, services, retired, evidenceDirec
   }, null, 2) + '\n', { mode: 0o600 })
 }
 
+
+async function readWorkbenchGoal(page, sessionId, predicate) {
+  const result = await waitForValue(page,
+    `window.__runPanelTestContext.get('remote.goals').get(${JSON.stringify(sessionId)})`,
+    result => result?.ok === true && predicate(result.value), 30_000)
+  return result.value
+}
+
+
+async function armWorkbenchGoalForRestart(page, services, native, paused) {
+  const start = services.requestLog.length
+  await openBusinessSession(page, native.parentSessionId)
+  const response = services.pauseNextModelResponse(request => request.sequence >= start
+    && requestMessageText((request.body.messages ?? []).findLast(message => message.role === 'user') ?? {})
+      .includes('<goal_round>'))
+  await waitForValue(page, `(() => {
+    const button = document.querySelector('[data-goal-bar] button[aria-label="Resume goal"], [data-goal-bar] button[aria-label="恢复目标"]')
+    if (!button) return false
+    button.click(); return true
+  })()`, value => value === true)
+  await response.started
+  const goal = await readWorkbenchGoal(page, native.parentSessionId,
+    goal => goal?.id === paused.id && goal.phase === 'active' && goal.activation === 'armed')
+  expect(goal.roundsStarted).toBe(paused.roundsStarted + 1)
+  return { goal, response }
+}
+
+async function verifyGoalPauseKeepsRun(page, services, sessionId, evidenceDirectory) {
+  const prompt = 'Create a Goal, submit a Run, then pause the Goal while the Run finishes.'
+  const start = services.requestLog.length
+  const matches = request => request.sequence >= start && (request.body.messages ?? [])
+    .some(message => message.role === 'user' && requestMessageText(message) === prompt)
+  const call = (id, name, args) => controlledToolResponse([{ id, name, arguments: args }])
+  services.enqueueModelResponse(matches, call('pause-run-goal', 'create_goal', { objective: prompt }))
+  services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'pause-run-goal'),
+    call('pause-run-submit', 'bash', { description: 'Submit a Run before pausing the Goal',
+      command: managedCliCommand('generation submit', {
+        title: 'Goal pause keeps accepted generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
+        template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId, model: null, loras: [],
+        parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt,
+          seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
+      }) }))
+  services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'pause-run-submit'),
+    request => {
+      const { goal } = JSON.parse(controlledToolResult(request, 'pause-run-goal'))
+      return call('pause-run-pause', 'update_goal', { goal_id: goal.id, revision: goal.revision, action: 'pause' })
+    })
+  const release = services.holdGenerationCompletion()
+  try {
+    await submitComposerPrompt(page, prompt)
+    const pausedRequest = await services.requestWhere(request => matches(request)
+      && hasControlledToolResult(request, 'pause-run-pause'), 30_000)
+    const { goal } = JSON.parse(controlledToolResult(pausedRequest, 'pause-run-pause'))
+    expect(goal.phase).toBe('paused')
+    const path = controlledToolResult(pausedRequest, 'pause-run-submit').split('\n', 1)[0]
+    const accepted = JSON.parse(await readFile(path, 'utf8'))
+    expect(accepted.run_id).toEqual(expect.any(String))
+    const query = `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({
+      sessionId: ${JSON.stringify(sessionId)}, turn: null })`
+    const pending = await waitForValue(page, query, result => result?.ok === true
+      && result.value.runs.some(run => run.runId === accepted.run_id && run.status === 'remote_pending'), 30_000)
+    release()
+    const completed = await waitForValue(page, query, result => result?.ok === true
+      && result.value.runs.some(run => run.runId === accepted.run_id && run.status === 'succeeded')
+      && result.value.media.some(media => media.runId === accepted.run_id), 30_000)
+    expect(await readWorkbenchGoal(page, sessionId, current => current?.id === goal.id)).toMatchObject({
+      phase: 'paused', activation: 'disarmed',
+    })
+    await waitForOfficialSessionEnd(page, sessionId, 'completed')
+    await writeFile(join(evidenceDirectory, 'official-business-goal-pause-run.json'),
+      JSON.stringify({ sessionId, goal, runId: accepted.run_id,
+        pending: pending.value.runs.find(run => run.runId === accepted.run_id),
+        completed: completed.value.runs.find(run => run.runId === accepted.run_id),
+        media: completed.value.media.filter(media => media.runId === accepted.run_id) }, null, 2) + '\n', { mode: 0o600 })
+    await submitComposerPrompt(page, '/goal clear')
+    await readWorkbenchGoal(page, sessionId, current => current == null)
+  } finally { release() }
+}
+
+async function verifyWorkbenchGoal(page, services, native, evidenceDirectory, restored) {
+  const sessionId = native.parentSessionId
+  const requestStart = restored?.requestStart ?? services.requestLog.length
+  await openBusinessSession(page, sessionId)
+  const prompt = restored ? 'Resume the persisted Goal and verify the existing Run.' : 'Create a Goal to verify the child Run.'
+  const matches = request => request.sequence >= requestStart && (request.body.messages ?? [])
+    .some(message => message.role === 'user' && requestMessageText(message).includes(prompt))
+  const automatic = request => matches(request) && requestMessageText(
+    (request.body.messages ?? []).findLast(message => message.role === 'user') ?? {}).includes('<goal_round>')
+  const call = (id, name, args) => controlledToolResponse([{ id, name, arguments: args }])
+  const goalArgs = (request, callId, action, extra = {}) => {
+    const { goal } = JSON.parse(controlledToolResult(request, callId))
+    return { goal_id: goal.id, revision: goal.revision, action, ...extra }
+  }
+  const after = id => request => matches(request) && hasControlledToolResult(request, id)
+  const observations = []
+  if (restored) {
+    const current = await readWorkbenchGoal(page, sessionId, goal => goal?.phase === 'active')
+    expect(current).toMatchObject({ id: restored.id, revision: restored.revision,
+      roundsStarted: restored.roundsStarted, activation: 'disarmed' })
+    expect(services.requestLog.slice(requestStart)).toHaveLength(0)
+    services.enqueueModelResponse(automatic, call('goal-restored-read', 'get_goal', {}))
+    services.enqueueModelResponse(after('goal-restored-read'), call('goal-restored-run', 'bash', {
+      description: 'Read the existing generation Run after Goal resume',
+      command: managedCliCommand('generation run-inputs', { run_ids: [native.childRunId] }),
+    }))
+    services.enqueueModelResponse(after('goal-restored-run'), call('goal-restored-media', 'bash', {
+      description: 'Read the existing Run media after Goal resume',
+      command: managedCliCommand('generation resolve-media', { run_ids: [native.childRunId] }),
+    }))
+    services.enqueueModelResponse(after('goal-restored-media'), request =>
+      call('goal-restored-complete', 'update_goal', goalArgs(request, 'goal-restored-read', 'complete')))
+    // The objective is the only new user input needed by the native resumed round.
+    await waitForValue(page, `(() => {
+      const button = document.querySelector('[data-goal-bar] button[aria-label="Resume goal"], [data-goal-bar] button[aria-label="恢复目标"]')
+      if (!button) return false
+      button.click(); return true
+    })()`, value => value === true)
+    const result = await services.requestWhere(after('goal-restored-complete'), 30_000)
+    expect(JSON.parse(controlledToolResult(result, 'goal-restored-complete')).goal.phase).toBe('complete')
+    const resultPath = controlledToolResult(result, 'goal-restored-run').split('\n', 1)[0]
+    const inputs = JSON.parse(await readFile(resultPath, 'utf8'))
+    expect(inputs.runs).toContainEqual(expect.objectContaining({ run_id: native.childRunId }))
+    const mediaPath = controlledToolResult(result, 'goal-restored-media').split('\n', 1)[0]
+    const resolvedMedia = JSON.parse(await readFile(mediaPath, 'utf8'))
+    const runMedia = resolvedMedia.runs.find(run => run.run_id === native.childRunId)
+    expect(runMedia.images.length).toBeGreaterThan(0)
+    for (const image of runMedia.images) expect((await lstat(image.file_path)).isFile()).toBe(true)
+    const generation = await waitForValue(page,
+      `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(sessionId)}, turn: null })`,
+      value => value?.ok === true && value.value.runs.some(run => run.runId === native.childRunId && run.status === 'succeeded'))
+    await waitForOfficialSessionEnd(page, sessionId, 'completed')
+    await waitForValue(page, `document.querySelector('[data-goal-bar]') === null`, value => value === true)
+    const completed = await readWorkbenchGoal(page, sessionId, goal => goal?.phase === 'complete')
+    await writeFile(join(evidenceDirectory, 'official-business-goal-after-restart.json'),
+      JSON.stringify({ sessionId, before: current, after: completed, runId: native.childRunId,
+        requestSequence: result.sequence, runInputs: inputs, runMedia,
+        generation: generation.value.runs.find(run => run.runId === native.childRunId) }, null, 2) + '\n', { mode: 0o600 })
+    return completed
+  }
+
+  expect(await readWorkbenchGoal(page, sessionId, goal => goal == null)).toBeUndefined()
+  services.enqueueModelResponse(matches, call('goal-create', 'create_goal', { objective: prompt, max_goal_rounds: 4 }))
+  services.enqueueModelResponse(after('goal-create'), call('goal-child-send', 'send_message', {
+    agent_id: native.childSessionId, message: 'Verify Goal child authority and the existing Run.',
+  }))
+  const childRequest = request => request.sequence >= requestStart && (request.body.messages ?? [])
+    .some(message => message.role === 'user' && requestMessageText(message).includes('Verify Goal child authority'))
+  const childPause = services.pauseNextModelResponse(childRequest)
+  services.enqueueModelResponse(childRequest, call('goal-child-read', 'get_goal', {}))
+  services.enqueueModelResponse(request => childRequest(request) && hasControlledToolResult(request, 'goal-child-read'),
+    call('goal-child-create', 'create_goal', { objective: 'Delegated child goal' }))
+  services.enqueueModelResponse(request => childRequest(request) && hasControlledToolResult(request, 'goal-child-create'),
+    call('goal-child-run', 'bash', { description: 'Verify the existing child Run',
+      command: managedCliCommand('generation run-inputs', { run_ids: [native.childRunId] }) }))
+  services.enqueueModelResponse(automatic, call('goal-read', 'get_goal', {}))
+  services.enqueueModelResponse(after('goal-read'), request =>
+    call('goal-complete', 'update_goal', goalArgs(request, 'goal-read', 'complete')))
+  try {
+    await submitComposerPrompt(page, prompt)
+    await childPause.started
+    await waitForOfficialSessionEnd(page, sessionId, 'completed')
+    const waiting = await readWorkbenchGoal(page, sessionId, goal => goal?.phase === 'active')
+    expect(waiting.roundsStarted).toBe(0)
+    expect(services.requestLog.some(automatic)).toBe(false)
+    await waitForValue(page, `document.querySelector('[data-goal-bar]')?.textContent.includes(${JSON.stringify(prompt)})`,
+      value => value === true)
+    childPause.release()
+    const childResult = await services.requestWhere(request => childRequest(request)
+      && hasControlledToolResult(request, 'goal-child-run'), 30_000)
+    expect(JSON.parse(controlledToolResult(childResult, 'goal-child-read'))).toEqual({ goal: null })
+    expect(controlledToolResult(childResult, 'goal-child-create')).toContain('direct human')
+    const childResultPath = controlledToolResult(childResult, 'goal-child-run').split('\n', 1)[0]
+    const childRunInputs = JSON.parse(await readFile(childResultPath, 'utf8'))
+    expect(childRunInputs.runs).toContainEqual(expect.objectContaining({ run_id: native.childRunId }))
+    const completedRequest = await services.requestWhere(after('goal-complete'), 30_000)
+    const completed = JSON.parse(controlledToolResult(completedRequest, 'goal-complete'))
+    expect(completed).toMatchObject({ goal: { id: waiting.id, phase: 'complete', roundsStarted: 1 }, activation: 'disarmed' })
+    expect(completedRequest.sequence).toBeGreaterThan(childResult.sequence)
+    await waitForOfficialSessionEnd(page, sessionId, 'completed')
+    await waitForValue(page, `document.querySelector('[data-goal-bar]') === null`, value => value === true)
+    observations.push({ waiting, completed, childSessionId: native.childSessionId, childRunInputs,
+      childRead: JSON.parse(controlledToolResult(childResult, 'goal-child-read')),
+      childDenied: controlledToolResult(childResult, 'goal-child-create'),
+      childRunSequence: childResult.sequence, completedSequence: completedRequest.sequence })
+  } finally { childPause.release() }
+
+  await verifyGoalPauseKeepsRun(page, services, sessionId, evidenceDirectory)
+  const budgetPrompt = 'Resume the persisted Goal and verify the existing Run.'
+  const budgetStart = services.requestLog.length
+  const budgetMatches = request => request.sequence >= budgetStart && (request.body.messages ?? [])
+    .some(message => message.role === 'user' && requestMessageText(message) === budgetPrompt)
+  services.enqueueModelResponse(budgetMatches,
+    call('goal-budget-create', 'create_goal', { objective: budgetPrompt, max_goal_rounds: 1 }))
+  await submitComposerPrompt(page, budgetPrompt)
+  const exhausted = await readWorkbenchGoal(page, sessionId,
+    goal => goal?.phase === 'blocked' && goal.blockedReason?.code === 'round-limit')
+  expect(exhausted.roundsStarted).toBe(1)
+  expect(exhausted.activation).toBe('disarmed')
+  await waitForValue(page, `document.querySelector('[data-goal-bar] [title]')?.getAttribute('title')`,
+    value => value === exhausted.blockedReason.message)
+  await submitComposerPrompt(page, '/goal resume')
+  expect(await readWorkbenchGoal(page, sessionId, goal => goal?.id === exhausted.id)).toMatchObject(exhausted)
+
+  const pausePrompt = 'Raise the Goal limit to three rounds, resume it, then pause it for restart.'
+  const pauseStart = services.requestLog.length
+  const pauseMatches = request => request.sequence >= pauseStart && (request.body.messages ?? [])
+    .some(message => message.role === 'user' && requestMessageText(message) === pausePrompt)
+  const pauseAfter = id => request => pauseMatches(request) && hasControlledToolResult(request, id)
+  services.enqueueModelResponse(pauseMatches, call('goal-budget-read', 'get_goal', {}))
+  services.enqueueModelResponse(pauseAfter('goal-budget-read'), request =>
+    call('goal-budget-edit', 'update_goal', goalArgs(request, 'goal-budget-read', 'edit', { max_goal_rounds: 3 })))
+  services.enqueueModelResponse(pauseAfter('goal-budget-edit'), request =>
+    call('goal-budget-resume', 'update_goal', goalArgs(request, 'goal-budget-edit', 'resume')))
+  services.enqueueModelResponse(pauseAfter('goal-budget-resume'), request =>
+    call('goal-pause', 'update_goal', goalArgs(request, 'goal-budget-resume', 'pause')))
+  await submitComposerPrompt(page, pausePrompt)
+  const pausedRequest = await services.requestWhere(pauseAfter('goal-pause'), 30_000)
+  const paused = JSON.parse(controlledToolResult(pausedRequest, 'goal-pause'))
+  expect(paused).toMatchObject({ goal: { id: exhausted.id, phase: 'paused', roundsStarted: 1, maxGoalRounds: 3 },
+    activation: 'disarmed' })
+  await waitForOfficialSessionEnd(page, sessionId, 'completed')
+  await waitForValue(page, `document.querySelector('[data-goal-bar]')?.textContent`,
+    text => typeof text === 'string' && text.includes(budgetPrompt))
+  observations.push({ exhausted, paused, pauseRequestSequence: pausedRequest.sequence })
+  await writeFile(join(evidenceDirectory, 'official-business-goal.json'),
+    JSON.stringify({ sessionId, observations }, null, 2) + '\n', { mode: 0o600 })
+  return paused.goal
+}
+
 async function verifyNativeSubagentContinuation(page, services, native, evidenceDirectory, afterRestart = false) {
   const phases = afterRestart ? ['cold'] : ['finished', 'active', 'interrupted']
   const observations = []
@@ -2056,7 +2290,7 @@ function assertWorkbenchModelRequest(request, personaPrefix) {
   expect(systemMessages.map(requestMessageText)).toContain(personaPrefix)
   const tools = (request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
   assertToolScope(tools, {
-    required: ['skill', 'bash'],
+    required: ['skill', 'bash', 'create_goal', 'get_goal', 'update_goal'],
     forbidden: [...RETIRED_BUSINESS_TOOL_NAMES, 'load_workspace_dependencies'],
   })
   const messages = JSON.stringify(request.body.messages ?? [])
@@ -2487,6 +2721,8 @@ description: ${USER_SKILL_DESCRIPTION}
     let identity
     let mediaFixture
     let generationEvidence
+    let goalEvidence
+    let goalRestartResponse
     let generationRestartEvidence
     let nativeSubagentEvidence
     let retiredPresetFixture
@@ -2709,6 +2945,7 @@ description: ${USER_SKILL_DESCRIPTION}
       )
       nativeSubagentEvidence = await verifyOfficialMcpScope(page, promptCapture, mcp, identity.workspaceId, context.businessEvidenceDirectory, traceContext)
       await verifyNativeSubagentContinuation(page, promptCapture, nativeSubagentEvidence, context.businessEvidenceDirectory)
+      goalEvidence = await verifyWorkbenchGoal(page, promptCapture, nativeSubagentEvidence, context.businessEvidenceDirectory)
       const catalogRemote = await page.evaluate("window.__runPanelTestContext.get('remote.harnessComfyuiCatalog').baseModels()")
       expect(catalogRemote).toEqual({ ok: true, value: { ok: true, value: { items: [{ id: '123', label: 'Desktop catalog fixture' }] } } })
       const imageModels = await page.evaluate("window.__runPanelTestContext.get('remote.harnessComfyuiImageReader').models()")
@@ -3592,6 +3829,12 @@ description: ${USER_SKILL_DESCRIPTION}
       await verifyContextDialog(page, context)
       savedBrowserPath = await verifyWorkflowBrowserSettings(page, context, desktopConfig, profileYamlAdapter)
       retiredPresetFixture = await createRetiredPresetFixture(page, promptCapture, identity.workspaceId, workspacePath)
+      const activeGoal = await armWorkbenchGoalForRestart(page, promptCapture, nativeSubagentEvidence, goalEvidence)
+      goalEvidence = activeGoal.goal
+      goalRestartResponse = activeGoal.response
+      await writeFile(join(context.businessEvidenceDirectory, 'official-business-goal-before-restart.json'),
+        JSON.stringify({ sessionId: nativeSubagentEvidence.parentSessionId, goal: goalEvidence }, null, 2) + '\n',
+        { mode: 0o600 })
       if (contextCaptureScript !== undefined) {
         await page.command('Page.removeScriptToEvaluateOnNewDocument', { identifier: contextCaptureScript })
         contextCaptureScript = undefined
@@ -3624,6 +3867,9 @@ description: ${USER_SKILL_DESCRIPTION}
       fixture.runs.find(activeRun => activeRun.runId === run.record.runId).active = false
       expect(businessRunStopped.record.state).toBe('stopped')
       expect(businessRunStopped.record.result.portsReleased).toBe(true)
+      goalRestartResponse.release()
+      expect(await goalRestartResponse.closed).toMatchObject({ finished: false })
+      goalEvidence.requestStart = promptCapture.requestLog.length
       retiredPresetFixture = await stageRetiredPresetFixture(dshHome, retiredPresetFixture)
 
       const finalRun = await startOfficialBusinessDesktop({
@@ -3649,6 +3895,7 @@ description: ${USER_SKILL_DESCRIPTION}
       contextCaptureScript = finalClientLoad.identifier
       installation.loadedClientSourceAfterRestart = finalClientLoad.loadedClientSource
       await verifyRetiredPresetFixture(page, promptCapture, retiredPresetFixture, context.businessEvidenceDirectory)
+      await verifyWorkbenchGoal(page, promptCapture, nativeSubagentEvidence, context.businessEvidenceDirectory, goalEvidence)
       await verifyNativeSubagentContinuation(page, promptCapture, nativeSubagentEvidence, context.businessEvidenceDirectory, true)
       generationRestartEvidence = await verifyGenerationAfterRestart(
         page, generationEvidence, context.businessEvidenceDirectory,

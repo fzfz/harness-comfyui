@@ -1,0 +1,187 @@
+{
+  "sessionId": "session-87ee6046-1f35-4217-92c8-bda926a6cf9d",
+  "observations": [
+    {
+      "waiting": {
+        "id": "goal-db345b66-2a0e-46af-bc9c-9ef9847c6408",
+        "revision": 1,
+        "objective": "Create a Goal to verify the child Run.",
+        "phase": "active",
+        "maxGoalRounds": 4,
+        "roundsStarted": 0,
+        "createdAt": 1793165779622,
+        "updatedAt": 1793165779622,
+        "activation": "armed"
+      },
+      "completed": {
+        "goal": {
+          "id": "goal-db345b66-2a0e-46af-bc9c-9ef9847c6408",
+          "revision": 2,
+          "objective": "Create a Goal to verify the child Run.",
+          "phase": "complete",
+          "roundsStarted": 1,
+          "maxGoalRounds": 4
+        },
+        "activation": "disarmed"
+      },
+      "childSessionId": "d0acde47-f874-4aa4-aee5-f2f3961c5ddb",
+      "childRunInputs": {
+        "runs": [
+          {
+            "run_id": "run_e20ec714-a0c9-4f64-acb7-fd013190d274",
+            "lookup_status": "available",
+            "arguments": {
+              "title": "Controlled native child generation",
+              "instance_id": "1",
+              "template_id": "1",
+              "parameters": {
+                "positive_prompt": "official Desktop generation regression image",
+                "seed": 424242
+              },
+              "loras": []
+            },
+            "workflow_status": "available",
+            "workflow": {
+              "version": 0.4,
+              "nodes": [
+                {
+                  "id": 1,
+                  "type": "FixturePrompt",
+                  "inputs": [
+                    {
+                      "name": "prompt",
+                      "type": "STRING",
+                      "link": null,
+                      "widget": {
+                        "name": "prompt"
+                      }
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": "CONDITIONING",
+                      "type": "CONDITIONING",
+                      "links": [
+                        10
+                      ]
+                    }
+                  ],
+                  "widgets_values": [
+                    "official Desktop generation regression image"
+                  ]
+                },
+                {
+                  "id": 2,
+                  "type": "FixtureImage",
+                  "inputs": [
+                    {
+                      "name": "conditioning",
+                      "type": "CONDITIONING",
+                      "link": 10
+                    },
+                    {
+                      "name": "seed",
+                      "type": "INT",
+                      "link": null,
+                      "widget": {
+                        "name": "seed"
+                      }
+                    }
+                  ],
+                  "outputs": [
+                    {
+                      "name": "IMAGE",
+                      "type": "IMAGE",
+                      "links": [
+                        11
+                      ]
+                    }
+                  ],
+                  "widgets_values": [
+                    424242
+                  ]
+                },
+                {
+                  "id": 3,
+                  "type": "SaveImage",
+                  "inputs": [
+                    {
+                      "name": "images",
+                      "type": "IMAGE",
+                      "link": 11
+                    },
+                    {
+                      "name": "filename_prefix",
+                      "type": "STRING",
+                      "link": null,
+                      "widget": {
+                        "name": "filename_prefix"
+                      }
+                    }
+                  ],
+                  "outputs": [],
+                  "widgets_values": [
+                    "official-desktop-controlled"
+                  ]
+                }
+              ],
+              "links": [
+                [
+                  10,
+                  1,
+                  0,
+                  2,
+                  0,
+                  "CONDITIONING"
+                ],
+                [
+                  11,
+                  2,
+                  0,
+                  3,
+                  0,
+                  "IMAGE"
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "childRead": {
+        "goal": null
+      },
+      "childDenied": "Error: this goal operation requires a direct human turn on a top-level agent",
+      "childRunSequence": 84,
+      "completedSequence": 88
+    },
+    {
+      "exhausted": {
+        "id": "goal-2401bebd-8e90-4941-af1f-03e3a2cd253b",
+        "revision": 2,
+        "objective": "Resume the persisted Goal and verify the existing Run.",
+        "phase": "blocked",
+        "maxGoalRounds": 1,
+        "blockedReason": {
+          "code": "round-limit",
+          "message": "Goal reached its configured limit of 1 rounds."
+        },
+        "roundsStarted": 1,
+        "createdAt": 1793165782278,
+        "updatedAt": 1793165782320,
+        "activation": "disarmed"
+      },
+      "paused": {
+        "goal": {
+          "id": "goal-2401bebd-8e90-4941-af1f-03e3a2cd253b",
+          "revision": 5,
+          "objective": "Resume the persisted Goal and verify the existing Run.",
+          "phase": "paused",
+          "roundsStarted": 1,
+          "maxGoalRounds": 3
+        },
+        "activation": "disarmed"
+      },
+      "pauseRequestSequence": 100
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+[
+  {
+    "runId": "a4cec42f-b8b2-405b-81b9-6e1e7b6c23eb",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:29:34.647Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 53910,
+      "rendererCdp": 53911,
+      "hostInspector": 53912
+    }
+  },
+  {
+    "runId": "799d88f5-5e45-430d-acf4-18b0b3a2135b",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:37:45.736Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 58485,
+      "rendererCdp": 58486,
+      "hostInspector": 58487
+    }
+  },
+  {
+    "runId": "89282c2b-a532-4bd1-b0a0-a2873887fa1a",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:32:28.065Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 55932,
+      "rendererCdp": 55933,
+      "hostInspector": 55934
+    }
+  },
+  {
+    "runId": "67de4f39-cf1b-4885-8571-4b6490950ea7",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:35:22.520Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 57347,
+      "rendererCdp": 57348,
+      "hostInspector": 57349
+    }
+  },
+  {
+    "runId": "1c512eff-e725-46a6-8bb8-b5484c7adc58",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:31:28.032Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 55577,
+      "rendererCdp": 55578,
+      "hostInspector": 55579
+    }
+  },
+  {
+    "runId": "d5f49517-da08-49a3-b2e2-d081cd647e44",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:30:30.093Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 55082,
+      "rendererCdp": 55083,
+      "hostInspector": 55084
+    }
+  },
+  {
+    "runId": "a4f0dab5-a49a-4bfb-974d-21f9b271d0e8",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:33:26.885Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 56343,
+      "rendererCdp": 56344,
+      "hostInspector": 56345
+    }
+  },
+  {
+    "runId": "65544cbb-5f0a-41c6-8236-4db3c0ecd600",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:36:55.870Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 57648,
+      "rendererCdp": 57649,
+      "hostInspector": 57650
+    }
+  },
+  {
+    "runId": "34b04a27-ce10-4308-bc9f-ca1af614dd34",
+    "state": "stopped",
+    "result": {
+      "exitCode": null,
+      "error": null,
+      "completedAt": "2026-10-28T05:34:27.357Z",
+      "portsReleased": true
+    },
+    "ports": {
+      "host": 56955,
+      "rendererCdp": 56956,
+      "hostInspector": 56957
+    }
+  }
+]

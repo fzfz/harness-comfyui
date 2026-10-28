@@ -1,0 +1,5 @@
+{
+  "error": "AssertionError: expected [ 'office', 'office-docx', \u2026(5) ] to deeply equal [ 'anima-prompt-builder', \u2026(7) ]",
+  "classification": "automated-regression",
+  "acceptanceClaim": false
+}

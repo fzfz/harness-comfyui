@@ -2,6 +2,10 @@
   name: cordis:include
   config:
     path: ../noobai-mcp.cordis.yml
+- id: command-goal
+  name: '@deepseek-ai/dsh-command-goal'
+- id: tool-goal
+  name: '@deepseek-ai/dsh-tool-goal'
 - id: tool-working-directory
   name: '@deepseek-ai/dsh-tool-working-directory'
 - id: workbench-composition
