@@ -31,8 +31,15 @@ export async function dispatch(
   switch (request.command) {
     case 'generation.submit': {
       const owner = await generationIdentity(options, identity)
-      const accepted = await options.runtime.acceptGeneration(owner, toGenerationRequest(request.request), signal)
-      return Object.freeze({ run_id: accepted.runId })
+      const accepted = await options.runtime.acceptGenerations(owner, request.items.map(item => ({
+        requestId: item.request_id,
+        request: toGenerationRequest(item.request),
+      })), signal)
+      return Object.freeze({ items: Object.freeze(accepted.items.map(item => Object.freeze({
+        request_id: item.requestId,
+        run_id: item.runId,
+        acceptance: item.acceptance,
+      }))) })
     }
     case 'generation.inspect-template-parameters':
       return options.runtime.inspectTemplateRuntimeParameters({
@@ -53,6 +60,7 @@ export async function dispatch(
       return options.runtime.readGenerationRunMedia({
         workspaceId: owner.workspaceId,
         runIds: request.run_ids,
+        includeParameters: request.include_parameters,
       }, signal)
     }
     case 'image.inspect': {

@@ -855,29 +855,29 @@ async function seedDesktopMedia(context, identity, stagedRunRepositoryFile) {
     now: () => currentTime,
   })
   try {
-    await runtime.acceptGeneration(
+    await runtime.acceptGenerations(
       { ...identity, turn: 1, callId: 'call_desktop_media_older' },
-      {
+      [{ requestId: randomUUID(), request: {
         title: 'Desktop older media modal',
         instanceId: 'desktop-test-instance',
         templateId: 'desktop-test-template',
         model: null,
         parameters: { positive_prompt: 'desktop older media modal' },
         loras: [],
-      },
+      } }],
     )
     for (let step = 0; step < 4; step += 1) await runtime.advance()
     currentTime += 1_000
-    await runtime.acceptGeneration(
+    await runtime.acceptGenerations(
       { ...identity, turn: 1, callId: 'call_desktop_media_newer' },
-      {
+      [{ requestId: randomUUID(), request: {
         title: 'Desktop newer media modal',
         instanceId: 'desktop-test-instance',
         templateId: 'desktop-test-template',
         model: null,
         parameters: { positive_prompt: 'desktop newer media modal' },
         loras: [],
-      },
+      } }],
     )
     for (let step = 0; step < 4; step += 1) await runtime.advance()
   } finally {
@@ -1212,13 +1212,13 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-inspect-read'),
       controlledToolResponse([{ id: 'native-child-generation', name: 'bash', arguments: {
         description: 'Submit controlled native child generation',
-        command: managedCliCommand('generation submit', {
+        command: managedCliCommand('generation submit', { items: [{ request_id: randomUUID(), request: {
           title: 'Controlled native child generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
           template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId,
           model: null,
           parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt, seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
           loras: [],
-        }),
+        } }] }),
       } }]))
     services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-generation'),
       request => controlledToolResponse([{ id: 'native-child-generation-read', name: 'bash', arguments: {
@@ -1282,8 +1282,8 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       && hasControlledToolResult(request, 'native-child-generation'))
     const childGenerationCall = controlledToolResult(childGenerationRequest, 'native-child-generation')
     const childGeneration = JSON.parse(await readFile(childGenerationCall.split('\n', 1)[0], 'utf8'))
-    expect(childGeneration).toMatchObject({ run_id: expect.any(String) })
-    native.childRunId = childGeneration.run_id
+    expect(childGeneration).toMatchObject({ items: [{ run_id: expect.any(String), acceptance: 'accepted' }] })
+    native.childRunId = childGeneration.items[0].run_id
     const childDepthRequest = services.requestLog.find(request => isChildRequest(request)
       && hasControlledToolResult(request, 'native-child-depth'))
     expect(requestMessageText(childDepthRequest.body.messages.find(message => message.tool_call_id === 'native-child-depth')))
@@ -1369,32 +1369,32 @@ async function createRetiredPresetFixture(page, services, workspaceId, workspace
     message.role === 'user' && requestMessageText(message) === prompt)
   services.enqueueModelResponse(requested, controlledToolResponse([{ id: 'retired-generation', name: 'bash', arguments: {
     description: 'Create controlled historical generation record',
-    command: managedCliCommand('generation submit', {
+    command: managedCliCommand('generation submit', { items: [{ request_id: randomUUID(), request: {
       title: 'Controlled retired Preset generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
       template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId,
       model: null,
       parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt, seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
       loras: [],
-    }),
+    } }] }),
   } }]))
   await openBusinessSession(page, sessionId)
   await submitComposerPrompt(page, prompt)
   const resultRequest = await services.requestWhere(request => requested(request) && hasControlledToolResult(request, 'retired-generation'), 30_000)
   const shell = controlledToolResult(resultRequest, 'retired-generation')
   const accepted = JSON.parse(await readFile(shell.split('\n', 1)[0], 'utf8'))
-  expect(accepted.run_id).toEqual(expect.any(String))
+  expect(accepted.items[0].run_id).toEqual(expect.any(String))
   await waitForOfficialSessionEnd(page, sessionId, 'completed')
   const projection = await waitForValue(page, `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(sessionId)}, turn: null })`,
-    result => result?.ok === true && result.value.runs.some(run => run.runId === accepted.run_id && run.status === 'succeeded'), 180_000)
-  const media = projection.value.media.filter(item => item.runId === accepted.run_id)
+    result => result?.ok === true && result.value.runs.some(run => run.runId === accepted.items[0].run_id && run.status === 'succeeded'), 180_000)
+  const media = projection.value.media.filter(item => item.runId === accepted.items[0].run_id)
   expect(media).toHaveLength(1)
   const mediaContent = await readOfficialMediaContent(page, media[0].mediaId, sessionId)
   expect(mediaContent).toMatchObject({ status: 200, contentType: 'image/png' })
   expect(mediaContent.bytes).toHaveLength(services.controlledPngByteLength)
   const artifactPath = join(workspacePath, 'retired-preset-result.txt')
-  const artifactContents = `${accepted.run_id}\n`
+  const artifactContents = `${accepted.items[0].run_id}\n`
   await writeFile(artifactPath, artifactContents, { mode: 0o600 })
-  return { sessionId, retiredPresetId: 'harness-comfyui-iteration', prompt, runId: accepted.run_id,
+  return { sessionId, retiredPresetId: 'harness-comfyui-iteration', prompt, runId: accepted.items[0].run_id,
     artifactPath, artifactContents, mediaIds: media.map(item => item.mediaId), mediaContent }
 }
 
@@ -1460,6 +1460,17 @@ async function readWorkbenchGoal(page, sessionId, predicate) {
 async function armWorkbenchGoalForRestart(page, services, native, paused) {
   const start = services.requestLog.length
   await openBusinessSession(page, native.parentSessionId)
+  const batch = native.goalBatch
+  expect(batch.sessionId).toBe(native.parentSessionId)
+  const generation = await page.evaluate(`window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(batch.sessionId)}, turn: null })`)
+  expect(generation).toMatchObject({ ok: true })
+  expect(batch.runIds.every(id => generation.value.runs.some(run => run.runId === id && run.status === 'succeeded'))).toBe(true)
+  expect(generation.value.media.filter(media => batch.runIds.includes(media.runId)).map(media => media.mediaId).sort()).toEqual(batch.mediaIds)
+  batch.restartBefore = {
+    sessionRunIds: generation.value.runs.map(run => run.runId).sort(),
+    sessionMediaIds: generation.value.media.map(media => media.mediaId).sort(),
+    promptSubmissionCount: services.comfyRequests.filter(request => request.method === 'POST' && request.pathname === '/prompt').length,
+  }
   const response = services.pauseNextModelResponse(request => request.sequence >= start
     && requestMessageText((request.body.messages ?? []).findLast(message => message.role === 'user') ?? {})
       .includes('<goal_round>'))
@@ -1472,24 +1483,28 @@ async function armWorkbenchGoalForRestart(page, services, native, paused) {
   const goal = await readWorkbenchGoal(page, native.parentSessionId,
     goal => goal?.id === paused.id && goal.phase === 'active' && goal.activation === 'armed')
   expect(goal.roundsStarted).toBe(paused.roundsStarted + 1)
+  expect(services.comfyRequests.filter(request => request.method === 'POST' && request.pathname === '/prompt')).toHaveLength(batch.restartBefore.promptSubmissionCount)
   return { goal, response }
 }
 
 async function verifyGoalPauseKeepsRun(page, services, sessionId, evidenceDirectory) {
   const prompt = 'Create a Goal, submit a Run, then pause the Goal while the Run finishes.'
   const start = services.requestLog.length
+  const promptCount = () => services.comfyRequests.filter(request => request.method === 'POST' && request.pathname === '/prompt').length
+  const beforeSubmissionCount = promptCount()
+  const manifest = { items: Array.from({ length: 2 }, () => ({ request_id: randomUUID(), request: {
+    title: 'Goal pause keeps accepted generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
+    template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId, model: null, loras: [],
+    parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt,
+      seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
+  } })) }
   const matches = request => request.sequence >= start && (request.body.messages ?? [])
     .some(message => message.role === 'user' && requestMessageText(message) === prompt)
   const call = (id, name, args) => controlledToolResponse([{ id, name, arguments: args }])
   services.enqueueModelResponse(matches, call('pause-run-goal', 'create_goal', { objective: prompt }))
   services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'pause-run-goal'),
-    call('pause-run-submit', 'bash', { description: 'Submit a Run before pausing the Goal',
-      command: managedCliCommand('generation submit', {
-        title: 'Goal pause keeps accepted generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
-        template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId, model: null, loras: [],
-        parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt,
-          seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
-      }) }))
+    call('pause-run-submit', 'bash', { description: 'Submit a batch before pausing the Goal',
+      command: managedCliCommand('generation submit', manifest) }))
   services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'pause-run-submit'),
     request => {
       const { goal } = JSON.parse(controlledToolResult(request, 'pause-run-goal'))
@@ -1504,26 +1519,78 @@ async function verifyGoalPauseKeepsRun(page, services, sessionId, evidenceDirect
     expect(goal.phase).toBe('paused')
     const path = controlledToolResult(pausedRequest, 'pause-run-submit').split('\n', 1)[0]
     const accepted = JSON.parse(await readFile(path, 'utf8'))
-    expect(accepted.run_id).toEqual(expect.any(String))
+    expect(accepted.items).toEqual(manifest.items.map(item => ({
+      request_id: item.request_id, run_id: expect.any(String), acceptance: 'accepted',
+    })))
+    const runIds = accepted.items.map(item => item.run_id)
+    expect(new Set(runIds).size).toBe(2)
     const query = `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({
       sessionId: ${JSON.stringify(sessionId)}, turn: null })`
     const pending = await waitForValue(page, query, result => result?.ok === true
-      && result.value.runs.some(run => run.runId === accepted.run_id && run.status === 'remote_pending'), 30_000)
+      && runIds.every(id => result.value.runs.some(run => run.runId === id && run.status === 'remote_pending')), 30_000)
     release()
     const completed = await waitForValue(page, query, result => result?.ok === true
-      && result.value.runs.some(run => run.runId === accepted.run_id && run.status === 'succeeded')
-      && result.value.media.some(media => media.runId === accepted.run_id), 30_000)
+      && runIds.every(id => result.value.runs.some(run => run.runId === id && run.status === 'succeeded')
+        && result.value.media.some(media => media.runId === id)), 30_000)
+    expect(promptCount()).toBe(beforeSubmissionCount + manifest.items.length)
     expect(await readWorkbenchGoal(page, sessionId, current => current?.id === goal.id)).toMatchObject({
       phase: 'paused', activation: 'disarmed',
     })
     await waitForOfficialSessionEnd(page, sessionId, 'completed')
+    const batch = { sessionId, manifest, accepted, runIds,
+      sessionRunIds: completed.value.runs.map(run => run.runId).sort(),
+      sessionMediaIds: completed.value.media.map(media => media.mediaId).sort(),
+      mediaIds: completed.value.media.filter(media => runIds.includes(media.runId)).map(media => media.mediaId).sort(),
+      promptSubmissionCount: promptCount() }
+    const resumeStart = services.requestLog.length
+    const resumed = request => request.sequence >= resumeStart
+    const after = id => request => resumed(request) && hasControlledToolResult(request, id)
+    services.enqueueModelResponse(request => resumed(request) && requestMessageText(
+      (request.body.messages ?? []).findLast(message => message.role === 'user') ?? {}).includes('<goal_round>'),
+    call('pause-replay-goal', 'get_goal', {}))
+    services.enqueueModelResponse(after('pause-replay-goal'), call('pause-replay-submit', 'bash', {
+      description: 'Replay the accepted batch after Goal resume', command: managedCliCommand('generation submit', manifest),
+    }))
+    services.enqueueModelResponse(after('pause-replay-submit'), call('pause-replay-media', 'bash', {
+      description: 'Read the accepted batch media after Goal resume',
+      command: managedCliCommand('generation resolve-media', { run_ids: runIds }),
+    }))
+    services.enqueueModelResponse(after('pause-replay-media'), request => {
+      const { goal } = JSON.parse(controlledToolResult(request, 'pause-replay-goal'))
+      return call('pause-replay-complete', 'update_goal', { goal_id: goal.id, revision: goal.revision, action: 'complete' })
+    })
+    await waitForValue(page, `(() => {
+      const button = document.querySelector('[data-goal-bar] button[aria-label="Resume goal"], [data-goal-bar] button[aria-label="恢复目标"]')
+      if (!button) return false
+      button.click(); return true
+    })()`, value => value === true)
+    const resumedRequest = await services.requestWhere(after('pause-replay-complete'), 30_000)
+    const replayPath = controlledToolResult(resumedRequest, 'pause-replay-submit').split('\n', 1)[0]
+    const replay = JSON.parse(await readFile(replayPath, 'utf8'))
+    expect(replay.items).toEqual(accepted.items.map(item => ({ ...item, acceptance: 'reused' })))
+    const mediaPath = controlledToolResult(resumedRequest, 'pause-replay-media').split('\n', 1)[0]
+    const resolvedMedia = JSON.parse(await readFile(mediaPath, 'utf8'))
+    expect(resolvedMedia.runs.map(run => run.run_id)).toEqual(runIds)
+    expect(resolvedMedia.runs.flatMap(run => run.images.map(image => image.media_id)).sort()).toEqual(batch.mediaIds)
+    for (const run of resolvedMedia.runs) {
+      expect(run).toMatchObject({ lookup_status: 'available', status: 'succeeded', run_error: null })
+      expect(run.images.length).toBeGreaterThan(0)
+      for (const image of run.images) expect((await lstat(image.file_path)).isFile()).toBe(true)
+    }
+    const afterResume = await page.evaluate(query)
+    expect(afterResume).toMatchObject({ ok: true })
+    expect(afterResume.value.runs.map(run => run.runId).sort()).toEqual(batch.sessionRunIds)
+    expect(afterResume.value.media.map(media => media.mediaId).sort()).toEqual(batch.sessionMediaIds)
+    expect(promptCount()).toBe(batch.promptSubmissionCount)
+    expect(JSON.parse(controlledToolResult(resumedRequest, 'pause-replay-complete')).goal.phase).toBe('complete')
+    await waitForOfficialSessionEnd(page, sessionId, 'completed')
     await writeFile(join(evidenceDirectory, 'official-business-goal-pause-run.json'),
-      JSON.stringify({ sessionId, goal, runId: accepted.run_id,
-        pending: pending.value.runs.find(run => run.runId === accepted.run_id),
-        completed: completed.value.runs.find(run => run.runId === accepted.run_id),
-        media: completed.value.media.filter(media => media.runId === accepted.run_id) }, null, 2) + '\n', { mode: 0o600 })
+      JSON.stringify({ ...batch, goal, pending: pending.value.runs.filter(run => runIds.includes(run.runId)),
+        completed: completed.value.runs.filter(run => runIds.includes(run.runId)),
+        replay, resolvedMedia, afterResume: afterResume.value, remotePromptCountAfterResume: promptCount() }, null, 2) + '\n', { mode: 0o600 })
     await submitComposerPrompt(page, '/goal clear')
     await readWorkbenchGoal(page, sessionId, current => current == null)
+    return batch
   } finally { release() }
 }
 
@@ -1543,19 +1610,48 @@ async function verifyWorkbenchGoal(page, services, native, evidenceDirectory, re
   }
   const after = id => request => matches(request) && hasControlledToolResult(request, id)
   const observations = []
+  const assertBatchReplay = async (request, submitId, mediaId, before) => {
+    const batch = native.goalBatch
+    expect(batch.sessionId).toBe(sessionId)
+    const replayPath = controlledToolResult(request, submitId).split('\n', 1)[0]
+    const replay = JSON.parse(await readFile(replayPath, 'utf8'))
+    expect(replay.items).toEqual(batch.accepted.items.map(item => ({ ...item, acceptance: 'reused' })))
+    const mediaPath = controlledToolResult(request, mediaId).split('\n', 1)[0]
+    const resolvedMedia = JSON.parse(await readFile(mediaPath, 'utf8'))
+    expect(resolvedMedia.runs.map(run => run.run_id)).toEqual(batch.runIds)
+    expect(resolvedMedia.runs.flatMap(run => run.images.map(image => image.media_id)).sort()).toEqual(batch.mediaIds)
+    for (const run of resolvedMedia.runs) {
+      expect(run).toMatchObject({ lookup_status: 'available', status: 'succeeded', run_error: null })
+      expect(run.images.length).toBeGreaterThan(0)
+      for (const image of run.images) expect((await lstat(image.file_path)).isFile()).toBe(true)
+    }
+    const generation = await page.evaluate(`window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(sessionId)}, turn: null })`)
+    expect(generation).toMatchObject({ ok: true })
+    expect(generation.value.runs.map(run => run.runId).sort()).toEqual(before.sessionRunIds)
+    expect(generation.value.media.map(media => media.mediaId).sort()).toEqual(before.sessionMediaIds)
+    expect(generation.value.media.filter(media => batch.runIds.includes(media.runId)).map(media => media.mediaId).sort()).toEqual(batch.mediaIds)
+    const promptSubmissionCount = services.comfyRequests.filter(item => item.method === 'POST' && item.pathname === '/prompt').length
+    expect(promptSubmissionCount).toBe(before.promptSubmissionCount)
+    return { replay, resolvedMedia, generation: generation.value, promptSubmissionCount }
+  }
   if (restored) {
     const current = await readWorkbenchGoal(page, sessionId, goal => goal?.phase === 'active')
     expect(current).toMatchObject({ id: restored.id, revision: restored.revision,
       roundsStarted: restored.roundsStarted, activation: 'disarmed' })
     expect(services.requestLog.slice(requestStart)).toHaveLength(0)
     services.enqueueModelResponse(automatic, call('goal-restored-read', 'get_goal', {}))
-    services.enqueueModelResponse(after('goal-restored-read'), call('goal-restored-run', 'bash', {
-      description: 'Read the existing generation Run after Goal resume',
-      command: managedCliCommand('generation run-inputs', { run_ids: [native.childRunId] }),
+    expect(native.goalBatch.sessionId).toBe(sessionId)
+    services.enqueueModelResponse(after('goal-restored-read'), call('goal-restored-replay', 'bash', {
+      description: 'Replay the accepted batch after application restart',
+      command: managedCliCommand('generation submit', native.goalBatch.manifest),
+    }))
+    services.enqueueModelResponse(after('goal-restored-replay'), call('goal-restored-run', 'bash', {
+      description: 'Read the accepted batch inputs after Goal resume',
+      command: managedCliCommand('generation run-inputs', { run_ids: native.goalBatch.runIds }),
     }))
     services.enqueueModelResponse(after('goal-restored-run'), call('goal-restored-media', 'bash', {
-      description: 'Read the existing Run media after Goal resume',
-      command: managedCliCommand('generation resolve-media', { run_ids: [native.childRunId] }),
+      description: 'Read the accepted batch media after Goal resume',
+      command: managedCliCommand('generation resolve-media', { run_ids: native.goalBatch.runIds }),
     }))
     services.enqueueModelResponse(after('goal-restored-media'), request =>
       call('goal-restored-complete', 'update_goal', goalArgs(request, 'goal-restored-read', 'complete')))
@@ -1569,22 +1665,14 @@ async function verifyWorkbenchGoal(page, services, native, evidenceDirectory, re
     expect(JSON.parse(controlledToolResult(result, 'goal-restored-complete')).goal.phase).toBe('complete')
     const resultPath = controlledToolResult(result, 'goal-restored-run').split('\n', 1)[0]
     const inputs = JSON.parse(await readFile(resultPath, 'utf8'))
-    expect(inputs.runs).toContainEqual(expect.objectContaining({ run_id: native.childRunId }))
-    const mediaPath = controlledToolResult(result, 'goal-restored-media').split('\n', 1)[0]
-    const resolvedMedia = JSON.parse(await readFile(mediaPath, 'utf8'))
-    const runMedia = resolvedMedia.runs.find(run => run.run_id === native.childRunId)
-    expect(runMedia.images.length).toBeGreaterThan(0)
-    for (const image of runMedia.images) expect((await lstat(image.file_path)).isFile()).toBe(true)
-    const generation = await waitForValue(page,
-      `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({ sessionId: ${JSON.stringify(sessionId)}, turn: null })`,
-      value => value?.ok === true && value.value.runs.some(run => run.runId === native.childRunId && run.status === 'succeeded'))
+    expect(inputs.runs.map(run => run.run_id)).toEqual(native.goalBatch.runIds)
+    const batchReplay = await assertBatchReplay(result, 'goal-restored-replay', 'goal-restored-media', native.goalBatch.restartBefore)
     await waitForOfficialSessionEnd(page, sessionId, 'completed')
     await waitForValue(page, `document.querySelector('[data-goal-bar]') === null`, value => value === true)
     const completed = await readWorkbenchGoal(page, sessionId, goal => goal?.phase === 'complete')
     await writeFile(join(evidenceDirectory, 'official-business-goal-after-restart.json'),
-      JSON.stringify({ sessionId, before: current, after: completed, runId: native.childRunId,
-        requestSequence: result.sequence, runInputs: inputs, runMedia,
-        generation: generation.value.runs.find(run => run.runId === native.childRunId) }, null, 2) + '\n', { mode: 0o600 })
+      JSON.stringify({ sessionId, before: current, after: completed, batch: native.goalBatch,
+        requestSequence: result.sequence, runInputs: inputs, ...batchReplay }, null, 2) + '\n', { mode: 0o600 })
     return completed
   }
 
@@ -1637,15 +1725,64 @@ async function verifyWorkbenchGoal(page, services, native, evidenceDirectory, re
   await verifyGoalPauseKeepsRun(page, services, sessionId, evidenceDirectory)
   const budgetPrompt = 'Resume the persisted Goal and verify the existing Run.'
   const budgetStart = services.requestLog.length
+  const promptCount = () => services.comfyRequests.filter(request => request.method === 'POST' && request.pathname === '/prompt').length
+  const beforeBudgetSubmissionCount = promptCount()
+  const budgetManifest = { items: Array.from({ length: 2 }, () => ({ request_id: randomUUID(), request: {
+    title: 'Goal round limit keeps accepted generation', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId,
+    template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId, model: null, loras: [],
+    parameters: { positive_prompt: OFFICIAL_BUSINESS_FIXTURE.generation.positivePrompt,
+      seed: OFFICIAL_BUSINESS_FIXTURE.generation.seed },
+  } })) }
   const budgetMatches = request => request.sequence >= budgetStart && (request.body.messages ?? [])
     .some(message => message.role === 'user' && requestMessageText(message) === budgetPrompt)
   services.enqueueModelResponse(budgetMatches,
     call('goal-budget-create', 'create_goal', { objective: budgetPrompt, max_goal_rounds: 1 }))
-  await submitComposerPrompt(page, budgetPrompt)
-  const exhausted = await readWorkbenchGoal(page, sessionId,
-    goal => goal?.phase === 'blocked' && goal.blockedReason?.code === 'round-limit')
-  expect(exhausted.roundsStarted).toBe(1)
-  expect(exhausted.activation).toBe('disarmed')
+  services.enqueueModelResponse(request => budgetMatches(request) && hasControlledToolResult(request, 'goal-budget-create'),
+    call('goal-budget-submit', 'bash', { description: 'Submit a batch before the Goal round limit is reached',
+      command: managedCliCommand('generation submit', budgetManifest) }))
+  const releaseBudgetCompletion = services.holdGenerationCompletion()
+  let exhausted
+  let batch
+  let pendingWhileExhausted
+  let completedWhileExhausted
+  try {
+    await submitComposerPrompt(page, budgetPrompt)
+    const acceptedRequest = await services.requestWhere(request => budgetMatches(request)
+      && hasControlledToolResult(request, 'goal-budget-submit'), 30_000)
+    const acceptedPath = controlledToolResult(acceptedRequest, 'goal-budget-submit').split('\n', 1)[0]
+    const accepted = JSON.parse(await readFile(acceptedPath, 'utf8'))
+    expect(accepted.items).toEqual(budgetManifest.items.map(item => ({
+      request_id: item.request_id, run_id: expect.any(String), acceptance: 'accepted',
+    })))
+    const runIds = accepted.items.map(item => item.run_id)
+    expect(new Set(runIds).size).toBe(2)
+    exhausted = await readWorkbenchGoal(page, sessionId,
+      goal => goal?.phase === 'blocked' && goal.blockedReason?.code === 'round-limit')
+    expect(exhausted.roundsStarted).toBe(1)
+    expect(exhausted.activation).toBe('disarmed')
+    const query = `window.__runPanelTestContext.get('remote.harnessComfyuiGeneration').list({
+      sessionId: ${JSON.stringify(sessionId)}, turn: null })`
+    pendingWhileExhausted = await waitForValue(page, query, result => result?.ok === true
+      && runIds.every(id => result.value.runs.some(run => run.runId === id && run.status === 'remote_pending')), 30_000)
+    expect(pendingWhileExhausted.value.media.some(media => runIds.includes(media.runId))).toBe(false)
+    expect(promptCount()).toBe(beforeBudgetSubmissionCount + budgetManifest.items.length)
+    releaseBudgetCompletion()
+    completedWhileExhausted = await waitForValue(page, query, result => result?.ok === true
+      && runIds.every(id => result.value.runs.some(run => run.runId === id && run.status === 'succeeded')
+        && result.value.media.some(media => media.runId === id)), 30_000)
+    expect(await readWorkbenchGoal(page, sessionId, goal => goal?.id === exhausted.id)).toMatchObject(exhausted)
+    for (const media of completedWhileExhausted.value.media.filter(media => runIds.includes(media.runId))) {
+      const content = await readOfficialMediaContent(page, media.mediaId, sessionId)
+      expect(content.bytes.length).toBeGreaterThan(0)
+    }
+    expect(promptCount()).toBe(beforeBudgetSubmissionCount + budgetManifest.items.length)
+    batch = { sessionId, manifest: budgetManifest, accepted, runIds,
+      sessionRunIds: completedWhileExhausted.value.runs.map(run => run.runId).sort(),
+      sessionMediaIds: completedWhileExhausted.value.media.map(media => media.mediaId).sort(),
+      mediaIds: completedWhileExhausted.value.media.filter(media => runIds.includes(media.runId)).map(media => media.mediaId).sort(),
+      promptSubmissionCount: promptCount() }
+    native.goalBatch = batch
+  } finally { releaseBudgetCompletion() }
   await waitForValue(page, `document.querySelector('[data-goal-bar] [title]')?.getAttribute('title')`,
     value => value === exhausted.blockedReason.message)
   await submitComposerPrompt(page, '/goal resume')
@@ -1661,7 +1798,15 @@ async function verifyWorkbenchGoal(page, services, native, evidenceDirectory, re
     call('goal-budget-edit', 'update_goal', goalArgs(request, 'goal-budget-read', 'edit', { max_goal_rounds: 3 })))
   services.enqueueModelResponse(pauseAfter('goal-budget-edit'), request =>
     call('goal-budget-resume', 'update_goal', goalArgs(request, 'goal-budget-edit', 'resume')))
-  services.enqueueModelResponse(pauseAfter('goal-budget-resume'), request =>
+  services.enqueueModelResponse(pauseAfter('goal-budget-resume'), call('goal-budget-replay', 'bash', {
+    description: 'Replay the accepted batch after raising the Goal round limit',
+    command: managedCliCommand('generation submit', batch.manifest),
+  }))
+  services.enqueueModelResponse(pauseAfter('goal-budget-replay'), call('goal-budget-media', 'bash', {
+    description: 'Read the accepted batch media after Goal round limit recovery',
+    command: managedCliCommand('generation resolve-media', { run_ids: batch.runIds }),
+  }))
+  services.enqueueModelResponse(pauseAfter('goal-budget-media'), request =>
     call('goal-pause', 'update_goal', goalArgs(request, 'goal-budget-resume', 'pause')))
   await submitComposerPrompt(page, pausePrompt)
   const pausedRequest = await services.requestWhere(pauseAfter('goal-pause'), 30_000)
@@ -1671,7 +1816,10 @@ async function verifyWorkbenchGoal(page, services, native, evidenceDirectory, re
   await waitForOfficialSessionEnd(page, sessionId, 'completed')
   await waitForValue(page, `document.querySelector('[data-goal-bar]')?.textContent`,
     text => typeof text === 'string' && text.includes(budgetPrompt))
-  observations.push({ exhausted, paused, pauseRequestSequence: pausedRequest.sequence })
+  const budgetBatchReplay = await assertBatchReplay(pausedRequest, 'goal-budget-replay', 'goal-budget-media', batch)
+  observations.push({ exhausted, paused, batch,
+    pendingWhileExhausted: pendingWhileExhausted.value, completedWhileExhausted: completedWhileExhausted.value,
+    batchReplay: budgetBatchReplay, pauseRequestSequence: pausedRequest.sequence })
   await writeFile(join(evidenceDirectory, 'official-business-goal.json'),
     JSON.stringify({ sessionId, observations }, null, 2) + '\n', { mode: 0o600 })
   return paused.goal
@@ -2438,7 +2586,7 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
   const cliResultPath = controlledToolResult(followupModelRequest, 'official-generation-submit').split('\n', 1)[0]
   expect(isAbsolute(cliResultPath)).toBe(true)
   const cliResult = JSON.parse(await readFile(cliResultPath, 'utf8'))
-  expect(controlledToolResult(followupModelRequest, 'official-generation-submit-read')).toContain(cliResult.run_id)
+  expect(controlledToolResult(followupModelRequest, 'official-generation-submit-read')).toContain(cliResult.items[0].run_id)
   const inspectPath = controlledToolResult(followupModelRequest, 'official-generation-inspect').split('\n', 1)[0]
   expect(isAbsolute(inspectPath)).toBe(true)
   expect(JSON.parse(await readFile(inspectPath, 'utf8'))).toMatchObject({ parameters: expect.any(Array) })
@@ -2451,7 +2599,7 @@ async function verifyControlledGeneration(page, services, workspaceId, evidenceD
     && value.value.media.length === 1, 180_000)
   const run = projection.value.runs[0]
   const media = projection.value.media[0]
-  expect(run.runId).toBe(cliResult.run_id)
+  expect(run.runId).toBe(cliResult.items[0].run_id)
   expect(run).toMatchObject({
     title: generation.runTitle,
     instanceTitle: 'Controlled Desktop Comfy Service',
@@ -3833,7 +3981,7 @@ description: ${USER_SKILL_DESCRIPTION}
       goalEvidence = activeGoal.goal
       goalRestartResponse = activeGoal.response
       await writeFile(join(context.businessEvidenceDirectory, 'official-business-goal-before-restart.json'),
-        JSON.stringify({ sessionId: nativeSubagentEvidence.parentSessionId, goal: goalEvidence }, null, 2) + '\n',
+        JSON.stringify({ sessionId: nativeSubagentEvidence.parentSessionId, goal: goalEvidence, batch: nativeSubagentEvidence.goalBatch }, null, 2) + '\n',
         { mode: 0o600 })
       if (contextCaptureScript !== undefined) {
         await page.command('Page.removeScriptToEvaluateOnNewDocument', { identifier: contextCaptureScript })

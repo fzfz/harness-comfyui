@@ -1,0 +1,1944 @@
+{
+  "schemaVersion": 1,
+  "scope": "18 次已完成会话：first-files 的 candidate、entry、file-admission、batch-limit 各 3 次；neutral-query 的 candidate512-query、query 各 3 次。",
+  "method": "独立读取官方 session.json 的 tool/call、tool/result、最终回复，并核对 Workspace 内的提交清单、媒体结果和查询输入文件。未运行模型或修改产品、矩阵。",
+  "baseline": {
+    "matrixPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512/4e9081b9-4050-466f-bf9d-b8f5b6e57c1a/matrix.json",
+    "case": "first-files",
+    "repetitions": [
+      {
+        "repetition": 1,
+        "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512/4e9081b9-4050-466f-bf9d-b8f5b6e57c1a/first-files/1/initial/trace/sessions/session-session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d/session.json",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1",
+        "skillRead": {
+          "tool": "skill",
+          "name": "comfyui-generate",
+          "callSeq": 16,
+          "resultSeq": 17
+        },
+        "catalogCalls": [
+          {
+            "seq": 23,
+            "ref": {
+              "kind": "workflow",
+              "id": "1"
+            }
+          },
+          {
+            "seq": 30,
+            "ref": {
+              "kind": "model",
+              "id": "1"
+            }
+          }
+        ],
+        "managedBatchSubmit": {
+          "callSeq": 42,
+          "itemCount": 11,
+          "manifestPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/manifest.json"
+        },
+        "statusAndMediaQuery": {
+          "command": "generation resolve-media",
+          "callSeqs": [
+            47,
+            52
+          ],
+          "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/resolve-input.json",
+          "includeParametersExplicit": true,
+          "includeParametersValue": true,
+          "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/media.json"
+        },
+        "finalDeliverySeq": 61,
+        "checks": {
+          "manifestItemCount": 11,
+          "templateIds": [
+            "1"
+          ],
+          "instanceIds": [
+            "1"
+          ],
+          "modelValues": [
+            null
+          ],
+          "mediaRunCount": 11,
+          "succeededRunCount": 11,
+          "imageCount": 11,
+          "mediaFilesExist": true,
+          "requestOrderMatches": true,
+          "finalIncludesAllRunIds": true,
+          "finalIncludesAllMediaFilenames": true,
+          "returnedParameterRunCount": 11
+        },
+        "naturalCompletion": true,
+        "traceMissing": [
+          {
+            "source": "model-request",
+            "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+            "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+          },
+          {
+            "source": "model-stream",
+            "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+            "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+          }
+        ],
+        "shellInvocations": [
+          {
+            "callSeq": 21,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 32,
+            "managedCliInvocations": 3,
+            "byCommand": {
+              "help": 3
+            }
+          },
+          {
+            "callSeq": 37,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "inspect-template-parameters": 1
+            }
+          },
+          {
+            "callSeq": 42,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "submit": 1
+            }
+          },
+          {
+            "callSeq": 47,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "resolve-media": 1
+            }
+          },
+          {
+            "callSeq": 52,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "resolve-media": 1
+            }
+          },
+          {
+            "callSeq": 57,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          }
+        ],
+        "submitToolCallCount": 1,
+        "submitCliInvocationCount": 1,
+        "httpSubmissionCount": null,
+        "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。"
+      },
+      {
+        "repetition": 2,
+        "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512/4e9081b9-4050-466f-bf9d-b8f5b6e57c1a/first-files/2/initial/trace/sessions/session-session-64d17061-2a85-4274-a529-36f7419a7cbd/session.json",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/2",
+        "skillRead": {
+          "tool": "skill",
+          "name": "comfyui-generate",
+          "callSeq": 16,
+          "resultSeq": 17
+        },
+        "catalogCalls": [
+          {
+            "seq": 21,
+            "ref": {
+              "kind": "workflow",
+              "id": "1"
+            }
+          },
+          {
+            "seq": 30,
+            "ref": {
+              "kind": "model",
+              "id": "1"
+            }
+          }
+        ],
+        "managedBatchSubmit": {
+          "callSeq": 44,
+          "itemCount": 11,
+          "manifestPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/2/manifest.json"
+        },
+        "statusAndMediaQuery": {
+          "command": "generation resolve-media",
+          "callSeqs": [
+            49
+          ],
+          "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/2/resolve-input.json",
+          "includeParametersExplicit": true,
+          "includeParametersValue": true,
+          "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/2/media-results.json"
+        },
+        "finalDeliverySeq": 63,
+        "checks": {
+          "manifestItemCount": 11,
+          "templateIds": [
+            "1"
+          ],
+          "instanceIds": [
+            "1"
+          ],
+          "modelValues": [
+            null
+          ],
+          "mediaRunCount": 11,
+          "succeededRunCount": 11,
+          "imageCount": 11,
+          "mediaFilesExist": true,
+          "requestOrderMatches": true,
+          "finalIncludesAllRunIds": true,
+          "finalIncludesAllMediaFilenames": true,
+          "returnedParameterRunCount": 11
+        },
+        "naturalCompletion": true,
+        "traceMissing": [
+          {
+            "source": "model-request",
+            "sessionId": "session-64d17061-2a85-4274-a529-36f7419a7cbd",
+            "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+          },
+          {
+            "source": "model-stream",
+            "sessionId": "session-64d17061-2a85-4274-a529-36f7419a7cbd",
+            "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+          }
+        ],
+        "shellInvocations": [
+          {
+            "callSeq": 25,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 32,
+            "managedCliInvocations": 3,
+            "byCommand": {
+              "help": 3
+            }
+          },
+          {
+            "callSeq": 34,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 39,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "inspect-template-parameters": 1
+            }
+          },
+          {
+            "callSeq": 44,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "submit": 1
+            }
+          },
+          {
+            "callSeq": 49,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "resolve-media": 1
+            }
+          },
+          {
+            "callSeq": 54,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 59,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          }
+        ],
+        "submitToolCallCount": 1,
+        "submitCliInvocationCount": 1,
+        "httpSubmissionCount": null,
+        "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。"
+      },
+      {
+        "repetition": 3,
+        "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512/4e9081b9-4050-466f-bf9d-b8f5b6e57c1a/first-files/3/initial/trace/sessions/session-session-067e558e-259e-4f61-82da-0b309c8f422b/session.json",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/3",
+        "skillRead": {
+          "tool": "skill",
+          "name": "comfyui-generate",
+          "callSeq": 16,
+          "resultSeq": 17
+        },
+        "catalogCalls": [
+          {
+            "seq": 21,
+            "ref": {
+              "kind": "workflow",
+              "id": "1"
+            }
+          },
+          {
+            "seq": 30,
+            "ref": {
+              "kind": "model",
+              "id": "1"
+            }
+          }
+        ],
+        "managedBatchSubmit": {
+          "callSeq": 40,
+          "itemCount": 11,
+          "manifestPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/3/manifest.json"
+        },
+        "statusAndMediaQuery": {
+          "command": "generation resolve-media",
+          "callSeqs": [
+            45
+          ],
+          "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/3/resolve-request.json",
+          "includeParametersExplicit": true,
+          "includeParametersValue": true,
+          "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/3/media.json"
+        },
+        "finalDeliverySeq": 59,
+        "checks": {
+          "manifestItemCount": 11,
+          "templateIds": [
+            "1"
+          ],
+          "instanceIds": [
+            "1"
+          ],
+          "modelValues": [
+            null
+          ],
+          "mediaRunCount": 11,
+          "succeededRunCount": 11,
+          "imageCount": 11,
+          "mediaFilesExist": true,
+          "requestOrderMatches": true,
+          "finalIncludesAllRunIds": true,
+          "finalIncludesAllMediaFilenames": true,
+          "returnedParameterRunCount": 11
+        },
+        "naturalCompletion": true,
+        "traceMissing": [
+          {
+            "source": "model-request",
+            "sessionId": "session-067e558e-259e-4f61-82da-0b309c8f422b",
+            "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+          },
+          {
+            "source": "model-stream",
+            "sessionId": "session-067e558e-259e-4f61-82da-0b309c8f422b",
+            "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+          }
+        ],
+        "shellInvocations": [
+          {
+            "callSeq": 25,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 35,
+            "managedCliInvocations": 4,
+            "byCommand": {
+              "help": 3,
+              "inspect-template-parameters": 1
+            }
+          },
+          {
+            "callSeq": 40,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "submit": 1
+            }
+          },
+          {
+            "callSeq": 45,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "resolve-media": 1
+            }
+          },
+          {
+            "callSeq": 50,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 55,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          }
+        ],
+        "submitToolCallCount": 1,
+        "submitCliInvocationCount": 1,
+        "httpSubmissionCount": null,
+        "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。"
+      }
+    ],
+    "validationNotes": [
+      "第 1 次先观察到 downloading，第二次 resolve-media 取得全部 succeeded。",
+      "第 2、3 次 sips 写入 /dev/null 失败后改为实际输出路径，后续工具结果确认完成。"
+    ],
+    "sourceSnapshot": {
+      "archivePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-model-candidate-final.tgz",
+      "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+      "dirty": true
+    }
+  },
+  "variants": {
+    "entry": {
+      "matrixPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-entry/8280bc1a-01dc-4537-b06a-07be4aae3ed9/matrix.json",
+      "case": "first-files",
+      "repetitions": [
+        {
+          "repetition": 1,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-entry/8280bc1a-01dc-4537-b06a-07be4aae3ed9/first-files/1/initial/trace/sessions/session-session-3f4f6acc-e66d-4ccb-970b-8e1f3877f954/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/1",
+          "skillRead": {
+            "tool": "skill",
+            "name": "comfyui-generate",
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "catalogCalls": [
+            {
+              "seq": 21,
+              "ref": {
+                "kind": "workflow",
+                "id": "1"
+              }
+            },
+            {
+              "seq": 30,
+              "ref": {
+                "kind": "model",
+                "id": "1"
+              }
+            }
+          ],
+          "managedBatchSubmit": {
+            "callSeq": 49,
+            "itemCount": 11,
+            "manifestPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/1/generation-manifest.json"
+          },
+          "statusAndMediaQuery": {
+            "command": "generation resolve-media",
+            "callSeqs": [
+              54
+            ],
+            "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/1/resolve-request.json",
+            "includeParametersExplicit": true,
+            "includeParametersValue": true,
+            "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/1/generation-media.json"
+          },
+          "finalDeliverySeq": 68,
+          "checks": {
+            "manifestItemCount": 11,
+            "templateIds": [
+              "1"
+            ],
+            "instanceIds": [
+              "1"
+            ],
+            "modelValues": [
+              null
+            ],
+            "mediaRunCount": 11,
+            "succeededRunCount": 11,
+            "imageCount": 11,
+            "mediaFilesExist": true,
+            "requestOrderMatches": true,
+            "finalIncludesAllRunIds": true,
+            "finalIncludesAllMediaFilenames": true,
+            "returnedParameterRunCount": 11
+          },
+          "naturalCompletion": true,
+          "traceMissing": [
+            {
+              "source": "model-request",
+              "sessionId": "session-3f4f6acc-e66d-4ccb-970b-8e1f3877f954",
+              "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+            },
+            {
+              "source": "model-stream",
+              "sessionId": "session-3f4f6acc-e66d-4ccb-970b-8e1f3877f954",
+              "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+            }
+          ],
+          "shellInvocations": [
+            {
+              "callSeq": 25,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 32,
+              "managedCliInvocations": 3,
+              "byCommand": {
+                "help": 3
+              }
+            },
+            {
+              "callSeq": 34,
+              "managedCliInvocations": 2,
+              "byCommand": {
+                "help": 1,
+                "inspect-template-parameters": 1
+              }
+            },
+            {
+              "callSeq": 39,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 44,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 49,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "submit": 1
+              }
+            },
+            {
+              "callSeq": 54,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "resolve-media": 1
+              }
+            },
+            {
+              "callSeq": 59,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 64,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            }
+          ],
+          "submitToolCallCount": 1,
+          "submitCliInvocationCount": 1,
+          "httpSubmissionCount": null,
+          "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。"
+        },
+        {
+          "repetition": 2,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-entry/8280bc1a-01dc-4537-b06a-07be4aae3ed9/first-files/2/initial/trace/sessions/session-session-491127c3-1244-4e82-8194-7258fdad7b3d/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/2",
+          "skillRead": {
+            "tool": "skill",
+            "name": "comfyui-generate",
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "catalogCalls": [
+            {
+              "seq": 21,
+              "ref": {
+                "kind": "workflow",
+                "id": "1"
+              }
+            },
+            {
+              "seq": 30,
+              "ref": {
+                "kind": "model",
+                "id": "1"
+              }
+            }
+          ],
+          "managedBatchSubmit": {
+            "callSeq": 44,
+            "itemCount": 11,
+            "manifestPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/2/generation-manifest.json"
+          },
+          "statusAndMediaQuery": {
+            "command": "generation resolve-media",
+            "callSeqs": [
+              49
+            ],
+            "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/2/generation-resolve-input.json",
+            "includeParametersExplicit": false,
+            "includeParametersValue": null,
+            "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/2/generation-media.json"
+          },
+          "finalDeliverySeq": 58,
+          "checks": {
+            "manifestItemCount": 11,
+            "templateIds": [
+              "1"
+            ],
+            "instanceIds": [
+              "1"
+            ],
+            "modelValues": [
+              null
+            ],
+            "mediaRunCount": 11,
+            "succeededRunCount": 11,
+            "imageCount": 11,
+            "mediaFilesExist": true,
+            "requestOrderMatches": true,
+            "finalIncludesAllRunIds": true,
+            "finalIncludesAllMediaFilenames": true,
+            "returnedParameterRunCount": 0
+          },
+          "naturalCompletion": true,
+          "traceMissing": [
+            {
+              "source": "model-request",
+              "sessionId": "session-491127c3-1244-4e82-8194-7258fdad7b3d",
+              "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+            },
+            {
+              "source": "model-stream",
+              "sessionId": "session-491127c3-1244-4e82-8194-7258fdad7b3d",
+              "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+            }
+          ],
+          "shellInvocations": [
+            {
+              "callSeq": 25,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 32,
+              "managedCliInvocations": 3,
+              "byCommand": {
+                "help": 3
+              }
+            },
+            {
+              "callSeq": 34,
+              "managedCliInvocations": 2,
+              "byCommand": {
+                "help": 1,
+                "inspect-template-parameters": 1
+              }
+            },
+            {
+              "callSeq": 39,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 44,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "submit": 1
+              }
+            },
+            {
+              "callSeq": 49,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "resolve-media": 1
+              }
+            },
+            {
+              "callSeq": 54,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            }
+          ],
+          "submitToolCallCount": 1,
+          "submitCliInvocationCount": 1,
+          "httpSubmissionCount": null,
+          "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。"
+        },
+        {
+          "repetition": 3,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-entry/8280bc1a-01dc-4537-b06a-07be4aae3ed9/first-files/3/initial/trace/sessions/session-session-deca81e6-363a-466c-9efe-e37502ca7d36/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/3",
+          "skillRead": {
+            "tool": "skill",
+            "name": "comfyui-generate",
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "catalogCalls": [
+            {
+              "seq": 21,
+              "ref": {
+                "kind": "workflow",
+                "id": "1"
+              }
+            },
+            {
+              "seq": 30,
+              "ref": {
+                "kind": "model",
+                "id": "1"
+              }
+            }
+          ],
+          "managedBatchSubmit": {
+            "callSeq": 45,
+            "itemCount": 11,
+            "manifestPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/3/generation-manifest.json"
+          },
+          "statusAndMediaQuery": {
+            "command": "generation resolve-media",
+            "callSeqs": [
+              50
+            ],
+            "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/3/generation-resolve-request.json",
+            "includeParametersExplicit": true,
+            "includeParametersValue": true,
+            "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-HZgfHx/first-files/3/generation-media.json"
+          },
+          "finalDeliverySeq": 59,
+          "checks": {
+            "manifestItemCount": 11,
+            "templateIds": [
+              "1"
+            ],
+            "instanceIds": [
+              "1"
+            ],
+            "modelValues": [
+              null
+            ],
+            "mediaRunCount": 11,
+            "succeededRunCount": 11,
+            "imageCount": 11,
+            "mediaFilesExist": true,
+            "requestOrderMatches": true,
+            "finalIncludesAllRunIds": true,
+            "finalIncludesAllMediaFilenames": true,
+            "returnedParameterRunCount": 11
+          },
+          "naturalCompletion": true,
+          "traceMissing": [
+            {
+              "source": "model-request",
+              "sessionId": "session-deca81e6-363a-466c-9efe-e37502ca7d36",
+              "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+            },
+            {
+              "source": "model-stream",
+              "sessionId": "session-deca81e6-363a-466c-9efe-e37502ca7d36",
+              "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+            }
+          ],
+          "shellInvocations": [
+            {
+              "callSeq": 25,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 35,
+              "managedCliInvocations": 3,
+              "byCommand": {
+                "help": 3
+              }
+            },
+            {
+              "callSeq": 40,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "inspect-template-parameters": 1
+              }
+            },
+            {
+              "callSeq": 45,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "submit": 1
+              }
+            },
+            {
+              "callSeq": 50,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "resolve-media": 1
+              }
+            },
+            {
+              "callSeq": 55,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            }
+          ],
+          "submitToolCallCount": 1,
+          "submitCliInvocationCount": 1,
+          "httpSubmissionCount": null,
+          "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。"
+        }
+      ],
+      "assessment": "3 次均完成受管批量生成和媒体交付；任务直接提供 Skill 路径，当前样本未隔离自主发现入口的效果。",
+      "validationNotes": [
+        "第 1 次 sips 写入 /dev/null 失败后，改为实际输出文件，工具结果 seq 65 确认 decoded 11 / 11。",
+        "第 2 次用 sips 读取尺寸；未显式请求历史 parameters，验收代码未比对保存后的 Prompt。",
+        "第 3 次记录 sips 尺寸输出并读取图片字节，未执行完整重编码；seq 56 实际返回 11 张 512×512，未出现 FAILED。"
+      ],
+      "sourceSnapshot": {
+        "archivePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-entry.tgz",
+        "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+        "dirty": true
+      }
+    },
+    "file-admission": {
+      "matrixPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/matrix.json",
+      "case": "first-files",
+      "repetitions": [
+        {
+          "repetition": 1,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/1/initial/trace/sessions/session-session-f7705f81-d08c-44f3-a06e-ecd32df42583/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1",
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "referenceRead": {
+            "callSeq": 21,
+            "resultSeq": 22,
+            "files": [
+              "references/prompt-result-contract.md",
+              "references/prompt-result-schema.json"
+            ]
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "submitCliInvocations": 0
+            }
+          ],
+          "submitToolCallCount": 0,
+          "submitCliInvocationCount": 0,
+          "observedRunCount": 0,
+          "observedMediaCount": 0,
+          "finalDeliverySeq": 25,
+          "finalOutcome": "要求用户提供 11 个 Prompt Builder 结果 JSON，未提交生成。",
+          "naturalCompletion": true
+        },
+        {
+          "repetition": 2,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/2/initial/trace/sessions/session-session-865842a7-71e1-4ecf-a12b-59610babf14b/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2",
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "referenceRead": {
+            "callSeq": 21,
+            "resultSeq": 22,
+            "files": [
+              "references/prompt-result-contract.md",
+              "references/prompt-result-schema.json"
+            ]
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "submitCliInvocations": 0
+            }
+          ],
+          "submitToolCallCount": 0,
+          "submitCliInvocationCount": 0,
+          "observedRunCount": 0,
+          "observedMediaCount": 0,
+          "finalDeliverySeq": 25,
+          "finalOutcome": "要求用户提供 11 个 Prompt Builder 结果 JSON，未提交生成。",
+          "naturalCompletion": true
+        },
+        {
+          "repetition": 3,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/3/initial/trace/sessions/session-session-aa396d58-da48-4637-93f7-e51119d83e9b/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3",
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "referenceRead": {
+            "callSeq": 21,
+            "resultSeq": 22,
+            "files": [
+              "references/prompt-result-contract.md",
+              "references/prompt-result-schema.json"
+            ]
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "submitCliInvocations": 0
+            }
+          ],
+          "submitToolCallCount": 0,
+          "submitCliInvocationCount": 0,
+          "observedRunCount": 0,
+          "observedMediaCount": 0,
+          "finalDeliverySeq": 25,
+          "finalOutcome": "要求用户提供 11 个 Prompt Builder 结果 JSON，未提交生成。",
+          "naturalCompletion": true
+        }
+      ],
+      "assessment": "3 次均读取 Skill 和结果 JSON 合同后停止，要求补充 11 个完整结果 JSON；每次受管 CLI 提交数、Run 数、媒体数均为 0。相同提示词文件任务在 candidate 3 次均完成，当前单变量对照支持输入准入规则导致文件输入任务在提交前停止。",
+      "causalLimit": "结论适用于本轮 11 份纯文本输入和当前模型。对已提供合规 Prompt Builder JSON 的任务未作比较。",
+      "sourceSnapshot": {
+        "archivePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-file-admission.tgz",
+        "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+        "dirty": true
+      }
+    },
+    "batch-limit": {
+      "matrixPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-batch-limit/486725b8-d172-4159-a7d3-dbfc51a49f3f/matrix.json",
+      "case": "first-files",
+      "repetitions": [
+        {
+          "repetition": 1,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-batch-limit/486725b8-d172-4159-a7d3-dbfc51a49f3f/first-files/1/initial/trace/sessions/session-session-0f1a224c-e839-4ff8-8230-5bd73cf4d40a/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/1",
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 27,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 34,
+              "managedCliInvocations": 3,
+              "byCommand": {
+                "help": 3,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 39,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 1,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 44,
+              "managedCliInvocations": 11,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 11,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 49,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 1
+              }
+            },
+            {
+              "callSeq": 54,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 59,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            }
+          ],
+          "submitToolCallCount": 1,
+          "submitCliInvocationCount": 11,
+          "submitCallSeq": 44,
+          "submitResultSeq": 45,
+          "submitEvidence": "单个 shell 的 seq -w 1 11 循环执行 11 次受管 generation submit；11 份单项提交结果均 accepted。",
+          "httpSubmissionCount": null,
+          "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。",
+          "managedCliInvocationsIncludingHelp": 16,
+          "managedCliInvocationsExcludingHelp": 13,
+          "statusAndMediaQuery": {
+            "callSeqs": [
+              49
+            ],
+            "includeParametersExplicit": true,
+            "includeParametersValue": true,
+            "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/1/resolve-request.json",
+            "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/1/media-results.json"
+          },
+          "checks": {
+            "manifestCount": 11,
+            "manifestItemCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "submissionResultCount": 11,
+            "acceptedItemCount": 11,
+            "templateIds": [
+              "1"
+            ],
+            "instanceIds": [
+              "1"
+            ],
+            "modelValues": [
+              null
+            ],
+            "observedRunCount": 11,
+            "succeededRunCount": 11,
+            "imageCount": 11,
+            "mediaFilesExist": true,
+            "requestOrderMatches": true,
+            "finalIncludesAllRunIds": true,
+            "finalIncludesAllMediaFilenames": true
+          },
+          "finalDeliverySeq": 63,
+          "naturalCompletion": true
+        },
+        {
+          "repetition": 2,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-batch-limit/486725b8-d172-4159-a7d3-dbfc51a49f3f/first-files/2/initial/trace/sessions/session-session-9383ae09-1d70-4e96-bf86-8924f1ae049f/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/2",
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 32,
+              "managedCliInvocations": 3,
+              "byCommand": {
+                "help": 3,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 37,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 1,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 42,
+              "managedCliInvocations": 11,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 11,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 47,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 1
+              }
+            },
+            {
+              "callSeq": 52,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 57,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            }
+          ],
+          "submitToolCallCount": 1,
+          "submitCliInvocationCount": 11,
+          "submitCallSeq": 42,
+          "submitResultSeq": 43,
+          "submitEvidence": "单个 shell 的 seq -w 1 11 循环执行 11 次受管 generation submit；11 份单项提交结果均 accepted。",
+          "httpSubmissionCount": null,
+          "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。",
+          "managedCliInvocationsIncludingHelp": 16,
+          "managedCliInvocationsExcludingHelp": 13,
+          "statusAndMediaQuery": {
+            "callSeqs": [
+              47
+            ],
+            "includeParametersExplicit": true,
+            "includeParametersValue": true,
+            "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/2/artifacts/resolve-input.json",
+            "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/2/artifacts/resolve-result.json"
+          },
+          "checks": {
+            "manifestCount": 11,
+            "manifestItemCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "submissionResultCount": 11,
+            "acceptedItemCount": 11,
+            "templateIds": [
+              "1"
+            ],
+            "instanceIds": [
+              "1"
+            ],
+            "modelValues": [
+              null
+            ],
+            "observedRunCount": 11,
+            "succeededRunCount": 11,
+            "imageCount": 11,
+            "mediaFilesExist": true,
+            "requestOrderMatches": true,
+            "finalIncludesAllRunIds": true,
+            "finalIncludesAllMediaFilenames": true
+          },
+          "finalDeliverySeq": 61,
+          "naturalCompletion": true
+        },
+        {
+          "repetition": 3,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-batch-limit/486725b8-d172-4159-a7d3-dbfc51a49f3f/first-files/3/initial/trace/sessions/session-session-dee837ef-330e-455c-a3ce-f83db1ac50ea/session.json",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/3",
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 32,
+              "managedCliInvocations": 3,
+              "byCommand": {
+                "help": 3,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 37,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 1,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 42,
+              "managedCliInvocations": 11,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 11,
+                "resolve-media": 0
+              }
+            },
+            {
+              "callSeq": 47,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 1
+              }
+            },
+            {
+              "callSeq": 52,
+              "managedCliInvocations": 0,
+              "byCommand": {
+                "help": 0,
+                "inspect-template-parameters": 0,
+                "submit": 0,
+                "resolve-media": 0
+              }
+            }
+          ],
+          "submitToolCallCount": 1,
+          "submitCliInvocationCount": 11,
+          "submitCallSeq": 42,
+          "submitResultSeq": 43,
+          "submitEvidence": "单个 shell 的 seq -w 1 11 循环执行 11 次受管 generation submit；11 份单项提交结果均 accepted。",
+          "httpSubmissionCount": null,
+          "httpSubmissionCountNote": "本项审阅未计数服务日志中的 POST /prompt。",
+          "managedCliInvocationsIncludingHelp": 16,
+          "managedCliInvocationsExcludingHelp": 13,
+          "statusAndMediaQuery": {
+            "callSeqs": [
+              47
+            ],
+            "includeParametersExplicit": true,
+            "includeParametersValue": true,
+            "inputPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/3/artifacts/resolve-request.json",
+            "mediaResultPath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-kjUez7/first-files/3/artifacts/media-results.json"
+          },
+          "checks": {
+            "manifestCount": 11,
+            "manifestItemCounts": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "submissionResultCount": 11,
+            "acceptedItemCount": 11,
+            "templateIds": [
+              "1"
+            ],
+            "instanceIds": [
+              "1"
+            ],
+            "modelValues": [
+              null
+            ],
+            "observedRunCount": 11,
+            "succeededRunCount": 11,
+            "imageCount": 11,
+            "mediaFilesExist": true,
+            "requestOrderMatches": true,
+            "finalIncludesAllRunIds": true,
+            "finalIncludesAllMediaFilenames": true
+          },
+          "finalDeliverySeq": 56,
+          "naturalCompletion": true
+        }
+      ],
+      "assessment": "3 次均用一个 shell 循环执行 11 次受管 generation submit，各提交 1 项，最后各交付 11 个成功 Run 和媒体。candidate 各次仅执行 1 次 submit 并提交 11 项。当前对照显示单项上限增加 CLI 提交次数，但未使本任务绕过受管 CLI 或无法完成。",
+      "causalLimit": "单次 shell tool/call 能容纳多次 CLI 调用。不能把两组各 1 次提交工具调用解释为相同的 CLI 提交次数，也不能从该数推导 HTTP 请求数。",
+      "validationNotes": [
+        "第 1 次 sips 输出到 /dev/null 失败，后续 seq 59 改用实际文件，seq 60 返回全部验收记录。",
+        "第 2 次 PIL 未安装，seq 57 改用 sips，seq 58 显示 11 项检查均 true。",
+        "第 3 次读取图片字节及 sips 尺寸，seq 53 显示 11 项 PASS；未执行完整重编码。"
+      ],
+      "sourceSnapshot": {
+        "archivePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-batch-limit.tgz",
+        "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+        "dirty": true
+      }
+    },
+    "query": {
+      "matrixPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-query/0a325cb7-507a-4a30-8435-2f740be63c1f/matrix.json",
+      "case": "neutral-query",
+      "repetitions": [
+        {
+          "repetition": 1,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-query/0a325cb7-507a-4a30-8435-2f740be63c1f/neutral-query/1/initial/trace/sessions/session-session-c2f7235f-b3e8-4487-86e0-3e8b854eaa78/session.json",
+          "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-query/0a325cb7-507a-4a30-8435-2f740be63c1f/neutral-query/1/initial/task-input.txt",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-tyQrpH/neutral-query/1",
+          "seededRunId": "run_3abd6bc4-58f3-4386-a6ba-b973cdc925c7",
+          "seededStatus": "failed",
+          "seededError": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 26,
+              "managedCliInvocations": 2,
+              "byCommand": {
+                "help": 2
+              }
+            },
+            {
+              "callSeq": 31,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "resolve-media": 1
+              }
+            },
+            {
+              "callSeq": 36,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "run-inputs": 1
+              }
+            }
+          ],
+          "queryCalls": [
+            {
+              "callSeq": 31,
+              "resultSeq": 32,
+              "commands": [
+                "resolve-media"
+              ]
+            },
+            {
+              "callSeq": 36,
+              "resultSeq": 37,
+              "commands": [
+                "run-inputs"
+              ]
+            }
+          ],
+          "resolveMediaFacts": {
+            "resultSeq": 32,
+            "exitCode": 0,
+            "fields": [
+              "run_id",
+              "lookup_status",
+              "title",
+              "parameters",
+              "images"
+            ],
+            "lookupStatus": "available",
+            "images": [],
+            "missingFields": [
+              "status",
+              "run_error",
+              "request_id",
+              "revision",
+              "updated_at",
+              "instance_id",
+              "prompt_id"
+            ],
+            "title": "Controlled prior generation failure",
+            "includeParametersExplicit": true,
+            "includeParametersValue": true,
+            "parametersReturned": true
+          },
+          "runInputsFacts": {
+            "queried": true,
+            "resultSeq": 37,
+            "workflowStatus": "unavailable",
+            "workflowError": {
+              "code": "COMFYUI_REMOTE_ERROR",
+              "message": "The controlled prior generation failed before producing an image."
+            }
+          },
+          "finalDeliverySeq": 40,
+          "assessment": "准确报告图片数组为空、状态字段缺失，无法确认当前执行状态；引用 run-inputs 的 workflow_error 说明历史失败事实，并区分当前状态尚未确认。",
+          "submitCliInvocationCount": 0,
+          "observedExistingRunCount": 1,
+          "observedNewRunCount": 0,
+          "observedMediaCount": 0,
+          "repeatedStatusPolling": false,
+          "unsupportedContinueGeneration": false,
+          "unsupportedWait": false,
+          "naturalCompletion": true
+        },
+        {
+          "repetition": 2,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-query/0a325cb7-507a-4a30-8435-2f740be63c1f/neutral-query/2/initial/trace/sessions/session-session-0022f653-577d-4406-9363-620aa11b15cb/session.json",
+          "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-query/0a325cb7-507a-4a30-8435-2f740be63c1f/neutral-query/2/initial/task-input.txt",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-tyQrpH/neutral-query/2",
+          "seededRunId": "run_040380bc-f0e3-4d29-abc8-fcb9e9b8cb1f",
+          "seededStatus": "failed",
+          "seededError": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 26,
+              "managedCliInvocations": 2,
+              "byCommand": {
+                "help": 2
+              }
+            },
+            {
+              "callSeq": 31,
+              "managedCliInvocations": 2,
+              "byCommand": {
+                "run-inputs": 1,
+                "resolve-media": 1
+              }
+            }
+          ],
+          "queryCalls": [
+            {
+              "callSeq": 31,
+              "resultSeq": 32,
+              "commands": [
+                "run-inputs",
+                "resolve-media"
+              ]
+            }
+          ],
+          "resolveMediaFacts": {
+            "resultSeq": 32,
+            "exitCode": 0,
+            "fields": [
+              "run_id",
+              "lookup_status",
+              "title",
+              "parameters",
+              "images"
+            ],
+            "lookupStatus": "available",
+            "images": [],
+            "missingFields": [
+              "status",
+              "run_error",
+              "request_id",
+              "revision",
+              "updated_at",
+              "instance_id",
+              "prompt_id"
+            ],
+            "title": "Controlled prior generation failure",
+            "includeParametersExplicit": false,
+            "includeParametersValue": null,
+            "parametersReturned": true
+          },
+          "runInputsFacts": {
+            "queried": true,
+            "resultSeq": 32,
+            "workflowStatus": "unavailable",
+            "workflowError": {
+              "code": "COMFYUI_REMOTE_ERROR",
+              "message": "The controlled prior generation failed before producing an image."
+            }
+          },
+          "finalDeliverySeq": 35,
+          "assessment": "准确报告图片数组为空、状态字段缺失，无法确认当前执行状态；引用 run-inputs 的 workflow_error 说明历史失败事实，并区分当前状态尚未确认。",
+          "submitCliInvocationCount": 0,
+          "observedExistingRunCount": 1,
+          "observedNewRunCount": 0,
+          "observedMediaCount": 0,
+          "repeatedStatusPolling": false,
+          "unsupportedContinueGeneration": false,
+          "unsupportedWait": false,
+          "naturalCompletion": true
+        },
+        {
+          "repetition": 3,
+          "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-query/0a325cb7-507a-4a30-8435-2f740be63c1f/neutral-query/3/initial/trace/sessions/session-session-bb7884f9-92f8-45ee-b8da-1ff410144fc5/session.json",
+          "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-query/0a325cb7-507a-4a30-8435-2f740be63c1f/neutral-query/3/initial/task-input.txt",
+          "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-tyQrpH/neutral-query/3",
+          "seededRunId": "run_cccd15c6-acaa-4e33-9a07-807f8cdf4791",
+          "seededStatus": "failed",
+          "seededError": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "skillRead": {
+            "callSeq": 16,
+            "resultSeq": 17
+          },
+          "shellInvocations": [
+            {
+              "callSeq": 21,
+              "managedCliInvocations": 0,
+              "byCommand": {}
+            },
+            {
+              "callSeq": 26,
+              "managedCliInvocations": 2,
+              "byCommand": {
+                "help": 2
+              }
+            },
+            {
+              "callSeq": 31,
+              "managedCliInvocations": 1,
+              "byCommand": {
+                "resolve-media": 1
+              }
+            }
+          ],
+          "queryCalls": [
+            {
+              "callSeq": 31,
+              "resultSeq": 32,
+              "commands": [
+                "resolve-media"
+              ]
+            }
+          ],
+          "resolveMediaFacts": {
+            "resultSeq": 32,
+            "exitCode": 0,
+            "fields": [
+              "run_id",
+              "lookup_status",
+              "title",
+              "parameters",
+              "images"
+            ],
+            "lookupStatus": "available",
+            "images": [],
+            "missingFields": [
+              "status",
+              "run_error",
+              "request_id",
+              "revision",
+              "updated_at",
+              "instance_id",
+              "prompt_id"
+            ],
+            "title": "Controlled prior generation failure",
+            "includeParametersExplicit": false,
+            "includeParametersValue": null,
+            "parametersReturned": true
+          },
+          "runInputsFacts": {
+            "queried": false,
+            "resultSeq": null,
+            "workflowStatus": null,
+            "workflowError": null
+          },
+          "finalDeliverySeq": 35,
+          "assessment": "准确报告图片数组为空、状态字段缺失，无法确认当前执行状态；未把失败标题或空图片数组当作失败状态证据。",
+          "submitCliInvocationCount": 0,
+          "observedExistingRunCount": 1,
+          "observedNewRunCount": 0,
+          "observedMediaCount": 0,
+          "repeatedStatusPolling": false,
+          "unsupportedContinueGeneration": false,
+          "unsupportedWait": false,
+          "naturalCompletion": true
+        }
+      ],
+      "comparison": {
+        "status": "reviewed",
+        "baselineLabel": "candidate512-query",
+        "matrixPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/matrix.json",
+        "baselineCurrentStatusConfirmed": 3,
+        "variantCurrentStatusConfirmed": 0,
+        "baselineAccurateNoMediaResponses": 3,
+        "variantAccurateNoMediaResponses": 3,
+        "baselineUnsupportedGenerationOrWaiting": 0,
+        "variantUnsupportedGenerationOrWaiting": 0,
+        "conclusion": "candidate 3 次均从状态查询确认 failed 与执行错误；query 3 次均因返回字段缺失而无法确认当前状态。query 第 1、2 次通过 run-inputs 得到历史错误，但仍明确当前状态未知。该对照支持显式状态和执行错误字段对当前状态核对的作用；未观察到缺字段导致擅自继续生成、等待或误报成功。"
+      },
+      "assessment": "3 次均通过受管 resolve-media 查询，确认返回空媒体和缺失状态字段，并停止依赖该结果的状态判断。第 1、2 次额外通过 run-inputs.workflow_error 取得历史失败事实，第 3 次未取得错误码。3 次均未重做、未生成新 Run、未反复轮询或等待。回复如实说明当前状态无法确认，当前状态核对目标因此尚未完成。",
+      "factSources": {
+        "task": "任务仅给出 Run ID 和查询要求，未透露 failed 状态或错误码。",
+        "resolve-media": "返回 lookup_status=available、images=[]、parameters 和 title；没有 status/run_error。",
+        "run-inputs": "第 1、2 次返回 workflow_status=unavailable、workflow_error.code=COMFYUI_REMOTE_ERROR 和失败消息；该接口提供了另一条错误信息来源。",
+        "independentObservation": "矩阵 observation 的 failed 与 error 字段供审阅者核对，不作为模型已读取事实的证据。"
+      },
+      "causalLimits": [
+        "title 保留 Controlled prior generation failure，向模型提供了失败暗示；任务文字中性不代表所有查询返回值都隐藏失败信息。",
+        "run-inputs 仍暴露相同错误码和消息，第 1、2 次通过该接口获得历史错误，不能将 query 变体视为完全隔绝所有失败信息。",
+        "第 1、2 次引用历史错误后仍明确当前状态无法确认；第 3 次只指出字段缺失。三次均没有把 lookup_status=available 等同于执行成功。",
+        "query 变体返回结构整体退回较少字段的形态，且 parameters 总是返回；当前比较不能分别估计 status、run_error、request_id 等单个字段的独立贡献。"
+      ],
+      "sourceSnapshot": {
+        "archivePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-query.tgz",
+        "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+        "dirty": true
+      }
+    }
+  },
+  "conclusions": {
+    "observed": "candidate 和 entry 各 3 次均用 1 次受管 submit 提交 11 项；batch-limit 各 3 次用单个 shell 执行 11 次单项 submit；三组各次均交付 11 个成功 Run 和媒体。file-admission 3 次均要求补充结果 JSON，各次 0 次提交、0 个 Run、0 张媒体。",
+    "entryCausalLimit": "两组任务均直接提供 comfyui-generate/SKILL.md 的绝对路径，可用 Skill 列表也包含该 Skill。各次首个业务工具调用均为 skill。当前对照只支持给定路径和当前任务条件下未观察到入口行为退化，无法估计缺少路径、含糊任务或独立发现条件下入口指引的必要性或作用大小。3 次成功也无法证明两变体在其他任务上等效。",
+    "parameterObservation": "candidate 3 次均显式 include_parameters=true，媒体结果各包含 11 项 parameters；entry 第 1、3 次显式 true，结果各包含 11 项 parameters。entry 第 2 次省略 include_parameters，结果未包含 parameters，该次验收代码未比对保存后的 Prompt。",
+    "fixtureScope": "本轮清单的 template_id 与 instance_id 均为字符串 1，model 为 null，按模板默认模型生成；MCP 查询的 workflow 与 model ID 均为字符串 1。此前任意 ref.id 可返回同一资源及缺少服务身份握手的发现属于夹具复用限制，在本轮驱动显式传入固定服务且核对实际请求与媒体的条件下，不构成本轮证据无效的阻塞。",
+    "traceLimit": "官方导出标记原始模型请求和原始流未持久化；本报告以保存的会话事件为依据。",
+    "counting": "分别记录宿主 tool/call、每个 shell 中实际执行的 CLI 次数、清单项数和观测 Run 数。help 调用单独记录；HTTP 提交次数须依据服务日志确认，不从工具调用数推导。"
+  },
+  "queryBaseline": {
+    "matrixPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/matrix.json",
+    "case": "neutral-query",
+    "repetitions": [
+      {
+        "repetition": 1,
+        "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/1/initial/trace/sessions/session-session-a9ad90d9-40d0-46b2-96f8-f52aec99726d/session.json",
+        "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/1/initial/task-input.txt",
+        "seededRunId": "run_70345ebf-4b05-4106-9c21-f8f8a4e9b62e",
+        "skillRead": {
+          "callSeq": 16,
+          "resultSeq": 17
+        },
+        "shellInvocations": [
+          {
+            "callSeq": 21,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 26,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "help": 1
+            }
+          },
+          {
+            "callSeq": 28,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "help": 1
+            }
+          },
+          {
+            "callSeq": 33,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "resolve-media": 1
+            }
+          },
+          {
+            "callSeq": 35,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "run-inputs": 1
+            }
+          }
+        ],
+        "resolveMediaFacts": {
+          "callSeq": 33,
+          "resultSeq": 34,
+          "fields": [
+            "run_id",
+            "request_id",
+            "lookup_status",
+            "title",
+            "status",
+            "revision",
+            "updated_at",
+            "instance_id",
+            "prompt_id",
+            "run_error",
+            "images"
+          ],
+          "lookupStatus": "available",
+          "status": "failed",
+          "runError": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": [],
+          "promptId": null,
+          "includeParametersExplicit": false,
+          "includeParametersValue": null,
+          "parametersReturned": false
+        },
+        "runInputsFacts": {
+          "queried": true,
+          "callSeq": 35,
+          "resultSeq": 36
+        },
+        "finalDeliverySeq": 39,
+        "assessment": "准确报告 failed、COMFYUI_REMOTE_ERROR 和无已保存图片，并说明错误消息不足以定位具体故障原因。",
+        "submitCliInvocationCount": 0,
+        "observedNewRunCount": 0,
+        "observedMediaCount": 0,
+        "unsupportedContinueGeneration": false,
+        "unsupportedWait": false,
+        "repeatedStatusPolling": false,
+        "naturalCompletion": true
+      },
+      {
+        "repetition": 2,
+        "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/2/initial/trace/sessions/session-session-c732d7ed-4aa2-430e-94cd-4e3767ba47b7/session.json",
+        "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/2/initial/task-input.txt",
+        "seededRunId": "run_72365124-e2b1-43ad-b675-57ee314e86fe",
+        "skillRead": {
+          "callSeq": 16,
+          "resultSeq": 17
+        },
+        "shellInvocations": [
+          {
+            "callSeq": 21,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 26,
+            "managedCliInvocations": 2,
+            "byCommand": {
+              "help": 2
+            }
+          },
+          {
+            "callSeq": 31,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "resolve-media": 1
+            }
+          }
+        ],
+        "resolveMediaFacts": {
+          "callSeq": 31,
+          "resultSeq": 32,
+          "fields": [
+            "run_id",
+            "request_id",
+            "lookup_status",
+            "title",
+            "status",
+            "revision",
+            "updated_at",
+            "instance_id",
+            "prompt_id",
+            "run_error",
+            "images"
+          ],
+          "lookupStatus": "available",
+          "status": "failed",
+          "runError": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": [],
+          "promptId": null,
+          "includeParametersExplicit": false,
+          "includeParametersValue": null,
+          "parametersReturned": false
+        },
+        "runInputsFacts": {
+          "queried": false,
+          "callSeq": null,
+          "resultSeq": null
+        },
+        "finalDeliverySeq": 35,
+        "assessment": "准确报告 failed、COMFYUI_REMOTE_ERROR 和无已保存图片，并说明错误消息不足以定位具体故障原因。",
+        "submitCliInvocationCount": 0,
+        "observedNewRunCount": 0,
+        "observedMediaCount": 0,
+        "unsupportedContinueGeneration": false,
+        "unsupportedWait": false,
+        "repeatedStatusPolling": false,
+        "naturalCompletion": true
+      },
+      {
+        "repetition": 3,
+        "sessionPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/3/initial/trace/sessions/session-session-e9d49dee-6912-448e-989f-c8172760a6fa/session.json",
+        "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/3/initial/task-input.txt",
+        "seededRunId": "run_678679b1-cfd3-49e1-806f-e09a698ed05f",
+        "skillRead": {
+          "callSeq": 16,
+          "resultSeq": 17
+        },
+        "shellInvocations": [
+          {
+            "callSeq": 21,
+            "managedCliInvocations": 0,
+            "byCommand": {}
+          },
+          {
+            "callSeq": 26,
+            "managedCliInvocations": 2,
+            "byCommand": {
+              "help": 2
+            }
+          },
+          {
+            "callSeq": 31,
+            "managedCliInvocations": 1,
+            "byCommand": {
+              "resolve-media": 1
+            }
+          }
+        ],
+        "resolveMediaFacts": {
+          "callSeq": 31,
+          "resultSeq": 32,
+          "fields": [
+            "run_id",
+            "request_id",
+            "lookup_status",
+            "title",
+            "status",
+            "revision",
+            "updated_at",
+            "instance_id",
+            "prompt_id",
+            "run_error",
+            "parameters",
+            "images"
+          ],
+          "lookupStatus": "available",
+          "status": "failed",
+          "runError": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": [],
+          "promptId": null,
+          "includeParametersExplicit": true,
+          "includeParametersValue": true,
+          "parametersReturned": true
+        },
+        "runInputsFacts": {
+          "queried": false,
+          "callSeq": null,
+          "resultSeq": null
+        },
+        "finalDeliverySeq": 35,
+        "assessment": "准确报告 failed、COMFYUI_REMOTE_ERROR 和无已保存图片，并说明错误消息不足以定位具体故障原因。",
+        "submitCliInvocationCount": 0,
+        "observedNewRunCount": 0,
+        "observedMediaCount": 0,
+        "unsupportedContinueGeneration": false,
+        "unsupportedWait": false,
+        "repeatedStatusPolling": false,
+        "naturalCompletion": true
+      }
+    ],
+    "assessment": "3 次均从 resolve-media.status 与 run_error 直接确认当前失败状态、错误码和消息；准确交付空媒体结果，未创建新 Run。第 1 次另查 run-inputs，第 2、3 次无需该查询即可完成当前状态核对。",
+    "sourceSnapshot": {
+      "archivePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-model-candidate-final.tgz",
+      "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+      "dirty": true
+    }
+  },
+  "snapshotBoundary": {
+    "candidateArchive": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-model-candidate-final.tgz",
+    "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+    "scope": "本报告的单变量比较仅适用于 generation-model-candidate-final.tgz 及对应 generation-ablation/build-RTZq6i 变体快照。",
+    "laterRevision": "后续候选 Skill 等待步骤已有独立修订，本报告不将后续版本或其他候选矩阵混入上述单变量组。",
+    "identityLimit": "当前 sourceCommit 标记 dirty，完整候选身份须沿各 matrix.sourceIdentity 与安装核对证据追溯；提交 SHA 单独不能代表当时全部内容。"
+  },
+  "singleVariableSummary": [
+    {
+      "variant": "entry",
+      "baselineTask": "first-files",
+      "baselineOutcome": "3/3 完成；每次 1 次受管 submit、11 Run、11 媒体。",
+      "variantOutcome": "3/3 完成；每次 1 次受管 submit、11 Run、11 媒体。",
+      "supportedInference": "给定 Skill 路径的任务中，未观察到入口行为退化。",
+      "limit": "任务直接给出 Skill 路径，不能估计自主发现入口的作用；entry 第 2 次未显式 include_parameters，也未核对保存后的 Prompt。"
+    },
+    {
+      "variant": "file-admission",
+      "baselineTask": "first-files",
+      "baselineOutcome": "3/3 完成生成和交付。",
+      "variantOutcome": "3/3 要求补充结果 JSON；每次 0 次提交、0 Run、0 媒体。",
+      "supportedInference": "本组纯文本文件任务被结果 JSON 准入规则阻断于提交前。",
+      "limit": "未比较已经提供合规 Prompt Builder JSON 的任务。"
+    },
+    {
+      "variant": "batch-limit",
+      "baselineTask": "first-files",
+      "baselineOutcome": "每次 1 次受管 submit 提交 11 项。",
+      "variantOutcome": "每次 1 个 shell 执行 11 次受管 submit，每次 1 项；3/3 交付 11 Run 和 11 媒体。",
+      "supportedInference": "单项上限增加提交 CLI 调用次数；本组未观察到绕过 CLI 或无法完成。",
+      "limit": "shell 工具调用数与 CLI 调用数分别记录；HTTP 请求数未在此审阅中计数。"
+    },
+    {
+      "variant": "query",
+      "baselineTask": "neutral-query",
+      "baselineOutcome": "3/3 从 resolve-media.status/run_error 确认当前失败。",
+      "variantOutcome": "0/3 确认当前状态；3/3 如实报告字段缺失与空媒体；2/3 从 run-inputs 取得历史错误。",
+      "supportedInference": "状态查询结果缺少状态和执行错误字段时，本组当前状态核对无法完成。",
+      "limit": "标题暗示失败，历史查询保留错误；未观察到擅自生成、等待或误报成功。无法分别量化各被删字段的作用。"
+    }
+  ]
+}

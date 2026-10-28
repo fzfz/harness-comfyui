@@ -1,0 +1,146 @@
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.agents/skills/comfyui-generate/SKILL.md b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/SKILL.md
+index 562589b..38a3997 100644
+--- a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.agents/skills/comfyui-generate/SKILL.md
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/SKILL.md
+@@ -7,11 +7,17 @@ description: 用户要求用 ComfyUI Workflow 创建图片、提交提示词文
+ 
+ ## 1. 确定任务与输入
+ 
+-1. Skill 执行者读取当前消息、已知路径的任务产物和已确认选择。提示词可来自消息正文、Prompt Builder 产物或用户指定文件。
+-2. 创建图片时，Skill 执行者按用户要求确定每张图片的内容与数量。多项输入的边界不明确时，只询问无法划分的输入。
+-3. 查询历史参数、复用 Seed、提交生成或查询媒体前，Skill 执行者必须完整读取 `references/generation-cli.md`，再读取对应命令的 `--help`。执行者必须通过官方前台 shell Tool Call 调用受管 CLI。上下文压缩后缺少参考内容时，执行者在下一次调用前重新读取。
+-4. 用户只要求查询历史 Run 时，执行者使用 `generation run-inputs`，按输入顺序返回查询结果。用户要求复用 Seed 时，执行者记录历史输入与待创建图片的对应关系；对应关系缺失时，只询问对应项。
+-5. 续聊涉及已保存清单或 Run 时，执行者先读取清单与查询结果。剩余任务按 `references/generation-cli.md` 的“请求复用与重做”处理。
++1. 创建图片时，Skill 执行者完整读取 `references/prompt-result-contract.md` 和 `references/prompt-result-schema.json`。当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。当前消息包含一个或多个用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者按照 `references/prompt-result-contract.md` 逐个校验这些结果 JSON。
++
++2. 多个结果 JSON 之间的边界不明确时，Skill 执行者列出无法划分的内容，并等待用户明确每个结果 JSON 的边界。
++
++3. 任一结果 JSON 无效时，Skill 执行者返回该结果的校验错误，并等待用户提供修正后的完整结果 JSON。
++
++4. 每个有效结果 JSON 默认创建一张图片。用户为某个结果 JSON 指定多张图片时，Skill 执行者按照结果 JSON 在当前消息中的出现顺序，并在每个结果 JSON 内按照图片序号顺序展开待创建图片。待创建图片总数必须为 1 至 20；总数超过 20 时，Skill 执行者报告当前总数，并等待用户减少图片数量。
++
++5. 查询历史参数、复用 Seed、提交生成或查询媒体前，Skill 执行者必须完整读取 `references/generation-cli.md`，再读取对应命令的 `--help`。执行者必须通过官方前台 shell Tool Call 调用受管 CLI。上下文压缩后缺少参考内容时，执行者在下一次调用前重新读取。
++6. 用户只要求查询历史 Run 时，执行者使用 `generation run-inputs`，按输入顺序返回查询结果。用户要求复用 Seed 时，执行者记录历史输入与待创建图片的对应关系；对应关系缺失时，只询问对应项。
++7. 续聊涉及已保存清单或 Run 时，执行者先读取清单与查询结果。剩余任务按 `references/generation-cli.md` 的“请求复用与重做”处理。
+ 
+ ## 2. 查询并核对资源
+ 
+@@ -28,7 +34,7 @@ description: 用户要求用 ComfyUI Workflow 创建图片、提交提示词文
+ 1. 执行者通过 NoobAI MCP 取得实例列表，采用返回的第一个实例。列表为空时，执行者报告没有可用实例，停止创建图片。
+ 2. 执行者必须完整读取 `references/template-parameter-inspection-cli.md` 和对应命令的 `--help`，再查询模板参数。执行者按参考确定 Prompt、Seed、`batch_size` 和尺寸参数。
+ 3. 执行者根据用户要求与提示词产物确定尺寸意图，再按参数参考选择尺寸。缺少尺寸意图时，执行者只询问所需宽高或宽高比与像素面积。
+-4. 执行者将提示词内容对应到 Workflow 的文本参数。结构化产物可按字段提取；文本与 MOSS Layout 的 JSON 正文作为文本保留。不得要求用户把已有产物改写成统一的 Prompt Builder JSON。
++4. 对于每个有效结果 JSON，Skill 执行者将 `positive_prompt` 用作正向 Prompt。`negative_mode` 为 `native_negative` 时，Skill 执行者将 `negative_prompt` 用作负向 Prompt；`negative_mode` 为 `positive_rewrite` 时，Skill 执行者省略负向 Prompt。
+ 5. 产物来自 Prompt Builder 时，执行者遵循该 Builder 的提示词合同。负向表达和画面含义由执行者判断；需要改写时，执行者先保存符合该 Builder 合同的产物。不得用程序判断这些语义。
+ 6. 执行者按 LoRA 顺序与各资源的触发词顺序核对正向 Prompt。相同触发词只保留一次。缺少完整触发词时，执行者按输入的提示词格式加入触发词。有 Builder 合同时，执行者保存符合该合同的产物。
+ 7. 执行者将最终文本保存为 UTF-8 文件，用 `parameter_files` 引用。原文件可直接使用时，执行者保留原文件。每张图片使用第 2 节确定的模型与 LoRA 顺序。
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/references/prompt-result-contract.md b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/references/prompt-result-contract.md
+new file mode 100644
+index 0000000..c935911
+--- /dev/null
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/references/prompt-result-contract.md
+@@ -0,0 +1,68 @@
++---
++文档用途: 定义 Prompt Builder 结果的校验顺序、约束和返回内容。
++读取时机: comfyui-generate 执行者校验用于创建图片的结果 JSON 时。
++---
++
++# Prompt Builder 结果校验
++
++## 输入定义与校验顺序
++
++1. 本文件将负责构建图片生成 Prompt 结果的 Skill 称为 Prompt Builder。
++
++2. 本文件将 `../SKILL.md` 第 1 节“确定任务与输入”交给本文件校验的单个 JSON 对象称为结果 JSON。
++
++3. Skill 执行者保持结果 JSON 的属性和值不变。Skill 执行者依次执行结构校验、负向模式校验和图片尺寸校验。
++
++4. 结果 JSON 依次通过三项校验时，Skill 执行者在结果 JSON 之外记录校验结论“有效”。
++
++5. 结果 JSON 未通过当前校验时，Skill 执行者在结果 JSON 之外记录校验结论“无效”。Skill 执行者停止后续校验，并向用户报告当前校验章节规定的错误内容。
++
++## 结构校验
++
++1. Skill 执行者使用 `references/prompt-result-schema.json` 校验结果 JSON 的属性名称、属性类型、必填属性、枚举值和额外属性。
++
++2. 结果 JSON 出现结构错误时，Skill 执行者逐项报告错误。每项错误包含完整 JSON 路径、当前值和 JSON Schema 规定的约束。
++
++3. 必填属性缺失时，Skill 执行者把该属性的当前值报告为“属性不存在”。
++
++## 负向模式校验
++
++1. `negative_mode` 为 `native_negative` 时，`negative_prompt` 必须是非空字符串，`positive_avoidance` 必须是 `null`。
++
++2. `negative_mode` 为 `positive_rewrite` 时，`negative_prompt` 必须是 `null`，`positive_avoidance` 必须是非空字符串。
++
++3. 可见画面状态指观察图片即可判断是否存在的具体表现。具体表现包括人物外观、物体、动作、构图、光照或环境。
++
++4. 在 `positive_rewrite` 分支中，`positive_avoidance` 的全部内容必须由一个或多个图片需要呈现的可见画面状态组成。
++
++5. Skill 执行者先识别 `positive_avoidance` 陈述的每一种可见画面状态，再逐项检查 `positive_prompt`；`positive_prompt` 直接陈述该状态或使用语义等价的肯定表述时，该状态通过检查。
++
++6. 结果 JSON 未通过负向模式校验时，Skill 执行者报告 `negative_mode`、`negative_prompt`、`positive_avoidance` 和 `positive_prompt` 的当前值以及违反的具体规则。
++
++7. `positive_prompt` 缺少 `positive_avoidance` 陈述的可见画面状态时，Skill 执行者同时报告缺少的具体状态。
++
++## 图片尺寸校验
++
++1. `width` 表示期望图片宽度，单位为像素。
++
++2. `height` 表示期望图片高度，单位为像素。
++
++3. `aspect_ratio` 表示期望图片宽度与高度的整数比，格式为 `宽度:高度`。
++
++4. `megapixels` 表示用百万像素计量的期望图片面积。
++
++5. Skill 执行者计算 `width` 和 `height` 的最大公约数 `gcd`，并构造字符串 `(width ÷ gcd):(height ÷ gcd)`。
++
++6. Skill 执行者确认构造出的字符串与 `aspect_ratio` 完全一致。
++
++7. Skill 执行者计算面积相对偏差 `abs(width × height ÷ 1,000,000 - megapixels) ÷ megapixels`，并确认相对偏差小于或等于 `0.05`。
++
++8. 构造出的字符串与 `aspect_ratio` 不一致时，Skill 执行者报告 `width`、`height`、`aspect_ratio` 的当前值和构造出的字符串。
++
++9. 面积相对偏差大于 `0.05` 时，Skill 执行者报告 `width`、`height`、`megapixels` 的当前值和相对偏差。
++
++10. 两项图片尺寸检查均通过时，结果 JSON 通过图片尺寸校验。
++
++## 返回输入处理步骤
++
++1. Skill 执行者将校验结论和已发现的全部错误返回给 `../SKILL.md` 第 1 节“确定任务与输入”。
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/references/prompt-result-schema.json b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/references/prompt-result-schema.json
+new file mode 100644
+index 0000000..4e8157a
+--- /dev/null
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package/.agents/skills/comfyui-generate/references/prompt-result-schema.json
+@@ -0,0 +1,30 @@
++{
++  "$schema": "https://json-schema.org/draft/2020-12/schema",
++  "$id": "generation-output-schema.json",
++  "type": "object",
++  "required": [
++    "model_route",
++    "positive_prompt",
++    "negative_mode",
++    "negative_prompt",
++    "positive_avoidance",
++    "generation_purpose",
++    "aspect_ratio",
++    "width",
++    "height",
++    "megapixels"
++  ],
++  "additionalProperties": false,
++  "properties": {
++    "model_route": { "type": "string", "minLength": 1 },
++    "positive_prompt": { "type": "string", "minLength": 1 },
++    "negative_mode": { "enum": ["native_negative", "positive_rewrite"] },
++    "negative_prompt": { "type": ["string", "null"] },
++    "positive_avoidance": { "type": ["string", "null"] },
++    "generation_purpose": { "enum": ["test", "final"] },
++    "aspect_ratio": { "type": "string", "pattern": "^[1-9][0-9]*:[1-9][0-9]*$" },
++    "width": { "type": "integer", "minimum": 1 },
++    "height": { "type": "integer", "minimum": 1 },
++    "megapixels": { "type": "number", "exclusiveMinimum": 0 }
++  }
++}

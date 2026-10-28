@@ -1,0 +1,94 @@
+{
+  "baseline": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+  "runtimeTargeted": {
+    "passed": 86,
+    "failed": 0
+  },
+  "cliTargetedAfterReview": {
+    "passed": 130,
+    "failed": 0
+  },
+  "integrationConsumers": {
+    "passed": 16,
+    "failed": 0
+  },
+  "controlledFixture": {
+    "passed": 10,
+    "failed": 0,
+    "log": ".local/generation-png-green.log"
+  },
+  "pluginPackageIsolated": {
+    "passed": 22,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "desktopFirstRun": {
+    "passed": 306,
+    "failed": 1,
+    "cause": "repository-skill-catalog fixture descriptions were not updated with Skill frontmatter",
+    "log": ".local/generation-desktop.log",
+    "status": "fixture corrected; subsequent complete run had 306 passes and one existing cold child Skill catalog failure"
+  },
+  "fullGate": {
+    "command": "pnpm quality",
+    "log": ".local/generation-quality-final-acceptance.log",
+    "status": "failed",
+    "completedSuites": {
+      "unitIntegrationSkill": 1496,
+      "contractSecurity": 77,
+      "production": 371,
+      "prototype": 32
+    },
+    "coverage": {
+      "statements": 93.87,
+      "branches": 87.31,
+      "functions": 100,
+      "lines": 96.57
+    },
+    "dependencyAudit": {
+      "full": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      },
+      "production": {
+        "critical": 0,
+        "high": 0,
+        "moderate": 0,
+        "low": 0
+      }
+    },
+    "desktop": {
+      "passed": 307,
+      "failed": 1,
+      "failure": "official cold child Skill catalog uses global office Skills instead of project preset Skills"
+    },
+    "commitAllowed": false,
+    "trackedLog": "docs/verification/generation-batch-20261028/quality-final.txt"
+  },
+  "laterConcurrentRun": {
+    "command": "pnpm quality",
+    "log": ".local/generation-quality-final-512.log",
+    "status": "failed",
+    "failure": "seven contract/security tests exceeded 5000 ms while isolated applications were starting",
+    "nextVerification": "completed: final acceptance run passed all 1976 non-Desktop tests and had only the independently verified cold child catalog failure"
+  },
+  "gitDiffCheck": "passed",
+  "realComfy": {
+    "newRuns": 12,
+    "images": 12,
+    "replayNewRuns": 0,
+    "redoNewRuns": 1,
+    "artifactChecks": "real-comfy-final/artifact-checks.json",
+    "lifecycleAndUI": "real-comfy-final/lifecycle-and-ui-checks.json",
+    "modelAssessment": "real-comfy-final/model-assessment.json",
+    "passed": true
+  },
+  "modelMatrix": {
+    "passed": 14,
+    "failed": 1,
+    "report": "candidate-final-assessment.json",
+    "hostFailure": "official-goal-pause-failure.json"
+  }
+}

@@ -49,21 +49,21 @@
 
 5. [dispatch()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/cli/dispatch.ts>) 将 Generation 请求交给 Runtime，将图片读取请求交给 Image Reader。Host coordinator 负责持续执行已接纳的 Run。
 
-6. [受管 CLI 入口](</Volumes/4Tdisk/work/AI2/harness-comfyui/scripts/cli/harness-comfyui.mjs>) 通过 [result-file.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/scripts/cli/result-file.mjs>) 将业务响应保存到单次调用的结果文件。写入完成后，CLI 返回文件路径。Run 和业务持久化由 Runtime 管理。CLI 输出格式与结果文件错误信息由 [CLI 帮助配置](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/managed-cli-help.json>) 定义。
+6. [受管 CLI 入口](</Volumes/4Tdisk/work/AI2/harness-comfyui/scripts/cli/harness-comfyui.mjs>) 读取提交清单，展开 UTF-8 参数文件，再把完整请求交给 Host。Agent 负责提示词含义、资源与尺寸选择；CLI 负责文件和结构校验。CLI 通过 [result-file.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/scripts/cli/result-file.mjs>) 保存业务响应，并返回结果文件路径。公共输出与错误由 [CLI 帮助配置](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/managed-cli-help.json>) 定义。
 
 ## Generation Run 生命周期与历史查询
 
-1. [GenerationRuntime.acceptGeneration()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>) 先持久化调用身份与 Generation Request，再由 [SourceGenerationPreparer](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/source-preparer.ts>) 读取实例、模板和映射数据并准备 Workflow。准备失败时，Tool Call 与失败 Run 保存同一错误码和错误信息；准备成功时，调用方收到 `run_id`。
+1. [GenerationRuntime.acceptGenerations()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>) 在同一事务内接纳整份清单。接纳成功后，调用方按输入顺序取得 `request_id`、`run_id` 与 `accepted` 或 `reused`。接纳校验失败时，本次新增 Run 数为零。
 
-2. 同一 Tool Call 的相同 Generation Request 返回同一 Run；同一 Tool Call 的不同请求返回 `RUN_REQUEST_CONFLICT`。独立生成任务使用独立 Tool Call。幂等判断与持久化入口统一为 `GenerationRuntime.acceptGeneration()`。
+2. 请求身份和重放规则见 [ADR 0005](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/adr/0005-harness-identities-and-generation-run-ownership.md>)。CLI 调用凭证确定 Run 归属；提交清单中的标识用于复用请求。
 
-3. [GenerationCoordinator](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-coordinator.ts>) 推进 `/prompt` 提交、Jobs API 观察、结果下载和媒体保存。Host 停止时 coordinator 中止本地观察；远端 ComfyUI 任务继续运行，Host 重启后从非终态 Run 恢复观察。
+3. 接纳事务提交后，[GenerationCoordinator](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-coordinator.ts>) 通过 [SourceGenerationPreparer](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/source-preparer.ts>) 准备 Workflow，再推进远端提交、观察、下载与媒体登记。各 Run 独立保存状态与错误。调用结束和应用重启后的执行规则见 [ADR 0002](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/adr/0002-generation-runs-are-durable-and-asynchronous.md>)。
 
 4. Run Repository 保存状态和索引；每个 Run 的目录保存请求、来源快照、Actual Workflow 与 API Workflow；Saved Media 保存下载后的媒体文件。对应写入和恢复逻辑由 [GenerationRuntime](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>) 维护，目录字段见[配置规范](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/configuration.md#configuration-profile-字段>)。
 
 5. `GenerationRuntime.readGenerationRunInputs()` 与 `readGenerationRunMedia()` 统一处理当前 Workspace 的历史查询。批量查询、Run ID 匹配与查询取消规则见 [GenerationRuntime](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>)。
 
-6. 历史参数查询读取创建 Run 时保存的请求参数与 Actual Workflow；媒体查询同时返回本地图片路径。参数转换由 [runInputArguments()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>) 负责，返回字段与 Workflow 状态由 [src/generation/contract.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/generation/contract.ts>) 定义。
+6. 历史输入查询读取已保存的参数与 Actual Workflow；媒体查询默认读取状态、错误和图片路径，显式请求时附带参数。字段分别由 [run-input-contract.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/generation/run-input-contract.ts>) 与 [run-media-contract.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/image-reader/run-media-contract.ts>) 定义。状态类型共用 [run-status.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/generation/run-status.ts>)。
 
 ## Workflow 参数化与官方导出
 

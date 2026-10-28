@@ -1,0 +1,116 @@
+{
+  "baselineSha": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+  "candidateTarball": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-model-candidate-final.tgz",
+  "sourceTarball": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/candidate.tgz",
+  "buildDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i",
+  "sourcePackageDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package",
+  "paths": {
+    "persona": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+    "skill": ".agents/skills/comfyui-generate/SKILL.md",
+    "contract": ".agents/skills/comfyui-generate/references/prompt-result-contract.md",
+    "schema": ".agents/skills/comfyui-generate/references/prompt-result-schema.json",
+    "limits": "config/managed-cli-limits.json",
+    "cli": ".local/source-cli/harness-comfyui.mjs",
+    "runtime": ".local/source-host/generation-runtime-Dk2ozOAl.js"
+  },
+  "packageVersion": "0.49.0",
+  "entryReplacement": {
+    "before": "设计提示词时，你根据任务与当前 Skill 摘要读取适用的 Prompt Builder。创建图片时，你必须读取 comfyui-generate，并把当前消息或已知文件路径交给该 Skill。已有提示词文件随任务继续传递。你按 Skill 正文读取参考文件。",
+    "after": "你根据任务和当前 Skill 摘要选择适用的 Skill，通过 skill 工具读取正文，再按正文要求读取参考文件。",
+    "paragraph": "persona.prefix Skill selection paragraph immediately before local reference reading"
+  },
+  "queryTask": "工作目录：{{workspace}}。生成 Skill：{{skill}}。请核对已有 Run {{failedRunId}} 的当前执行情况，交付已经保存的图片路径，说明需要处理的问题及判断依据。本轮只核对已有任务。",
+  "queryFixture": {
+    "sameBothArms": true,
+    "discloseStatusInTask": false,
+    "reuseMatrixKnownFailureFixture": true,
+    "note": "Use actual Workspace/session identity, the same original request and failure code/message, and a fresh isolated database for each session."
+  },
+  "fileAdmissionBaselineAdaptations": [
+    "Restore the creation-only scope previously supplied by the original section heading.",
+    "Update three original contract section references to current SKILL.md section 1; validation rules and JSON schema retain baseline text."
+  ],
+  "batchLimitDerivatives": [
+    "config/managed-cli-limits.json",
+    ".local/source-host/generation-runtime-Dk2ozOAl.js",
+    ".local/source-cli/harness-comfyui.mjs"
+  ],
+  "variants": [
+    {
+      "id": "entry",
+      "factor": "persona Skill entry paragraph",
+      "tarball": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-entry.tgz",
+      "packageDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/entry/package",
+      "changes": [
+        {
+          "path": "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+          "operation": "modified"
+        }
+      ],
+      "diff": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/evidence/entry.diff",
+      "packageMetadataUnchanged": true,
+      "archiveRoundTripVerified": true
+    },
+    {
+      "id": "file-admission",
+      "factor": "Prompt Builder ten-field admission contract",
+      "tarball": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-file-admission.tgz",
+      "packageDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/file-admission/package",
+      "changes": [
+        {
+          "path": ".agents/skills/comfyui-generate/SKILL.md",
+          "operation": "modified"
+        },
+        {
+          "path": ".agents/skills/comfyui-generate/references/prompt-result-contract.md",
+          "operation": "added"
+        },
+        {
+          "path": ".agents/skills/comfyui-generate/references/prompt-result-schema.json",
+          "operation": "added"
+        }
+      ],
+      "diff": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/evidence/file-admission.diff",
+      "packageMetadataUnchanged": true,
+      "archiveRoundTripVerified": true
+    },
+    {
+      "id": "query",
+      "factor": "Runtime readGenerationRunMedia successful result projection",
+      "tarball": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-query.tgz",
+      "packageDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/query/package",
+      "changes": [
+        {
+          "path": ".local/source-host/generation-runtime-Dk2ozOAl.js",
+          "operation": "modified"
+        }
+      ],
+      "diff": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/evidence/query.diff",
+      "packageMetadataUnchanged": true,
+      "archiveRoundTripVerified": true
+    },
+    {
+      "id": "batch-limit",
+      "factor": "maxSubmissionItems configuration and two compiled derivatives",
+      "tarball": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-batch-limit.tgz",
+      "packageDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/batch-limit/package",
+      "changes": [
+        {
+          "path": ".local/source-cli/harness-comfyui.mjs",
+          "operation": "modified"
+        },
+        {
+          "path": ".local/source-host/generation-runtime-Dk2ozOAl.js",
+          "operation": "modified"
+        },
+        {
+          "path": "config/managed-cli-limits.json",
+          "operation": "modified"
+        }
+      ],
+      "diff": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/evidence/batch-limit.diff",
+      "packageMetadataUnchanged": true,
+      "archiveRoundTripVerified": true
+    }
+  ]
+}

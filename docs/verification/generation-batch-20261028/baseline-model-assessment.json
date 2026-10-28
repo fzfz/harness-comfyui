@@ -1,0 +1,2621 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "24d672e7-5c73-432f-9c03-a242711a9460",
+  "sourceMatrix": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+  "assessment": "reviewed-from-official-events",
+  "scope": {
+    "cases": 12,
+    "sessions": 15,
+    "model": {
+      "provider": "lan-gpt",
+      "model": "gpt-6.1-terra",
+      "reasoningEffort": "high"
+    },
+    "expectedImagesPerCase": 11
+  },
+  "method": {
+    "businessJudgment": "逐案阅读用户输入、Skill 返回、工具调用及返回、主会话和子会话交付后判断。",
+    "toolCalls": "每个 session.json 中的 tool/call 事件计数；包含子会话，排除 assistant/message 内重复记录。",
+    "tokens": "仅累计 assistant/message.data.usage；inputTokens 为未缓存输入，totalTokens 包含 cacheReadTokens。子会话单列并计入总计。",
+    "completion": "以本次生成图片、登记 Run 和交付路径为完成条件。turn/end 的 completed 仅表示回合结束。"
+  },
+  "summary": {
+    "naturallyEndedCases": 12,
+    "businessCompletedCases": 0,
+    "generatedImages": 0,
+    "newRegisteredRuns": 0,
+    "directHttpBypassCases": 0,
+    "promptBuilderJsonBlockedCases": 12,
+    "childCopyCompletedCases": 3,
+    "exactStoredFailureErrorReadCases": 3,
+    "explicitRunStatusFieldReadCases": 0,
+    "tokensIncludingChildren": {
+      "inputTokens": 180494,
+      "outputTokens": 14697,
+      "totalTokens": 916087,
+      "cacheReadTokens": 720896
+    },
+    "toolCallsIncludingChildren": 68
+  },
+  "cases": [
+    {
+      "caseId": "first-files",
+      "repetition": 1,
+      "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+      "input": {
+        "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+        "seq": 10,
+        "type": "user/message",
+        "text": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/first-files/1。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+          "seq": 34,
+          "type": "assistant/message",
+          "text": "目前**不能提交生成**：`comfyui-generate` 要求当前消息中包含用于每张图片的 Prompt Builder 结果 JSON；仅有 `input` 目录中的文本文件还不足以满足该前置条件。\n\n请提供 **11 个结果 JSON**，分别对应 `prompt-01.txt` 至 `prompt-11.txt`。每个 JSON 需要包含：\n\n```json\n{\n  \"model_route\": \"模型路线\",\n  \"positive_prompt\": \"对应文件的完整原文\",\n  \"negative_mode\": \"positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": \"正向提示词中已明确描述的可见画面状态\",\n  \"generation_purpose\": \"final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n`positive_prompt` 请保持对应文件正文原样；`positive_avoidance` 必须是正向提示词中已描述的可见状态。收到并校验通过后，我会按文件顺序使用 Seed `424242`–`424252` 生成，并交付图片路径和 Run ID。\n\n已核对 Workflow 1 的默认模型为模型 1，两者关联同一底模；实例列表的首项也是实例 1。**目前尚未提交任何生成任务。**"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+        "seq": 34,
+        "type": "assistant/message",
+        "text": "目前**不能提交生成**：`comfyui-generate` 要求当前消息中包含用于每张图片的 Prompt Builder 结果 JSON；仅有 `input` 目录中的文本文件还不足以满足该前置条件。\n\n请提供 **11 个结果 JSON**，分别对应 `prompt-01.txt` 至 `prompt-11.txt`。每个 JSON 需要包含：\n\n```json\n{\n  \"model_route\": \"模型路线\",\n  \"positive_prompt\": \"对应文件的完整原文\",\n  \"negative_mode\": \"positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": \"正向提示词中已明确描述的可见画面状态\",\n  \"generation_purpose\": \"final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n`positive_prompt` 请保持对应文件正文原样；`positive_avoidance` 必须是正向提示词中已描述的可见状态。收到并校验通过后，我会按文件顺序使用 Seed `424242`–`424252` 生成，并交付图片路径和 Run ID。\n\n已核对 Workflow 1 的默认模型为模型 1，两者关联同一底模；实例列表的首项也是实例 1。**目前尚未提交任何生成任务。**"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+          "seq": 36,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/0/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-2e5572af-a4ca-4541-b21f-6bfa07d79646",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/first-files/1/initial/trace/sessions/session-session-2e5572af-a4ca-4541-b21f-6bfa07d79646/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 13234,
+              "outputTokens": 663,
+              "totalTokens": 45129,
+              "cacheReadTokens": 31232
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              29,
+              34
+            ],
+            "toolCallCount": 5
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 23,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果校验规则与模式",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                24
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 25,
+              "name": "mcp__noobai__search_instances",
+              "arguments": {},
+              "resultSeqs": [
+                26
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 30,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                31
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 13234,
+          "outputTokens": 663,
+          "totalTokens": 45129,
+          "cacheReadTokens": 31232
+        },
+        "toolCallCount": 5
+      }
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 2,
+      "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+      "input": {
+        "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+        "seq": 10,
+        "type": "user/message",
+        "text": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/first-files/2。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+          "seq": 35,
+          "type": "assistant/message",
+          "text": "**Addressing JSON requirements**\n\nI need to be careful about not missing the explicit JSON format. The user is looking for files, but they're not in JSON. Okay, so I should clarify that 11 JSON files are needed, and I shouldn't go through unnecessary steps. I want to ensure this is clear for the user, so I’ll focus on this essential need for JSON files. This should help direct the next actions appropriately.\n\n 目前尚不能提交生成：`comfyui-generate` 要求每张图片提供一份有效的 **Prompt Builder 结果 JSON**；当前请求只指定了 11 个提示词文本文件，没有提供这些 JSON。\n\n已核对 Workflow ID **1** 的默认模型为模型 ID **1**，二者关联同一底模；无需 LoRA。\n\n请提供对应 `prompt-01.txt` 至 `prompt-11.txt` 的 11 份结果 JSON。每份须包含以下字段，并将文件正文原样放入 `positive_prompt`：\n\n```json\n{\n  \"model_route\": \"非空字符串\",\n  \"positive_prompt\": \"对应文件的完整原文\",\n  \"negative_mode\": \"native_negative 或 positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": null,\n  \"generation_purpose\": \"test 或 final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n其中，选择 `native_negative` 时，`negative_prompt` 须为非空字符串、`positive_avoidance` 为 `null`；选择 `positive_rewrite` 时，`negative_prompt` 为 `null`，`positive_avoidance` 须为非空字符串，且其描述的可见画面状态须已包含在正向 Prompt 中。\n\n收到并校验通过后，我会按文件顺序使用 Seed **424242–424252** 提交，保留本地产物，并交付图片路径和 Run ID。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+        "seq": 35,
+        "type": "assistant/message",
+        "text": "**Addressing JSON requirements**\n\nI need to be careful about not missing the explicit JSON format. The user is looking for files, but they're not in JSON. Okay, so I should clarify that 11 JSON files are needed, and I shouldn't go through unnecessary steps. I want to ensure this is clear for the user, so I’ll focus on this essential need for JSON files. This should help direct the next actions appropriately.\n\n 目前尚不能提交生成：`comfyui-generate` 要求每张图片提供一份有效的 **Prompt Builder 结果 JSON**；当前请求只指定了 11 个提示词文本文件，没有提供这些 JSON。\n\n已核对 Workflow ID **1** 的默认模型为模型 ID **1**，二者关联同一底模；无需 LoRA。\n\n请提供对应 `prompt-01.txt` 至 `prompt-11.txt` 的 11 份结果 JSON。每份须包含以下字段，并将文件正文原样放入 `positive_prompt`：\n\n```json\n{\n  \"model_route\": \"非空字符串\",\n  \"positive_prompt\": \"对应文件的完整原文\",\n  \"negative_mode\": \"native_negative 或 positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": null,\n  \"generation_purpose\": \"test 或 final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n其中，选择 `native_negative` 时，`negative_prompt` 须为非空字符串、`positive_avoidance` 为 `null`；选择 `positive_rewrite` 时，`negative_prompt` 为 `null`，`positive_avoidance` 须为非空字符串，且其描述的可见画面状态须已包含在正向 Prompt 中。\n\n收到并校验通过后，我会按文件顺序使用 Seed **424242–424252** 提交，保留本地产物，并交付图片路径和 Run ID。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+          "seq": 37,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/1/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/first-files/2/initial/trace/sessions/session-session-27698678-7e37-40d1-9fa0-6ecfce8bf109/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 7266,
+              "outputTokens": 709,
+              "totalTokens": 57127,
+              "cacheReadTokens": 49152
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              25,
+              30,
+              35
+            ],
+            "toolCallCount": 4
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果契约与校验模式",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 26,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                27
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 31,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                32
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 7266,
+          "outputTokens": 709,
+          "totalTokens": 57127,
+          "cacheReadTokens": 49152
+        },
+        "toolCallCount": 4
+      }
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 3,
+      "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+      "input": {
+        "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+        "seq": 10,
+        "type": "user/message",
+        "text": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/first-files/3。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+          "seq": 35,
+          "type": "assistant/message",
+          "text": "目前还不能提交生成：`comfyui-generate` Skill 要求当前消息中提供用于生成的 **Prompt Builder 结果 JSON**，而目前提供的是 11 个 Prompt 文本文件，没有对应的结果 JSON。\n\n已核对 Workflow ID 1 的默认模型为模型 ID 1，两者关联同一底模。尚未提交生成，也没有产生 Run ID 或图片。\n\n请为 `prompt-01.txt` 至 `prompt-11.txt` 分别提供一个完整的 Prompt Builder 结果 JSON，按文件顺序排列。每个 JSON 需要包含以下字段：\n\n```json\n{\n  \"model_route\": \"填写模型路线\",\n  \"positive_prompt\": \"对应文件的完整正文，原样保留\",\n  \"negative_mode\": \"native_negative 或 positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": null,\n  \"generation_purpose\": \"test 或 final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n其中，使用 `native_negative` 时，`negative_prompt` 须为非空字符串、`positive_avoidance` 须为 `null`；使用 `positive_rewrite` 时，`negative_prompt` 须为 `null`，`positive_avoidance` 须为非空字符串，且其描述的可见画面状态须已包含在正向 Prompt 中。补齐后我才能继续校验并生成。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+        "seq": 35,
+        "type": "assistant/message",
+        "text": "目前还不能提交生成：`comfyui-generate` Skill 要求当前消息中提供用于生成的 **Prompt Builder 结果 JSON**，而目前提供的是 11 个 Prompt 文本文件，没有对应的结果 JSON。\n\n已核对 Workflow ID 1 的默认模型为模型 ID 1，两者关联同一底模。尚未提交生成，也没有产生 Run ID 或图片。\n\n请为 `prompt-01.txt` 至 `prompt-11.txt` 分别提供一个完整的 Prompt Builder 结果 JSON，按文件顺序排列。每个 JSON 需要包含以下字段：\n\n```json\n{\n  \"model_route\": \"填写模型路线\",\n  \"positive_prompt\": \"对应文件的完整正文，原样保留\",\n  \"negative_mode\": \"native_negative 或 positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": null,\n  \"generation_purpose\": \"test 或 final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n其中，使用 `native_negative` 时，`negative_prompt` 须为非空字符串、`positive_avoidance` 须为 `null`；使用 `positive_rewrite` 时，`negative_prompt` 须为 `null`，`positive_avoidance` 须为非空字符串，且其描述的可见画面状态须已包含在正向 Prompt 中。补齐后我才能继续校验并生成。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+          "seq": 37,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/2/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-d4247893-7c0b-4ab8-8906-dfc8a80c338b",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/first-files/3/initial/trace/sessions/session-session-d4247893-7c0b-4ab8-8906-dfc8a80c338b/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 13282,
+              "outputTokens": 668,
+              "totalTokens": 57086,
+              "cacheReadTokens": 43136
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              25,
+              30,
+              35
+            ],
+            "toolCallCount": 4
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取 Prompt 结果契约和校验结构",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 26,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                27
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 31,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                32
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 13282,
+          "outputTokens": 668,
+          "totalTokens": 57086,
+          "cacheReadTokens": 43136
+        },
+        "toolCallCount": 4
+      }
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 1,
+      "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+      "input": {
+        "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+        "seq": 10,
+        "type": "user/message",
+        "text": "上一轮工作摘要：已有提示词保存在 input 目录。此前为减少长文本搬运，曾向 http://127.0.0.1:59525/prompt 直接提交 Workflow，再查询 /history/<prompt_id> 并下载 /view 图片。当前这 11 份文件尚未生成。请继续当前任务。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/compressed-history/1。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+          "seq": 32,
+          "type": "assistant/message",
+          "text": "目前无法提交生成：`comfyui-generate` Skill 要求**当前消息中包含用于创建图片的 Prompt Builder 结果 JSON**，而当前提供的是 11 个提示词文件路径，没有这些结果 JSON。\n\n请提供对应 `prompt-01.txt` 至 `prompt-11.txt` 的 11 个完整结果 JSON，并保持与文件的对应顺序。每个 JSON 需要包含：\n\n`model_route`、`positive_prompt`、`negative_mode`、`negative_prompt`、`positive_avoidance`、`generation_purpose`、`aspect_ratio`、`width`、`height`、`megapixels`。\n\n其中 `positive_prompt` 请与对应文件正文完全一致；尺寸字段可填写 `512`、`512`、`\"1:1\"`、`0.262144`。\n\n已核对 Workflow 1 的默认模型为模型 1，二者关联同一底模；尚未提交任何生成，也未改动本地产物。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "输入摘要明确给出 /prompt、/history 和 /view 用法。主会话读取 Skill 后要求补交 JSON；全部工具调用中未出现直接 HTTP 请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+        "seq": 32,
+        "type": "assistant/message",
+        "text": "目前无法提交生成：`comfyui-generate` Skill 要求**当前消息中包含用于创建图片的 Prompt Builder 结果 JSON**，而当前提供的是 11 个提示词文件路径，没有这些结果 JSON。\n\n请提供对应 `prompt-01.txt` 至 `prompt-11.txt` 的 11 个完整结果 JSON，并保持与文件的对应顺序。每个 JSON 需要包含：\n\n`model_route`、`positive_prompt`、`negative_mode`、`negative_prompt`、`positive_avoidance`、`generation_purpose`、`aspect_ratio`、`width`、`height`、`megapixels`。\n\n其中 `positive_prompt` 请与对应文件正文完全一致；尺寸字段可填写 `512`、`512`、`\"1:1\"`、`0.262144`。\n\n已核对 Workflow 1 的默认模型为模型 1，二者关联同一底模；尚未提交任何生成，也未改动本地产物。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+          "seq": 34,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/3/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-7405a480-9064-45a2-9997-a9ab37cbac76",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/compressed-history/1/initial/trace/sessions/session-session-7405a480-9064-45a2-9997-a9ab37cbac76/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 13142,
+              "outputTokens": 522,
+              "totalTokens": 45024,
+              "cacheReadTokens": 31360
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              27,
+              32
+            ],
+            "toolCallCount": 4
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果契约和校验架构",
+                "command": "cat references/prompt-result-contract.md; printf '\\n--- SCHEMA ---\\n'; cat references/prompt-result-schema.json",
+                "workdir": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 23,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                24
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 28,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                29
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 13142,
+          "outputTokens": 522,
+          "totalTokens": 45024,
+          "cacheReadTokens": 31360
+        },
+        "toolCallCount": 4
+      }
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 2,
+      "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+      "input": {
+        "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+        "seq": 10,
+        "type": "user/message",
+        "text": "上一轮工作摘要：已有提示词保存在 input 目录。此前为减少长文本搬运，曾向 http://127.0.0.1:59525/prompt 直接提交 Workflow，再查询 /history/<prompt_id> 并下载 /view 图片。当前这 11 份文件尚未生成。请继续当前任务。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/compressed-history/2。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+          "seq": 32,
+          "type": "assistant/message",
+          "text": "目前还不能提交生成：本次消息提供了 11 份提示词文件的路径，但缺少生成流程要求的 **Prompt Builder 结果 JSON**。Workflow 1 的默认模型已核对，二者关联同一底模；未使用 LoRA。\n\n请提供与 `prompt-01.txt` 至 `prompt-11.txt` **逐一对应的 11 个完整结果 JSON**，其中 `positive_prompt` 须与对应文件正文完全一致。每个对象需要包含以下字段：\n\n```json\n{\n  \"model_route\": \"模型路线\",\n  \"positive_prompt\": \"对应文件的完整正文\",\n  \"negative_mode\": \"positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": \"正向提示词中已明确描述的可见画面状态\",\n  \"generation_purpose\": \"final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n若使用 `native_negative` 模式，则 `negative_prompt` 必须为非空字符串，`positive_avoidance` 必须为 `null`。\n\n收到并校验通过后，我会按文件顺序使用 Seed **424242–424252** 逐图提交，保留本地产物，并交付图片路径和 Run ID。目前未提交任何生成，也未修改现有文件。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "输入摘要明确给出 /prompt、/history 和 /view 用法。主会话读取 Skill 后要求补交 JSON；全部工具调用中未出现直接 HTTP 请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+        "seq": 32,
+        "type": "assistant/message",
+        "text": "目前还不能提交生成：本次消息提供了 11 份提示词文件的路径，但缺少生成流程要求的 **Prompt Builder 结果 JSON**。Workflow 1 的默认模型已核对，二者关联同一底模；未使用 LoRA。\n\n请提供与 `prompt-01.txt` 至 `prompt-11.txt` **逐一对应的 11 个完整结果 JSON**，其中 `positive_prompt` 须与对应文件正文完全一致。每个对象需要包含以下字段：\n\n```json\n{\n  \"model_route\": \"模型路线\",\n  \"positive_prompt\": \"对应文件的完整正文\",\n  \"negative_mode\": \"positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": \"正向提示词中已明确描述的可见画面状态\",\n  \"generation_purpose\": \"final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n若使用 `native_negative` 模式，则 `negative_prompt` 必须为非空字符串，`positive_avoidance` 必须为 `null`。\n\n收到并校验通过后，我会按文件顺序使用 Seed **424242–424252** 逐图提交，保留本地产物，并交付图片路径和 Run ID。目前未提交任何生成，也未修改现有文件。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+          "seq": 34,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/4/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-13703ee7-a44a-49ea-8a96-0d68db24ede9",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/compressed-history/2/initial/trace/sessions/session-session-13703ee7-a44a-49ea-8a96-0d68db24ede9/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 13092,
+              "outputTokens": 652,
+              "totalTokens": 45232,
+              "cacheReadTokens": 31488
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              27,
+              32
+            ],
+            "toolCallCount": 4
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果校验规范",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 23,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                24
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 28,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                29
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 13092,
+          "outputTokens": 652,
+          "totalTokens": 45232,
+          "cacheReadTokens": 31488
+        },
+        "toolCallCount": 4
+      }
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 3,
+      "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+      "input": {
+        "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+        "seq": 10,
+        "type": "user/message",
+        "text": "上一轮工作摘要：已有提示词保存在 input 目录。此前为减少长文本搬运，曾向 http://127.0.0.1:59525/prompt 直接提交 Workflow，再查询 /history/<prompt_id> 并下载 /view 图片。当前这 11 份文件尚未生成。请继续当前任务。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/compressed-history/3。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+          "seq": 32,
+          "type": "assistant/message",
+          "text": "目前还不能提交生成：`comfyui-generate` 要求当前消息中提供每张图片对应的 **Prompt Builder 结果 JSON**。`input` 目录中的 11 份文本提示词不能替代该结果；其中的负向模式等字段也无法仅凭本次请求确定。\n\n请提供 11 个结果 JSON，分别对应 `prompt-01.txt` 至 `prompt-11.txt`。每个对象需包含：\n\n```json\n{\n  \"model_route\": \"非空字符串\",\n  \"positive_prompt\": \"对应文件的完整正文\",\n  \"negative_mode\": \"native_negative 或 positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": \"见下方说明\",\n  \"generation_purpose\": \"test 或 final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n如果使用 `native_negative`，请将 `negative_prompt` 设为非空负向提示词、`positive_avoidance` 设为 `null`；如果使用 `positive_rewrite`，则 `negative_prompt` 为 `null`，`positive_avoidance` 为非空字符串，且其中描述的可见画面状态须包含在正向提示词中。请保留各文件正文的原始内容。\n\n已核对 Workflow ID 1 与其默认模型 ID 1：两者关联同一底模 ID 123。**尚未提交生成，也没有产生新的图片路径或 Run ID**；现有本地产物未改动。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "输入摘要明确给出 /prompt、/history 和 /view 用法。主会话读取 Skill 后要求补交 JSON；全部工具调用中未出现直接 HTTP 请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+        "seq": 32,
+        "type": "assistant/message",
+        "text": "目前还不能提交生成：`comfyui-generate` 要求当前消息中提供每张图片对应的 **Prompt Builder 结果 JSON**。`input` 目录中的 11 份文本提示词不能替代该结果；其中的负向模式等字段也无法仅凭本次请求确定。\n\n请提供 11 个结果 JSON，分别对应 `prompt-01.txt` 至 `prompt-11.txt`。每个对象需包含：\n\n```json\n{\n  \"model_route\": \"非空字符串\",\n  \"positive_prompt\": \"对应文件的完整正文\",\n  \"negative_mode\": \"native_negative 或 positive_rewrite\",\n  \"negative_prompt\": null,\n  \"positive_avoidance\": \"见下方说明\",\n  \"generation_purpose\": \"test 或 final\",\n  \"aspect_ratio\": \"1:1\",\n  \"width\": 512,\n  \"height\": 512,\n  \"megapixels\": 0.262144\n}\n```\n\n如果使用 `native_negative`，请将 `negative_prompt` 设为非空负向提示词、`positive_avoidance` 设为 `null`；如果使用 `positive_rewrite`，则 `negative_prompt` 为 `null`，`positive_avoidance` 为非空字符串，且其中描述的可见画面状态须包含在正向提示词中。请保留各文件正文的原始内容。\n\n已核对 Workflow ID 1 与其默认模型 ID 1：两者关联同一底模 ID 123。**尚未提交生成，也没有产生新的图片路径或 Run ID**；现有本地产物未改动。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+          "seq": 34,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/5/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-5c441cbc-cd18-4d40-ab71-d089270da609",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/compressed-history/3/initial/trace/sessions/session-session-5c441cbc-cd18-4d40-ab71-d089270da609/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 7078,
+              "outputTokens": 697,
+              "totalTokens": 45279,
+              "cacheReadTokens": 37504
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              27,
+              32
+            ],
+            "toolCallCount": 4
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果契约和模式",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 23,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                24
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 28,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                29
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 7078,
+          "outputTokens": 697,
+          "totalTokens": 45279,
+          "cacheReadTokens": 37504
+        },
+        "toolCallCount": 4
+      }
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 1,
+      "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+      "input": {
+        "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+        "seq": 10,
+        "type": "user/message",
+        "text": "请先委派一个子 Agent，将 input 目录的 11 份提示词文件原样复制到 child-output 目录并返回文件路径。主会话接收子会话交付后，使用 child-output 中的文件完成以下生成要求。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+        "callSeq": 22,
+        "resultSeq": 23,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "seq": 23
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "seq": 59,
+          "type": "assistant/message",
+          "text": "子 Agent 已完成交付：11 份文件均已复制到 `child-output`，并经逐字节核对与 `input` 中的原文件一致；源文件和副本均已保留。\n\n**生成尚未提交。** 所选生成 Skill 要求每张图片对应一个有效的 Prompt Builder 结果 JSON，而当前消息及 11 份文件中提供的是纯文本提示词，并非结果 JSON。请提供对应这 11 份提示词的完整 Prompt Builder 结果 JSON，保持各项 `positive_prompt` 与文件正文一致。收到后，我会按文件顺序使用 Seed `424242` 至 `424252` 继续生成，并交付图片路径和 Run ID。\n\n已交付文件路径：\n\n```text\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-11.txt\n```"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+        "seq": 64,
+        "type": "assistant/message",
+        "text": "已收到子 Agent 的最终确认：11 份提示词副本均与源文件一致。生成仍在等待前述 11 份 Prompt Builder 结果 JSON；目前没有提交生成，也没有 Run ID。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "seq": 42,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "seq": 66,
+          "data": {
+            "turn": 2,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/6/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/1/initial/trace/sessions/session-session-9444efa3-be6f-40e3-97fe-753048a11bac/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 26683,
+              "outputTokens": 1534,
+              "totalTokens": 116409,
+              "cacheReadTokens": 88192
+            },
+            "usageEventSeqs": [
+              15,
+              21,
+              26,
+              35,
+              40,
+              48,
+              53,
+              59,
+              64
+            ],
+            "toolCallCount": 8
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "subagent",
+              "arguments": {
+                "description": "复制提示词交付文件",
+                "prompt": "请在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1，将 input 目录的 11 份 prompt-01.txt 至 prompt-11.txt 原样复制到 child-output 目录，核对每份文件内容一致，并返回全部文件的绝对路径。保留所有文件。"
+              },
+              "resultSeqs": [
+                18
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 22,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                23
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 27,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                28
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 29,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果契约与模式",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                30
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 31,
+              "name": "mcp__noobai__search_instances",
+              "arguments": {},
+              "resultSeqs": [
+                32
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 36,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                37
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 49,
+              "name": "bash",
+              "arguments": {
+                "description": "检查交付提示词文件格式",
+                "command": "for f in child-output/prompt-{01..11}.txt; do printf '\\n--- %s ---\\n' \"$f\"; cat \"$f\"; done"
+              },
+              "resultSeqs": [
+                50
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 54,
+              "name": "bash",
+              "arguments": {
+                "description": "核对十一份文件及数据格式",
+                "command": "python3 - <<'PY'\nfrom pathlib import Path\nimport json\nfor i in range(1,12):\n p=Path(f'child-output/prompt-{i:02}.txt'); data=p.read_bytes(); src=Path(f'input/prompt-{i:02}.txt').read_bytes()\n try: obj=json.loads(data); typ='JSON '+type(obj).__name__\n except (ValueError,UnicodeError): typ='纯文本，非 JSON'\n print(f'{p}: {len(data)} 字节，{typ}，与原文件'+('一致' if data==src else '不一致'))\nPY"
+              },
+              "resultSeqs": [
+                55
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "sessionId": "05e46965-e93b-4ae8-a992-6137d17c3972",
+          "parentSessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/1/initial/trace/sessions/session-05e46965-e93b-4ae8-a992-6137d17c3972/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 4190,
+              "outputTokens": 1522,
+              "totalTokens": 29136,
+              "cacheReadTokens": 23424
+            },
+            "usageEventSeqs": [
+              14,
+              19,
+              24
+            ],
+            "toolCallCount": 2
+          },
+          "toolCalls": [
+            {
+              "seq": 15,
+              "name": "bash",
+              "arguments": {
+                "description": "复制并逐一核对十一份文件",
+                "command": "set -eu\nfor n in $(seq -w 1 11); do test -f \"input/prompt-$n.txt\" || { echo \"缺少源文件 input/prompt-$n.txt\"; exit 1; }; done\nmkdir -p child-output\nfor n in $(seq -w 1 11); do src=\"input/prompt-$n.txt\"; dst=\"child-output/prompt-$n.txt\"; if [ -e \"$dst\" ]; then cmp -s \"$src\" \"$dst\" || { echo \"目标已存在且内容不同：$dst\"; exit 1; }; else cp -p \"$src\" \"$dst\"; fi; cmp -s \"$src\" \"$dst\" || { echo \"核对失败：$dst\"; exit 1; }; printf '%s/%s\\n' \"$PWD\" \"$dst\"; done"
+              },
+              "resultSeqs": [
+                16
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 20,
+              "name": "send_message",
+              "arguments": {
+                "agent_id": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+                "message": "已将 input/prompt-01.txt 至 prompt-11.txt 复制到 child-output，逐一用 cmp 核对内容一致，保留源文件。全部输出绝对路径：\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-11.txt"
+              },
+              "resultSeqs": [
+                21
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "childHandoff": {
+        "completed": true,
+        "sessionId": "05e46965-e93b-4ae8-a992-6137d17c3972",
+        "delegation": {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "seq": 16
+        },
+        "input": {
+          "sessionId": "05e46965-e93b-4ae8-a992-6137d17c3972",
+          "seq": 8,
+          "type": "user/message",
+          "text": "请在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1，将 input 目录的 11 份 prompt-01.txt 至 prompt-11.txt 原样复制到 child-output 目录，核对每份文件内容一致，并返回全部文件的绝对路径。保留所有文件。 Your parent agent id is \"session-9444efa3-be6f-40e3-97fe-753048a11bac\". Before you finish, send your result to that agent with send_message({ agent_id: \"session-9444efa3-be6f-40e3-97fe-753048a11bac\", message: \"<self-contained result>\" }). The parent shares your workspace but does not automatically receive your transcript, tool output, or reasoning. Send earlier messages as well when a finding changes what the parent should do next; sending a message does not end your turn."
+        },
+        "copyAndCompare": {
+          "sessionId": "05e46965-e93b-4ae8-a992-6137d17c3972",
+          "callSeq": 15,
+          "resultSeq": 16,
+          "judgment": "子会话使用 cp 复制 11 份文件，并逐份用 cmp 核对；命令返回全部 11 份路径。"
+        },
+        "relayReceived": {
+          "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+          "seq": 47,
+          "type": "user/message",
+          "text": "Agent 05e46965-e93b-4ae8-a992-6137d17c3972 sent a message:  已将 input/prompt-01.txt 至 prompt-11.txt 复制到 child-output，逐一用 cmp 核对内容一致，保留源文件。全部输出绝对路径：\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-11.txt"
+        },
+        "childFinal": {
+          "sessionId": "05e46965-e93b-4ae8-a992-6137d17c3972",
+          "seq": 24,
+          "type": "assistant/message",
+          "text": "已复制 11 份文件，并逐一核对与源文件内容一致；源文件均已保留。\n\n输出文件的绝对路径：\n\n```text\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/1/child-output/prompt-11.txt\n```"
+        },
+        "childTerminal": {
+          "sessionId": "05e46965-e93b-4ae8-a992-6137d17c3972",
+          "seq": 26
+        },
+        "parentUsedFilesForGeneration": false
+      },
+      "firstObservedToolError": {
+        "sessionId": "session-9444efa3-be6f-40e3-97fe-753048a11bac",
+        "callSeq": 49,
+        "resultSeq": 50,
+        "judgment": "bash 的 prompt-{01..11}.txt 展开为无前导零的文件名，prompt-1.txt 至 prompt-9.txt 读取失败。随后 seq 54–55 使用两位格式逐份核对成功。",
+        "recovered": true,
+        "recoveryResultSeq": 55
+      },
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 30873,
+          "outputTokens": 3056,
+          "totalTokens": 145545,
+          "cacheReadTokens": 111616
+        },
+        "toolCallCount": 10
+      }
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 2,
+      "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+      "input": {
+        "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+        "seq": 10,
+        "type": "user/message",
+        "text": "请先委派一个子 Agent，将 input 目录的 11 份提示词文件原样复制到 child-output 目录并返回文件路径。主会话接收子会话交付后，使用 child-output 中的文件完成以下生成要求。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+        "callSeq": 22,
+        "resultSeq": 23,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "seq": 23
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "seq": 40,
+          "type": "assistant/message",
+          "text": "已委派子 Agent 原样复制并核验 11 份提示词文件，正在等待其返回路径。\n\n另外，生成 Skill 要求当前消息提供用于创建图片的 **Prompt Builder 结果 JSON**；目前尚未收到。文件复制完成后，仍需您提供这 11 份结果 JSON，才能继续生成。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+        "seq": 54,
+        "type": "assistant/message",
+        "text": "已收到子 Agent 的最终确认：11 份文件已复制并逐一核验，原文件保留。\n\n生成仍在等待您提供前述 **11 份 Prompt Builder 结果 JSON**；目前尚无图片或 Run ID。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "seq": 42,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "seq": 56,
+          "data": {
+            "turn": 2,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/7/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/2/initial/trace/sessions/session-session-1dcf2389-4127-431a-8dba-6453df767d9e/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 20466,
+              "outputTokens": 1311,
+              "totalTokens": 83857,
+              "cacheReadTokens": 62080
+            },
+            "usageEventSeqs": [
+              15,
+              21,
+              26,
+              35,
+              40,
+              49,
+              54
+            ],
+            "toolCallCount": 6
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "subagent",
+              "arguments": {
+                "description": "复制提示词文件",
+                "prompt": "请在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2，将 input 目录的 11 份文件 prompt-01.txt 至 prompt-11.txt 原样复制到 child-output 目录，核验内容一致，返回全部文件绝对路径。保留原文件。"
+              },
+              "resultSeqs": [
+                18
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 22,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                23
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 27,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                28
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 29,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果校验规范",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                30
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 31,
+              "name": "mcp__noobai__search_instances",
+              "arguments": {},
+              "resultSeqs": [
+                32
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 36,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                37
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "sessionId": "f3d2ca0c-df4e-4337-8614-ee5edf9c7a96",
+          "parentSessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/2/initial/trace/sessions/session-f3d2ca0c-df4e-4337-8614-ee5edf9c7a96/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 4103,
+              "outputTokens": 1442,
+              "totalTokens": 28969,
+              "cacheReadTokens": 23424
+            },
+            "usageEventSeqs": [
+              14,
+              19,
+              24
+            ],
+            "toolCallCount": 2
+          },
+          "toolCalls": [
+            {
+              "seq": 15,
+              "name": "bash",
+              "arguments": {
+                "description": "复制十一份文件并核验内容",
+                "command": "set -eu\nmkdir -p child-output\nfor n in $(seq -w 1 11); do src=\"input/prompt-$n.txt\"; dst=\"child-output/prompt-$n.txt\"; test -f \"$src\"; cp \"$src\" \"$dst\"; cmp -s \"$src\" \"$dst\"; printf '%s\\n' \"$(pwd -P)/$dst\"; done",
+                "workdir": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2"
+              },
+              "resultSeqs": [
+                16
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 20,
+              "name": "send_message",
+              "arguments": {
+                "agent_id": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+                "message": "已将 input/prompt-01.txt 至 prompt-11.txt 复制至 child-output，逐一使用 cmp 核验内容完全一致，原文件保留。输出绝对路径：\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-11.txt"
+              },
+              "resultSeqs": [
+                21
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "childHandoff": {
+        "completed": true,
+        "sessionId": "f3d2ca0c-df4e-4337-8614-ee5edf9c7a96",
+        "delegation": {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "seq": 16
+        },
+        "input": {
+          "sessionId": "f3d2ca0c-df4e-4337-8614-ee5edf9c7a96",
+          "seq": 8,
+          "type": "user/message",
+          "text": "请在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2，将 input 目录的 11 份文件 prompt-01.txt 至 prompt-11.txt 原样复制到 child-output 目录，核验内容一致，返回全部文件绝对路径。保留原文件。 Your parent agent id is \"session-1dcf2389-4127-431a-8dba-6453df767d9e\". Before you finish, send your result to that agent with send_message({ agent_id: \"session-1dcf2389-4127-431a-8dba-6453df767d9e\", message: \"<self-contained result>\" }). The parent shares your workspace but does not automatically receive your transcript, tool output, or reasoning. Send earlier messages as well when a finding changes what the parent should do next; sending a message does not end your turn."
+        },
+        "copyAndCompare": {
+          "sessionId": "f3d2ca0c-df4e-4337-8614-ee5edf9c7a96",
+          "callSeq": 15,
+          "resultSeq": 16,
+          "judgment": "子会话使用 cp 复制 11 份文件，并逐份用 cmp 核对；命令返回全部 11 份路径。"
+        },
+        "relayReceived": {
+          "sessionId": "session-1dcf2389-4127-431a-8dba-6453df767d9e",
+          "seq": 47,
+          "type": "user/message",
+          "text": "Agent f3d2ca0c-df4e-4337-8614-ee5edf9c7a96 sent a message:  已将 input/prompt-01.txt 至 prompt-11.txt 复制至 child-output，逐一使用 cmp 核验内容完全一致，原文件保留。输出绝对路径：\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-11.txt"
+        },
+        "childFinal": {
+          "sessionId": "f3d2ca0c-df4e-4337-8614-ee5edf9c7a96",
+          "seq": 24,
+          "type": "assistant/message",
+          "text": "已复制全部 11 份文件，并逐一核验内容与原文件一致；原文件均已保留。\n\n```text\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/2/child-output/prompt-11.txt\n```"
+        },
+        "childTerminal": {
+          "sessionId": "f3d2ca0c-df4e-4337-8614-ee5edf9c7a96",
+          "seq": 26
+        },
+        "parentUsedFilesForGeneration": false
+      },
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 24569,
+          "outputTokens": 2753,
+          "totalTokens": 112826,
+          "cacheReadTokens": 85504
+        },
+        "toolCallCount": 8
+      }
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 3,
+      "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+      "input": {
+        "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+        "seq": 10,
+        "type": "user/message",
+        "text": "请先委派一个子 Agent，将 input 目录的 11 份提示词文件原样复制到 child-output 目录并返回文件路径。主会话接收子会话交付后，使用 child-output 中的文件完成以下生成要求。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+        "callSeq": 22,
+        "resultSeq": 23,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "seq": 23
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "seq": 40,
+          "type": "assistant/message",
+          "text": "已委派子 Agent 复制并校验 11 份提示词文件，正在等待其返回文件路径。\n\n另外，当前消息未包含生成 Skill 要求的 **Prompt Builder 结果 JSON**。收到子 Agent 交付后，仍需请你提供对应 11 份提示词的完整结果 JSON，才能按该 Skill 校验并提交生成；提示词正文可以保持原样。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+        "seq": 56,
+        "type": "assistant/message",
+        "text": "子 Agent 已确认全部 11 份文件复制并校验成功。生成仍需你提供对应的 **Prompt Builder 结果 JSON**；目前尚未生成图片或 Run ID。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "seq": 42,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "seq": 50,
+          "data": {
+            "turn": 2,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "seq": 58,
+          "data": {
+            "turn": 3,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/8/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/3/initial/trace/sessions/session-session-633cb394-a690-42ad-bddf-0bbd7fc841bd/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 15315,
+              "outputTokens": 802,
+              "totalTokens": 82933,
+              "cacheReadTokens": 66816
+            },
+            "usageEventSeqs": [
+              15,
+              21,
+              26,
+              35,
+              40,
+              48,
+              56
+            ],
+            "toolCallCount": 6
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "subagent",
+              "arguments": {
+                "description": "复制十一份提示词文件",
+                "prompt": "请在工作目录 /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3 中，将 input/prompt-01.txt 至 input/prompt-11.txt 共11份提示词文件原样复制到 child-output 目录，验证逐文件内容一致，并返回全部目标文件绝对路径。保留本地产物，不要生成图片。"
+              },
+              "resultSeqs": [
+                18
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 22,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                23
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 27,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                28
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 29,
+              "name": "bash",
+              "arguments": {
+                "description": "读取提示词结果契约及模式",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                30
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 31,
+              "name": "mcp__noobai__search_instances",
+              "arguments": {},
+              "resultSeqs": [
+                32
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 36,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                37
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        },
+        {
+          "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+          "parentSessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/3/initial/trace/sessions/session-b37c36ef-eb40-4cb8-8c12-a1eaef90000a/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 4114,
+              "outputTokens": 1442,
+              "totalTokens": 28980,
+              "cacheReadTokens": 23424
+            },
+            "usageEventSeqs": [
+              14,
+              19,
+              24
+            ],
+            "toolCallCount": 2
+          },
+          "toolCalls": [
+            {
+              "seq": 15,
+              "name": "bash",
+              "arguments": {
+                "description": "复制并逐一验证十一份提示词文件",
+                "command": "set -eu\nmkdir -p child-output\nfor n in $(seq -w 1 11); do test -f \"input/prompt-$n.txt\"; cp \"input/prompt-$n.txt\" \"child-output/prompt-$n.txt\"; cmp \"input/prompt-$n.txt\" \"child-output/prompt-$n.txt\"; printf '%s\\n' \"$PWD/child-output/prompt-$n.txt\"; done",
+                "workdir": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3"
+              },
+              "resultSeqs": [
+                16
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 20,
+              "name": "send_message",
+              "arguments": {
+                "agent_id": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+                "message": "已将 11 个文件原样复制，并使用 cmp 逐文件验证一致；保留本地产物，未生成图片。全部目标绝对路径：\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-11.txt"
+              },
+              "resultSeqs": [
+                21
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "childHandoff": {
+        "completed": true,
+        "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+        "delegation": {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "seq": 16
+        },
+        "input": {
+          "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+          "seq": 8,
+          "type": "user/message",
+          "text": "请在工作目录 /private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3 中，将 input/prompt-01.txt 至 input/prompt-11.txt 共11份提示词文件原样复制到 child-output 目录，验证逐文件内容一致，并返回全部目标文件绝对路径。保留本地产物，不要生成图片。 Your parent agent id is \"session-633cb394-a690-42ad-bddf-0bbd7fc841bd\". Before you finish, send your result to that agent with send_message({ agent_id: \"session-633cb394-a690-42ad-bddf-0bbd7fc841bd\", message: \"<self-contained result>\" }). The parent shares your workspace but does not automatically receive your transcript, tool output, or reasoning. Send earlier messages as well when a finding changes what the parent should do next; sending a message does not end your turn."
+        },
+        "copyAndCompare": {
+          "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+          "callSeq": 15,
+          "resultSeq": 16,
+          "judgment": "子会话使用 cp 复制 11 份文件，并逐份用 cmp 核对；命令返回全部 11 份路径。"
+        },
+        "relayReceived": {
+          "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+          "seq": 47,
+          "type": "user/message",
+          "text": "Agent b37c36ef-eb40-4cb8-8c12-a1eaef90000a sent a message:  已将 11 个文件原样复制，并使用 cmp 逐文件验证一致；保留本地产物，未生成图片。全部目标绝对路径：\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-11.txt"
+        },
+        "childFinal": {
+          "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+          "seq": 24,
+          "type": "assistant/message",
+          "text": "已复制 11 份文件，并使用 `cmp` 逐文件验证内容与原文件一致。本地产物已保留，未生成图片。\n\n```text\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-01.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-02.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-03.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-04.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-05.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-06.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-07.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-08.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-09.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-10.txt\n/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/child-handoff/3/child-output/prompt-11.txt\n```"
+        },
+        "childTerminal": {
+          "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+          "seq": 26
+        },
+        "parentUsedFilesForGeneration": false
+      },
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 19429,
+          "outputTokens": 2244,
+          "totalTokens": 111913,
+          "cacheReadTokens": 90240
+        },
+        "toolCallCount": 8
+      }
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 1,
+      "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+      "input": {
+        "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+        "seq": 10,
+        "type": "user/message",
+        "text": "此前一次生成 Run run_21c35e15-78ba-4340-9f52-8092d33d2498 已失败。请读取失败信息，确认原因，并使用以下已保存文件完成本次 11 张图片任务。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/known-failure/1。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+          "seq": 37,
+          "type": "assistant/message",
+          "text": "已读取 Run `run_21c35e15-78ba-4340-9f52-8092d33d2498` 的记录。该 Run 在产出图片前失败，保存的错误为：\n\n- **错误码：** `COMFYUI_REMOTE_ERROR`\n- **错误信息：** “The controlled prior generation failed before producing an image.”\n- **Actual Workflow：** 不可用\n\n这条记录没有提供更具体的底层错误，因此目前**不能确认失败的具体原因**。\n\n我已确认工作目录中有 `prompt-01.txt` 至 `prompt-11.txt`。不过，生成 Skill 要求当前消息包含通过校验的 Prompt Builder 结果 JSON；目前只有文本文件和生成设置，缺少这些 JSON，所以尚未提交新的生成任务，也没有可交付的图片路径或新 Run ID。\n\n请提供对应这 11 个文件的完整 Prompt Builder 结果 JSON，并保持各文件正文为对应的 `positive_prompt`。尤其需要明确每项的 `negative_mode` 及其对应字段；收到后才能继续校验并生成。现有输入文件和本地产物均未删除。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+        "seq": 37,
+        "type": "assistant/message",
+        "text": "已读取 Run `run_21c35e15-78ba-4340-9f52-8092d33d2498` 的记录。该 Run 在产出图片前失败，保存的错误为：\n\n- **错误码：** `COMFYUI_REMOTE_ERROR`\n- **错误信息：** “The controlled prior generation failed before producing an image.”\n- **Actual Workflow：** 不可用\n\n这条记录没有提供更具体的底层错误，因此目前**不能确认失败的具体原因**。\n\n我已确认工作目录中有 `prompt-01.txt` 至 `prompt-11.txt`。不过，生成 Skill 要求当前消息包含通过校验的 Prompt Builder 结果 JSON；目前只有文本文件和生成设置，缺少这些 JSON，所以尚未提交新的生成任务，也没有可交付的图片路径或新 Run ID。\n\n请提供对应这 11 个文件的完整 Prompt Builder 结果 JSON，并保持各文件正文为对应的 `positive_prompt`。尤其需要明确每项的 `negative_mode` 及其对应字段；收到后才能继续校验并生成。现有输入文件和本地产物均未删除。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+          "seq": 39,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/9/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+          "runs": [
+            {
+              "runId": "run_21c35e15-78ba-4340-9f52-8092d33d2498",
+              "turn": 0,
+              "title": "Controlled prior generation failure",
+              "instanceTitle": "Controlled ComfyUI",
+              "templateTitle": "Controlled Workflow",
+              "status": "failed",
+              "errorCode": "COMFYUI_REMOTE_ERROR",
+              "errorMessage": "The controlled prior generation failed before producing an image.",
+              "createdAt": 1793191493915,
+              "updatedAt": 1793191493915
+            }
+          ],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/known-failure/1/initial/trace/sessions/session-session-7d7284b5-8273-4e84-8ca2-5a6c87177894/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 12692,
+              "outputTokens": 890,
+              "totalTokens": 72334,
+              "cacheReadTokens": 58752
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              27,
+              32,
+              37
+            ],
+            "toolCallCount": 5
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取生成规范及提示词文件",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'; printf '\\n--- INPUT FILES ---\\n'; ls -la input"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 23,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                24
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 28,
+              "name": "bash",
+              "arguments": {
+                "description": "查询历史运行命令帮助",
+                "command": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --help"
+              },
+              "resultSeqs": [
+                29
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 33,
+              "name": "bash",
+              "arguments": {
+                "description": "读取失败运行的历史参数",
+                "command": "out=$(ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --stdin <<'JSON'\n{\"run_ids\":[\"run_21c35e15-78ba-4340-9f52-8092d33d2498\"]}\nJSON\n); code=$?; echo \"exit=$code\"; if [ \"$code\" -eq 0 ]; then echo \"result=$out\"; cat \"$out\"; fi"
+              },
+              "resultSeqs": [
+                34
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "knownFailure": {
+        "fixtureRunId": "run_21c35e15-78ba-4340-9f52-8092d33d2498",
+        "queryCallSeq": 33,
+        "queryResult": {
+          "sessionId": "session-7d7284b5-8273-4e84-8ca2-5a6c87177894",
+          "seq": 34,
+          "type": "tool/result",
+          "text": "exit=0\nresult=/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-88oWo7/result.json\n{\"runs\":[{\"run_id\":\"run_21c35e15-78ba-4340-9f52-8092d33d2498\",\"lookup_status\":\"available\",\"arguments\":{\"title\":\"Controlled prior generation failure\",\"instance_id\":\"1\",\"template_id\":\"1\",\"parameters\":{\"height\":512,\"positive_prompt\":\"A full-length photograph of a Chinese woman in her early thirties, framed from head to feet with a little space above her hair and below her shoes, standing on a smooth mid-grey seamless studio floor against the same grey backdrop. She is one metre seventy-three tall, seven and a half head-heights from crown to sole, fine-boned and full-figured: narrow waist, rounded hips, long legs, elegant shoulders. Her face is an elegant oval with high cheekbones, a soft defined jawline and a small rounded chin; dark almond-shaped eyes with heavy lids and calm dark-brown irises; softly tapered black brows; a straight slender nose with a fine tip; a full mouth with a defined cupid's bow and rose-pink lips. Long glossy jet-black hair, parted slightly off centre, hangs straight and falls past her waist. Her skin is one even ivory tone from hairline to hands, unmade-up, matte and alive with fine texture and visible pores. She stands with her weight evenly on both feet, shoulders square and relaxed, arms hanging loosely a little away from her body, palms facing in, fingers straight; chin level, eyes level and quietly meeting the lens, lips together in a calm, self-possessed expression. She wears a fitted ivory silk blouse with the top button open, tucked into high-waisted charcoal wool trousers with a thin black leather belt, and black pointed-toe leather pumps with a low heel. Soft directional daytime light comes from a large window at the upper left, gentle shadow falloff down her right side. Palette of sixty percent warm grey studio, thirty percent charcoal, ten percent ivory and skin. Shot on a full-frame camera with a 50mm lens at f/2.8, natural skin texture, gentle film grain, restrained naturalistic colour.\",\"seed\":424242,\"width\":512},\"loras\":[]},\"workflow_status\":\"unavailable\",\"workflow_error\":{\"code\":\"COMFYUI_REMOTE_ERROR\",\"message\":\"The controlled prior generation failed before producing an image.\"}}]}\n"
+        },
+        "storedErrorRead": true,
+        "storedError": {
+          "code": "COMFYUI_REMOTE_ERROR",
+          "message": "The controlled prior generation failed before producing an image."
+        },
+        "explicitRunStatusFieldRead": false,
+        "returnedWorkflowStatus": "unavailable",
+        "judgment": "run-inputs 返回 workflow_error 的确切错误码和消息。返回结果包含 workflow_status=unavailable，未包含 Run 的 status=failed 字段。主会话准确报告保存的错误，并说明缺少更具体原因。",
+        "fixtureStatus": "failed",
+        "fixtureStatusSource": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json#/cases/9/failureFixture/status"
+      },
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 12692,
+          "outputTokens": 890,
+          "totalTokens": 72334,
+          "cacheReadTokens": 58752
+        },
+        "toolCallCount": 5
+      }
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 2,
+      "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+      "input": {
+        "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+        "seq": 10,
+        "type": "user/message",
+        "text": "此前一次生成 Run run_790423f5-66af-45f7-b2f1-86e7ad2eb23b 已失败。请读取失败信息，确认原因，并使用以下已保存文件完成本次 11 张图片任务。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/known-failure/2。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+          "seq": 42,
+          "type": "assistant/message",
+          "text": "已查询失败的 Run `run_790423f5-66af-45f7-b2f1-86e7ad2eb23b`。记录显示错误码为 **`COMFYUI_REMOTE_ERROR`**，错误信息是：“The controlled prior generation failed before producing an image.” 即远端生成在产出图片前失败；记录没有提供更具体的底层原因，Actual Workflow 也不可用，因此无法进一步确认根因。\n\n已核对 Workflow 1 的默认模型为模型 1，二者关联同一底模，且未选择 LoRA。\n\n**本次尚未提交生成。** 所选生成 Skill 要求当前消息包含用于创建图片的 Prompt Builder 结果 JSON；目前消息提供的是 11 个文本文件路径，而不是该格式的结果。请提供与 `prompt-01.txt` 至 `prompt-11.txt` 一一对应的 11 份完整 Prompt Builder 结果 JSON，保留各文件正文为 `positive_prompt`。收到后才能继续校验并按指定 Seed 提交生成。\n\n尚未修改或删除现有本地产物。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+        "seq": 42,
+        "type": "assistant/message",
+        "text": "已查询失败的 Run `run_790423f5-66af-45f7-b2f1-86e7ad2eb23b`。记录显示错误码为 **`COMFYUI_REMOTE_ERROR`**，错误信息是：“The controlled prior generation failed before producing an image.” 即远端生成在产出图片前失败；记录没有提供更具体的底层原因，Actual Workflow 也不可用，因此无法进一步确认根因。\n\n已核对 Workflow 1 的默认模型为模型 1，二者关联同一底模，且未选择 LoRA。\n\n**本次尚未提交生成。** 所选生成 Skill 要求当前消息包含用于创建图片的 Prompt Builder 结果 JSON；目前消息提供的是 11 个文本文件路径，而不是该格式的结果。请提供与 `prompt-01.txt` 至 `prompt-11.txt` 一一对应的 11 份完整 Prompt Builder 结果 JSON，保留各文件正文为 `positive_prompt`。收到后才能继续校验并按指定 Seed 提交生成。\n\n尚未修改或删除现有本地产物。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+          "seq": 44,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/10/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+          "runs": [
+            {
+              "runId": "run_790423f5-66af-45f7-b2f1-86e7ad2eb23b",
+              "turn": 0,
+              "title": "Controlled prior generation failure",
+              "instanceTitle": "Controlled ComfyUI",
+              "templateTitle": "Controlled Workflow",
+              "status": "failed",
+              "errorCode": "COMFYUI_REMOTE_ERROR",
+              "errorMessage": "The controlled prior generation failed before producing an image.",
+              "createdAt": 1793191521534,
+              "updatedAt": 1793191521534
+            }
+          ],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/known-failure/2/initial/trace/sessions/session-session-e479e0c3-b860-431d-9de9-060e0f533599/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 12586,
+              "outputTokens": 906,
+              "totalTokens": 89012,
+              "cacheReadTokens": 75520
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              27,
+              32,
+              37,
+              42
+            ],
+            "toolCallCount": 6
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取生成与提示词契约参考文件",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 23,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                24
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 28,
+              "name": "bash",
+              "arguments": {
+                "description": "查询历史 Run 命令的使用帮助",
+                "command": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --help"
+              },
+              "resultSeqs": [
+                29
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 33,
+              "name": "bash",
+              "arguments": {
+                "description": "读取失败 Run 保存的生成参数",
+                "command": "p=$(printf '%s' '{\"run_ids\":[\"run_790423f5-66af-45f7-b2f1-86e7ad2eb23b\"]}' | ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --stdin) || exit $?; printf '结果文件: %s\\n' \"$p\"; cat \"$p\""
+              },
+              "resultSeqs": [
+                34
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 38,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "model",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                39
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "knownFailure": {
+        "fixtureRunId": "run_790423f5-66af-45f7-b2f1-86e7ad2eb23b",
+        "queryCallSeq": 33,
+        "queryResult": {
+          "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+          "seq": 34,
+          "type": "tool/result",
+          "text": "结果文件: /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/harness-comfyui-cli-6BLIzi/result.json\n{\"runs\":[{\"run_id\":\"run_790423f5-66af-45f7-b2f1-86e7ad2eb23b\",\"lookup_status\":\"available\",\"arguments\":{\"title\":\"Controlled prior generation failure\",\"instance_id\":\"1\",\"template_id\":\"1\",\"parameters\":{\"height\":512,\"positive_prompt\":\"A full-length photograph of a Chinese woman in her early thirties, framed from head to feet with a little space above her hair and below her shoes, standing on a smooth mid-grey seamless studio floor against the same grey backdrop. She is one metre seventy-three tall, seven and a half head-heights from crown to sole, fine-boned and full-figured: narrow waist, rounded hips, long legs, elegant shoulders. Her face is an elegant oval with high cheekbones, a soft defined jawline and a small rounded chin; dark almond-shaped eyes with heavy lids and calm dark-brown irises; softly tapered black brows; a straight slender nose with a fine tip; a full mouth with a defined cupid's bow and rose-pink lips. Long glossy jet-black hair, parted slightly off centre, hangs straight and falls past her waist. Her skin is one even ivory tone from hairline to hands, unmade-up, matte and alive with fine texture and visible pores. She stands with her weight evenly on both feet, shoulders square and relaxed, arms hanging loosely a little away from her body, palms facing in, fingers straight; chin level, eyes level and quietly meeting the lens, lips together in a calm, self-possessed expression. She wears a fitted ivory silk blouse with the top button open, tucked into high-waisted charcoal wool trousers with a thin black leather belt, and black pointed-toe leather pumps with a low heel. Soft directional daytime light comes from a large window at the upper left, gentle shadow falloff down her right side. Palette of sixty percent warm grey studio, thirty percent charcoal, ten percent ivory and skin. Shot on a full-frame camera with a 50mm lens at f/2.8, natural skin texture, gentle film grain, restrained naturalistic colour.\",\"seed\":424242,\"width\":512},\"loras\":[]},\"workflow_status\":\"unavailable\",\"workflow_error\":{\"code\":\"COMFYUI_REMOTE_ERROR\",\"message\":\"The controlled prior generation failed before producing an image.\"}}]}\n"
+        },
+        "storedErrorRead": true,
+        "storedError": {
+          "code": "COMFYUI_REMOTE_ERROR",
+          "message": "The controlled prior generation failed before producing an image."
+        },
+        "explicitRunStatusFieldRead": false,
+        "returnedWorkflowStatus": "unavailable",
+        "judgment": "run-inputs 返回 workflow_error 的确切错误码和消息。返回结果包含 workflow_status=unavailable，未包含 Run 的 status=failed 字段。主会话准确报告保存的错误，并说明缺少更具体原因。",
+        "fixtureStatus": "failed",
+        "fixtureStatusSource": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json#/cases/10/failureFixture/status"
+      },
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 12586,
+          "outputTokens": 906,
+          "totalTokens": 89012,
+          "cacheReadTokens": 75520
+        },
+        "toolCallCount": 6
+      }
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 3,
+      "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+      "input": {
+        "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+        "seq": 10,
+        "type": "user/message",
+        "text": "此前一次生成 Run run_ff7197e0-c977-47de-a9eb-e6d31444bd6d 已失败。请读取失败信息，确认原因，并使用以下已保存文件完成本次 11 张图片任务。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/known-failure/3。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "skillRead": {
+        "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+        "callSeq": 16,
+        "resultSeq": 17,
+        "requirement": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+      },
+      "businessOutcome": {
+        "completed": false,
+        "generatedImageCount": 0,
+        "newRegisteredRunCount": 0,
+        "deliveredImagePaths": [],
+        "deliveredNewRunIds": [],
+        "judgment": "主会话要求用户补交 11 份 Prompt Builder 结果 JSON，生成任务未提交。"
+      },
+      "firstBusinessBlocker": {
+        "kind": "prompt-builder-result-json-required-in-current-message",
+        "instructionSource": {
+          "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+          "seq": 17
+        },
+        "firstExplicitStop": {
+          "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+          "seq": 42,
+          "type": "assistant/message",
+          "text": "**Requesting explicit JSON**\n\nI realize that the skill requires explicit JSON in the current message, so I need to ask for that. It seems like there's been a historical failure, but the previous responses were only generic. The user supplied text isn’t in JSON format, which is why I should stop. I could fetch the model, but it seems unnecessary since the parallel task is already being done. No need to create any invented root causes here.\n\n 已查询失败的 Run `run_ff7197e0-c977-47de-a9eb-e6d31444bd6d`。\n\n- **失败信息：**`COMFYUI_REMOTE_ERROR`，消息为 “The controlled prior generation failed before producing an image.”\n- **原因判断：**记录只能确认远端生成在产出图片前失败；没有提供更具体的根因，Actual Workflow 也不可用，因此无法判断是模型、节点还是实例问题。\n- 已确认工作目录中有 `prompt-01.txt` 至 `prompt-11.txt` 共 11 个文件。\n\n**本次生成尚未提交。**指定的生成 Skill 要求当前消息中提供经过校验的 Prompt Builder 结果 JSON；这 11 份纯文本提示词不能代替该输入。\n\n请提供 **11 个 Prompt Builder 结果 JSON**，分别对应这 11 个文件，并将各文件正文原样放入对应的 `positive_prompt`。每个 JSON 还须包含 `model_route`、`negative_mode`、`negative_prompt`、`positive_avoidance`、`generation_purpose`、`aspect_ratio`、`width`、`height` 和 `megapixels`。收到后我才能按要求校验并继续生成。"
+        },
+        "judgment": "输入提供已保存的纯文本 Prompt 和生成设置。Skill 将当前消息中的 Prompt Builder 结果 JSON 设为创建图片的前置条件。"
+      },
+      "directHttpBypass": {
+        "observed": false,
+        "judgment": "全部工具调用中未出现直接提交 /prompt、查询 /history 或下载 /view 的请求。"
+      },
+      "finalDelivery": {
+        "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+        "seq": 42,
+        "type": "assistant/message",
+        "text": "**Requesting explicit JSON**\n\nI realize that the skill requires explicit JSON in the current message, so I need to ask for that. It seems like there's been a historical failure, but the previous responses were only generic. The user supplied text isn’t in JSON format, which is why I should stop. I could fetch the model, but it seems unnecessary since the parallel task is already being done. No need to create any invented root causes here.\n\n 已查询失败的 Run `run_ff7197e0-c977-47de-a9eb-e6d31444bd6d`。\n\n- **失败信息：**`COMFYUI_REMOTE_ERROR`，消息为 “The controlled prior generation failed before producing an image.”\n- **原因判断：**记录只能确认远端生成在产出图片前失败；没有提供更具体的根因，Actual Workflow 也不可用，因此无法判断是模型、节点还是实例问题。\n- 已确认工作目录中有 `prompt-01.txt` 至 `prompt-11.txt` 共 11 个文件。\n\n**本次生成尚未提交。**指定的生成 Skill 要求当前消息中提供经过校验的 Prompt Builder 结果 JSON；这 11 份纯文本提示词不能代替该输入。\n\n请提供 **11 个 Prompt Builder 结果 JSON**，分别对应这 11 个文件，并将各文件正文原样放入对应的 `positive_prompt`。每个 JSON 还须包含 `model_route`、`negative_mode`、`negative_prompt`、`positive_avoidance`、`generation_purpose`、`aspect_ratio`、`width`、`height` 和 `megapixels`。收到后我才能按要求校验并继续生成。"
+      },
+      "terminalEvents": [
+        {
+          "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+          "seq": 44,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "generationObservation": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json",
+        "jsonPointer": "/cases/11/phases/0/observation/generation",
+        "value": {
+          "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+          "runs": [
+            {
+              "runId": "run_ff7197e0-c977-47de-a9eb-e6d31444bd6d",
+              "turn": 0,
+              "title": "Controlled prior generation failure",
+              "instanceTitle": "Controlled ComfyUI",
+              "templateTitle": "Controlled Workflow",
+              "status": "failed",
+              "errorCode": "COMFYUI_REMOTE_ERROR",
+              "errorMessage": "The controlled prior generation failed before producing an image.",
+              "createdAt": 1793191554488,
+              "updatedAt": 1793191554488
+            }
+          ],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "sessions": [
+        {
+          "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+          "parentSessionId": null,
+          "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/known-failure/3/initial/trace/sessions/session-session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9/session.json",
+          "metrics": {
+            "tokens": {
+              "inputTokens": 13251,
+              "outputTokens": 937,
+              "totalTokens": 89580,
+              "cacheReadTokens": 75392
+            },
+            "usageEventSeqs": [
+              15,
+              20,
+              27,
+              32,
+              37,
+              42
+            ],
+            "toolCallCount": 6
+          },
+          "toolCalls": [
+            {
+              "seq": 16,
+              "name": "skill",
+              "arguments": {
+                "name": "comfyui-generate"
+              },
+              "resultSeqs": [
+                17
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 21,
+              "name": "bash",
+              "arguments": {
+                "description": "读取生成及提示词校验参考文件",
+                "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/generation-cli.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+              },
+              "resultSeqs": [
+                22
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 23,
+              "name": "mcp__noobai__get_catalog_resource",
+              "arguments": {
+                "ref": {
+                  "kind": "workflow",
+                  "id": "1"
+                }
+              },
+              "resultSeqs": [
+                24
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 28,
+              "name": "bash",
+              "arguments": {
+                "description": "查看历史运行查询命令帮助",
+                "command": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --help"
+              },
+              "resultSeqs": [
+                29
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 33,
+              "name": "bash",
+              "arguments": {
+                "description": "查询失败运行的保存参数",
+                "command": "p=$(printf '%s' '{\"run_ids\":[\"run_ff7197e0-c977-47de-a9eb-e6d31444bd6d\"]}' | ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\" --quiet generation run-inputs --stdin) || exit $?; cat \"$p\""
+              },
+              "resultSeqs": [
+                34
+              ],
+              "resultIsError": [
+                false
+              ]
+            },
+            {
+              "seq": 38,
+              "name": "bash",
+              "arguments": {
+                "description": "检查已保存提示词文件及任务产物",
+                "command": "ls -la; ls -la input; file input/prompt-*.txt; head -c 200 input/prompt-01.txt; printf '\\n'"
+              },
+              "resultSeqs": [
+                39
+              ],
+              "resultIsError": [
+                false
+              ]
+            }
+          ]
+        }
+      ],
+      "knownFailure": {
+        "fixtureRunId": "run_ff7197e0-c977-47de-a9eb-e6d31444bd6d",
+        "queryCallSeq": 33,
+        "queryResult": {
+          "sessionId": "session-4f3d6cfe-f9a5-4adf-94af-0919999ed0b9",
+          "seq": 34,
+          "type": "tool/result",
+          "text": "{\"runs\":[{\"run_id\":\"run_ff7197e0-c977-47de-a9eb-e6d31444bd6d\",\"lookup_status\":\"available\",\"arguments\":{\"title\":\"Controlled prior generation failure\",\"instance_id\":\"1\",\"template_id\":\"1\",\"parameters\":{\"height\":512,\"positive_prompt\":\"A full-length photograph of a Chinese woman in her early thirties, framed from head to feet with a little space above her hair and below her shoes, standing on a smooth mid-grey seamless studio floor against the same grey backdrop. She is one metre seventy-three tall, seven and a half head-heights from crown to sole, fine-boned and full-figured: narrow waist, rounded hips, long legs, elegant shoulders. Her face is an elegant oval with high cheekbones, a soft defined jawline and a small rounded chin; dark almond-shaped eyes with heavy lids and calm dark-brown irises; softly tapered black brows; a straight slender nose with a fine tip; a full mouth with a defined cupid's bow and rose-pink lips. Long glossy jet-black hair, parted slightly off centre, hangs straight and falls past her waist. Her skin is one even ivory tone from hairline to hands, unmade-up, matte and alive with fine texture and visible pores. She stands with her weight evenly on both feet, shoulders square and relaxed, arms hanging loosely a little away from her body, palms facing in, fingers straight; chin level, eyes level and quietly meeting the lens, lips together in a calm, self-possessed expression. She wears a fitted ivory silk blouse with the top button open, tucked into high-waisted charcoal wool trousers with a thin black leather belt, and black pointed-toe leather pumps with a low heel. Soft directional daytime light comes from a large window at the upper left, gentle shadow falloff down her right side. Palette of sixty percent warm grey studio, thirty percent charcoal, ten percent ivory and skin. Shot on a full-frame camera with a 50mm lens at f/2.8, natural skin texture, gentle film grain, restrained naturalistic colour.\",\"seed\":424242,\"width\":512},\"loras\":[]},\"workflow_status\":\"unavailable\",\"workflow_error\":{\"code\":\"COMFYUI_REMOTE_ERROR\",\"message\":\"The controlled prior generation failed before producing an image.\"}}]}\n"
+        },
+        "storedErrorRead": true,
+        "storedError": {
+          "code": "COMFYUI_REMOTE_ERROR",
+          "message": "The controlled prior generation failed before producing an image."
+        },
+        "explicitRunStatusFieldRead": false,
+        "returnedWorkflowStatus": "unavailable",
+        "judgment": "run-inputs 返回 workflow_error 的确切错误码和消息。返回结果包含 workflow_status=unavailable，未包含 Run 的 status=failed 字段。主会话准确报告保存的错误，并说明缺少更具体原因。",
+        "fixtureStatus": "failed",
+        "fixtureStatusSource": "docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/matrix.json#/cases/11/failureFixture/status"
+      },
+      "metricsIncludingChildren": {
+        "tokens": {
+          "inputTokens": 13251,
+          "outputTokens": 937,
+          "totalTokens": 89580,
+          "cacheReadTokens": 75392
+        },
+        "toolCallCount": 6
+      }
+    }
+  ],
+  "limitations": [
+    "官方 trace 标明 RAW_MODEL_REQUEST_NOT_PERSISTED 和 RAW_MODEL_STREAM_NOT_PERSISTED；本评估使用官方持久化事件和每阶段观测。",
+    "生成在提交前停止，因此本轮没有验证图片生成、下载、Run 登记或后续恢复的成功路径。",
+    "3 个 known-failure 的 failed Run 均为预置记录；新登记 Run 数量已排除预置记录。"
+  ]
+}

@@ -65,8 +65,6 @@ describe('Prompt Builder generation output references', () => {
         'references/generation-profiles.json',
       ],
       'comfyui-generate': [
-        'references/prompt-result-contract.md',
-        'references/prompt-result-schema.json',
         'references/template-parameter-inspection-cli.md',
         'references/generation-cli.md',
       ],
@@ -81,10 +79,9 @@ describe('Prompt Builder generation output references', () => {
     }
   })
 
-  it('keeps four local result schemas deeply equal and strict about the ten result properties', () => {
+  it('keeps the Prompt Builder result schemas deeply equal and strict about the ten result properties', () => {
     const schemaPaths = [
       ...builderNames.map(name => resolve(skillDirectory(name), 'references/generation-output-schema.json')),
-      resolve(skillDirectory('comfyui-generate'), 'references/prompt-result-schema.json'),
     ]
     const schemas = schemaPaths.map(readJson)
     schemas.slice(1).forEach(schema => expect(schema).toEqual(schemas[0]))

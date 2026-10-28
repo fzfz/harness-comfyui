@@ -1,0 +1,158 @@
+[
+  {
+    "name": "search_instances",
+    "description": "## 查询用途\n\n1. 查询实例登记目录。\n\n## 输入参数\n\n1. query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。\n2. limit：每页记录数量；默认 5，最小 1，最大 20。\n3. page：页码；默认 1，最小 1，最大 100000。\n\n## 返回字段\n\n1. 结果字段默认包含完整的文字、数组元素和对象属性。\n2. 嵌套字段的说明适用于父对象为非 null 的情况。\n3. 字段路径中的 [] 表示数组中的每条记录。\n4. results：查询结果；空数组表示本页没有记录。按返回顺序读取 results 中的记录。\n5. next：查询控制；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。\n6. message：查询诊断；仅在需要说明结果时提供。理解空结果或修正调用。\n7. suggested_call：查询控制；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。\n8. results[].ref：资源定位；始终提供。使用 kind 与 id 唯一定位资源。\n9. results[].name：资源定位；始终提供。核对资源名称。\n10. results[].url：实例连接；始终提供。连接已登记的实例服务地址。\n11. results[].enabled：登记状态；始终提供布尔值。识别管理员保存的启用配置。\n12. results[].validation_passed：登记状态；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。\n13. next.tool：查询控制；始终提供。选择对应工具。\n14. next.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n15. suggested_call.tool：查询控制；始终提供。选择对应工具。\n16. suggested_call.arguments：查询控制；始终提供对象。原样复制为后续工具参数。\n17. results[].ref.kind：资源定位；始终提供。识别资源类别。\n18. results[].ref.id：资源定位；始终提供字符串。保留十进制字符串形式，准确引用资源。",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "query 填写自然语言语义查询；空字符串或省略时浏览符合筛选条件的目录。所有筛选条件以 AND 组合，结果须同时满足。",
+          "default": "",
+          "maxLength": 200
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "limit：每页记录数量；默认 5，最小 1，最大 20。",
+          "default": 5,
+          "maximum": 20
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "page：页码；默认 1，最小 1，最大 100000。",
+          "default": 1,
+          "maximum": 100000
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "validation_passed": {
+          "type": "boolean"
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "ref": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "const": "instance",
+                    "description": "资源定位；返回完整字段值；始终提供。识别资源类别。"
+                  },
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,19}$",
+                    "description": "资源定位；返回完整字段值；始终提供字符串。保留十进制字符串形式，准确引用资源。"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id"
+                ],
+                "description": "资源定位；返回完整字段值；始终提供。使用 kind 与 id 唯一定位资源。"
+              },
+              "name": {
+                "type": "string",
+                "description": "资源定位；返回完整字段值；始终提供。核对资源名称。"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "实例连接；返回完整字段值；始终提供。连接已登记的实例服务地址。"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "登记状态；返回完整字段值；始终提供布尔值。识别管理员保存的启用配置。"
+              },
+              "validation_passed": {
+                "type": "boolean",
+                "description": "登记状态；返回完整字段值；始终提供布尔值。识别已保存的校验结果，实时连通性通过 get_instance_status 查询。"
+              }
+            },
+            "required": [
+              "ref",
+              "name",
+              "url",
+              "enabled",
+              "validation_passed"
+            ]
+          },
+          "description": "查询结果；返回完整字段值；空数组表示本页没有记录。按返回顺序读取 results 中的记录。"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tool": {
+                  "type": "string",
+                  "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+                },
+                "arguments": {
+                  "type": "object",
+                  "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+                }
+              },
+              "required": [
+                "tool",
+                "arguments"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "查询控制；返回完整字段值；null 表示本次候选已读完。调用 next.tool，并将 next.arguments 作为完整参数提交；后续调用重新查询。"
+        },
+        "message": {
+          "type": "string",
+          "description": "查询诊断；返回完整字段值；仅在需要说明结果时提供。理解空结果或修正调用。"
+        },
+        "suggested_call": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tool": {
+              "type": "string",
+              "description": "查询控制；返回完整字段值；始终提供。选择对应工具。"
+            },
+            "arguments": {
+              "type": "object",
+              "description": "查询控制；返回完整字段值；始终提供对象。原样复制为后续工具参数。"
+            }
+          },
+          "required": [
+            "tool",
+            "arguments"
+          ],
+          "description": "查询控制；返回完整字段值；仅在有可执行建议时提供。保留当前任务要求的关联筛选条件，按需要执行建议调用。"
+        }
+      },
+      "required": [
+        "results",
+        "next"
+      ]
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  }
+]

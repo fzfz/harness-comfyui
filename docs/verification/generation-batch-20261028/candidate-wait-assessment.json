@@ -1,0 +1,461 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "25075062-f804-4381-a86b-8fae57be564b",
+  "matrixPath": "docs/verification/generation-batch-20261028/model-traces/candidate512-wait/25075062-f804-4381-a86b-8fae57be564b/matrix.json",
+  "assessedAt": "2026-10-28T14:18:31.753776+00:00",
+  "scope": "只读审阅已结束导出记录；独立产物核验另行汇总。",
+  "model": {
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "cases": [
+    {
+      "caseId": "first-files",
+      "repetition": 1,
+      "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-wait/25075062-f804-4381-a86b-8fae57be564b/first-files/1/initial/trace/sessions/session-session-171c142a-ba04-4dfa-bed2-39c48b5f7479/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_f79919a0-c577-46a0-adf9-6a6a567f606a",
+          "run_5624e840-0938-44ea-b791-5f561e9d0645",
+          "run_2174a3f8-ca6a-4206-8398-4621407edfca",
+          "run_ecdf3e72-8f92-4bc2-83d0-60047fd093e2",
+          "run_86830086-e55f-4584-b0b7-2c4df2352662",
+          "run_725a8761-061b-4570-8121-2eb1cb2045ad",
+          "run_a0d19d38-d958-41d8-9123-dc0a0a610465",
+          "run_5587fb02-95cd-49d5-81f5-188bb6c77736",
+          "run_5f16734f-1b43-4b22-b4f5-f8c4e9fe3cc7",
+          "run_a74f673a-00e3-4c47-914e-f1383f493577",
+          "run_7a9932d6-773a-40f8-815c-3cd1b82b9014"
+        ],
+        "promptHandoff": "parameter_files 引用原始文件；提交清单保留 request_id。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerification": "所有 Run 已 succeeded 后调用 run-inputs；Python 读取完整文件，仅输出比较结果、尺寸、映射与路径。",
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待工具结果解析为 JSON，全部 runs 无 parameters；终态程序的 print 与 sips stdout 逐项审阅，均未输出 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 10,
+        "toolCallsByName": {
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 6
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          },
+          "method": "逐条读取 shell 命令；for 循环中的 4 个帮助子命令按实际循环次数统计。"
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 22346,
+          "outputTokens": 2397,
+          "totalTokens": 153127,
+          "cacheReadTokens": 128384
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 26
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 33
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 43
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 47
+          },
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 48
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 52
+          },
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 53
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 56
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-171c142a-ba04-4dfa-bed2-39c48b5f7479",
+            "seq": 58
+          }
+        ]
+      },
+      "findings": []
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 2,
+      "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-wait/25075062-f804-4381-a86b-8fae57be564b/first-files/2/initial/trace/sessions/session-session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_e1b197c1-2c04-4e01-8bbe-402d993e0bf4",
+          "run_e31fed2b-ca09-4d72-a8d6-ad030791cb1a",
+          "run_a4145ee2-9885-42c8-8efa-c568be339284",
+          "run_b0f4ecdd-3a13-4325-ae77-069d091d9d17",
+          "run_bb952bc4-be5f-4a87-b338-0aba5564cd5f",
+          "run_c100e8f5-1545-4053-9bf0-531089c4768e",
+          "run_9afa2c8d-e1eb-4669-939a-b09b3928d144",
+          "run_d839eab2-5d96-4954-9f55-9e28a42801dd",
+          "run_7be7a91f-7a27-4812-8382-234f0dd32919",
+          "run_4c5e03f4-8ec5-4468-b2b7-22baae3c34a6",
+          "run_ce4b5f1d-e99a-4d1a-b572-bcd2bc704f40"
+        ],
+        "promptHandoff": "parameter_files 引用原始文件；提交清单保留 request_id。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerification": "所有 Run 已 succeeded 后调用 run-inputs；Python 读取完整文件，仅输出比较结果、尺寸、映射与路径。",
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待工具结果解析为 JSON，全部 runs 无 parameters；终态程序的 print 与 sips stdout 逐项审阅，均未输出 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 10,
+        "toolCallsByName": {
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 6
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          },
+          "method": "逐条读取 shell 命令；for 循环中的 4 个帮助子命令按实际循环次数统计。"
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 31817,
+          "outputTokens": 2928,
+          "totalTokens": 169529,
+          "cacheReadTokens": 134784
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 26
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 36
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 46
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 50
+          },
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 51
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 55
+          },
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 56
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 59
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-f0d0498a-7f27-4638-b54f-b98b2fe3f99f",
+            "seq": 61
+          }
+        ]
+      },
+      "findings": []
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 3,
+      "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-wait/25075062-f804-4381-a86b-8fae57be564b/first-files/3/initial/trace/sessions/session-session-1b443418-2c58-4328-8227-9a6e8caaa1dd/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_aa5f9048-0a54-432f-9bdf-116f3f4ae926",
+          "run_7a6a7875-79ed-4242-b0a2-9b84dc32015a",
+          "run_8266ff61-31ca-40b3-b74c-10d3d9509d6f",
+          "run_6a6bff8f-7704-48e2-8b91-b903f41c8144",
+          "run_af63716d-40cc-4b46-b69f-c425ca1f0e6a",
+          "run_0d657753-34a8-45b7-b906-8427493be2e6",
+          "run_6cd4cf76-f640-415a-8214-70d873fd6d38",
+          "run_c09edde6-e14f-405f-aa75-5f64a8df3391",
+          "run_20b05e1f-26d8-41e1-95cc-3ebc62fc549f",
+          "run_4e5d2204-b2f0-409b-9846-73f84288edb6",
+          "run_9ea43f47-b2d3-499c-a96b-5ae35643874b"
+        ],
+        "promptHandoff": "parameter_files 引用原始文件；提交清单保留 request_id。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerification": "所有 Run 已 succeeded 后调用 run-inputs；Python 读取完整文件，仅输出比较结果、尺寸、映射与路径。",
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待工具结果解析为 JSON，全部 runs 无 parameters；终态程序的 print 与 sips stdout 逐项审阅，均未输出 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 11,
+        "toolCallsByName": {
+          "skill": 1,
+          "bash": 7,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          },
+          "method": "逐条读取 shell 命令；for 循环中的 4 个帮助子命令按实际循环次数统计。"
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 31051,
+          "outputTokens": 2896,
+          "totalTokens": 152475,
+          "cacheReadTokens": 118528
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 22
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 35
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 45
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 49
+          },
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 50
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 54
+          },
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 55
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 58
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-1b443418-2c58-4328-8227-9a6e8caaa1dd",
+            "seq": 60
+          }
+        ]
+      },
+      "findings": []
+    }
+  ],
+  "pending": [],
+  "summary": {
+    "reviewed": 3,
+    "waitingLightweightPassed": 3,
+    "generationDeliveryTracePassed": 3,
+    "pending": 0,
+    "independentArtifactVerification": "pending"
+  },
+  "aggregateMetrics": {
+    "toolCallCount": 31,
+    "toolCallsByName": {
+      "skill": 3,
+      "mcp__noobai__get_catalog_resource": 6,
+      "mcp__noobai__search_instances": 3,
+      "bash": 19
+    },
+    "managedCliBusinessInvocations": 12,
+    "managedCliHelpInvocations": 12,
+    "managedCliInvocations": 24,
+    "assistantMessageUsageSum": {
+      "inputTokens": 85214,
+      "outputTokens": 8221,
+      "totalTokens": 475131,
+      "cacheReadTokens": 381696
+    },
+    "deduplicationKey": "sessionId + seq"
+  }
+}

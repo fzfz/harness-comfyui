@@ -1,0 +1,12 @@
+{
+  "session": {
+    "sessionId": "session-ee669f3f-de53-40e6-ae04-1f6a86e42550",
+    "workspaceId": "9d2628c5-c90a-4222-8301-f0a988e85c7f",
+    "workspacePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/workspace/batch-11",
+    "presetId": "harness-comfyui-cli-candidate",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "prompt": "请原样重放当前工作目录已保存的 submission-manifest.json 一次，保持所有 request_id、文件正文、Seed 和其他参数不变。本轮只验证请求重放，新增 Run 必须为零。核对返回的 11 个 Run ID 与首次结果相同，并把重放结果另存为 replay-result.json，保留首次结果。"
+}

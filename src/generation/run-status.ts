@@ -1,0 +1,12 @@
+export type GenerationRunStatus =
+  | 'created'
+  | 'prepared'
+  | 'submitting'
+  | 'submission_unknown'
+  | 'remote_pending'
+  | 'remote_running'
+  | 'downloading'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelling'
+  | 'cancelled'

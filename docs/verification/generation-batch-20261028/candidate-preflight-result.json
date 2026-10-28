@@ -1,0 +1,198 @@
+{
+  "classification": "real-model-controlled-comfy-preflight",
+  "model": "gpt-6.1-terra",
+  "reasoningEffort": "high",
+  "traceIndexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate-preflight/trace-index.json",
+  "naturalCompletion": true,
+  "runs": [
+    {
+      "run_id": "run_0176e151-d169-4615-8fec-1a452236579a",
+      "status": "succeeded",
+      "prompt_id": "ce1c012b-77c1-4957-9e04-4e048ea3b7d7"
+    },
+    {
+      "run_id": "run_432245b3-d78a-4c66-96d0-7c1abb890cab",
+      "status": "succeeded",
+      "prompt_id": "a0e2f43d-8ce4-47f5-8808-e57bd55b88ae"
+    },
+    {
+      "run_id": "run_eebec4db-bd33-4297-ae0d-6f08ca1ae580",
+      "status": "succeeded",
+      "prompt_id": "69e839d9-ff05-401f-a380-402d0e34869d"
+    },
+    {
+      "run_id": "run_b23c4b68-67d0-44a6-bb8b-5f0f56d86b4b",
+      "status": "succeeded",
+      "prompt_id": "b6a49dbc-96f8-4fe2-a229-b5e54e87f384"
+    },
+    {
+      "run_id": "run_34a33e30-18b0-498b-829e-aad92f7993a6",
+      "status": "succeeded",
+      "prompt_id": "ac413227-296c-4161-8584-1f409b404983"
+    },
+    {
+      "run_id": "run_b218ed52-93b0-47de-a084-79ecf48d43bc",
+      "status": "succeeded",
+      "prompt_id": "5eef2719-52f2-4eb2-9cd3-696af09ff974"
+    },
+    {
+      "run_id": "run_14964d32-18cf-4e88-84ba-92c274fee6e2",
+      "status": "succeeded",
+      "prompt_id": "7da5f164-15d1-4a2c-86e0-89ceccf42d98"
+    },
+    {
+      "run_id": "run_fe9b20a6-cf3d-4587-be33-7f5dde6e5335",
+      "status": "succeeded",
+      "prompt_id": "bea43f12-2de3-444e-b871-173eea3a46ee"
+    },
+    {
+      "run_id": "run_e28319e3-6437-4b7a-aa68-190e996518da",
+      "status": "succeeded",
+      "prompt_id": "664c043a-8391-4cd9-91d2-1f7a800f5246"
+    },
+    {
+      "run_id": "run_1ffe63c1-dfd0-40d9-bd7b-17047081e039",
+      "status": "succeeded",
+      "prompt_id": "e02f337b-101e-46cf-82cd-021dc30aa5ba"
+    },
+    {
+      "run_id": "run_9f382f49-e375-4cf0-b934-033968ee13b5",
+      "status": "succeeded",
+      "prompt_id": "b7e23918-fba4-47e0-8107-e8d774bb8fd8"
+    }
+  ],
+  "media": [
+    {
+      "media_id": "media_ac5bacc9-2078-4641-a77a-1389db3a5b4c",
+      "run_id": "run_0176e151-d169-4615-8fec-1a452236579a",
+      "relative_path": "ac/5b/media_ac5bacc9-2078-4641-a77a-1389db3a5b4c.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_db21c0b2-1727-4d73-bfd6-04203d2684c8",
+      "run_id": "run_432245b3-d78a-4c66-96d0-7c1abb890cab",
+      "relative_path": "db/21/media_db21c0b2-1727-4d73-bfd6-04203d2684c8.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_e195a09c-648c-444a-8f35-54e3fd70418b",
+      "run_id": "run_eebec4db-bd33-4297-ae0d-6f08ca1ae580",
+      "relative_path": "e1/95/media_e195a09c-648c-444a-8f35-54e3fd70418b.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_ebaed441-d534-4d24-85c4-1fcb53483463",
+      "run_id": "run_b23c4b68-67d0-44a6-bb8b-5f0f56d86b4b",
+      "relative_path": "eb/ae/media_ebaed441-d534-4d24-85c4-1fcb53483463.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_b0bbdff3-19f4-4d2c-9a41-9c6e4b56e017",
+      "run_id": "run_34a33e30-18b0-498b-829e-aad92f7993a6",
+      "relative_path": "b0/bb/media_b0bbdff3-19f4-4d2c-9a41-9c6e4b56e017.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_48330d38-72a5-4cbf-b97a-a7f24315ac25",
+      "run_id": "run_b218ed52-93b0-47de-a084-79ecf48d43bc",
+      "relative_path": "48/33/media_48330d38-72a5-4cbf-b97a-a7f24315ac25.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_02b750f3-f4ba-40ee-969e-287da54e97e2",
+      "run_id": "run_14964d32-18cf-4e88-84ba-92c274fee6e2",
+      "relative_path": "02/b7/media_02b750f3-f4ba-40ee-969e-287da54e97e2.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_d2d8e9bd-9964-41b7-b6c6-e46dd1578ab1",
+      "run_id": "run_fe9b20a6-cf3d-4587-be33-7f5dde6e5335",
+      "relative_path": "d2/d8/media_d2d8e9bd-9964-41b7-b6c6-e46dd1578ab1.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_7f86f278-4f56-4956-bf33-93f24edf7152",
+      "run_id": "run_e28319e3-6437-4b7a-aa68-190e996518da",
+      "relative_path": "7f/86/media_7f86f278-4f56-4956-bf33-93f24edf7152.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_32ee3f37-fbf1-4e6a-8ca9-87ea977ebab2",
+      "run_id": "run_1ffe63c1-dfd0-40d9-bd7b-17047081e039",
+      "relative_path": "32/ee/media_32ee3f37-fbf1-4e6a-8ca9-87ea977ebab2.png",
+      "fileExists": true
+    },
+    {
+      "media_id": "media_746e6043-d451-4531-b3f6-557efd8b8108",
+      "run_id": "run_9f382f49-e375-4cf0-b934-033968ee13b5",
+      "relative_path": "74/6e/media_746e6043-d451-4531-b3f6-557efd8b8108.png",
+      "fileExists": true
+    }
+  ],
+  "phaseMetrics": {
+    "submit": {
+      "toolCallCount": 1,
+      "promptBodyCharacters": 0,
+      "callIds": [
+        "call_fHk691aQeM9NSBH0Bd9y54S9"
+      ]
+    },
+    "wait": {
+      "toolCallCount": 1,
+      "promptBodyCharacters": 0,
+      "callIds": [
+        "call_zN6AOUgN2EuayXO55cEaLF9s"
+      ]
+    }
+  },
+  "totalToolCalls": 12,
+  "usage": [
+    {
+      "inputTokens": 8392,
+      "outputTokens": 21,
+      "totalTokens": 8413
+    },
+    {
+      "inputTokens": 1808,
+      "outputTokens": 259,
+      "totalTokens": 10259,
+      "cacheReadTokens": 8192
+    },
+    {
+      "inputTokens": 7189,
+      "outputTokens": 166,
+      "totalTokens": 17211,
+      "cacheReadTokens": 9856
+    },
+    {
+      "inputTokens": 3031,
+      "outputTokens": 104,
+      "totalTokens": 20031,
+      "cacheReadTokens": 16896
+    },
+    {
+      "inputTokens": 371,
+      "outputTokens": 231,
+      "totalTokens": 20442,
+      "cacheReadTokens": 19840
+    },
+    {
+      "inputTokens": 404,
+      "outputTokens": 100,
+      "totalTokens": 20600,
+      "cacheReadTokens": 20096
+    },
+    {
+      "inputTokens": 21268,
+      "outputTokens": 134,
+      "totalTokens": 21402
+    },
+    {
+      "inputTokens": 3140,
+      "outputTokens": 957,
+      "totalTokens": 25217,
+      "cacheReadTokens": 21120
+    }
+  ],
+  "businessAssessment": "invalid controlled image fixture; 1x1 bytes cannot fully decode; flow evidence only"
+}

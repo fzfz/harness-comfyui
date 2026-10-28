@@ -78,7 +78,7 @@
 
 ## 生成记录与媒体
 
-1. **Generation Run**：受管 CLI 的生成请求创建并持久保存的异步生成任务，归属原始项目目录对应的 Workspace。创建入口见 [GenerationRuntime.acceptGeneration()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>)，记录生命周期见 [Generation Run 生命周期与历史查询](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#generation-run-生命周期与历史查询>)。
+1. **Generation Run**：受管 CLI 的生成请求创建并持久保存的异步生成任务，归属原始项目目录对应的 Workspace。接纳入口见 [GenerationRuntime.acceptGenerations()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>)，记录生命周期见 [Generation Run 生命周期与历史查询](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#generation-run-生命周期与历史查询>)。
 
 2. **Run Repository**：Plugin Storage 中保存 Generation Run 记录的 SQLite 数据库。目录配置见 [config/base.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/base.json>) 的 `paths.runRepositoryFile`，建表入口见 [GenerationRuntime.initializeDatabase()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>)。
 
@@ -88,9 +88,13 @@
 
 5. **Generation Run Input Query**：读取当前 Workspace 中 Generation Run 的生成参数和实际 Workflow 的只读查询，由受管 CLI 的 `generation run-inputs --stdin` 提供。查询入口见 [GenerationRuntime.readGenerationRunInputs()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>)，输入输出结构见 [src/generation/run-input-contract.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/generation/run-input-contract.ts>)。
 
-6. **Generation Run Media Query**：读取当前 Workspace 中 Generation Run 的生成参数和本地输出图片路径的只读查询，由受管 CLI 的 `generation resolve-media --stdin` 提供。查询入口见 [GenerationRuntime.readGenerationRunMedia()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/generation-runtime.ts>)，输出结构见 [src/image-reader/run-media-contract.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/image-reader/run-media-contract.ts>)。
+6. **Generation Run Media Query**：读取当前 Workspace 中 Run 状态、错误与本地图片路径的只读查询。调用与返回规则见[生成生命周期与历史查询](docs/system/architecture.md#generation-run-生命周期与历史查询)，结构见 [run-media-contract.ts](src/image-reader/run-media-contract.ts)。
 
 7. **Session Media Viewer**：Host Plugin 为单个 Session 的 Generation Media 提供的同源 HTML 查看页。渲染入口见 [renderGenerationMediaViewerPage()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/media-viewer-page.ts>)，访问与下载入口见 [registerGenerationMediaRoutes()](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation/media-routes.ts>)，界面行为见 [Client 工作台、结果与媒体访问](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#client-工作台结果与媒体访问>)。
+
+8. **提交清单**：Agent 保存的生成请求集合，使用 `items` 数组组织各项 `request_id`、`request` 和可选 `parameter_files`。批次指一份提交清单中的请求集合。结构入口见 [src/cli/contract.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/cli/contract.ts>)。
+
+9. **request_id**：Agent 在首次提交前生成并保存的 UUID，用于在同一 Workspace、Session 内识别同一次请求。持久去重规则见 [ADR 0005](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/adr/0005-harness-identities-and-generation-run-ownership.md>)。
 
 ## 项目 CLI、Skill 与 Preset
 

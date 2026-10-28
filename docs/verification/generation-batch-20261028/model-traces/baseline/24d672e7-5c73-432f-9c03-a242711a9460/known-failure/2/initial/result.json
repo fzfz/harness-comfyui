@@ -1,0 +1,166 @@
+{
+  "id": "initial",
+  "runId": "e59efdc1-f21d-460c-8897-03dc57572dad",
+  "startedAt": "2026-10-28T12:45:21.664Z",
+  "naturalCompletion": true,
+  "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/known-failure/2/initial/task-input.txt",
+  "terminal": {
+    "type": "turn/end",
+    "seq": 44,
+    "time": 1793191554054,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    }
+  },
+  "observation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 44,
+        "values": {
+          "title": "baseline known-failure 2",
+          "goal": null,
+          "tokenUsage": {
+            "uncachedInputTokens": 12586,
+            "outputTokens": 906,
+            "cacheReadTokens": 75520,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {
+            "pressureTokens": 17854,
+            "projectedTokens": 17990,
+            "contextWindow": 262144
+          },
+          "contextBreakdown": {
+            "systemTokens": 428,
+            "toolsTokens": 4547,
+            "messageTokens": 7008
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 1,
+            "steps": 6,
+            "llmMs": 31877,
+            "toolMs": 369,
+            "ttftMs": 25328,
+            "ttftSteps": 6,
+            "decodeMs": 6549,
+            "decodeTokens": 906
+          },
+          "turnOutline": [
+            {
+              "turn": 1,
+              "seq": 6,
+              "prompt": "此前一次生成 Run run_790423f5-66af-45f7-b2f1-86e7ad2eb2…",
+              "response": "已查询失败的 Run `run_790423f5-66af-45f7-b2f1-86e7ad2eb23b`。记录显示错误码为 **`COMFYUI_REMOTE_ERROR`**，错误信息是：“The controlled prior g…"
+            }
+          ],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/known-failure/2",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            },
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": false,
+            "lastPromptAt": 1793191521776
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+        "runs": [
+          {
+            "runId": "run_790423f5-66af-45f7-b2f1-86e7ad2eb23b",
+            "turn": 0,
+            "title": "Controlled prior generation failure",
+            "instanceTitle": "Controlled ComfyUI",
+            "templateTitle": "Controlled Workflow",
+            "status": "failed",
+            "errorCode": "COMFYUI_REMOTE_ERROR",
+            "errorMessage": "The controlled prior generation failed before producing an image.",
+            "createdAt": 1793191521534,
+            "updatedAt": 1793191521534
+          }
+        ],
+        "media": [],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "trace": {
+    "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/known-failure/2/initial/trace/trace-index.json",
+    "sessions": [
+      {
+        "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+        "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/known-failure/2/initial/trace/sessions/session-session-e479e0c3-b860-431d-9de9-060e0f533599/session.json"
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-e479e0c3-b860-431d-9de9-060e0f533599",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ]
+  },
+  "completedAt": "2026-10-28T12:45:54.309Z"
+}

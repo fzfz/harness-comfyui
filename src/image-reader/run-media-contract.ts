@@ -1,4 +1,5 @@
 import type { GenerationRunInputError, JsonValue } from '../generation/run-input-contract.ts'
+import type { GenerationRunStatus } from '../generation/run-status.ts'
 
 export interface GenerationRunMediaImage {
   readonly media_id: string
@@ -11,9 +12,16 @@ export interface GenerationRunMediaImage {
 
 export interface AvailableGenerationRunMedia {
   readonly run_id: string
+  readonly request_id: string
   readonly lookup_status: 'available'
   readonly title: string
-  readonly parameters: Readonly<Record<string, JsonValue>>
+  readonly status: GenerationRunStatus
+  readonly revision: number
+  readonly updated_at: number
+  readonly instance_id: string | null
+  readonly prompt_id: string | null
+  readonly run_error: GenerationRunInputError | null
+  readonly parameters?: Readonly<Record<string, JsonValue>>
   readonly images: readonly GenerationRunMediaImage[]
 }
 

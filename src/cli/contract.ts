@@ -5,8 +5,10 @@ import { parseCatalogStableId } from '../catalog/contract.ts'
 import { MAX_RUN_INPUT_QUERY_IDS } from '../generation/run-input-contract.ts'
 import type { GenerationRequest, JsonValue } from '../host/generation/generation-runtime.ts'
 
+import { GENERATION_MAX_SUBMISSION_ITEMS } from './limits.ts'
+import { isGenerationRequestId } from '../generation/submission-contract.ts'
 export const CLI_ROUTE_PATH = '/api/harness-comfyui/cli/v1'
-export const CLI_MAX_BODY_BYTES = 1_048_576
+export { CLI_MAX_BODY_BYTES } from './limits.ts'
 export const CLI_ENVIRONMENT_NAMES = Object.freeze(parseManagedCliEnvironment(managedCliEnvironment).environmentNames)
 
 export interface CliGenerationModel {
@@ -30,8 +32,16 @@ export interface CliGenerationRequest {
   readonly loras: readonly CliGenerationLora[]
 }
 
+export interface CliGenerationSubmissionItem {
+  readonly request_id: string
+  readonly request: CliGenerationRequest
+}
+
+export interface CliGenerationManifestItem extends CliGenerationSubmissionItem {
+  readonly parameter_files?: Readonly<Record<string, string>>
+}
 export type CliRequest =
-  | { readonly command: 'generation.submit'; readonly request: CliGenerationRequest }
+  | { readonly command: 'generation.submit'; readonly items: readonly CliGenerationSubmissionItem[] }
   | {
     readonly command: 'generation.inspect-template-parameters'
     readonly template_id: string
@@ -39,7 +49,7 @@ export type CliRequest =
   }
   | { readonly command: 'generation.random-seeds'; readonly count: number }
   | { readonly command: 'generation.run-inputs'; readonly run_ids: readonly string[] }
-  | { readonly command: 'generation.resolve-media'; readonly run_ids: readonly string[] }
+  | { readonly command: 'generation.resolve-media'; readonly run_ids: readonly string[]; readonly include_parameters: boolean }
   | { readonly command: 'image.inspect'; readonly file_path: string; readonly prompt?: string }
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -160,12 +170,46 @@ export function parseCliGenerationRequest(value: unknown): CliGenerationRequest 
   })
 }
 
+function generationSubmissionItems(value: unknown, allowFiles: boolean): readonly CliGenerationManifestItem[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > GENERATION_MAX_SUBMISSION_ITEMS) {
+    throw new TypeError(`Generation items must contain between 1 and ${GENERATION_MAX_SUBMISSION_ITEMS} requests`)
+  }
+  const requestIds = new Set<string>()
+  return Object.freeze(value.map((item, index) => {
+    const label = `Generation items[${index}]`
+    const source = record(item, label)
+    const hasFiles = allowFiles && Object.hasOwn(source, 'parameter_files')
+    exactKeys(source, hasFiles ? ['request_id', 'request', 'parameter_files'] : ['request_id', 'request'], label)
+    if (!isGenerationRequestId(source.request_id)) throw new TypeError(`${label} request_id must be a UUID`)
+    const requestId = source.request_id.toLowerCase()
+    if (requestIds.has(requestId)) throw new TypeError(`${label} request_id duplicates ${requestId}`)
+    requestIds.add(requestId)
+    const request = parseCliGenerationRequest(source.request)
+    if (!hasFiles) return Object.freeze({ request_id: requestId, request })
+    const files = record(source.parameter_files, `${label} parameter_files`)
+    const entries = Object.entries(files).map(([parameter, path]) => {
+      if (parameter.length === 0) throw new TypeError(`${label} parameter_files requires a parameter ID`)
+      if (Object.hasOwn(request.parameters, parameter)) {
+        throw new TypeError(`${label} parameter ${parameter} is present in both parameters and parameter_files (${String(path)})`)
+      }
+      return [parameter, text(path, `${label} parameter ${parameter} file path`, 10_000)] as const
+    })
+    return Object.freeze({ request_id: requestId, request, parameter_files: Object.freeze(Object.fromEntries(entries)) })
+  }))
+}
+
+export function parseCliGenerationManifest(value: unknown): readonly CliGenerationManifestItem[] {
+  const source = record(value, 'Generation manifest')
+  exactKeys(source, ['items'], 'Generation manifest')
+  return generationSubmissionItems(source.items, true)
+}
+
 export function parseCliRequest(value: unknown): CliRequest {
   const source = record(value, 'CLI request')
   if (typeof source.command !== 'string') throw new TypeError('CLI request command is invalid')
   if (source.command === 'generation.submit') {
-    exactKeys(source, ['command', 'request'], 'CLI request')
-    return Object.freeze({ command: source.command, request: parseCliGenerationRequest(source.request) })
+    exactKeys(source, ['command', 'items'], 'CLI request')
+    return Object.freeze({ command: source.command, items: generationSubmissionItems(source.items, false) })
   }
   if (source.command === 'generation.inspect-template-parameters') {
     exactKeys(source, ['command', 'template_id', 'instance_id'], 'CLI request')
@@ -179,7 +223,13 @@ export function parseCliRequest(value: unknown): CliRequest {
     exactKeys(source, ['command', 'count'], 'CLI request')
     return Object.freeze({ command: source.command, count: randomSeedCount(source.count) })
   }
-  if (source.command === 'generation.run-inputs' || source.command === 'generation.resolve-media') {
+  if (source.command === 'generation.resolve-media') {
+    const hasParameters = Object.hasOwn(source, 'include_parameters')
+    exactKeys(source, hasParameters ? ['command', 'run_ids', 'include_parameters'] : ['command', 'run_ids'], 'CLI request')
+    if (hasParameters && typeof source.include_parameters !== 'boolean') throw new TypeError('CLI request include_parameters must be a boolean')
+    return Object.freeze({ command: source.command, run_ids: runIds(source.run_ids), include_parameters: hasParameters ? source.include_parameters as boolean : false })
+  }
+  if (source.command === 'generation.run-inputs') {
     exactKeys(source, ['command', 'run_ids'], 'CLI request')
     return Object.freeze({ command: source.command, run_ids: runIds(source.run_ids) })
   }
@@ -198,15 +248,6 @@ export function parseCliRequest(value: unknown): CliRequest {
 
 export function parseCliArguments(argv: readonly string[], stdin: string): CliRequest {
   const prefix = argv.slice(0, 3).join(' ')
-  if (argv.length === 3 && prefix === 'generation submit --stdin') {
-    let request: unknown
-    try {
-      request = JSON.parse(stdin) as unknown
-    } catch {
-      throw new TypeError('Generation stdin must contain one JSON object')
-    }
-    return parseCliRequest({ command: 'generation.submit', request })
-  }
   if (argv.length === 3 && prefix === 'generation run-inputs --stdin') {
     let request: unknown
     try {
@@ -252,8 +293,8 @@ export function parseCliArguments(argv: readonly string[], stdin: string): CliRe
       throw new TypeError('Generation media resolution stdin must contain one JSON object')
     }
     const source = record(request, 'Generation media resolution stdin')
-    exactKeys(source, ['run_ids'], 'Generation media resolution stdin')
-    return parseCliRequest({ command: 'generation.resolve-media', run_ids: source.run_ids })
+    exactKeys(source, Object.hasOwn(source, 'include_parameters') ? ['run_ids', 'include_parameters'] : ['run_ids'], 'Generation media resolution stdin')
+    return parseCliRequest({ ...source, command: 'generation.resolve-media' })
   }
   if (argv.length === 3 && prefix === 'image inspect --stdin') {
     let request: unknown

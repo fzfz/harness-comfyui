@@ -6,7 +6,7 @@
 
 ## CLI 的用途与适用任务
 
-1. `generation resolve-media --stdin` 只查询一个或多个 ComfyUI Generation Run 的原始 `parameters` 与本地图片路径；
+1. `generation resolve-media --stdin` 查询 Run 状态、错误与本地图片路径。图片审阅显式请求原始 `parameters`。
 2. `image inspect --stdin` 使用图片读取设置中的独立视觉模型观察一张本地图片。
 
 3. 输入来源、Run 批次、图片处理顺序、语义比较与改进 Prompt 步骤按 `SKILL.md` 第 2 至 6 节执行。本文件定义这两个命令的输入输出合同、错误和副作用。
@@ -15,7 +15,7 @@
 
 1. Harness ComfyUI Host 必须处于运行状态。受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者必须设置 `ELECTRON_RUN_AS_NODE=1`，传入 `--expose-internals`，并执行本文件定义的命令。
 
-2. Skill 执行者必须在当前 Session 的 Workspace 工作目录调用 `generation resolve-media --stdin`。命令使用当前 Session 和 Workspace，Skill 执行者只需提供本文件定义的命令参数。
+2. Skill 执行者通过当前 Session 的受管前台 shell Tool Call 调用 `generation resolve-media --stdin`。查询范围为该 Session 原始项目目录对应的 Workspace。
 
 3. Skill 执行者调用 `image inspect --stdin` 前，用户必须已经在 Harness“图片读取”设置页保存并启用一份可用的命名配置。当前命名配置向 CLI 提供视觉模型、默认读图 Prompt、`temperature`、最大输出 Token 和调用该模型所需的连接信息。CLI 根据当前命名配置连接视觉模型。
 
@@ -29,17 +29,19 @@
    ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin
    ```
 
-2. Skill 执行者必须向 stdin 写入一个只包含 `run_ids` 的 JSON 对象：
+2. Skill 执行者向 stdin 写入以下 JSON 对象：
 
    ```json
    {
-     "run_ids": ["run_01234567-89ab-4cde-8fab-0123456789ab", "run_89abcdef-0123-4567-89ab-cdef01234567"]
+     "run_ids": ["run_01234567-89ab-4cde-8fab-0123456789ab", "run_89abcdef-0123-4567-89ab-cdef01234567"],
+     "include_parameters": true
    }
    ```
 
-3. `run_ids` 必须是只包含一至二十个字符串的数组。每个字符串可以是完整 Generation Run ID，也可以是当前 Workspace 内唯一的 Run ID 前缀。前缀必须从完整 ID 开头连续截取，并至少包含 `run_` 与 UUID 部分开头的八个小写十六进制字符；前缀延伸到 UUID 连字符的位置时必须保留该连字符。例如，完整 ID `run_01234567-89ab-4cde-8fab-0123456789ab` 对应的最短合法前缀是 `run_01234567`。CLI 保留输入顺序和重复值。
+3. `run_ids` 必须是只包含 1 至 20 个字符串的数组。每个字符串可以是完整 Generation Run ID，也可以是当前 Workspace 内唯一的 Run ID 前缀。前缀必须从完整 ID 开头连续截取，并至少包含 `run_` 与 UUID 开头的 8 个小写十六进制字符；前缀延伸到 UUID 连字符的位置时必须保留该连字符。例如，完整 ID `run_01234567-89ab-4cde-8fab-0123456789ab` 对应的最短合法前缀是 `run_01234567`。CLI 保留输入顺序和重复值。
 
-4. 缺失 `run_ids`、`run_ids` 不是数组、元素不是字符串、数组为空、数组超过二十项或输入 JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。
+4. `include_parameters` 为可选布尔值，默认 `false`。本 Skill 必须传入 `true`，取得 Prompt 对比所需的原始参数。
+5. `run_ids` 缺失或违反第 3 项约束、`include_parameters` 不是布尔值、JSON 包含额外属性时，CLI 返回命令级 `CLI_REQUEST_INVALID`。
 
 ### image inspect --stdin
 
@@ -53,7 +55,7 @@
 
    ```json
    {
-     "file_path": "/absolute/local/path/result.png"
+     "file_path": "<图片绝对路径>"
    }
    ```
 
@@ -61,14 +63,14 @@
 
    ```json
    {
-     "file_path": "/absolute/local/path/result.png",
+     "file_path": "<图片绝对路径>",
      "prompt": "逐项观察双手的手指数、遮挡关系和明显形变；只报告图片中可见的内容。"
    }
    ```
 
 4. `file_path` 必须是长度为一至一万个字符、字符范围排除 U+0000–U+001F 和 U+007F–U+009F 控制字符的字符串。`file_path` 必须是 Host 可以读取的本地绝对路径。目标必须是非空普通文件，文件大小必须小于或等于 Host 当前图片输入上限。Host 根据文件内容签名接受 PNG、JPEG、WebP 或 GIF 图片。
 
-5. 视觉模型接收的是每帧宽高约为原图 70% 的图片，最小边长为一个像素。发送图片保持输入格式；PNG、WebP 和 GIF 保留透明度，动画 GIF 和动画 WebP 保留帧数、各帧延时与循环次数。原图保持不变，成功输出的 `file_path` 指向输入原图。
+5. 视觉模型观察缩小后的图片，细小内容可能无法辨认。输出的 `file_path` 指向输入原图。
 
 6. `prompt` 可以不提供。省略 `prompt` 时，Host 使用当前命名配置保存的默认读图 Prompt；提供 `prompt` 时，Host 使用该字符串覆盖本次调用的默认读图 Prompt。`prompt` 必须是包含非空白字符且不超过 32768 个字符的字符串，可以包含 JSON 转义后的换行符。
 
@@ -87,8 +89,15 @@
      "runs": [
        {
          "run_id": "run_01234567-89ab-4cde-8fab-0123456789ab",
+         "request_id": "8cc6f783-3374-4b14-9ae5-d5ce375de8f6",
          "lookup_status": "available",
          "title": "角色立绘",
+         "status": "succeeded",
+         "revision": 6,
+         "updated_at": 1793174400000,
+         "instance_id": "2",
+         "prompt_id": "remote-prompt-id",
+         "run_error": null,
          "parameters": {
            "positive_prompt": "1girl, white hair",
            "negative_prompt": "bad hands",
@@ -103,7 +112,7 @@
              "output_index": 0,
              "filename": "result.png",
              "media_type": "image/png",
-             "file_path": "/absolute/local/path/result.png"
+             "file_path": "<图片绝对路径>"
            }
          ]
        },
@@ -121,7 +130,9 @@
 
 2. `runs` 为每个输入 `run_id` 返回一个元素。成功元素的 `run_id` 是解析后的完整 Generation Run ID；错误元素的 `run_id` 保留输入值。某个 Run 没有已保存图片时，成功元素的 `images` 是空数组。逐 Run 错误不改变命令的退出码 `0`，并且不阻止 CLI 返回其他 Run 的结果。
 
-3. `parameters` 是 Host 接受该 Run 时保存的原始 Generation Request 参数。
+3. `request_id` 为已保存的请求标识。`status` 为执行状态；`revision` 为数字修订号，`updated_at` 为毫秒时间戳。`instance_id` 与 `prompt_id` 尚未取得时为 `null`。
+4. `run_error` 为执行错误的 `code`、`message`，没有错误时为 `null`。`lookup_status: available` 表示找到记录，执行结果按 `status` 判断。
+5. `include_parameters: true` 时，`parameters` 为接纳 Run 时保存的请求参数。默认查询省略 `parameters`。图片审阅的调用值见“参数与标准输入”。
 
 ### image inspect --stdin 输出
 
@@ -131,7 +142,7 @@
    {
      "provider": "provider-route",
      "model": "vision-model",
-     "file_path": "/absolute/local/path/result.png",
+     "file_path": "<图片绝对路径>",
      "observation": "图片中可见一名白发人物，采用半身正面构图。"
    }
    ```
@@ -180,7 +191,7 @@
    | `IMAGE_READER_MODEL_NOT_CONFIGURED` | 当前命名配置缺少调用视觉模型所需的值。Skill 执行者必须请用户在“图片读取”设置页完成或切换命名配置。 |
    | `IMAGE_READER_PROMPT_REQUIRED` | 本次 stdin 提供的 `prompt` 为空或只包含空白字符。Skill 执行者必须提供包含非空白字符的完整 `prompt`，或删除 `prompt` 以使用当前配置的默认读图 Prompt。 |
    | `IMAGE_READER_PROMPT_TOO_LONG` | 本次 stdin 提供的 `prompt` 超过 32768 个字符。Skill 执行者必须把 `prompt` 缩短到 32768 个字符以内后重试。 |
-   | `IMAGE_READER_FILE_INVALID` | `file_path` 不是绝对路径，目标不是 Host 可读取的非空普通文件，输入文件或缩放结果超过 Host 当前图片输入上限，文件读取失败，图片内容签名不是 PNG、JPEG、WebP 或 GIF，或 Host 无法解码、缩放或按原格式重新编码图片。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。只有取得新的、满足这些输入条件且可以完成缩放的 `images[].file_path` 后，Skill 执行者才可以重试当前图片。 |
+   | `IMAGE_READER_FILE_INVALID` | 文件路径、类型、大小或读取不符合“参数与标准输入”的约束，或 Host 无法处理图片编码与缩放。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。只有取得新的、满足这些输入条件且可以完成缩放的 `images[].file_path` 后，Skill 执行者才可以重试当前图片。 |
    | `IMAGE_READER_ATTACHMENT_FAILED` | Host 无法准备本次图片输入。Skill 执行者必须报告当前 `file_path`，并继续处理其他图片。Host 图片读取服务恢复后，Skill 执行者可以重试当前图片。 |
    | `IMAGE_READER_MODEL_UNAVAILABLE` | 当前命名配置指定的模型不可用。Skill 执行者必须请用户刷新设置页信息或修改当前命名配置。设置变更后，Skill 执行者可以重试当前图片。 |
    | `IMAGE_READER_MODEL_IMAGE_UNSUPPORTED` | 当前命名配置指定的模型没有声明图片输入能力。Skill 执行者必须请用户在图片读取设置中改选支持图片输入的模型。设置变更后，Skill 执行者可以重试当前图片。 |
@@ -191,35 +202,9 @@
 
 ## 副作用与重复调用
 
-1. `generation resolve-media --stdin` 每次调用只读取 Host 当前保存的 Generation Run 参数与图片路径。Skill 执行者可以按 Run 批次重复调用。
+1. `generation resolve-media --stdin` 读取 Host 当前保存的 Run 与媒体记录。Skill 执行者可按 Run 批次重复查询，或等待执行中的 Run 保存图片后重新查询。
 
 2. `image inspect --stdin` 每次调用根据当前命名配置发起一次视觉模型请求，并独立返回本次观察结果。
-
-## 完整调用示例
-
-1. 以下命令展示 `generation resolve-media --stdin` 的输入示例：
-
-   ```sh
-   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation resolve-media --stdin <<'JSON'
-   {"run_ids":["run_01234567-89ab-4cde-8fab-0123456789ab"]}
-   JSON
-   ```
-
-2. 以下命令展示 `image inspect --stdin` 的 `file_path` 输入示例：
-
-   ```sh
-   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
-   {"file_path":"/absolute/local/path/result.png"}
-   JSON
-   ```
-
-3. 以下命令展示 `image inspect --stdin` 同时传入 `file_path` 与可选 `prompt` 的输入示例：
-
-   ```sh
-   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet image inspect --stdin <<'JSON'
-   {"file_path":"/absolute/local/path/result.png","prompt":"逐项观察双手的手指数、遮挡关系和明显形变；只报告图片中可见的内容。"}
-   JSON
-   ```
 
 ## 命令帮助
 

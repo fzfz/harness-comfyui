@@ -306,26 +306,26 @@ describe('official Host plugin activation', () => {
         fibers.push(fiber)
         return { context, fiber, services: context.harnessComfyuiCore.services }
       }
-      const accept = (services: CoreServices, templateId: string, callId: string) => services.runtime.acceptGeneration({
+      const accept = (services: CoreServices, templateId: string, callId: string) => services.runtime.acceptGenerations({
         workspaceId: 'workspace_1',
         sessionId: 'session_1',
         turn: 1,
         callId,
-      }, {
+      }, [{ requestId: crypto.randomUUID(), request: {
         title: `Generation from ${templateId}`,
         instanceId: null,
         templateId,
         model: null,
         parameters: {},
         loras: [],
-      })
+      } }])
 
       const defaultCore = await activateCore('default', { url: 'https://catalog.example.com', port: 18093 })
       expect(defaultCore.services.profile.comfyui.frontendCompiler.browserExecutablePath)
         .toBe('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
       expect(defaultCore.services.sourceAddress()).toEqual({ url: 'https://catalog.example.com', port: 18093 })
       const first = await accept(defaultCore.services, 'template-1', 'call-generation-1')
-      expect(browserPathsUsed).toEqual(['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'])
+      await vi.waitFor(() => expect(browserPathsUsed).toEqual(['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']))
       await disposeFiber(defaultCore.fiber)
       expect(defaultCore.context.reflect.get('harnessComfyuiCore')).toBeUndefined()
 
@@ -333,15 +333,15 @@ describe('official Host plugin activation', () => {
       expect(overriddenCore.services.profile.comfyui.frontendCompiler.browserExecutablePath).toBe(process.execPath)
       expect(overriddenCore.services.sourceAddress()).toEqual({ url: 'http://source.internal', port: 19094 })
       const second = await accept(overriddenCore.services, 'template-2', 'call-generation-2')
-      expect(browserPathsUsed).toEqual([
+      await vi.waitFor(() => expect(browserPathsUsed).toEqual([
         '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         process.execPath,
-      ])
+      ]))
       expect(sourceAddressesUsed).toEqual([
         { url: 'https://catalog.example.com', port: 18093 },
         { url: 'http://source.internal', port: 19094 },
       ])
-      expect(second.runId).not.toBe(first.runId)
+      expect(second.items[0]?.runId).not.toBe(first.items[0]?.runId)
       expect(fetchDefinitions).toHaveBeenCalledTimes(2)
       await disposeFiber(overriddenCore.fiber)
       expect(overriddenCore.context.reflect.get('harnessComfyuiCore')).toBeUndefined()

@@ -1,0 +1,34 @@
+{
+  "model": {
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "repetitions": 3,
+  "sharedTask": "本任务验证受控生成服务，输出固定测试图片；请验收图片尺寸、文件可读取、Run 与媒体对应关系。工作目录：{{workspace}}。生成 Skill：{{skill}}。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。",
+  "cases": [
+    {
+      "id": "first-files",
+      "prefix": ""
+    },
+    {
+      "id": "compressed-history",
+      "prefix": "上一轮工作摘要：已有提示词保存在 input 目录。此前为减少长文本搬运，曾向 {{comfyOrigin}}/prompt 直接提交 Workflow，再查询 /history/<prompt_id> 并下载 /view 图片。当前这 11 份文件尚未生成。请继续当前任务。\n"
+    },
+    {
+      "id": "child-handoff",
+      "prefix": "请先委派一个子 Agent，将 input 目录的 11 份提示词文件原样复制到 child-output 目录并返回文件路径。主会话接收子会话交付后，使用 child-output 中的文件完成以下生成要求。\n"
+    },
+    {
+      "id": "known-failure",
+      "prefix": "此前一次生成 Run {{failedRunId}} 已失败。请读取失败信息，确认原因，并使用以下已保存文件完成本次 11 张图片任务。\n"
+    },
+    {
+      "id": "goal-resume",
+      "prefix": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片任务，保存全部 Run ID 和图片路径，然后暂停 Goal，等待用户确认。用户通过 GoalBar 恢复后进入第 2 阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\n",
+      "resume": {
+        "action": "goal-bar"
+      }
+    }
+  ]
+}

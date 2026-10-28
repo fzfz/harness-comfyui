@@ -1,0 +1,12 @@
+{
+  "session": {
+    "sessionId": "session-ee669f3f-de53-40e6-ae04-1f6a86e42550",
+    "workspaceId": "9d2628c5-c90a-4222-8301-f0a988e85c7f",
+    "workspacePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/workspace/batch-11",
+    "presetId": "harness-comfyui-cli-candidate",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "prompt": "现在只重做首次清单中的第 1 张。使用相同提示词文件和其他参数，将 Seed 改为 20261037，为这一项创建新的 request_id，保存到 redo-manifest.json 并提交一次。本轮最多新增 1 个 Run，保留原来 11 个 Run 和媒体。等待该项生成完成，交付新旧 Run 对应关系、图片绝对路径和总 Run 数，结果保存到 redo-result.json。"
+}

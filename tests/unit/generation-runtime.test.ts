@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync, unlinkSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -28,6 +29,17 @@ afterEach(() => {
 
 type TestGenerationPreparationAdapter = Pick<GenerationPreparationAdapter, 'prepare'>
   & Partial<Pick<GenerationPreparationAdapter, 'inspectRuntimeParameters'>>
+
+async function acceptPrepared(
+  runtime: GenerationRuntime,
+  identity: Parameters<GenerationRuntime['acceptGenerations']>[0],
+  request: GenerationRequest,
+  signal?: AbortSignal,
+) {
+  const accepted = await runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request }], signal)
+  await runtime.advance(signal)
+  return accepted.items[0]!
+}
 
 function createRuntime(preparer: TestGenerationPreparationAdapter): GenerationRuntime {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-generation-'))
@@ -112,7 +124,7 @@ describe('GenerationRuntime acceptance', () => {
       },
     })
     const positivePrompt = '银发少女，蓝灰色电影光线\n保持原始换行。'
-    const { runId } = await runtime.acceptGeneration(
+    const { runId } = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_prompt' },
       request(positivePrompt),
     )
@@ -144,7 +156,7 @@ describe('GenerationRuntime acceptance', () => {
     ] satisfies GenerationRequest[]
 
     for (const [index, generationRequest] of requests.entries()) {
-      const { runId } = await runtime.acceptGeneration(
+      const { runId } = await acceptPrepared(runtime,
         { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: `call_missing_prompt_${index}` },
         generationRequest,
       )
@@ -159,50 +171,6 @@ describe('GenerationRuntime acceptance', () => {
     expect(() => runtime.positivePromptForRun('run_missing')).toThrow(
       expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
     )
-    runtime.close()
-  })
-
-  it('prepares one independent Run per Tool callId before accepting it', async () => {
-    const preparedPrompts: string[] = []
-    const runtime = createRuntime({
-      async prepare(generationRequest) {
-        const prompt = generationRequest.parameters.positive_prompt as string
-        preparedPrompts.push(prompt)
-        return {
-          instanceId: '2',
-          instanceTitle: 'ComfyUI',
-          templateTitle: 'Anima Aesthetic 1.1｜文生图',
-          sourceSnapshot: { template_id: '34', revision_number: 1 },
-          actualWorkflow: { version: 0.4, prompt },
-          apiWorkflow: { '7': { class_type: 'CLIPTextEncode', inputs: { text: prompt } } },
-          expectedOutputNodeIds: ['10'],
-          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-        }
-      },
-    })
-
-    const owner = { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3 }
-    const first = await runtime.acceptGeneration({ ...owner, callId: 'call_a' }, request('first prompt'))
-    const second = await runtime.acceptGeneration({ ...owner, callId: 'call_b' }, request('second prompt'))
-    const replay = await runtime.acceptGeneration({ ...owner, callId: 'call_a' }, request('first prompt'))
-
-    expect(first.runId).not.toBe(second.runId)
-    expect(replay).toEqual(first)
-    expect(preparedPrompts).toEqual(['first prompt', 'second prompt'])
-    expect(runtime.queryRuns({ workspaceId: owner.workspaceId, sessionId: owner.sessionId, turn: 3 })
-      .map(run => run.status)).toEqual(['prepared', 'prepared'])
-
-    const runs = runtime.queryRuns({ workspaceId: owner.workspaceId, sessionId: owner.sessionId, turn: 3 })
-    expect(runs.map(run => ({ runId: run.runId, callId: run.callId, status: run.status }))).toEqual([
-      { runId: second.runId, callId: 'call_b', status: 'prepared' },
-      { runId: first.runId, callId: 'call_a', status: 'prepared' },
-    ])
-
-    const firstWorkflow = JSON.parse(await runtime.readActualWorkflow(first.runId)) as { prompt: string }
-    const secondWorkflow = JSON.parse(await runtime.readActualWorkflow(second.runId)) as { prompt: string }
-    expect(firstWorkflow.prompt).toBe('first prompt')
-    expect(secondWorkflow.prompt).toBe('second prompt')
-
     runtime.close()
   })
 
@@ -233,7 +201,7 @@ describe('GenerationRuntime acceptance', () => {
       }],
     }
 
-    await runtime.acceptGeneration(
+    await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_lora' },
       generationRequest,
     )
@@ -266,7 +234,7 @@ describe('GenerationRuntime acceptance', () => {
       },
     }
 
-    await runtime.acceptGeneration(
+    await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_model' },
       generationRequest,
     )
@@ -285,62 +253,12 @@ describe('GenerationRuntime acceptance', () => {
       model: { id: '1', fileName: 37 },
     }
 
-    await expect(runtime.acceptGeneration(
+    await expect(acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_invalid_model' },
       invalidRequest as never,
     )).rejects.toMatchObject({ code: 'GENERATION_REQUEST_INVALID' })
 
-    expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
-      status: 'failed',
-      errorCode: 'GENERATION_REQUEST_INVALID',
-      errorMessage: 'The persisted Generation model is invalid.',
-    })
-    runtime.close()
-  })
-
-  it('rejects a different request for an already accepted Tool callId', async () => {
-    const runtime = createRuntime({
-      async prepare(generationRequest) {
-        return {
-          instanceId: '2',
-          instanceTitle: 'ComfyUI',
-          templateTitle: 'Template',
-          sourceSnapshot: { template_id: generationRequest.templateId },
-          actualWorkflow: { version: 0.4 },
-          apiWorkflow: {},
-          expectedOutputNodeIds: ['10'],
-          connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
-        }
-      },
-    })
-    const identity = { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_a' }
-
-    await runtime.acceptGeneration(identity, request('first prompt'))
-
-    await expect(runtime.acceptGeneration(identity, request('different prompt'))).rejects.toMatchObject({
-      code: 'RUN_REQUEST_CONFLICT',
-    })
-    runtime.close()
-  })
-
-  it('returns preparation failures to the Tool caller, persists them, and replays the same error', async () => {
-    const runtime = createRuntime({
-      async prepare() {
-        throw new Error('template is invalid')
-      },
-    })
-    const identity = { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_failed' }
-
-    await expect(runtime.acceptGeneration(identity, request('prompt'))).rejects.toThrow('template is invalid')
-    expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
-      status: 'failed',
-      errorCode: 'GENERATION_PREPARATION_FAILED',
-      errorMessage: 'template is invalid',
-    })
-    await expect(runtime.acceptGeneration(identity, request('prompt'))).rejects.toMatchObject({
-      code: 'GENERATION_PREPARATION_FAILED',
-      message: 'template is invalid',
-    })
+    expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })).toEqual([])
     runtime.close()
   })
 
@@ -374,9 +292,11 @@ describe('GenerationRuntime acceptance', () => {
       code: 'SOURCE_QUERY_FAILED',
       message: '数据源读取 instance 记录（ID：2）返回 HTTP 404。请核对当前目录记录和数据源配置。',
     }
+    const requestId = randomUUID()
     let runtime = createRuntimeAt(root, adapter)
     try {
-      await expect(runtime.acceptGeneration(identity, input)).rejects.toMatchObject(expected)
+      await runtime.acceptGenerations(identity, [{ requestId, request: input }])
+      await runtime.advance()
       expect(reads).toEqual(['template-bundle/29', 'instance/2'])
       runtime.close()
       runtime = createRuntimeAt(root, adapter)
@@ -386,49 +306,23 @@ describe('GenerationRuntime acceptance', () => {
         errorCode: expected.code,
         errorMessage: expected.message,
       })
-      await expect(runtime.acceptGeneration(identity, input)).rejects.toMatchObject(expected)
+      await expect(runtime.acceptGenerations(identity, [{ requestId, request: input }])).resolves.toMatchObject({
+        items: [{ requestId, acceptance: 'reused' }],
+      })
       expect(reads).toEqual(['template-bundle/29', 'instance/2'])
     } finally {
       runtime.close()
     }
   })
 
-  it('preserves created when the Tool caller cancels preparation', async () => {
-    const controller = new AbortController()
-    const runtime = createRuntime({
-      async prepare(_request, signal) {
-        await new Promise<void>((_resolve, reject) => {
-          const abort = () => reject(new DOMException('cancelled', 'AbortError'))
-          if (signal?.aborted === true) abort()
-          else signal?.addEventListener('abort', abort, { once: true })
-        })
-        throw new Error('unreachable')
-      },
-    })
-    const accepting = runtime.acceptGeneration(
-      { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_cancelled' },
-      request('prompt'),
-      controller.signal,
-    )
-    controller.abort()
-    await expect(accepting).rejects.toMatchObject({ name: 'AbortError' })
-    expect(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]).toMatchObject({
-      status: 'created', errorCode: null,
-    })
-    runtime.close()
-  })
-
   it('rejects invalid ownership, missing artifacts and unavailable worker transport', async () => {
     const runtime = createRuntime({ async prepare() { throw new GenerationRuntimeError('SOURCE_FAILED', 'source failed') } })
     const valid = { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 0, callId: 'call_1' }
-    await expect(runtime.acceptGeneration({ ...valid, workspaceId: '../bad' }, request('prompt'))).rejects.toThrow('workspaceId')
-    await expect(runtime.acceptGeneration({ ...valid, sessionId: '' }, request('prompt'))).rejects.toThrow('sessionId')
-    await expect(runtime.acceptGeneration({ ...valid, turn: -1 }, request('prompt'))).rejects.toThrow('turn')
-    await expect(runtime.acceptGeneration({ ...valid, callId: '' }, request('prompt'))).rejects.toThrow('callId')
-    await expect(runtime.acceptGeneration(valid, request('prompt'))).rejects.toMatchObject({
-      code: 'SOURCE_FAILED',
-      message: 'source failed',
-    })
+    await expect(acceptPrepared(runtime, { ...valid, workspaceId: '../bad' }, request('prompt'))).rejects.toThrow('workspaceId')
+    await expect(acceptPrepared(runtime, { ...valid, sessionId: '' }, request('prompt'))).rejects.toThrow('sessionId')
+    await expect(acceptPrepared(runtime, { ...valid, turn: -1 }, request('prompt'))).rejects.toThrow('turn')
+    await expect(acceptPrepared(runtime, { ...valid, callId: '' }, request('prompt'))).rejects.toThrow('callId')
+    await acceptPrepared(runtime, valid, request('prompt'))
     expect(() => runtime.actualWorkflowPath(runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]!.runId))
       .toThrow('not ready')
     expect(() => runtime.getMedia('missing')).toThrow('not found')
@@ -478,7 +372,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
     })
 
     for (const [index, runId] of runIds.entries()) {
-      const accepted = await runtime.acceptGeneration(
+      const accepted = await acceptPrepared(runtime,
         {
           workspaceId: index === 4 || index === 6 ? 'workspace_2' : 'workspace_1',
           sessionId: `session_${index}`,
@@ -551,11 +445,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
       model: { id: '3', fileName: 'anima-aesthetic-v1.1.safetensors' },
       loras: [{ id: '91', fileName: 'style.safetensors', weight: 0.8, triggerWords: ['style'] }],
     }
-    const first = await runtime.acceptGeneration(
+    const first = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_lookup_first' },
       firstRequest,
     )
-    const second = await runtime.acceptGeneration(
+    const second = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_2', turn: 2, callId: 'call_lookup_second' },
       request('second prompt'),
     )
@@ -630,11 +524,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
         }
       },
     })
-    const otherWorkspace = await runtime.acceptGeneration(
+    const otherWorkspace = await acceptPrepared(runtime,
       { workspaceId: 'workspace_2', sessionId: 'session_2', turn: 1, callId: 'call_other_workspace' },
       request('hidden prompt'),
     )
-    const visible = await runtime.acceptGeneration(
+    const visible = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_visible' },
       request('visible prompt'),
     )
@@ -667,11 +561,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
       },
     }
     let runtime = createRuntimeAt(root, preparer)
-    const withoutLoras = await runtime.acceptGeneration(
+    const withoutLoras = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_pre_lora' },
       request('pre-LoRA prompt'),
     )
-    const withHistoricalLora = await runtime.acceptGeneration(
+    const withHistoricalLora = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_pre_model' },
       {
         ...request('historical LoRA prompt'),
@@ -738,10 +632,10 @@ describe('GenerationRuntime historical Run input lookup', () => {
         throw new GenerationRuntimeError('GENERATION_PARAMETER_INVALID', 'Sampler selection is invalid.')
       },
     })
-    await expect(runtime.acceptGeneration(
+    await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_failed_lookup' },
       request('failed prompt'),
-    )).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_INVALID' })
+    )
     const failedRun = runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_1' })[0]!
 
     await expect(runtime.readGenerationRunInputs({
@@ -779,7 +673,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
         }
       },
     })
-    const accepted = await runtime.acceptGeneration(
+    const accepted = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_missing_artifact' },
       request('saved prompt'),
     )
@@ -815,11 +709,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
         }
       },
     })
-    const corrupted = await runtime.acceptGeneration(
+    const corrupted = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_invalid_workflow' },
       request('corrupted workflow prompt'),
     )
-    const valid = await runtime.acceptGeneration(
+    const valid = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_after_invalid_workflow' },
       request('valid workflow prompt'),
     )
@@ -865,11 +759,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
       },
     }
     let runtime = createRuntimeAt(root, preparer)
-    const corrupted = await runtime.acceptGeneration(
+    const corrupted = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_corrupted_request' },
       request('corrupted prompt'),
     )
-    const valid = await runtime.acceptGeneration(
+    const valid = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_after_corruption' },
       request('valid prompt'),
     )
@@ -908,11 +802,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
       },
     }
     let runtime = createRuntimeAt(root, preparer)
-    const invalidLoras = await runtime.acceptGeneration(
+    const invalidLoras = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_invalid_historical_loras' },
       request('invalid loras'),
     )
-    const invalidModel = await runtime.acceptGeneration(
+    const invalidModel = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_invalid_historical_model' },
       request('invalid model'),
     )
@@ -991,11 +885,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
       },
       reportRunInputLookupError,
     })
-    const first = await runtime.acceptGeneration(
+    const first = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_unexpected_first' },
       request('first prompt'),
     )
-    const second = await runtime.acceptGeneration(
+    const second = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_unexpected_second' },
       request('second prompt'),
     )
@@ -1083,11 +977,11 @@ describe('GenerationRuntime historical Run input lookup', () => {
         throw new DOMException('cancelled', 'AbortError')
       },
     })
-    const first = await runtime.acceptGeneration(
+    const first = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_cancel_lookup_first' },
       request('first prompt'),
     )
-    const second = await runtime.acceptGeneration(
+    const second = await acceptPrepared(runtime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 2, callId: 'call_cancel_lookup_second' },
       request('second prompt'),
     )

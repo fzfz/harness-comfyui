@@ -6,6 +6,16 @@ import { DatabaseSync } from 'node:sqlite'
 
 import { ERROR_CATALOG } from '../../../config/error-catalog-schema.ts'
 import type { GenerationMediaKind } from '../../generation/contract.ts'
+import { GENERATION_MAX_SUBMISSION_ITEMS } from '../../cli/limits.ts'
+import type { GenerationRunStatus } from '../../generation/run-status.ts'
+import {
+  isGenerationRequestId,
+  type GenerationLoraSelection,
+  type GenerationModelSelection,
+  type GenerationRequest,
+  type GenerationSubmissionItem,
+  type GenerationSubmissionResult,
+} from '../../generation/submission-contract.ts'
 import {
   MAX_RUN_INPUT_QUERY_IDS,
   MIN_RUN_INPUT_ID_PREFIX_LENGTH,
@@ -26,26 +36,8 @@ import type {
 export type { JsonPrimitive, JsonValue } from '../../generation/run-input-contract.ts'
 export { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
 
-export interface GenerationLoraSelection {
-  readonly id: string
-  readonly fileName: string
-  readonly weight: number
-  readonly triggerWords: readonly string[]
-}
-
-export interface GenerationModelSelection {
-  readonly id: string
-  readonly fileName: string
-}
-
-export interface GenerationRequest {
-  readonly title: string
-  readonly instanceId: string | null
-  readonly templateId: string
-  readonly model: GenerationModelSelection | null
-  readonly parameters: Readonly<Record<string, JsonValue>>
-  readonly loras: readonly GenerationLoraSelection[]
-}
+export type { GenerationRunStatus } from '../../generation/run-status.ts'
+export type { GenerationLoraSelection, GenerationModelSelection, GenerationRequest } from '../../generation/submission-contract.ts'
 
 export interface GenerationIdentity {
   readonly workspaceId: string
@@ -118,21 +110,9 @@ export interface GenerationTransport {
   }): Promise<{ readonly bytes: Uint8Array; readonly mediaType: string }>
 }
 
-export type GenerationRunStatus =
-  | 'created'
-  | 'prepared'
-  | 'submitting'
-  | 'submission_unknown'
-  | 'remote_pending'
-  | 'remote_running'
-  | 'downloading'
-  | 'succeeded'
-  | 'failed'
-  | 'cancelling'
-  | 'cancelled'
-
 export interface GenerationRunSnapshot {
   readonly runId: string
+  readonly requestId: string
   readonly workspaceId: string
   readonly sessionId: string
   readonly turn: number
@@ -207,6 +187,7 @@ export interface GenerationRuntimeOptions {
 
 interface RunRow {
   run_id: string
+  request_id: string
   workspace_id: string
   session_id: string
   turn: number
@@ -475,6 +456,7 @@ function mediaSnapshot(row: MediaRow): GenerationMediaSnapshot {
 function snapshot(row: RunRow): GenerationRunSnapshot {
   return Object.freeze({
     runId: row.run_id,
+    requestId: row.request_id,
     workspaceId: row.workspace_id,
     sessionId: row.session_id,
     turn: row.turn,
@@ -494,6 +476,35 @@ function snapshot(row: RunRow): GenerationRunSnapshot {
   })
 }
 
+const GENERATION_RUN_TABLE_DEFINITION = `(
+  run_id TEXT PRIMARY KEY,
+  request_id TEXT NOT NULL,
+  workspace_id TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  turn INTEGER NOT NULL,
+  call_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  instance_id TEXT,
+  instance_title TEXT,
+  instance_origin TEXT,
+  template_id TEXT NOT NULL,
+  template_title TEXT,
+  status TEXT NOT NULL,
+  revision INTEGER NOT NULL,
+  prompt_id TEXT,
+  request_json TEXT NOT NULL,
+  source_snapshot_path TEXT,
+  actual_workflow_path TEXT,
+  api_workflow_path TEXT,
+  expected_output_node_ids_json TEXT,
+  missing_observed_at INTEGER,
+  error_code TEXT,
+  error_message TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(workspace_id, session_id, request_id)
+)`
+
 export class GenerationRuntime {
   private readonly options: GenerationRuntimeOptions
   private readonly database: DatabaseSync
@@ -504,7 +515,6 @@ export class GenerationRuntime {
   private readonly missingObservationMs: number
   private readonly readJsonArtifact: NonNullable<GenerationRuntimeOptions['readJsonArtifact']>
   private readonly reportRunInputLookupError: GenerationRuntimeOptions['reportRunInputLookupError']
-  private readonly preparations = new Map<string, Promise<void>>()
   private advanceInFlight: Promise<void> | undefined
 
   constructor(options: GenerationRuntimeOptions) {
@@ -551,45 +561,15 @@ export class GenerationRuntime {
   }
 
   private initializeDatabase(): void {
-    this.database.exec(`
-      PRAGMA foreign_keys = ON;
-      PRAGMA journal_mode = WAL;
-      PRAGMA busy_timeout = 5000;
+    this.database.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA foreign_keys = OFF;')
+    this.database.exec('BEGIN IMMEDIATE')
+    try {
+      this.database.exec(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         version INTEGER PRIMARY KEY,
         applied_at INTEGER NOT NULL
       );
-      CREATE TABLE IF NOT EXISTS generation_runs (
-        run_id TEXT PRIMARY KEY,
-        workspace_id TEXT NOT NULL,
-        session_id TEXT NOT NULL,
-        turn INTEGER NOT NULL,
-        call_id TEXT NOT NULL,
-        title TEXT NOT NULL,
-        instance_id TEXT,
-        instance_title TEXT,
-        instance_origin TEXT,
-        template_id TEXT NOT NULL,
-        template_title TEXT,
-        status TEXT NOT NULL,
-        revision INTEGER NOT NULL,
-        prompt_id TEXT,
-        request_json TEXT NOT NULL,
-        source_snapshot_path TEXT,
-        actual_workflow_path TEXT,
-        api_workflow_path TEXT,
-        expected_output_node_ids_json TEXT,
-        missing_observed_at INTEGER,
-        error_code TEXT,
-        error_message TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL,
-        UNIQUE(workspace_id, session_id, call_id)
-      );
-      CREATE INDEX IF NOT EXISTS generation_runs_session_turn
-        ON generation_runs(workspace_id, session_id, turn, created_at DESC);
-      CREATE INDEX IF NOT EXISTS generation_runs_status
-        ON generation_runs(status, updated_at);
+      CREATE TABLE IF NOT EXISTS generation_runs ${GENERATION_RUN_TABLE_DEFINITION};
       CREATE TABLE IF NOT EXISTS generation_run_outputs (
         run_id TEXT NOT NULL REFERENCES generation_runs(run_id) ON DELETE CASCADE,
         node_id TEXT NOT NULL,
@@ -637,9 +617,19 @@ export class GenerationRuntime {
       );
       INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (1, ${this.now()});
     `)
-    const runColumns = this.database.prepare('PRAGMA table_info(generation_runs)').all() as unknown as readonly { name: string }[]
-    if (!runColumns.some(column => column.name === 'instance_origin')) {
-      this.database.exec('ALTER TABLE generation_runs ADD COLUMN instance_origin TEXT')
+      const runColumns = this.database.prepare('PRAGMA table_info(generation_runs)').all() as unknown as readonly { name: string }[]
+      if (!runColumns.some(column => column.name === 'instance_origin')) {
+        this.database.exec('ALTER TABLE generation_runs ADD COLUMN instance_origin TEXT')
+      }
+      this.migrateRequestIdentity()
+      const violations = this.database.prepare('PRAGMA foreign_key_check').all()
+      if (violations.length > 0) throw new Error('Generation repository migration failed foreign key validation.')
+      this.database.exec('COMMIT')
+    } catch (error) {
+      this.database.exec('ROLLBACK')
+      throw error
+    } finally {
+      this.database.exec('PRAGMA foreign_keys = ON')
     }
     this.database.prepare(`
       UPDATE generation_runs SET status = 'submission_unknown', revision = revision + 1,
@@ -651,6 +641,26 @@ export class GenerationRuntime {
     this.recoverStagedMedia()
   }
 
+  private migrateRequestIdentity(): void {
+    const columns = this.database.prepare('PRAGMA table_info(generation_runs)').all() as unknown as readonly { name: string }[]
+    if (!columns.some(column => column.name === 'request_id')) {
+      this.database.exec(`CREATE TABLE generation_runs_migration ${GENERATION_RUN_TABLE_DEFINITION}`)
+      const targetColumns = this.database.prepare('PRAGMA table_info(generation_runs_migration)').all() as unknown as readonly { name: string }[]
+      const sourceColumns = targetColumns.map(column => column.name === 'request_id' ? 'run_id' : column.name)
+      this.database.exec(`
+        INSERT INTO generation_runs_migration SELECT ${sourceColumns.join(', ')} FROM generation_runs;
+        DROP TABLE generation_runs;
+        ALTER TABLE generation_runs_migration RENAME TO generation_runs;
+      `)
+    }
+    this.database.exec(`
+      CREATE INDEX IF NOT EXISTS generation_runs_session_turn
+        ON generation_runs(workspace_id, session_id, turn, created_at DESC);
+      CREATE INDEX IF NOT EXISTS generation_runs_status ON generation_runs(status, updated_at);
+    `)
+    this.database.prepare('INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (2, ?)').run(this.now())
+  }
+
   async inspectTemplateRuntimeParameters(
     input: GenerationTemplateRuntimeParameterInspectionInput,
     signal?: AbortSignal,
@@ -660,55 +670,68 @@ export class GenerationRuntime {
     return this.options.preparer.inspectRuntimeParameters(input, signal)
   }
 
-  async acceptGeneration(
+  async acceptGenerations(
     identity: GenerationIdentity,
-    request: GenerationRequest,
+    items: readonly GenerationSubmissionItem[],
     signal?: AbortSignal,
-  ): Promise<{ readonly runId: string }> {
+  ): Promise<GenerationSubmissionResult> {
+    signal?.throwIfAborted()
     assertPathId(identity.workspaceId, 'workspaceId')
     if (identity.sessionId.trim().length === 0) throw new TypeError('sessionId is invalid')
     if (!Number.isSafeInteger(identity.turn) || identity.turn < 0) throw new TypeError('turn is invalid')
     if (identity.callId.trim().length === 0) throw new TypeError('callId is invalid')
-    const requestJson = canonicalJson(request as unknown as JsonValue)
-    let row = this.findByCall(identity)
-    if (row !== undefined) {
-      if (row.request_json !== requestJson) {
-        throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', 'The Tool call was already accepted with a different Generation request.')
-      }
-      if (row.status === 'failed' && row.actual_workflow_path === null) {
-        throw new GenerationRuntimeError(
-          row.error_code ?? 'GENERATION_PREPARATION_FAILED',
-          row.error_message ?? 'Generation preparation failed.',
-        )
-      }
-      if (row.status === 'created') {
-        await this.preparePersistedRequest(row.run_id, row.request_json, signal)
-      }
-      return Object.freeze({ runId: row.run_id })
+    if (!Array.isArray(items) || items.length < 1 || items.length > GENERATION_MAX_SUBMISSION_ITEMS) {
+      throw new GenerationRuntimeError('GENERATION_SUBMISSION_INVALID', `Submit between 1 and ${GENERATION_MAX_SUBMISSION_ITEMS} Generation requests.`)
     }
-
-    const runId = this.createRunId()
-    assertPathId(runId, 'runId')
-    const createdAt = this.now()
-    this.database.prepare(`
-      INSERT INTO generation_runs(
-        run_id, workspace_id, session_id, turn, call_id, title, template_id,
-        status, revision, request_json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'created', 0, ?, ?, ?)
-    `).run(
-      runId,
-      identity.workspaceId,
-      identity.sessionId,
-      identity.turn,
-      identity.callId,
-      request.title,
-      request.templateId,
-      requestJson,
-      createdAt,
-      createdAt,
-    )
-    await this.preparePersistedRequest(runId, requestJson, signal)
-    return Object.freeze({ runId })
+    const requestIds = new Set<string>()
+    const normalized = items.map(item => {
+      if (item === null || typeof item !== 'object' || !isGenerationRequestId(item.requestId)) {
+        throw new GenerationRuntimeError('GENERATION_SUBMISSION_INVALID', 'Each requestId must be a UUID.')
+      }
+      const requestId = item.requestId.toLowerCase()
+      if (requestIds.has(requestId)) {
+        throw new GenerationRuntimeError('GENERATION_SUBMISSION_INVALID', `Duplicate requestId: ${item.requestId}.`)
+      }
+      requestIds.add(requestId)
+      const request = generationRequest(canonicalJson(item.request as unknown as JsonValue))
+      return { requestId, request, requestJson: canonicalJson(request as unknown as JsonValue) }
+    })
+    const accepted: GenerationSubmissionResult['items'][number][] = []
+    this.database.exec('BEGIN IMMEDIATE')
+    try {
+      const find = this.database.prepare(`
+        SELECT * FROM generation_runs WHERE workspace_id = ? AND session_id = ? AND request_id = ?
+      `)
+      const insert = this.database.prepare(`
+        INSERT INTO generation_runs(
+          run_id, request_id, workspace_id, session_id, turn, call_id, title, template_id,
+          status, revision, request_json, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'created', 0, ?, ?, ?)
+      `)
+      for (const item of normalized) {
+        const row = find.get(identity.workspaceId, identity.sessionId, item.requestId) as unknown as RunRow | undefined
+        if (row !== undefined) {
+          if (row.request_json !== item.requestJson) {
+            throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', `Request ${item.requestId} was already accepted with a different Generation request.`)
+          }
+          accepted.push(Object.freeze({ requestId: item.requestId, runId: row.run_id, acceptance: 'reused' }))
+          continue
+        }
+        const runId = this.createRunId()
+        assertPathId(runId, 'runId')
+        const createdAt = this.now()
+        insert.run(
+          runId, item.requestId, identity.workspaceId, identity.sessionId, identity.turn, identity.callId,
+          item.request.title, item.request.templateId, item.requestJson, createdAt, createdAt,
+        )
+        accepted.push(Object.freeze({ requestId: item.requestId, runId, acceptance: 'accepted' }))
+      }
+      this.database.exec('COMMIT')
+    } catch (error) {
+      this.database.exec('ROLLBACK')
+      throw error
+    }
+    return Object.freeze({ items: Object.freeze(accepted) })
   }
 
   queryRuns(query: GenerationRunQuery): readonly GenerationRunSnapshot[] {
@@ -811,7 +834,7 @@ export class GenerationRuntime {
   }
 
   async readGenerationRunMedia(
-    input: { readonly workspaceId: string; readonly runIds: readonly string[] },
+    input: { readonly workspaceId: string; readonly runIds: readonly string[]; readonly includeParameters?: boolean },
     signal?: AbortSignal,
   ): Promise<GenerationRunMediaResult> {
     assertRunLookupInput(input)
@@ -820,8 +843,9 @@ export class GenerationRuntime {
       signal?.throwIfAborted()
       try {
         const row = this.resolveGenerationRunRow(input.workspaceId, requestedRunId)
-        const request = historicalGenerationRequest(row.request_json)
-        const argumentsValue = runInputArguments(request)
+        const parameters = input.includeParameters === true
+          ? runInputArguments(historicalGenerationRequest(row.request_json)).parameters
+          : undefined
         const mediaRows = this.database.prepare(`
           SELECT * FROM generation_media
           WHERE run_id = ? AND media_kind = 'image'
@@ -829,9 +853,16 @@ export class GenerationRuntime {
         `).all(row.run_id) as unknown as MediaRow[]
         runs.push(Object.freeze({
           run_id: row.run_id,
+          request_id: row.request_id,
           lookup_status: 'available' as const,
-          title: argumentsValue.title,
-          parameters: argumentsValue.parameters,
+          title: row.title,
+          status: row.status,
+          revision: row.revision,
+          updated_at: row.updated_at,
+          instance_id: row.instance_id,
+          prompt_id: row.prompt_id,
+          run_error: row.error_code === null ? null : runInputError(row.error_code, row.error_message ?? 'Generation failed.'),
+          ...(parameters === undefined ? {} : { parameters }),
           images: Object.freeze(mediaRows.map(media => Object.freeze({
             media_id: media.media_id,
             node_id: media.node_id,
@@ -903,13 +934,6 @@ export class GenerationRuntime {
 
   close(): void {
     this.database.close()
-  }
-
-  private findByCall(identity: GenerationIdentity): RunRow | undefined {
-    return this.database.prepare(`
-      SELECT * FROM generation_runs
-      WHERE workspace_id = ? AND session_id = ? AND call_id = ?
-    `).get(identity.workspaceId, identity.sessionId, identity.callId) as unknown as RunRow | undefined
   }
 
   private async readGenerationRunInput(
@@ -1043,7 +1067,7 @@ export class GenerationRuntime {
   private async advanceRun(row: RunRow, signal?: AbortSignal): Promise<void> {
     try {
       if (row.status === 'created') {
-        await this.prepare(row.run_id, generationRequest(row.request_json), signal)
+        await this.prepareOnce(row.run_id, generationRequest(row.request_json), signal)
         return
       }
       if (row.status === 'prepared') {
@@ -1324,33 +1348,6 @@ export class GenerationRuntime {
         .run(firstMissing, this.now(), row.run_id)
     }
     if (this.now() - firstMissing >= this.missingObservationMs) this.markFailed(row.run_id, terminal)
-  }
-
-  private async prepare(runId: string, request: GenerationRequest, signal?: AbortSignal): Promise<void> {
-    const current = this.preparations.get(runId)
-    if (current !== undefined) return current
-    const preparation = this.prepareOnce(runId, request, signal).finally(() => {
-      this.preparations.delete(runId)
-    })
-    this.preparations.set(runId, preparation)
-    return preparation
-  }
-
-  private async preparePersistedRequest(runId: string, document: string, signal?: AbortSignal): Promise<void> {
-    let request: GenerationRequest
-    try {
-      request = generationRequest(document)
-    } catch (error) {
-      const facts = errorFacts(error)
-      this.database.prepare(`
-        UPDATE generation_runs SET status = 'failed', revision = revision + 1,
-          error_code = ?, error_message = ?, updated_at = ?
-        WHERE run_id = ? AND status = 'created'
-      `).run(facts.code, facts.message, this.now(), runId)
-      if (error instanceof GenerationRuntimeError) throw error
-      throw new GenerationRuntimeError(facts.code, facts.message)
-    }
-    await this.prepare(runId, request, signal)
   }
 
   private async prepareOnce(runId: string, request: GenerationRequest, signal?: AbortSignal): Promise<void> {

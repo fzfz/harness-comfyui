@@ -1,0 +1,3903 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "ce2971f1-dc26-474d-96d4-ccf9bc0ed191",
+  "matrixPath": "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/matrix.json",
+  "assessedAt": "2026-10-28T14:43:35.310206+00:00",
+  "scope": "只读审阅已结束导出记录；独立产物核验另行汇总。",
+  "model": {
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "cases": [
+    {
+      "caseId": "first-files",
+      "repetition": 1,
+      "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/first-files/1/initial/trace/sessions/session-session-94636b6e-5c1c-4151-8d77-3ccba19b7524/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_76516046-7e18-423e-aef8-3fb080bb787c",
+          "run_d60ccf9f-80d9-4c2d-a6f2-7e4fa9e52ec6",
+          "run_318db1d7-f179-4925-a77a-838ef83b4984",
+          "run_4b479984-36d9-4772-93ed-4f4d49cf8746",
+          "run_b639e239-8951-45dd-b966-889d09d860b4",
+          "run_7305e164-b794-496b-99c5-bba2acfceb1b",
+          "run_d81888f4-7217-45a2-b3e3-23a6b4f2bc6e",
+          "run_790e3d33-7faf-42dc-81d4-c68c6d17fb0a",
+          "run_8f4b5597-da84-495a-8249-fceaa68c77bc",
+          "run_3fc1cc01-09d0-4594-a47e-597dc1e90c79",
+          "run_695ac4f3-6370-42b4-9c4d-84e129171ed0"
+        ],
+        "promptHandoff": "parameter_files 引用原始文件；提交清单保留 request_id。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerification": "所有 Run 已 succeeded 后调用 run-inputs；Python 读取完整文件，仅输出比较结果、尺寸、映射与路径。",
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待工具结果解析为 JSON，全部 runs 无 parameters；终态程序的 print 与 sips stdout 逐项审阅，均未输出 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 12,
+        "toolCallsByName": {
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 8
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          },
+          "method": "逐条读取 shell 命令；for 循环中的 4 个帮助子命令按实际循环次数统计。"
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 22110,
+          "outputTokens": 3031,
+          "totalTokens": 194101,
+          "cacheReadTokens": 168960
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 26
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 43
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 48
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 52
+          },
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 53
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 57
+          },
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 63
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 66
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "seq": 68
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "minor-recovered",
+          "detail": "sips 向 /dev/null 解码失败；随后改为 verification-decodes 文件并确认 11 项解码成功。",
+          "evidence": [
+            {
+              "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+              "seq": 57
+            },
+            {
+              "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+              "seq": 58
+            },
+            {
+              "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+              "seq": 62
+            },
+            {
+              "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+              "seq": 63
+            }
+          ]
+        }
+      ],
+      "waitingResults": [
+        {
+          "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+          "resultSeq": 53,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_76516046-7e18-423e-aef8-3fb080bb787c",
+            "run_d60ccf9f-80d9-4c2d-a6f2-7e4fa9e52ec6",
+            "run_318db1d7-f179-4925-a77a-838ef83b4984",
+            "run_4b479984-36d9-4772-93ed-4f4d49cf8746",
+            "run_b639e239-8951-45dd-b966-889d09d860b4",
+            "run_7305e164-b794-496b-99c5-bba2acfceb1b",
+            "run_d81888f4-7217-45a2-b3e3-23a6b4f2bc6e",
+            "run_790e3d33-7faf-42dc-81d4-c68c6d17fb0a",
+            "run_8f4b5597-da84-495a-8249-fceaa68c77bc",
+            "run_3fc1cc01-09d0-4594-a47e-597dc1e90c79",
+            "run_695ac4f3-6370-42b4-9c4d-84e129171ed0"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 2,
+      "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/first-files/2/initial/trace/sessions/session-session-e3e98392-7d6e-4464-b624-5a96d0ae898a/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_2fe8e673-5579-414d-8945-0ef51d7301e9",
+          "run_ce59f1ce-62be-4dd6-a0b5-5f035cfda639",
+          "run_88f0027a-f3fa-411e-9cb5-1cdba4eb65dc",
+          "run_fc3fd2e4-ce0b-4087-a997-ccb20ed3e48c",
+          "run_574d9340-a0f6-4ea9-adcd-a04e9080782b",
+          "run_89b1da76-8e2e-443d-ba46-7601a9a52b1a",
+          "run_1ce0e616-7e36-4f59-9207-aaf16494f993",
+          "run_6b1650db-fcd3-48bd-ab70-248e86bdc725",
+          "run_b5cd450c-3995-474f-9e26-8736a68f73f1",
+          "run_95bd2fa9-0cf1-404d-b4c2-e20359397556",
+          "run_6feb111e-4e4e-40d2-aeb0-7266e63b8d7f"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态参数核对显示正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "terminalParameterVerification": "状态全部 succeeded 后读取 run-inputs；程序仅打印比较结果、尺寸及媒体路径。",
+        "allRunIdsAndMediaPathsDelivered": true,
+        "deliveryPaths": "受管媒体路径",
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "已解析等待 JSON 的全部 runs，并人工审阅历史查询程序输出与 sips 输出；没有 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 12,
+        "toolCallsByName": {
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 8
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 24056,
+          "outputTokens": 2784,
+          "totalTokens": 194648,
+          "cacheReadTokens": 167808
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 26
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 43
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 48
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 52
+          },
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 53
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 57
+          },
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 63
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 66
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "seq": 68
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "waitingResults": [
+        {
+          "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+          "resultSeq": 53,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_2fe8e673-5579-414d-8945-0ef51d7301e9",
+            "run_ce59f1ce-62be-4dd6-a0b5-5f035cfda639",
+            "run_88f0027a-f3fa-411e-9cb5-1cdba4eb65dc",
+            "run_fc3fd2e4-ce0b-4087-a997-ccb20ed3e48c",
+            "run_574d9340-a0f6-4ea9-adcd-a04e9080782b",
+            "run_89b1da76-8e2e-443d-ba46-7601a9a52b1a",
+            "run_1ce0e616-7e36-4f59-9207-aaf16494f993",
+            "run_6b1650db-fcd3-48bd-ab70-248e86bdc725",
+            "run_b5cd450c-3995-474f-9e26-8736a68f73f1",
+            "run_95bd2fa9-0cf1-404d-b4c2-e20359397556",
+            "run_6feb111e-4e4e-40d2-aeb0-7266e63b8d7f"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 3,
+      "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/first-files/3/initial/trace/sessions/session-session-4d3397f8-3583-400c-babd-c6201f244c3f/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_2dfbe8ca-1604-4132-a3d3-93c054cf79c2",
+          "run_eaed69f7-0617-4525-b7af-d19043abea26",
+          "run_85dae2f0-c13c-4675-b9f3-04f6d631323e",
+          "run_43854b93-b2a0-41ba-97b8-db4a1b1a21a9",
+          "run_56bd1871-3c5e-470a-9988-ab1e5879fcec",
+          "run_fe8447b8-ac55-4c4d-a5b3-6538b7fe4f6a",
+          "run_9cea8e96-12f4-462b-b74f-8936a0d1c44f",
+          "run_450e56e1-f634-4dbe-badb-bf8375e18c8c",
+          "run_532c4a9c-d462-4f5a-8e20-381e4d8da990",
+          "run_18d04238-70a4-4d9b-8efa-693448b2da9d",
+          "run_49656f75-0df4-4cd8-851a-852f08241c57"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态参数核对显示正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "terminalParameterVerification": "状态全部 succeeded 后读取 run-inputs；程序仅打印比较结果、尺寸及媒体路径。",
+        "allRunIdsAndMediaPathsDelivered": true,
+        "deliveryPaths": "受管媒体路径",
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "已解析等待 JSON 的全部 runs，并人工审阅历史查询程序输出与 sips 输出；没有 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 11,
+        "toolCallsByName": {
+          "skill": 1,
+          "bash": 7,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 20843,
+          "outputTokens": 2397,
+          "totalTokens": 150344,
+          "cacheReadTokens": 127104
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 22
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 33
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 45
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 49
+          },
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 50
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 54
+          },
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 55
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 58
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "seq": 60
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "minor-recovered",
+          "detail": "输入文件列表使用花括号展开时丢失前导零；随后改用 seq -w 检查成功。",
+          "evidence": [
+            {
+              "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+              "seq": 34
+            },
+            {
+              "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+              "seq": 35
+            },
+            {
+              "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+              "seq": 39
+            },
+            {
+              "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+              "seq": 40
+            }
+          ]
+        }
+      ],
+      "waitingResults": [
+        {
+          "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+          "resultSeq": 50,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_2dfbe8ca-1604-4132-a3d3-93c054cf79c2",
+            "run_eaed69f7-0617-4525-b7af-d19043abea26",
+            "run_85dae2f0-c13c-4675-b9f3-04f6d631323e",
+            "run_43854b93-b2a0-41ba-97b8-db4a1b1a21a9",
+            "run_56bd1871-3c5e-470a-9988-ab1e5879fcec",
+            "run_fe8447b8-ac55-4c4d-a5b3-6538b7fe4f6a",
+            "run_9cea8e96-12f4-462b-b74f-8936a0d1c44f",
+            "run_450e56e1-f634-4dbe-badb-bf8375e18c8c",
+            "run_532c4a9c-d462-4f5a-8e20-381e4d8da990",
+            "run_18d04238-70a4-4d9b-8efa-693448b2da9d",
+            "run_49656f75-0df4-4cd8-851a-852f08241c57"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 1,
+      "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/compressed-history/1/initial/trace/sessions/session-session-93f31496-adbc-4891-aedf-79db59a194e7/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_df26fe6c-1e2e-4826-9bbb-6496e268a425",
+          "run_485c6bf4-a36a-4e91-be85-a863d85d250c",
+          "run_a686ab43-5e58-4364-866a-80c97a6d5b38",
+          "run_26beef80-85fd-4d00-a0b9-40af98bf5d70",
+          "run_36663af5-ff2a-4752-b168-41ca117fd5ab",
+          "run_3ce12aa6-bc81-42f6-aa7a-1fc8ce1c4e59",
+          "run_5354f7ec-0f4f-452f-b294-9550a68808b3",
+          "run_ddc048a7-80a6-44f2-be50-bcf8254b400b",
+          "run_747b38c2-0ec1-41e8-b345-4a2ed075e70b",
+          "run_670af10c-10ba-451d-ba48-c3fbcf3db510",
+          "run_7b5c1bc4-2075-451b-8c3e-99e60a292405"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态参数核对显示正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "terminalParameterVerification": "状态全部 succeeded 后读取 run-inputs；程序仅打印比较结果、尺寸及媒体路径。",
+        "allRunIdsAndMediaPathsDelivered": true,
+        "deliveryPaths": "受管媒体路径",
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "已解析等待 JSON 的全部 runs，并人工审阅历史查询程序输出与 sips 输出；没有 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 13,
+        "toolCallsByName": {
+          "skill": 1,
+          "bash": 9,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 31834,
+          "outputTokens": 2727,
+          "totalTokens": 174593,
+          "cacheReadTokens": 140032
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 22
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 37
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 47
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 51
+          },
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 52
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 61
+          },
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 62
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 65
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "seq": 67
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "waitingResults": [
+        {
+          "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+          "resultSeq": 52,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_df26fe6c-1e2e-4826-9bbb-6496e268a425",
+            "run_485c6bf4-a36a-4e91-be85-a863d85d250c",
+            "run_a686ab43-5e58-4364-866a-80c97a6d5b38",
+            "run_26beef80-85fd-4d00-a0b9-40af98bf5d70",
+            "run_36663af5-ff2a-4752-b168-41ca117fd5ab",
+            "run_3ce12aa6-bc81-42f6-aa7a-1fc8ce1c4e59",
+            "run_5354f7ec-0f4f-452f-b294-9550a68808b3",
+            "run_ddc048a7-80a6-44f2-be50-bcf8254b400b",
+            "run_747b38c2-0ec1-41e8-b345-4a2ed075e70b",
+            "run_670af10c-10ba-451d-ba48-c3fbcf3db510",
+            "run_7b5c1bc4-2075-451b-8c3e-99e60a292405"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 2,
+      "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/compressed-history/2/initial/trace/sessions/session-session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_04fa4905-0a7a-4621-a184-5884c3fb9678",
+          "run_982b715f-4fae-442f-9d84-55d21713ba85",
+          "run_470c1b65-9404-45a4-bb39-a96b40c7212f",
+          "run_a386c979-9887-40df-9d64-5cd9b2435147",
+          "run_8db00e39-27b6-44e3-bdff-2e3824b8c479",
+          "run_285b1419-27bd-4d0e-afae-eea18676f745",
+          "run_b5c2db1d-84b7-4eca-83e0-02e8b6800310",
+          "run_95562ba3-85d9-46d4-9f8c-bceb119e3a54",
+          "run_480e2dd5-7c9c-4793-a7c6-8f8d76de853a",
+          "run_7b9b09f5-93d5-47dc-85df-2607c9d189f9",
+          "run_1f10f12b-0d1c-4692-9ebf-ec026ad6d3b2"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态参数核对显示正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "terminalParameterVerification": "状态全部 succeeded 后读取 run-inputs；程序仅打印比较结果、尺寸及媒体路径。",
+        "allRunIdsAndMediaPathsDelivered": true,
+        "deliveryPaths": "工作目录 images 副本",
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "已解析等待 JSON 的全部 runs，并人工审阅历史查询程序输出与 sips 输出；没有 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 12,
+        "toolCallsByName": {
+          "skill": 1,
+          "bash": 8,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 22130,
+          "outputTokens": 2196,
+          "totalTokens": 178438,
+          "cacheReadTokens": 154112
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 22
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 35
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 45
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 49
+          },
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 50
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 54
+          },
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 60
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 63
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "seq": 65
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "waitingResults": [
+        {
+          "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+          "resultSeq": 50,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_04fa4905-0a7a-4621-a184-5884c3fb9678",
+            "run_982b715f-4fae-442f-9d84-55d21713ba85",
+            "run_470c1b65-9404-45a4-bb39-a96b40c7212f",
+            "run_a386c979-9887-40df-9d64-5cd9b2435147",
+            "run_8db00e39-27b6-44e3-bdff-2e3824b8c479",
+            "run_285b1419-27bd-4d0e-afae-eea18676f745",
+            "run_b5c2db1d-84b7-4eca-83e0-02e8b6800310",
+            "run_95562ba3-85d9-46d4-9f8c-bceb119e3a54",
+            "run_480e2dd5-7c9c-4793-a7c6-8f8d76de853a",
+            "run_7b9b09f5-93d5-47dc-85df-2607c9d189f9",
+            "run_1f10f12b-0d1c-4692-9ebf-ec026ad6d3b2"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 3,
+      "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/compressed-history/3/initial/trace/sessions/session-session-32dad0d5-7f11-4a1c-823a-5041331106ce/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_3e4a5075-6064-4ff4-b6ce-5341aab393a7",
+          "run_3a0977af-655f-4348-afa4-9d977bf001a4",
+          "run_de797411-5993-4fa0-8a22-090d40e6e345",
+          "run_8c45fc69-3721-409f-8fad-cc73f5d2c35e",
+          "run_689c4087-5134-4a78-a556-96ce2c8648e2",
+          "run_7008212e-c894-4fcd-8e45-31c906aaf1ff",
+          "run_0d322279-57d4-4ec9-a476-90145bd7bdbc",
+          "run_b5fc98e2-564f-4e56-aab7-e067efedef2c",
+          "run_3ab1abd4-9d76-460e-996f-1aa12425a768",
+          "run_83cd3d29-93fc-452c-a96f-4528f8d9e4bd",
+          "run_2e803a55-95a7-4b8c-ade8-eabf3930e757"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态参数核对显示正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "terminalParameterVerification": "状态全部 succeeded 后读取 run-inputs；程序仅打印比较结果、尺寸及媒体路径。",
+        "allRunIdsAndMediaPathsDelivered": true,
+        "deliveryPaths": "工作目录 images 副本",
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "已解析等待 JSON 的全部 runs，并人工审阅历史查询程序输出与 sips 输出；没有 Prompt 正文。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 11,
+        "toolCallsByName": {
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 7
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 1,
+            "run-inputs": 1
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 21563,
+          "outputTokens": 2260,
+          "totalTokens": 168335,
+          "cacheReadTokens": 144512
+        }
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 26
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 43
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 48
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 52
+          },
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 53
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 57
+          },
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 58
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 61
+          }
+        ],
+        "end": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "seq": 63
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "waitingResults": [
+        {
+          "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+          "resultSeq": 53,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_3e4a5075-6064-4ff4-b6ce-5341aab393a7",
+            "run_3a0977af-655f-4348-afa4-9d977bf001a4",
+            "run_de797411-5993-4fa0-8a22-090d40e6e345",
+            "run_8c45fc69-3721-409f-8fad-cc73f5d2c35e",
+            "run_689c4087-5134-4a78-a556-96ce2c8648e2",
+            "run_7008212e-c894-4fcd-8e45-31c906aaf1ff",
+            "run_0d322279-57d4-4ec9-a476-90145bd7bdbc",
+            "run_b5fc98e2-564f-4e56-aab7-e067efedef2c",
+            "run_3ab1abd4-9d76-460e-996f-1aa12425a768",
+            "run_83cd3d29-93fc-452c-a96f-4528f8d9e4bd",
+            "run_2e803a55-95a7-4b8c-ade8-eabf3930e757"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 1,
+      "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/child-handoff/1/initial/trace/sessions/session-session-0f24da03-224f-4613-b47b-0b53cd721ca3/session.json",
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/child-handoff/1/initial/trace/sessions/session-9acee8a9-63e9-4013-8a86-23f1b8493674/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_e0d1e47a-2374-4dc7-a434-c5db2e9c5f36",
+          "run_ab7815ca-416f-4380-9e57-b1e7e457ced1",
+          "run_c0b805fa-096d-4549-89d7-751927cd3d13",
+          "run_cf376c27-033d-4df0-bcde-9f4d4ad3973d",
+          "run_e4f8a285-1c7c-41b7-842a-2251320328cf",
+          "run_73c8e4f4-2227-4134-b1d6-632879306dac",
+          "run_87bd0e2f-58d8-411a-865e-9589f8f4668e",
+          "run_272e0f6c-1a63-4c01-98e2-5d799a463bdf",
+          "run_40eeca25-d12c-48b5-a2ba-4e5e59efe0ae",
+          "run_bcf1d6d7-641f-4a6f-bbf0-06abb70cce9d",
+          "run_95221860-c90a-42b8-974d-f98cb10cc068"
+        ],
+        "promptHandoff": "子会话 cp 并 cmp 逐字节核对；主会话 parameter_files 引用 child-output 文件。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 14,
+        "toolCallsByName": {
+          "subagent": 1,
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 8,
+          "send_message": 1
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 27257,
+          "outputTokens": 4317,
+          "totalTokens": 194646,
+          "cacheReadTokens": 163072
+        },
+        "sessions": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "usage": {
+              "inputTokens": 23044,
+              "outputTokens": 2845,
+              "totalTokens": 165409,
+              "cacheReadTokens": 139520
+            },
+            "toolCalls": {
+              "subagent": 1,
+              "skill": 1,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1,
+              "bash": 7
+            }
+          },
+          {
+            "sessionId": "9acee8a9-63e9-4013-8a86-23f1b8493674",
+            "usage": {
+              "inputTokens": 4213,
+              "outputTokens": 1472,
+              "totalTokens": 29237,
+              "cacheReadTokens": 23552
+            },
+            "toolCalls": {
+              "bash": 1,
+              "send_message": 1
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 22
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 23
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 31
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 32
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 39
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 40
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 41
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 42
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 54
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 55
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 61
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 62
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 61
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 62
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 66
+          },
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 67
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "seq": 70
+          }
+        ],
+        "childCopyAndDelivery": [
+          {
+            "sessionId": "9acee8a9-63e9-4013-8a86-23f1b8493674",
+            "seq": 15
+          },
+          {
+            "sessionId": "9acee8a9-63e9-4013-8a86-23f1b8493674",
+            "seq": 16
+          },
+          {
+            "sessionId": "9acee8a9-63e9-4013-8a86-23f1b8493674",
+            "seq": 20
+          },
+          {
+            "sessionId": "9acee8a9-63e9-4013-8a86-23f1b8493674",
+            "seq": 24
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          {
+            "sessionId": "9acee8a9-63e9-4013-8a86-23f1b8493674",
+            "requestHeaderSeqs": [
+              11
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "waitingResults": [
+        {
+          "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+          "resultSeq": 62,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_e0d1e47a-2374-4dc7-a434-c5db2e9c5f36",
+            "run_ab7815ca-416f-4380-9e57-b1e7e457ced1",
+            "run_c0b805fa-096d-4549-89d7-751927cd3d13",
+            "run_cf376c27-033d-4df0-bcde-9f4d4ad3973d",
+            "run_e4f8a285-1c7c-41b7-842a-2251320328cf",
+            "run_73c8e4f4-2227-4134-b1d6-632879306dac",
+            "run_87bd0e2f-58d8-411a-865e-9589f8f4668e",
+            "run_272e0f6c-1a63-4c01-98e2-5d799a463bdf",
+            "run_40eeca25-d12c-48b5-a2ba-4e5e59efe0ae",
+            "run_bcf1d6d7-641f-4a6f-bbf0-06abb70cce9d",
+            "run_95221860-c90a-42b8-974d-f98cb10cc068"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 2,
+      "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/child-handoff/2/initial/trace/sessions/session-session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa/session.json",
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/child-handoff/2/initial/trace/sessions/session-8444fb17-2e72-42d5-bc41-797876e37911/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_20ce2988-7f7b-4c55-8ef8-aadc0e16947d",
+          "run_f4c8c86a-a145-4f0f-af0c-29c6084e580b",
+          "run_e538de68-97ed-4200-a2f8-af9182160193",
+          "run_6c6537e3-8a91-4aac-bdcb-6d0ed74a3476",
+          "run_d859dabb-6b31-45e5-b783-811641bf6589",
+          "run_7f05fd56-84a0-47a0-b6e1-441cb506a8a8",
+          "run_2f8664da-a03c-4796-911c-5af3d8161d72",
+          "run_0352ab06-3e0a-442e-8a6f-c9c0a3948ba8",
+          "run_6a089d00-e31c-41d0-8370-374e50539077",
+          "run_ec99ca71-9e1e-4bb9-af8f-afe88e6a436d",
+          "run_88cece0a-6f09-4a28-b25f-df46ee8b3dd1"
+        ],
+        "promptHandoff": "子会话 cp 与 cmp 验证原文件逐字节一致；主会话直接引用 child-output。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable",
+        "terminalParameterVerification": "本案例未调用 run-inputs；图片与 Run 映射已核验，正文保存一致性待独立产物核验。"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 13,
+        "toolCallsByName": {
+          "subagent": 1,
+          "skill": 1,
+          "bash": 7,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "send_message": 1
+        },
+        "managedCliInvocations": {
+          "business": 3,
+          "help": 3,
+          "total": 6
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 43486,
+          "outputTokens": 3937,
+          "totalTokens": 187967,
+          "cacheReadTokens": 140544
+        },
+        "sessions": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "usage": {
+              "inputTokens": 36163,
+              "outputTokens": 2554,
+              "totalTokens": 158909,
+              "cacheReadTokens": 120192
+            },
+            "toolCalls": {
+              "subagent": 1,
+              "skill": 1,
+              "bash": 6,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1
+            }
+          },
+          {
+            "sessionId": "8444fb17-2e72-42d5-bc41-797876e37911",
+            "usage": {
+              "inputTokens": 7323,
+              "outputTokens": 1383,
+              "totalTokens": 29058,
+              "cacheReadTokens": 20352
+            },
+            "toolCalls": {
+              "bash": 1,
+              "send_message": 1
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 22
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 23
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 27
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 28
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 38
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 39
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 44
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 45
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 51
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 52
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 57
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 58
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 64
+          },
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 65
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "seq": 68
+          }
+        ],
+        "childCopyAndDelivery": [
+          {
+            "sessionId": "8444fb17-2e72-42d5-bc41-797876e37911",
+            "seq": 15
+          },
+          {
+            "sessionId": "8444fb17-2e72-42d5-bc41-797876e37911",
+            "seq": 16
+          },
+          {
+            "sessionId": "8444fb17-2e72-42d5-bc41-797876e37911",
+            "seq": 20
+          },
+          {
+            "sessionId": "8444fb17-2e72-42d5-bc41-797876e37911",
+            "seq": 24
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          {
+            "sessionId": "8444fb17-2e72-42d5-bc41-797876e37911",
+            "requestHeaderSeqs": [
+              11
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "notes": "模型未调用 run-inputs 核对保存的 Prompt；正文一致性的服务端证据由独立产物核验补充。",
+      "waitingResults": [
+        {
+          "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+          "resultSeq": 58,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_20ce2988-7f7b-4c55-8ef8-aadc0e16947d",
+            "run_f4c8c86a-a145-4f0f-af0c-29c6084e580b",
+            "run_e538de68-97ed-4200-a2f8-af9182160193",
+            "run_6c6537e3-8a91-4aac-bdcb-6d0ed74a3476",
+            "run_d859dabb-6b31-45e5-b783-811641bf6589",
+            "run_7f05fd56-84a0-47a0-b6e1-441cb506a8a8",
+            "run_2f8664da-a03c-4796-911c-5af3d8161d72",
+            "run_0352ab06-3e0a-442e-8a6f-c9c0a3948ba8",
+            "run_6a089d00-e31c-41d0-8370-374e50539077",
+            "run_ec99ca71-9e1e-4bb9-af8f-afe88e6a436d",
+            "run_88cece0a-6f09-4a28-b25f-df46ee8b3dd1"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 3,
+      "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/child-handoff/3/initial/trace/sessions/session-session-a988a84f-df42-43e8-81f6-2eea7fbc358d/session.json",
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/child-handoff/3/initial/trace/sessions/session-ab973fa4-8917-4ee5-a8b0-794bc3ede206/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_1e88c641-7483-41e7-83c1-b4be958ea853",
+          "run_343d276e-e32e-4032-bf9f-a205c6a8b2d8",
+          "run_e25518a1-feba-4adc-ba1a-10c530eedd29",
+          "run_465d8af6-abf4-4845-bd85-a86f6f92d81c",
+          "run_062edd9c-3a39-4a83-8627-c16617ef861c",
+          "run_90bf1990-800f-4622-92fd-0e1549f0fdbd",
+          "run_0abf50ea-af89-4d70-aa86-2a2c68dbe64c",
+          "run_547fb2d7-c956-45d2-ae00-6f3f95167b0c",
+          "run_a49e838b-3713-41a4-b923-2f15c6901b16",
+          "run_e0a73d8b-4052-487f-9fff-0606e8ecabdb",
+          "run_eb7828df-b347-465e-9d22-8aac33f48c55"
+        ],
+        "promptHandoff": "子会话 cp 与 cmp 核对字节一致，主会话提交前再次比较原文件与 child-output，并在终态核对保存 Prompt。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 12,
+        "toolCallsByName": {
+          "subagent": 1,
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 6,
+          "send_message": 1
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 49864,
+          "outputTokens": 3917,
+          "totalTokens": 194069,
+          "cacheReadTokens": 140288
+        },
+        "sessions": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "usage": {
+              "inputTokens": 45640,
+              "outputTokens": 2551,
+              "totalTokens": 165055,
+              "cacheReadTokens": 116864
+            },
+            "toolCalls": {
+              "subagent": 1,
+              "skill": 1,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1,
+              "bash": 5
+            }
+          },
+          {
+            "sessionId": "ab973fa4-8917-4ee5-a8b0-794bc3ede206",
+            "usage": {
+              "inputTokens": 4224,
+              "outputTokens": 1366,
+              "totalTokens": 29014,
+              "cacheReadTokens": 23424
+            },
+            "toolCalls": {
+              "bash": 1,
+              "send_message": 1
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 22
+          },
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 23
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 31
+          },
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 32
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 38
+          },
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 39
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 49
+          },
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 50
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 55
+          },
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 56
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 62
+          },
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 63
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "seq": 66
+          }
+        ],
+        "childCopyAndDelivery": [
+          {
+            "sessionId": "ab973fa4-8917-4ee5-a8b0-794bc3ede206",
+            "seq": 15
+          },
+          {
+            "sessionId": "ab973fa4-8917-4ee5-a8b0-794bc3ede206",
+            "seq": 16
+          },
+          {
+            "sessionId": "ab973fa4-8917-4ee5-a8b0-794bc3ede206",
+            "seq": 20
+          },
+          {
+            "sessionId": "ab973fa4-8917-4ee5-a8b0-794bc3ede206",
+            "seq": 24
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          {
+            "sessionId": "ab973fa4-8917-4ee5-a8b0-794bc3ede206",
+            "requestHeaderSeqs": [
+              11
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "waitingResults": [
+        {
+          "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+          "resultSeq": 56,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_1e88c641-7483-41e7-83c1-b4be958ea853",
+            "run_343d276e-e32e-4032-bf9f-a205c6a8b2d8",
+            "run_e25518a1-feba-4adc-ba1a-10c530eedd29",
+            "run_465d8af6-abf4-4845-bd85-a86f6f92d81c",
+            "run_062edd9c-3a39-4a83-8627-c16617ef861c",
+            "run_90bf1990-800f-4622-92fd-0e1549f0fdbd",
+            "run_0abf50ea-af89-4d70-aa86-2a2c68dbe64c",
+            "run_547fb2d7-c956-45d2-ae00-6f3f95167b0c",
+            "run_a49e838b-3713-41a4-b923-2f15c6901b16",
+            "run_e0a73d8b-4052-487f-9fff-0606e8ecabdb",
+            "run_eb7828df-b347-465e-9d22-8aac33f48c55"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 1,
+      "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/known-failure/1/initial/trace/sessions/session-session-a12691e7-c237-482b-92cf-757c0e1c154a/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_b4fb2da6-47cf-40dc-88d4-c71d87d68ed5",
+          "run_1df2e164-9569-414e-8d1e-d6b6930c51df",
+          "run_b4bd4212-caf5-49a4-b672-efc24f9db815",
+          "run_dd1024fa-2970-4e93-8195-e97ad0c7dd9b",
+          "run_54e6f13d-6bcb-4ff4-873f-8cadc9ae227d",
+          "run_affbb4ab-cc1f-4d83-a1e4-470f4ac4daad",
+          "run_f230eace-6314-4c93-8f97-c22997b0c2a7",
+          "run_370f786f-80cd-422e-8011-713d0e26e188",
+          "run_a7bea2bd-23c2-47f5-8f35-fa60883ac044",
+          "run_8fccccac-1b39-4da7-b677-fe46e1579f80",
+          "run_42d58755-5320-4787-93d5-ab9b2b7ed801"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态程序核对正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable",
+        "priorFailure": {
+          "run_id": "run_21bf69aa-74ae-40cd-b9ac-904400e92d81",
+          "request_id": "6c199c98-1320-4185-8ecd-71d9b22c8d9d",
+          "lookup_status": "available",
+          "title": "Controlled prior generation failure",
+          "status": "failed",
+          "revision": 1,
+          "updated_at": 1793197600535,
+          "instance_id": "1",
+          "prompt_id": null,
+          "run_error": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": []
+        },
+        "failureDiagnosisPromptBody": "用户指定旧失败 Run 的显式 run-inputs 读取正文；此读取发生在新批次提交之前。"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 11,
+        "toolCallsByName": {
+          "skill": 1,
+          "bash": 7,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "managedCliInvocations": {
+          "business": 6,
+          "help": 4,
+          "total": 10
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 22612,
+          "outputTokens": 2847,
+          "totalTokens": 199923,
+          "cacheReadTokens": 174464
+        },
+        "sessions": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "usage": {
+              "inputTokens": 22612,
+              "outputTokens": 2847,
+              "totalTokens": 199923,
+              "cacheReadTokens": 174464
+            },
+            "toolCalls": {
+              "skill": 1,
+              "bash": 7,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 21
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 22
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 35
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 36
+          }
+        ],
+        "priorFailure": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 40
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 41
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 45
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 46
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 50
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 51
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 55
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 56
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 60
+          },
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 61
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "seq": 64
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "notes": "seq41 的旧失败 Run 历史输入含正文，属于用户要求的失败诊断；新批次等待 seq50–51 正文为0。",
+      "waitingResults": [
+        {
+          "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+          "resultSeq": 51,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_b4fb2da6-47cf-40dc-88d4-c71d87d68ed5",
+            "run_1df2e164-9569-414e-8d1e-d6b6930c51df",
+            "run_b4bd4212-caf5-49a4-b672-efc24f9db815",
+            "run_dd1024fa-2970-4e93-8195-e97ad0c7dd9b",
+            "run_54e6f13d-6bcb-4ff4-873f-8cadc9ae227d",
+            "run_affbb4ab-cc1f-4d83-a1e4-470f4ac4daad",
+            "run_f230eace-6314-4c93-8f97-c22997b0c2a7",
+            "run_370f786f-80cd-422e-8011-713d0e26e188",
+            "run_a7bea2bd-23c2-47f5-8f35-fa60883ac044",
+            "run_8fccccac-1b39-4da7-b677-fe46e1579f80",
+            "run_42d58755-5320-4787-93d5-ab9b2b7ed801"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 2,
+      "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/known-failure/2/initial/trace/sessions/session-session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_5712aedb-5b8b-4992-baa6-11459e36b8d1",
+          "run_683b6404-ac86-4b6c-99c0-a9b4fc8ba06f",
+          "run_20ea4c06-d30a-4fed-b797-6b147e23f5f4",
+          "run_8e0b85d4-a190-4dbb-a43c-aec27c4323d2",
+          "run_98cd0a70-0b05-4d7b-a274-d8c149217d7d",
+          "run_2be92ecc-8e53-4c77-aa78-b2c8cbdc44a2",
+          "run_7ba00aa4-2dd4-4ba7-a0f3-b319d9db4edf",
+          "run_075c3111-0cf0-4df4-bc0e-2c2837d6f9d3",
+          "run_fbb05bb1-8e0a-4387-846a-43b7a0e20cf3",
+          "run_405d13ca-12b4-4e9b-8d88-2dcb5f32b754",
+          "run_96a0ede4-4700-43c4-a83f-a65d920e90f6"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态程序核对正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable",
+        "priorFailure": {
+          "run_id": "run_d791d088-0ca4-4469-99eb-79ed96fe2caf",
+          "request_id": "d262b529-da00-4ad0-9939-cd60dd28ebe9",
+          "lookup_status": "available",
+          "title": "Controlled prior generation failure",
+          "status": "failed",
+          "revision": 1,
+          "updated_at": 1793197686017,
+          "instance_id": "1",
+          "prompt_id": null,
+          "run_error": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": []
+        },
+        "failureDiagnosisPromptBody": "用户指定旧失败 Run 的显式 run-inputs 读取正文；此读取发生在新批次提交之前。"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 10,
+        "toolCallsByName": {
+          "skill": 1,
+          "bash": 6,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "managedCliInvocations": {
+          "business": 6,
+          "help": 4,
+          "total": 10
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 40943,
+          "outputTokens": 2613,
+          "totalTokens": 154020,
+          "cacheReadTokens": 110464
+        },
+        "sessions": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "usage": {
+              "inputTokens": 40943,
+              "outputTokens": 2613,
+              "totalTokens": 154020,
+              "cacheReadTokens": 110464
+            },
+            "toolCalls": {
+              "skill": 1,
+              "bash": 6,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 21
+          },
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 22
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 32
+          },
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 33
+          }
+        ],
+        "priorFailure": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 37
+          },
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 38
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 42
+          },
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 43
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 47
+          },
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 48
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 52
+          },
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 53
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "seq": 56
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "notes": "旧失败 Run 诊断调用 run-inputs 并输出正文；新批次等待正文为0。",
+      "waitingResults": [
+        {
+          "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+          "resultSeq": 48,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_5712aedb-5b8b-4992-baa6-11459e36b8d1",
+            "run_683b6404-ac86-4b6c-99c0-a9b4fc8ba06f",
+            "run_20ea4c06-d30a-4fed-b797-6b147e23f5f4",
+            "run_8e0b85d4-a190-4dbb-a43c-aec27c4323d2",
+            "run_98cd0a70-0b05-4d7b-a274-d8c149217d7d",
+            "run_2be92ecc-8e53-4c77-aa78-b2c8cbdc44a2",
+            "run_7ba00aa4-2dd4-4ba7-a0f3-b319d9db4edf",
+            "run_075c3111-0cf0-4df4-bc0e-2c2837d6f9d3",
+            "run_fbb05bb1-8e0a-4387-846a-43b7a0e20cf3",
+            "run_405d13ca-12b4-4e9b-8d88-2dcb5f32b754",
+            "run_96a0ede4-4700-43c4-a83f-a65d920e90f6"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 3,
+      "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/known-failure/3/initial/trace/sessions/session-session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_02ac97bc-f2f8-4f6b-8181-fee004160540",
+          "run_4d134739-8065-478d-9a19-8f0e9ae84290",
+          "run_aafcaf52-22f7-409f-8066-8707f007f943",
+          "run_3a04fbed-c947-4a00-bc04-d15e7c5710fd",
+          "run_00576f59-db0c-4ab8-a66d-0af86f40d3e4",
+          "run_29ec162b-fd9f-45b2-94ea-f4c51e461908",
+          "run_b3c42b1f-91a6-4a37-a097-7e94dd065069",
+          "run_2ab00191-69ae-4338-9c53-36195b0b7de4",
+          "run_2ad769ed-caaf-4bab-ad80-87c2a36a9543",
+          "run_2a6b3c3e-d763-48aa-b46e-4af51dd04427",
+          "run_e4a1a98e-90f6-4b64-943c-7d98078b9f64"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态程序核对正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "not-applicable",
+        "priorFailure": {
+          "run_id": "run_81a4428c-4cbc-4f64-ba26-55a56f74f9b1",
+          "request_id": "aadea7c5-a751-45bd-a0a8-e24a34b61c9a",
+          "lookup_status": "available",
+          "title": "Controlled prior generation failure",
+          "status": "failed",
+          "revision": 1,
+          "updated_at": 1793197760098,
+          "instance_id": "1",
+          "prompt_id": null,
+          "run_error": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": []
+        },
+        "failureDiagnosisPromptBody": "用户指定旧失败 Run 的显式 run-inputs 读取正文；此读取发生在新批次提交之前。"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 12,
+        "toolCallsByName": {
+          "skill": 1,
+          "bash": 8,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "managedCliInvocations": {
+          "business": 6,
+          "help": 4,
+          "total": 10
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 25274,
+          "outputTokens": 3697,
+          "totalTokens": 186795,
+          "cacheReadTokens": 157824
+        },
+        "sessions": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "usage": {
+              "inputTokens": 25274,
+              "outputTokens": 3697,
+              "totalTokens": 186795,
+              "cacheReadTokens": 157824
+            },
+            "toolCalls": {
+              "skill": 1,
+              "bash": 8,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 17
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 21
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 22
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 32
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 33
+          }
+        ],
+        "priorFailure": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 39
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 40
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 44
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 45
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 49
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 50
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 54
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 55
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 59
+          },
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 60
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "seq": 63
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+            "requestHeaderSeqs": [
+              13
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "notes": "旧失败诊断读取历史正文；新批次等待和终态核对摘要正文为0。sips 写 /dev/null 失败后使用 PNG 结构与解压核验恢复。",
+      "waitingResults": [
+        {
+          "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+          "resultSeq": 50,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_02ac97bc-f2f8-4f6b-8181-fee004160540",
+            "run_4d134739-8065-478d-9a19-8f0e9ae84290",
+            "run_aafcaf52-22f7-409f-8066-8707f007f943",
+            "run_3a04fbed-c947-4a00-bc04-d15e7c5710fd",
+            "run_00576f59-db0c-4ab8-a66d-0af86f40d3e4",
+            "run_29ec162b-fd9f-45b2-94ea-f4c51e461908",
+            "run_b3c42b1f-91a6-4a37-a097-7e94dd065069",
+            "run_2ab00191-69ae-4338-9c53-36195b0b7de4",
+            "run_2ad769ed-caaf-4bab-ad80-87c2a36a9543",
+            "run_2a6b3c3e-d763-48aa-b46e-4af51dd04427",
+            "run_e4a1a98e-90f6-4b64-943c-7d98078b9f64"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 1,
+      "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/goal-resume/1/resume/trace/sessions/session-session-03be8015-aad4-4fce-87ce-27b75ee5b708/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_bb04e16f-96f9-43be-a63c-ed64f4560109",
+          "run_336b79b9-c15f-480e-939b-0dbd6e855674",
+          "run_67522b4b-dfcd-48b0-a3ee-24c36e1c5b83",
+          "run_c4692b6a-bb1e-4a77-8468-d7732d7346fc",
+          "run_a0c37893-180d-4aac-be88-2c83b0ad11f1",
+          "run_14de0d36-8b4f-4f0e-abc0-44bf26a6581a",
+          "run_28c71986-f09c-44cf-aa55-3e0d8e9c2dca",
+          "run_ca907811-09f7-426c-900e-ef6c16b0d07a",
+          "run_74de0e97-2769-4d80-89c4-491b127c6c15",
+          "run_8cfb12f6-894c-481d-8acf-3d51182b3861",
+          "run_a7b8a65e-9712-4fd2-beb2-884ba49d65c3"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态程序核对正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "complete",
+        "initialGoalPaused": true,
+        "goalResumedAfterRestart": true,
+        "resumeSubmitCalls": 0,
+        "sameRunIdsAndPaths": true,
+        "goalRoundsStarted": 1,
+        "terminalParameterVerification": "本案例未调用 run-inputs；图片与 Run 映射已核验，正文保存一致性待独立产物核验。"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 20,
+        "toolCallsByName": {
+          "skill": 2,
+          "create_goal": 1,
+          "get_goal": 2,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 10,
+          "update_goal": 2
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 4,
+          "total": 8,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 2
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 41639,
+          "outputTokens": 4204,
+          "totalTokens": 488979,
+          "cacheReadTokens": 443136
+        },
+        "sessions": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "usage": {
+              "inputTokens": 41639,
+              "outputTokens": 4204,
+              "totalTokens": 488979,
+              "cacheReadTokens": 443136
+            },
+            "toolCalls": {
+              "skill": 2,
+              "create_goal": 1,
+              "get_goal": 2,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1,
+              "bash": 10,
+              "update_goal": 2
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 17
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 96
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 97
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 36
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 37
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 101
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 102
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 43
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 44
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 53
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 54
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 58
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 59
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 63
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 64
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 106
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 107
+          }
+        ],
+        "initialVerification": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 68
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 69
+          }
+        ],
+        "pause": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 73
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 74
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 75
+          }
+        ],
+        "resume": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 83
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 111
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 112
+          }
+        ],
+        "complete": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 116
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 117
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 118
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 78
+          },
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "seq": 124
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+            "requestHeaderSeqs": [
+              13,
+              89
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "notes": "模型未调用 run-inputs；初次与恢复均核对 Run/媒体/文件尺寸。正文保存一致性由独立产物核验补充。",
+      "restartEvidence": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/matrix.json",
+        "jsonPointer": "/cases/12/phases/1",
+        "initialRunId": "ed9333e3-6342-4861-aefe-fb402d783bd2",
+        "resumeRunId": "b1f2337e-3861-4419-be55-4e0254dc440e",
+        "userAction": {
+          "action": "goal-bar"
+        },
+        "errors": []
+      },
+      "waitingResults": [
+        {
+          "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+          "resultSeq": 64,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_bb04e16f-96f9-43be-a63c-ed64f4560109",
+            "run_336b79b9-c15f-480e-939b-0dbd6e855674",
+            "run_67522b4b-dfcd-48b0-a3ee-24c36e1c5b83",
+            "run_c4692b6a-bb1e-4a77-8468-d7732d7346fc",
+            "run_a0c37893-180d-4aac-be88-2c83b0ad11f1",
+            "run_14de0d36-8b4f-4f0e-abc0-44bf26a6581a",
+            "run_28c71986-f09c-44cf-aa55-3e0d8e9c2dca",
+            "run_ca907811-09f7-426c-900e-ef6c16b0d07a",
+            "run_74de0e97-2769-4d80-89c4-491b127c6c15",
+            "run_8cfb12f6-894c-481d-8acf-3d51182b3861",
+            "run_a7b8a65e-9712-4fd2-beb2-884ba49d65c3"
+          ]
+        },
+        {
+          "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+          "resultSeq": 107,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_bb04e16f-96f9-43be-a63c-ed64f4560109",
+            "run_336b79b9-c15f-480e-939b-0dbd6e855674",
+            "run_67522b4b-dfcd-48b0-a3ee-24c36e1c5b83",
+            "run_c4692b6a-bb1e-4a77-8468-d7732d7346fc",
+            "run_a0c37893-180d-4aac-be88-2c83b0ad11f1",
+            "run_14de0d36-8b4f-4f0e-abc0-44bf26a6581a",
+            "run_28c71986-f09c-44cf-aa55-3e0d8e9c2dca",
+            "run_ca907811-09f7-426c-900e-ef6c16b0d07a",
+            "run_74de0e97-2769-4d80-89c4-491b127c6c15",
+            "run_8cfb12f6-894c-481d-8acf-3d51182b3861",
+            "run_a7b8a65e-9712-4fd2-beb2-884ba49d65c3"
+          ]
+        }
+      ],
+      "executionStatus": "naturally-ended"
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 2,
+      "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/goal-resume/2/initial/trace/sessions/session-ae22ec2a-d8c6-4364-8620-722e8ae56cac/session.json",
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/goal-resume/2/initial/trace/sessions/session-session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c/session.json"
+      ],
+      "assessment": "fail-goal-pause-and-resume",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_14fc0dee-1fc1-4f5a-b8bc-99fd330a6857",
+          "run_b9569fab-7f91-4e11-86cf-08429638775c",
+          "run_ca18ab37-a094-4d71-a30f-0744ade41699",
+          "run_43936aa8-246a-416a-8ce4-73ca11a65954",
+          "run_dfefd1ce-d48c-4c3e-bd25-33ad885bdd0f",
+          "run_423fd732-bcef-465f-8be9-2c35b81a5364",
+          "run_f1f1f44a-9052-48fc-ba08-d00ce1741395",
+          "run_f94baa54-c848-44e9-b393-51e868966ea6",
+          "run_a9167c5d-5ab2-4072-bd12-ceac23d2ca8e",
+          "run_d48c460e-bde2-48be-9d60-89c8051f0c25",
+          "run_cf923b43-cd60-44bb-b06e-537e47cff9b4"
+        ],
+        "promptHandoff": "主会话委派子会话生成；子会话通过 parameter_files 使用原始文件并核对保存参数，回报 Run 与产物路径。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "blocked",
+        "initialGoalPaused": false,
+        "goalResumedAfterRestart": false,
+        "resumeSubmitCalls": 0,
+        "businessComplete": false,
+        "goalRoundsStarted": 3
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "子会话默认状态 JSON 无正文；主会话查询只返回路径，后续程序只输出状态、匹配布尔值及媒体路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq",
+        "toolCallCount": 25,
+        "toolCallsByName": {
+          "skill": 2,
+          "bash": 10,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "send_message": 1,
+          "create_goal": 1,
+          "update_goal": 3,
+          "get_goal": 4,
+          "subagent": 1
+        },
+        "managedCliInvocations": {
+          "business": 5,
+          "help": 5,
+          "total": 10,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 2,
+            "run-inputs": 1
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 78194,
+          "outputTokens": 5413,
+          "totalTokens": 526743,
+          "cacheReadTokens": 443136
+        },
+        "sessions": [
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "usage": {
+              "inputTokens": 42977,
+              "outputTokens": 2526,
+              "totalTokens": 206783,
+              "cacheReadTokens": 161280
+            },
+            "toolCalls": {
+              "skill": 1,
+              "bash": 7,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1,
+              "send_message": 1
+            }
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "usage": {
+              "inputTokens": 35217,
+              "outputTokens": 2887,
+              "totalTokens": 319960,
+              "cacheReadTokens": 281856
+            },
+            "toolCalls": {
+              "create_goal": 1,
+              "update_goal": 3,
+              "get_goal": 4,
+              "skill": 1,
+              "subagent": 1,
+              "bash": 3
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 33
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 34
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 15
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 16
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 52
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 53
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 20
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 21
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 31
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 32
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 58
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 59
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 41
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 42
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 46
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 47
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 58
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 59
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 65
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 66
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 51
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 52
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 56
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 57
+          }
+        ],
+        "delegationAndHandoff": [
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 38
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 61
+          },
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "seq": 65
+          }
+        ],
+        "pauseFailure": [
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 70
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 71
+          }
+        ],
+        "blocked": [
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 120
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 121
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 122
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 74
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 128
+          }
+        ],
+        "triggeringTurn": [
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "seq": 63
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+            "requestHeaderSeqs": [
+              11
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          {
+            "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+            "requestHeaderSeqs": [
+              13,
+              82,
+              96,
+              110
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "restartEvidence": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/matrix.json",
+        "jsonPointer": "/cases/13/phases/1",
+        "initialRunId": "b1f2337e-3861-4419-be55-4e0254dc440e",
+        "resumeRunId": "6ed78278-5d5b-41d0-9562-9c4ac15e21cd",
+        "userAction": {
+          "action": "goal-bar"
+        },
+        "errors": [
+          {
+            "stage": "resume",
+            "name": "Error",
+            "code": null,
+            "message": "GoalBar resume requires a paused Goal or an active, disarmed Goal.",
+            "terminal": null
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "阶段1的11项生成完成后，主会话 pause 调用被宿主拒绝，Goal 最终进入 blocked。重启后的 GoalBar resume 被拒绝，阶段2未执行，Goal 未 complete。",
+          "evidence": [
+            {
+              "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+              "seq": 70
+            },
+            {
+              "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+              "seq": 71
+            },
+            {
+              "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+              "seq": 120
+            },
+            {
+              "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+              "seq": 121
+            },
+            {
+              "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+              "seq": 128
+            }
+          ]
+        }
+      ],
+      "waitingResults": [
+        {
+          "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+          "resultSeq": 47,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_14fc0dee-1fc1-4f5a-b8bc-99fd330a6857",
+            "run_b9569fab-7f91-4e11-86cf-08429638775c",
+            "run_ca18ab37-a094-4d71-a30f-0744ade41699",
+            "run_43936aa8-246a-416a-8ce4-73ca11a65954",
+            "run_dfefd1ce-d48c-4c3e-bd25-33ad885bdd0f",
+            "run_423fd732-bcef-465f-8be9-2c35b81a5364",
+            "run_f1f1f44a-9052-48fc-ba08-d00ce1741395",
+            "run_f94baa54-c848-44e9-b393-51e868966ea6",
+            "run_a9167c5d-5ab2-4072-bd12-ceac23d2ca8e",
+            "run_d48c460e-bde2-48be-9d60-89c8051f0c25",
+            "run_cf923b43-cd60-44bb-b06e-537e47cff9b4"
+          ]
+        },
+        {
+          "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+          "resultSeq": 66,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "promptBodyCharacters": 0,
+          "stdoutForm": "程序逐项打印状态、请求和路径匹配结果；上游 CLI 输出为结果文件路径。"
+        }
+      ],
+      "executionStatus": "execution-error"
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 3,
+      "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/goal-resume/3/resume/trace/sessions/session-session-3934fc82-ea40-4bf7-82ff-965001a6a5cf/session.json"
+      ],
+      "assessment": "trace-pass-pending-independent-artifact-verification",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_257b6c52-5395-4a04-b72d-2448ca7c6a8d",
+          "run_ea8c8dd9-8766-4ed9-bcdf-da960a5f02e0",
+          "run_b120a45c-2dd8-439a-993c-726abee2a075",
+          "run_29420969-3160-4e47-89e9-1441974e78bb",
+          "run_da564beb-47f0-4f7a-811e-5622e049c5c2",
+          "run_a8508e66-578a-417f-b978-52a4f0636277",
+          "run_9acfea3e-5a88-47fc-8684-1f064c30bdae",
+          "run_6473a341-1e34-446c-a02c-26289b417fbe",
+          "run_9ac10745-5837-491d-b75c-6aa365b5d06f",
+          "run_965f9750-e7f5-4a28-879b-29a109357918",
+          "run_eb4eaeb6-d044-4f99-8500-25e9463fec0c"
+        ],
+        "promptHandoff": "parameter_files 引用 input 文件；终态程序核对正文一致。",
+        "directHttpBypass": false,
+        "waitingInputKeys": [
+          "run_ids"
+        ],
+        "waitingOutputContainsParameters": false,
+        "waitingPromptBodyCharacters": 0,
+        "terminalParameterVerificationPromptBodyCharacters": 0,
+        "allRunIdsAndMediaPathsDelivered": true,
+        "goalStatus": "complete",
+        "initialGoalPaused": true,
+        "goalResumedAfterRestart": true,
+        "resumeSubmitCalls": 0,
+        "sameRunIdsAndPaths": true,
+        "goalRoundsStarted": 1,
+        "terminalParameterVerification": "本案例未调用 run-inputs；图片与 Run 映射已核验，正文保存一致性待独立产物核验。"
+      },
+      "lightweightQueryAssessment": {
+        "apiDefault": "pass-observed",
+        "modelWaitingSelection": "pass",
+        "criterion7_2_6": "pass",
+        "stdoutReview": "等待 JSON 全部 runs 无 parameters；终态外部程序仅打印核对结果、尺寸与路径。"
+      },
+      "metrics": {
+        "deduplicationKey": "sessionId + seq；恢复导出已累计历史，仅计最后阶段每个 session 的唯一 seq。",
+        "toolCallCount": 19,
+        "toolCallsByName": {
+          "skill": 2,
+          "create_goal": 1,
+          "get_goal": 3,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 8,
+          "update_goal": 2
+        },
+        "managedCliInvocations": {
+          "business": 4,
+          "help": 3,
+          "total": 7,
+          "businessByCommand": {
+            "inspect-template-parameters": 1,
+            "submit": 1,
+            "resolve-media": 2
+          }
+        },
+        "assistantMessageUsageSum": {
+          "inputTokens": 52169,
+          "outputTokens": 4247,
+          "totalTokens": 497248,
+          "cacheReadTokens": 440832
+        },
+        "sessions": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "usage": {
+              "inputTokens": 52169,
+              "outputTokens": 4247,
+              "totalTokens": 497248,
+              "cacheReadTokens": 440832
+            },
+            "toolCalls": {
+              "skill": 2,
+              "create_goal": 1,
+              "get_goal": 3,
+              "mcp__noobai__get_catalog_resource": 2,
+              "mcp__noobai__search_instances": 1,
+              "bash": 8,
+              "update_goal": 2
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "skill": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 17
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 89
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 90
+          }
+        ],
+        "reference": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 36
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 37
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 94
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 95
+          }
+        ],
+        "help": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 46
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 47
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 51
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 52
+          }
+        ],
+        "waiting": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 56
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 57
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 99
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 100
+          }
+        ],
+        "initialVerification": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 61
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 62
+          }
+        ],
+        "pause": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 66
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 67
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 68
+          }
+        ],
+        "resume": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 76
+          }
+        ],
+        "terminalVerification": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 104
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 105
+          }
+        ],
+        "complete": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 114
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 115
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 116
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 71
+          },
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "seq": 122
+          }
+        ],
+        "modelIdentity": [
+          {
+            "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+            "requestHeaderSeqs": [
+              13,
+              82
+            ],
+            "model": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ]
+      },
+      "findings": [],
+      "notes": "初次与恢复均核对 Run/媒体与 PNG 结构；未读取保存后的 Prompt，正文一致性由独立产物核验补充。",
+      "executionStatus": "naturally-ended",
+      "waitingResults": [
+        {
+          "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+          "resultSeq": 57,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_257b6c52-5395-4a04-b72d-2448ca7c6a8d",
+            "run_ea8c8dd9-8766-4ed9-bcdf-da960a5f02e0",
+            "run_b120a45c-2dd8-439a-993c-726abee2a075",
+            "run_29420969-3160-4e47-89e9-1441974e78bb",
+            "run_da564beb-47f0-4f7a-811e-5622e049c5c2",
+            "run_a8508e66-578a-417f-b978-52a4f0636277",
+            "run_9acfea3e-5a88-47fc-8684-1f064c30bdae",
+            "run_6473a341-1e34-446c-a02c-26289b417fbe",
+            "run_9ac10745-5837-491d-b75c-6aa365b5d06f",
+            "run_965f9750-e7f5-4a28-879b-29a109357918",
+            "run_eb4eaeb6-d044-4f99-8500-25e9463fec0c"
+          ]
+        },
+        {
+          "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+          "resultSeq": 100,
+          "runCount": 11,
+          "statuses": {
+            "succeeded": 11
+          },
+          "parametersFieldCount": 0,
+          "promptBodyCharacters": 0,
+          "runIds": [
+            "run_257b6c52-5395-4a04-b72d-2448ca7c6a8d",
+            "run_ea8c8dd9-8766-4ed9-bcdf-da960a5f02e0",
+            "run_b120a45c-2dd8-439a-993c-726abee2a075",
+            "run_29420969-3160-4e47-89e9-1441974e78bb",
+            "run_da564beb-47f0-4f7a-811e-5622e049c5c2",
+            "run_a8508e66-578a-417f-b978-52a4f0636277",
+            "run_9acfea3e-5a88-47fc-8684-1f064c30bdae",
+            "run_6473a341-1e34-446c-a02c-26289b417fbe",
+            "run_9ac10745-5837-491d-b75c-6aa365b5d06f",
+            "run_965f9750-e7f5-4a28-879b-29a109357918",
+            "run_eb4eaeb6-d044-4f99-8500-25e9463fec0c"
+          ]
+        }
+      ],
+      "restartEvidence": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/matrix.json",
+        "jsonPointer": "/cases/14/phases/1",
+        "initialRunId": "6ed78278-5d5b-41d0-9562-9c4ac15e21cd",
+        "resumeRunId": "38b12de7-6666-4b5c-93cd-19eeecc7e21a",
+        "userAction": {
+          "action": "goal-bar"
+        },
+        "errors": []
+      }
+    }
+  ],
+  "pending": [],
+  "summary": {
+    "reviewed": 15,
+    "pending": 0,
+    "matrixExecutionStatus": "recorded",
+    "overallAssessment": "not-passed",
+    "scenarioTracePassed": 14,
+    "scenarioTraceFailed": 1,
+    "generationDeliveryTracePassed": 15,
+    "waitingLightweightPassed": 15,
+    "waitingQueryCount": 18,
+    "waitingPromptBodyCharacters": 0,
+    "goalLifecyclePassed": 2,
+    "goalLifecycleFailed": 1,
+    "independentArtifactVerification": "另行汇总；本报告依据模型已结束的官方会话记录。"
+  },
+  "aggregateMetrics": {
+    "sessions": 19,
+    "toolCallCount": 207,
+    "toolCallsByName": {
+      "skill": 18,
+      "mcp__noobai__get_catalog_resource": 30,
+      "mcp__noobai__search_instances": 15,
+      "bash": 117,
+      "subagent": 4,
+      "send_message": 4,
+      "create_goal": 3,
+      "get_goal": 9,
+      "update_goal": 7
+    },
+    "managedCliBusinessInvocations": 66,
+    "managedCliHelpInvocations": 59,
+    "managedCliInvocations": 125,
+    "assistantMessageUsageSum": {
+      "inputTokens": 523974,
+      "outputTokens": 50587,
+      "totalTokens": 3690849,
+      "cacheReadTokens": 3116288
+    },
+    "deduplicationKey": "sessionId + seq",
+    "tokenInterpretation": "assistant/message.data.usage 原始数值求和。totalTokens 包含 inputTokens、outputTokens、cacheReadTokens；未重复累计 stream usage。",
+    "cliCountingMethod": "逐条读取已结束会话的 shell 调用，按 for 循环展开计入 help；业务调用与帮助调用分列。"
+  },
+  "matrixExecutionStatus": "recorded",
+  "materialFindings": [
+    {
+      "caseId": "goal-resume",
+      "repetition": 2,
+      "severity": "material",
+      "detail": "第1阶段图片生成完成，但子会话通知触发的主会话暂停调用被拒绝；Goal 随后 blocked。重启后的 GoalBar 恢复失败，第2阶段未完成。",
+      "evidence": [
+        {
+          "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+          "seq": 63
+        },
+        {
+          "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+          "seq": 70
+        },
+        {
+          "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+          "seq": 71
+        },
+        {
+          "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+          "seq": 120
+        },
+        {
+          "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+          "seq": 121
+        },
+        {
+          "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+          "seq": 128
+        }
+      ],
+      "matrixError": [
+        {
+          "stage": "resume",
+          "name": "Error",
+          "code": null,
+          "message": "GoalBar resume requires a paused Goal or an active, disarmed Goal.",
+          "terminal": null
+        }
+      ]
+    }
+  ],
+  "modelIdentityEvidence": [
+    {
+      "sessionId": "session-94636b6e-5c1c-4151-8d77-3ccba19b7524",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-e3e98392-7d6e-4464-b624-5a96d0ae898a",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-4d3397f8-3583-400c-babd-c6201f244c3f",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-93f31496-adbc-4891-aedf-79db59a194e7",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-53ee39e7-3d71-4d8b-a4b2-6ea0fb122ad3",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-32dad0d5-7f11-4a1c-823a-5041331106ce",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-0f24da03-224f-4613-b47b-0b53cd721ca3",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "9acee8a9-63e9-4013-8a86-23f1b8493674",
+      "requestHeaderSeqs": [
+        11
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-b8e31d7c-3e53-4d92-83cc-3eacfb5dedaa",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "8444fb17-2e72-42d5-bc41-797876e37911",
+      "requestHeaderSeqs": [
+        11
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-a988a84f-df42-43e8-81f6-2eea7fbc358d",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "ab973fa4-8917-4ee5-a8b0-794bc3ede206",
+      "requestHeaderSeqs": [
+        11
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-a12691e7-c237-482b-92cf-757c0e1c154a",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-9eed85e1-7c30-4123-9e1f-5ce6c3945be9",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-81e4fdb0-1d83-484d-8d3b-f9e50892b6d7",
+      "requestHeaderSeqs": [
+        13
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+      "requestHeaderSeqs": [
+        13,
+        89
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "ae22ec2a-d8c6-4364-8620-722e8ae56cac",
+      "requestHeaderSeqs": [
+        11
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-dc0f2005-33c0-4ef6-9f31-7d1eb6134a3c",
+      "requestHeaderSeqs": [
+        13,
+        82,
+        96,
+        110
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "sessionId": "session-3934fc82-ea40-4bf7-82ff-965001a6a5cf",
+      "requestHeaderSeqs": [
+        13,
+        82
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      }
+    }
+  ]
+}

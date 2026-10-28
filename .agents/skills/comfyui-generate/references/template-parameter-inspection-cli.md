@@ -10,7 +10,7 @@
 
 ## 调用入口
 
-1. 受管前台 shell Tool Call 提供 Host Electron 可执行文件路径 `DSH_HARNESS_COMFYUI_NODE_EXECUTABLE` 和 Workflow 参数检查 CLI 脚本路径 `DSH_HARNESS_COMFYUI_CLI`。Skill 执行者使用以下入口以 Node 模式调用本命令：
+1. 调用环境与结果读取遵循 [Generation CLI 第 1 节](generation-cli.md#1-调用入口与结果文件)。本命令的调用形式如下：
 
    ```sh
    ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation inspect-template-parameters --stdin
@@ -18,7 +18,7 @@
 
 ## 调用条件
 
-1. Skill 执行者按 [SKILL.md](../SKILL.md)“创建图片”的步骤顺序进入“检查 Workflow 参数”，并满足该步骤的前置条件后调用本命令。
+1. Skill 执行者按 [SKILL.md](../SKILL.md#3-检查参数并承接提示词) 第 3 节确定资源和实例后调用本命令。
 
 ## 参数与标准输入
 
@@ -32,16 +32,14 @@
 
 ## 输入值的来源
 
-1. `template_id` 使用 [SKILL.md](../SKILL.md)“核对当前选择”确定的模板 ID。
-2. `instance_id` 使用 [SKILL.md](../SKILL.md)“检查 Workflow 参数”确定的实例 ID。
+1. `template_id` 使用 [SKILL.md](../SKILL.md#2-查询并核对资源) 第 2 节确定的模板 ID。
+2. `instance_id` 使用 [SKILL.md](../SKILL.md#3-检查参数并承接提示词) 第 3 节确定的实例 ID。
 
 ## 结果文件中的 JSON
 
 1. 结果文件中的 JSON 对象包含 `parameters` 和 `size_candidates`。
 
 ### `parameters`
-
-`parameters` 数组中的每一项描述一个生成参数：
 
 1. `parameter_id`：Generation Request 的 `parameters` 对象使用的属性名。
 2. `kind`：参数用途，例如 `positive_prompt`、`negative_prompt`、`seed` 或 `batch_size`。
@@ -57,11 +55,11 @@
 
 ### `size_candidates`
 
-`size_candidates` 数组中的每一项描述一组可供选择的图片尺寸参数。每项的 `candidate_id` 标识该尺寸候选项；每项还使用以下一种结构：
+1. 每项 `candidate_id` 标识一组尺寸参数。候选项使用以下一种结构。
 
-1. `representation: "width_height"`：`width` 和 `height` 都是与 `parameters[]` 使用相同字段结构的参数对象。
-2. `representation: "aspect_ratio_megapixels"`：`aspect_ratio` 和 `megapixels` 都是与 `parameters[]` 使用相同字段结构的参数对象。
-3. `representation: "resolution_preset"`：`parameter` 是与 `parameters[]` 使用相同字段结构的参数对象。`mapped_options` 是预设映射数组；每个数组元素的 `value` 是满足 `parameter` 取值限制的参数值，`width` 和 `height` 是该预设对应的、以像素为单位的正整数图片宽度和高度。`unmapped_values` 是由无法映射到 `width` 和 `height` 的预设参数值组成的数组。
+   1. `representation: "width_height"`：`width` 和 `height` 都是与 `parameters[]` 使用相同字段结构的参数对象。
+   2. `representation: "aspect_ratio_megapixels"`：`aspect_ratio` 和 `megapixels` 都是与 `parameters[]` 使用相同字段结构的参数对象。
+   3. `representation: "resolution_preset"`：`parameter` 是与 `parameters[]` 使用相同字段结构的参数对象。`mapped_options` 是预设映射数组；每个元素的 `value` 满足 `parameter` 的取值限制。`width` 和 `height` 是预设对应的正整数像素宽高。`unmapped_values` 是由无法映射到 `width` 和 `height` 的预设参数值组成的数组。
 
 ## Generation Request 参数检查
 
@@ -72,67 +70,73 @@
 
 ## 图片尺寸选择
 
-### 选择前提
+### 目标尺寸
 
-1. `size_candidates` 为空时，Skill 执行者报告该 Workflow 模板没有返回可用的图片尺寸参数，并停止构造 Generation Request。
+1. Skill 执行者从用户要求与提示词产物取得目标尺寸。用户已指定尺寸时采用用户值。产物尺寸补全用户未指定的值。
+2. 尺寸以像素宽高或宽高比与百万像素数表达。缺少这些信息时，执行者只询问缺失项。
+3. 目标尺寸的换算使用以下关系。
 
-2. 已经通过 [Prompt Builder 结果合同](prompt-result-contract.md) 检查的结果 JSON 提供 `width`、`height`、`aspect_ratio` 和 `megapixels`。`width` 和 `height` 是以像素为单位的正整数，分别表示期望图片宽度和高度；`aspect_ratio` 是由两个正整数组成的 `A:B` 字符串，并且 `A / B` 必须等于 `width / height`；`megapixels` 是表示期望图片百万像素数的正数。
+   1. `width`、`height` 为正数，表示目标像素宽高。
+   2. `aspect_ratio` 为正整数构成的 `A:B`，比值等于 `width / height`。
+   3. `megapixels` 为 `width * height / 1,000,000`。
+   4. 已知 `aspect_ratio` 与 `megapixels` 时，`width = sqrt(megapixels * 1,000,000 * A / B)`，`height = sqrt(megapixels * 1,000,000 * B / A)`。
 
-### 选择步骤
+4. 写入整数参数的值必须满足参数约束。换算得到的目标宽高可用于选择最接近的可接受整数。
+5. `size_candidates` 为空时，执行者报告模板没有可用尺寸参数，停止构造请求。
 
-1. Skill 执行者先查找直接匹配。对一个 `width_height` 项，`width` 参数对象接受结果 JSON 的 `width` 且 `height` 参数对象接受结果 JSON 的 `height` 时，该项产生一个直接匹配。对一个 `aspect_ratio_megapixels` 项，`aspect_ratio` 参数对象包含 `allowed_values` 时，Skill 执行者只检查 `allowed_values` 数组中被该参数对象接受且符合 `A:B` 格式的值；`aspect_ratio` 参数对象未包含 `allowed_values` 时，Skill 执行者只检查结果 JSON 的 `aspect_ratio`。被检查的宽高比值和结果 JSON 的 `aspect_ratio` 分别约分后相同，并且 `aspect_ratio` 参数对象接受该宽高比值、`megapixels` 参数对象接受结果 JSON 的 `megapixels` 时，该宽高比值与结果 JSON 的 `megapixels` 组成一个直接匹配。对一个 `resolution_preset` 项，`mapped_options[]` 中 `width` 和 `height` 分别等于结果 JSON `width` 和 `height` 的每个元素分别产生一个直接匹配。
-2. 多种 `representation` 都有直接匹配时，Skill 执行者按照 `width_height`、`aspect_ratio_megapixels`、`resolution_preset` 的顺序选择。最先匹配的 `representation` 中仍有多项直接匹配时，Skill 执行者列出这些匹配的 `candidate_id` 和参数值，并等待用户选择。
-3. 没有直接匹配时，Skill 执行者为每个 `width_height` 项分别确定最接近结果 JSON `width` 和 `height` 的可接受整数。参数对象包含 `allowed_values` 时，Skill 执行者在该数组中选择与目标值绝对差最小的可接受正整数。参数对象不包含 `allowed_values` 时，目标值小于 `minimum` 就选择大于或等于 `minimum` 的最小正整数，目标值大于 `maximum` 就选择小于或等于 `maximum` 的最大正整数，其他情况选择目标值；参数对象没有返回其中一项边界时，Skill 执行者只检查已经返回的边界。两个整数与目标值的绝对差相同时，Skill 执行者选择较小的整数。任一参数对象没有可接受的正整数时，该 `width_height` 项不产生候选尺寸。
-4. 没有直接匹配时，Skill 执行者为每个 `aspect_ratio_megapixels` 项确定宽高比和百万像素数。`aspect_ratio` 参数对象未包含 `allowed_values` 时，该项不产生候选尺寸；包含 `allowed_values` 时，Skill 执行者保留其中符合 `A:B` 格式、`A` 和 `B` 均为正整数且被 `aspect_ratio` 参数对象接受的值，并按照第 6 项的宽高比偏差公式，选择偏差最小的值。`megapixels` 参数对象包含 `allowed_values` 时，Skill 执行者在该数组中选择与结果 JSON `megapixels` 绝对差最小的可接受正数。`megapixels` 参数对象未包含 `allowed_values` 且 `value_type` 为 `number` 时，Skill 执行者选择满足已返回数值边界且与结果 JSON `megapixels` 绝对差最小的正数；`value_type` 为 `integer` 时，Skill 执行者选择满足已返回数值边界且与结果 JSON `megapixels` 绝对差最小的正整数；其他 `value_type` 不产生百万像素候选值。`aspect_ratio` 或 `megapixels` 有多个并列最小偏差值时，Skill 执行者保留全部并列值，并将每个保留的宽高比值与每个保留的百万像素值组成一个候选尺寸。任一参数对象没有可接受的值时，该 `aspect_ratio_megapixels` 项不产生候选尺寸。
-5. 没有直接匹配时，每个 `resolution_preset` 项的 `mapped_options[]` 分别产生一个候选尺寸；`unmapped_values` 不产生候选尺寸。
-6. Skill 执行者计算第 3 至 5 项产生的每个候选尺寸相对于结果 JSON 尺寸的宽高比偏差和像素面积偏差。结果 JSON 的宽高比为 `width / height`，像素面积为 `width * height`。`width_height` 和 `resolution_preset` 候选尺寸的宽高比为候选 `width / height`，像素面积为候选 `width * height`；`aspect_ratio_megapixels` 候选尺寸的宽高比为 `A / B`，像素面积为候选 `megapixels * 1,000,000`。宽高比偏差为 `abs(候选宽高比 - 结果 JSON 宽高比) / 结果 JSON 宽高比`；像素面积偏差为 `abs(候选像素面积 - 结果 JSON 像素面积) / 结果 JSON 像素面积`。
-7. Skill 执行者排除宽高比偏差大于 `0.05` 或像素面积偏差大于 `0.10` 的候选尺寸。Skill 执行者在剩余候选尺寸中先选择宽高比偏差最小的候选尺寸，再从中选择像素面积偏差最小的候选尺寸。多个候选尺寸的两项偏差均相同时，Skill 执行者列出这些候选尺寸并等待用户选择。
-8. Skill 执行者选出直接匹配以外的候选尺寸后，向用户列出结果 JSON 的 `width`、`height`、`aspect_ratio` 和 `megapixels`、准备写入 Generation Request 的每个 `parameter_id` 及其对应值、宽高比偏差和像素面积偏差，并等待用户确认。
-9. 没有候选尺寸同时满足两项偏差限制时，Skill 执行者列出 `size_candidates` 数组中每个元素的 `candidate_id`。对于 `width_height` 和 `aspect_ratio_megapixels`，Skill 执行者同时列出各参数对象的 `value_type`、`minimum`、`maximum` 和 `allowed_values`；对于 `resolution_preset`，Skill 执行者同时列出 `mapped_options`。Skill 执行者随后等待用户选择其他 Workflow 模板，或者重新指定符合其中一个候选项取值限制的 `width`、`height`、`aspect_ratio` 和 `megapixels`。
-10. Skill 执行者把选定的尺寸值写入 Generation Request 的 `parameters` 对象。`width_height` 使用 `width.parameter_id` 和 `height.parameter_id` 作为属性名；`aspect_ratio_megapixels` 使用 `aspect_ratio.parameter_id` 和 `megapixels.parameter_id` 作为属性名；`resolution_preset` 使用 `parameter.parameter_id` 作为属性名，并写入所选 `mapped_options[]` 项的 `value`。
+### 直接匹配
+
+1. 执行者按每项的 `representation` 寻找直接匹配。
+
+   1. `width_height`：两个参数分别接受目标 `width` 与 `height`。
+   2. `aspect_ratio_megapixels`：两个参数接受目标宽高比与 `megapixels`。有 `allowed_values` 时，宽高比从列表中选择。两个比例约分后相同即为相同宽高比。
+   3. `resolution_preset`：`mapped_options` 中的宽高与目标宽高相等。
+
+2. 多种表示都有直接匹配时，执行者依次选择 `width_height`、`aspect_ratio_megapixels`、`resolution_preset`。同一种表示有多个直接匹配时，执行者列出候选 ID 与参数值，等待用户选择。
+
+### 近似候选
+
+1. 没有直接匹配时，执行者按以下规则取得近似候选。第 2 至 4 项确定候选值，第 5 项计算偏差。
+2. `width_height` 的宽高分别选择最接近目标的可接受正整数。有 `allowed_values` 时从列表中选择；无列表时按数值边界选择。两个候选整数与目标值的绝对差相同时，执行者选择较小值。任一参数没有可接受整数时，执行者排除该项。
+3. `aspect_ratio_megapixels` 按以下规则选择。
+
+   1. 宽高比从 `allowed_values` 中选择。保留参数接受且符合正整数 `A:B` 的值，再选择宽高比偏差最小者。缺少列表时排除该项。
+   2. 百万像素数有 `allowed_values` 时，选择最接近目标的可接受正数。
+   3. 百万像素数无列表时，`number` 选择边界内最接近目标的正数；`integer` 选择最接近目标的正整数。其他类型排除该项。
+   4. 最小偏差有并列值时保留全部，并组合每个宽高比与百万像素数。任一参数没有可接受值时排除该项。
+
+4. `resolution_preset` 的每个 `mapped_options` 元素产生一个候选。`unmapped_values` 不参与选择。
+5. 执行者计算各候选与目标尺寸的偏差。
+
+   1. 目标宽高比为 `width / height`，像素面积为 `width * height`。
+   2. `width_height` 与 `resolution_preset` 使用候选宽高计算比值和面积。
+   3. `aspect_ratio_megapixels` 使用 `A / B` 和 `megapixels * 1,000,000`。
+   4. 宽高比偏差为 `abs(候选宽高比 - 目标宽高比) / 目标宽高比`。
+   5. 像素面积偏差为 `abs(候选面积 - 目标面积) / 目标面积`。
+
+6. 执行者排除宽高比偏差大于 `0.05` 或面积偏差大于 `0.10` 的候选。剩余候选先取宽高比偏差最小者，再取面积偏差最小者。两项均并列时，执行者等待用户选择。
+7. 采用近似候选前，执行者向用户列出以下内容，等待用户确认。
+
+   1. 目标尺寸。
+   2. 候选的每个 `parameter_id` 与值。
+   3. 宽高比偏差与像素面积偏差。
+
+8. 没有候选同时满足偏差上限时，执行者列出每项候选 ID。宽高与宽高比表示附参数类型、边界和允许值；预设表示附 `mapped_options`。执行者等待用户更换模板或指定可用尺寸。
+
+### 写入尺寸参数
+
+1. 执行者将选定值写入请求的 `parameters`。
+2. `width_height` 使用 `width.parameter_id` 和 `height.parameter_id`。
+3. `aspect_ratio_megapixels` 使用 `aspect_ratio.parameter_id` 和 `megapixels.parameter_id`。
+4. `resolution_preset` 使用 `parameter.parameter_id`，值为选定映射项的 `value`。
 
 ## 错误处理与重试
 
-公共文件错误按“命令帮助”处理。以下规则处理其他业务错误。
-
-1. `CLI_REQUEST_INVALID`：Skill 执行者按照“参数与标准输入”一节检查本次标准输入。用户提供的 `template_id` 或 `instance_id` 不符合字符串要求时，Skill 执行者报告属性名、属性值和“必须是去除首尾空白后仍非空的字符串”这一要求，并等待用户提供新值。用户提供的 ID 符合要求，但 Skill 执行者构造的 JSON 不符合输入要求时，Skill 执行者修正 JSON 并重试一次；重试失败时按照本节对应错误码处理，再次收到 `CLI_REQUEST_INVALID` 时报告完整错误消息并停止构造 Generation Request。本次标准输入已经符合要求时，Skill 执行者报告完整错误消息并停止构造 Generation Request。
-2. `GENERATION_PARAMETER_TARGET_AMBIGUOUS`、`GENERATION_PARAMETER_TARGET_NOT_FOUND`、`GENERATION_PARAMETER_CONTRACT_UNSUPPORTED` 或 `GENERATION_PARAMETER_INVALID`：Skill 执行者报告 stderr 中对应错误码的完整错误消息，并停止构造 Generation Request。
-3. 其他错误码：Skill 执行者报告错误码、错误消息和本次使用的 `template_id`、`instance_id`，并停止构造 Generation Request。
+1. 公共文件错误按 [Generation CLI 第 1 节](generation-cli.md#1-调用入口与结果文件) 处理。
+2. `CLI_REQUEST_INVALID`：执行者核对输入属性与字符串约束。用户提供的 ID 无效时，执行者报告属性名、值与约束，等待用户修正。执行者构造的 JSON 有误时，执行者修正后重试一次。输入已符合约束或重试仍失败时，执行者报告完整错误，停止构造请求。
+3. `GENERATION_PARAMETER_TARGET_AMBIGUOUS`、`GENERATION_PARAMETER_TARGET_NOT_FOUND`、`GENERATION_PARAMETER_CONTRACT_UNSUPPORTED` 或 `GENERATION_PARAMETER_INVALID`：执行者报告完整错误，停止构造请求。
+4. 其他错误：执行者报告错误码、消息、模板 ID 与实例 ID，停止构造请求。
 
 ## 查询结果复用
 
 1. 处理当前用户请求期间，Skill 执行者复用同一组 `template_id` 和 `instance_id` 对应的完整检查结果；`template_id` 或 `instance_id` 改变时，Skill 执行者重新调用本命令。
-
-## 完整调用示例
-
-1. Skill 执行者使用以下命令通过标准输入提交查询：
-
-   ```sh
-   ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" --quiet generation inspect-template-parameters --stdin <<'JSON'
-   {"template_id":"36","instance_id":"2"}
-   JSON
-   ```
-
-2. 以下示例展示结果文件中的 JSON，内容按多行排版：
-
-   ```json
-   {
-     "parameters": [
-       {"parameter_id":"positive_prompt","kind":"positive_prompt","value_type":"string","current_value":""},
-       {"parameter_id":"seed","kind":"seed","value_type":"integer","current_value":0,"minimum":0,"maximum":2147483647},
-       {"parameter_id":"batch_size","kind":"batch_size","value_type":"integer","current_value":1,"minimum":1,"maximum":8}
-     ],
-     "size_candidates": [
-       {
-         "candidate_id":"aspect_ratio_megapixels:aspect_ratio:megapixels",
-         "representation":"aspect_ratio_megapixels",
-         "aspect_ratio":{"parameter_id":"aspect_ratio","kind":"aspect_ratio","value_type":"choice","current_value":"1:1","allowed_values":["1:1","9:16","16:9"]},
-         "megapixels":{"parameter_id":"megapixels","kind":"megapixels","value_type":"number","current_value":1,"minimum":0.5,"maximum":2}
-       }
-     ]
-   }
-   ```
-
-## 命令帮助
-
-1. 首次调用受管 CLI 前，Skill 执行者将本文件调用入口中的 `--stdin` 替换为 `--help`，读取该命令帮助。公共输出与文件错误按帮助处理。本文件的成功 JSON 指返回路径中的文件内容。

@@ -99,33 +99,38 @@
       ]
     },
     "generation resolve-media": {
-      "summary": "查询 Run 产生的本地图片路径。",
+      "summary": "查询 Run 状态、执行错误与本地图片路径。",
       "details": [
         "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
         "run_ids: 必填字符串数组，1 至 20 项；使用提交返回的 run_id，也接受 run_ 加至少八个 UUID 字符、且在当前 Workspace 内唯一的前缀。",
-        "输出与作用: runs 按输入顺序返回 images（含 file_path）及逐项错误；尚无图片并不表示已经完成。 只读。",
+        "include_parameters：可选布尔值，默认 false。true 返回保存的 parameters；读取 Actual Workflow 时使用 generation run-inputs。",
+        "输出：runs 按输入顺序返回 request_id、status、revision、updated_at、instance_id、prompt_id、run_error、images 与逐项查询错误。lookup_status 为 available 表示已找到 Run；status 表示执行状态。run_error 为错误码与消息或 null。",
         "示例（按实际查询结果替换值）:\n{cli} generation resolve-media --stdin <<'JSON'\n{\"run_ids\": [\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}\nJSON"
       ],
       "next": [
         "按上方示例替换真实输入后执行命令。"
       ],
       "after": [
-        "使用 images 中实际 file_path 读取图片: {cli} image inspect --help；尚无图片时结合工作台 Run 状态再查询。"
+        "按 status 判断等待、失败或完成；使用 images 中的 file_path 读取图片：{cli} image inspect --help。"
       ]
     },
     "generation submit": {
-      "summary": "创建一个持久生成 Run；返回表示已接受。",
+      "summary": "提交生成清单，返回每项已接纳的 Run。",
       "details": [
-        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
-        "必填 title、instance_id、template_id、model、parameters、loras。title 非空，最长 500；ID 来自目录。model 为 null 或 {id,file_name}；parameters 使用模板检查返回的参数名和值；loras 为数组（最多100项），每项 {id,file_name,weight,trigger_words}，weight 为有限数，trigger_words 为最多100项且不重复的字符串数组。",
-        "输出与作用: run_id；创建生成任务。同一 shell Tool Call 的相同请求重放同一个 Run，多个独立 Run 各用一次新的前台 Tool Call。",
-        "示例（按实际查询结果替换值）:\n{cli} generation submit --stdin <<'JSON'\n{\"title\": \"example\", \"instance_id\": \"2\", \"template_id\": \"1\", \"model\": null, \"parameters\": {\"positive_prompt\": \"example\", \"seed\": 1}, \"loras\": []}\nJSON"
+        "参数：--file <清单路径> 或 --stdin 必选其一；--quiet 可选。输入必须为 UTF-8 JSON 对象，--file 指向普通文件。",
+        "items：必填数组，1 至 {max_submission_items} 项。每项包含 request_id、request，可选 parameter_files。request_id 为首次提交前生成并保存的 UUID。",
+        "request：必填 title、instance_id、template_id、model、parameters、loras。title 最长 500 字符；ID 来自目录。model 为 null 或 {id,file_name}。parameters 使用模板参数名和值。loras 最多 100 项，每项包含 id、file_name、weight、trigger_words。weight 为有限数，trigger_words 最多 100 项且不重复。",
+        "parameter_files：参数 ID 到 UTF-8 普通文本文件路径的映射。--file 的相对引用按清单目录解析；--stdin 要求绝对路径。同一参数只在 parameters 或 parameter_files 中填写。CLI 保留文件原文。清单文件与展开后的请求均最多 {max_request_bytes} 字节。",
+        "输出：items 按输入顺序返回 request_id、run_id、acceptance。acceptance 为 accepted 或 reused。接纳后由 Host 继续执行；使用 resolve-media 查询状态。",
+        "重试：响应丢失或结果文件保存失败时，在同一 Workspace、Session 中使用原清单重试。相同 request_id 与相同请求返回原 Run。修改参数后重做或再次生成时，为该项保存新的 request_id。",
+        "示例：{cli} generation submit --file /absolute/path/manifest.json\n清单内容：{\"items\":[{\"request_id\":\"01234567-89ab-4cde-8fab-0123456789ab\",\"request\":{\"title\":\"example\",\"instance_id\":\"2\",\"template_id\":\"1\",\"model\":null,\"parameters\":{\"seed\":1},\"loras\":[]},\"parameter_files\":{\"positive_prompt\":\"prompt.txt\"}}]}",
+        "标准输入示例：cat /absolute/path/manifest.json | {cli} generation submit --stdin。文件引用须使用绝对路径。"
       ],
       "next": [
-        "按上方示例替换真实输入后执行命令。"
+        "保存清单与提示词文件后，按上方示例提交。"
       ],
       "after": [
-        "Run 已接受。查询此 Run 的图片路径: printf '%s\\n' {run_ids_json} | {cli} generation resolve-media --stdin"
+        "查询本次各项状态与图片路径：printf '%s\\n' {run_ids_json} | {cli} generation resolve-media --stdin"
       ]
     }
   },
@@ -135,7 +140,7 @@
     "providerFailure": "打开 Harness 设置中的“图片读取”，核对当前配置的视觉模型、连接地址和服务状态；修正后重新执行本命令。",
     "invalidCommand": "CLI command is invalid; received argv: {argv}. Pass the command words and options shown by --help",
     "resultFilePrepareFailed": "CLI_RESULT_FILE_PREPARE_FAILED: Cannot prepare result file at {path}: {system_error}. Host request was not sent. Fix temporary-directory access or free disk space before retrying.",
-    "resultFileWriteFailed": "CLI_RESULT_FILE_WRITE_FAILED: Host command {command} succeeded, but result file {path} could not be saved: {system_error}. Do not repeat the command to save its result. {accepted_run_id_if_submit} Fix temporary-directory access or free disk space; report this completed command and stop dependent work.",
+    "resultFileWriteFailed": "CLI_RESULT_FILE_WRITE_FAILED: Host command {command} succeeded, but result file {path} could not be saved: {system_error}. {accepted_run_id_if_submit} Fix temporary-directory access or free disk space. For other commands, report the completed command and stop dependent work.",
     "resultPathWriteFailed": "CLI_RESULT_PATH_WRITE_FAILED: Result was saved at {path}, but output could not be written to {stream}: {system_error}. Read the saved file; do not repeat the command.",
     "requestTooLarge": "stdin exceeds the maximum request size ({max_bytes} bytes). Shorten stdin JSON; for a multi-Run query, reduce the number of Run IDs.",
     "responseTooLarge": "CLI_RESPONSE_TOO_LARGE: Host response exceeds the maximum size ({max_bytes} bytes). The Host command may already have completed. Report this error and apply this command's existing retry conditions. For a Run query, use a smaller batch only when those conditions permit another query; if one Run still exceeds the limit, report it and stop dependent work.",
@@ -143,17 +148,19 @@
     "nonLoopbackApi": "{name} is not the managed loopback endpoint. {action}",
     "environmentRecovery": "Confirm that the Harness ComfyUI Host is running, then start a new managed foreground shell Tool call from the current Session."
   },
-  "valueOptions": [],
+  "valueOptions": [
+    "--file"
+  ],
   "commonDetails": [
     "业务命令通过受管前台 shell 调用。--help 离线可用。",
     "业务命令成功时，CLI 将原始业务 JSON 保存到独立临时文件。stdout 只返回该文件的绝对路径和换行。读取该文件后处理业务结果。",
     "业务命令退出码为 0 时，结果文件已写入并关闭。--quiet 省略成功后的 NEXT 提示；普通调用的 NEXT 写入 stderr。--help 仍直接输出帮助文本。",
     "CLI 退出后保留成功文件。需要长期保存时，将该文件复制到任务产物目录。复用和刷新条件按当前 Skill 的业务合同执行。",
     "CLI_RESULT_FILE_PREPARE_FAILED 表示请求尚未发送。修复临时目录权限或磁盘空间后再调用。",
-    "CLI_RESULT_FILE_WRITE_FAILED 表示 Host 已执行成功，但结果文件保存失败。报告错误并停止依赖结果的操作，不自动重新执行业务命令。提交命令的错误同时报告已接纳的 run_id。",
+    "CLI_RESULT_FILE_WRITE_FAILED 表示 Host 已执行成功，但结果文件保存失败。提交命令同时报告已接纳的 request_id 与 run_id；修复临时目录权限或磁盘空间后，可使用原清单恢复结果。其他命令报告错误并停止依赖结果的操作。",
     "CLI_RESULT_PATH_WRITE_FAILED 表示文件已保存，但路径输出失败。读取错误中给出的文件路径，不重新执行业务命令。",
-    "本地输入、环境或结果文件准备错误退出 2；Host、Provider、协议、结果保存或输出错误退出 1。帮助退出 0。",
-    "术语: Run 是生成记录，run_id 是其标识；Workspace 是会话所属工作目录；Actual Workflow 是该 Run 实际执行的工作流。"
+    "本地输入校验、环境读取或结果文件准备失败时，CLI 退出码为 2。Host 请求、Provider 调用、协议解析、结果保存或路径输出失败时，退出码为 1。帮助命令退出码为 0。",
+    "术语：Run 是生成记录，run_id 是其标识；Workspace 是按会话原始项目目录确定的业务分组；Actual Workflow 是该 Run 实际执行的工作流。"
   ],
   "providerErrorCodes": [
     "IMAGE_READER_MODEL_NOT_CONFIGURED",

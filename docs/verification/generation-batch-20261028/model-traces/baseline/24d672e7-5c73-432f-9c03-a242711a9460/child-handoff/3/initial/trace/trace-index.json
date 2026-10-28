@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "runId": "e59efdc1-f21d-460c-8897-03dc57572dad",
+  "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+  "source": {
+    "kind": "official-session-export",
+    "route": "api/session.export"
+  },
+  "sessions": [
+    {
+      "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+      "parentSessionId": null,
+      "entry": "session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/3/initial/trace/sessions/session-session-633cb394-a690-42ad-bddf-0bbd7fc841bd/session.json",
+      "eventCount": 59,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 58,
+        "complete": true
+      }
+    },
+    {
+      "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+      "parentSessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+      "entry": "subagents/b37c36ef-eb40-4cb8-8c12-a1eaef90000a/session.v4.jsonl",
+      "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/child-handoff/3/initial/trace/sessions/session-b37c36ef-eb40-4cb8-8c12-a1eaef90000a/session.json",
+      "eventCount": 27,
+      "coverage": {
+        "firstSeq": 0,
+        "lastSeq": 26,
+        "complete": true
+      }
+    }
+  ],
+  "missing": [
+    {
+      "source": "model-request",
+      "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "session-633cb394-a690-42ad-bddf-0bbd7fc841bd",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    },
+    {
+      "source": "model-request",
+      "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+      "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+    },
+    {
+      "source": "model-stream",
+      "sessionId": "b37c36ef-eb40-4cb8-8c12-a1eaef90000a",
+      "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+    }
+  ],
+  "complete": false
+}

@@ -1,0 +1,263 @@
+{
+  "checkedAt": "2026-10-28T15:06:56.425952+00:00",
+  "latestEnvironmentRuns": [
+    {
+      "runId": "0d9fb94c-040d-43f7-96fe-832d07a77540",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-ablation512-query/dsh-home",
+      "ports": {
+        "host": {
+          "port": 50737,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 50738,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 50739,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "38b12de7-6666-4b5c-93cd-19eeecc7e21a",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-candidate512-final/dsh-home",
+      "ports": {
+        "host": {
+          "port": 63453,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 63454,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 63455,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "85a2ab37-98c9-4c73-bc02-38a1e7a39b79",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home",
+      "ports": {
+        "host": {
+          "port": 52824,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 52825,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 52826,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "45dff997-e14d-44cd-ab3b-ffb236223460",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/dsh-home",
+      "ports": {
+        "host": {
+          "port": 55645,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 55646,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 55647,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "536e8e11-ec29-4e52-95d5-a8b23e40a416",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-baseline512/dsh-home",
+      "ports": {
+        "host": {
+          "port": 49368,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 49369,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 49370,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "deaf03a3-7e10-42f6-8291-3c758eb6c508",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-candidate-final/dsh-home",
+      "ports": {
+        "host": {
+          "port": 59891,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 59892,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 59893,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "339fe690-4aa4-4442-bee1-7ee6e6dd052c",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-candidate/dsh-home",
+      "ports": {
+        "host": {
+          "port": 63885,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 63886,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 63887,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "f7a0f09e-a319-4f3c-8188-808783766c4d",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-candidate512/dsh-home",
+      "ports": {
+        "host": {
+          "port": 55092,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 55093,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 55094,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "a3ef4b11-ccd9-4fab-ade3-63116e4b485b",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-ablation512-entry/dsh-home",
+      "ports": {
+        "host": {
+          "port": 60558,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 60559,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 60560,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "adf746a6-4fc7-41b2-a73d-936b80233968",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-ablation512-batch-limit/dsh-home",
+      "ports": {
+        "host": {
+          "port": 64100,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 64101,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 64102,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "ed96d75b-a3dd-4223-8819-bac4c08645e7",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-candidate512-wait/dsh-home",
+      "ports": {
+        "host": {
+          "port": 49195,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 49196,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 49197,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "10055e25-b1db-40b8-9863-7b5d1833e1d0",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy/dsh-home",
+      "ports": {
+        "host": {
+          "port": 54958,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 54959,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 54960,
+          "released": true
+        }
+      }
+    },
+    {
+      "runId": "74a86950-da9b-46e0-acae-951c872055f1",
+      "state": "stopped",
+      "profileHome": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-ablation512-file-admission/dsh-home",
+      "ports": {
+        "host": {
+          "port": 63060,
+          "released": true
+        },
+        "rendererCdp": {
+          "port": 63061,
+          "released": true
+        },
+        "hostInspector": {
+          "port": 63062,
+          "released": true
+        }
+      }
+    }
+  ],
+  "controlledServicePorts": [
+    {
+      "port": 58149,
+      "released": true
+    },
+    {
+      "port": 58150,
+      "released": true
+    }
+  ],
+  "allReleased": true
+}

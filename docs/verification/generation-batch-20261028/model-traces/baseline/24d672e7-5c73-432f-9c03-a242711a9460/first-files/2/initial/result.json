@@ -1,0 +1,153 @@
+{
+  "id": "initial",
+  "runId": "e59efdc1-f21d-460c-8897-03dc57572dad",
+  "startedAt": "2026-10-28T12:40:16.732Z",
+  "naturalCompletion": true,
+  "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/first-files/2/initial/task-input.txt",
+  "terminal": {
+    "type": "turn/end",
+    "seq": 37,
+    "time": 1793191244641,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    }
+  },
+  "observation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 37,
+        "values": {
+          "title": "baseline first-files 2",
+          "goal": null,
+          "tokenUsage": {
+            "uncachedInputTokens": 7266,
+            "outputTokens": 709,
+            "cacheReadTokens": 49152,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {
+            "pressureTokens": 12710,
+            "projectedTokens": 13035,
+            "contextWindow": 262144
+          },
+          "contextBreakdown": {
+            "systemTokens": 428,
+            "toolsTokens": 4547,
+            "messageTokens": 3906
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 1,
+            "steps": 5,
+            "llmMs": 27776,
+            "toolMs": 58,
+            "ttftMs": 16923,
+            "ttftSteps": 5,
+            "decodeMs": 10853,
+            "decodeTokens": 709
+          },
+          "turnOutline": [
+            {
+              "turn": 1,
+              "seq": 6,
+              "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000…",
+              "response": "目前尚不能提交生成：`comfyui-generate` 要求每张图片提供一份有效的 **Prompt Builder 结果 JSON**；当前请求只指定了 11 个提示词文本文件，没有提供这些 JSON。 已核对 Workflow ID…"
+            }
+          ],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-IdGxqX/first-files/2",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            },
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": false,
+            "lastPromptAt": 1793191216773
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+        "runs": [],
+        "media": [],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "trace": {
+    "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/first-files/2/initial/trace/trace-index.json",
+    "sessions": [
+      {
+        "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+        "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline/24d672e7-5c73-432f-9c03-a242711a9460/first-files/2/initial/trace/sessions/session-session-27698678-7e37-40d1-9fa0-6ecfce8bf109/session.json"
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-27698678-7e37-40d1-9fa0-6ecfce8bf109",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ]
+  },
+  "completedAt": "2026-10-28T12:40:45.377Z"
+}

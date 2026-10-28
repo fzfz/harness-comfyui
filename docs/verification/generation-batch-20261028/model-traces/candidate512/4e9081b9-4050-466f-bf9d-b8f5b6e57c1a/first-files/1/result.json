@@ -1,0 +1,583 @@
+{
+  "caseId": "first-files",
+  "repetition": 1,
+  "startedAt": "2026-10-28T13:58:08.086Z",
+  "phases": [
+    {
+      "id": "initial",
+      "runId": "2b241164-f203-415b-8661-946709cc54a9",
+      "startedAt": "2026-10-28T13:58:09.661Z",
+      "naturalCompletion": true,
+      "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512/4e9081b9-4050-466f-bf9d-b8f5b6e57c1a/first-files/1/initial/task-input.txt",
+      "terminal": {
+        "type": "turn/end",
+        "seq": 63,
+        "time": 1793195974778,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "observation": {
+        "session": {
+          "ok": true,
+          "value": {
+            "kind": "sequenced",
+            "asOfSeq": 63,
+            "values": {
+              "title": "candidate512 first-files 1",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 31492,
+                "outputTokens": 2709,
+                "cacheReadTokens": 151936,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {
+                "pressureTokens": 30340,
+                "projectedTokens": 30854,
+                "contextWindow": 262144
+              },
+              "contextBreakdown": {
+                "systemTokens": 466,
+                "toolsTokens": 4547,
+                "messageTokens": 17374
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 1,
+                "steps": 9,
+                "llmMs": 80541,
+                "toolMs": 4140,
+                "ttftMs": 38548,
+                "ttftSteps": 9,
+                "decodeMs": 41993,
+                "decodeTokens": 2709
+              },
+              "turnOutline": [
+                {
+                  "turn": 1,
+                  "seq": 6,
+                  "prompt": "本任务验证受控生成服务，输出固定测试图片；请验收图片尺寸、文件可读取、Run 与媒体对应关系。工作…",
+                  "response": "**11 张固定测试图片均已生成并通过验收。** 每个 Run 均为 `succeeded`，且各有一张对应媒体；图片均可读取、PNG 数据校验及解压通过，尺寸均为 **512 × 512**。已核对 Run、请求 ID、媒体的对应关系，…"
+                }
+              ],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                },
+                "next": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": false,
+                "lastPromptAt": 1793195889924
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        "goal": {
+          "ok": true
+        },
+        "generation": {
+          "ok": true,
+          "value": {
+            "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+            "runs": [
+              {
+                "runId": "run_033e8e9f-5263-41a2-8061-19cfba2aad80",
+                "turn": 1,
+                "title": "图片 11",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923385,
+                "updatedAt": 1793195929091
+              },
+              {
+                "runId": "run_0eccdcc1-8a66-4920-ab3e-18c1ca413267",
+                "turn": 1,
+                "title": "图片 10",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923385,
+                "updatedAt": 1793195929065
+              },
+              {
+                "runId": "run_ab4ef500-f6fe-4e72-979d-716169bff80f",
+                "turn": 1,
+                "title": "图片 9",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923385,
+                "updatedAt": 1793195929039
+              },
+              {
+                "runId": "run_08797b12-3883-45c4-aeb0-d593d3f400e2",
+                "turn": 1,
+                "title": "图片 8",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923385,
+                "updatedAt": 1793195929022
+              },
+              {
+                "runId": "run_feea0752-04b7-40fc-b8be-0f840f1e839c",
+                "turn": 1,
+                "title": "图片 7",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923385,
+                "updatedAt": 1793195929013
+              },
+              {
+                "runId": "run_5356557e-fa44-4d8a-b3ba-47dcadda663e",
+                "turn": 1,
+                "title": "图片 6",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923385,
+                "updatedAt": 1793195929007
+              },
+              {
+                "runId": "run_2be75777-9cba-4cf1-8b46-530ab83929e8",
+                "turn": 1,
+                "title": "图片 5",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923385,
+                "updatedAt": 1793195928998
+              },
+              {
+                "runId": "run_433179c3-29c9-480c-af9c-65dca446a825",
+                "turn": 1,
+                "title": "图片 4",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923384,
+                "updatedAt": 1793195928982
+              },
+              {
+                "runId": "run_394be5fe-fa30-49e3-acd6-743724df5f73",
+                "turn": 1,
+                "title": "图片 3",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923384,
+                "updatedAt": 1793195928962
+              },
+              {
+                "runId": "run_ba23832a-b162-4997-a765-0140e5dd8498",
+                "turn": 1,
+                "title": "图片 2",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923384,
+                "updatedAt": 1793195928952
+              },
+              {
+                "runId": "run_2f538edb-3217-46df-8972-dca0acff4d1d",
+                "turn": 1,
+                "title": "图片 1",
+                "instanceTitle": "Controlled Desktop Comfy Service",
+                "templateTitle": "Controlled frontend workflow",
+                "status": "succeeded",
+                "errorCode": null,
+                "errorMessage": null,
+                "createdAt": 1793195923384,
+                "updatedAt": 1793195928936
+              }
+            ],
+            "media": [
+              {
+                "mediaId": "media_5d17b419-0aaf-4c5c-9190-3e55d48adc2c",
+                "runId": "run_033e8e9f-5263-41a2-8061-19cfba2aad80",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195929080
+              },
+              {
+                "mediaId": "media_4690f595-5e8c-4a1e-a187-c196f3b94db5",
+                "runId": "run_0eccdcc1-8a66-4920-ab3e-18c1ca413267",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195929055
+              },
+              {
+                "mediaId": "media_8856f9cf-6c31-4e1a-bbc5-4c95ab7acd58",
+                "runId": "run_ab4ef500-f6fe-4e72-979d-716169bff80f",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195929032
+              },
+              {
+                "mediaId": "media_5a3cf23e-2c3c-48ee-b9a9-5b11d4e7c87f",
+                "runId": "run_08797b12-3883-45c4-aeb0-d593d3f400e2",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195929019
+              },
+              {
+                "mediaId": "media_8b7c5619-494b-4d2f-abd0-35d63070376c",
+                "runId": "run_feea0752-04b7-40fc-b8be-0f840f1e839c",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195929011
+              },
+              {
+                "mediaId": "media_87ee71d9-5076-4778-8e10-a35db26375b8",
+                "runId": "run_5356557e-fa44-4d8a-b3ba-47dcadda663e",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195929005
+              },
+              {
+                "mediaId": "media_0dad136d-b692-464d-bf7c-c9e8a481f91a",
+                "runId": "run_2be75777-9cba-4cf1-8b46-530ab83929e8",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195928989
+              },
+              {
+                "mediaId": "media_34655662-6118-4abd-96f5-49644c96f842",
+                "runId": "run_433179c3-29c9-480c-af9c-65dca446a825",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195928972
+              },
+              {
+                "mediaId": "media_9d8dc730-99f9-44bc-b5ea-71e74a81571d",
+                "runId": "run_394be5fe-fa30-49e3-acd6-743724df5f73",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195928960
+              },
+              {
+                "mediaId": "media_f5d56891-ae85-49f3-89f2-9e2af6745f77",
+                "runId": "run_ba23832a-b162-4997-a765-0140e5dd8498",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195928943
+              },
+              {
+                "mediaId": "media_7b0b02c8-94ad-4c5a-bcbc-e9bda574ed56",
+                "runId": "run_2f538edb-3217-46df-8972-dca0acff4d1d",
+                "turn": 1,
+                "outputIndex": 0,
+                "mediaKind": "image",
+                "filename": "official-desktop-controlled.png",
+                "mediaType": "image/png",
+                "byteSize": 6275,
+                "createdAt": 1793195928929
+              }
+            ],
+            "hasActiveRuns": false,
+            "refreshAfterMs": 1000
+          }
+        },
+        "sessionRunning": false
+      },
+      "trace": {
+        "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512/4e9081b9-4050-466f-bf9d-b8f5b6e57c1a/first-files/1/initial/trace/trace-index.json",
+        "sessions": [
+          {
+            "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+            "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512/4e9081b9-4050-466f-bf9d-b8f5b6e57c1a/first-files/1/initial/trace/sessions/session-session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d/session.json"
+          }
+        ],
+        "missing": [
+          {
+            "source": "model-request",
+            "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+            "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+          },
+          {
+            "source": "model-stream",
+            "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+            "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+          }
+        ]
+      },
+      "completedAt": "2026-10-28T13:59:35.198Z"
+    }
+  ],
+  "errors": [],
+  "businessAssessment": "pending-human-review",
+  "inputs": [
+    {
+      "name": "prompt-01.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-01.txt",
+      "byteLength": 1725
+    },
+    {
+      "name": "prompt-02.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-02.txt",
+      "byteLength": 1828
+    },
+    {
+      "name": "prompt-03.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-03.txt",
+      "byteLength": 2027
+    },
+    {
+      "name": "prompt-04.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-04.txt",
+      "byteLength": 1899
+    },
+    {
+      "name": "prompt-05.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-05.txt",
+      "byteLength": 2279
+    },
+    {
+      "name": "prompt-06.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-06.txt",
+      "byteLength": 2300
+    },
+    {
+      "name": "prompt-07.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-07.txt",
+      "byteLength": 2377
+    },
+    {
+      "name": "prompt-08.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-08.txt",
+      "byteLength": 2305
+    },
+    {
+      "name": "prompt-09.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-09.txt",
+      "byteLength": 2389
+    },
+    {
+      "name": "prompt-10.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-10.txt",
+      "byteLength": 2367
+    },
+    {
+      "name": "prompt-11.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1/input/prompt-11.txt",
+      "byteLength": 2191
+    }
+  ],
+  "identity": {
+    "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+    "workspaceId": "a6dc96df-e0c5-409e-b800-cc22f026c54a",
+    "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1",
+    "presetId": "harness-comfyui-cli-candidate",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "initialObservation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 4,
+        "values": {
+          "title": "candidate512 first-files 1",
+          "goal": null,
+          "tokenUsage": {
+            "uncachedInputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {},
+          "contextBreakdown": {
+            "systemTokens": 0,
+            "toolsTokens": 0,
+            "messageTokens": 0
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 0,
+            "steps": 0,
+            "llmMs": 0,
+            "toolMs": 0,
+            "ttftMs": 0,
+            "ttftSteps": 0,
+            "decodeMs": 0,
+            "decodeTokens": 0
+          },
+          "turnOutline": [],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-nMA69L/first-files/1",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": null,
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": true,
+            "lastPromptAt": null
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-e88fbf65-da2e-4197-b734-ad39a7f7cb6d",
+        "runs": [],
+        "media": [],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "executionStatus": "naturally-ended",
+  "completedAt": "2026-10-28T13:59:35.225Z"
+}

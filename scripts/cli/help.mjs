@@ -20,16 +20,19 @@ export function presentationArguments(argv, valueOptions = []) {
   return { args, quiet, helpRequested }
 }
 
-export function renderHelp(definition, argv) {
+export function renderHelp(definition, argv, values = {}) {
   const help = parseHelpDefinition(definition)
   if (!presentationArguments(argv, help.valueOptions).helpRequested) return undefined
   const key = argv.slice(0, -1).join(' ')
   if (argv.at(-1) !== '--help' || !Object.hasOwn(help.nodes, key)) throw new TypeError(`Unknown help command. Next: ${help.invocation} --help`)
   const node = help.nodes[key]
   const children = Object.entries(help.nodes).filter(([name]) => name && name.split(' ').slice(0, -1).join(' ') === key)
-  return [node.summary, '', `用法: ${help.invocation}${key ? ` ${key}` : ''} --help`, ...(help.commonDetails ?? []).concat(node.details).map(line => line.replaceAll('{cli}', help.invocation)),
+  const render = line => Object.entries({ cli: help.invocation, ...values }).reduce(
+    (result, [name, value]) => result.replaceAll(`{${name}}`, String(value)), line,
+  )
+  return [node.summary, '', `用法: ${help.invocation}${key ? ` ${key}` : ''} --help`, ...(help.commonDetails ?? []).concat(node.details).map(render),
     ...children.map(([name, child]) => `\n${name}: ${child.summary}\n  ${help.invocation} ${name} --help`),
-    '', '下一步:', ...node.next.map(line => line.replaceAll('{cli}', help.invocation)), ''].join('\n')
+    '', '下一步:', ...node.next.map(render), ''].join('\n')
 }
 
 export function helpHint(definition, argv) {

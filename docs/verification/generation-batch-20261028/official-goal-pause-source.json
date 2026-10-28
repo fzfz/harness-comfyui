@@ -1,0 +1,32 @@
+{
+  "appVersion": "0.2.1-rc.3",
+  "sourcePath": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-tool-goal/lib/index.js",
+  "sourceReadOnly": true,
+  "excerpts": [
+    {
+      "start": 11,
+      "end": 19,
+      "text": "/** Resolve the immutable event cut and open-turn boundary without copying the turn suffix. */\nfunction openTurnEvents(ctx, agent) {\n\tconst events = agent.session.snapshotEvents();\n\tconst boundary = ctx.sessionProjections.stateOf(agent.session, \"turnBoundary\");\n\tif (boundary === void 0 || boundary.openTurnStartSeq === null) reject(\"goal tools require an open model turn\", \"GOAL_TOOL_DRIVER_REQUIRED\");\n\treturn {\n\t\tevents,\n\t\topenTurnStartSeq: boundary.openTurnStartSeq\n\t};"
+    },
+    {
+      "start": 36,
+      "end": 64,
+      "text": "/** Whether the captured open turn contains an event accepted by `predicate`. */\nfunction someOpenTurnEvent(execution, predicate) {\n\tfor (let seq = execution.openTurnStartSeq + 1; seq < execution.events.length; seq += 1) {\n\t\tconst event = execution.events[seq];\n\t\tif (event !== void 0 && predicate(event)) return true;\n\t}\n\treturn false;\n}\n/**\n* Whether host-attested human input appears in the current root-agent turn.\n* An omitted `Agent.followup()` / `steer()` source resolves to `user`, so non-human\n* producers must supply their own source rather than inheriting this authority.\n*/\nfunction hasDirectHumanInput(ctx, execution) {\n\tif (!ctx.agents.roots().includes(execution.agent)) return false;\n\treturn someOpenTurnEvent(execution, (event) => event.type === \"user/message\" && event.data.source.kind === \"user\");\n}\n/** Whether this turn is the current goal's exact admitted round. */\nfunction isMatchingGoalRound(execution, goal) {\n\treturn someOpenTurnEvent(execution, (event) => event.type === \"user/message\" && event.data.source.kind === \"goal\" && event.data.source.goalId === goal.id && event.data.source.revision === goal.revision && event.data.source.round === goal.roundsStarted);\n}\n/**\n* Require authority originating in a human message accepted by a runtime root.\n* @param ctx - Context carrying the live agent graph.\n* @param execution - Authenticated current tool execution.\n*/\nfunction requireDirectHuman(ctx, execution) {\n\tif (hasDirectHumanInput(ctx, execution)) return;\n\treject(\"this goal operation requires a direct human turn on a top-level agent\");"
+    },
+    {
+      "start": 72,
+      "end": 79,
+      "text": "function completionAuthority(ctx, execution) {\n\tif (hasDirectHumanInput(ctx, execution)) return { kind: \"direct-human\" };\n\tconst goal = ctx.goals.get(execution.agent);\n\tif (goal !== void 0 && isMatchingGoalRound(execution, goal)) return {\n\t\tkind: \"goal-round\",\n\t\tgoal\n\t};\n\treturn reject(\"complete and blocked require a direct human turn or the current goal round\");"
+    },
+    {
+      "start": 315,
+      "end": 320,
+      "text": "\t\t\taction: {\n\t\t\t\ttype: \"string\",\n\t\t\t\trequired: true,\n\t\t\t\tenum: UPDATE_ACTIONS,\n\t\t\t\tdescription: \"edit, pause, and resume require a direct top-level human request. complete and blocked are also allowed during an automatic continuation of this goal; blocked is rejected before the configured minimum round count.\"\n\t\t\t},"
+    },
+    {
+      "start": 348,
+      "end": 360,
+      "text": "\t\t\tif (args.action === \"pause\" || args.action === \"resume\") {\n\t\t\t\trequireDirectHuman(ctx, execution);\n\t\t\t\tif (hasText(args.objective) || hasRoundCap(args.max_goal_rounds) || hasText(args.blocked_reason)) throw new HarnessError(\"objective and max_goal_rounds are valid only with action edit; blocked_reason is valid only with action blocked\", \"GOAL_TOOL_INVALID_UPDATE\");\n\t\t\t\tconst current = ctx.goals.get(execution.agent);\n\t\t\t\tif (args.action === \"resume\" && current?.id === ref.id && current.revision === ref.revision && current.phase === \"paused\") throw new HarnessError(\"the model cannot resume a paused goal; the user must resume it\", \"GOAL_TOOL_RESUME_PAUSED\");\n\t\t\t\tconst goal = args.action === \"pause\" ? ctx.goals.pause(execution.agent, ref) : ctx.goals.resume(execution.agent, ref);\n\t\t\t\treturn Promise.resolve(goalValue(goal));\n\t\t\t}\n\t\t\tconst authority = completionAuthority(ctx, execution);\n\t\t\tif (hasText(args.objective) || hasRoundCap(args.max_goal_rounds)) throw new HarnessError(\"objective and max_goal_rounds are valid only with action edit\", \"GOAL_TOOL_INVALID_UPDATE\");\n\t\t\tif (args.action === \"complete\" && hasText(args.blocked_reason)) throw new HarnessError(\"blocked_reason is valid only with action blocked\", \"GOAL_TOOL_INVALID_UPDATE\");\n\t\t\tif (args.action === \"blocked\" && (args.blocked_reason === void 0 || args.blocked_reason.trim().length === 0)) throw new HarnessError(\"blocked_reason is required with action blocked\", \"GOAL_TOOL_INVALID_UPDATE\");\n\t\t\tif (args.action === \"blocked\" && authority.kind === \"goal-round\" && authority.goal.roundsStarted < resolved.blockedAfterConsecutiveRounds) throw new HarnessError(`blocked requires at least ${resolved.blockedAfterConsecutiveRounds} consecutive goal rounds; current round is ${authority.goal.roundsStarted}`, \"GOAL_TOOL_BLOCK_THRESHOLD\");"
+    }
+  ]
+}

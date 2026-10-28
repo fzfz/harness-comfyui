@@ -1,27 +1,29 @@
 ---
 name: comfyui-image-review
-description: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。
+description: 用户要求按 run_id 分析生成图片、比较 Prompt 与图片或改写下一轮 Prompt 时使用。Skill 读取原始参数，逐图调用独立视觉模型，再给出改进 Prompt。
 ---
 
 # ComfyUI Image Review
 
 ## 1. 读取 CLI 合同
 
-1. 当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/cli.md`。CLI 返回错误后，当前 Agent 在修改命令输入或重试前必须重新读取该文件的“错误、修正与重试”章节，除非当前上下文完整保留该章节。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。
+1. 当前 Agent 在本次 Skill 执行第一次调用项目 CLI 前必须完整读取 `references/cli.md`。CLI 返回错误后，当前 Agent 先读取“错误、修正与重试”，再修改输入或重试。当前上下文完整保留该章节时，可直接使用。上下文压缩后不再完整保留该文件内容时，当前 Agent 必须在下一条 CLI 命令前重新完整读取该文件。
 
 ## 2. 取得 Generation Run 与图片
 
-1. 当前 Agent 必须优先从用户消息中按出现顺序收集一个或多个明确的 `run_id`。用户指代当前会话此前的 Generation 提交结果时，当前 Agent 必须从该提交结果中按返回顺序取得对应 `run_id`。当前用户消息和被指代的此前 Generation 提交结果都没有可用 `run_id` 时，当前 Agent 必须请用户提供至少一个 `run_id`，并结束本次 Skill 执行。
+1. 当前 Agent 必须优先从用户消息中按出现顺序收集一个或多个明确的 `run_id`。用户指代当前会话此前的 Generation 提交结果时，当前 Agent 必须从该提交结果中按返回顺序取得对应 `run_id`。两种来源均缺少 `run_id` 时，当前 Agent 必须请用户提供 ID，结束本次执行。
 
-2. 当前 Agent 必须把全部 `run_id` 按原顺序分成每组一至二十个，并为每组调用一次 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" generation resolve-media --stdin`。当前 Agent 必须保留输入中的重复 `run_id` 和原始顺序。命令成功后，当前 Agent 必须读取返回路径中的结果文件，并按各组调用顺序合并文件中的 `runs`。
+2. 当前 Agent 必须把全部 `run_id` 按原顺序分成每组 1 至 20 个，并为每组调用一次 `generation resolve-media --stdin`。输入必须显式包含 `include_parameters: true`。调用入口见 `references/cli.md`。当前 Agent 保留重复 ID 与原始顺序。命令成功后，当前 Agent 读取结果文件，按各组顺序合并 `runs`。
 
 3. 某个 `runs` 元素的 `lookup_status` 为 `error` 时，当前 Agent 必须报告该元素的 `run_id`、`error.code` 和 `error.message`，并跳过该元素的图片读取。Run media 命令发生命令级失败时，当前 Agent 按 `references/cli.md` 处理。
 
+4. 查询到 Run 后，当前 Agent 记录 `status` 与 `run_error`。Run 尚在执行且没有已保存图片时，当前 Agent 等待并查询该 Run。Run 失败、取消或结果不明时，当前 Agent 报告状态与错误，并审阅已保存图片。
+
 ## 3. 逐图读取
 
-1. 当前 Agent 必须按 `runs` 顺序处理每个成功 Run，并按每个 Run 的 `images` 顺序处理每张图片。当前 Agent 必须为每张图片分别调用一次 `ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI" image inspect --stdin`，并把该图片的 `file_path` 作为本次调用的同名字段。某个成功 Run 的 `images` 为空时，当前 Agent 必须报告该 Run 没有已保存图片。
+1. 当前 Agent 按 `runs` 顺序处理 `lookup_status` 为 `available` 的每项记录，并按 `images` 顺序逐图调用 `image inspect --stdin`。调用方法见 `references/cli.md` 的“参数与标准输入”。每次调用使用对应图片的 `file_path`。该项记录的 `images` 为空时，当前 Agent 报告该 Run 没有已保存图片。
 
-2. 用户明确指定本次图片观察的关注点、返回格式或读图提示词时，当前 Agent 必须把该要求组织成脱离默认提示词也能独立理解的完整 `prompt`，并在每次相关的 `image inspect --stdin` 调用中与 `file_path` 一起传递。用户没有指定本次观察要求时，当前 Agent 必须省略 `prompt`。`prompt` 的缺省与覆盖行为见 [CLI 参考](references/cli.md#image-inspect---stdin)“参数与标准输入”的 `image inspect --stdin` 第 6 项。
+2. 用户指定关注点、返回格式或读图提示词时，当前 Agent 将要求写成完整 `prompt`。该 `prompt` 必须能独立表达观察要求。每次读取适用图片时，当前 Agent 将 `prompt` 与 `file_path` 一起传递。用户没有指定本次观察要求时，当前 Agent 必须省略 `prompt`。`prompt` 的缺省与覆盖行为见 [CLI 参考](references/cli.md#image-inspect---stdin)“参数与标准输入”的 `image inspect --stdin` 第 6 项。
 
 3. 同一项观察要求适用于全部图片时，当前 Agent 必须为每次图片调用传递同一份 `prompt`。用户为特定 Run 或图片指定不同观察要求时，当前 Agent 必须把对应 `prompt` 只传给对应图片。用户明确指定本次关注点时，当前 Agent 还必须在第 4 节的 Prompt 对比中使用该关注点。
 
@@ -31,12 +33,12 @@ description: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始�
 
 ## 4. 对比生成意图与可见结果
 
-1. 当前 Agent 必须为每个 Run 独立比较原始 `parameters` 与成功取得的图片 `observation`。当前 Agent 只能把 Prompt 参数表达的主体、数量、外观、姿态、构图、镜头、场景、光线、风格和文字要求视为生成意图。当前 Agent 将宽高、seed、steps、CFG、sampler 和 scheduler 等运行参数作为诊断上下文，以解释生成过程。
+1. 当前 Agent 必须为每个 Run 独立比较原始 `parameters` 与成功取得的图片 `observation`。生成意图以 Prompt 参数为准。比较内容包括主体、数量、外观、姿态、构图、镜头、场景、光线、风格和文字。当前 Agent 将宽高、seed、steps、CFG、sampler 和 scheduler 等运行参数作为诊断上下文，以解释生成过程。
 
 2. 当前 Agent 必须逐项区分：
 
-   1. 已实现：图片观察明确支持的生成意图；
-   2. 缺失或偏弱：图片观察明确描述为未实现或表现偏弱的生成意图；
+   1. 符合意图：图片观察明确支持的生成意图；
+   2. 缺失或偏弱：图片观察明确描述为缺失或表现偏弱的生成意图；
    3. 意外内容：图片观察明确出现，但生成意图没有要求的内容；
    4. 不确定：图片观察未提及、描述为遮挡或无法确认的内容。
 
@@ -44,7 +46,7 @@ description: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始�
 
 ## 5. 编写改进 Prompt
 
-1. 当前 Agent 必须为存在成功图片观察的每个 Run 编写一份改进 Prompt。当前 Agent 必须保留已实现且符合用户意图的内容，强化缺失或偏弱的内容，并使用明确的主体、关系、位置、镜头和视觉属性替换含糊表达。只有意外内容影响用户目标时，当前 Agent 才可以添加针对性约束。
+1. 当前 Agent 必须为存在成功图片观察的每个 Run 编写一份改进 Prompt。当前 Agent 保留符合用户意图的内容，强化缺失或偏弱的内容。含糊表达改为明确的主体、关系、位置、镜头和视觉属性。只有意外内容影响用户目标时，当前 Agent 才可以添加针对性约束。
 
 2. 当前 Agent 必须保持原 Prompt 的语言和标签体系。当前 Agent 必须按原始 `parameters` 中的参数名分别给出每个已有 Prompt 参数的改进值，并保留各参数的用途。
 
@@ -54,8 +56,8 @@ description: 按一个或多个 ComfyUI Generation Run 的 run_id 读取原始�
 
    1. Run 标题与原始 Prompt 参数；
    2. 每张图片的 `media_id`、观察结果或读取错误；
-   3. 已实现、缺失或偏弱、意外内容与不确定内容；
+   3. 符合意图、缺失或偏弱、意外内容与不确定内容；
    4. 该 Run 的改进 Prompt；
    5. 非 Prompt 运行参数的保持或调整意见及具体理由。
 
-2. 存在多个 Run 时，当前 Agent 必须在全部 Run 结果之后补充跨 Run 的共同问题与差异，并保留每个 Run 的独立改进 Prompt。
+2. 存在多个 Run 时，当前 Agent 在各项结果后补充共同问题与差异。每个 Run 保留独立的改进 Prompt。

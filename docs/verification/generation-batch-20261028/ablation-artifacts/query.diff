@@ -1,0 +1,32 @@
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.local/source-host/generation-runtime-Dk2ozOAl.js b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/query/package/.local/source-host/generation-runtime-Dk2ozOAl.js
+index aca7d62..15b1622 100644
+--- a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.local/source-host/generation-runtime-Dk2ozOAl.js
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/query/package/.local/source-host/generation-runtime-Dk2ozOAl.js
+@@ -2517,7 +2517,7 @@ var GenerationRuntime = class {
+ 			signal?.throwIfAborted();
+ 			try {
+ 				const row = this.resolveGenerationRunRow(input.workspaceId, requestedRunId);
+-				const parameters = input.includeParameters === true ? runInputArguments(historicalGenerationRequest(row.request_json)).parameters : void 0;
++				const argumentsValue = runInputArguments(historicalGenerationRequest(row.request_json));
+ 				const mediaRows = this.database.prepare(`
+           SELECT * FROM generation_media
+           WHERE run_id = ? AND media_kind = 'image'
+@@ -2525,16 +2525,9 @@ var GenerationRuntime = class {
+         `).all(row.run_id);
+ 				runs.push(Object.freeze({
+ 					run_id: row.run_id,
+-					request_id: row.request_id,
+ 					lookup_status: "available",
+-					title: row.title,
+-					status: row.status,
+-					revision: row.revision,
+-					updated_at: row.updated_at,
+-					instance_id: row.instance_id,
+-					prompt_id: row.prompt_id,
+-					run_error: row.error_code === null ? null : runInputError(row.error_code, row.error_message ?? "Generation failed."),
+-					...parameters === void 0 ? {} : { parameters },
++					title: argumentsValue.title,
++					parameters: argumentsValue.parameters,
+ 					images: Object.freeze(mediaRows.map((media) => Object.freeze({
+ 						media_id: media.media_id,
+ 						node_id: media.node_id,

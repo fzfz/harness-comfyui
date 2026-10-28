@@ -1,0 +1,1066 @@
+{
+  "observedDate": "2026-10-28",
+  "baselineCommit": "d50af91b4205809e2dc307edcc59b8f3ecfde469",
+  "installedPluginVersion": "0.48.1",
+  "historicalPluginVersion": "0.48.0",
+  "sourceArchive": "/Users/fzfz/Downloads/dsh-session-session-1236bce5-cfb8-401c-8768-17d228c5c16d.zip",
+  "sessionId": "session-1236bce5-cfb8-401c-8768-17d228c5c16d",
+  "eventCount": 3727,
+  "firstSeq": 0,
+  "lastSeq": 3726,
+  "continuous": true,
+  "toolCallCounts": {
+    "bash": 468,
+    "skill": 1,
+    "mcp__noobai__query_semantic_works": 1,
+    "query_semantic_generation_models": 1,
+    "query_semantic_comfyui_templates": 1,
+    "query_semantic_comfyui_instances": 1,
+    "mcp__noobai__get_catalog_resource": 1,
+    "load_workspace_dependencies": 1,
+    "inspect_image": 183,
+    "mcp__noobai__get_instance_status": 1,
+    "generate_with_comfyui": 63,
+    "mcp__noobai__get_instance_queue": 3,
+    "get_generation_run_media": 11,
+    "compress": 21,
+    "mcp__noobai__get_instance_connection": 1,
+    "present": 1
+  },
+  "generationCallsByTurn": {
+    "1": 41,
+    "2": 22
+  },
+  "positivePromptCharacters": {
+    "min": 1725,
+    "max": 3297,
+    "total": 162508
+  },
+  "registeredRunCount": 63,
+  "registeredMediaCount": 63,
+  "runs": [
+    {
+      "run_id": "run_8635133b-6cf3-4bda-b947-7c153b0a8709",
+      "turn": 1,
+      "call_id": "call_00_ahho207ov48n8kzwpc4b1vxn",
+      "title": "林茜 立绘人设 T-A 基线全身正装",
+      "status": "succeeded",
+      "prompt_id": "d2cb0923-2c31-4ee6-ba8a-b1d181a69a0e"
+    },
+    {
+      "run_id": "run_e321d038-57c0-45d7-ae89-47d0ef91edc3",
+      "turn": 1,
+      "call_id": "call_01_el63um1a2fxk4z4k7tkd8ibo",
+      "title": "林茜 立绘人设 T-B 裸体全身正面",
+      "status": "succeeded",
+      "prompt_id": "3a01fccc-b553-476c-9a1c-ab46ff203a33"
+    },
+    {
+      "run_id": "run_968a663d-89eb-44c3-83be-67e1e372e91f",
+      "turn": 1,
+      "call_id": "call_00_00m2jk0grhukdss9o753g4ko",
+      "title": "林茜 立绘人设 T2-A 正装四分之三 1024",
+      "status": "succeeded",
+      "prompt_id": "d78c2e4d-544a-4345-aae2-8b0ade291329"
+    },
+    {
+      "run_id": "run_5525052b-7034-44f2-acea-b779bd92c986",
+      "turn": 1,
+      "call_id": "call_01_leyz8qal2azvs669eajs43w3",
+      "title": "林茜 立绘人设 T2-B 裸体四分之三 1024",
+      "status": "succeeded",
+      "prompt_id": "bc74ca59-866c-40f4-872c-c136198dead8"
+    },
+    {
+      "run_id": "run_4f7d3789-2ea4-4899-91ef-040286750458",
+      "turn": 1,
+      "call_id": "call_00_5hxwgyu4qr7thjhqngxv7z47",
+      "title": "林茜 立绘人设 01v3 基准正装",
+      "status": "succeeded",
+      "prompt_id": "9acf8acd-756c-490f-8f44-c445f85243ef"
+    },
+    {
+      "run_id": "run_ed3acd31-1651-4367-91d4-b091938dfa9c",
+      "turn": 1,
+      "call_id": "call_01_kxi6ate3xhdg0nba6590qiv7",
+      "title": "林茜 立绘人设 02v3 基准裸体正面",
+      "status": "succeeded",
+      "prompt_id": "4c5113c5-4367-41d8-9297-41619bbd1e29"
+    },
+    {
+      "run_id": "run_5a4c40bf-4c8a-4364-8905-5f8df7091bc5",
+      "turn": 1,
+      "call_id": "call_00_qhwc37mqaqn7ns55y5iffwxv",
+      "title": "林茜 立绘人设 01v4 基准正装侧身",
+      "status": "succeeded",
+      "prompt_id": "b3d6ae0a-5a4a-41d2-8292-a9cfcd2c5569"
+    },
+    {
+      "run_id": "run_743ee96e-bcab-45d1-8c24-e58f12c13dd6",
+      "turn": 1,
+      "call_id": "call_01_w7h2fspp2aouo789mlq3ugnx",
+      "title": "林茜 立绘人设 02v4 基准裸体正面",
+      "status": "succeeded",
+      "prompt_id": "ece41c19-8705-41f3-a95f-90c488a98790"
+    },
+    {
+      "run_id": "run_7f9cb55b-e326-410c-8d42-f099f3c423ee",
+      "turn": 1,
+      "call_id": "call_00_9usw1busn536qztw8m37tqzd",
+      "title": "林茜 01v5 基准正装",
+      "status": "succeeded",
+      "prompt_id": "c91f31e9-bd95-40b4-8f4b-adbfbe03d481"
+    },
+    {
+      "run_id": "run_ed57f85a-5aeb-4486-a6a2-67dd12cf0fa4",
+      "turn": 1,
+      "call_id": "call_01_r3ggz1ke0unc0s94ns5jbmn3",
+      "title": "林茜 02v5 基准裸体正面",
+      "status": "succeeded",
+      "prompt_id": "136f46e1-6fa9-4648-b0ef-fba41d89a37f"
+    },
+    {
+      "run_id": "run_78e130ee-9aeb-405b-a38d-6cb107c7f45a",
+      "turn": 1,
+      "call_id": "call_02_pqkkismyhui99gmr4br8fczc",
+      "title": "林茜 03v5 基准裸体背面",
+      "status": "succeeded",
+      "prompt_id": "5dd430ec-2bce-4370-adb6-b18ec2e38505"
+    },
+    {
+      "run_id": "run_ca30fba9-d3c4-49fd-b6e1-aa6ec46bd34d",
+      "turn": 1,
+      "call_id": "call_03_h1p62uhwbnjzaz51hh7l4nhl",
+      "title": "林茜 04v5 半身脸部基准",
+      "status": "succeeded",
+      "prompt_id": "f51d9ed4-f18b-4055-ace2-a1ecadd6c1b3"
+    },
+    {
+      "run_id": "run_bc11eb49-e9c5-4caf-bae4-8717f0cb8309",
+      "turn": 1,
+      "call_id": "call_00_orr2qtte99tw13xtefc1gaje",
+      "title": "林茜 00 脸部基准 v6 东亚",
+      "status": "succeeded",
+      "prompt_id": "9f15c3be-09b6-459d-9b90-53838da9e876"
+    },
+    {
+      "run_id": "run_c5985e83-9598-4b6e-bc50-c7cb3dcbd4a5",
+      "turn": 1,
+      "call_id": "call_01_9kt3jnsgryn5hon3ys57l113",
+      "title": "林茜 01v6 基准正装 东亚",
+      "status": "succeeded",
+      "prompt_id": "237c8bae-bd2c-4795-ae81-126401ae68d4"
+    },
+    {
+      "run_id": "run_74194eeb-23b3-49a9-95f3-ecae10780ce3",
+      "turn": 1,
+      "call_id": "call_02_45rvvslduh9wl7zc0h3ks575",
+      "title": "林茜 02v6 基准裸体正面 东亚",
+      "status": "succeeded",
+      "prompt_id": "c3193ff1-429b-4f2a-a299-2775be91bda6"
+    },
+    {
+      "run_id": "run_ec54f978-de8c-49f8-aab3-17a9fb63fa3c",
+      "turn": 1,
+      "call_id": "call_00_eli7sbqvuxyq7f2oojtip4ry",
+      "title": "林茜 01v7 基准正装 正面换重心",
+      "status": "succeeded",
+      "prompt_id": "8badfdff-0b02-4950-a98d-0fae58407b01"
+    },
+    {
+      "run_id": "run_4fbcdd29-89f8-457f-bd05-92b3189d520e",
+      "turn": 1,
+      "call_id": "call_01_cd36e6rq5j35w2ulaod2qdh8",
+      "title": "林茜 04 P1 婚姻日常 厨房",
+      "status": "succeeded",
+      "prompt_id": "2dc7ee89-b2e4-4cbd-b3aa-63972e0b9e09"
+    },
+    {
+      "run_id": "run_5bd7312d-7c3a-4876-bbae-c97093a82cb3",
+      "turn": 1,
+      "call_id": "call_02_e0n628vm441llxgxcndivfbs",
+      "title": "林茜 06 P3 职业内场",
+      "status": "succeeded",
+      "prompt_id": "810cb69c-7cfe-42df-8ba8-8347f3e1a89d"
+    },
+    {
+      "run_id": "run_aed7d218-45e9-4a53-bffb-4b9080f968cd",
+      "turn": 1,
+      "call_id": "call_00_k2pznd82pfktum9uo38eobbn",
+      "title": "林茜 05 P2 柜台面具 家电城",
+      "status": "succeeded",
+      "prompt_id": "c0d56a52-014c-49da-9771-85e021f24a7b"
+    },
+    {
+      "run_id": "run_0186be8a-c99a-4c5e-a026-c0a6c83ea741",
+      "turn": 1,
+      "call_id": "call_01_sor4f6j9a13g2cid7otkkbcd",
+      "title": "林茜 07 P4 私密夜间 粉睡衣",
+      "status": "succeeded",
+      "prompt_id": "2644c084-4b1e-4f59-8323-968c50fdb222"
+    },
+    {
+      "run_id": "run_7240d56a-11c9-4124-b50c-46f3ce270c77",
+      "turn": 1,
+      "call_id": "call_02_bsfjcbiorvmkyolrdkg0a85a",
+      "title": "林茜 08 P4 裸体 夜灯",
+      "status": "succeeded",
+      "prompt_id": "439c9463-cf30-4746-8439-5f9995be1427"
+    },
+    {
+      "run_id": "run_dd85b76e-1dc5-40a0-8e96-f01ea9bac164",
+      "turn": 1,
+      "call_id": "call_01_sjak1600fl68p48wyd16zqww",
+      "title": "林茜 04v2 P1 婚姻日常 厨房",
+      "status": "succeeded",
+      "prompt_id": "159d2e57-4f89-4c6a-9e58-6f84d4af67e2"
+    },
+    {
+      "run_id": "run_81e009cf-8cd4-4fef-b703-2078f32805f8",
+      "turn": 1,
+      "call_id": "call_00_pqqffrzkeivtevlkb64d0we3",
+      "title": "林茜 07v2 P4 私密夜间 粉睡衣",
+      "status": "succeeded",
+      "prompt_id": "7d878e8d-f800-4efb-89c5-72eec52c0b32"
+    },
+    {
+      "run_id": "run_156c2065-307a-4f20-9f1d-f21e56a7319b",
+      "turn": 1,
+      "call_id": "call_01_vmdptar927exhzmye0ydvh7q",
+      "title": "林茜 08v2 P4 裸体 夜灯",
+      "status": "succeeded",
+      "prompt_id": "eb19ff88-f0e8-490f-b7b0-b9f210b4ff6d"
+    },
+    {
+      "run_id": "run_395110d8-5841-4f16-aac9-d27b4910c118",
+      "turn": 1,
+      "call_id": "call_00_k3ily33mx29i039ic4oqjlm2",
+      "title": "林茜 09 P5 出门在街 雨夜",
+      "status": "succeeded",
+      "prompt_id": "14bc0075-5226-499f-85d2-1d631db033c8"
+    },
+    {
+      "run_id": "run_248cd34c-6182-4faa-82e9-4e0fd619ca33",
+      "turn": 1,
+      "call_id": "call_01_hm7e3c9aj17njdarz6irfv2c",
+      "title": "林茜 10 P6 见长辈",
+      "status": "succeeded",
+      "prompt_id": "c3fdecba-7846-4775-a31e-bf5ff28dd6c3"
+    },
+    {
+      "run_id": "run_def47ae2-bf65-4d91-a580-87d8a4946b9c",
+      "turn": 1,
+      "call_id": "call_02_zxjljsrcba14t4m5vmfredum",
+      "title": "林茜 11 P7 终局",
+      "status": "succeeded",
+      "prompt_id": "6912041d-b33a-4f55-b91b-5298d874e3e0"
+    },
+    {
+      "run_id": "run_640dec7a-fcf1-466d-9181-b56c35699de8",
+      "turn": 1,
+      "call_id": "call_00_xs7pjt5d6itoau1mzl68gtzu",
+      "title": "林茜 11v2 P7 终局 消瘦版",
+      "status": "succeeded",
+      "prompt_id": "58348de9-aeb1-4611-9074-5998ef965248"
+    },
+    {
+      "run_id": "run_c7b8fdbd-5630-450e-a022-de2d8c932544",
+      "turn": 1,
+      "call_id": "call_00_no2hg3v90nb8xb8osfyhin9r",
+      "title": "林茜 04v3 P1 厨房 脸加固",
+      "status": "succeeded",
+      "prompt_id": "e4ef7c8b-b01c-4404-aec9-90c0e351b11c"
+    },
+    {
+      "run_id": "run_86fb1857-4362-4399-ab05-203c13737e3e",
+      "turn": 1,
+      "call_id": "call_01_fk9y9ms3jwz1c8ol39bke91w",
+      "title": "林茜 05v2 P2 柜台 脸加固",
+      "status": "succeeded",
+      "prompt_id": "376de664-3aa2-4547-8972-a0b2d2788ad5"
+    },
+    {
+      "run_id": "run_a042f54c-a486-4ebf-912c-ffa462d9541a",
+      "turn": 1,
+      "call_id": "call_02_v2zs7qfkk68k4etplyg44xy1",
+      "title": "林茜 06v2 P3 内场 脸加固",
+      "status": "succeeded",
+      "prompt_id": "7d4c8a8c-b4f0-443a-9ea6-04576d88c0f7"
+    },
+    {
+      "run_id": "run_6dd4ed25-5737-41b8-a006-5dcfe73c970c",
+      "turn": 1,
+      "call_id": "call_03_htow2scy7ja9l2pyy3q5e23s",
+      "title": "林茜 07v3 P4 睡衣 脸加固",
+      "status": "succeeded",
+      "prompt_id": "cf6b4d1f-3b30-46e4-a156-a6e2976d2eeb"
+    },
+    {
+      "run_id": "run_d13ea36c-eaac-45d9-ab7b-9ec22f1e17c9",
+      "turn": 1,
+      "call_id": "call_04_7ykfauvrn8adklpe38pqf6to",
+      "title": "林茜 08v3 P4 裸体夜 脸加固",
+      "status": "succeeded",
+      "prompt_id": "cd8e19f9-298e-4df2-847f-cd62d97fadb0"
+    },
+    {
+      "run_id": "run_716d44d9-1e92-4300-9cf2-1abe18716cb1",
+      "turn": 1,
+      "call_id": "call_00_o5k1t1k2z5ik3kpk147y0qyh",
+      "title": "林茜 11v3 P7 终局 消瘦强化",
+      "status": "succeeded",
+      "prompt_id": "577c90f7-4063-4cc3-82e0-0bf4aeb4b596"
+    },
+    {
+      "run_id": "run_0b208afd-61cb-4cba-abd2-27ace9c2cfd1",
+      "turn": 1,
+      "call_id": "call_01_9x9orsyvyrglke6u5jm9gcsk",
+      "title": "林茜 11b P7 终局 四比五半身",
+      "status": "succeeded",
+      "prompt_id": "4f3ad99a-edb5-488b-a3d6-970df5723f87"
+    },
+    {
+      "run_id": "run_758a3952-16e7-4a7e-8794-81f5665ef7e3",
+      "turn": 1,
+      "call_id": "call_00_qlq27iw36rp9d4yhovz37k09",
+      "title": "林茜 11v4 P7 终局 消瘦身材版",
+      "status": "succeeded",
+      "prompt_id": "0d644bc9-23c4-4706-b821-1964f2b3a95c"
+    },
+    {
+      "run_id": "run_ecc1df18-2645-4d19-8a63-eba1fae2e9a8",
+      "turn": 1,
+      "call_id": "call_00_t656psfho5ztvv8hm68o53pn",
+      "title": "林茜 11c P7 终局 膝上构图消瘦",
+      "status": "succeeded",
+      "prompt_id": "6d7bea0e-73b2-4150-aac4-6f51a8bc69b3"
+    },
+    {
+      "run_id": "run_da30f23f-8007-4387-a727-abb5d4a5b84c",
+      "turn": 1,
+      "call_id": "call_00_sfrsqxizkauz6ux5voiqngb1",
+      "title": "林茜 11d P7 终局 拖鞋版",
+      "status": "succeeded",
+      "prompt_id": "72f3cb08-1600-40f5-b193-f9559014f696"
+    },
+    {
+      "run_id": "run_7577d812-20c9-4011-b77b-08b1e8e5b66a",
+      "turn": 1,
+      "call_id": "call_00_96hi5juy5zcz3qsps5cap3qp",
+      "title": "林茜 11e P7 终局 棉拖前置",
+      "status": "succeeded",
+      "prompt_id": "30b23608-e424-4631-b676-9e90f35cc420"
+    },
+    {
+      "run_id": "run_1adea924-322b-47ac-8066-1f1b659908e0",
+      "turn": 1,
+      "call_id": "call_00_ln7ljtt92s6ehf7mppera98r",
+      "title": "林茜 08 P4 裸体夜灯 v4 手臂放下",
+      "status": "succeeded",
+      "prompt_id": "359307be-5d4f-4cef-8ed9-eaa6df031d7c"
+    },
+    {
+      "run_id": "run_2f146b37-c4c4-43b8-bdd2-0ca702228d85",
+      "turn": 1,
+      "call_id": "call_00_s6yszdpfho2w927chx1wyu6l",
+      "title": "林茜 08 P4 裸体夜灯 v5 手藏身后",
+      "status": "succeeded",
+      "prompt_id": "2b42d66d-2342-4005-bff3-7e09ea3acd30"
+    },
+    {
+      "run_id": "run_d8901da3-0a5e-4f9b-9a07-b42f4ad99f8b",
+      "turn": 2,
+      "call_id": "call_00_RvHgR207fon0DqoOZArr6616",
+      "title": "林茜 01 v8 比例锚定",
+      "status": "succeeded",
+      "prompt_id": "1d364501-4112-43ba-b9d4-4c4560dfc8ac"
+    },
+    {
+      "run_id": "run_55d085c1-1d72-4df6-85d8-3e0440b764b5",
+      "turn": 2,
+      "call_id": "call_01_14VkTshv7pmR9cldPWkW1054",
+      "title": "林茜 02 v7 比例锚定 裸体正面",
+      "status": "succeeded",
+      "prompt_id": "ca8dde81-7e3b-4e94-a551-8d6cf2a1af95"
+    },
+    {
+      "run_id": "run_e9722a05-525f-45f3-a7f8-f2d598708e8f",
+      "turn": 2,
+      "call_id": "call_02_6aGjt5hHq8dJ7aDhHF5R5276",
+      "title": "林茜 03 v6 比例锚定 裸体背面",
+      "status": "succeeded",
+      "prompt_id": "6fdf3812-649c-4457-ba28-c56508d3e91d"
+    },
+    {
+      "run_id": "run_dcb39c55-eb52-40e7-ba6b-1209974d77fb",
+      "turn": 2,
+      "call_id": "call_03_UgjxkYBfBnKCeNqOHBYc3267",
+      "title": "林茜 04 v4 P1 厨房 比例锚定",
+      "status": "succeeded",
+      "prompt_id": "64d01f88-c26a-48b5-adf7-8ce42ce30f1b"
+    },
+    {
+      "run_id": "run_3b66c05a-f0e2-45fc-831a-3de091765be1",
+      "turn": 2,
+      "call_id": "call_00_slbctl07mbqvxxlq4af8fpfa",
+      "title": "林茜 02 v8 竖幅 896x1600 比例测试",
+      "status": "succeeded",
+      "prompt_id": "28b84e40-6c66-4b3f-a5bc-c0f216e94125"
+    },
+    {
+      "run_id": "run_b1380fbe-947c-47a1-b4e9-f3ccd4ff9e0b",
+      "turn": 2,
+      "call_id": "call_00_dn6q2kdz5igt9km65p33h8kk",
+      "title": "林茜 02 v9 地标比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "de1bc9c6-8942-48e7-b115-922fabfb79eb"
+    },
+    {
+      "run_id": "run_4973141f-420a-45be-9753-b5c58e8a1cc3",
+      "turn": 2,
+      "call_id": "call_00_lnswbxxg65uagwhm7mhihmv6",
+      "title": "林茜 02 v10 厘米人体测量 896x1600",
+      "status": "succeeded",
+      "prompt_id": "a580ef51-7ca8-4fa0-92b1-60136c3a7b46"
+    },
+    {
+      "run_id": "run_70ae8164-6414-47b9-b347-3b1d034179a0",
+      "turn": 2,
+      "call_id": "call_00_oaswcamnmw74c53w4cpoqbux",
+      "title": "林茜 02 v11 去长腿诱导 896x1600",
+      "status": "succeeded",
+      "prompt_id": "11af097b-5f81-4bf1-b315-4d87506f9e0c"
+    },
+    {
+      "run_id": "run_b2680ecb-5fee-407f-9893-c8207ba714a6",
+      "turn": 2,
+      "call_id": "call_00_s5fgy0pa6jeciy39n6kjw8bp",
+      "title": "林茜 02 v12 抓拍35mm平视 896x1600",
+      "status": "succeeded",
+      "prompt_id": "0a78ace8-176f-4cf9-8c9e-0a9c1f3f54d8"
+    },
+    {
+      "run_id": "run_40b9d514-ba0b-47f2-b224-2835dc432208",
+      "turn": 2,
+      "call_id": "call_00_22p0j3wx2eadwazm161mvh0e",
+      "title": "林茜 01 基准正装 v9 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "4a1930ae-0e71-4d47-8702-44eab7b6a78a"
+    },
+    {
+      "run_id": "run_e4dabb39-a25c-48d3-9b70-7b3a861fe387",
+      "turn": 2,
+      "call_id": "call_00_a7ltq56e91o3l1v1qklnernr",
+      "title": "林茜 02 基准裸体正面 v13 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "b3f690bf-25b1-4628-9889-5a13b67544d6"
+    },
+    {
+      "run_id": "run_d82b8cc1-4d8d-408a-b238-6a0895323bb4",
+      "turn": 2,
+      "call_id": "call_00_b6j8bhd5m4ihazd3zcrs6oht",
+      "title": "林茜 03 基准裸体背面 v7 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "c8f740f8-7733-49e3-a832-1654e1fc6ba7"
+    },
+    {
+      "run_id": "run_24dd797b-9d7e-4817-a232-f9b2d0daf7d0",
+      "turn": 2,
+      "call_id": "call_00_27pmy5pdviwlrp5kwg6rbqre",
+      "title": "林茜 04 P1 厨房 v5 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "3cb56e0c-0291-4488-832a-3e854de58acd"
+    },
+    {
+      "run_id": "run_5583c445-a825-40c7-b670-bc3d313ea103",
+      "turn": 2,
+      "call_id": "call_00_kyua2231sqif76d5cxjps82r",
+      "title": "林茜 05 P2 柜台 v3 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "9aac93aa-8848-4d3b-ae4f-2b6e7dc2e42f"
+    },
+    {
+      "run_id": "run_e9bc4db6-0daa-4662-8ef6-0f2be983bf85",
+      "turn": 2,
+      "call_id": "call_00_jdlpxn7oginccgdienfjtetx",
+      "title": "林茜 06 P3 内场 v3 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "c03a821f-2c37-4898-953d-4ecb7454b579"
+    },
+    {
+      "run_id": "run_70ca9f0f-6598-4b84-8be7-b86643acf6bb",
+      "turn": 2,
+      "call_id": "call_00_xv30vlcdrsetorbp45670akn",
+      "title": "林茜 07 P4a 粉睡衣 v4 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "1351359f-4fee-4b79-8d7f-830e6a564287"
+    },
+    {
+      "run_id": "run_20fec844-963c-45b1-b74c-9d5b7c4ca381",
+      "turn": 2,
+      "call_id": "call_00_aiy05w19pe8hwi7sbdebklt9",
+      "title": "林茜 08 P4b 裸体夜灯 v6 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "afe0a5bf-fe29-4fcb-9bc2-def570654236"
+    },
+    {
+      "run_id": "run_b69d17d6-b134-462d-837f-874fdcd7a5e2",
+      "turn": 2,
+      "call_id": "call_00_o4ez7kwa9canjg60d1a8g7bn",
+      "title": "林茜 09 P5 雨夜 v3 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "6f496c44-75bd-4656-8091-5693f5903fa1"
+    },
+    {
+      "run_id": "run_4033971f-35c1-4273-9e68-7721f70aef6c",
+      "turn": 2,
+      "call_id": "call_00_na4t7e9j5wn03v2539qfvpxq",
+      "title": "林茜 10 P6 见长辈 v3 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "68f8fee6-b986-44d3-af9a-f542ed4588de"
+    },
+    {
+      "run_id": "run_aa9ac5a4-f283-4a1b-a559-f9ee61b1b515",
+      "turn": 2,
+      "call_id": "call_00_wddbak6ov0k863s71kr5n0wj",
+      "title": "林茜 11 P7 终局 v6 厘米比例 896x1600",
+      "status": "succeeded",
+      "prompt_id": "8ae6c16a-a8b0-460b-a6ab-911b702e5b2d"
+    },
+    {
+      "run_id": "run_78f056ff-c56c-4f9d-ab0f-b304b5162c01",
+      "turn": 2,
+      "call_id": "call_00_wkrhw10ugvjgsejyn4nrg466",
+      "title": "林茜 01 v10 门框椅子比例锚",
+      "status": "succeeded",
+      "prompt_id": "bf71a133-98c2-458f-87d8-af681c3b2ef3"
+    },
+    {
+      "run_id": "run_4796a1d4-127b-4aec-9d9d-2dc6bfae2b75",
+      "turn": 2,
+      "call_id": "call_00_7a1dvrh44e1hl7owg8b2n8ax",
+      "title": "林茜 01 v11 近距50mm胸高 保底测试",
+      "status": "succeeded",
+      "prompt_id": "d9e05538-d802-4f07-852e-089ae9e90a7b"
+    }
+  ],
+  "firstDirectBatch": [
+    {
+      "promptId": "c63fd89e-ace6-4ceb-9473-3890c193630c",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "0b10892e-871c-497b-8dd9-10d184a6a11f",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "993c2d3b-1009-4ff6-b9e7-70e5b76cb22d",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "104f7e4d-93bb-4221-a14b-955ccd517a71",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "cb420206-98ee-4955-8ec5-d1919a0f0aaf",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "e870c416-f1bf-4965-8cb3-3deab7edbd62",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "ca957928-4441-4c83-a84a-6aeb9f53bc11",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "1fa4fa04-0a7c-46c3-80b1-1c78e86c5f98",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "e7691a9d-021c-40ca-a643-2e1a1b5ca941",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "2547f9ba-9205-4281-b282-3b15f08ec83c",
+      "registeredRuns": 0
+    },
+    {
+      "promptId": "281e40c9-af58-45cd-ad35-f75277031fce",
+      "registeredRuns": 0
+    }
+  ],
+  "requestHeaders": [
+    {
+      "seq": 14,
+      "toolNames": [
+        "acp_cache",
+        "acp_read_original_image",
+        "acp_status",
+        "bash",
+        "compress",
+        "decompress",
+        "generate_with_comfyui",
+        "get_generation_run_media",
+        "inspect_image",
+        "interrupt_agent",
+        "list_agents",
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "load_workspace_dependencies",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "query_semantic_comfyui_instances",
+        "query_semantic_comfyui_templates",
+        "query_semantic_generation_models",
+        "query_semantic_loras",
+        "read_comfyui_run_inputs",
+        "read_mcp_resource",
+        "search_context",
+        "send_message",
+        "skill",
+        "studio_delegate",
+        "studio_list_subagents",
+        "subagent",
+        "working_directory"
+      ],
+      "generateTool": {
+        "name": "generate_with_comfyui",
+        "description": "Create one durable ComfyUI Generation Run from one approved template, an optional resolved generation model, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Title shown for this Generation Run."
+            },
+            "instance_id": {
+              "type": "string",
+              "description": "Approved ComfyUI instance identity."
+            },
+            "template_id": {
+              "type": "string",
+              "description": "Approved ComfyUI template identity."
+            },
+            "model": {
+              "type": "object",
+              "description": "Generation model resolved by query_semantic_generation_models; the Host replaces the template default model with this model on the target ComfyUI instance.",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Resolved generation-model catalog identity."
+                },
+                "file_name": {
+                  "type": "string",
+                  "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                }
+              },
+              "required": [
+                "id",
+                "file_name"
+              ]
+            },
+            "parameters": {
+              "type": "object",
+              "description": "Explicit Workflow runtime values. Standard semantic keys include positive_prompt, negative_prompt, width, height, seed, cfg, steps, sampler_name, scheduler, denoise, batch_size, resolution_preset, reference_image, aspect_ratio, megapixels. An exact user-supplied Workflow input key is also accepted. The Host resolves every supplied key against the executable Workflow and the target ComfyUI instance.",
+              "additionalProperties": true
+            },
+            "loras": {
+              "type": "array",
+              "description": "LoRAs resolved by query_semantic_loras and applied to the current Workflow through the target ComfyUI instance node definitions.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Resolved LoRA catalog identity."
+                  },
+                  "file_name": {
+                    "type": "string",
+                    "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "Model weight selected for this LoRA."
+                  },
+                  "trigger_words": {
+                    "type": "array",
+                    "description": "Trigger words actually used in the rewritten final prompt.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "file_name",
+                  "weight",
+                  "trigger_words"
+                ]
+              }
+            }
+          },
+          "required": [
+            "title",
+            "template_id",
+            "parameters"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "seq": 2967,
+      "toolNames": [
+        "acp_cache",
+        "acp_read_original_image",
+        "acp_status",
+        "bash",
+        "compress",
+        "decompress",
+        "generate_with_comfyui",
+        "get_generation_run_media",
+        "inspect_image",
+        "interrupt_agent",
+        "list_agents",
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "load_workspace_dependencies",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "query_semantic_comfyui_instances",
+        "query_semantic_comfyui_templates",
+        "query_semantic_generation_models",
+        "query_semantic_loras",
+        "read_comfyui_run_inputs",
+        "read_mcp_resource",
+        "search_context",
+        "send_message",
+        "skill",
+        "studio_delegate",
+        "studio_list_subagents",
+        "subagent",
+        "working_directory"
+      ],
+      "generateTool": {
+        "name": "generate_with_comfyui",
+        "description": "Create one durable ComfyUI Generation Run from one approved template, an optional resolved generation model, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Title shown for this Generation Run."
+            },
+            "instance_id": {
+              "type": "string",
+              "description": "Approved ComfyUI instance identity."
+            },
+            "template_id": {
+              "type": "string",
+              "description": "Approved ComfyUI template identity."
+            },
+            "model": {
+              "type": "object",
+              "description": "Generation model resolved by query_semantic_generation_models; the Host replaces the template default model with this model on the target ComfyUI instance.",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Resolved generation-model catalog identity."
+                },
+                "file_name": {
+                  "type": "string",
+                  "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                }
+              },
+              "required": [
+                "id",
+                "file_name"
+              ]
+            },
+            "parameters": {
+              "type": "object",
+              "description": "Explicit Workflow runtime values. Standard semantic keys include positive_prompt, negative_prompt, width, height, seed, cfg, steps, sampler_name, scheduler, denoise, batch_size, resolution_preset, reference_image, aspect_ratio, megapixels. An exact user-supplied Workflow input key is also accepted. The Host resolves every supplied key against the executable Workflow and the target ComfyUI instance.",
+              "additionalProperties": true
+            },
+            "loras": {
+              "type": "array",
+              "description": "LoRAs resolved by query_semantic_loras and applied to the current Workflow through the target ComfyUI instance node definitions.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Resolved LoRA catalog identity."
+                  },
+                  "file_name": {
+                    "type": "string",
+                    "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "Model weight selected for this LoRA."
+                  },
+                  "trigger_words": {
+                    "type": "array",
+                    "description": "Trigger words actually used in the rewritten final prompt.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "file_name",
+                  "weight",
+                  "trigger_words"
+                ]
+              }
+            }
+          },
+          "required": [
+            "title",
+            "template_id",
+            "parameters"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "seq": 3348,
+      "toolNames": [
+        "acp_cache",
+        "acp_read_original_image",
+        "acp_status",
+        "bash",
+        "compress",
+        "decompress",
+        "generate_with_comfyui",
+        "get_generation_run_media",
+        "inspect_image",
+        "interrupt_agent",
+        "list_agents",
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "load_workspace_dependencies",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "query_semantic_comfyui_instances",
+        "query_semantic_comfyui_templates",
+        "query_semantic_generation_models",
+        "query_semantic_loras",
+        "read_comfyui_run_inputs",
+        "read_mcp_resource",
+        "search_context",
+        "send_message",
+        "skill",
+        "studio_delegate",
+        "studio_list_subagents",
+        "subagent",
+        "working_directory"
+      ],
+      "generateTool": {
+        "name": "generate_with_comfyui",
+        "description": "Create one durable ComfyUI Generation Run from one approved template, an optional resolved generation model, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "Title shown for this Generation Run."
+            },
+            "instance_id": {
+              "type": "string",
+              "description": "Approved ComfyUI instance identity."
+            },
+            "template_id": {
+              "type": "string",
+              "description": "Approved ComfyUI template identity."
+            },
+            "model": {
+              "type": "object",
+              "description": "Generation model resolved by query_semantic_generation_models; the Host replaces the template default model with this model on the target ComfyUI instance.",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Resolved generation-model catalog identity."
+                },
+                "file_name": {
+                  "type": "string",
+                  "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                }
+              },
+              "required": [
+                "id",
+                "file_name"
+              ]
+            },
+            "parameters": {
+              "type": "object",
+              "description": "Explicit Workflow runtime values. Standard semantic keys include positive_prompt, negative_prompt, width, height, seed, cfg, steps, sampler_name, scheduler, denoise, batch_size, resolution_preset, reference_image, aspect_ratio, megapixels. An exact user-supplied Workflow input key is also accepted. The Host resolves every supplied key against the executable Workflow and the target ComfyUI instance.",
+              "additionalProperties": true
+            },
+            "loras": {
+              "type": "array",
+              "description": "LoRAs resolved by query_semantic_loras and applied to the current Workflow through the target ComfyUI instance node definitions.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Resolved LoRA catalog identity."
+                  },
+                  "file_name": {
+                    "type": "string",
+                    "description": "Resolved catalog file name; the Host maps it to the target instance path."
+                  },
+                  "weight": {
+                    "type": "number",
+                    "description": "Model weight selected for this LoRA."
+                  },
+                  "trigger_words": {
+                    "type": "array",
+                    "description": "Trigger words actually used in the rewritten final prompt.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "file_name",
+                  "weight",
+                  "trigger_words"
+                ]
+              }
+            }
+          },
+          "required": [
+            "title",
+            "template_id",
+            "parameters"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "seq": 3692,
+      "toolNames": [
+        "acp_cache",
+        "acp_read_original_image",
+        "acp_status",
+        "bash",
+        "compress",
+        "decompress",
+        "interrupt_agent",
+        "list_agents",
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "search_context",
+        "send_message",
+        "skill",
+        "studio_delegate",
+        "studio_list_subagents",
+        "subagent",
+        "working_directory"
+      ],
+      "generateTool": null
+    }
+  ],
+  "lastTurnEnded": true,
+  "validation": {
+    "command": "./node_modules/.bin/vitest run tests/integration/cli-route.test.ts -t 'accepts the identical Generation Request from two independent shell calls'",
+    "passed": 1,
+    "skipped": 13,
+    "checks": [
+      "same call and same payload returns same run",
+      "same call and different payload returns HTTP 409 RUN_REQUEST_CONFLICT",
+      "independent calls create independent runs"
+    ]
+  },
+  "missingEvidence": [
+    "raw network request bodies for every model step",
+    "controlled real-model replay comparing the proposed batch interface"
+  ],
+  "installedCliHelpVerified": true,
+  "installedCliHelpEntry": "/Users/fzfz/.dsh/profiles/desktop/node_modules/harness-comfyui/.local/source-cli/harness-comfyui.mjs",
+  "installedMatchingResources": [
+    "config/managed-cli-help.json",
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+    ".agents/skills/comfyui-generate/references/generation-cli.md"
+  ],
+  "generationCallIdentityMatchesDatabase": true,
+  "firstDirectBatchDownloadResult": "saved 11",
+  "historicalPluginVersionEvidence": "root-cause-evidence.json"
+}
