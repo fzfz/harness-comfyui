@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
@@ -80,6 +81,17 @@ function runtime(
   })
 }
 
+async function acceptPrepared(
+  runtime: GenerationRuntime,
+  identity: Parameters<GenerationRuntime['acceptGenerations']>[0],
+  request: GenerationRequest,
+  signal?: AbortSignal,
+) {
+  const accepted = await runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request }], signal)
+  await runtime.advance(signal)
+  return accepted.items[0]!
+}
+
 function acceptSubmission(input: Parameters<GenerationTransport['submit']>[0]): { readonly promptId: string } {
   if (!input.onRequestStart()) throw new Error('submission was not accepted')
   return { promptId: input.promptId }
@@ -93,7 +105,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       submit: vi.fn(), observe: vi.fn(), download: vi.fn(),
     }
     const first = runtime(root, transport)
-    const accepted = await first.acceptGeneration(
+    const accepted = await acceptPrepared(first,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_order' }, request,
     )
     first.close()
@@ -141,7 +153,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       })),
     }
     const generation = runtime(root, transport)
-    const accepted = await generation.acceptGeneration(
+    const accepted = await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
@@ -150,11 +162,14 @@ describe('GenerationRuntime worker lifecycle', () => {
 
     const readJsonArtifact = vi.fn(async () => { throw new Error('Run media must not read Workflow artifacts') })
     const reopened = runtime(root, transport, { readJsonArtifact })
-    const result = await reopened.readGenerationRunMedia({ workspaceId: 'workspace_1', runIds: [accepted.runId] })
+    const result = await reopened.readGenerationRunMedia({ workspaceId: 'workspace_1', runIds: [accepted.runId], includeParameters: true })
     expect(result).toEqual({ runs: [{
       run_id: accepted.runId,
+      request_id: accepted.requestId,
       lookup_status: 'available',
       title: '两个结果',
+      status: 'succeeded', revision: 5, updated_at: expect.any(Number), instance_id: '2',
+      prompt_id: '0193f85c-86fb-4ad9-8d2b-28cf39e8b042', run_error: null,
       parameters: { positive_prompt: 'first prompt' },
       images: [
         expect.objectContaining({ node_id: '10', output_index: 0, filename: 'first-of-ten.webp', media_type: 'image/webp' }),
@@ -176,7 +191,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       observe: vi.fn(),
       download: vi.fn(),
     })
-    const accepted = await generation.acceptGeneration(
+    const accepted = await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
@@ -189,8 +204,8 @@ describe('GenerationRuntime worker lifecycle', () => {
         error: expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
       },
       {
-        run_id: accepted.runId, lookup_status: 'available', title: '两个结果',
-        parameters: { positive_prompt: 'first prompt' }, images: [],
+        run_id: accepted.runId, request_id: accepted.requestId, lookup_status: 'available', title: '两个结果',
+        status: 'prepared', revision: 1, updated_at: expect.any(Number), instance_id: '2', prompt_id: null, run_error: null, images: [],
       },
     ] })
     await expect(generation.readGenerationRunMedia({
@@ -223,7 +238,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       })),
     }
     const generation = runtime(root, transport)
-    const accepted = await generation.acceptGeneration(
+    const accepted = await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
@@ -259,7 +274,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       download: vi.fn(),
     }
     const first = runtime(root, transport)
-    const accepted = await first.acceptGeneration(
+    const accepted = await acceptPrepared(first,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
@@ -296,7 +311,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       download: vi.fn(),
     }
     const first = runtime(root, transport)
-    const accepted = await first.acceptGeneration(
+    const accepted = await acceptPrepared(first,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
@@ -332,7 +347,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       download: vi.fn(),
     }
     const first = runtime(root, transport)
-    const accepted = await first.acceptGeneration(
+    const accepted = await acceptPrepared(first,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
@@ -365,11 +380,11 @@ describe('GenerationRuntime worker lifecycle', () => {
       download: vi.fn(),
     }
     const generation = runtime(root, transport)
-    await generation.acceptGeneration(
+    await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' },
       request,
     )
-    await generation.acceptGeneration(
+    await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 5, callId: 'call_2' },
       request,
     )
@@ -401,7 +416,7 @@ describe('GenerationRuntime worker lifecycle', () => {
         download: vi.fn(),
       }
       const generation = runtime(root, transport)
-      await generation.acceptGeneration(
+      await acceptPrepared(generation,
         { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: `call_${expectedStatus}` },
         request,
       )
@@ -419,7 +434,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       submit: vi.fn(), observe: vi.fn(), download: vi.fn(),
     }
     const artifactRuntime = runtime(artifactRoot, artifactTransport)
-    await artifactRuntime.acceptGeneration(
+    await acceptPrepared(artifactRuntime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_artifact' },
       request,
     )
@@ -440,7 +455,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       observe: vi.fn(), download: vi.fn(),
     }
     const sourceRuntime = runtime(sourceRoot, sourceTransport)
-    await sourceRuntime.acceptGeneration(
+    await acceptPrepared(sourceRuntime,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source' },
       request,
     )
@@ -464,7 +479,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       download: vi.fn(),
     }
     const generation = runtime(root, transport)
-    await generation.acceptGeneration(
+    await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_cancel' },
       request,
     )
@@ -488,7 +503,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       observe: vi.fn(), download: vi.fn(),
     }
     const first = runtime(root, firstTransport)
-    await first.acceptGeneration(
+    await acceptPrepared(first,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_preflight_cancel' }, request,
     )
     await expect(first.advance(controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
@@ -540,7 +555,7 @@ describe('GenerationRuntime worker lifecycle', () => {
     })
     const generation = runtime(root, new ComfyHttpTransport({ source, fetchImplementation }))
     try {
-      const accepted = await generation.acceptGeneration(
+      const accepted = await acceptPrepared(generation,
         { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source_recovery' }, request,
       )
       await generation.advance()
@@ -580,7 +595,7 @@ describe('GenerationRuntime worker lifecycle', () => {
     }
     const generation = runtime(root, transport, { now: () => now, missingObservationMs: 50 })
     try {
-      const accepted = await generation.acceptGeneration(
+      const accepted = await acceptPrepared(generation,
         { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source_deadline' }, request,
       )
       await generation.advance()
@@ -618,7 +633,7 @@ describe('GenerationRuntime worker lifecycle', () => {
     }
     const generation = runtime(root, transport)
     try {
-      const accepted = await generation.acceptGeneration(
+      const accepted = await acceptPrepared(generation,
         { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_source_terminal' }, request,
       )
       await generation.advance()
@@ -651,7 +666,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       submit: vi.fn(async input => acceptSubmission(input)), observe, download: vi.fn(),
     }
     const generation = runtime(root, transport, { now: () => now, missingObservationMs: 50 })
-    await generation.acceptGeneration(
+    await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_gap' }, request,
     )
     await generation.advance()
@@ -695,7 +710,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       createRunId: () => 'run_default_media',
       createPromptId: () => '0193f85c-86fb-4ad9-8d2b-28cf39e8b042',
     })
-    await generation.acceptGeneration(
+    await acceptPrepared(generation,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 6, callId: 'call_default_media' },
       request,
     )
@@ -720,7 +735,7 @@ describe('GenerationRuntime worker lifecycle', () => {
       submit: vi.fn(), observe: vi.fn(), download: vi.fn(),
     }
     const first = runtime(root, transport)
-    const accepted = await first.acceptGeneration(
+    const accepted = await acceptPrepared(first,
       { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 4, callId: 'call_1' }, request,
     )
     first.close()

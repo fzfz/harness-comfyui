@@ -1,0 +1,78 @@
+{
+  "releaseCliVersion": "0.48.0",
+  "fixture": "Local CLI HTTP handler and temporary Generation Runtime; remote transport is controlled in process",
+  "promptCharacters": 3195,
+  "fileSubmit": {
+    "exitCode": 0,
+    "stdoutContainsPrompt": false,
+    "promptPreserved": true
+  },
+  "sameCallReplay": {
+    "sameRun": true
+  },
+  "sameCallDifferentRequest": {
+    "exitCode": 1,
+    "code": "RUN_REQUEST_CONFLICT"
+  },
+  "independentCalls": {
+    "count": 11,
+    "persistedRuns": 11
+  },
+  "statusProjection": [
+    {
+      "storedStatus": "prepared",
+      "storedError": null,
+      "publicKeys": [
+        "run_id",
+        "lookup_status",
+        "title",
+        "parameters",
+        "images"
+      ],
+      "lookupStatus": "available",
+      "images": 0
+    },
+    {
+      "storedStatus": "remote_pending",
+      "storedError": null,
+      "publicKeys": [
+        "run_id",
+        "lookup_status",
+        "title",
+        "parameters",
+        "images"
+      ],
+      "lookupStatus": "available",
+      "images": 0
+    },
+    {
+      "storedStatus": "remote_running",
+      "storedError": null,
+      "publicKeys": [
+        "run_id",
+        "lookup_status",
+        "title",
+        "parameters",
+        "images"
+      ],
+      "lookupStatus": "available",
+      "images": 0
+    },
+    {
+      "storedStatus": "failed",
+      "storedError": "CONTROLLED_FAILURE",
+      "publicKeys": [
+        "run_id",
+        "lookup_status",
+        "title",
+        "parameters",
+        "images"
+      ],
+      "lookupStatus": "available",
+      "images": 0
+    }
+  ],
+  "identicalMediaResponsesAcrossStates": true,
+  "controlledTransportSubmissions": 1,
+  "externalComfyuiRequests": 0
+}

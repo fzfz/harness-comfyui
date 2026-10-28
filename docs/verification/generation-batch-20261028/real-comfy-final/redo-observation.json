@@ -1,0 +1,399 @@
+{
+  "generation": {
+    "ok": true,
+    "value": {
+      "sessionId": "session-ee669f3f-de53-40e6-ae04-1f6a86e42550",
+      "runs": [
+        {
+          "runId": "run_1e4a7dc9-6df7-4304-9ea7-df9fb1230a41",
+          "turn": 3,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 1",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793199650235,
+          "updatedAt": 1793199665116
+        },
+        {
+          "runId": "run_f932c0c5-0e65-461a-b709-15e3cfd641d2",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 11",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199435546
+        },
+        {
+          "runId": "run_5f0a8bf9-1873-43d2-908a-049a6c06222b",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 10",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199420508
+        },
+        {
+          "runId": "run_33e64abc-9d8b-4ab4-80fa-e2cf0c6a97c7",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 9",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199407309
+        },
+        {
+          "runId": "run_e4bac080-e545-4150-9200-3265c9fbfe5a",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 8",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199393563
+        },
+        {
+          "runId": "run_66d633bd-9b33-4c8b-9702-0e4a505596a1",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 7",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199379964
+        },
+        {
+          "runId": "run_00dd4327-31fe-4d62-bfef-6123daca8828",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 6",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199366979
+        },
+        {
+          "runId": "run_374be7ae-6a18-436c-a5b7-ee0d1e94c579",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 5",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199353254
+        },
+        {
+          "runId": "run_daa95364-7130-4958-9418-793e908ba45f",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 4",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199339075
+        },
+        {
+          "runId": "run_152b7c93-1c3f-473a-a1c3-166fccb0789b",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 3",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199326007
+        },
+        {
+          "runId": "run_bf464513-b0c0-442a-b8a0-8b50253acecd",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 2",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199310652
+        },
+        {
+          "runId": "run_2dd3b5a7-67e0-4df4-83be-e9323ab37bea",
+          "turn": 1,
+          "title": "林茜 立绘人设 T-A 基线全身正装 - 图片 1",
+          "instanceTitle": "win3080",
+          "templateTitle": "moss4步加速cfg大于1模板",
+          "status": "succeeded",
+          "errorCode": null,
+          "errorMessage": null,
+          "createdAt": 1793198971251,
+          "updatedAt": 1793199291563
+        }
+      ],
+      "media": [
+        {
+          "mediaId": "media_b1a1f229-dc1b-4928-86f5-c796e9f42308",
+          "runId": "run_1e4a7dc9-6df7-4304-9ea7-df9fb1230a41",
+          "turn": 3,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00267_.png",
+          "mediaType": "image/png",
+          "byteSize": 1170436,
+          "createdAt": 1793199665114
+        },
+        {
+          "mediaId": "media_f697b4be-473c-49fc-b5c9-a63aca8617eb",
+          "runId": "run_f932c0c5-0e65-461a-b709-15e3cfd641d2",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00266_.png",
+          "mediaType": "image/png",
+          "byteSize": 1175780,
+          "createdAt": 1793199435542
+        },
+        {
+          "mediaId": "media_e904c17e-fc3f-4579-90cc-ebff03795c4b",
+          "runId": "run_5f0a8bf9-1873-43d2-908a-049a6c06222b",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00265_.png",
+          "mediaType": "image/png",
+          "byteSize": 1153935,
+          "createdAt": 1793199420505
+        },
+        {
+          "mediaId": "media_8cdfbdee-e491-46d7-94e9-baa1353c68c6",
+          "runId": "run_33e64abc-9d8b-4ab4-80fa-e2cf0c6a97c7",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00264_.png",
+          "mediaType": "image/png",
+          "byteSize": 1149974,
+          "createdAt": 1793199407306
+        },
+        {
+          "mediaId": "media_535a9e87-aca8-48de-9889-903c4bcbec72",
+          "runId": "run_e4bac080-e545-4150-9200-3265c9fbfe5a",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00263_.png",
+          "mediaType": "image/png",
+          "byteSize": 1158341,
+          "createdAt": 1793199393560
+        },
+        {
+          "mediaId": "media_4ef7b9ba-c6b9-4489-9857-d2cd20d6984b",
+          "runId": "run_66d633bd-9b33-4c8b-9702-0e4a505596a1",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00262_.png",
+          "mediaType": "image/png",
+          "byteSize": 1166896,
+          "createdAt": 1793199379963
+        },
+        {
+          "mediaId": "media_4a011d12-c72d-4a5a-9a48-cd54cace92e4",
+          "runId": "run_00dd4327-31fe-4d62-bfef-6123daca8828",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00261_.png",
+          "mediaType": "image/png",
+          "byteSize": 1140844,
+          "createdAt": 1793199366976
+        },
+        {
+          "mediaId": "media_2cda67d5-a1e1-49f3-b043-4298cedb3366",
+          "runId": "run_374be7ae-6a18-436c-a5b7-ee0d1e94c579",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00260_.png",
+          "mediaType": "image/png",
+          "byteSize": 1171158,
+          "createdAt": 1793199353250
+        },
+        {
+          "mediaId": "media_159cb4d0-1425-4bf2-b8b7-3a0a3bc61fd7",
+          "runId": "run_daa95364-7130-4958-9418-793e908ba45f",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00259_.png",
+          "mediaType": "image/png",
+          "byteSize": 1111564,
+          "createdAt": 1793199339072
+        },
+        {
+          "mediaId": "media_f1d5eb91-0db6-41a9-8982-d15c869d5dd1",
+          "runId": "run_152b7c93-1c3f-473a-a1c3-166fccb0789b",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00258_.png",
+          "mediaType": "image/png",
+          "byteSize": 1138332,
+          "createdAt": 1793199326002
+        },
+        {
+          "mediaId": "media_46e48ca9-eaf7-4552-b90f-9061f59cce64",
+          "runId": "run_bf464513-b0c0-442a-b8a0-8b50253acecd",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00257_.png",
+          "mediaType": "image/png",
+          "byteSize": 1114808,
+          "createdAt": 1793199310650
+        },
+        {
+          "mediaId": "media_a697ee67-93e3-4b4a-997e-ba451b77913e",
+          "runId": "run_2dd3b5a7-67e0-4df4-83be-e9323ab37bea",
+          "turn": 1,
+          "outputIndex": 0,
+          "mediaKind": "image",
+          "filename": "moss-4step_00256_.png",
+          "mediaType": "image/png",
+          "byteSize": 1174404,
+          "createdAt": 1793199291560
+        }
+      ],
+      "hasActiveRuns": false,
+      "refreshAfterMs": 1000
+    }
+  },
+  "session": {
+    "ok": true,
+    "value": {
+      "kind": "sequenced",
+      "asOfSeq": 131,
+      "values": {
+        "title": "真实 ComfyUI 文件批量最终验收",
+        "goal": null,
+        "tokenUsage": {
+          "uncachedInputTokens": 77629,
+          "outputTokens": 5702,
+          "cacheReadTokens": 937984,
+          "cacheWriteTokens": 0
+        },
+        "contextPressure": {
+          "pressureTokens": 74903,
+          "projectedTokens": 75086,
+          "contextWindow": 262144
+        },
+        "contextBreakdown": {
+          "systemTokens": 466,
+          "toolsTokens": 13418,
+          "messageTokens": 35766
+        },
+        "inbox": {
+          "next-turn": [],
+          "next-step": []
+        },
+        "sessionStats": {
+          "turns": 3,
+          "steps": 20,
+          "llmMs": 171930,
+          "toolMs": 481622,
+          "ttftMs": 78670,
+          "ttftSteps": 20,
+          "decodeMs": 93260,
+          "decodeTokens": 5702
+        },
+        "turnOutline": [
+          {
+            "turn": 1,
+            "seq": 6,
+            "prompt": "工作目录：/Users/fzfz/.codex/worktrees/generation-batc…",
+            "response": "**11 项均已生成成功**，每项保存了 1 张图片；本轮新增 11 个 Run，没有自动重做。 以下按 `input/prompt-01.txt` 至 `prompt-11.txt` 顺序列出完整 Run ID 和图片绝对路径： 1.…"
+          },
+          {
+            "turn": 2,
+            "seq": 66,
+            "prompt": "请原样重放当前工作目录已保存的 submission-manifest.json 一次，保持所有…",
+            "response": "已原样重放一次并完成核对： - 11 项返回结果均为 **`reused`**，对应的 request_id 和完整 Run ID 均与首次结果一致。 - **新增 Run：0。** - 首次结果 `submission-result.j…"
+          },
+          {
+            "turn": 3,
+            "seq": 89,
+            "prompt": "现在只重做首次清单中的第 1 张。使用相同提示词文件和其他参数，将 Seed 改为 2026103…",
+            "response": "第 1 张已重做成功，Seed 从 `20261026` 改为 `20261037`，其余请求参数及提示词文件沿用首次清单。 | | 完整 Run ID | |---|---| | 原第 1 张 | `run_2dd3b5a7-67e0-…"
+          }
+        ],
+        "agentPreset": "harness-comfyui-cli-candidate",
+        "userQuestions": {
+          "active": [],
+          "settled": []
+        },
+        "permissions": {
+          "currentValue": "workspace-write"
+        },
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/workspace/batch-11",
+        "subagentCatalog": [],
+        "subagentTiming": {
+          "settledMs": 0
+        },
+        "subagent": null,
+        "todos": null,
+        "plan": {
+          "active": false,
+          "pending": false
+        },
+        "modelSelection": {
+          "lastUsed": {
+            "provider": "lan-gpt",
+            "model": "gpt-6.1-terra",
+            "reasoningEffort": "high"
+          },
+          "next": {
+            "provider": "lan-gpt",
+            "model": "gpt-6.1-terra",
+            "reasoningEffort": "high"
+          }
+        },
+        "sessionListMetadata": {
+          "blank": false,
+          "lastPromptAt": 1793199603149
+        },
+        "imageLimits": {
+          "maxImageBytes": 20971520,
+          "maxImagesPerMessage": 20,
+          "maxMessageImageBytes": 209715200,
+          "maxImagePixels": 64000000,
+          "maxImageDimension": 8192,
+          "mediaTypes": [
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/gif"
+          ]
+        }
+      }
+    }
+  }
+}

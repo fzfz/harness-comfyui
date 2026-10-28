@@ -12,6 +12,7 @@ import managedCliEnvironment from '../../config/managed-cli-environment.json' wi
 import { parsePluginPackageConfig } from '../../config/plugin-package-schema.mjs'
 import { buildPlugin, packPlugin } from '../../scripts/build/index.mjs'
 
+import { pathToFileURL } from 'node:url'
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const temporaryDirectories = new Set()
 const readOnlyDirectories = new Set()
@@ -290,6 +291,9 @@ describe('plugin build and package entry points', () => {
     expect(installedFiles.some(path => path.startsWith('scripts/source-client/'))).toBe(false)
     expect(installedFiles).not.toContain('config/source-cli-guidance.json')
     expect(installedFiles).toContain('config/source-client.json')
+    expect(installedFiles).toContain('config/managed-cli-limits.json')
+    const packagedHelp = await import(pathToFileURL(join(packageRoot, 'scripts/cli/help.mjs')).href)
+    expect(typeof packagedHelp.renderHelp).toBe('function')
     expect(await readdir(packageRoot)).not.toContain('src')
     expect(await readdir(packageRoot)).not.toContain('.env')
     const cliEnvironment = { ...process.env }
@@ -297,7 +301,11 @@ describe('plugin build and package entry points', () => {
       delete cliEnvironment[name]
     }
     const resultRoot = await temporaryDirectory()
-    const accepted = { run_id: 'run_packaged_cli' }
+    const requestId = '01234567-89ab-4cde-8fab-0123456789ab'
+    const accepted = { items: [{ request_id: requestId, run_id: 'run_packaged_cli', acceptance: 'accepted' }] }
+    const manifestPath = join(outsideWorkspace, 'manifest.json')
+    await writeFile(join(outsideWorkspace, 'prompt.txt'), 'first\r\nsecond\n')
+    await writeFile(manifestPath, JSON.stringify({ items: [{ request_id: requestId, request: { title: 'package', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] }, parameter_files: { positive_prompt: 'prompt.txt' } }] }))
     let requests = 0
     const server = createServer(async (request, response) => {
       requests += 1
@@ -305,14 +313,14 @@ describe('plugin build and package entry points', () => {
       for await (const chunk of request) chunks.push(Buffer.from(chunk))
       expect(JSON.parse(Buffer.concat(chunks).toString('utf8'))).toEqual({
         command: 'generation.submit',
-        request: { title: 'package', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] },
+        items: [{ request_id: requestId, request: { title: 'package', template_id: '1', instance_id: '2', model: null, parameters: { positive_prompt: 'first\r\nsecond\n' }, loras: [] } }],
       })
       response.end(JSON.stringify({ ok: true, data: accepted }))
     })
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
     const address = server.address()
     try {
-      const execution = execFile(process.execPath, [resolve(packageRoot, runtimeArtifacts.managedCli.outputEntryRelativePath), '--quiet', 'generation', 'submit', '--stdin'], {
+      const execution = execFile(process.execPath, [resolve(packageRoot, runtimeArtifacts.managedCli.outputEntryRelativePath), '--quiet', 'generation', 'submit', '--file', manifestPath], {
         cwd: outsideWorkspace,
         env: {
           ...cliEnvironment,
@@ -322,16 +330,17 @@ describe('plugin build and package entry points', () => {
         },
         timeout: 10000,
       })
-      execution.child.stdin.end(JSON.stringify({ title: 'package', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] }))
+      execution.child.stdin.end()
       const { stdout, stderr } = await execution
       expect(stdout).toMatch(/^\/[^\r\n]+\n$/u)
       expect(stdout.startsWith(`${resultRoot}/`)).toBe(true)
-      expect(await readFile(stdout.slice(0, -1), 'utf8')).toBe('{"run_id":"run_packaged_cli"}\n')
+      expect(await readFile(stdout.slice(0, -1), 'utf8')).toBe(`${JSON.stringify(accepted)}\n`)
       expect(stderr).toBe('')
       expect(requests).toBe(1)
     } finally { await new Promise(resolve => server.close(resolve)) }
     for (const { args, input, status, error } of [
       { args: ['generation', 'inspect-template-parameters', '--help'], status: 0 },
+      { args: ['generation', 'submit', '--help'], status: 0 },
       { args: ['catalog', 'instance', 'list'], status: 2, error: 'CLI_ARGUMENT_INVALID:' },
       {
         args: ['generation', 'inspect-template-parameters', '--stdin'],
@@ -355,6 +364,12 @@ describe('plugin build and package entry points', () => {
       } else {
         expect(result.stderr).toBe('')
         expect(result.stdout).toContain('template_id')
+        if (args[1] === 'submit') {
+          expect(result.stdout).toContain('--file')
+          expect(result.stdout).toContain('1 至 20 项')
+          expect(result.stdout).toContain('1048576')
+          expect(result.stdout).not.toContain('{max_')
+        }
       }
     }
   })

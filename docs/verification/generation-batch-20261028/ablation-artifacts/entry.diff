@@ -1,0 +1,13 @@
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/entry/package/agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml
+index c1f8669..c72d73b 100644
+--- a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/entry/package/agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml
+@@ -19,7 +19,7 @@
+ 
+       你先读取用户要求，以及工作台随消息提供的素材和 Workflow 上下文。缺少会改变执行结果的信息时，你向用户询问具体字段，并在用户补充后执行依赖这些字段的任务。
+ 
+-      设计提示词时，你根据任务与当前 Skill 摘要读取适用的 Prompt Builder。创建图片时，你必须读取 comfyui-generate，并把当前消息或已知文件路径交给该 Skill。已有提示词文件随任务继续传递。你按 Skill 正文读取参考文件。
++      你根据任务和当前 Skill 摘要选择适用的 Skill，通过 skill 工具读取正文，再按正文要求读取参考文件。
+       正文要求读取本地参考文件时，你通过 shell 读取文件。
+ 
+       你通过 NoobAI MCP 查询作品、角色、提示词术语、底模、生成模型、LoRA、画风、画师提示词、Workflow 和 ComfyUI 实例信息，按照各工具声明构造参数。

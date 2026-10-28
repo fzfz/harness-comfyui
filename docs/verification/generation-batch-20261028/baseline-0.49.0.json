@@ -1,0 +1,32 @@
+{
+  "previousPlanBaseline": "d50af91b4205809e2dc307edcc59b8f3ecfde469",
+  "planBaseline": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+  "version": "0.49.0",
+  "branch": "codex/generation-batch-investigation",
+  "remoteMainVerified": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+  "tagVerified": "v0.49.0",
+  "criticalPathsUnchanged": {
+    "src/cli/contract.ts": true,
+    "scripts/cli/harness-comfyui.mjs": true,
+    "src/host/cli/route.ts": true,
+    "src/host/cli/dispatch.ts": true,
+    "src/host/generation/generation-runtime.ts": true,
+    "src/host/generation/generation-coordinator.ts": true,
+    "src/host/generation/generation-service.ts": true,
+    "src/image-reader/run-media-contract.ts": true,
+    ".agents/skills/comfyui-generate": true,
+    ".agents/skills/moss-prompt-builder": true,
+    ".agents/skills/comfyui-image-review": true,
+    "config/managed-cli-help.json": true
+  },
+  "relevantChangedPaths": [
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+    "agent-presets/shared/agent.cordis.yml",
+    "config/desktop-e2e.json",
+    "docs/system/testing.md",
+    "docs/agents/worktree-development.md"
+  ],
+  "knownBaselineFailuresSource": "docs/verification/comfyui-workbench-goal/README.md",
+  "historicalInvestigationBaselinePreserved": true,
+  "newRuntimeTestsExecuted": false
+}

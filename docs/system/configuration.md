@@ -188,3 +188,10 @@
    | `cliServer.shutdownTimeoutMs` | 插件卸载时等待已接纳请求退出的期限，默认 `5000` 毫秒。 |
 
 3. [config/managed-cli-help.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/managed-cli-help.json>) 定义受管 CLI 的公共输出说明与结果文件错误。
+
+4. [config/managed-cli-limits.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/managed-cli-limits.json>) 统一提供 CLI、Host 与帮助使用的请求限制，由 [src/cli/limits.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/cli/limits.ts>) 加载。
+
+   | 字段 | 用途 |
+   | --- | --- |
+   | `maxSubmissionItems` | 一份生成清单接纳的最大项数。 |
+   | `maxRequestBytes` | 请求体的最大字节数。生成提交在参数文件展开后计算。 |

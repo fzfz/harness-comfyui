@@ -1,0 +1,430 @@
+{
+  "id": "initial",
+  "runId": "ed9333e3-6342-4861-aefe-fb402d783bd2",
+  "startedAt": "2026-10-28T14:31:01.601Z",
+  "naturalCompletion": true,
+  "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/goal-resume/1/initial/task-input.txt",
+  "terminal": {
+    "type": "turn/end",
+    "seq": 80,
+    "time": 1793197947713,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    }
+  },
+  "observation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 80,
+        "values": {
+          "title": "candidate512-final goal-resume 1",
+          "goal": {
+            "goal": {
+              "id": "goal-e8c0ebe4-eff1-4030-b175-b121bb9c605c",
+              "revision": 2,
+              "objective": "两阶段受控生成服务验证，最多4轮：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-tzDTJR/goal-resume/1，使用 comfyui-generate、Workflow ID 1、实例 ID 1、模板默认模型、不用 LoRA，以 input/prompt-01.txt 至 prompt-11.txt 原文分别生成11张512×512图片，Seed依次424242至424252，其余保留模板值。验收图片尺寸、可读取性和 Run 与媒体对应关系，保存全部 Run ID、图片路径及后续所需本地产物并交付；然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段，先查询已有11个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+              "phase": "paused",
+              "maxGoalRounds": 4
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793197872006,
+            "updatedAt": 1793197921424
+          },
+          "tokenUsage": {
+            "uncachedInputTokens": 23863,
+            "outputTokens": 2579,
+            "cacheReadTokens": 197632,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {
+            "pressureTokens": 28241,
+            "projectedTokens": 28728,
+            "contextWindow": 262144
+          },
+          "contextBreakdown": {
+            "systemTokens": 466,
+            "toolsTokens": 4547,
+            "messageTokens": 13514
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 1,
+            "steps": 12,
+            "llmMs": 83823,
+            "toolMs": 2050,
+            "ttftMs": 44852,
+            "ttftSteps": 12,
+            "decodeMs": 38971,
+            "decodeTokens": 2579
+          },
+          "turnOutline": [
+            {
+              "turn": 1,
+              "seq": 6,
+              "prompt": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片…",
+              "response": "## 第 1 阶段已完成，Goal 已暂停 11 个 Run 均成功；已核对每个请求、Run 和媒体的对应关系，并用 `sips` 验证图片可读取、尺寸均为 **512 × 512**。这是受控服务输出的固定测试图片。 下表中的图片路径均…"
+            }
+          ],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-tzDTJR/goal-resume/1",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            },
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": false,
+            "lastPromptAt": 1793197861731
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true,
+      "value": {
+        "id": "goal-e8c0ebe4-eff1-4030-b175-b121bb9c605c",
+        "revision": 2,
+        "objective": "两阶段受控生成服务验证，最多4轮：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-tzDTJR/goal-resume/1，使用 comfyui-generate、Workflow ID 1、实例 ID 1、模板默认模型、不用 LoRA，以 input/prompt-01.txt 至 prompt-11.txt 原文分别生成11张512×512图片，Seed依次424242至424252，其余保留模板值。验收图片尺寸、可读取性和 Run 与媒体对应关系，保存全部 Run ID、图片路径及后续所需本地产物并交付；然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段，先查询已有11个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+        "phase": "paused",
+        "maxGoalRounds": 4,
+        "roundsStarted": 0,
+        "createdAt": 1793197872006,
+        "updatedAt": 1793197921424,
+        "activation": "disarmed"
+      }
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+        "runs": [
+          {
+            "runId": "run_a7b8a65e-9712-4fd2-beb2-884ba49d65c3",
+            "turn": 1,
+            "title": "图片 11",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904955
+          },
+          {
+            "runId": "run_8cfb12f6-894c-481d-8acf-3d51182b3861",
+            "turn": 1,
+            "title": "图片 10",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904954
+          },
+          {
+            "runId": "run_74de0e97-2769-4d80-89c4-491b127c6c15",
+            "turn": 1,
+            "title": "图片 9",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904952
+          },
+          {
+            "runId": "run_ca907811-09f7-426c-900e-ef6c16b0d07a",
+            "turn": 1,
+            "title": "图片 8",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904951
+          },
+          {
+            "runId": "run_28c71986-f09c-44cf-aa55-3e0d8e9c2dca",
+            "turn": 1,
+            "title": "图片 7",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904950
+          },
+          {
+            "runId": "run_14de0d36-8b4f-4f0e-abc0-44bf26a6581a",
+            "turn": 1,
+            "title": "图片 6",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904948
+          },
+          {
+            "runId": "run_a0c37893-180d-4aac-be88-2c83b0ad11f1",
+            "turn": 1,
+            "title": "图片 5",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904947
+          },
+          {
+            "runId": "run_c4692b6a-bb1e-4a77-8468-d7732d7346fc",
+            "turn": 1,
+            "title": "图片 4",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904946
+          },
+          {
+            "runId": "run_67522b4b-dfcd-48b0-a3ee-24c36e1c5b83",
+            "turn": 1,
+            "title": "图片 3",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904944
+          },
+          {
+            "runId": "run_336b79b9-c15f-480e-939b-0dbd6e855674",
+            "turn": 1,
+            "title": "图片 2",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904943
+          },
+          {
+            "runId": "run_bb04e16f-96f9-43be-a63c-ed64f4560109",
+            "turn": 1,
+            "title": "图片 1",
+            "instanceTitle": "Controlled Desktop Comfy Service",
+            "templateTitle": "Controlled frontend workflow",
+            "status": "succeeded",
+            "errorCode": null,
+            "errorMessage": null,
+            "createdAt": 1793197902714,
+            "updatedAt": 1793197904941
+          }
+        ],
+        "media": [
+          {
+            "mediaId": "media_1bd07dcf-bede-466d-8554-419749d01dc9",
+            "runId": "run_a7b8a65e-9712-4fd2-beb2-884ba49d65c3",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904954
+          },
+          {
+            "mediaId": "media_d2712f0f-b609-4dbc-8101-4e7d1747648c",
+            "runId": "run_8cfb12f6-894c-481d-8acf-3d51182b3861",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904953
+          },
+          {
+            "mediaId": "media_98a54367-604d-466b-9c57-bd4eee28bfe0",
+            "runId": "run_74de0e97-2769-4d80-89c4-491b127c6c15",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904952
+          },
+          {
+            "mediaId": "media_50fcbe74-a235-4ce3-8794-23d13457dd9f",
+            "runId": "run_ca907811-09f7-426c-900e-ef6c16b0d07a",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904951
+          },
+          {
+            "mediaId": "media_efe61daa-e889-4852-b123-8291601340b2",
+            "runId": "run_28c71986-f09c-44cf-aa55-3e0d8e9c2dca",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904949
+          },
+          {
+            "mediaId": "media_d07d66d3-7297-4815-9b9a-7781d4126bf5",
+            "runId": "run_14de0d36-8b4f-4f0e-abc0-44bf26a6581a",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904948
+          },
+          {
+            "mediaId": "media_b78e32c1-2b46-4564-948f-f0f1a965490b",
+            "runId": "run_a0c37893-180d-4aac-be88-2c83b0ad11f1",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904947
+          },
+          {
+            "mediaId": "media_c60387f2-c85c-4bd9-b993-5477f18d2a23",
+            "runId": "run_c4692b6a-bb1e-4a77-8468-d7732d7346fc",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904945
+          },
+          {
+            "mediaId": "media_62d8d460-1d8f-46c2-bb31-cb0412aa07be",
+            "runId": "run_67522b4b-dfcd-48b0-a3ee-24c36e1c5b83",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904944
+          },
+          {
+            "mediaId": "media_b9335e43-113c-4b80-b5e2-e973b91e55f4",
+            "runId": "run_336b79b9-c15f-480e-939b-0dbd6e855674",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904942
+          },
+          {
+            "mediaId": "media_d818b3f2-4090-4784-9dcc-5413a3eeb4f6",
+            "runId": "run_bb04e16f-96f9-43be-a63c-ed64f4560109",
+            "turn": 1,
+            "outputIndex": 0,
+            "mediaKind": "image",
+            "filename": "official-desktop-controlled.png",
+            "mediaType": "image/png",
+            "byteSize": 6275,
+            "createdAt": 1793197904940
+          }
+        ],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "trace": {
+    "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/goal-resume/1/initial/trace/trace-index.json",
+    "sessions": [
+      {
+        "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+        "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-final/ce2971f1-dc26-474d-96d4-ccf9bc0ed191/goal-resume/1/initial/trace/sessions/session-session-03be8015-aad4-4fce-87ce-27b75ee5b708/session.json"
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-03be8015-aad4-4fce-87ce-27b75ee5b708",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ]
+  },
+  "completedAt": "2026-10-28T14:32:28.300Z"
+}

@@ -2,7 +2,6 @@ import { createServer, request as createHttpRequest, type IncomingMessage, type 
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -77,6 +76,72 @@ async function serve(
   }
 }
 
+describe('managed CLI manifest acceptance', () => {
+  it('dispatches every expanded request with Host ownership and returns ordered acceptance items', async () => {
+    const firstId = '01234567-89ab-4cde-8fab-0123456789ab'
+    const secondId = '11234567-89ab-4cde-8fab-0123456789ab'
+    const acceptGenerations = vi.fn(async () => ({ items: [
+      { requestId: firstId, runId: 'run_first', acceptance: 'accepted' },
+      { requestId: secondId, runId: 'run_second', acceptance: 'reused' },
+    ] }))
+    const request = { title: 'Batch', instance_id: '2', template_id: '39', model: null, parameters: { positive_prompt: 'line one\nline two\n' }, loras: [] }
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: { authorize: () => ({ sessionId: 'session_child', turn: 4, callId: 'call_batch', cwd: '/workspace/current' }) },
+      runtime: { acceptGenerations } as unknown as GenerationRuntime,
+      imageReader: unusedImageReader(),
+      workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: ['session_child'] }) },
+    }))
+    try {
+      const response = await post(server.origin, 'capability', { command: 'generation.submit', items: [
+        { request_id: firstId, request }, { request_id: secondId, request },
+      ] })
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ ok: true, data: { items: [
+        { request_id: firstId, run_id: 'run_first', acceptance: 'accepted' },
+        { request_id: secondId, run_id: 'run_second', acceptance: 'reused' },
+      ] } })
+      expect(acceptGenerations).toHaveBeenCalledWith(
+        { workspaceId: 'workspace_1', sessionId: 'session_child', turn: 4, callId: 'call_batch' },
+        [
+          { requestId: firstId, request: { title: 'Batch', instanceId: '2', templateId: '39', model: null, parameters: request.parameters, loras: [] } },
+          { requestId: secondId, request: { title: 'Batch', instanceId: '2', templateId: '39', model: null, parameters: request.parameters, loras: [] } },
+        ],
+        expect.any(AbortSignal),
+      )
+    } finally { await server.close() }
+  })
+})
+
+it('rejects unexpanded files, duplicate IDs and caller ownership before Runtime acceptance', async () => {
+  const acceptGenerations = vi.fn()
+  const requestId = '01234567-89ab-4cde-8fab-0123456789ab'
+  const item = { request_id: requestId, request: { title: 'Batch', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] } }
+  const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+    webServer,
+    capabilities: { authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }) },
+    runtime: { acceptGenerations } as never,
+    imageReader: unusedImageReader(),
+    workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: ['session_1'] }) },
+  }))
+  try {
+    for (const body of [
+      { command: 'generation.submit', items: [] },
+      { command: 'generation.submit', items: Array.from({ length: 21 }, () => item) },
+      { command: 'generation.submit', items: [item, item] },
+      { command: 'generation.submit', items: [{ ...item, parameter_files: { positive_prompt: '/tmp/prompt.txt' } }] },
+      { command: 'generation.submit', items: [{ ...item, workspace_id: 'forged' }] },
+      { command: 'generation.submit', items: [item], session_id: 'forged' },
+      { command: 'generation.submit', request: item.request },
+    ]) {
+      const response = await post(server.origin, 'capability', body)
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ ok: false, error: { code: 'CLI_REQUEST_INVALID' } })
+    }
+    expect(acceptGenerations).not.toHaveBeenCalled()
+  } finally { await server.close() }
+})
+
 function post(origin: string, capability: string, body: unknown): Promise<Response> {
   return fetch(`${origin}${CLI_ROUTE_PATH}`, {
     method: 'POST',
@@ -130,14 +195,14 @@ describe('Harness ComfyUI managed CLI route', () => {
     expect(complete.signal.aborted).toBe(false)
   })
 
-  it('aborts generation preparation when the CLI client disconnects after sending the complete body', async () => {
+  it('aborts pending acceptance when the CLI client disconnects after sending the complete body', async () => {
     let resolveAbort!: () => void
     const aborted = new Promise<void>(resolve => { resolveAbort = resolve })
-    const acceptGeneration = vi.fn(async (_owner, _request, signal: AbortSignal) => {
+    const acceptGenerations = vi.fn(async (_owner, _request, signal: AbortSignal) => {
       await new Promise<never>((_resolve, reject) => {
         signal.addEventListener('abort', () => {
           resolveAbort()
-          reject(new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'Generation preparation was canceled.'))
+          reject(new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'Generation acceptance was canceled.'))
         }, { once: true })
       })
     })
@@ -146,7 +211,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
       },
-      runtime: { acceptGeneration, readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() } as never,
+      runtime: { acceptGenerations, readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() } as never,
       imageReader: unusedImageReader(),
       workspaceRegistry: {
         resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
@@ -155,12 +220,12 @@ describe('Harness ComfyUI managed CLI route', () => {
 
     await postThenDisconnect(server.origin, 'trusted', {
       command: 'generation.submit',
-      request: {
+      items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: {
         title: 'Disconnected generation', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [],
-      },
+      } }],
     })
     await expect(aborted).resolves.toBeUndefined()
-    expect(acceptGeneration).toHaveBeenCalledOnce()
+    expect(acceptGenerations).toHaveBeenCalledOnce()
     await server.close()
   })
 
@@ -172,9 +237,9 @@ describe('Harness ComfyUI managed CLI route', () => {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
       },
       runtime: {
-        acceptGeneration: vi.fn(async (_owner, _request, signal: AbortSignal) => {
+        acceptGenerations: vi.fn(async (_owner, _request, signal: AbortSignal) => {
           routeSignal = signal
-          return { runId: 'run_normal' }
+          return { items: [{ requestId: '01234567-89ab-4cde-8fab-0123456789ab', runId: 'run_normal', acceptance: 'accepted' }] }
         }),
         readGenerationRunInputs: vi.fn(),
         readGenerationRunMedia: vi.fn(),
@@ -187,11 +252,11 @@ describe('Harness ComfyUI managed CLI route', () => {
 
     const response = await post(server.origin, 'trusted', {
       command: 'generation.submit',
-      request: {
+      items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: {
         title: 'Normal generation', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [],
-      },
+      } }],
     })
-    expect(await response.json()).toEqual({ ok: true, data: { run_id: 'run_normal' } })
+    expect(await response.json()).toEqual({ ok: true, data: { items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', run_id: 'run_normal', acceptance: 'accepted' }] } })
     await new Promise(resolve => setImmediate(resolve))
     expect(routeSignal?.aborted).toBe(false)
     await server.close()
@@ -270,7 +335,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
       },
       runtime: {
-        acceptGeneration: vi.fn(),
+        acceptGenerations: vi.fn(),
         readGenerationRunInputs: vi.fn(),
         readGenerationRunMedia: vi.fn(),
         inspectTemplateRuntimeParameters,
@@ -315,7 +380,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
       },
       runtime: {
-        acceptGeneration: vi.fn(),
+        acceptGenerations: vi.fn(),
         readGenerationRunInputs: vi.fn(),
         readGenerationRunMedia: vi.fn(),
         inspectTemplateRuntimeParameters: vi.fn(),
@@ -373,22 +438,23 @@ describe('Harness ComfyUI managed CLI route', () => {
 
     const response = await post(server.origin, capability, {
       command: 'generation.submit',
-      request: {
+      items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: {
         title: 'CLI generation',
         instance_id: '2',
         template_id: '39',
         model: null,
         parameters: { positive_prompt: '1girl' },
         loras: [],
-      },
+      } }],
     })
 
     expect(response.status).toBe(200)
-    const submitEnvelope = await response.json() as { readonly data: { readonly run_id: string } }
-    expect(submitEnvelope).toEqual({ ok: true, data: { run_id: expect.any(String) } })
+    const submitEnvelope = await response.json() as { readonly data: { readonly items: readonly { readonly run_id: string }[] } }
+    expect(submitEnvelope).toEqual({ ok: true, data: { items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', run_id: expect.any(String), acceptance: 'accepted' }] } })
+    await runtime.advance()
     const queryResponse = await post(server.origin, capability, {
       command: 'generation.run-inputs',
-      run_ids: [submitEnvelope.data.run_id, 'not a valid run id', submitEnvelope.data.run_id],
+      run_ids: [submitEnvelope.data.items[0]!.run_id, 'not a valid run id', submitEnvelope.data.items[0]!.run_id],
     })
     expect(queryResponse.status).toBe(200)
     expect(await queryResponse.json()).toEqual({
@@ -396,7 +462,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       data: {
         runs: [
           {
-            run_id: submitEnvelope.data.run_id,
+            run_id: submitEnvelope.data.items[0]!.run_id,
             lookup_status: 'available',
             arguments: {
               title: 'CLI generation',
@@ -417,7 +483,7 @@ describe('Harness ComfyUI managed CLI route', () => {
             },
           },
           {
-            run_id: submitEnvelope.data.run_id,
+            run_id: submitEnvelope.data.items[0]!.run_id,
             lookup_status: 'available',
             arguments: {
               title: 'CLI generation',
@@ -446,7 +512,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     await server.close()
   })
 
-  it('accepts the identical Generation Request from two independent shell calls', async () => {
+  it('replays a request across shell calls and accepts a new request within the original shell call', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-cli-route-repeat-'))
     temporaryDirectories.push(root)
     const runRepositoryFile = join(root, 'data', 'runs.sqlite')
@@ -485,61 +551,56 @@ describe('Harness ComfyUI managed CLI route', () => {
     }))
     const body = {
       command: 'generation.submit',
-      request: {
+      items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: {
         title: 'Repeated CLI generation',
         instance_id: '2',
         template_id: '39',
         model: null,
         parameters: { positive_prompt: '1girl', seed: 123456 },
         loras: [],
-      },
+      } }],
     }
 
-    const first = await post(server.origin, 'capability_cli_1', body)
-    const replay = await post(server.origin, 'capability_cli_1', body)
-    const conflict = await post(server.origin, 'capability_cli_1', {
-      ...body,
-      request: { ...body.request, title: 'Conflicting CLI generation' },
-    })
-    const second = await post(server.origin, 'capability_cli_2', body)
-    const firstResult = await first.json() as { readonly data: { readonly run_id: string } }
-    const replayResult = await replay.json() as { readonly data: { readonly run_id: string } }
-    const secondResult = await second.json() as { readonly data: { readonly run_id: string } }
-
-    expect(first.status).toBe(200)
-    expect(replay.status).toBe(200)
-    expect(replayResult.data.run_id).toBe(firstResult.data.run_id)
-    expect(conflict.status).toBe(409)
-    expect(await conflict.json()).toEqual({
-      ok: false,
-      error: {
-        code: 'RUN_REQUEST_CONFLICT',
-        message: 'The Tool call was already accepted with a different Generation request.',
-      },
-    })
-    expect(second.status).toBe(200)
-    expect(firstResult.data.run_id).not.toBe(secondResult.data.run_id)
-    const database = new DatabaseSync(runRepositoryFile, { readOnly: true })
-    const rows = database.prepare(`
-      SELECT run_id, call_id, request_json FROM generation_runs
-      WHERE session_id = ? ORDER BY created_at
-    `).all('session_7') as unknown as readonly {
-      readonly run_id: string
-      readonly call_id: string
-      readonly request_json: string
-    }[]
-    database.close()
-    expect(rows).toHaveLength(2)
-    expect(rows.map(row => row.run_id)).toEqual([firstResult.data.run_id, secondResult.data.run_id])
-    expect(rows.map(row => row.call_id)).toEqual(['call_cli_1', 'call_cli_2'])
-    expect(new Set(rows.map(row => row.request_json))).toEqual(new Set([rows[0]!.request_json]))
-    runtime.close()
-    await server.close()
+    try {
+      const first = await post(server.origin, 'capability_cli_1', body)
+      const replay = await post(server.origin, 'capability_cli_2', body)
+      const conflict = await post(server.origin, 'capability_cli_1', {
+        ...body,
+        items: [{ ...body.items[0], request: { ...body.items[0]!.request, title: 'Conflicting CLI generation' } }],
+      })
+      const second = await post(server.origin, 'capability_cli_1', {
+        ...body,
+        items: [{ ...body.items[0], request_id: '11234567-89ab-4cde-8fab-0123456789ab' }],
+      })
+      const firstResult = await first.json() as { data: { items: { request_id: string; run_id: string; acceptance: string }[] } }
+      const replayResult = await replay.json() as typeof firstResult
+      const secondResult = await second.json() as typeof firstResult
+      expect(first.status).toBe(200)
+      expect(firstResult.data.items[0]!.acceptance).toBe('accepted')
+      expect(replay.status).toBe(200)
+      expect(replayResult.data.items[0]).toEqual({ ...firstResult.data.items[0], acceptance: 'reused' })
+      expect(conflict.status).toBe(409)
+      expect(await conflict.json()).toEqual({
+        ok: false,
+        error: {
+          code: 'RUN_REQUEST_CONFLICT',
+          message: 'Request 01234567-89ab-4cde-8fab-0123456789ab was already accepted with a different Generation request.',
+        },
+      })
+      expect(second.status).toBe(200)
+      expect(secondResult.data.items[0]!.run_id).not.toBe(firstResult.data.items[0]!.run_id)
+      const runs = runtime.queryRuns({ workspaceId: 'workspace_1', sessionId: 'session_7', turn: 4 })
+      expect(runs).toHaveLength(2)
+      expect(new Set(runs.map(run => run.callId))).toEqual(new Set(['call_cli_1']))
+    } finally {
+      runtime.close()
+      await server.close()
+    }
   })
 
   it('rejects every retired Catalog request before dispatch while enforcing HTTP and capability boundaries', async () => {
     const runtime = {
-      acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+      acceptGenerations: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
       readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
     }
     const imageReader = unusedImageReader()
@@ -595,7 +656,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
       },
-      runtime: { acceptGeneration: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia } as never,
+      runtime: { acceptGenerations: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia } as never,
       imageReader: { inspect } as never,
       workspaceRegistry: {
         resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
@@ -624,7 +685,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       data: { runs: [{ run_id: 'run_1', lookup_status: 'available', title: 'portrait', parameters: {}, images: [] }] },
     })
     expect(readGenerationRunMedia).toHaveBeenCalledWith(
-      { workspaceId: 'workspace_1', runIds: ['run_1'] },
+      { workspaceId: 'workspace_1', runIds: ['run_1'], includeParameters: false },
       expect.any(AbortSignal),
     )
     expect(inspectionResponse.status).toBe(200)
@@ -655,7 +716,7 @@ describe('Harness ComfyUI managed CLI route', () => {
   })
 
   it('rejects the old internal Run media command without calling a runtime', async () => {
-    const acceptGeneration = vi.fn()
+    const acceptGenerations = vi.fn()
     const inspectTemplateRuntimeParameters = vi.fn()
     const readGenerationRunInputs = vi.fn()
     const readGenerationRunMedia = vi.fn()
@@ -666,7 +727,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       capabilities: {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
       },
-      runtime: { acceptGeneration, inspectTemplateRuntimeParameters, readGenerationRunInputs, readGenerationRunMedia },
+      runtime: { acceptGenerations, inspectTemplateRuntimeParameters, readGenerationRunInputs, readGenerationRunMedia },
       imageReader: { inspect } as never,
       workspaceRegistry: { resolveByPath },
     }))
@@ -680,7 +741,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       ok: false,
       error: { code: 'CLI_REQUEST_INVALID', message: 'CLI request command is invalid' },
     })
-    expect(acceptGeneration).not.toHaveBeenCalled()
+    expect(acceptGenerations).not.toHaveBeenCalled()
     expect(inspectTemplateRuntimeParameters).not.toHaveBeenCalled()
     expect(readGenerationRunInputs).not.toHaveBeenCalled()
     expect(readGenerationRunMedia).not.toHaveBeenCalled()
@@ -700,7 +761,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
       },
       runtime: {
-        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+        acceptGenerations: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
         readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
       },
       imageReader: { inspect } as never,
@@ -730,7 +791,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
       },
       runtime: {
-        acceptGeneration: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
+        acceptGenerations: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
         readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn(),
       },
       imageReader: failureFixture.service,
@@ -758,7 +819,7 @@ describe('Harness ComfyUI managed CLI route', () => {
 
   it('reports route, media type, Generation, workspace, and internal failures', async () => {
     const runtime = {
-      acceptGeneration: vi.fn(async () => {
+      acceptGenerations: vi.fn(async () => {
         throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', 'The call already accepted another request.')
       }),
       inspectTemplateRuntimeParameters: vi.fn(async () => { throw new Error('internal details') }),
@@ -775,9 +836,9 @@ describe('Harness ComfyUI managed CLI route', () => {
     }))
     const generationBody = {
       command: 'generation.submit',
-      request: {
+      items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: {
         title: 'generation', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [],
-      },
+      } }],
     }
 
     const [routeMissing, mediaType, invalidJson, internalFailure, workspaceFailure] = await Promise.all([
@@ -810,7 +871,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         message: 'Harness 未找到当前会话创建时的项目目录对应的 Workspace。 请在官方 Desktop 中选择或创建该目录对应的 Workspace，再重试。',
       },
     })
-    expect(runtime.acceptGeneration).not.toHaveBeenCalled()
+    expect(runtime.acceptGenerations).not.toHaveBeenCalled()
     await server.close()
 
     const generationServer = await serve(webServer => registerHarnessComfyuiCliRoute({
@@ -830,7 +891,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       ok: false,
       error: { code: 'RUN_REQUEST_CONFLICT', message: 'The call already accepted another request.' },
     })
-    expect(runtime.acceptGeneration).toHaveBeenCalledOnce()
+    expect(runtime.acceptGenerations).toHaveBeenCalledOnce()
     await generationServer.close()
   })
 })

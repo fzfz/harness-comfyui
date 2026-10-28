@@ -1,0 +1,227 @@
+{
+  "sourceSessionArchive": "/Users/fzfz/Downloads/dsh-session-session-1236bce5-cfb8-401c-8768-17d228c5c16d.zip",
+  "deploymentRecord": "/Volumes/4Tdisk/work/AI2/harness-comfyui-prod-env/.local/deployment-backups/20261026-v0.48.0/deployment-record.json",
+  "deployedVersion": "0.48.0",
+  "deploymentRecordedAt": "2026-10-26T04:28:31.365213+00:00",
+  "deployedCommit": "2d74f999f64eb2e0ddc9b05af699354be874e3ba",
+  "sessionFirstRequestTimeMs": 1792992259218,
+  "productionArchive": "/Volumes/4Tdisk/work/AI2/harness-comfyui-prod-env/.local/deployment-backups/20261026-v0.48.0/harness-comfyui-0.48.0.tgz",
+  "archivedResourcesMatchReleaseSource": {
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml": true,
+    "agent-presets/shared/agent.cordis.yml": true,
+    "config/managed-cli-help.json": true
+  },
+  "businessSkillFilesInReleaseArchive": 0,
+  "oldGenerationToolPresentInArchive": true,
+  "globalSkillDiscoverySource": "main checkout via global symlinks; deployment-record and global-skill-links-before.json",
+  "runtimeAndContractFilesUnchangedSinceRelease": {
+    "src/host/generation/generation-runtime.ts": true,
+    "src/host/cli/route.ts": true,
+    "src/host/cli/dispatch.ts": true,
+    "src/cli/contract.ts": true,
+    "scripts/cli/harness-comfyui.mjs": true,
+    "config/managed-cli-help.json": true,
+    ".agents/skills/comfyui-generate/SKILL.md": true,
+    ".agents/skills/comfyui-generate/references/prompt-result-schema.json": true,
+    ".agents/skills/moss-prompt-builder/SKILL.md": true
+  },
+  "actualBashDeclaration": {
+    "name": "bash",
+    "description": "Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell; pass `workdir` instead of using `cd`. Managed `$DSH_*` variables expose current harness environment facts. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Provide `description` before `command` in the arguments. Before any delete or move, verify that the resolved absolute target path is the intended one; never run it against a computed path you have not checked. An unset variable expands to an empty string, so guard variables in such paths with `${VAR:?}`. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]`, a policy denial: do not retry another way.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: \"ls\" → \"List files in current directory\"; \"git status\" → \"Show working tree status\"; \"npm install\" → \"Install package dependencies\"."
+        },
+        "command": {
+          "type": "string",
+          "description": "The bash command to execute."
+        },
+        "timeoutMs": {
+          "type": "number",
+          "description": "Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry."
+        },
+        "workdir": {
+          "type": "string",
+          "description": "Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."
+        },
+        "sandbox_permissions": {
+          "type": "string",
+          "description": "The narrowest wider sandbox mode for a one-shot retry of the exact command the sandbox just denied; the retry asks the user for approval.",
+          "enum": [
+            "workspace-write",
+            "danger-full-access"
+          ]
+        },
+        "justification": {
+          "type": "string",
+          "description": "Required with sandbox_permissions: one sentence for the user explaining why this exact command needs the wider access. Use the language of the user’s current request."
+        }
+      },
+      "required": [
+        "description",
+        "command"
+      ]
+    }
+  },
+  "actualGenerationToolDescription": "Create one durable ComfyUI Generation Run from one approved template, an optional resolved generation model, explicit runtime parameters, resolved LoRA selections, and an optional safe instance route; return the accepted run_id without waiting for remote completion.",
+  "beforeBypassGenerationSkillCalls": 0,
+  "beforeBypassManagedCliCalls": 0,
+  "mediaQueries": [
+    {
+      "seq": 124,
+      "returnedRuns": 2,
+      "emptyImages": 2,
+      "positivePromptCharacters": 3553,
+      "resultCharacters": 5113
+    },
+    {
+      "seq": 139,
+      "returnedRuns": 2,
+      "emptyImages": 2,
+      "positivePromptCharacters": 3553,
+      "resultCharacters": 5113
+    },
+    {
+      "seq": 164,
+      "returnedRuns": 2,
+      "emptyImages": 2,
+      "positivePromptCharacters": 3553,
+      "resultCharacters": 5113
+    },
+    {
+      "seq": 194,
+      "returnedRuns": 2,
+      "emptyImages": 0,
+      "positivePromptCharacters": 3553,
+      "resultCharacters": 5647
+    },
+    {
+      "seq": 245,
+      "returnedRuns": 2,
+      "emptyImages": 0,
+      "positivePromptCharacters": 3926,
+      "resultCharacters": 6094
+    },
+    {
+      "seq": 284,
+      "returnedRuns": 2,
+      "emptyImages": 0,
+      "positivePromptCharacters": 4579,
+      "resultCharacters": 6735
+    },
+    {
+      "seq": 333,
+      "returnedRuns": 2,
+      "emptyImages": 0,
+      "positivePromptCharacters": 4682,
+      "resultCharacters": 6840
+    },
+    {
+      "seq": 406,
+      "returnedRuns": 4,
+      "emptyImages": 0,
+      "positivePromptCharacters": 8899,
+      "resultCharacters": 13183
+    },
+    {
+      "seq": 471,
+      "returnedRuns": 3,
+      "emptyImages": 0,
+      "positivePromptCharacters": 6914,
+      "resultCharacters": 10218
+    },
+    {
+      "seq": 511,
+      "returnedRuns": 3,
+      "emptyImages": 0,
+      "positivePromptCharacters": 7105,
+      "resultCharacters": 10392
+    },
+    {
+      "seq": 559,
+      "returnedRuns": 3,
+      "emptyImages": 0,
+      "positivePromptCharacters": 6953,
+      "resultCharacters": 10241
+    }
+  ],
+  "mediaQueryPositivePromptCharacters": 57270,
+  "keyEvents": [
+    8,
+    12,
+    13,
+    14,
+    109,
+    111,
+    121,
+    122,
+    124,
+    139,
+    143,
+    144,
+    153,
+    154,
+    164,
+    167,
+    168,
+    173,
+    174,
+    178,
+    179,
+    364,
+    619,
+    620,
+    625,
+    1455,
+    1499,
+    1500,
+    1505,
+    1506,
+    1530,
+    1531,
+    3692
+  ],
+  "mossCaptionDraftKeys": [
+    "caption"
+  ],
+  "mossCompiledCaptionType": "plain text",
+  "generationResultRequiredKeys": [
+    "model_route",
+    "positive_prompt",
+    "negative_mode",
+    "negative_prompt",
+    "positive_avoidance",
+    "generation_purpose",
+    "aspect_ratio",
+    "width",
+    "height",
+    "megapixels"
+  ],
+  "mossCaptionMissingRequiredKeys": [
+    "model_route",
+    "positive_prompt",
+    "negative_mode",
+    "negative_prompt",
+    "positive_avoidance",
+    "generation_purpose",
+    "aspect_ratio",
+    "width",
+    "height",
+    "megapixels"
+  ],
+  "mossCaptionExtraKeys": [
+    "caption"
+  ],
+  "mechanismProbe": "root-cause-probe.json",
+  "probeCommand": "node --experimental-transform-types docs/verification/generation-batch-20261028/root-cause-probe.mts .local/root-cause-v0480/package docs/verification/generation-batch-20261028/root-cause-probe.json",
+  "probeExternalComfyuiRequests": 0,
+  "sameModelSingleVariableReplayPerformed": false,
+  "initialMcpQueueResultSeqs": [
+    122,
+    144,
+    154
+  ]
+}

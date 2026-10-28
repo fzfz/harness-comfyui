@@ -1,0 +1,9 @@
+{
+  "status": "ready",
+  "previousRunId": "9f7cef53-e8f0-4c9b-be84-93129fb9eed5",
+  "runId": "45dff997-e14d-44cd-ab3b-ffb236223460",
+  "configPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/45dff997-e14d-44cd-ab3b-ffb236223460/evidence/real-model-config.json",
+  "presetId": "harness-comfyui-cli-candidate",
+  "installedPackageRoot": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+  "mcpUrl": "http://127.0.0.1:18943/mcp"
+}

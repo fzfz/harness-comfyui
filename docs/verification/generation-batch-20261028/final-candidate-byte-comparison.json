@@ -1,0 +1,13 @@
+{
+  "archives": [
+    "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-model-candidate-wait-final.tgz",
+    "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.49.0.tgz"
+  ],
+  "fileCounts": [
+    203,
+    203
+  ],
+  "sameFiles": true,
+  "differentFiles": [],
+  "allFileBytesMatch": true
+}

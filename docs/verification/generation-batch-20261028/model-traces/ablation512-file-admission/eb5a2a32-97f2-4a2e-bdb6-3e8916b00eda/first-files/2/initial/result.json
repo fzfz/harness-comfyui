@@ -1,0 +1,153 @@
+{
+  "id": "initial",
+  "runId": "74a86950-da9b-46e0-acae-951c872055f1",
+  "startedAt": "2026-10-28T14:05:32.073Z",
+  "naturalCompletion": true,
+  "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/2/initial/task-input.txt",
+  "terminal": {
+    "type": "turn/end",
+    "seq": 27,
+    "time": 1793196350286,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    }
+  },
+  "observation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 27,
+        "values": {
+          "title": "ablation512-file-admission first-files 2",
+          "goal": null,
+          "tokenUsage": {
+            "uncachedInputTokens": 5973,
+            "outputTokens": 395,
+            "cacheReadTokens": 24448,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {
+            "pressureTokens": 11758,
+            "projectedTokens": 11855,
+            "contextWindow": 262144
+          },
+          "contextBreakdown": {
+            "systemTokens": 466,
+            "toolsTokens": 4547,
+            "messageTokens": 2969
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 1,
+            "steps": 3,
+            "llmMs": 17739,
+            "toolMs": 135,
+            "ttftMs": 9721,
+            "ttftSteps": 3,
+            "decodeMs": 8018,
+            "decodeTokens": 395
+          },
+          "turnOutline": [
+            {
+              "turn": 1,
+              "seq": 6,
+              "prompt": "本任务验证受控生成服务，输出固定测试图片；请验收图片尺寸、文件可读取、Run 与媒体对应关系。工作…",
+              "response": "当前请求缺少生成 Skill 必需的 **Prompt Builder 结果 JSON**。虽然已提供 11 份提示词文件及生成参数，Skill 仍要求当前消息包含用于创建图片的结果 JSON；在此之前不能提交生成。 请提供与 `prom…"
+            }
+          ],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            },
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": false,
+            "lastPromptAt": 1793196332349
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+        "runs": [],
+        "media": [],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "trace": {
+    "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/2/initial/trace/trace-index.json",
+    "sessions": [
+      {
+        "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+        "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/2/initial/trace/sessions/session-session-865842a7-71e1-4ecf-a12b-59610babf14b/session.json"
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ]
+  },
+  "completedAt": "2026-10-28T14:05:50.695Z"
+}

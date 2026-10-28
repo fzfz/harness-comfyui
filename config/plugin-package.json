@@ -17,6 +17,7 @@
     "config/image-reader-runtime.json",
     "config/managed-cli-environment.json",
     "config/managed-cli-help.json",
+    "config/managed-cli-limits.json",
     "config/node-script-runtime.json",
     "config/product-agent.json",
     "config/product-agent-schema.mjs",

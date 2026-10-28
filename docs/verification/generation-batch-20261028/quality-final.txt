@@ -1,0 +1,232 @@
+$ pnpm run quality:preinstall && pnpm run quality:fast && pnpm run test:desktop
+$ pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts
+$ node scripts/security/check-manifest-lock.mjs
+package.json, pnpm-lock.yaml, and pnpm-workspace.yaml are consistent: /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui
+$ node scripts/security/audit-lockfile.mjs
+full: critical=0 high=0 moderate=0 low=0
+production: critical=0 high=0 moderate=0 low=0
+$ node scripts/security/check-build-scripts.mjs
+reviewed build scripts: @google/genai@1.52.0, koffi@3.1.5, node-pty@1.2.0-beta.15, protobufjs@7.6.5
+$ pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype
+$ node scripts/security/check-harness-boundary.mjs
+Harness project Tool registry boundary is valid: /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui
+$ tsc --noEmit && tsc -p tsconfig.agent-presets.json
+$ vitest run tests/unit tests/integration tests/skills --coverage --testTimeout=30000
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui
+      Coverage enabled with v8
+
+(node:53519) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1/1] Workflow template 43: Matrix fixture
+
+ Test Files  74 passed (74)
+      Tests  1496 passed (1496)
+   Start at  22:26:45
+   Duration  17.73s (transform 11.01s, setup 0ms, import 12.50s, tests 51.87s, environment 12ms)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   93.87 |    87.31 |     100 |   96.57 |                   
+ src               |   92.39 |     92.3 |     100 |   95.45 |                   
+  ...ngs-schema.ts |      96 |    96.87 |     100 |      96 | 67                
+  ...age-schema.ts |   77.77 |       50 |     100 |    87.5 | 21                
+  ...e-settings.ts |      92 |    92.85 |     100 |   95.74 | 55,103            
+ src/catalog       |   95.96 |    94.25 |     100 |   96.77 |                   
+  contract.ts      |   94.31 |    90.69 |     100 |   95.75 | ...25,438,588-592 
+ src/cli           |   90.41 |    91.83 |     100 |   91.94 |                   
+  contract.ts      |   90.74 |     92.3 |     100 |   92.36 | ...67,282,293,304 
+  limits.ts        |      80 |       75 |     100 |      80 | 5                 
+ src/client        |   95.62 |    83.33 |     100 |     100 |                   
+  index.tsx        |   95.62 |    83.33 |     100 |     100 | ...49-159,180,230 
+ ...t/image-reader |    95.5 |    87.45 |     100 |   99.41 |                   
+  ...-settings.tsx |    95.5 |    87.45 |     100 |   99.41 | 175,208           
+ ...lient/settings |   97.84 |    89.94 |     100 |   99.56 |                   
+  ...-settings.tsx |   96.62 |    88.73 |     100 |     100 | ...58-60,86,94-98 
+  ...-settings.tsx |    96.7 |    87.69 |     100 |   98.79 | 132               
+  ...reset-tip.tsx |     100 |    92.85 |     100 |     100 | 34                
+  ...tings-form.ts |     100 |    93.75 |     100 |     100 | 34                
+ ...ient/workbench |   97.43 |    93.01 |     100 |   99.28 |                   
+  ...navigation.ts |   97.87 |    94.73 |     100 |   97.61 | 72                
+  contract.ts      |   97.14 |    92.85 |     100 |     100 | 54,72             
+  controller.ts    |    98.3 |       90 |     100 |     100 | 51,70             
+  ...-surfaces.tsx |   96.56 |    93.92 |     100 |     100 | ...93,370,456,600 
+  ...s-contract.ts |     100 |       50 |     100 |     100 | 47                
+  ...ts-drawer.tsx |   96.96 |    88.57 |     100 |   98.15 | 216,224,233       
+ src/config        |    87.5 |    80.48 |     100 |   92.56 |                   
+  load-profile.ts  |    87.5 |    80.48 |     100 |   92.56 | ...35,157-159,241 
+ src/host          |     100 |    95.65 |     100 |     100 |                   
+  ...-resources.ts |     100 |    91.66 |     100 |     100 | 55                
+ src/host/catalog  |   87.57 |    83.83 |     100 |   89.03 |                   
+  ...log-client.ts |   84.32 |    83.22 |     100 |    86.5 | ...99,310,338-339 
+ src/host/cli      |   96.92 |    89.69 |     100 |   96.87 |                   
+  route.ts         |   93.42 |       80 |     100 |   93.24 | 54,70,78,141-142  
+  server.ts        |     100 |    66.66 |     100 |     100 | 22                
+  ...capability.ts |   98.18 |    97.91 |     100 |     100 | 46                
+ src/host/core     |   98.83 |    88.88 |     100 |     100 |                   
+  ...r-settings.ts |     100 |       75 |     100 |     100 | 26                
+  ...in-storage.ts |   95.45 |     87.5 |     100 |     100 | 12                
+ ...ost/generation |   92.34 |     84.6 |     100 |    95.4 |                   
+  ...nd-browser.ts |   91.82 |    80.55 |     100 |   96.13 | ...07,917,956,962 
+  ...ker-client.ts |   85.82 |    74.24 |     100 |    93.1 | ...27,131,171,188 
+  ...end-worker.ts |    87.3 |    78.57 |     100 |   89.47 | ...90,100,138,212 
+  ...-transport.ts |   84.91 |    75.39 |     100 |   88.31 | ...64,276,296-298 
+  ...oordinator.ts |   90.32 |    54.54 |     100 |   95.83 | 37                
+  ...on-runtime.ts |   92.29 |     87.8 |     100 |   94.62 | ...1393,1436-1437 
+  ...on-service.ts |   97.05 |       35 |     100 |     100 | 45,66-90          
+  media-routes.ts  |   97.89 |    86.53 |     100 |   98.88 | 95                
+  ...i-workflow.ts |   92.22 |     87.3 |     100 |   95.59 | ...46,256,353-354 
+  source-client.ts |   90.27 |    83.87 |     100 |   88.33 | ...77,84,87,91,94 
+  ...e-preparer.ts |   78.26 |    58.33 |     100 |      90 | 128,131           
+  ...w-compiler.ts |   94.08 |    88.92 |     100 |   96.96 | ...2077-2082,2240 
+ ...t/image-reader |   94.65 |    89.26 |     100 |   97.55 |                   
+  ...on-service.ts |   93.46 |    89.18 |     100 |   95.63 | ...14,427-428,481 
+  ...tial-store.ts |   92.85 |    83.33 |     100 |     100 | 29                
+  errors.ts        |   97.29 |    95.45 |     100 |   97.05 | 110               
+  ...ader-input.ts |   95.94 |    93.18 |     100 |   98.33 | 37                
+  ...er-service.ts |   95.29 |    91.78 |     100 |   97.36 | 116,170           
+  ...e-settings.ts |   93.65 |    85.61 |     100 |   98.63 | 43,110            
+  plugin.ts        |     100 |    71.42 |     100 |     100 | 56-66             
+  ...gistration.ts |   89.28 |    78.94 |     100 |     100 | 27,48-53          
+ .../source-client |   93.82 |       84 |     100 |     100 |                   
+  http-client.ts   |   95.52 |    84.21 |     100 |     100 | 35-36,81,88-91,98 
+  source-client.ts |   77.77 |       80 |     100 |     100 | 16,25             
+ src/image-reader  |   93.84 |    91.12 |     100 |   97.83 |                   
+  contract.ts      |   89.65 |    81.63 |     100 |   97.36 | 205,219           
+  ...ngs-errors.ts |   98.43 |    98.61 |     100 |     100 | 77                
+  settings.ts      |      93 |     90.1 |     100 |   96.62 | 206,295,346       
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 93.87% ( 6357/6772 )
+Branches     : 87.31% ( 4372/5007 )
+Functions    : 100% ( 1435/1435 )
+Lines        : 96.57% ( 5605/5804 )
+================================================================================
+$ vitest run tests/contract tests/security
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui
+
+
+ Test Files  12 passed (12)
+      Tests  77 passed (77)
+   Start at  22:27:03
+   Duration  7.91s (transform 511ms, setup 0ms, import 904ms, tests 15.21s, environment 1ms)
+
+$ vitest run tests/production --maxWorkers=1 --no-file-parallelism
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui
+
+
+ Test Files  20 passed (20)
+      Tests  371 passed (371)
+   Start at  22:27:12
+   Duration  26.78s (transform 522ms, setup 0ms, import 1.47s, tests 22.66s, environment 1ms)
+
+$ node --test prototype/generation-workbench/tests/*.test.mjs prototype/media-viewer-navigation/tests/*.test.mjs
+✔ the static page references only local runtime assets (1.824458ms)
+✔ all prototype state branches have a selectable fixture (0.225333ms)
+✔ the browser exposes only the importable Workflow JSON download (0.307292ms)
+✔ every downloadable UI Workflow fixture has complete node-link references (0.195583ms)
+✔ every internally persisted API Workflow fixture references existing API nodes (0.136ms)
+✔ each run owns matching metadata, media outputs, UI Workflow, and API Workflow (0.613208ms)
+✔ chat turns cover zero, one, and multiple associated runs (0.364166ms)
+✔ each session run set is exactly the union of its chat-turn run sets (0.136791ms)
+✔ saved Session media belongs to a chat turn and links to a local original file (0.308375ms)
+✔ LoRA remains a run parameter and does not create a dedicated session type (0.178708ms)
+✔ visible controls are implemented and chat-turn labels explain their result projection (0.434875ms)
+✔ the base model is a query filter and never a message-context reference (0.298875ms)
+✔ Tool execution details remain owned by the DeepSeek Harness trace (0.246459ms)
+✔ Session results use fixed media cards with turn filters and independent pagination (0.329625ms)
+✔ the left-side all-media entry opens a centered cross-Session media library (0.245209ms)
+✔ every visible ComfyUI async task belongs to exactly one Session chat turn (0.233625ms)
+✔ submission timeout and Jobs API 404 paths have one repository outcome each (0.098042ms)
+✔ the left-side task entry opens a filtered and paginated ComfyUI async task list (0.249834ms)
+✔ queued and running ComfyUI Jobs use the prompt-scoped idempotent cancel endpoint (0.678916ms)
+✔ the audited interface labels inputs, exposes a skip target, and reserves media dimensions (0.136584ms)
+✔ the default conversation turn exposes queued, running, media-saving, and submission-unknown runs (0.124875ms)
+✔ new chat turns receive scoped Agent elements and unique runtime run ids (0.284583ms)
+✔ run cards describe Jobs API observations instead of legacy history polling (0.170791ms)
+✔ the static prototype does not duplicate the live Harness slash Skill chooser (0.212916ms)
+✔ run focus restores the selected turn projection before highlighting a card (0.099458ms)
+✔ a native modal dialog backs the context picker (0.117041ms)
+✔ message-context candidates use fixed three-column cards with covers and pagination (0.257458ms)
+▶ media viewer navigation prototype contract
+  ✔ provides three structurally named viewer variants (0.626542ms)
+  ✔ binds bare horizontal arrow keys to media navigation (0.085041ms)
+  ✔ renders the persisted positive prompt or an explicit missing state (0.076583ms)
+  ✔ names both disabled time boundaries with the current Session scope (0.057208ms)
+  ✔ uses a module entry point and preserves complete media (0.095208ms)
+✔ media viewer navigation prototype contract (1.756542ms)
+ℹ tests 32
+ℹ suites 1
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 113.728208
+$ node tests/desktop/run-desktop-tests.mjs
+$ node scripts/build/cli.mjs build
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-host/index.js
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-host/core.js
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-host/image-reader.js
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-host/cli.js
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-host/web.js
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-host/comfy-frontend-worker.js
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-cli/harness-comfyui.mjs
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/source-client/client.js
+/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/desktop-test-runner/artifacts/harness-comfyui-0.49.0.tgz
+
+ RUN  v4.1.12 /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui
+
+ ❯ tests/desktop/official-desktop-live.test.mjs (14 tests | 1 failed) 430729ms
+     × installs the packed candidate through Desktop, restarts the app, and verifies workbench behavior 429805ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/desktop/official-desktop-live.test.mjs > official Desktop plugin regression > installs the packed candidate through Desktop, restarts the app, and verifies workbench behavior
+AssertionError: expected [ 'office', 'office-docx', …(5) ] to deeply equal [ 'anima-prompt-builder', …(7) ]
+
+- Expected
++ Received
+
+  [
+-   "anima-prompt-builder",
+-   "character-portrait-prompt-designer",
+-   "comfyui-generate",
+-   "comfyui-image-review",
+-   "krea2-anime-prompt-builder",
+-   "local-image-reader",
+-   "moss-prompt-builder",
+-   "wai-sdxl-prompt-builder",
++   "office",
++   "office-docx",
++   "office-export-pdf",
++   "office-pptx",
++   "office-recalculate",
++   "office-render",
++   "office-xlsx",
+  ]
+
+ ❯ tests/desktop/official-desktop-live.test.mjs:4101:10
+    4099|       const endedChildSkillCatalog = nativeSubagentEvidence.endedChild…
+    4100|       expect(endedChildSkillCatalog.skills.map(skill => skill.name).so…
+    4101|         .toEqual(REPOSITORY_SKILL_CATALOG.map(skill => skill.name).sor…
+       |          ^
+    4102|       expect(endedChildSkillCatalog.skills.every(skill =>
+    4103|         isPathWithin(skill.path, endedChildSkillCatalog.installedPlugi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 12 passed (13)
+      Tests  1 failed | 307 passed (308)
+   Start at  22:27:42
+   Duration  922.98s (transform 547ms, setup 0ms, import 1.53s, tests 919.66s, environment 1ms)
+
+Desktop test runner tests command exited with code 1
+[ELIFECYCLE] Command failed with exit code 1.
+[ELIFECYCLE] Command failed with exit code 1.

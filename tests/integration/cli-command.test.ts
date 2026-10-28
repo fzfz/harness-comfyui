@@ -1,5 +1,5 @@
-import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
+import { spawn, spawnSync } from 'node:child_process'
+import { mkdtemp, readFile, readdir, rm, truncate, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -57,6 +57,7 @@ async function runCli(input: {
   readonly temporaryDirectory?: string
   readonly fault?: 'write' | 'close' | 'request'
   readonly requestError?: string
+  readonly timeoutMs?: number
   readonly brokenStdout?: boolean
   readonly brokenStderr?: boolean
 }): Promise<{ readonly exitCode: number; readonly stdout: string; readonly stderr: string; readonly resultFileContent?: string; readonly temporaryDirectory: string }> {
@@ -78,6 +79,7 @@ async function runCli(input: {
         DSH_HARNESS_COMFYUI_CLI_CAPABILITY: input.capability ?? 'test_capability',
       },
     })
+    const watchdog = input.timeoutMs === undefined ? undefined : setTimeout(() => child.kill(), input.timeoutMs)
     const stdout: Buffer[] = []
     const stderr: Buffer[] = []
     child.stdout.on('data', chunk => stdout.push(Buffer.from(chunk)))
@@ -86,6 +88,7 @@ async function runCli(input: {
     if (input.brokenStderr) child.stderr.destroy()
     child.once('error', reject)
     child.once('close', code => {
+      clearTimeout(watchdog)
       const output = Buffer.concat(stdout).toString('utf8')
       const result = { exitCode: code ?? 1, stdout: output, stderr: Buffer.concat(stderr).toString('utf8'), temporaryDirectory: directory }
       if (/^\/[^\r\n]+\n$/u.test(output)) {
@@ -122,6 +125,265 @@ async function serveImageReader(imageReader: unknown) {
   }
 }
 
+describe('managed CLI generation manifests', () => {
+  it('expands a file manifest relative to its directory and preserves each text parameter', async () => {
+    const directory = await mkdtemp(join(temporaryRoot, 'manifest-中文 space-'))
+    callDirectories.push(directory)
+    const firstId = '01234567-89ab-4cde-8fab-0123456789ab'
+    const secondId = '11234567-89ab-4cde-8fab-0123456789ab'
+    const plain = '第一行\r\n第二行\n'
+    const layout = '{\n  "layout": "人物位于左侧"\n}\n'
+    await writeFile(join(directory, 'plain.txt'), plain)
+    await writeFile(join(directory, 'layout.json'), layout)
+    const request = { title: 'CLI generation', instance_id: '2', template_id: '39', model: null, parameters: { seed: 7 }, loras: [] }
+    const manifest = { items: [
+      { request_id: firstId, request, parameter_files: { positive_prompt: 'plain.txt' } },
+      { request_id: secondId, request, parameter_files: { positive_prompt: join(directory, 'layout.json') } },
+    ] }
+    const manifestPath = join(directory, 'manifest.json')
+    await writeFile(manifestPath, JSON.stringify(manifest))
+    const data = { items: [
+      { request_id: firstId, run_id: 'run_first', acceptance: 'accepted' },
+      { request_id: secondId, run_id: 'run_second', acceptance: 'accepted' },
+    ] }
+    const host = await serveCliData(data)
+    try {
+      const result = await runCli({ args: ['generation', 'submit', '--file', manifestPath], apiUrl: host.apiUrl, keepStdinOpen: true })
+      expect(result.exitCode).toBe(0)
+      expect(JSON.parse(result.resultFileContent!)).toEqual(data)
+      expect(result.stdout).not.toContain('第一行')
+      expect(host.requests).toEqual([{ command: 'generation.submit', items: [
+        { request_id: firstId, request: { ...request, parameters: { seed: 7, positive_prompt: plain } } },
+        { request_id: secondId, request: { ...request, parameters: { seed: 7, positive_prompt: layout } } },
+      ] }])
+      expect(result.stderr).toContain('run_first')
+      expect(result.stderr).toContain('run_second')
+    } finally { await host.close() }
+  })
+})
+
+describe('managed CLI manifest preflight', () => {
+  it.each([1, 11, 20])('accepts %i independent manifest items from stdin', async count => {
+    const items = Array.from({ length: count }, (_, index) => ({
+      request_id: `${String(index).padStart(8, '0')}-89ab-4cde-8fab-0123456789ab`,
+      request: { title: `Item ${index}`, instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] },
+    }))
+    const host = await serveCliData({ items: items.map((item, index) => ({ request_id: item.request_id, run_id: `run_${index}`, acceptance: 'accepted' })) })
+    try {
+      const result = await runCli({ args: ['generation', 'submit', '--stdin'], stdin: JSON.stringify({ items }), apiUrl: host.apiUrl })
+      expect(result.exitCode).toBe(0)
+      expect(host.requests).toEqual([{ command: 'generation.submit', items }])
+    } finally { await host.close() }
+  })
+
+  it('rejects the whole manifest before HTTP when structure or any referenced file fails', async () => {
+    const directory = await mkdtemp(join(temporaryRoot, 'preflight-'))
+    callDirectories.push(directory)
+    const request = { title: 'Batch', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] }
+    const item = { request_id: '01234567-89ab-4cde-8fab-0123456789ab', request }
+    const invalidPath = join(directory, 'invalid.txt')
+    await writeFile(invalidPath, Buffer.from([0xc3, 0x28]))
+    const path = join(directory, 'prompt.txt')
+    await writeFile(path, 'valid text')
+    const host = await serveCliData({})
+    const cases = [
+      { value: { items: [] }, diagnostic: 'items' },
+      { value: { items: Array.from({ length: 21 }, () => item) }, diagnostic: '20' },
+      { value: { items: [item, item] }, diagnostic: 'duplicates' },
+      { value: { items: [{ ...item, request_id: 'invalid' }] }, diagnostic: 'UUID' },
+      { value: { items: [{ ...item, session_id: 'forged' }] }, diagnostic: 'properties' },
+      { value: { items: [{ ...item, parameter_files: { positive_prompt: 'relative.txt' } }] }, diagnostic: 'absolute path' },
+      { value: { items: [{ ...item, request: { ...request, parameters: { positive_prompt: 'duplicate' } }, parameter_files: { positive_prompt: path } }] }, diagnostic: 'both parameters and parameter_files' },
+      { value: { items: [item, { ...item, request_id: '11234567-89ab-4cde-8fab-0123456789ab', parameter_files: { positive_prompt: join(directory, 'missing.txt') } }] }, diagnostic: 'items[1] parameter positive_prompt file' },
+      { value: { items: [{ ...item, parameter_files: { positive_prompt: invalidPath } }] }, diagnostic: 'items[0] parameter positive_prompt file' },
+      { value: request, diagnostic: 'items' },
+    ]
+    try {
+      for (const testCase of cases) {
+        const result = await runCli({ args: ['generation', 'submit', '--stdin'], stdin: JSON.stringify(testCase.value), apiUrl: host.apiUrl })
+        expect(result.exitCode, JSON.stringify(testCase.value)).toBe(2)
+        expect(result.stdout).toBe('')
+        expect(result.stderr).toContain(testCase.diagnostic)
+      }
+      expect(host.requests).toEqual([])
+    } finally { await host.close() }
+  })
+
+  it('applies the byte limit to the expanded request and preserves absolute stdin file content', async () => {
+    const directory = await mkdtemp(join(temporaryRoot, 'byte-limit-'))
+    callDirectories.push(directory)
+    const path = join(directory, 'prompt.txt')
+    const request = { title: 'Batch', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] }
+    const requestId = '01234567-89ab-4cde-8fab-0123456789ab'
+    const manifest = { items: [{ request_id: requestId, request, parameter_files: { positive_prompt: path } }] }
+    const empty = { command: 'generation.submit', items: [{ request_id: requestId, request: { ...request, parameters: { positive_prompt: '' } } }] }
+    const allowed = CLI_MAX_BODY_BYTES - Buffer.byteLength(JSON.stringify(empty))
+    const host = await serveCliData({ items: [{ request_id: requestId, run_id: 'run_exact_limit', acceptance: 'accepted' }] })
+    try {
+      await writeFile(path, 'x'.repeat(allowed))
+      const accepted = await runCli({ args: ['generation', 'submit', '--stdin'], stdin: JSON.stringify(manifest), apiUrl: host.apiUrl })
+      expect(accepted.exitCode).toBe(0)
+      expect(Buffer.byteLength(JSON.stringify(host.requests[0]))).toBe(1_048_576)
+      await writeFile(path, 'x'.repeat(allowed + 1))
+      const rejected = await runCli({ args: ['generation', 'submit', '--stdin'], stdin: JSON.stringify(manifest), apiUrl: host.apiUrl })
+      expect(rejected.exitCode).toBe(2)
+      expect(rejected.stderr).toContain('CLI_REQUEST_TOO_LARGE')
+      expect(host.requests).toHaveLength(1)
+    } finally { await host.close() }
+  })
+
+  it('preserves a file-backed parameter named __proto__', async () => {
+    const directory = await mkdtemp(join(temporaryRoot, 'parameter-id-'))
+    callDirectories.push(directory)
+    const path = join(directory, 'prompt.txt')
+    await writeFile(path, '\ufefffirst\r\nsecond\n')
+    const requestId = '01234567-89ab-4cde-8fab-0123456789ab'
+    const host = await serveCliData({ items: [{ request_id: requestId, run_id: 'run_parameter', acceptance: 'accepted' }] })
+    try {
+      const result = await runCli({ args: ['generation', 'submit', '--stdin'], stdin: JSON.stringify({ items: [{
+        request_id: requestId,
+        request: { title: 'Parameter ID', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] },
+        parameter_files: Object.fromEntries([['__proto__', path]]),
+      }] }), apiUrl: host.apiUrl })
+      expect(result.exitCode).toBe(0)
+      expect(host.requests[0]).toMatchObject({ items: [{ request: { parameters: Object.fromEntries([['__proto__', '\ufefffirst\r\nsecond\n']]) } }] })
+    } finally { await host.close() }
+  })
+})
+
+it('recovers accepted manifest items through the Host route after the result file cannot be saved', async () => {
+  const directory = await mkdtemp(join(temporaryRoot, 'recover-manifest-'))
+  callDirectories.push(directory)
+  const runtime = new GenerationRuntime({
+    runRepositoryFile: join(directory, 'runs.sqlite'),
+    runDirectory: join(directory, 'runs'),
+    savedMediaDirectory: join(directory, 'media'),
+    preparer: {
+      inspectRuntimeParameters: async () => { throw new Error('unreachable') },
+      prepare: async () => { throw new Error('Preparation is asynchronous') },
+    },
+  })
+  let call = 0
+  const handler = createCliHandler({
+    capabilities: { authorize: () => ({ sessionId: 'session_manifest', turn: 2, callId: `call_${++call}`, cwd: '/workspace' }) },
+    runtime,
+    imageReader: { inspect: async () => { throw new Error('unreachable') } },
+    workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_manifest', sessionIds: ['session_manifest'] }) },
+  })
+  const server = createServer((request, response) => void handler(request, response))
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  if (address === null || typeof address === 'string') throw new Error('Test server address is unavailable')
+  const apiUrl = `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`
+  const manifestPath = join(directory, 'manifest.json')
+  const request = { title: 'Recovery', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] }
+  await writeFile(manifestPath, JSON.stringify({ items: [
+    { request_id: '01234567-89ab-4cde-8fab-0123456789ab', request },
+    { request_id: '11234567-89ab-4cde-8fab-0123456789ab', request },
+  ] }))
+  try {
+    const failed = await runCli({ args: ['generation', 'submit', '--file', manifestPath], apiUrl, fault: 'write' })
+    expect(failed.exitCode).toBe(1)
+    expect(failed.stderr).toContain('CLI_RESULT_FILE_WRITE_FAILED')
+    const recovered = await runCli({ args: ['generation', 'submit', '--file', manifestPath], apiUrl })
+    expect(recovered.exitCode).toBe(0)
+    const data = JSON.parse(recovered.resultFileContent!) as { items: { request_id: string; run_id: string; acceptance: string }[] }
+    expect(data.items).toHaveLength(2)
+    for (const item of data.items) {
+      expect(item.acceptance).toBe('reused')
+      expect(failed.stderr).toContain(`${item.request_id}=${item.run_id}`)
+    }
+    const queried = await runCli({ args: ['generation', 'resolve-media', '--stdin'], stdin: JSON.stringify({ run_ids: data.items.map(item => item.run_id) }), apiUrl })
+    const result = JSON.parse(queried.resultFileContent!) as { runs: { status: string; parameters?: unknown }[] }
+    expect(result.runs.map(run => run.status)).toEqual(['created', 'created'])
+    expect(result.runs.every(run => !Object.hasOwn(run, 'parameters'))).toBe(true)
+  } finally {
+    runtime.close()
+    await new Promise<void>(resolve => server.close(() => resolve()))
+  }
+})
+
+it('reports malformed manifest JSON without copying prompt text into diagnostics', async () => {
+  const result = await runCli({
+    args: ['generation', 'submit', '--stdin'],
+    stdin: '{"items":[{"request_id":"01234567-89ab-4cde-8fab-0123456789ab","request":{"parameters":{"positive_prompt": SECRET_PROMPT_BODY_7F9A}}}]}',
+    apiUrl: 'http://127.0.0.1:1/api/harness-comfyui/cli/v1',
+  })
+  expect(result.exitCode).toBe(2)
+  expect(result.stdout).toBe('')
+  expect(result.stderr).not.toContain('SECRET_PROMPT_BODY_7F9A')
+})
+
+it.each([
+  ['generation', 'submit', '--file'],
+  ['generation', 'submit', '--file', '/tmp/manifest.json', '--stdin'],
+  ['generation', 'submit', '--stdin', '--file', '/tmp/manifest.json'],
+  ['generation', 'submit', '--file', '/tmp/first.json', '--file', '/tmp/second.json'],
+].map(args => ({ args })))('rejects incomplete or conflicting manifest options before reading stdin: $args', async ({ args }) => {
+  const result = await runCli({ args, keepStdinOpen: true, apiUrl: 'http://127.0.0.1:1/api/harness-comfyui/cli/v1' })
+  expect(result.exitCode).toBe(2)
+  expect(result.stdout).toBe('')
+  expect(result.stderr).toContain('CLI_ARGUMENT_INVALID')
+  expect(result.stderr).toContain('generation submit --help')
+})
+
+describe('managed CLI bounded file input', () => {
+  it('rejects oversized manifest and parameter files before contacting the Host', async () => {
+    const directory = await mkdtemp(join(temporaryRoot, 'bounded-input-'))
+    callDirectories.push(directory)
+    const manifestPath = join(directory, 'manifest.json')
+    const parameterPath = join(directory, 'huge.txt')
+    const request = { title: 'Bounded input', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] }
+    const item = { request_id: '01234567-89ab-4cde-8fab-0123456789ab', request }
+    const host = await serveCliData({})
+    try {
+      await writeFile(manifestPath, JSON.stringify({ items: [item] }) + ' '.repeat(CLI_MAX_BODY_BYTES))
+      const manifest = await runCli({ args: ['generation', 'submit', '--file', manifestPath], apiUrl: host.apiUrl })
+      expect(manifest.exitCode).toBe(2)
+      expect(manifest.stderr).toContain('CLI_REQUEST_TOO_LARGE')
+      await writeFile(parameterPath, '')
+      await truncate(parameterPath, 4_294_967_296)
+      const parameter = await runCli({
+        args: ['generation', 'submit', '--stdin'],
+        stdin: JSON.stringify({ items: [{ ...item, parameter_files: { positive_prompt: parameterPath } }] }),
+        apiUrl: host.apiUrl,
+      })
+      expect(parameter.exitCode).toBe(2)
+      expect(parameter.stderr).toContain('CLI_REQUEST_TOO_LARGE')
+      expect(parameter.stderr).toContain('items[0] parameter positive_prompt file')
+      expect(host.requests).toEqual([])
+    } finally { await host.close() }
+  })
+
+  it('rejects FIFO and directory inputs without waiting for file content', async () => {
+    const directory = await mkdtemp(join(temporaryRoot, 'nonregular-input-'))
+    callDirectories.push(directory)
+    const fifo = join(directory, 'prompt.fifo')
+    const created = spawnSync('mkfifo', [fifo])
+    expect(created.status, created.stderr?.toString()).toBe(0)
+    const request = { title: 'File kind', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] }
+    const item = { request_id: '01234567-89ab-4cde-8fab-0123456789ab', request }
+    const host = await serveCliData({})
+    try {
+      for (const path of [fifo, directory]) {
+        const manifest = await runCli({ args: ['generation', 'submit', '--file', path], apiUrl: host.apiUrl, timeoutMs: 2000 })
+        expect(manifest.exitCode).toBe(2)
+        expect(manifest.stderr).toContain('regular file')
+        const parameter = await runCli({
+          args: ['generation', 'submit', '--stdin'],
+          stdin: JSON.stringify({ items: [{ ...item, parameter_files: { positive_prompt: path } }] }),
+          apiUrl: host.apiUrl,
+          timeoutMs: 2000,
+        })
+        expect(parameter.exitCode).toBe(2)
+        expect(parameter.stderr).toContain('regular file')
+        expect(parameter.stderr).toContain('items[0] parameter positive_prompt file')
+      }
+      expect(host.requests).toEqual([])
+    } finally { await host.close() }
+  })
+})
+
 function expectCliResult(actual: {exitCode: number; stdout: string; stderr: string; resultFileContent?: string}, expected: {exitCode: number; stdout?: string; resultFileContent?: string; stderr: string}) {
   expect(actual.exitCode).toBe(expected.exitCode)
   if (expected.exitCode === 0) {
@@ -154,7 +416,7 @@ async function serveCliData(data: unknown) {
 
 describe('managed CLI result-file transport', () => {
   const commands = [
-    { args: ['generation', 'submit', '--stdin'], input: { title: 'test', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] }, data: { run_id: 'run_accepted' } },
+    { args: ['generation', 'submit', '--stdin'], input: { items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: { title: 'test', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] } }] }, data: { items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', run_id: 'run_accepted', acceptance: 'accepted' }] } },
     { args: ['generation', 'inspect-template-parameters', '--stdin'], input: { template_id: '1', instance_id: '2' }, data: { parameters: [], size_candidates: [] } },
     { args: ['generation', 'random-seeds', '--stdin'], input: { count: 2 }, data: { seeds: [12, 34] } },
     { args: ['generation', 'run-inputs', '--stdin'], input: { run_ids: ['run_1'] }, data: { runs: [{ run_id: 'run_1', workflow_status: 'available', workflow: { title: '中文 Workflow', nodes: [{ id: 9 }] } }] } },
@@ -311,14 +573,15 @@ describe('managed CLI result-file transport', () => {
   })
 
   it.each(['write', 'close'] as const)('reports an accepted Run after a %s failure without resubmitting', async fault => {
-    const host = await serveCliData({ run_id: 'run_already_accepted' })
+    const host = await serveCliData({ items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', run_id: 'run_already_accepted', acceptance: 'accepted' }] })
     try {
       const result = await runCli({ args: commands[0].args, stdin: JSON.stringify(commands[0].input), apiUrl: host.apiUrl, fault })
       expect(result.exitCode).toBe(1)
       expect(result.stdout).toBe('')
       expect(result.stderr).toContain('CLI_RESULT_FILE_WRITE_FAILED')
       expect(result.stderr).toContain('Host command generation.submit succeeded')
-      expect(result.stderr).toContain('Run was accepted: run_already_accepted')
+      expect(result.stderr).toContain('01234567-89ab-4cde-8fab-0123456789ab=run_already_accepted')
+      expect(result.stderr).toContain('Retry with the original manifest')
       expect(result.stderr).toContain(fault)
       expect(await readdir(result.temporaryDirectory)).toEqual([])
       expect(host.requests).toHaveLength(1)
@@ -502,7 +765,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       const chunks: Buffer[] = []
       for await (const chunk of request) chunks.push(Buffer.from(chunk))
       posted = JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
-      const body = JSON.stringify({ ok: true, data: { run_id: 'run_cli_1' } })
+      const body = JSON.stringify({ ok: true, data: { items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', run_id: 'run_cli_1', acceptance: 'accepted' }] } })
       response.writeHead(200, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) })
       response.end(body)
     })
@@ -521,14 +784,14 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
 
     const result = await runCli({
       args: ['generation', 'submit', '--stdin'],
-      stdin: JSON.stringify(generation),
+      stdin: JSON.stringify({ items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: generation }] }),
       apiUrl,
       capability: 'capability_from_host',
     })
 
-    expectCliResult(result, { exitCode: 0, resultFileContent: '{"run_id":"run_cli_1"}\n', stderr: '' })
+    expectCliResult(result, { exitCode: 0, resultFileContent: '{"items":[{"request_id":"01234567-89ab-4cde-8fab-0123456789ab","run_id":"run_cli_1","acceptance":"accepted"}]}\n', stderr: '' })
     expect(authorization).toBe('Bearer capability_from_host')
-    expect(posted).toEqual({ command: 'generation.submit', request: generation })
+    expect(posted).toEqual({ command: 'generation.submit', items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: generation }] })
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
@@ -665,7 +928,7 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
     expectCliResult(inspectionResult, { exitCode: 0, resultFileContent: `${JSON.stringify(inspection)}\n`, stderr: '' })
     expectCliResult(promptedInspectionResult, { exitCode: 0, resultFileContent: `${JSON.stringify(inspection)}\n`, stderr: '' })
     expect(posted).toEqual([
-      { command: 'generation.resolve-media', run_ids: ['run_1'] },
+      { command: 'generation.resolve-media', run_ids: ['run_1'], include_parameters: false },
       { command: 'image.inspect', file_path: '/media/result.png' },
       { command: 'image.inspect', file_path: '/media/result.png', prompt: '只识别图片中的文字。' },
     ])

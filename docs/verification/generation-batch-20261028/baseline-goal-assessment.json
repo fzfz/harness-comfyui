@@ -1,0 +1,947 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "054b3755-85b4-4fe4-9e67-1a350a453406",
+  "sourceMatrix": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/matrix.json",
+  "assessment": "reviewed-from-official-events-and-driver-guard",
+  "summary": {
+    "cases": 3,
+    "goalsCreatedWithRequestedTwoStagesAndFourRoundLimit": 3,
+    "initialTurnsNaturallyEnded": 3,
+    "firstStageBusinessCompleted": 0,
+    "newRegisteredRuns": 0,
+    "generatedImages": 0,
+    "goalsBlockedByPromptBuilderJsonRequirement": 3,
+    "blockedStatePreservedAfterRestart": 3,
+    "resumeRejectedByDriverPrecondition": 3,
+    "goalBarResumeClicksDispatched": 0,
+    "modelResumeTurnsStarted": 0,
+    "secondStageBusinessCompleted": 0,
+    "judgment": "3 次任务均在第一阶段生成前受阻。重启保留 blocked 状态，驱动器随即拒绝 GoalBar 恢复。模型第二阶段恢复能力尚未得到验证。",
+    "tokens": {
+      "inputTokens": 33483,
+      "outputTokens": 2623,
+      "totalTokens": 230026,
+      "cacheReadTokens": 193920
+    },
+    "toolCallCount": 20
+  },
+  "driverEvidence": {
+    "path": "docs/verification/generation-batch-20261028/real-model-driver.mjs",
+    "symbol": "resumeGoal",
+    "lines": [
+      174,
+      195
+    ],
+    "guardLines": [
+      177,
+      178
+    ],
+    "guard": "beforeGoal.phase === paused OR (beforeGoal.phase === active AND beforeGoal.activation === disarmed)",
+    "error": "GoalBar resume requires a paused Goal or an active, disarmed Goal.",
+    "judgment": "驱动器先读取 Goal 并验证状态，再寻找按钮和发送鼠标事件。blocked 状态在按钮点击之前触发错误。"
+  },
+  "metricsDefinition": "每个案例仅累计 error-trace 内 assistant/message.data.usage 和 tool/call；该 trace 包含 initial 事件，initial trace 不重复累计。",
+  "cases": [
+    {
+      "caseId": "goal-resume",
+      "repetition": 1,
+      "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+      "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/1/error-trace/sessions/session-session-e1f4dcdd-92ae-43d2-8f55-43a860951593/session.json",
+      "input": {
+        "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+        "seq": 10,
+        "text": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片任务，保存全部 Run ID 和图片路径，然后暂停 Goal，等待用户确认。用户通过 GoalBar 恢复后进入第 2 阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "goalCreation": {
+        "call": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 16,
+          "type": "tool/call",
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "call_Din16qlwAiqwstQBH1Q0WLGs",
+            "name": "create_goal",
+            "arguments": "{\"objective\":\"两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\",\"max_goal_rounds\":4}"
+          }
+        },
+        "change": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 17,
+          "type": "goal/change",
+          "data": {
+            "kind": "goal/change",
+            "version": 1,
+            "operation": "create",
+            "goal": {
+              "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+              "revision": 1,
+              "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+              "phase": "active",
+              "maxGoalRounds": 4
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191630944,
+            "updatedAt": 1793191630944
+          }
+        },
+        "result": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 18,
+          "text": "{\"goal\":{\"id\":\"goal-f335c014-6c21-402b-b225-c0f7b4a2abab\",\"revision\":1,\"objective\":\"两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\",\"phase\":\"active\",\"roundsStarted\":0,\"maxGoalRounds\":4},\"activation\":\"armed\"}"
+        },
+        "judgment": "Goal objective 包含先生成 11 张并交付后暂停、用户恢复后核对已有 Run 并完成的要求；max_goal_rounds 为 4。"
+      },
+      "firstStage": {
+        "businessCompleted": false,
+        "newRegisteredRuns": 0,
+        "generatedImages": 0,
+        "firstBlocker": "Skill 要求当前消息提供 Prompt Builder 结果 JSON。输入仅提供 11 份文本文件和生成设置。",
+        "skillEvidence": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "callSeq": 27,
+          "resultSeq": 28,
+          "quote": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+        },
+        "blockCall": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 46,
+          "type": "tool/call",
+          "data": {
+            "turn": 1,
+            "step": 6,
+            "callId": "call_FpbhYNSxFymdhagTQZdf7GTc",
+            "name": "update_goal",
+            "arguments": "{\"goal_id\":\"goal-f335c014-6c21-402b-b225-c0f7b4a2abab\",\"revision\":1,\"action\":\"blocked\",\"blocked_reason\":\"当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。\"}"
+          }
+        },
+        "blockChange": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 47,
+          "type": "goal/change",
+          "data": {
+            "kind": "goal/change",
+            "version": 1,
+            "operation": "block",
+            "goal": {
+              "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+              "revision": 2,
+              "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+              "phase": "blocked",
+              "maxGoalRounds": 4,
+              "blockedReason": {
+                "code": "model-reported",
+                "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+              }
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191630944,
+            "updatedAt": 1793191653444
+          }
+        },
+        "blockResult": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 48,
+          "text": "{\"goal\":{\"id\":\"goal-f335c014-6c21-402b-b225-c0f7b4a2abab\",\"revision\":2,\"objective\":\"两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\",\"phase\":\"blocked\",\"roundsStarted\":0,\"maxGoalRounds\":4,\"blockedReason\":{\"code\":\"model-reported\",\"message\":\"当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。\"}},\"activation\":\"disarmed\"}"
+        },
+        "finalDelivery": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 51,
+          "text": "已创建两阶段 Goal，最多运行 **4 轮**，但第一阶段目前被必要输入阻塞，尚未提交生成，也没有产生 Run ID 或图片路径。\n\n已确认 11 个 Prompt 文件存在；Workflow 1 的默认模型为模型 1，二者关联相同底模，且未选择 LoRA。\n\n`comfyui-generate` 要求当前消息提供每张图片对应的 **Prompt Builder 结果 JSON**；仅提供文本文件路径不能替代这一输入。请提供 11 个完整结果 JSON，并让每个 `positive_prompt` 与对应文件正文完全一致。每个 JSON 需要包含：\n\n- `model_route`、`positive_prompt`\n- `negative_mode`、`negative_prompt`、`positive_avoidance`\n- `generation_purpose`\n- `aspect_ratio: \"1:1\"`、`width: 512`、`height: 512`、`megapixels: 0.262144`\n\n补充后请使用 **`/goal resume`** 恢复阻塞的 Goal。第一阶段完成并交付后，才会按您的要求暂停等待确认；第二阶段将核对已有 Run 和图片路径，不重新生成。"
+        },
+        "naturalEnd": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "type": "turn/end",
+          "seq": 53,
+          "time": 1793191660346,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        "goalAtNaturalEnd": {
+          "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+          "revision": 2,
+          "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191630944,
+          "updatedAt": 1793191653444,
+          "activation": "disarmed"
+        },
+        "generationAtNaturalEnd": {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "restart": {
+        "evidencePointer": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/matrix.json#/cases/0/phases/1/restart",
+        "previousRunId": "e59efdc1-f21d-460c-8897-03dc57572dad",
+        "runId": "fbac9480-6a66-4872-bd33-1aae30dc049c",
+        "configPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/fbac9480-6a66-4872-bd33-1aae30dc049c/evidence/real-model-config.json",
+        "presetId": "harness-comfyui-cli-candidate",
+        "installedPackageRoot": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+        "mcpUrl": "http://127.0.0.1:59526/mcp",
+        "goalBeforeResume": {
+          "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+          "revision": 2,
+          "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191630944,
+          "updatedAt": 1793191653444,
+          "activation": "disarmed"
+        },
+        "sameGoalAsInitialEnd": true,
+        "sessionAsOfSeq": 55
+      },
+      "resume": {
+        "recordedRequestedAction": {
+          "action": "goal-bar"
+        },
+        "errorEvidencePointer": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/matrix.json#/cases/0/errors/0",
+        "error": {
+          "stage": "resume",
+          "name": "Error",
+          "code": null,
+          "message": "GoalBar resume requires a paused Goal or an active, disarmed Goal.",
+          "terminal": null
+        },
+        "rejectedAt": "driver-precondition-before-goalbar-click",
+        "goalBarClickDispatched": false,
+        "modelResumeTurnStarted": false,
+        "eventsAfterInitialEnd": [
+          {
+            "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+            "seq": 54,
+            "type": "session/end-seed",
+            "data": {}
+          },
+          {
+            "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+            "seq": 55,
+            "type": "model/selection",
+            "data": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ],
+        "goalAtError": {
+          "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+          "revision": 2,
+          "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191630944,
+          "updatedAt": 1793191653444,
+          "activation": "disarmed"
+        },
+        "judgment": "第一阶段保持 blocked，未到达交付后 paused 的前置状态。驱动器在恢复前验证时抛错；后续 trace 仅新增 session/end-seed 和 model/selection。"
+      },
+      "toolCalls": [
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 16,
+          "name": "create_goal",
+          "arguments": {
+            "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+            "max_goal_rounds": 4
+          }
+        },
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 22,
+          "name": "get_goal",
+          "arguments": {}
+        },
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 27,
+          "name": "skill",
+          "arguments": {
+            "name": "comfyui-generate"
+          }
+        },
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 32,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": {
+            "ref": {
+              "kind": "workflow",
+              "id": "1"
+            }
+          }
+        },
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 34,
+          "name": "bash",
+          "arguments": {
+            "description": "Read prompt result contract and schema",
+            "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+          }
+        },
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 36,
+          "name": "bash",
+          "arguments": {
+            "description": "Inspect available input prompt files",
+            "command": "ls -la input; for i in $(seq -w 1 11); do test -f \"input/prompt-$i.txt\" || echo \"Missing input/prompt-$i.txt\"; done"
+          }
+        },
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 41,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": {
+            "ref": {
+              "kind": "model",
+              "id": "1"
+            }
+          }
+        },
+        {
+          "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+          "seq": 46,
+          "name": "update_goal",
+          "arguments": {
+            "goal_id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+            "revision": 1,
+            "action": "blocked",
+            "blocked_reason": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+          }
+        }
+      ],
+      "metrics": {
+        "tokens": {
+          "inputTokens": 9415,
+          "outputTokens": 978,
+          "totalTokens": 81177,
+          "cacheReadTokens": 70784
+        },
+        "usageEventSeqs": [
+          15,
+          21,
+          26,
+          31,
+          40,
+          45,
+          51
+        ],
+        "toolCallCount": 8,
+        "modelTurnsAfterRestart": 0
+      }
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 2,
+      "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+      "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/2/error-trace/sessions/session-session-a9299622-acef-491f-92b0-38e200ba9688/session.json",
+      "input": {
+        "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+        "seq": 10,
+        "text": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片任务，保存全部 Run ID 和图片路径，然后暂停 Goal，等待用户确认。用户通过 GoalBar 恢复后进入第 2 阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "goalCreation": {
+        "call": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 21,
+          "type": "tool/call",
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "callId": "call_Nifzv48alSeeTfM95nl0IO0q",
+            "name": "create_goal",
+            "arguments": "{\"objective\":\"分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\",\"max_goal_rounds\":4}"
+          }
+        },
+        "change": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 22,
+          "type": "goal/change",
+          "data": {
+            "kind": "goal/change",
+            "version": 1,
+            "operation": "create",
+            "goal": {
+              "id": "goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a",
+              "revision": 1,
+              "objective": "分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+              "phase": "active",
+              "maxGoalRounds": 4
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191711383,
+            "updatedAt": 1793191711383
+          }
+        },
+        "result": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 23,
+          "text": "{\"goal\":{\"id\":\"goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a\",\"revision\":1,\"objective\":\"分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\",\"phase\":\"active\",\"roundsStarted\":0,\"maxGoalRounds\":4},\"activation\":\"armed\"}"
+        },
+        "judgment": "Goal objective 包含先生成 11 张并交付后暂停、用户恢复后核对已有 Run 并完成的要求；max_goal_rounds 为 4。"
+      },
+      "firstStage": {
+        "businessCompleted": false,
+        "newRegisteredRuns": 0,
+        "generatedImages": 0,
+        "firstBlocker": "Skill 要求当前消息提供 Prompt Builder 结果 JSON。输入仅提供 11 份文本文件和生成设置。",
+        "skillEvidence": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "callSeq": 16,
+          "resultSeq": 17,
+          "quote": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+        },
+        "blockCall": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 37,
+          "type": "tool/call",
+          "data": {
+            "turn": 1,
+            "step": 5,
+            "callId": "call_pg9eJqYOA7xaTLfFETLqdjiQ",
+            "name": "update_goal",
+            "arguments": "{\"goal_id\":\"goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a\",\"revision\":1,\"action\":\"blocked\",\"blocked_reason\":\"当前消息缺少生图 Skill 必需的 11 份 Prompt Builder 结果 JSON；需要用户提供对应 JSON，才能校验并继续生成。\"}"
+          }
+        },
+        "blockChange": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 38,
+          "type": "goal/change",
+          "data": {
+            "kind": "goal/change",
+            "version": 1,
+            "operation": "block",
+            "goal": {
+              "id": "goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a",
+              "revision": 2,
+              "objective": "分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+              "phase": "blocked",
+              "maxGoalRounds": 4,
+              "blockedReason": {
+                "code": "model-reported",
+                "message": "当前消息缺少生图 Skill 必需的 11 份 Prompt Builder 结果 JSON；需要用户提供对应 JSON，才能校验并继续生成。"
+              }
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191711383,
+            "updatedAt": 1793191723430
+          }
+        },
+        "blockResult": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 39,
+          "text": "{\"goal\":{\"id\":\"goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a\",\"revision\":2,\"objective\":\"分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\",\"phase\":\"blocked\",\"roundsStarted\":0,\"maxGoalRounds\":4,\"blockedReason\":{\"code\":\"model-reported\",\"message\":\"当前消息缺少生图 Skill 必需的 11 份 Prompt Builder 结果 JSON；需要用户提供对应 JSON，才能校验并继续生成。\"}},\"activation\":\"disarmed\"}"
+        },
+        "finalDelivery": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 42,
+          "text": "已创建两阶段 Goal，最多运行 **4 轮**。但第 1 阶段尚未开始：所选 `comfyui-generate` Skill 要求在消息中提供 Prompt Builder 结果 JSON；仅指定 prompt 文本文件不满足该输入要求。因此 Goal 目前已标记为**阻塞**，没有提交生图，也没有产生 Run ID 或图片路径。\n\n请提供与 11 个文件一一对应的完整 Prompt Builder 结果 JSON，并将各文件正文原样放入对应的 `positive_prompt`。每份 JSON 还需包含：\n\n`model_route`、`negative_mode`、`negative_prompt`、`positive_avoidance`、`generation_purpose`、`aspect_ratio`、`width`、`height`、`megapixels`。\n\n尺寸应为 `512 × 512`、比例 `1:1`、面积 `0.262144`。补充后，请使用 **`/goal resume`** 恢复阻塞的目标。"
+        },
+        "naturalEnd": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "type": "turn/end",
+          "seq": 44,
+          "time": 1793191729686,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        "goalAtNaturalEnd": {
+          "id": "goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a",
+          "revision": 2,
+          "objective": "分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前消息缺少生图 Skill 必需的 11 份 Prompt Builder 结果 JSON；需要用户提供对应 JSON，才能校验并继续生成。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191711383,
+          "updatedAt": 1793191723430,
+          "activation": "disarmed"
+        },
+        "generationAtNaturalEnd": {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "restart": {
+        "evidencePointer": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/matrix.json#/cases/1/phases/1/restart",
+        "previousRunId": "fbac9480-6a66-4872-bd33-1aae30dc049c",
+        "runId": "5e727efb-03aa-4bd8-aa74-b45abab840cb",
+        "configPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/5e727efb-03aa-4bd8-aa74-b45abab840cb/evidence/real-model-config.json",
+        "presetId": "harness-comfyui-cli-candidate",
+        "installedPackageRoot": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+        "mcpUrl": "http://127.0.0.1:59526/mcp",
+        "goalBeforeResume": {
+          "id": "goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a",
+          "revision": 2,
+          "objective": "分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前消息缺少生图 Skill 必需的 11 份 Prompt Builder 结果 JSON；需要用户提供对应 JSON，才能校验并继续生成。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191711383,
+          "updatedAt": 1793191723430,
+          "activation": "disarmed"
+        },
+        "sameGoalAsInitialEnd": true,
+        "sessionAsOfSeq": 46
+      },
+      "resume": {
+        "recordedRequestedAction": {
+          "action": "goal-bar"
+        },
+        "errorEvidencePointer": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/matrix.json#/cases/1/errors/0",
+        "error": {
+          "stage": "resume",
+          "name": "Error",
+          "code": null,
+          "message": "GoalBar resume requires a paused Goal or an active, disarmed Goal.",
+          "terminal": null
+        },
+        "rejectedAt": "driver-precondition-before-goalbar-click",
+        "goalBarClickDispatched": false,
+        "modelResumeTurnStarted": false,
+        "eventsAfterInitialEnd": [
+          {
+            "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+            "seq": 45,
+            "type": "session/end-seed",
+            "data": {}
+          },
+          {
+            "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+            "seq": 46,
+            "type": "model/selection",
+            "data": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ],
+        "goalAtError": {
+          "id": "goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a",
+          "revision": 2,
+          "objective": "分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前消息缺少生图 Skill 必需的 11 份 Prompt Builder 结果 JSON；需要用户提供对应 JSON，才能校验并继续生成。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191711383,
+          "updatedAt": 1793191723430,
+          "activation": "disarmed"
+        },
+        "judgment": "第一阶段保持 blocked，未到达交付后 paused 的前置状态。驱动器在恢复前验证时抛错；后续 trace 仅新增 session/end-seed 和 model/selection。"
+      },
+      "toolCalls": [
+        {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 16,
+          "name": "skill",
+          "arguments": {
+            "name": "comfyui-generate"
+          }
+        },
+        {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 21,
+          "name": "create_goal",
+          "arguments": {
+            "objective": "分两阶段执行：第1阶段在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/2，使用指定 comfyui-generate Skill、Workflow ID 1、实例 ID 1、模板默认模型、不使用 LoRA，以 512×512、其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，Seed 从 424242 开始逐张加一；保存全部 Run ID、图片路径及后续继续任务所需本地产物，交付后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第2阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+            "max_goal_rounds": 4
+          }
+        },
+        {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 27,
+          "name": "get_goal",
+          "arguments": {}
+        },
+        {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 32,
+          "name": "bash",
+          "arguments": {
+            "description": "读取提示词结果校验规范和模式",
+            "command": "cat '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md' '/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json'"
+          }
+        },
+        {
+          "sessionId": "session-a9299622-acef-491f-92b0-38e200ba9688",
+          "seq": 37,
+          "name": "update_goal",
+          "arguments": {
+            "goal_id": "goal-572d2cfd-928c-45d1-9d99-16ee8cf7e65a",
+            "revision": 1,
+            "action": "blocked",
+            "blocked_reason": "当前消息缺少生图 Skill 必需的 11 份 Prompt Builder 结果 JSON；需要用户提供对应 JSON，才能校验并继续生成。"
+          }
+        }
+      ],
+      "metrics": {
+        "tokens": {
+          "inputTokens": 8044,
+          "outputTokens": 773,
+          "totalTokens": 68977,
+          "cacheReadTokens": 60160
+        },
+        "usageEventSeqs": [
+          15,
+          20,
+          26,
+          31,
+          36,
+          42
+        ],
+        "toolCallCount": 5,
+        "modelTurnsAfterRestart": 0
+      }
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 3,
+      "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+      "tracePath": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/3/error-trace/sessions/session-session-8279ef2a-a854-4e2a-90ce-7119a6398c29/session.json",
+      "input": {
+        "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+        "seq": 10,
+        "text": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片任务，保存全部 Run ID 和图片路径，然后暂停 Goal，等待用户确认。用户通过 GoalBar 恢复后进入第 2 阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。\n工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。已选 Workflow ID 为 1，ComfyUI 实例 ID 为 1。采用模板默认生成模型，不使用 LoRA。尺寸为 512 × 512；保留其他模板值。input 目录有 11 份 prompt-01.txt 至 prompt-11.txt，每个文件生成一张图片，正文原样保留。Seed 从 424242 开始逐图加一。请完成生成并交付全部图片路径和 Run ID，保留后续继续任务需要的本地产物。"
+      },
+      "goalCreation": {
+        "call": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 16,
+          "type": "tool/call",
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "call_tBl44EnQ0K4rv46eJRMdTzGd",
+            "name": "create_goal",
+            "arguments": "{\"objective\":\"分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。\",\"max_goal_rounds\":4}"
+          }
+        },
+        "change": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 17,
+          "type": "goal/change",
+          "data": {
+            "kind": "goal/change",
+            "version": 1,
+            "operation": "create",
+            "goal": {
+              "id": "goal-4b63303b-2730-4c72-be1b-b9abb1507031",
+              "revision": 1,
+              "objective": "分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。",
+              "phase": "active",
+              "maxGoalRounds": 4
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191778811,
+            "updatedAt": 1793191778811
+          }
+        },
+        "result": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 18,
+          "text": "{\"goal\":{\"id\":\"goal-4b63303b-2730-4c72-be1b-b9abb1507031\",\"revision\":1,\"objective\":\"分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。\",\"phase\":\"active\",\"roundsStarted\":0,\"maxGoalRounds\":4},\"activation\":\"armed\"}"
+        },
+        "judgment": "Goal objective 包含先生成 11 张并交付后暂停、用户恢复后核对已有 Run 并完成的要求；max_goal_rounds 为 4。"
+      },
+      "firstStage": {
+        "businessCompleted": false,
+        "newRegisteredRuns": 0,
+        "generatedImages": 0,
+        "firstBlocker": "Skill 要求当前消息提供 Prompt Builder 结果 JSON。输入仅提供 11 份文本文件和生成设置。",
+        "skillEvidence": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "callSeq": 27,
+          "resultSeq": 28,
+          "quote": "当前消息未包含用于创建图片的 Prompt Builder 结果 JSON 时，Skill 执行者报告当前请求缺少 Prompt Builder 结果 JSON，并等待用户提供。"
+        },
+        "blockCall": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 44,
+          "type": "tool/call",
+          "data": {
+            "turn": 1,
+            "step": 6,
+            "callId": "call_2LSoGGictlNMeGsJX7uXtxHJ",
+            "name": "update_goal",
+            "arguments": "{\"goal_id\":\"goal-4b63303b-2730-4c72-be1b-b9abb1507031\",\"revision\":1,\"action\":\"blocked\",\"blocked_reason\":\"当前消息缺少 comfyui-generate Skill 必需的 11 个 Prompt Builder 结果 JSON；仅提供 prompt 文本文件不足以满足该 Skill 的输入契约。需要用户提供每张图对应的完整结果 JSON。\"}"
+          }
+        },
+        "blockChange": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 45,
+          "type": "goal/change",
+          "data": {
+            "kind": "goal/change",
+            "version": 1,
+            "operation": "block",
+            "goal": {
+              "id": "goal-4b63303b-2730-4c72-be1b-b9abb1507031",
+              "revision": 2,
+              "objective": "分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。",
+              "phase": "blocked",
+              "maxGoalRounds": 4,
+              "blockedReason": {
+                "code": "model-reported",
+                "message": "当前消息缺少 comfyui-generate Skill 必需的 11 个 Prompt Builder 结果 JSON；仅提供 prompt 文本文件不足以满足该 Skill 的输入契约。需要用户提供每张图对应的完整结果 JSON。"
+              }
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191778811,
+            "updatedAt": 1793191802523
+          }
+        },
+        "blockResult": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 46,
+          "text": "{\"goal\":{\"id\":\"goal-4b63303b-2730-4c72-be1b-b9abb1507031\",\"revision\":2,\"objective\":\"分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。\",\"phase\":\"blocked\",\"roundsStarted\":0,\"maxGoalRounds\":4,\"blockedReason\":{\"code\":\"model-reported\",\"message\":\"当前消息缺少 comfyui-generate Skill 必需的 11 个 Prompt Builder 结果 JSON；仅提供 prompt 文本文件不足以满足该 Skill 的输入契约。需要用户提供每张图对应的完整结果 JSON。\"}},\"activation\":\"disarmed\"}"
+        },
+        "finalDelivery": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 49,
+          "text": "已创建两阶段 Goal，**最多运行 4 轮**。Workflow 1 的默认模型为模型 1，二者关联同一底模。\n\n当前 Goal 已标记为阻塞：指定的 `comfyui-generate` Skill 要求在消息中提供 Prompt Builder 结果 JSON；目前只指定了 11 个 Prompt 文本文件，尚未提供这些 JSON，因此还不能提交生成。**目前没有生成图片或 Run ID。**\n\n请为 11 张图片分别提供完整的 Prompt Builder 结果 JSON，并保持各文件原文对应的 `positive_prompt`。每个 JSON 必须包含：\n\n`model_route`、`positive_prompt`、`negative_mode`、`negative_prompt`、`positive_avoidance`、`generation_purpose`、`aspect_ratio`、`width`、`height`、`megapixels`。\n\n补充后请使用 **`/goal resume`** 恢复阻塞的 Goal。"
+        },
+        "naturalEnd": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "type": "turn/end",
+          "seq": 51,
+          "time": 1793191809482,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        "goalAtNaturalEnd": {
+          "id": "goal-4b63303b-2730-4c72-be1b-b9abb1507031",
+          "revision": 2,
+          "objective": "分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前消息缺少 comfyui-generate Skill 必需的 11 个 Prompt Builder 结果 JSON；仅提供 prompt 文本文件不足以满足该 Skill 的输入契约。需要用户提供每张图对应的完整结果 JSON。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191778811,
+          "updatedAt": 1793191802523,
+          "activation": "disarmed"
+        },
+        "generationAtNaturalEnd": {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "runs": [],
+          "media": [],
+          "hasActiveRuns": false,
+          "refreshAfterMs": 1000
+        }
+      },
+      "restart": {
+        "evidencePointer": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/matrix.json#/cases/2/phases/1/restart",
+        "previousRunId": "5e727efb-03aa-4bd8-aa74-b45abab840cb",
+        "runId": "85a2ab37-98c9-4c73-bc02-38a1e7a39b79",
+        "configPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/85a2ab37-98c9-4c73-bc02-38a1e7a39b79/evidence/real-model-config.json",
+        "presetId": "harness-comfyui-cli-candidate",
+        "installedPackageRoot": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+        "mcpUrl": "http://127.0.0.1:59526/mcp",
+        "goalBeforeResume": {
+          "id": "goal-4b63303b-2730-4c72-be1b-b9abb1507031",
+          "revision": 2,
+          "objective": "分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前消息缺少 comfyui-generate Skill 必需的 11 个 Prompt Builder 结果 JSON；仅提供 prompt 文本文件不足以满足该 Skill 的输入契约。需要用户提供每张图对应的完整结果 JSON。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191778811,
+          "updatedAt": 1793191802523,
+          "activation": "disarmed"
+        },
+        "sameGoalAsInitialEnd": true,
+        "sessionAsOfSeq": 53
+      },
+      "resume": {
+        "recordedRequestedAction": {
+          "action": "goal-bar"
+        },
+        "errorEvidencePointer": "docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/matrix.json#/cases/2/errors/0",
+        "error": {
+          "stage": "resume",
+          "name": "Error",
+          "code": null,
+          "message": "GoalBar resume requires a paused Goal or an active, disarmed Goal.",
+          "terminal": null
+        },
+        "rejectedAt": "driver-precondition-before-goalbar-click",
+        "goalBarClickDispatched": false,
+        "modelResumeTurnStarted": false,
+        "eventsAfterInitialEnd": [
+          {
+            "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+            "seq": 52,
+            "type": "session/end-seed",
+            "data": {}
+          },
+          {
+            "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+            "seq": 53,
+            "type": "model/selection",
+            "data": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          }
+        ],
+        "goalAtError": {
+          "id": "goal-4b63303b-2730-4c72-be1b-b9abb1507031",
+          "revision": 2,
+          "objective": "分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。",
+          "phase": "blocked",
+          "maxGoalRounds": 4,
+          "blockedReason": {
+            "code": "model-reported",
+            "message": "当前消息缺少 comfyui-generate Skill 必需的 11 个 Prompt Builder 结果 JSON；仅提供 prompt 文本文件不足以满足该 Skill 的输入契约。需要用户提供每张图对应的完整结果 JSON。"
+          },
+          "roundsStarted": 0,
+          "createdAt": 1793191778811,
+          "updatedAt": 1793191802523,
+          "activation": "disarmed"
+        },
+        "judgment": "第一阶段保持 blocked，未到达交付后 paused 的前置状态。驱动器在恢复前验证时抛错；后续 trace 仅新增 session/end-seed 和 model/selection。"
+      },
+      "toolCalls": [
+        {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 16,
+          "name": "create_goal",
+          "arguments": {
+            "objective": "分两阶段完成图片任务。第一阶段：在工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/3，使用指定 comfyui-generate Skill、Workflow ID 1、ComfyUI 实例 ID 1 和模板默认模型，不使用 LoRA；以 input/prompt-01.txt 至 prompt-11.txt 的原文分别生成一张 512×512 图片，其他模板值不变，seed 从 424242 逐图加一。保存并交付全部 Run ID 和图片路径，保留后续任务所需本地产物；随后暂停 Goal 等待用户确认。第二阶段：用户通过 GoalBar 恢复后，先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，然后完成 Goal。",
+            "max_goal_rounds": 4
+          }
+        },
+        {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 22,
+          "name": "get_goal",
+          "arguments": {}
+        },
+        {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 27,
+          "name": "skill",
+          "arguments": {
+            "name": "comfyui-generate"
+          }
+        },
+        {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 32,
+          "name": "bash",
+          "arguments": {
+            "description": "读取 Prompt 结果契约和校验模式",
+            "command": "cat /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-contract.md /Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/references/prompt-result-schema.json"
+          }
+        },
+        {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 34,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": {
+            "ref": {
+              "kind": "workflow",
+              "id": "1"
+            }
+          }
+        },
+        {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 39,
+          "name": "mcp__noobai__get_catalog_resource",
+          "arguments": {
+            "ref": {
+              "kind": "model",
+              "id": "1"
+            }
+          }
+        },
+        {
+          "sessionId": "session-8279ef2a-a854-4e2a-90ce-7119a6398c29",
+          "seq": 44,
+          "name": "update_goal",
+          "arguments": {
+            "goal_id": "goal-4b63303b-2730-4c72-be1b-b9abb1507031",
+            "revision": 1,
+            "action": "blocked",
+            "blocked_reason": "当前消息缺少 comfyui-generate Skill 必需的 11 个 Prompt Builder 结果 JSON；仅提供 prompt 文本文件不足以满足该 Skill 的输入契约。需要用户提供每张图对应的完整结果 JSON。"
+          }
+        }
+      ],
+      "metrics": {
+        "tokens": {
+          "inputTokens": 16024,
+          "outputTokens": 872,
+          "totalTokens": 79872,
+          "cacheReadTokens": 62976
+        },
+        "usageEventSeqs": [
+          15,
+          21,
+          26,
+          31,
+          38,
+          43,
+          49
+        ],
+        "toolCallCount": 7,
+        "modelTurnsAfterRestart": 0
+      }
+    }
+  ]
+}

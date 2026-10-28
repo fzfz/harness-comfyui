@@ -1,4 +1,5 @@
 import { createServer } from 'node:http'
+import { randomUUID } from 'node:crypto'
 import managedCliHelp from '../../../config/managed-cli-help.json' with { type: 'json' }
 import { requestMessageText } from './official-mcp-acceptance.mjs'
 
@@ -10,7 +11,7 @@ const CONTROLLED_PNG = Buffer.from(
   'base64',
 )
 
-export async function startOfficialBusinessServices(fixture) {
+export async function startOfficialBusinessServices(fixture, { outputPngBytes = CONTROLLED_PNG } = {}) {
   const requests = []
   const requestLog = []
   const comfyRequests = []
@@ -19,6 +20,8 @@ export async function startOfficialBusinessServices(fixture) {
   const jobPollCounts = new Map()
   let generationCompletionHeld = false
   let submittedPrompt = null
+  const submittedPrompts = new Map()
+  const failedPrompts = new Set()
   const waiters = []
   const responsePauses = []
   const modelResponses = []
@@ -64,7 +67,10 @@ export async function startOfficialBusinessServices(fixture) {
     }
     if (request.method === 'POST' && pathname === '/prompt') {
       void readJson(request).then(body => {
-        submittedPrompt = { promptId: body.prompt_id, body }
+        const promptId = body.prompt_id ?? randomUUID()
+        body.prompt_id = promptId
+        submittedPrompt = { promptId, body }
+        submittedPrompts.set(promptId, submittedPrompt)
         comfyRequests.push({ method: request.method, pathname, promptId: body.prompt_id, body })
         writeJson(response, { prompt_id: body.prompt_id })
       }).catch(error => writeFailure(response, error))
@@ -77,7 +83,8 @@ export async function startOfficialBusinessServices(fixture) {
       comfyRequests.push({ method: request.method, pathname, promptId, poll: count })
       writeJson(response, {
         id: promptId,
-        status: generationCompletionHeld || count === 1 ? 'pending' : 'completed',
+        status: failedPrompts.has(promptId) ? 'failed' : generationCompletionHeld || count === 1 ? 'pending' : 'completed',
+        ...(failedPrompts.has(promptId) ? { error: { message: 'Controlled generation failure' } } : {}),
         outputs: { [fixture.generation.outputNodeId]: { images: [controlledOutputDescriptor(fixture)] } },
       })
       return
@@ -85,11 +92,12 @@ export async function startOfficialBusinessServices(fixture) {
     if (request.method === 'GET' && pathname.startsWith('/history/')) {
       const promptId = decodeURIComponent(pathname.slice('/history/'.length))
       comfyRequests.push({ method: request.method, pathname, promptId })
-      const history = submittedPrompt?.promptId === promptId
+      const stored = submittedPrompts.get(promptId)
+      const history = stored !== undefined
         ? {
-            prompt: [0, promptId, submittedPrompt.body.prompt, {}, ['official-desktop-regression-client']],
+            prompt: [0, promptId, stored.body.prompt, {}, ['official-desktop-regression-client']],
             outputs: { [fixture.generation.outputNodeId]: { images: [controlledOutputDescriptor(fixture)] } },
-            status: { status_str: 'success', completed: true, messages: [] },
+            status: { status_str: failedPrompts.has(promptId) ? 'error' : 'success', completed: true, messages: [] },
           }
         : null
       writeJson(response, history === null ? {} : { [promptId]: history })
@@ -110,8 +118,8 @@ export async function startOfficialBusinessServices(fixture) {
         response.end()
         return
       }
-      response.writeHead(200, { 'content-type': 'image/png', 'content-length': CONTROLLED_PNG.length })
-      response.end(CONTROLLED_PNG)
+      response.writeHead(200, { 'content-type': 'image/png', 'content-length': outputPngBytes.length })
+      response.end(outputPngBytes)
       return
     }
     if (request.method === 'GET' && request.url === '/internal/semantic') {
@@ -311,8 +319,13 @@ export async function startOfficialBusinessServices(fixture) {
       generationCompletionHeld = true
       return () => { generationCompletionHeld = false }
     },
+    failGeneration(promptId) {
+      if (!submittedPrompts.has(promptId)) throw new Error(`Unknown controlled prompt: ${promptId}`)
+      failedPrompts.add(promptId)
+    },
+    get promptSubmissions() { return structuredClone([...submittedPrompts.values()]) },
     get promptSubmission() { return submittedPrompt === null ? null : structuredClone(submittedPrompt) },
-    get controlledPngByteLength() { return CONTROLLED_PNG.length },
+    get controlledPngByteLength() { return outputPngBytes.length },
     get historyRequestCount() { return comfyRequests.filter(item => item.pathname.startsWith('/history/')).length },
     async readHistory(promptId) {
       const response = await fetch(`${origin}/history/${encodeURIComponent(promptId)}`)
@@ -493,10 +506,10 @@ function controlledGenerationResponse(body, generation) {
     command = `cat ${quote(requestMessageText(resultFor('official-generation-inspect')).split('\n', 1)[0])}`
   } else if (!resultFor('official-generation-submit')) {
     id = 'official-generation-submit'
-    command = commandFor('generation submit', {
+    command = commandFor('generation submit', { items: [{ request_id: randomUUID(), request: {
       title: generation.runTitle, instance_id: generation.instanceId, template_id: generation.templateId,
       model: null, parameters: { positive_prompt: generation.positivePrompt, seed: generation.seed }, loras: [],
-    })
+    } }] })
   } else if (!resultFor('official-generation-submit-read')) {
     id = 'official-generation-submit-read'
     command = `cat ${quote(requestMessageText(resultFor('official-generation-submit')).split('\n', 1)[0])}`

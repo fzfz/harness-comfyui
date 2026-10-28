@@ -1,0 +1,15 @@
+{
+  "model": {
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "repetitions": 3,
+  "cases": [
+    {
+      "id": "neutral-query",
+      "seedFailure": true,
+      "taskTemplate": "工作目录：{{workspace}}。生成 Skill：{{skill}}。请核对已有 Run {{failedRunId}} 的当前执行情况，交付已经保存的图片路径，说明需要处理的问题及判断依据。本轮只核对已有任务。"
+    }
+  ]
+}

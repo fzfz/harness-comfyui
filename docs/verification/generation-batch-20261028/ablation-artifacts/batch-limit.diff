@@ -1,0 +1,36 @@
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.local/source-cli/harness-comfyui.mjs b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/batch-limit/package/.local/source-cli/harness-comfyui.mjs
+index c080ac1..a23956f 100644
+--- a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.local/source-cli/harness-comfyui.mjs
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/batch-limit/package/.local/source-cli/harness-comfyui.mjs
+@@ -2723,7 +2723,7 @@ function parseCatalogStableId(value) {
+ }
+ //#endregion
+ //#region config/managed-cli-limits.json
+-var maxSubmissionItems = 20;
++var maxSubmissionItems = 1;
+ var maxRequestBytes = 1048576;
+ //#endregion
+ //#region src/cli/limits.ts
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.local/source-host/generation-runtime-Dk2ozOAl.js b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/batch-limit/package/.local/source-host/generation-runtime-Dk2ozOAl.js
+index aca7d62..9f65629 100644
+--- a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/.local/source-host/generation-runtime-Dk2ozOAl.js
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/batch-limit/package/.local/source-host/generation-runtime-Dk2ozOAl.js
+@@ -1943,7 +1943,7 @@ function catalogOperationFailure(error) {
+ }
+ //#endregion
+ //#region config/managed-cli-limits.json
+-var maxSubmissionItems = 20;
++var maxSubmissionItems = 1;
+ var maxRequestBytes = 1048576;
+ //#endregion
+ //#region src/cli/limits.ts
+diff --git a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/config/managed-cli-limits.json b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/batch-limit/package/config/managed-cli-limits.json
+index a9fd53b..0ba524d 100644
+--- a/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/source/package/config/managed-cli-limits.json
++++ b/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/batch-limit/package/config/managed-cli-limits.json
+@@ -1,4 +1,4 @@
+ {
+-  "maxSubmissionItems": 20,
++  "maxSubmissionItems": 1,
+   "maxRequestBytes": 1048576
+ }

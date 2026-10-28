@@ -9,11 +9,11 @@
   },
   {
     "name": "comfyui-generate",
-    "description": "用户要求使用当前选择的 ComfyUI Workflow 创建图片、核对所选 Workflow 模板、生成模型和 LoRA 是否兼容、查询历史 Generation Run，或者在创建图片时复用历史 Seed 时使用。"
+    "description": "用户要求用 ComfyUI Workflow 创建图片、提交提示词文件、批量生成或单项重做时使用。核对模板、模型及 LoRA 兼容性，或查询历史 Run 与复用 Seed 时也使用。"
   },
   {
     "name": "comfyui-image-review",
-    "description": "按一个或多个 ComfyUI Generation Run 的 run_id 读取原始生成参数和本地图片，逐图调用独立视觉模型观察图片，对比生成意图与可见结果，并给出可直接用于下一次生成的改进 Prompt。用户要求分析 run_id 对应图片、检查生图结果、比较 Prompt 与图片或优化下一轮提示词时使用。"
+    "description": "用户要求按 run_id 分析生成图片、比较 Prompt 与图片或改写下一轮 Prompt 时使用。Skill 读取原始参数，逐图调用独立视觉模型，再给出改进 Prompt。"
   },
   {
     "name": "krea2-anime-prompt-builder",

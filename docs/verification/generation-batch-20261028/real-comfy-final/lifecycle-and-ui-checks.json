@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-10-28T15:06:56.396592+00:00",
+  "checks": {
+    "initialRuns": true,
+    "replaySameRuns": true,
+    "replaySameMedia": true,
+    "redoAddsOneRun": true,
+    "redoPreservesOriginalRuns": true,
+    "redoAddsOneMedia": true,
+    "redoPreservesOriginalMedia": true,
+    "restartSameRuns": true,
+    "restartSameMedia": true
+  },
+  "pages": {
+    "before-restart": {
+      "count": 3,
+      "uniqueImages": 12,
+      "checks": {
+        "allVisible": true,
+        "summary": true,
+        "allRunCards": true,
+        "allMediaDisplayed": true,
+        "allDecoded": true
+      }
+    },
+    "after-restart": {
+      "count": 3,
+      "uniqueImages": 12,
+      "checks": {
+        "allVisible": true,
+        "summary": true,
+        "allRunCards": true,
+        "allMediaDisplayed": true,
+        "allDecoded": true
+      }
+    }
+  },
+  "pass": true
+}

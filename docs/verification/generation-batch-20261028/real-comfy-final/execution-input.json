@@ -1,0 +1,17 @@
+{
+  "session": {
+    "sessionId": "session-ee669f3f-de53-40e6-ae04-1f6a86e42550",
+    "workspaceId": "9d2628c5-c90a-4222-8301-f0a988e85c7f",
+    "workspacePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/workspace/batch-11",
+    "presetId": "harness-comfyui-cli-candidate",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "prompt": "工作目录：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/workspace/batch-11。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。使用已选 Workflow 45、生成模型 18 和 ComfyUI 实例 2，保留模板原图及其内置 LoRA 节点，不额外选择目录 LoRA。参数记录在 generation-parameters.json：宽896、高1344、steps4、cfg2，负向提示词和其他参数按该文件，Seed从20261026开始逐张加一。input/prompt-01.txt 至 prompt-11.txt 每文件生成一张，正向正文原样保留。请一批提交11项，等待生成结束，交付全部图片绝对路径及完整Run ID，并保存后续重放和单项重做需要的清单与结果。本轮最多新增11个Run；出现失败时保留原记录并交付错误。",
+  "preflight": {
+    "sessionId": "session-bd2fdbe6-fd8e-414c-8d59-8cafa56e1601",
+    "newRuns": 0,
+    "reason": "The test input incorrectly excluded the selected template internal LoRA; the approved template graph remains unchanged."
+  }
+}

@@ -2,6 +2,24 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.49.1
+
+## 文件交接与批量生成
+
+1. `comfyui-generate` 接受提示词文本、提示词技能产物和 UTF-8 文件。Agent 可直接使用已有文件创建提交清单。
+2. 受管 CLI 一次可提交最多 20 项任务。每项使用独立请求标识。重放原清单时沿用原 Run；单项重做时，仅为指定项新增 Run。
+3. Host 统一接纳请求并保存生成状态与媒体。生成结果归属原会话，主会话可查看子会话生成结果。
+
+## 状态查询
+
+1. 默认查询返回执行状态、失败原因和图片路径。需要生成参数时，调用者显式请求参数或查询历史输入。
+2. 等待生成结果时，Agent 读取状态摘要，避免重复传递提示词正文。
+
+## 验收与已知问题
+
+1. 内网 `gpt-6.1-terra` 使用 `high` 推理级别完成真实 ComfyUI 验收：首次批量生成 11 张，重放新增 0 个 Run，单项重做新增 1 个 Run。12 张图片均进入所属会话媒体面板，重启后仍可查看。证据见[文件批量生成验收](verification/generation-batch-20261028/README.md)。
+2. Desktop `0.2.1-rc.3` 查询已结束子会话的 Skill 目录时仍返回 Office Skill。见[调用证据](verification/generation-batch-20261028/official-cold-skill-failure.json)。
+
 # Harness ComfyUI v0.49.0
 
 ## 工作台 Goal

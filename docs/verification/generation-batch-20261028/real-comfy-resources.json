@@ -1,0 +1,35 @@
+{
+  "title": "林茜 立绘人设 T-A 基线全身正装",
+  "template_id": "45",
+  "model": {
+    "id": "18",
+    "file_name": "moss_image_sft_4step_v2.0_fp32.safetensors"
+  },
+  "instance_id": "2",
+  "parameters": {
+    "negative_prompt": "bad anatomy, deformed body, distorted proportions, extra limbs, extra arms, extra legs, missing limbs, fused fingers, extra fingers, malformed hands, twisted neck, long neck, tiny head, oversized head, elongated legs, stretched torso, blurry, low resolution, jpeg artifacts, watermark, text, logo, signature, border, frame, two views, split screen, smooth plastic skin, airbrushed, doll skin, waxy skin, heavy makeup, rouge, rosy cheeks, red lips, cartoon, anime, illustration",
+    "width": 896,
+    "height": 1344,
+    "seed": 20261026,
+    "steps": 4,
+    "cfg": 2,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "batch_size": 1
+  },
+  "promptCharacters": [
+    1725,
+    1828,
+    2027,
+    1899,
+    2279,
+    2300,
+    2377,
+    2305,
+    2389,
+    2367,
+    2191
+  ],
+  "instance_url": "http://192.168.110.122:8188/",
+  "source_origin": "http://127.0.0.1:18093"
+}

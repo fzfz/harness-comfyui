@@ -1,0 +1,51 @@
+{
+  "sessionId": "session-ee669f3f-de53-40e6-ae04-1f6a86e42550",
+  "visible": "true",
+  "summary": "12 个运行 · 12 个媒体",
+  "runs": [
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 1run_1e4a7dc9-6df7-4304-9ea7-df9fb1230a41已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 11run_f932c0c5-0e65-461a-b709-15e3cfd641d2已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 10run_5f0a8bf9-1873-43d2-908a-049a6c06222b已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 9run_33e64abc-9d8b-4ab4-80fa-e2cf0c6a97c7已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 8run_e4bac080-e545-4150-9200-3265c9fbfe5a已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 7run_66d633bd-9b33-4c8b-9702-0e4a505596a1已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 6run_00dd4327-31fe-4d62-bfef-6123daca8828已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 5run_374be7ae-6a18-436c-a5b7-ee0d1e94c579已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 4run_daa95364-7130-4958-9418-793e908ba45f已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 3run_152b7c93-1c3f-473a-a1c3-166fccb0789b已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 2run_bf464513-b0c0-442a-b8a0-8b50253acecd已完成实例win3080工作流moss4步加速cfg大于1模板",
+    "林茜 立绘人设 T-A 基线全身正装 - 图片 1run_2dd3b5a7-67e0-4df4-83be-e9323ab37bea已完成实例win3080工作流moss4步加速cfg大于1模板"
+  ],
+  "media": [
+    "图片moss-4step_00263_.png第 1 轮2026/10/28 22:56:33 · 输出 0run_e4bac080-e545-4150-9200-3265c9fbfe5a",
+    "图片moss-4step_00262_.png第 1 轮2026/10/28 22:56:19 · 输出 0run_66d633bd-9b33-4c8b-9702-0e4a505596a1",
+    "图片moss-4step_00261_.png第 1 轮2026/10/28 22:56:06 · 输出 0run_00dd4327-31fe-4d62-bfef-6123daca8828",
+    "图片moss-4step_00260_.png第 1 轮2026/10/28 22:55:53 · 输出 0run_374be7ae-6a18-436c-a5b7-ee0d1e94c579"
+  ],
+  "images": [
+    {
+      "complete": true,
+      "width": 896,
+      "height": 1344,
+      "src": "/api/harness-comfyui/media/media_535a9e87-aca8-48de-9889-903c4bcbec72/content?session_id=session-ee669f3f-de53-40e6-ae04-1f6a86e42550"
+    },
+    {
+      "complete": true,
+      "width": 896,
+      "height": 1344,
+      "src": "/api/harness-comfyui/media/media_4ef7b9ba-c6b9-4489-9857-d2cd20d6984b/content?session_id=session-ee669f3f-de53-40e6-ae04-1f6a86e42550"
+    },
+    {
+      "complete": true,
+      "width": 896,
+      "height": 1344,
+      "src": "/api/harness-comfyui/media/media_4a011d12-c72d-4a5a-9a48-cd54cace92e4/content?session_id=session-ee669f3f-de53-40e6-ae04-1f6a86e42550"
+    },
+    {
+      "complete": true,
+      "width": 896,
+      "height": 1344,
+      "src": "/api/harness-comfyui/media/media_2cda67d5-a1e1-49f3-b043-4298cedb3366/content?session_id=session-ee669f3f-de53-40e6-ae04-1f6a86e42550"
+    }
+  ]
+}

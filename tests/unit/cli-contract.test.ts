@@ -3,9 +3,19 @@ import { describe, expect, it } from 'vitest'
 import {
   CLI_ROUTE_PATH,
   parseCliArguments,
+  parseCliGenerationManifest,
   parseCliRequest,
   toGenerationRequest,
 } from '../../src/cli/contract.ts'
+
+it('accepts an explicit parameter query and defaults media queries to lightweight results', () => {
+  expect(parseCliArguments(['generation', 'resolve-media', '--stdin'], '{"run_ids":["run_1"],"include_parameters":true}'))
+    .toEqual({ command: 'generation.resolve-media', run_ids: ['run_1'], include_parameters: true })
+  expect(parseCliRequest({ command: 'generation.resolve-media', run_ids: ['run_1'] }))
+    .toEqual({ command: 'generation.resolve-media', run_ids: ['run_1'], include_parameters: false })
+  expect(() => parseCliRequest({ command: 'generation.resolve-media', run_ids: ['run_1'], include_parameters: 'true' }))
+    .toThrow('include_parameters')
+})
 
 describe('Harness ComfyUI CLI contract', () => {
   it('rejects retired Catalog commands at argv and JSON request boundaries', () => {
@@ -26,7 +36,7 @@ describe('Harness ComfyUI CLI contract', () => {
     }
   })
 
-  it('parses stdin Generation JSON and maps it to the existing runtime request', () => {
+  it('parses a Generation manifest and maps its request to the runtime contract', () => {
     const input = {
       title: 'portrait',
       instance_id: '2',
@@ -44,11 +54,11 @@ describe('Harness ComfyUI CLI contract', () => {
         trigger_words: ['mature woman'],
       }],
     }
-    const request = parseCliArguments(['generation', 'submit', '--stdin'], JSON.stringify(input))
+    const items = [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: input, parameter_files: { negative_prompt: '/tmp/negative.txt' } }]
+    const manifest = parseCliGenerationManifest({ items })
 
-    expect(request).toEqual({ command: 'generation.submit', request: input })
-    if (request.command !== 'generation.submit') throw new Error('Expected a generation request.')
-    expect(toGenerationRequest(request.request)).toEqual({
+    expect(manifest).toEqual(items)
+    expect(toGenerationRequest(manifest[0]!.request)).toEqual({
       title: 'portrait',
       instanceId: '2',
       templateId: '39',
@@ -142,7 +152,7 @@ describe('Harness ComfyUI CLI contract', () => {
     expect(parseCliArguments(
       ['generation', 'resolve-media', '--stdin'],
       JSON.stringify({ run_ids: ['run_1', 'run_2'] }),
-    )).toEqual({ command: 'generation.resolve-media', run_ids: ['run_1', 'run_2'] })
+    )).toEqual({ command: 'generation.resolve-media', run_ids: ['run_1', 'run_2'], include_parameters: false })
     expect(parseCliArguments(
       ['image', 'inspect', '--stdin'],
       JSON.stringify({ file_path: '/media/result.png' }),
@@ -184,17 +194,16 @@ describe('Harness ComfyUI CLI contract', () => {
     expect(() => parseCliArguments(['catalog', 'model', 'guess'], '')).toThrow('CLI command')
     expect(() => parseCliArguments(['catalog', 'template', 'resolve', '--id', '0'], '')).toThrow('CLI command')
     expect(() => parseCliRequest({ command: 'catalog.instance.list', extra: true })).toThrow('CLI request command')
-    expect(() => parseCliArguments(['generation', 'submit', '--stdin'], '{')).toThrow('Generation stdin')
     expect(() => parseCliRequest({
       command: 'generation.submit',
-      request: {
+      items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: {
         title: 'portrait',
         instance_id: '2',
         template_id: '39',
         model: null,
         parameters: { steps: Number.NaN },
         loras: [],
-      },
+      } }],
     })).toThrow('parameters')
   })
 })

@@ -1,0 +1,166 @@
+{
+  "id": "initial",
+  "runId": "f7a0f09e-a319-4f3c-8188-808783766c4d",
+  "startedAt": "2026-10-28T14:24:35.283Z",
+  "naturalCompletion": true,
+  "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/3/initial/task-input.txt",
+  "terminal": {
+    "type": "turn/end",
+    "seq": 37,
+    "time": 1793197501315,
+    "data": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    }
+  },
+  "observation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 37,
+        "values": {
+          "title": "candidate512-query neutral-query 3",
+          "goal": null,
+          "tokenUsage": {
+            "uncachedInputTokens": 17217,
+            "outputTokens": 632,
+            "cacheReadTokens": 44800,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {
+            "pressureTokens": 15559,
+            "projectedTokens": 15671,
+            "contextWindow": 262144
+          },
+          "contextBreakdown": {
+            "systemTokens": 466,
+            "toolsTokens": 4547,
+            "messageTokens": 5085
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 1,
+            "steps": 5,
+            "llmMs": 25484,
+            "toolMs": 458,
+            "ttftMs": 14434,
+            "ttftSteps": 5,
+            "decodeMs": 11050,
+            "decodeTokens": 632
+          },
+          "turnOutline": [
+            {
+              "turn": 1,
+              "seq": 6,
+              "prompt": "工作目录：/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000…",
+              "response": "已核对 Run `run_678679b1-cfd3-49e1-806f-e09a698ed05f`。 - **当前状态：失败**（`failed`）。 - **已保存图片：无**。查询结果中的 `images` 为空，因此没有可交付的图…"
+            }
+          ],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-BlsaOt/neutral-query/3",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            },
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": false,
+            "lastPromptAt": 1793197475343
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-e9d49dee-6912-448e-989f-c8172760a6fa",
+        "runs": [
+          {
+            "runId": "run_678679b1-cfd3-49e1-806f-e09a698ed05f",
+            "turn": 0,
+            "title": "Controlled prior generation failure",
+            "instanceTitle": "Controlled ComfyUI",
+            "templateTitle": "Controlled Workflow",
+            "status": "failed",
+            "errorCode": "COMFYUI_REMOTE_ERROR",
+            "errorMessage": "The controlled prior generation failed before producing an image.",
+            "createdAt": 1793197475260,
+            "updatedAt": 1793197475260
+          }
+        ],
+        "media": [],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "trace": {
+    "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/3/initial/trace/trace-index.json",
+    "sessions": [
+      {
+        "sessionId": "session-e9d49dee-6912-448e-989f-c8172760a6fa",
+        "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/candidate512-query/54bf69fb-bac9-4952-a387-923688524655/neutral-query/3/initial/trace/sessions/session-session-e9d49dee-6912-448e-989f-c8172760a6fa/session.json"
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-e9d49dee-6912-448e-989f-c8172760a6fa",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-e9d49dee-6912-448e-989f-c8172760a6fa",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ]
+  },
+  "completedAt": "2026-10-28T14:25:01.621Z"
+}

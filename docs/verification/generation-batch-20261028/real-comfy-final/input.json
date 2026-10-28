@@ -1,0 +1,47 @@
+{
+  "session": {
+    "sessionId": "session-bd2fdbe6-fd8e-414c-8d59-8cafa56e1601",
+    "workspaceId": "9d2628c5-c90a-4222-8301-f0a988e85c7f",
+    "workspacePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/workspace/batch-11",
+    "presetId": "harness-comfyui-cli-candidate",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "prompt": "工作目录：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/workspace/batch-11。生成 Skill：/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-real-comfy-final/dsh-home/profiles/desktop/node_modules/harness-comfyui/.agents/skills/comfyui-generate/SKILL.md。使用已选 Workflow 45、生成模型 18 和 ComfyUI 实例 2，不使用 LoRA。参数记录在 generation-parameters.json：宽896、高1344、steps4、cfg2，负向提示词和其他参数按该文件，Seed从20261026开始逐张加一。input/prompt-01.txt 至 prompt-11.txt 每文件生成一张，正向正文原样保留。请一批提交11项，等待生成结束，交付全部图片绝对路径及完整Run ID，并保存后续重放和单项重做需要的清单与结果。本轮最多新增11个Run；出现失败时保留原记录并交付错误。",
+  "resources": {
+    "title": "林茜 立绘人设 T-A 基线全身正装",
+    "template_id": "45",
+    "model": {
+      "id": "18",
+      "file_name": "moss_image_sft_4step_v2.0_fp32.safetensors"
+    },
+    "instance_id": "2",
+    "parameters": {
+      "negative_prompt": "bad anatomy, deformed body, distorted proportions, extra limbs, extra arms, extra legs, missing limbs, fused fingers, extra fingers, malformed hands, twisted neck, long neck, tiny head, oversized head, elongated legs, stretched torso, blurry, low resolution, jpeg artifacts, watermark, text, logo, signature, border, frame, two views, split screen, smooth plastic skin, airbrushed, doll skin, waxy skin, heavy makeup, rouge, rosy cheeks, red lips, cartoon, anime, illustration",
+      "width": 896,
+      "height": 1344,
+      "seed": 20261026,
+      "steps": 4,
+      "cfg": 2,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "batch_size": 1
+    },
+    "promptCharacters": [
+      1725,
+      1828,
+      2027,
+      1899,
+      2279,
+      2300,
+      2377,
+      2305,
+      2389,
+      2367,
+      2191
+    ],
+    "instance_url": "http://192.168.110.122:8188/",
+    "source_origin": "http://127.0.0.1:18093"
+  }
+}

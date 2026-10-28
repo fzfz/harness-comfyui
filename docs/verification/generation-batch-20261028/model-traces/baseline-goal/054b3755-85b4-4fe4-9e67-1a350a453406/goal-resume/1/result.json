@@ -1,0 +1,690 @@
+{
+  "caseId": "goal-resume",
+  "repetition": 1,
+  "startedAt": "2026-10-28T12:47:04.179Z",
+  "phases": [
+    {
+      "id": "initial",
+      "runId": "e59efdc1-f21d-460c-8897-03dc57572dad",
+      "startedAt": "2026-10-28T12:47:04.344Z",
+      "naturalCompletion": true,
+      "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/1/initial/task-input.txt",
+      "terminal": {
+        "type": "turn/end",
+        "seq": 53,
+        "time": 1793191660346,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "completed"
+          }
+        }
+      },
+      "observation": {
+        "session": {
+          "ok": true,
+          "value": {
+            "kind": "sequenced",
+            "asOfSeq": 53,
+            "values": {
+              "title": "baseline-goal goal-resume 1",
+              "goal": {
+                "goal": {
+                  "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+                  "revision": 2,
+                  "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+                  "phase": "blocked",
+                  "blockedReason": {
+                    "code": "model-reported",
+                    "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+                  },
+                  "maxGoalRounds": 4
+                },
+                "roundsStarted": 0,
+                "createdAt": 1793191630944,
+                "updatedAt": 1793191653444
+              },
+              "tokenUsage": {
+                "uncachedInputTokens": 9415,
+                "outputTokens": 978,
+                "cacheReadTokens": 70784,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {
+                "pressureTokens": 14392,
+                "projectedTokens": 14540,
+                "contextWindow": 262144
+              },
+              "contextBreakdown": {
+                "systemTokens": 428,
+                "toolsTokens": 4547,
+                "messageTokens": 4679
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 1,
+                "steps": 7,
+                "llmMs": 35807,
+                "toolMs": 103,
+                "ttftMs": 24917,
+                "ttftSteps": 7,
+                "decodeMs": 10890,
+                "decodeTokens": 978
+              },
+              "turnOutline": [
+                {
+                  "turn": 1,
+                  "seq": 6,
+                  "prompt": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片…",
+                  "response": "已创建两阶段 Goal，最多运行 **4 轮**，但第一阶段目前被必要输入阻塞，尚未提交生成，也没有产生 Run ID 或图片路径。 已确认 11 个 Prompt 文件存在；Workflow 1 的默认模型为模型 1，二者关联相同底模，…"
+                }
+              ],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                },
+                "next": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": false,
+                "lastPromptAt": 1793191624401
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        "goal": {
+          "ok": true,
+          "value": {
+            "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+            "revision": 2,
+            "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+            "phase": "blocked",
+            "maxGoalRounds": 4,
+            "blockedReason": {
+              "code": "model-reported",
+              "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191630944,
+            "updatedAt": 1793191653444,
+            "activation": "disarmed"
+          }
+        },
+        "generation": {
+          "ok": true,
+          "value": {
+            "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+            "runs": [],
+            "media": [],
+            "hasActiveRuns": false,
+            "refreshAfterMs": 1000
+          }
+        },
+        "sessionRunning": false
+      },
+      "trace": {
+        "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/1/initial/trace/trace-index.json",
+        "sessions": [
+          {
+            "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+            "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/1/initial/trace/sessions/session-session-e1f4dcdd-92ae-43d2-8f55-43a860951593/session.json"
+          }
+        ],
+        "missing": [
+          {
+            "source": "model-request",
+            "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+            "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+          },
+          {
+            "source": "model-stream",
+            "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+            "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+          }
+        ]
+      },
+      "completedAt": "2026-10-28T12:47:40.681Z"
+    },
+    {
+      "id": "resume",
+      "runId": "fbac9480-6a66-4872-bd33-1aae30dc049c",
+      "startedAt": "2026-10-28T12:47:40.695Z",
+      "naturalCompletion": false,
+      "restart": {
+        "previousRunId": "e59efdc1-f21d-460c-8897-03dc57572dad",
+        "runId": "fbac9480-6a66-4872-bd33-1aae30dc049c",
+        "configPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/fbac9480-6a66-4872-bd33-1aae30dc049c/evidence/real-model-config.json",
+        "presetId": "harness-comfyui-cli-candidate",
+        "installedPackageRoot": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-batch-baseline/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+        "mcpUrl": "http://127.0.0.1:59526/mcp"
+      },
+      "before": {
+        "session": {
+          "ok": true,
+          "value": {
+            "kind": "sequenced",
+            "asOfSeq": 55,
+            "values": {
+              "title": "baseline-goal goal-resume 1",
+              "goal": {
+                "goal": {
+                  "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+                  "revision": 2,
+                  "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+                  "phase": "blocked",
+                  "blockedReason": {
+                    "code": "model-reported",
+                    "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+                  },
+                  "maxGoalRounds": 4
+                },
+                "roundsStarted": 0,
+                "createdAt": 1793191630944,
+                "updatedAt": 1793191653444
+              },
+              "tokenUsage": {
+                "uncachedInputTokens": 9415,
+                "outputTokens": 978,
+                "cacheReadTokens": 70784,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {
+                "pressureTokens": 14392,
+                "projectedTokens": 14540,
+                "contextWindow": 262144
+              },
+              "contextBreakdown": {
+                "systemTokens": 428,
+                "toolsTokens": 4547,
+                "messageTokens": 4679
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 1,
+                "steps": 7,
+                "llmMs": 35807,
+                "toolMs": 103,
+                "ttftMs": 24917,
+                "ttftSteps": 7,
+                "decodeMs": 10890,
+                "decodeTokens": 978
+              },
+              "turnOutline": [
+                {
+                  "turn": 1,
+                  "seq": 6,
+                  "prompt": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片…",
+                  "response": "已创建两阶段 Goal，最多运行 **4 轮**，但第一阶段目前被必要输入阻塞，尚未提交生成，也没有产生 Run ID 或图片路径。 已确认 11 个 Prompt 文件存在；Workflow 1 的默认模型为模型 1，二者关联相同底模，…"
+                }
+              ],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                },
+                "next": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": false,
+                "lastPromptAt": 1793191624401
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        "goal": {
+          "ok": true,
+          "value": {
+            "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+            "revision": 2,
+            "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+            "phase": "blocked",
+            "maxGoalRounds": 4,
+            "blockedReason": {
+              "code": "model-reported",
+              "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191630944,
+            "updatedAt": 1793191653444,
+            "activation": "disarmed"
+          }
+        },
+        "generation": {
+          "ok": true,
+          "value": {
+            "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+            "runs": [],
+            "media": [],
+            "hasActiveRuns": false,
+            "refreshAfterMs": 1000
+          }
+        },
+        "sessionRunning": false
+      },
+      "userAction": {
+        "action": "goal-bar"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "stage": "resume",
+      "name": "Error",
+      "code": null,
+      "message": "GoalBar resume requires a paused Goal or an active, disarmed Goal.",
+      "terminal": null
+    }
+  ],
+  "businessAssessment": "pending-human-review",
+  "inputs": [
+    {
+      "name": "prompt-01.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-01.txt",
+      "byteLength": 1725
+    },
+    {
+      "name": "prompt-02.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-02.txt",
+      "byteLength": 1828
+    },
+    {
+      "name": "prompt-03.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-03.txt",
+      "byteLength": 2027
+    },
+    {
+      "name": "prompt-04.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-04.txt",
+      "byteLength": 1899
+    },
+    {
+      "name": "prompt-05.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-05.txt",
+      "byteLength": 2279
+    },
+    {
+      "name": "prompt-06.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-06.txt",
+      "byteLength": 2300
+    },
+    {
+      "name": "prompt-07.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-07.txt",
+      "byteLength": 2377
+    },
+    {
+      "name": "prompt-08.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-08.txt",
+      "byteLength": 2305
+    },
+    {
+      "name": "prompt-09.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-09.txt",
+      "byteLength": 2389
+    },
+    {
+      "name": "prompt-10.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-10.txt",
+      "byteLength": 2367
+    },
+    {
+      "name": "prompt-11.txt",
+      "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1/input/prompt-11.txt",
+      "byteLength": 2191
+    }
+  ],
+  "identity": {
+    "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+    "workspaceId": "146b06af-b124-4db7-96fc-6d5164d9ba26",
+    "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1",
+    "presetId": "harness-comfyui-cli-candidate",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "initialObservation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 4,
+        "values": {
+          "title": "baseline-goal goal-resume 1",
+          "goal": null,
+          "tokenUsage": {
+            "uncachedInputTokens": 0,
+            "outputTokens": 0,
+            "cacheReadTokens": 0,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {},
+          "contextBreakdown": {
+            "systemTokens": 0,
+            "toolsTokens": 0,
+            "messageTokens": 0
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 0,
+            "steps": 0,
+            "llmMs": 0,
+            "toolMs": 0,
+            "ttftMs": 0,
+            "ttftSteps": 0,
+            "decodeMs": 0,
+            "decodeTokens": 0
+          },
+          "turnOutline": [],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": null,
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": true,
+            "lastPromptAt": null
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+        "runs": [],
+        "media": [],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "executionStatus": "execution-error",
+  "lastObservation": {
+    "session": {
+      "ok": true,
+      "value": {
+        "kind": "sequenced",
+        "asOfSeq": 55,
+        "values": {
+          "title": "baseline-goal goal-resume 1",
+          "goal": {
+            "goal": {
+              "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+              "revision": 2,
+              "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+              "phase": "blocked",
+              "blockedReason": {
+                "code": "model-reported",
+                "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+              },
+              "maxGoalRounds": 4
+            },
+            "roundsStarted": 0,
+            "createdAt": 1793191630944,
+            "updatedAt": 1793191653444
+          },
+          "tokenUsage": {
+            "uncachedInputTokens": 9415,
+            "outputTokens": 978,
+            "cacheReadTokens": 70784,
+            "cacheWriteTokens": 0
+          },
+          "contextPressure": {
+            "pressureTokens": 14392,
+            "projectedTokens": 14540,
+            "contextWindow": 262144
+          },
+          "contextBreakdown": {
+            "systemTokens": 428,
+            "toolsTokens": 4547,
+            "messageTokens": 4679
+          },
+          "inbox": {
+            "next-turn": [],
+            "next-step": []
+          },
+          "sessionStats": {
+            "turns": 1,
+            "steps": 7,
+            "llmMs": 35807,
+            "toolMs": 103,
+            "ttftMs": 24917,
+            "ttftSteps": 7,
+            "decodeMs": 10890,
+            "decodeTokens": 978
+          },
+          "turnOutline": [
+            {
+              "turn": 1,
+              "seq": 6,
+              "prompt": "请创建 Goal，最多运行 4 轮，并把以下两阶段要求写入目标：第 1 阶段完成以下 11 张图片…",
+              "response": "已创建两阶段 Goal，最多运行 **4 轮**，但第一阶段目前被必要输入阻塞，尚未提交生成，也没有产生 Run ID 或图片路径。 已确认 11 个 Prompt 文件存在；Workflow 1 的默认模型为模型 1，二者关联相同底模，…"
+            }
+          ],
+          "agentPreset": "harness-comfyui-cli-candidate",
+          "userQuestions": {
+            "active": [],
+            "settled": []
+          },
+          "permissions": {
+            "currentValue": "workspace-write"
+          },
+          "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1",
+          "subagentCatalog": [],
+          "subagentTiming": {
+            "settledMs": 0
+          },
+          "subagent": null,
+          "todos": null,
+          "plan": {
+            "active": false,
+            "pending": false
+          },
+          "modelSelection": {
+            "lastUsed": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            },
+            "next": {
+              "provider": "lan-gpt",
+              "model": "gpt-6.1-terra",
+              "reasoningEffort": "high"
+            }
+          },
+          "sessionListMetadata": {
+            "blank": false,
+            "lastPromptAt": 1793191624401
+          },
+          "imageLimits": {
+            "maxImageBytes": 20971520,
+            "maxImagesPerMessage": 20,
+            "maxMessageImageBytes": 209715200,
+            "maxImagePixels": 64000000,
+            "maxImageDimension": 8192,
+            "mediaTypes": [
+              "image/png",
+              "image/jpeg",
+              "image/webp",
+              "image/gif"
+            ]
+          }
+        }
+      }
+    },
+    "goal": {
+      "ok": true,
+      "value": {
+        "id": "goal-f335c014-6c21-402b-b225-c0f7b4a2abab",
+        "revision": 2,
+        "objective": "两阶段任务，工作目录 /var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-yEyC7B/goal-resume/1：第一阶段使用 comfyui-generate、Workflow ID 1、ComfyUI 实例 ID 1、模板默认模型且不使用 LoRA，512×512，其他模板值不变，将 input/prompt-01.txt 至 prompt-11.txt 的正文原样分别生成一张图片，seed 从 424242 逐张递增；保存并交付全部 11 个 Run ID 和图片路径以及后续所需本地产物，然后暂停 Goal 等待用户确认。用户通过 GoalBar 恢复后进入第二阶段：先查询已有 11 个 Run，核对图片及交付路径，保留已有生成结果，完成 Goal。",
+        "phase": "blocked",
+        "maxGoalRounds": 4,
+        "blockedReason": {
+          "code": "model-reported",
+          "message": "当前用户消息未提供 comfyui-generate 所必需的 Prompt Builder 结果 JSON；需要用户提供对应 11 个输入文件的完整结果 JSON，方可校验并提交生成。"
+        },
+        "roundsStarted": 0,
+        "createdAt": 1793191630944,
+        "updatedAt": 1793191653444,
+        "activation": "disarmed"
+      }
+    },
+    "generation": {
+      "ok": true,
+      "value": {
+        "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+        "runs": [],
+        "media": [],
+        "hasActiveRuns": false,
+        "refreshAfterMs": 1000
+      }
+    },
+    "sessionRunning": false
+  },
+  "errorTrace": {
+    "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/1/error-trace/trace-index.json",
+    "sessions": [
+      {
+        "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+        "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/baseline-goal/054b3755-85b4-4fe4-9e67-1a350a453406/goal-resume/1/error-trace/sessions/session-session-e1f4dcdd-92ae-43d2-8f55-43a860951593/session.json"
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-e1f4dcdd-92ae-43d2-8f55-43a860951593",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ]
+  },
+  "completedAt": "2026-10-28T12:48:22.179Z"
+}

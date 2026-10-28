@@ -1,0 +1,1223 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda",
+  "label": "ablation512-file-admission",
+  "startedAt": "2026-10-28T14:05:15.191Z",
+  "specificationFile": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-cases.json",
+  "inputDirectory": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-real-inputs",
+  "workspaceRoot": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF",
+  "model": {
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  "repetitions": 3,
+  "caseIds": [
+    "first-files"
+  ],
+  "sourceIdentity": {
+    "schemaVersion": 1,
+    "packageName": "harness-comfyui",
+    "packageVersion": "0.49.0",
+    "archivePath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/generation-ablation/build-RTZq6i/generation-ablation-file-admission.tgz",
+    "sourceCommit": "c23129b5b51906015a8fd6c6fc7f6110cbe690a7",
+    "dirty": true,
+    "runtimeFiles": [
+      ".agents/skills/anima-prompt-builder/SKILL.md",
+      ".agents/skills/anima-prompt-builder/agents/openai.yaml",
+      ".agents/skills/anima-prompt-builder/references/00-template-header.md",
+      ".agents/skills/anima-prompt-builder/references/01-quick-start.md",
+      ".agents/skills/anima-prompt-builder/references/02-role.md",
+      ".agents/skills/anima-prompt-builder/references/03-output-protocol.md",
+      ".agents/skills/anima-prompt-builder/references/04-final-self-check.md",
+      ".agents/skills/anima-prompt-builder/references/05-conflict-table.md",
+      ".agents/skills/anima-prompt-builder/references/06-slot-order.md",
+      ".agents/skills/anima-prompt-builder/references/07-assembly-decision-tree.md",
+      ".agents/skills/anima-prompt-builder/references/08-count-identity.md",
+      ".agents/skills/anima-prompt-builder/references/09-appearance.md",
+      ".agents/skills/anima-prompt-builder/references/10-clothing-state.md",
+      ".agents/skills/anima-prompt-builder/references/11-pose-action-sex.md",
+      ".agents/skills/anima-prompt-builder/references/12-expression-reaction.md",
+      ".agents/skills/anima-prompt-builder/references/13-camera-shot.md",
+      ".agents/skills/anima-prompt-builder/references/14-scene-environment.md",
+      ".agents/skills/anima-prompt-builder/references/15-detail-mood.md",
+      ".agents/skills/anima-prompt-builder/references/16-special-theme.md",
+      ".agents/skills/anima-prompt-builder/references/artist-style-query-vocabulary.md",
+      ".agents/skills/anima-prompt-builder/references/generation-cli.md",
+      ".agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/anima-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/anima-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/anima-prompt-builder/references/prompt-weight-policy.json",
+      ".agents/skills/anima-prompt-builder/references/prompt-weighting.md",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/anima-prompt-builder/scripts/validate-output.mjs",
+      ".agents/skills/character-portrait-prompt-designer/SKILL.md",
+      ".agents/skills/character-portrait-prompt-designer/evals/evals.json",
+      ".agents/skills/character-portrait-prompt-designer/evals/verification-report.md",
+      ".agents/skills/character-portrait-prompt-designer/references/color-theory.md",
+      ".agents/skills/character-portrait-prompt-designer/references/generation-cli.md",
+      ".agents/skills/character-portrait-prompt-designer/references/prompt-structure.md",
+      ".agents/skills/comfyui-generate/SKILL.md",
+      ".agents/skills/comfyui-generate/references/generation-cli.md",
+      ".agents/skills/comfyui-generate/references/prompt-result-contract.md",
+      ".agents/skills/comfyui-generate/references/prompt-result-schema.json",
+      ".agents/skills/comfyui-generate/references/template-parameter-inspection-cli.md",
+      ".agents/skills/comfyui-image-review/SKILL.md",
+      ".agents/skills/comfyui-image-review/references/cli.md",
+      ".agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      ".agents/skills/krea2-anime-prompt-builder/agents/openai.yaml",
+      ".agents/skills/krea2-anime-prompt-builder/references/anime-style-presets.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-cli.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/krea2-anime-prompt-builder/references/input-contract.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/krea2-prompt-rules.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/motion-migration-constraints.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/游戏服装多样性库.md",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/validate-output.mjs",
+      ".agents/skills/local-image-reader/SKILL.md",
+      ".agents/skills/local-image-reader/references/image-inspection-cli.md",
+      ".agents/skills/moss-prompt-builder/SKILL.md",
+      ".agents/skills/moss-prompt-builder/agents/openai.yaml",
+      ".agents/skills/moss-prompt-builder/references/compiler.md",
+      ".agents/skills/moss-prompt-builder/references/layout.md",
+      ".agents/skills/moss-prompt-builder/scripts/compile_prompt.py",
+      ".agents/skills/moss-prompt-builder/scripts/test_compile_prompt.py",
+      ".agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+      ".agents/skills/wai-sdxl-prompt-builder/agents/openai.yaml",
+      ".agents/skills/wai-sdxl-prompt-builder/references/action-structure.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/artist-style-query-vocabulary.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/composition-decision-tree.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/NTR.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/RBQ与物化.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/事后.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/偷窥与展示.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/另类日常.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/异种.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/束缚与BDSM.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/男娘与Futa.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/胁迫.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/调教与宠物.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/隐奸.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/before-after-storyboard.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/camera-action-pairing.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/environment-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/multi-subject-attribution.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/nsfw-action-structure.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/occlusion-and-depth.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/single-subject-portrait.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/two-subject-interaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-cli.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/input-contract.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-conflict-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-format-validator.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/action.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/appearance.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/artist.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/camera-composition.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/character.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/detail-mood.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/environment.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/expression-reaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/lighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/non-artist-style.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/outfit.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/quality.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/relation-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/subject.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/technical.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/action.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/appearance.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/artist.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/camera-composition.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/character.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/detail-mood.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/environment.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/expression-reaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/lighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/non-artist-style.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/outfit.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/quality.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/relation-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/subject.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/technical.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-self-check.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weight-policy.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/spatial-relation-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/storyboard-panel-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/visual-design-slot-order.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/wai-artist-syntax.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/wai-prompt-position-order.md",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/validate-output.mjs",
+      ".local/source-cli/harness-comfyui.mjs",
+      ".local/source-client/client.js",
+      ".local/source-host/browser-settings-schema-Dgpu2Zwi.js",
+      ".local/source-host/cli.js",
+      ".local/source-host/comfy-frontend-worker.js",
+      ".local/source-host/core.js",
+      ".local/source-host/errors-CkknegYz.js",
+      ".local/source-host/generation-error-s7pDSYyC.js",
+      ".local/source-host/generation-runtime-Dk2ozOAl.js",
+      ".local/source-host/image-reader.js",
+      ".local/source-host/index.js",
+      ".local/source-host/pending-requests-BrC9NqCi.js",
+      ".local/source-host/plugin-BoIYgwoZ.js",
+      ".local/source-host/resource-path-BvAGoQ1l.js",
+      ".local/source-host/settings-Cc0Qsd87.js",
+      ".local/source-host/settings-entry-ids-DSb58B0I.js",
+      ".local/source-host/web.js",
+      ".local/source-host/workspace-access-C2qex-ud.js",
+      "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+      "agent-presets/harness-comfyui-cli-candidate/preset.yml",
+      "agent-presets/noobai-mcp.cordis.yml",
+      "agent-presets/presets.cordis.yml",
+      "agent-presets/project-installed-presets.mjs",
+      "agent-presets/shared/agent.cordis.yml",
+      "agent-presets/workbench-composition.mjs",
+      "config/base.json",
+      "config/browser-settings.json",
+      "config/environment-overrides.json",
+      "config/error-catalog.json",
+      "config/image-reader-processing.json",
+      "config/image-reader-profiles.json",
+      "config/image-reader-runtime.json",
+      "config/managed-cli-environment.json",
+      "config/managed-cli-help.json",
+      "config/managed-cli-limits.json",
+      "config/node-script-runtime.json",
+      "config/plugin-package-schema.mjs",
+      "config/plugin-package.json",
+      "config/plugin-runtime-resources-schema.ts",
+      "config/plugin-runtime-resources.json",
+      "config/plugin-storage.json",
+      "config/product-agent-schema.mjs",
+      "config/product-agent.json",
+      "config/profiles/production.json",
+      "config/runtime-artifacts.json",
+      "config/schema.ts",
+      "config/settings-entry-ids.json",
+      "config/source-client.json",
+      "cordis.patch.yml",
+      "locales/cli/en.json",
+      "locales/cli/zh.json",
+      "locales/core/en.json",
+      "locales/core/zh.json",
+      "locales/image-reader/en.json",
+      "locales/image-reader/zh.json",
+      "locales/presets/en.json",
+      "locales/presets/zh.json",
+      "locales/web/en.json",
+      "locales/web/zh.json",
+      "locales/workbench/en.json",
+      "locales/workbench/zh.json",
+      "scripts/cli/help-schema.mjs",
+      "scripts/cli/help.mjs"
+    ]
+  },
+  "installedPackageRoot": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-development/official-environment/generation-ablation512-file-admission/dsh-home/profiles/desktop/node_modules/harness-comfyui",
+  "configPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/.local/desktop-e2e/74a86950-da9b-46e0-acae-951c872055f1/evidence/real-model-config.json",
+  "businessAssessment": "pending-human-review",
+  "executionStatus": "recorded",
+  "cases": [
+    {
+      "caseId": "first-files",
+      "repetition": 1,
+      "startedAt": "2026-10-28T14:05:15.200Z",
+      "phases": [
+        {
+          "id": "initial",
+          "runId": "74a86950-da9b-46e0-acae-951c872055f1",
+          "startedAt": "2026-10-28T14:05:15.347Z",
+          "naturalCompletion": true,
+          "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/1/initial/task-input.txt",
+          "terminal": {
+            "type": "turn/end",
+            "seq": 27,
+            "time": 1793196329893,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          },
+          "observation": {
+            "session": {
+              "ok": true,
+              "value": {
+                "kind": "sequenced",
+                "asOfSeq": 27,
+                "values": {
+                  "title": "ablation512-file-admission first-files 1",
+                  "goal": null,
+                  "tokenUsage": {
+                    "uncachedInputTokens": 5973,
+                    "outputTokens": 415,
+                    "cacheReadTokens": 24448,
+                    "cacheWriteTokens": 0
+                  },
+                  "contextPressure": {
+                    "pressureTokens": 11758,
+                    "projectedTokens": 11884,
+                    "contextWindow": 262144
+                  },
+                  "contextBreakdown": {
+                    "systemTokens": 466,
+                    "toolsTokens": 4547,
+                    "messageTokens": 2879
+                  },
+                  "inbox": {
+                    "next-turn": [],
+                    "next-step": []
+                  },
+                  "sessionStats": {
+                    "turns": 1,
+                    "steps": 3,
+                    "llmMs": 14392,
+                    "toolMs": 41,
+                    "ttftMs": 8064,
+                    "ttftSteps": 3,
+                    "decodeMs": 6328,
+                    "decodeTokens": 415
+                  },
+                  "turnOutline": [
+                    {
+                      "turn": 1,
+                      "seq": 6,
+                      "prompt": "本任务验证受控生成服务，输出固定测试图片；请验收图片尺寸、文件可读取、Run 与媒体对应关系。工作…",
+                      "response": "当前请求缺少 **Prompt Builder 结果 JSON**。按指定的生成 Skill，只有提示词文本文件还不能提交生成；我需要先逐项校验结果 JSON。 请提供与 `prompt-01.txt` 至 `prompt-11.txt`…"
+                    }
+                  ],
+                  "agentPreset": "harness-comfyui-cli-candidate",
+                  "userQuestions": {
+                    "active": [],
+                    "settled": []
+                  },
+                  "permissions": {
+                    "currentValue": "workspace-write"
+                  },
+                  "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1",
+                  "subagentCatalog": [],
+                  "subagentTiming": {
+                    "settledMs": 0
+                  },
+                  "subagent": null,
+                  "todos": null,
+                  "plan": {
+                    "active": false,
+                    "pending": false
+                  },
+                  "modelSelection": {
+                    "lastUsed": {
+                      "provider": "lan-gpt",
+                      "model": "gpt-6.1-terra",
+                      "reasoningEffort": "high"
+                    },
+                    "next": {
+                      "provider": "lan-gpt",
+                      "model": "gpt-6.1-terra",
+                      "reasoningEffort": "high"
+                    }
+                  },
+                  "sessionListMetadata": {
+                    "blank": false,
+                    "lastPromptAt": 1793196315442
+                  },
+                  "imageLimits": {
+                    "maxImageBytes": 20971520,
+                    "maxImagesPerMessage": 20,
+                    "maxMessageImageBytes": 209715200,
+                    "maxImagePixels": 64000000,
+                    "maxImageDimension": 8192,
+                    "mediaTypes": [
+                      "image/png",
+                      "image/jpeg",
+                      "image/webp",
+                      "image/gif"
+                    ]
+                  }
+                }
+              }
+            },
+            "goal": {
+              "ok": true
+            },
+            "generation": {
+              "ok": true,
+              "value": {
+                "sessionId": "session-f7705f81-d08c-44f3-a06e-ecd32df42583",
+                "runs": [],
+                "media": [],
+                "hasActiveRuns": false,
+                "refreshAfterMs": 1000
+              }
+            },
+            "sessionRunning": false
+          },
+          "trace": {
+            "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/1/initial/trace/trace-index.json",
+            "sessions": [
+              {
+                "sessionId": "session-f7705f81-d08c-44f3-a06e-ecd32df42583",
+                "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/1/initial/trace/sessions/session-session-f7705f81-d08c-44f3-a06e-ecd32df42583/session.json"
+              }
+            ],
+            "missing": [
+              {
+                "source": "model-request",
+                "sessionId": "session-f7705f81-d08c-44f3-a06e-ecd32df42583",
+                "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+              },
+              {
+                "source": "model-stream",
+                "sessionId": "session-f7705f81-d08c-44f3-a06e-ecd32df42583",
+                "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+              }
+            ]
+          },
+          "completedAt": "2026-10-28T14:05:30.426Z"
+        }
+      ],
+      "errors": [],
+      "businessAssessment": "pending-human-review",
+      "inputs": [
+        {
+          "name": "prompt-01.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-01.txt",
+          "byteLength": 1725
+        },
+        {
+          "name": "prompt-02.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-02.txt",
+          "byteLength": 1828
+        },
+        {
+          "name": "prompt-03.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-03.txt",
+          "byteLength": 2027
+        },
+        {
+          "name": "prompt-04.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-04.txt",
+          "byteLength": 1899
+        },
+        {
+          "name": "prompt-05.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-05.txt",
+          "byteLength": 2279
+        },
+        {
+          "name": "prompt-06.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-06.txt",
+          "byteLength": 2300
+        },
+        {
+          "name": "prompt-07.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-07.txt",
+          "byteLength": 2377
+        },
+        {
+          "name": "prompt-08.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-08.txt",
+          "byteLength": 2305
+        },
+        {
+          "name": "prompt-09.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-09.txt",
+          "byteLength": 2389
+        },
+        {
+          "name": "prompt-10.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-10.txt",
+          "byteLength": 2367
+        },
+        {
+          "name": "prompt-11.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1/input/prompt-11.txt",
+          "byteLength": 2191
+        }
+      ],
+      "identity": {
+        "sessionId": "session-f7705f81-d08c-44f3-a06e-ecd32df42583",
+        "workspaceId": "81fb48f2-5f6d-4dc4-a014-92fd6853dae0",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1",
+        "presetId": "harness-comfyui-cli-candidate",
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "initialObservation": {
+        "session": {
+          "ok": true,
+          "value": {
+            "kind": "sequenced",
+            "asOfSeq": 4,
+            "values": {
+              "title": "ablation512-file-admission first-files 1",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 0,
+                "outputTokens": 0,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {},
+              "contextBreakdown": {
+                "systemTokens": 0,
+                "toolsTokens": 0,
+                "messageTokens": 0
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 0,
+                "steps": 0,
+                "llmMs": 0,
+                "toolMs": 0,
+                "ttftMs": 0,
+                "ttftSteps": 0,
+                "decodeMs": 0,
+                "decodeTokens": 0
+              },
+              "turnOutline": [],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/1",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": null,
+                "next": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": true,
+                "lastPromptAt": null
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        "goal": {
+          "ok": true
+        },
+        "generation": {
+          "ok": true,
+          "value": {
+            "sessionId": "session-f7705f81-d08c-44f3-a06e-ecd32df42583",
+            "runs": [],
+            "media": [],
+            "hasActiveRuns": false,
+            "refreshAfterMs": 1000
+          }
+        },
+        "sessionRunning": false
+      },
+      "executionStatus": "naturally-ended",
+      "completedAt": "2026-10-28T14:05:30.453Z"
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 2,
+      "startedAt": "2026-10-28T14:05:30.482Z",
+      "phases": [
+        {
+          "id": "initial",
+          "runId": "74a86950-da9b-46e0-acae-951c872055f1",
+          "startedAt": "2026-10-28T14:05:32.073Z",
+          "naturalCompletion": true,
+          "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/2/initial/task-input.txt",
+          "terminal": {
+            "type": "turn/end",
+            "seq": 27,
+            "time": 1793196350286,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          },
+          "observation": {
+            "session": {
+              "ok": true,
+              "value": {
+                "kind": "sequenced",
+                "asOfSeq": 27,
+                "values": {
+                  "title": "ablation512-file-admission first-files 2",
+                  "goal": null,
+                  "tokenUsage": {
+                    "uncachedInputTokens": 5973,
+                    "outputTokens": 395,
+                    "cacheReadTokens": 24448,
+                    "cacheWriteTokens": 0
+                  },
+                  "contextPressure": {
+                    "pressureTokens": 11758,
+                    "projectedTokens": 11855,
+                    "contextWindow": 262144
+                  },
+                  "contextBreakdown": {
+                    "systemTokens": 466,
+                    "toolsTokens": 4547,
+                    "messageTokens": 2969
+                  },
+                  "inbox": {
+                    "next-turn": [],
+                    "next-step": []
+                  },
+                  "sessionStats": {
+                    "turns": 1,
+                    "steps": 3,
+                    "llmMs": 17739,
+                    "toolMs": 135,
+                    "ttftMs": 9721,
+                    "ttftSteps": 3,
+                    "decodeMs": 8018,
+                    "decodeTokens": 395
+                  },
+                  "turnOutline": [
+                    {
+                      "turn": 1,
+                      "seq": 6,
+                      "prompt": "本任务验证受控生成服务，输出固定测试图片；请验收图片尺寸、文件可读取、Run 与媒体对应关系。工作…",
+                      "response": "当前请求缺少生成 Skill 必需的 **Prompt Builder 结果 JSON**。虽然已提供 11 份提示词文件及生成参数，Skill 仍要求当前消息包含用于创建图片的结果 JSON；在此之前不能提交生成。 请提供与 `prom…"
+                    }
+                  ],
+                  "agentPreset": "harness-comfyui-cli-candidate",
+                  "userQuestions": {
+                    "active": [],
+                    "settled": []
+                  },
+                  "permissions": {
+                    "currentValue": "workspace-write"
+                  },
+                  "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2",
+                  "subagentCatalog": [],
+                  "subagentTiming": {
+                    "settledMs": 0
+                  },
+                  "subagent": null,
+                  "todos": null,
+                  "plan": {
+                    "active": false,
+                    "pending": false
+                  },
+                  "modelSelection": {
+                    "lastUsed": {
+                      "provider": "lan-gpt",
+                      "model": "gpt-6.1-terra",
+                      "reasoningEffort": "high"
+                    },
+                    "next": {
+                      "provider": "lan-gpt",
+                      "model": "gpt-6.1-terra",
+                      "reasoningEffort": "high"
+                    }
+                  },
+                  "sessionListMetadata": {
+                    "blank": false,
+                    "lastPromptAt": 1793196332349
+                  },
+                  "imageLimits": {
+                    "maxImageBytes": 20971520,
+                    "maxImagesPerMessage": 20,
+                    "maxMessageImageBytes": 209715200,
+                    "maxImagePixels": 64000000,
+                    "maxImageDimension": 8192,
+                    "mediaTypes": [
+                      "image/png",
+                      "image/jpeg",
+                      "image/webp",
+                      "image/gif"
+                    ]
+                  }
+                }
+              }
+            },
+            "goal": {
+              "ok": true
+            },
+            "generation": {
+              "ok": true,
+              "value": {
+                "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+                "runs": [],
+                "media": [],
+                "hasActiveRuns": false,
+                "refreshAfterMs": 1000
+              }
+            },
+            "sessionRunning": false
+          },
+          "trace": {
+            "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/2/initial/trace/trace-index.json",
+            "sessions": [
+              {
+                "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+                "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/2/initial/trace/sessions/session-session-865842a7-71e1-4ecf-a12b-59610babf14b/session.json"
+              }
+            ],
+            "missing": [
+              {
+                "source": "model-request",
+                "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+                "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+              },
+              {
+                "source": "model-stream",
+                "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+                "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+              }
+            ]
+          },
+          "completedAt": "2026-10-28T14:05:50.695Z"
+        }
+      ],
+      "errors": [],
+      "businessAssessment": "pending-human-review",
+      "inputs": [
+        {
+          "name": "prompt-01.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-01.txt",
+          "byteLength": 1725
+        },
+        {
+          "name": "prompt-02.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-02.txt",
+          "byteLength": 1828
+        },
+        {
+          "name": "prompt-03.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-03.txt",
+          "byteLength": 2027
+        },
+        {
+          "name": "prompt-04.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-04.txt",
+          "byteLength": 1899
+        },
+        {
+          "name": "prompt-05.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-05.txt",
+          "byteLength": 2279
+        },
+        {
+          "name": "prompt-06.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-06.txt",
+          "byteLength": 2300
+        },
+        {
+          "name": "prompt-07.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-07.txt",
+          "byteLength": 2377
+        },
+        {
+          "name": "prompt-08.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-08.txt",
+          "byteLength": 2305
+        },
+        {
+          "name": "prompt-09.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-09.txt",
+          "byteLength": 2389
+        },
+        {
+          "name": "prompt-10.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-10.txt",
+          "byteLength": 2367
+        },
+        {
+          "name": "prompt-11.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2/input/prompt-11.txt",
+          "byteLength": 2191
+        }
+      ],
+      "identity": {
+        "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+        "workspaceId": "ef724fb8-5167-4ef5-8ce4-0dc05afa903e",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2",
+        "presetId": "harness-comfyui-cli-candidate",
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "initialObservation": {
+        "session": {
+          "ok": true,
+          "value": {
+            "kind": "sequenced",
+            "asOfSeq": 4,
+            "values": {
+              "title": "ablation512-file-admission first-files 2",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 0,
+                "outputTokens": 0,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {},
+              "contextBreakdown": {
+                "systemTokens": 0,
+                "toolsTokens": 0,
+                "messageTokens": 0
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 0,
+                "steps": 0,
+                "llmMs": 0,
+                "toolMs": 0,
+                "ttftMs": 0,
+                "ttftSteps": 0,
+                "decodeMs": 0,
+                "decodeTokens": 0
+              },
+              "turnOutline": [],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/2",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": null,
+                "next": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": true,
+                "lastPromptAt": null
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        "goal": {
+          "ok": true
+        },
+        "generation": {
+          "ok": true,
+          "value": {
+            "sessionId": "session-865842a7-71e1-4ecf-a12b-59610babf14b",
+            "runs": [],
+            "media": [],
+            "hasActiveRuns": false,
+            "refreshAfterMs": 1000
+          }
+        },
+        "sessionRunning": false
+      },
+      "executionStatus": "naturally-ended",
+      "completedAt": "2026-10-28T14:05:50.780Z"
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 3,
+      "startedAt": "2026-10-28T14:05:50.864Z",
+      "phases": [
+        {
+          "id": "initial",
+          "runId": "74a86950-da9b-46e0-acae-951c872055f1",
+          "startedAt": "2026-10-28T14:05:51.643Z",
+          "naturalCompletion": true,
+          "promptPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/3/initial/task-input.txt",
+          "terminal": {
+            "type": "turn/end",
+            "seq": 27,
+            "time": 1793196371103,
+            "data": {
+              "turn": 1,
+              "reason": {
+                "kind": "completed"
+              }
+            }
+          },
+          "observation": {
+            "session": {
+              "ok": true,
+              "value": {
+                "kind": "sequenced",
+                "asOfSeq": 27,
+                "values": {
+                  "title": "ablation512-file-admission first-files 3",
+                  "goal": null,
+                  "tokenUsage": {
+                    "uncachedInputTokens": 6033,
+                    "outputTokens": 609,
+                    "cacheReadTokens": 24448,
+                    "cacheWriteTokens": 0
+                  },
+                  "contextPressure": {
+                    "pressureTokens": 11818,
+                    "projectedTokens": 12014,
+                    "contextWindow": 262144
+                  },
+                  "contextBreakdown": {
+                    "systemTokens": 466,
+                    "toolsTokens": 4547,
+                    "messageTokens": 2991
+                  },
+                  "inbox": {
+                    "next-turn": [],
+                    "next-step": []
+                  },
+                  "sessionStats": {
+                    "turns": 1,
+                    "steps": 3,
+                    "llmMs": 19109,
+                    "toolMs": 93,
+                    "ttftMs": 9658,
+                    "ttftSteps": 3,
+                    "decodeMs": 9451,
+                    "decodeTokens": 609
+                  },
+                  "turnOutline": [
+                    {
+                      "turn": 1,
+                      "seq": 6,
+                      "prompt": "本任务验证受控生成服务，输出固定测试图片；请验收图片尺寸、文件可读取、Run 与媒体对应关系。工作…",
+                      "response": "当前请求缺少生成 Skill 要求的 **Prompt Builder 结果 JSON**。虽然已指定 11 份提示词文件，但这些文件不能替代该 Skill 要求的结果 JSON；因此我尚未提交生成，也没有产生 Run 或图片。 请提供与…"
+                    }
+                  ],
+                  "agentPreset": "harness-comfyui-cli-candidate",
+                  "userQuestions": {
+                    "active": [],
+                    "settled": []
+                  },
+                  "permissions": {
+                    "currentValue": "workspace-write"
+                  },
+                  "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3",
+                  "subagentCatalog": [],
+                  "subagentTiming": {
+                    "settledMs": 0
+                  },
+                  "subagent": null,
+                  "todos": null,
+                  "plan": {
+                    "active": false,
+                    "pending": false
+                  },
+                  "modelSelection": {
+                    "lastUsed": {
+                      "provider": "lan-gpt",
+                      "model": "gpt-6.1-terra",
+                      "reasoningEffort": "high"
+                    },
+                    "next": {
+                      "provider": "lan-gpt",
+                      "model": "gpt-6.1-terra",
+                      "reasoningEffort": "high"
+                    }
+                  },
+                  "sessionListMetadata": {
+                    "blank": false,
+                    "lastPromptAt": 1793196351863
+                  },
+                  "imageLimits": {
+                    "maxImageBytes": 20971520,
+                    "maxImagesPerMessage": 20,
+                    "maxMessageImageBytes": 209715200,
+                    "maxImagePixels": 64000000,
+                    "maxImageDimension": 8192,
+                    "mediaTypes": [
+                      "image/png",
+                      "image/jpeg",
+                      "image/webp",
+                      "image/gif"
+                    ]
+                  }
+                }
+              }
+            },
+            "goal": {
+              "ok": true
+            },
+            "generation": {
+              "ok": true,
+              "value": {
+                "sessionId": "session-aa396d58-da48-4637-93f7-e51119d83e9b",
+                "runs": [],
+                "media": [],
+                "hasActiveRuns": false,
+                "refreshAfterMs": 1000
+              }
+            },
+            "sessionRunning": false
+          },
+          "trace": {
+            "indexPath": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/3/initial/trace/trace-index.json",
+            "sessions": [
+              {
+                "sessionId": "session-aa396d58-da48-4637-93f7-e51119d83e9b",
+                "path": "/Users/fzfz/.codex/worktrees/generation-batch-investigation/harness-comfyui/docs/verification/generation-batch-20261028/model-traces/ablation512-file-admission/eb5a2a32-97f2-4a2e-bdb6-3e8916b00eda/first-files/3/initial/trace/sessions/session-session-aa396d58-da48-4637-93f7-e51119d83e9b/session.json"
+              }
+            ],
+            "missing": [
+              {
+                "source": "model-request",
+                "sessionId": "session-aa396d58-da48-4637-93f7-e51119d83e9b",
+                "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+              },
+              {
+                "source": "model-stream",
+                "sessionId": "session-aa396d58-da48-4637-93f7-e51119d83e9b",
+                "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+              }
+            ]
+          },
+          "completedAt": "2026-10-28T14:06:11.291Z"
+        }
+      ],
+      "errors": [],
+      "businessAssessment": "pending-human-review",
+      "inputs": [
+        {
+          "name": "prompt-01.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-01.txt",
+          "byteLength": 1725
+        },
+        {
+          "name": "prompt-02.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-02.txt",
+          "byteLength": 1828
+        },
+        {
+          "name": "prompt-03.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-03.txt",
+          "byteLength": 2027
+        },
+        {
+          "name": "prompt-04.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-04.txt",
+          "byteLength": 1899
+        },
+        {
+          "name": "prompt-05.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-05.txt",
+          "byteLength": 2279
+        },
+        {
+          "name": "prompt-06.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-06.txt",
+          "byteLength": 2300
+        },
+        {
+          "name": "prompt-07.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-07.txt",
+          "byteLength": 2377
+        },
+        {
+          "name": "prompt-08.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-08.txt",
+          "byteLength": 2305
+        },
+        {
+          "name": "prompt-09.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-09.txt",
+          "byteLength": 2389
+        },
+        {
+          "name": "prompt-10.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-10.txt",
+          "byteLength": 2367
+        },
+        {
+          "name": "prompt-11.txt",
+          "path": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3/input/prompt-11.txt",
+          "byteLength": 2191
+        }
+      ],
+      "identity": {
+        "sessionId": "session-aa396d58-da48-4637-93f7-e51119d83e9b",
+        "workspaceId": "a7ea8434-0efe-404b-a6a5-b6981e0260df",
+        "workspacePath": "/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3",
+        "presetId": "harness-comfyui-cli-candidate",
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-terra",
+        "reasoningEffort": "high"
+      },
+      "initialObservation": {
+        "session": {
+          "ok": true,
+          "value": {
+            "kind": "sequenced",
+            "asOfSeq": 4,
+            "values": {
+              "title": "ablation512-file-admission first-files 3",
+              "goal": null,
+              "tokenUsage": {
+                "uncachedInputTokens": 0,
+                "outputTokens": 0,
+                "cacheReadTokens": 0,
+                "cacheWriteTokens": 0
+              },
+              "contextPressure": {},
+              "contextBreakdown": {
+                "systemTokens": 0,
+                "toolsTokens": 0,
+                "messageTokens": 0
+              },
+              "inbox": {
+                "next-turn": [],
+                "next-step": []
+              },
+              "sessionStats": {
+                "turns": 0,
+                "steps": 0,
+                "llmMs": 0,
+                "toolMs": 0,
+                "ttftMs": 0,
+                "ttftSteps": 0,
+                "decodeMs": 0,
+                "decodeTokens": 0
+              },
+              "turnOutline": [],
+              "agentPreset": "harness-comfyui-cli-candidate",
+              "userQuestions": {
+                "active": [],
+                "settled": []
+              },
+              "permissions": {
+                "currentValue": "workspace-write"
+              },
+              "workingDirectory": "/private/var/folders/td/trvrwv_d2bxb0ns9qgpmmlqm0000gn/T/generation-model-matrix-UrHVJF/first-files/3",
+              "subagentCatalog": [],
+              "subagentTiming": {
+                "settledMs": 0
+              },
+              "subagent": null,
+              "todos": null,
+              "plan": {
+                "active": false,
+                "pending": false
+              },
+              "modelSelection": {
+                "lastUsed": null,
+                "next": {
+                  "provider": "lan-gpt",
+                  "model": "gpt-6.1-terra",
+                  "reasoningEffort": "high"
+                }
+              },
+              "sessionListMetadata": {
+                "blank": true,
+                "lastPromptAt": null
+              },
+              "imageLimits": {
+                "maxImageBytes": 20971520,
+                "maxImagesPerMessage": 20,
+                "maxMessageImageBytes": 209715200,
+                "maxImagePixels": 64000000,
+                "maxImageDimension": 8192,
+                "mediaTypes": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp",
+                  "image/gif"
+                ]
+              }
+            }
+          }
+        },
+        "goal": {
+          "ok": true
+        },
+        "generation": {
+          "ok": true,
+          "value": {
+            "sessionId": "session-aa396d58-da48-4637-93f7-e51119d83e9b",
+            "runs": [],
+            "media": [],
+            "hasActiveRuns": false,
+            "refreshAfterMs": 1000
+          }
+        },
+        "sessionRunning": false
+      },
+      "executionStatus": "naturally-ended",
+      "completedAt": "2026-10-28T14:06:11.312Z"
+    }
+  ],
+  "completedAt": "2026-10-28T14:06:11.334Z"
+}

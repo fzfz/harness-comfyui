@@ -1,0 +1,8 @@
+{
+  "document": "README.md",
+  "reviews": [
+    "generation-acceptance-final-semantic-review.json"
+  ],
+  "resolution": "All recommendations were applied; the final count wording retains Arabic numerals required by the repository.",
+  "resolvedAt": "2026-10-28T15:11:52.920537+00:00"
+}

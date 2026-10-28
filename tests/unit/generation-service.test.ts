@@ -16,7 +16,7 @@ describe('GenerationRemoteService', () => {
   it('returns the specific Run error without artifact paths or ComfyUI credentials', async () => {
     const context = nativeContext()
     const queryRuns = vi.fn(() => [{
-      runId: 'run_1', workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_1',
+      runId: 'run_1', requestId: 'request_1', workspaceId: 'workspace_1', sessionId: 'session_1', turn: 3, callId: 'call_1',
       title: '立绘', instanceId: '2', instanceTitle: 'ComfyUI', templateId: '34', templateTitle: 'Anima',
       status: 'failed' as const, revision: 4, promptId: 'secret-prompt-id',
       errorCode: 'SOURCE_PROTOCOL_ERROR', errorMessage: 'Template Workflow node 6 is invalid.',

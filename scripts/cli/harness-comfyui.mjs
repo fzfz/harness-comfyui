@@ -15,6 +15,8 @@ import {
 
 import { prepareResultFile, writeResultFile, discardUnpublishedResult } from './result-file.mjs'
 
+import { assertRequestSize, decodeUtf8, loadGenerationManifest } from './generation-manifest.mjs'
+import { GENERATION_MAX_SUBMISSION_ITEMS } from '../../src/cli/limits.ts'
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
 
 // Write callbacks report pipe failures; the listeners also consume Node's error events.
@@ -61,7 +63,7 @@ async function stdinText(required) {
     }
     chunks.push(bytes)
   }
-  return Buffer.concat(chunks).toString('utf8')
+  return decodeUtf8(Buffer.concat(chunks))
 }
 
 async function responseJson(response) {
@@ -114,7 +116,7 @@ async function main() {
   let output
   try {
     ({ args: argv, quiet } = presentationArguments(process.argv.slice(2), help.valueOptions))
-    output = renderHelp(help, argv)
+    output = renderHelp(help, argv, { max_submission_items: GENERATION_MAX_SUBMISSION_ITEMS, max_request_bytes: CLI_MAX_BODY_BYTES })
   } catch (error) {
     await reportFailure(`CLI_ARGUMENT_INVALID: ${error.message} ${helpHint(help, [])}`, 2)
     return
@@ -125,6 +127,7 @@ async function main() {
     return
   }
   const command = argv.join(' ')
+  const needsFile = argv.length === 4 && argv[0] === 'generation' && argv[1] === 'submit' && argv[2] === '--file'
   const needsStdin = argv.length === 3 && (
     command === 'generation submit --stdin'
     || command === 'generation inspect-template-parameters --stdin'
@@ -140,12 +143,16 @@ async function main() {
       const example = "['node', CLI, " + words.map(shellQuote).join(', ') + ']'
       throw new TypeError(help.messages.splitCommand.replaceAll('{argv}', example).replaceAll('{help}', helpHint(help, words)))
     }
-    request = parseCliArguments(argv, await stdinText(needsStdin))
+    const input = await stdinText(needsStdin)
+    request = argv[0] === 'generation' && argv[1] === 'submit' && (needsStdin || needsFile)
+      ? await loadGenerationManifest(argv, input)
+      : parseCliArguments(argv, input)
+    assertRequestSize(request)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'
     const code = error !== null && typeof error === 'object' && error.code === 'CLI_REQUEST_TOO_LARGE'
       ? error.code
-      : needsStdin ? 'CLI_REQUEST_INVALID' : 'CLI_ARGUMENT_INVALID'
+      : needsStdin || needsFile ? 'CLI_REQUEST_INVALID' : 'CLI_ARGUMENT_INVALID'
     await reportFailure(`${code}: ${message} ${helpHint(help, argv)}`, 2)
     return
   }
@@ -186,8 +193,14 @@ async function main() {
       await reportFailure(await discardResult(handle, message))
       return
     }
-    if (request.command === 'generation.submit' && (typeof envelope.data.run_id !== 'string' || envelope.data.run_id.length === 0)) {
-      throw new Error('CLI_PROTOCOL_ERROR: Host submit response has no valid run_id')
+    if (request.command === 'generation.submit' && (
+      !Array.isArray(envelope.data?.items)
+      || envelope.data.items.length !== request.items.length
+      || envelope.data.items.some((item, index) => item?.request_id !== request.items[index].request_id
+        || typeof item.run_id !== 'string' || item.run_id.length === 0
+        || !['accepted', 'reused'].includes(item.acceptance))
+    )) {
+      throw new Error('CLI_PROTOCOL_ERROR: Host submit response has invalid acceptance items. Retry with the saved manifest.')
     }
     data = envelope.data
   } catch (error) {
@@ -200,7 +213,7 @@ async function main() {
   catch (error) {
     const message = fileMessage('resultFileWriteFailed', {
       command: request.command, path: handle.path, system_error: error.message,
-      accepted_run_id_if_submit: request.command === 'generation.submit' ? `Run was accepted: ${data.run_id}.` : '',
+      accepted_run_id_if_submit: request.command === 'generation.submit' ? `Accepted Runs: ${data.items.map(item => `${item.request_id}=${item.run_id}`).join(', ')}. Retry with the original manifest to recover the result.` : '',
     }, argv)
     await reportFailure(await discardResult(handle, message))
     return
@@ -213,7 +226,7 @@ async function main() {
   }
   try {
     const next = renderNextSteps(help, request.command.replaceAll('.', ' '), quiet, {
-      run_ids_json: request.command === 'generation.submit' ? shellQuote(JSON.stringify({ run_ids: [data.run_id] })) : '',
+      run_ids_json: request.command === 'generation.submit' ? shellQuote(JSON.stringify({ run_ids: data.items.map(item => item.run_id) })) : '',
     })
     if (next) await writeOutput(stderr, next)
   } catch (error) {

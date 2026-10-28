@@ -13,7 +13,7 @@ export interface CliHandlerOptions {
   readonly capabilities: Pick<CliShellCapabilityStore, 'authorize'>
   readonly runtime: Pick<
     GenerationRuntime,
-    'acceptGeneration' | 'inspectTemplateRuntimeParameters' | 'readGenerationRunInputs' | 'readGenerationRunMedia'
+    'acceptGenerations' | 'inspectTemplateRuntimeParameters' | 'readGenerationRunInputs' | 'readGenerationRunMedia'
   >
   readonly imageReader: Pick<ImageReaderService, 'inspect'>
   readonly workspaceRegistry: WorkspaceRegistryProjection

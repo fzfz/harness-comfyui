@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import sharp from 'sharp'
 
 import { describe, expect, it } from 'vitest'
 
@@ -7,6 +8,41 @@ import { parseOfficialBusinessFixture } from './official-business-schema.mjs'
 import { startOfficialBusinessServices } from './official-business-services.mjs'
 
 describe('controlled model response scripts', () => {
+  it('serves the configured PNG dimensions and reports its actual byte length', async () => {
+    const outputPngBytes = await sharp({ create: { width: 512, height: 512, channels: 4, background: '#7f9fbfff' } }).png().toBuffer()
+    const fixture = parseOfficialBusinessFixture(officialBusinessFixtureJson)
+    const services = await startOfficialBusinessServices(fixture, { outputPngBytes })
+    try {
+      const query = new URLSearchParams({ filename: fixture.generation.filename, subfolder: fixture.generation.subfolder, type: 'output' })
+      const response = await fetch(`${services.origin}/view?${query}`)
+      expect(response.status).toBe(200)
+      const bytes = Buffer.from(await response.arrayBuffer())
+      expect(bytes.equals(outputPngBytes)).toBe(true)
+      expect(services.controlledPngByteLength).toBe(bytes.length)
+      expect(await sharp(bytes).metadata()).toMatchObject({ format: 'png', width: 512, height: 512 })
+    } finally { await services.close() }
+  })
+
+  it('keeps each submitted workflow queryable and fails only the selected job', async () => {
+    const services = await startOfficialBusinessServices(parseOfficialBusinessFixture(officialBusinessFixtureJson))
+    try {
+      const ids = [randomUUID(), randomUUID()]
+      for (const [index, id] of ids.entries()) {
+        await fetch(`${services.origin}/prompt`, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ prompt_id: id, prompt: { marker: index } }) })
+      }
+      for (const [index, id] of ids.entries()) {
+        const history = await services.readHistory(id)
+        expect(history[id].prompt[2]).toEqual({ marker: index })
+      }
+      services.failGeneration(ids[0])
+      const failed = await (await fetch(`${services.origin}/api/jobs/${ids[0]}`)).json()
+      expect(failed).toMatchObject({ status: 'failed', error: { message: expect.any(String) } })
+      expect((await services.readHistory(ids[0]))[ids[0]].status.status_str).toBe('error')
+      expect((await services.readHistory(ids[1]))[ids[1]].status.status_str).toBe('success')
+    } finally { await services.close() }
+  })
+
   it('holds accepted generation jobs pending until explicitly released', async () => {
     const services = await startOfficialBusinessServices(parseOfficialBusinessFixture(officialBusinessFixtureJson))
     try {

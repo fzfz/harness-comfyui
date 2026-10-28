@@ -1,0 +1,2061 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "a8fced61-bf97-476a-a4eb-43aafdfb5d62",
+  "assessedAt": "2026-10-28T13:14:53.911230+00:00",
+  "scope": "已导出的 naturally-ended 官方主子会话记录；业务语义由审阅者逐案例判断。",
+  "cases": [
+    {
+      "caseId": "first-files",
+      "repetition": 1,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/first-files/1/initial/trace/sessions/session-session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_6286891d-88c7-47a9-aec8-707bc757acdc",
+          "run_5019037c-0657-42b0-b79f-a9d3fb97dd9e",
+          "run_260ee353-d53b-41df-8751-68369e8aa86f",
+          "run_dd4d276d-43d8-43ad-8f66-cee0363f0420",
+          "run_d9cc9926-7377-4acb-ad9d-8dd79f310d11",
+          "run_e4f20c1b-f858-4c52-9aa5-befdd3660c4f",
+          "run_9b4f5e53-8de4-42f4-b51b-b3b12f836264",
+          "run_99ac4896-54ef-4d9e-915f-845856bf21e4",
+          "run_0235de9c-5b25-41f6-919c-f187d586caf2",
+          "run_3cea77dd-7cfa-4fb5-97fa-3c5f495058c4",
+          "run_d5df2aa7-381b-4685-bda4-7399e3c0186e"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 6
+        },
+        "usage": {
+          "inputTokens": 19074,
+          "outputTokens": 1919,
+          "totalTokens": 122753,
+          "cacheReadTokens": 101760
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 25
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 45
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 50
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 53
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+            "seq": 55
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "minor-recovered",
+          "detail": "文件存在性查询的花括号展开丢失前导零；随后改用完整文件名完成任务。",
+          "evidence": [
+            {
+              "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+              "seq": 27
+            },
+            {
+              "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+              "seq": 28
+            },
+            {
+              "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+              "seq": 34
+            },
+            {
+              "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+              "seq": 35
+            }
+          ]
+        },
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+              "seq": 50
+            },
+            {
+              "sessionId": "session-3d90b46a-4fbb-4a6e-91dc-9b7c00c1b910",
+              "seq": 53
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 2,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/first-files/2/initial/trace/sessions/session-session-a56b9841-3081-416c-b354-3515669a52a4/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_10595b35-bdd3-4dc8-8e80-d61f09ba7a02",
+          "run_6b8dd7d3-1ff0-4afb-b9e6-4484fa93b904",
+          "run_09c34376-8c88-452b-8073-b83b06bfc7d3",
+          "run_873f5fcb-951e-4a89-a29a-16b605296db5",
+          "run_120c9b97-1578-4cb1-990a-2fa00b224951",
+          "run_731b5f87-99f2-437d-b3b2-2e6ec3faae4c",
+          "run_6b27a3a6-a4db-45e8-a334-a498cdd01c6c",
+          "run_4c93de81-6b49-4d62-8bbb-4a70c1b8a758",
+          "run_9a987a16-ebf7-48ba-9045-c42c061b6730",
+          "run_e8f327e6-31a0-485c-82a2-0cb0f81e75bd",
+          "run_d0f07516-1f7b-49b0-8a53-eee08ed27b55"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "bash": 5,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "usage": {
+          "inputTokens": 19048,
+          "outputTokens": 2058,
+          "totalTokens": 121970,
+          "cacheReadTokens": 100864
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 21
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 43
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 48
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 51
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+            "seq": 53
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "minor-recovered",
+          "detail": "文件存在性查询的花括号展开丢失前导零；随后改用完整文件名完成任务。",
+          "evidence": [
+            {
+              "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+              "seq": 32
+            },
+            {
+              "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+              "seq": 33
+            },
+            {
+              "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+              "seq": 37
+            },
+            {
+              "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+              "seq": 38
+            }
+          ]
+        },
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+              "seq": 48
+            },
+            {
+              "sessionId": "session-a56b9841-3081-416c-b354-3515669a52a4",
+              "seq": 51
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "first-files",
+      "repetition": 3,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/first-files/3/initial/trace/sessions/session-session-a5f566e5-5d73-4444-a990-0ff81143e709/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_e3e7df3c-1615-4c1e-ad1f-616de9f086fe",
+          "run_1ca7f6e4-e692-4bd0-9ce7-cb3dd5a226b1",
+          "run_f5d172e8-f643-422f-bbf2-f0932287738d",
+          "run_97f211b3-f2d2-419e-888f-b731500a4473",
+          "run_56f16760-2ab1-405d-9a45-47b82af48fb8",
+          "run_c62f7055-e4dd-4a7a-b3c9-e867e3557bb8",
+          "run_2e67d0fd-6d26-4f55-8bc5-33037ed6919a",
+          "run_605ea9b9-0c84-4e10-8933-adc6449aa8ec",
+          "run_33d480ad-3ee9-46ee-8ad3-22cb5790b8e2",
+          "run_ab22c58d-126a-441a-a9f3-a7d129f0974a",
+          "run_cd4626b3-0541-4abd-a623-d51f84390551"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "bash": 5,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "usage": {
+          "inputTokens": 24806,
+          "outputTokens": 1890,
+          "totalTokens": 121800,
+          "cacheReadTokens": 95104
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 21
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 43
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 48
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 51
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+            "seq": 53
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+              "seq": 48
+            },
+            {
+              "sessionId": "session-a5f566e5-5d73-4444-a990-0ff81143e709",
+              "seq": 51
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 1,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/compressed-history/1/initial/trace/sessions/session-session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_a8463a82-a292-4780-8d5e-6fc06f2564a7",
+          "run_8436e65a-f904-4d2a-8ea5-ee43f33f3617",
+          "run_5b463101-9efe-4ee0-b805-7fc461b8b9ad",
+          "run_acdc14dc-51eb-4cfa-bfa5-5a64c9663d7c",
+          "run_1c432349-079f-4f3f-a38b-a2f014b27052",
+          "run_404c45ae-991b-457d-be64-8dfc5e754058",
+          "run_276839c6-d28f-4e66-8e26-fd2651b19654",
+          "run_624a0ee7-784a-4771-891c-1554fb51a65d",
+          "run_e6543083-897f-43f2-a7f0-7a28b66c4574",
+          "run_3d41055d-0296-40b6-8c38-22c93d5b3a8e",
+          "run_2658d551-2e71-4e77-a5d2-c510811236bd"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 5
+        },
+        "usage": {
+          "inputTokens": 18525,
+          "outputTokens": 1884,
+          "totalTokens": 121273,
+          "cacheReadTokens": 100864
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 25
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 43
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 48
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 51
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+            "seq": 53
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+              "seq": 48
+            },
+            {
+              "sessionId": "session-bb76a041-3bd6-4a9a-b0c1-eda7e628a8c6",
+              "seq": 51
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 2,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/compressed-history/2/initial/trace/sessions/session-session-5c590c0f-7434-45c4-8f94-ca058484394d/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_ec1b22e8-dcc3-490f-9919-3b71811ab1ec",
+          "run_844a9af0-84ed-4b20-9528-ad58a148e5dc",
+          "run_6554eb3b-2c64-4ba3-a424-ad139acac103",
+          "run_e74d3628-0be8-4a15-a750-3d9dbe6f71c5",
+          "run_df3b11b5-ff8b-4322-a03e-ab4c798a75dd",
+          "run_b1af5086-a925-48e3-b4cb-777dbb0a4c10",
+          "run_27319390-3d56-4e58-8b1f-144a5f0105f3",
+          "run_6e609802-b3f9-4fe7-baeb-f628b39c03da",
+          "run_0c1690cd-5a07-482f-86b1-bf05f6acf6cb",
+          "run_dd2e268e-4d69-4356-b3ee-ea73fb58b0c2",
+          "run_a1937f04-4a12-4350-8420-59899bd0d9d2"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "bash": 5,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "usage": {
+          "inputTokens": 18939,
+          "outputTokens": 1965,
+          "totalTokens": 123048,
+          "cacheReadTokens": 102144
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 21
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 43
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 48
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 51
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+            "seq": 53
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+              "seq": 48
+            },
+            {
+              "sessionId": "session-5c590c0f-7434-45c4-8f94-ca058484394d",
+              "seq": 51
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "compressed-history",
+      "repetition": 3,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/compressed-history/3/initial/trace/sessions/session-session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_5c645eb5-473d-4ca9-a46a-ff155a07c850",
+          "run_c0321881-ce71-4e86-a6fe-a84d3e0e0e48",
+          "run_825bd3ed-130c-4b7e-8fa9-9e37685d1658",
+          "run_23608233-b1f1-4291-9d41-834f1d489515",
+          "run_fa452626-f558-4191-acbd-c748e4936113",
+          "run_edcc5c17-7f55-4114-9925-c8df27a36ab4",
+          "run_18b26d49-d7ff-4f3a-8e5a-a4e0e6b48565",
+          "run_dce9b60d-c9b4-46bb-99e9-860da19215a3",
+          "run_45eaf6ae-335d-4a82-b818-2526d7f82e67",
+          "run_fb04d7dd-e5eb-4b2a-8f7c-34f43e2c0349",
+          "run_8f841e9f-3d8b-4e14-b45c-737c170fedb5"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "bash": 5,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "usage": {
+          "inputTokens": 31235,
+          "outputTokens": 2022,
+          "totalTokens": 121961,
+          "cacheReadTokens": 88704
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 21
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 43
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 48
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 51
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+            "seq": 53
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+              "seq": 48
+            },
+            {
+              "sessionId": "session-1b3faea8-a8af-480a-85a0-3fb0f0d4c638",
+              "seq": 51
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 1,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/child-handoff/1/initial/trace/sessions/session-session-d733fe35-e552-4ee4-9230-80c69771b41b/session.json",
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/child-handoff/1/initial/trace/sessions/session-b9e28cbd-162e-448f-b16f-d0bb72f677e9/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_814562ee-2dfb-416d-8b15-cb7a8d85186f",
+          "run_e0c4cd65-ab59-4fef-9fc9-0f54b9cdec32",
+          "run_961342b7-5288-4648-b606-4d1502243b0d",
+          "run_bbd28751-85a5-4295-aefd-3cd8f9fe20de",
+          "run_77839d81-2d42-4e7d-8e21-1c722ea03701",
+          "run_6b25754f-6fd0-4715-9e26-e0c7fbcc648a",
+          "run_cbe67e7b-2537-4301-a7f5-1f96288cf5d7",
+          "run_a18c02c3-efac-42a8-be0c-8d445f6ae971",
+          "run_cc468181-7f48-4152-a047-c655c09e4d95",
+          "run_cb54dfdc-d3c5-4905-8d33-d9881763da6d",
+          "run_b3e69a43-ffb6-49d9-8175-a3bf1d3b6b9e"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "子会话逐字节复制并比较 11 份文件；主会话通过 parameter_files 提交 child-output 文件。",
+        "toolCalls": {
+          "subagent": 1,
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 7,
+          "send_message": 1
+        },
+        "usage": {
+          "inputTokens": 24908,
+          "outputTokens": 3649,
+          "totalTokens": 163469,
+          "cacheReadTokens": 134912
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 12
+          },
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 51
+          },
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 64
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 22
+          },
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 31
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 54
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 60
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 65
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+            "seq": 67
+          }
+        ],
+        "childCopyAndDelivery": [
+          {
+            "sessionId": "b9e28cbd-162e-448f-b16f-d0bb72f677e9",
+            "seq": 15
+          },
+          {
+            "sessionId": "b9e28cbd-162e-448f-b16f-d0bb72f677e9",
+            "seq": 16
+          },
+          {
+            "sessionId": "b9e28cbd-162e-448f-b16f-d0bb72f677e9",
+            "seq": 20
+          },
+          {
+            "sessionId": "b9e28cbd-162e-448f-b16f-d0bb72f677e9",
+            "seq": 24
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+              "seq": 60
+            },
+            {
+              "sessionId": "session-d733fe35-e552-4ee4-9230-80c69771b41b",
+              "seq": 65
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 2,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/child-handoff/2/initial/trace/sessions/session-session-a6404a4e-7ea7-4111-acca-c538a01563e1/session.json",
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/child-handoff/2/initial/trace/sessions/session-70bd6d2e-a810-4698-964c-76f335a1398b/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_f603ebda-6335-4c9e-94d5-0d59a2f88e01",
+          "run_c74bf56a-68ce-465d-ac2c-113cd73fc36a",
+          "run_515773b5-a653-4991-a5be-e9a80efe3666",
+          "run_24f584c5-0232-499b-8a97-970d07270ccb",
+          "run_ba0519be-905c-49d2-a2c8-a07888a89e8c",
+          "run_2dcb0acb-e1f6-4ed1-ac08-85c69049524f",
+          "run_f9c5041b-1941-4098-b7a7-21a41f41891d",
+          "run_2dbc7743-fdbd-45b2-b61a-80e7c1a07328",
+          "run_39bdda02-8e8f-4538-a6ac-4a7b8a7c541a",
+          "run_ecf6f28b-95d4-429b-9e3c-b7178041855f",
+          "run_3b116457-531f-40a9-bf18-0c955178f2dc"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "子会话逐字节复制并比较 11 份文件；主会话通过 parameter_files 提交 child-output 文件。",
+        "toolCalls": {
+          "subagent": 1,
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 7,
+          "send_message": 1
+        },
+        "usage": {
+          "inputTokens": 32482,
+          "outputTokens": 3489,
+          "totalTokens": 162051,
+          "cacheReadTokens": 126080
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 12
+          },
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 51
+          },
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 64
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 22
+          },
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 31
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 54
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 60
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 65
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+            "seq": 67
+          }
+        ],
+        "childCopyAndDelivery": [
+          {
+            "sessionId": "70bd6d2e-a810-4698-964c-76f335a1398b",
+            "seq": 15
+          },
+          {
+            "sessionId": "70bd6d2e-a810-4698-964c-76f335a1398b",
+            "seq": 16
+          },
+          {
+            "sessionId": "70bd6d2e-a810-4698-964c-76f335a1398b",
+            "seq": 20
+          },
+          {
+            "sessionId": "70bd6d2e-a810-4698-964c-76f335a1398b",
+            "seq": 24
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+              "seq": 60
+            },
+            {
+              "sessionId": "session-a6404a4e-7ea7-4111-acca-c538a01563e1",
+              "seq": 65
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "child-handoff",
+      "repetition": 3,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/child-handoff/3/initial/trace/sessions/session-session-cde2cc73-453a-409d-a5ac-495d7f730fde/session.json",
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/child-handoff/3/initial/trace/sessions/session-f9a614d9-b67d-4442-9979-9385217e6107/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_f2f7c7b8-c65f-4c93-8532-c831248e31c8",
+          "run_b75df91a-49c7-4dfc-a3bf-2beecf1b38d5",
+          "run_f55b8f5c-4bd7-46e2-aac4-f21832a26ede",
+          "run_7c77d639-ca09-432c-b488-b32371b7e541",
+          "run_ab4992c2-bf66-4fca-bd1f-0f423c307639",
+          "run_ff6d2c81-9f51-4447-b638-02e955bec74e",
+          "run_aa9ec3b4-8fba-429d-9015-50d81337b8b4",
+          "run_a8ffebc7-11fd-47d3-ad48-7281a7d40099",
+          "run_3f5a7298-b5f1-4c47-9b10-133e4ca00ba2",
+          "run_c9ebf210-cf7d-4afd-9e5d-739c9b06015f",
+          "run_2f61cb2c-f6fb-467e-8b64-c924645a3f66"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "子会话逐字节复制并比较 11 份文件；主会话通过 parameter_files 提交 child-output 文件。",
+        "toolCalls": {
+          "subagent": 1,
+          "skill": 1,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 6,
+          "send_message": 1
+        },
+        "usage": {
+          "inputTokens": 29402,
+          "outputTokens": 3745,
+          "totalTokens": 162811,
+          "cacheReadTokens": 129664
+        },
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 12
+          },
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 49
+          },
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 62
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 22
+          },
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 31
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 52
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 58
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 63
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+            "seq": 65
+          }
+        ],
+        "childCopyAndDelivery": [
+          {
+            "sessionId": "f9a614d9-b67d-4442-9979-9385217e6107",
+            "seq": 15
+          },
+          {
+            "sessionId": "f9a614d9-b67d-4442-9979-9385217e6107",
+            "seq": 16
+          },
+          {
+            "sessionId": "f9a614d9-b67d-4442-9979-9385217e6107",
+            "seq": 20
+          },
+          {
+            "sessionId": "f9a614d9-b67d-4442-9979-9385217e6107",
+            "seq": 24
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+              "seq": 58
+            },
+            {
+              "sessionId": "session-cde2cc73-453a-409d-a5ac-495d7f730fde",
+              "seq": 63
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 1,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/known-failure/1/initial/trace/sessions/session-session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_5384fe39-d466-41d4-b27d-530d48c75f9f",
+          "run_ad69ec64-f98d-4bb2-b9e0-34c7aa6917a5",
+          "run_ea30d308-a114-4e86-8c1a-0981df0750bd",
+          "run_59128eb5-2645-42b0-9387-29bf561a4ba9",
+          "run_d55f6360-46b8-46ce-a8ad-1aabbf98f9a7",
+          "run_0e468614-31b8-4461-95ff-d46a1ccf6c29",
+          "run_b0bdff11-56c9-4c4b-acb8-df571f86107a",
+          "run_41e834d8-5448-4684-8224-f5793430c734",
+          "run_0591c77d-abbf-4690-a584-6c580da3a34d",
+          "run_5c17b0db-7b50-41e3-bb80-e70ac98fa538",
+          "run_b7fe7ab0-9691-4e7b-a5bf-cd16c4bea2a4"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "bash": 5,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "usage": {
+          "inputTokens": 20768,
+          "outputTokens": 2222,
+          "totalTokens": 129614,
+          "cacheReadTokens": 106624
+        },
+        "priorFailure": {
+          "run_id": "run_82c0ce27-0bd9-4195-9163-84953153c21a",
+          "request_id": "a2713d8a-0bae-4e61-81af-21d66e3503b3",
+          "lookup_status": "available",
+          "title": "Controlled prior generation failure",
+          "status": "failed",
+          "revision": 1,
+          "updated_at": 1793192099049,
+          "instance_id": "1",
+          "prompt_id": null,
+          "run_error": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": []
+        },
+        "explicitRunInputsContainsPromptBody": true,
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 21
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 43
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 48
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 51
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 53
+          }
+        ],
+        "priorFailure": [
+          {
+            "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+            "seq": 38
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "minor-recovered",
+          "detail": "模型最初将 CLI 返回的文件路径解析为 JSON，产生两次 JSONDecodeError；随后读取结果文件并完成任务。",
+          "evidence": [
+            {
+              "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+              "seq": 32
+            },
+            {
+              "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+              "seq": 33
+            },
+            {
+              "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+              "seq": 37
+            },
+            {
+              "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+              "seq": 38
+            }
+          ]
+        },
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+              "seq": 48
+            },
+            {
+              "sessionId": "session-1096ff2d-8f05-4ed6-adff-3ba92b0d288c",
+              "seq": 51
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 2,
+      "assessment": "business-unverified-fixture-invalid",
+      "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/known-failure/2/initial/trace/sessions/session-session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_db3aab2f-bb9d-4676-aa78-54d1c6607e57",
+          "run_098f86b4-7ead-4631-b502-a6f0848d89d9",
+          "run_4523c286-8b73-41d4-a99d-d69079a7df32",
+          "run_b7d76cbf-24cc-4cec-a8e6-3f12a7b3dc92",
+          "run_be5d6e75-b2de-4a05-9151-b528e622eba6",
+          "run_cba8da57-4874-4ac3-89a6-ffef0ed6a849",
+          "run_5cfd10cb-9cd1-4643-8263-16bbcac9393f",
+          "run_332fe5e9-a8d6-4270-9e3b-eb78722ec709",
+          "run_c062be39-b2db-4c5f-94ad-0c4aeaab3a31",
+          "run_1a5c1c73-2d92-4c5d-911d-399d38f70c53",
+          "run_18c1a679-c63f-4a2c-80a7-86d985c40007"
+        ],
+        "deliveryContainsAllRunIds": true,
+        "deliveryContainsAllMediaNames": true,
+        "defaultStatusQueryContainsPromptBody": false,
+        "directHttpBypass": false,
+        "promptHandoff": "parameter_files 引用原始文件；主会话未重写正文。",
+        "toolCalls": {
+          "skill": 1,
+          "bash": 6,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1
+        },
+        "usage": {
+          "inputTokens": 24153,
+          "outputTokens": 2194,
+          "totalTokens": 126827,
+          "cacheReadTokens": 100480
+        },
+        "priorFailure": {
+          "run_id": "run_5de20b5b-4c8d-4695-bc41-d042b8bbdcd0",
+          "request_id": "51e3ba5c-116d-4bea-a2ce-2d5f71121e7f",
+          "lookup_status": "available",
+          "title": "Controlled prior generation failure",
+          "status": "failed",
+          "revision": 1,
+          "updated_at": 1793192167052,
+          "instance_id": "1",
+          "prompt_id": null,
+          "run_error": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "images": []
+        },
+        "explicitRunInputsContainsPromptBody": true,
+        "actualImageDimensionsVerifiedByModel": false
+      },
+      "evidence": {
+        "input": [
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 10
+          },
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 11
+          },
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 12
+          }
+        ],
+        "skillAndReferences": [
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 21
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 45
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 50
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 53
+          }
+        ],
+        "ended": [
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 55
+          }
+        ],
+        "priorFailure": [
+          {
+            "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+            "seq": 38
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "该会话依据 Run succeeded 与媒体路径宣告生成完成，未读取图片实际尺寸。同一轮受控夹具在 Goal 恢复中输出 1×1 图片，本案例只能证明受管提交、状态与文件交付链路。",
+          "evidence": [
+            {
+              "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+              "seq": 50
+            },
+            {
+              "sessionId": "session-17f6ee9b-1fe3-4bf5-af62-44b947bd0857",
+              "seq": 53
+            }
+          ]
+        }
+      ],
+      "managedFlowAssessment": "pass"
+    },
+    {
+      "caseId": "known-failure",
+      "repetition": 3,
+      "assessment": "business-unverified-fixture-invalid",
+      "managedFlowAssessment": "pass",
+      "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/known-failure/3/initial/trace/sessions/session-session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_58a054af-5249-4c42-bd73-26e65645c3cc",
+          "run_8455da3e-1ebc-4df0-9336-f09f11d02d60",
+          "run_622b5ef3-e549-47d3-a69c-dc422990597a",
+          "run_a99284ac-b2be-47de-9c65-6cbfa67c271c",
+          "run_85c1a416-88b0-44fe-a15b-af1eca83dc21",
+          "run_5cb95503-1804-42d3-a4ac-5a3de72921c3",
+          "run_5072a0d9-2bd6-4356-9f5e-89dff3476274",
+          "run_5bf857e5-40b2-4adb-af19-7298f4d74f1d",
+          "run_a075f04f-e59a-45d1-8fd5-2db9a44761bc",
+          "run_38660050-93a6-4750-b845-c0121a2b5fb4",
+          "run_2cf373f0-b83e-4909-b53f-f7e918347716"
+        ],
+        "priorFailure": {
+          "run_id": "run_d51d7b63-35db-4d37-871b-6510954dbaef",
+          "request_id": "f4ef247e-1fd9-4604-89a4-81eb9e6b5549",
+          "lookup_status": "available",
+          "title": "Controlled prior generation failure",
+          "status": "failed",
+          "revision": 1,
+          "updated_at": 1793192233280,
+          "instance_id": "1",
+          "prompt_id": null,
+          "run_error": {
+            "code": "COMFYUI_REMOTE_ERROR",
+            "message": "The controlled prior generation failed before producing an image."
+          },
+          "parameters": {
+            "height": 512,
+            "positive_prompt": "A full-length photograph of a Chinese woman in her early thirties, framed from head to feet with a little space above her hair and below her shoes, standing on a smooth mid-grey seamless studio floor against the same grey backdrop. She is one metre seventy-three tall, seven and a half head-heights from crown to sole, fine-boned and full-figured: narrow waist, rounded hips, long legs, elegant shoulders. Her face is an elegant oval with high cheekbones, a soft defined jawline and a small rounded chin; dark almond-shaped eyes with heavy lids and calm dark-brown irises; softly tapered black brows; a straight slender nose with a fine tip; a full mouth with a defined cupid's bow and rose-pink lips. Long glossy jet-black hair, parted slightly off centre, hangs straight and falls past her waist. Her skin is one even ivory tone from hairline to hands, unmade-up, matte and alive with fine texture and visible pores. She stands with her weight evenly on both feet, shoulders square and relaxed, arms hanging loosely a little away from her body, palms facing in, fingers straight; chin level, eyes level and quietly meeting the lens, lips together in a calm, self-possessed expression. She wears a fitted ivory silk blouse with the top button open, tucked into high-waisted charcoal wool trousers with a thin black leather belt, and black pointed-toe leather pumps with a low heel. Soft directional daytime light comes from a large window at the upper left, gentle shadow falloff down her right side. Palette of sixty percent warm grey studio, thirty percent charcoal, ten percent ivory and skin. Shot on a full-frame camera with a 50mm lens at f/2.8, natural skin texture, gentle film grain, restrained naturalistic colour.",
+            "seed": 424242,
+            "width": 512
+          },
+          "images": []
+        },
+        "directHttpBypass": false,
+        "defaultStatusQueryContainsPromptBody": false,
+        "explicitIncludeParametersContainsPromptBody": true,
+        "actualImageDimensionsVerifiedByModel": false,
+        "promptHandoff": "parameter_files 引用原文件；清单保留请求标识。"
+      },
+      "evidence": {
+        "skillAndReferences": [
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 16
+          },
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 21
+          }
+        ],
+        "priorFailure": [
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 37
+          },
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 38
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 42
+          },
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 43
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 47
+          },
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 48
+          }
+        ],
+        "delivery": [
+          {
+            "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+            "seq": 51
+          }
+        ]
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "模型依据 succeeded 宣告 512×512 图片完成，未核验实际尺寸；业务结果受同轮夹具尺寸缺陷影响。",
+          "evidence": [
+            {
+              "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+              "seq": 48
+            },
+            {
+              "sessionId": "session-cf9e1588-fe6f-4078-a53e-6d23dbaf024e",
+              "seq": 51
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 1,
+      "assessment": "fail-output-dimensions",
+      "managedFlowAssessment": "pass",
+      "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/goal-resume/1/resume/trace/sessions/session-session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_3a0d2f13-8a37-4833-8836-27816026b162",
+          "run_d8124b9e-b847-4905-8e31-291f892b3167",
+          "run_95c355a2-e16c-48b1-81c4-e41f5b1d7bb3",
+          "run_ac05af5b-200f-4b94-9ba6-76b311ceafa9",
+          "run_fb3a1f25-f13a-418c-9542-08745115ee5b",
+          "run_2049c120-eb81-42ee-aec4-866f472b044f",
+          "run_8379e590-b1c8-4e84-a751-62fc97fcd1be",
+          "run_2ad71d2c-c694-4060-8166-36ee9a8210fb",
+          "run_04c8270c-580e-40db-a1f4-c5d4d39d9bfd",
+          "run_e19acb67-e5aa-40b5-884d-928363c5b347",
+          "run_193623c2-3c2d-4f62-a845-a2584086790d"
+        ],
+        "actualDimensions": [
+          1,
+          1
+        ],
+        "requiredDimensions": [
+          512,
+          512
+        ],
+        "actualImageDimensionsVerifiedByModel": true,
+        "directHttpBypass": false,
+        "defaultStatusQueryContainsPromptBody": false,
+        "initialGoalPaused": true,
+        "goalResumedAfterRestart": true,
+        "resumeSubmitCalls": 0,
+        "sameRunIdsAndPaths": true,
+        "finalGoalStatus": "blocked",
+        "goalRoundsStarted": 3,
+        "businessComplete": false,
+        "usage": {
+          "inputTokens": 51914,
+          "outputTokens": 4557,
+          "totalTokens": 798231,
+          "cacheReadTokens": 741760
+        }
+      },
+      "evidence": {
+        "pause": [
+          {
+            "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+            "seq": 64
+          }
+        ],
+        "resume": [
+          {
+            "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+            "seq": 73
+          }
+        ],
+        "query": [
+          {
+            "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+            "seq": 96
+          }
+        ],
+        "dimensions": [
+          {
+            "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+            "seq": 97
+          }
+        ],
+        "history": [
+          {
+            "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+            "seq": 126
+          }
+        ],
+        "blocked": [
+          {
+            "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+            "seq": 150
+          }
+        ],
+        "final": [
+          {
+            "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+            "seq": 157
+          }
+        ]
+      },
+      "restartEvidence": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/matrix.json",
+        "jsonPointer": "/cases/12/phases/1",
+        "initialRunId": "c4b2c412-126e-48b5-8b28-bd25a384d8d0",
+        "resumeRunId": "b2c2547b-fae7-4fa1-a294-2a331c11f48e",
+        "userAction": {
+          "action": "goal-bar"
+        }
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "实际 11 张 PNG 均为 1×1，无法满足 512×512 的任务要求。模型恢复后核验尺寸，连续 3 轮确认后将 Goal 标为 blocked。",
+          "evidence": [
+            {
+              "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+              "seq": 97
+            },
+            {
+              "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+              "seq": 150
+            },
+            {
+              "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+              "seq": 157
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 2,
+      "assessment": "fail-output-dimensions",
+      "managedFlowAssessment": "pass",
+      "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/goal-resume/2/resume/trace/sessions/session-session-abd91ea9-9d39-4e1f-8091-2971a3e5543c/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_57944e37-7900-4e74-adb8-886619b684dd",
+          "run_fcdda57e-8ac4-4bf6-8334-3f04ee2a01e2",
+          "run_90de3793-8af9-4e6f-80a9-1713a4ee76be",
+          "run_10c59bb5-3e84-4d44-96d6-3e532437f68e",
+          "run_bfbb8d6f-7522-4bc8-b188-805b672b5b80",
+          "run_66499bea-90b6-4f35-b1c3-be821d801fdd",
+          "run_b656b07e-cea9-47d1-bd08-7aba4a65e58f",
+          "run_cdf99ccb-35e4-4355-ac01-6a3c3d88e911",
+          "run_d7388798-496e-471a-b1fb-65850e8c6f50",
+          "run_d7d9366f-7f9d-40d0-903a-06244dba16de",
+          "run_f0015f71-c7c8-443b-af4b-eada061efb2b"
+        ],
+        "actualDimensions": [
+          1,
+          1
+        ],
+        "requiredDimensions": [
+          512,
+          512
+        ],
+        "actualImageDimensionsVerifiedByModel": true,
+        "directHttpBypass": false,
+        "defaultStatusQueryContainsPromptBody": false,
+        "initialGoalPaused": true,
+        "goalResumedAfterRestart": true,
+        "resumeSubmitCalls": 0,
+        "sameRunIdsAndPaths": true,
+        "finalGoalStatus": "blocked",
+        "goalRoundsStarted": 3,
+        "businessComplete": false,
+        "usage": {
+          "inputTokens": 42154,
+          "outputTokens": 4611,
+          "totalTokens": 731693,
+          "cacheReadTokens": 684928
+        }
+      },
+      "evidence": {
+        "pause": [
+          {
+            "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+            "seq": 69
+          }
+        ],
+        "resume": [
+          {
+            "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+            "seq": 78
+          }
+        ],
+        "query": [
+          {
+            "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+            "seq": 106
+          }
+        ],
+        "dimensions": [
+          {
+            "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+            "seq": 107
+          }
+        ],
+        "history": [
+          {
+            "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+            "seq": 131
+          }
+        ],
+        "blocked": [
+          {
+            "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+            "seq": 155
+          }
+        ],
+        "final": [
+          {
+            "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+            "seq": 162
+          }
+        ]
+      },
+      "restartEvidence": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/matrix.json",
+        "jsonPointer": "/cases/13/phases/1",
+        "initialRunId": "b2c2547b-fae7-4fa1-a294-2a331c11f48e",
+        "resumeRunId": "13a433cd-40d5-4e1f-b7b2-d1535665cc6e",
+        "userAction": {
+          "action": "goal-bar"
+        }
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "实际 11 张 PNG 均为 1×1，无法满足 512×512 的任务要求。模型恢复后核验尺寸，连续 3 轮确认后将 Goal 标为 blocked。",
+          "evidence": [
+            {
+              "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+              "seq": 107
+            },
+            {
+              "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+              "seq": 155
+            },
+            {
+              "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+              "seq": 162
+            }
+          ]
+        },
+        {
+          "severity": "minor-recovered",
+          "detail": "Python 中写入小写 true，首次恢复查询失败；随后改为 True 并完成核验。",
+          "evidence": [
+            {
+              "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+              "seq": 101
+            },
+            {
+              "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+              "seq": 102
+            },
+            {
+              "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+              "seq": 106
+            },
+            {
+              "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+              "seq": 107
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "caseId": "goal-resume",
+      "repetition": 3,
+      "assessment": "fail-output-dimensions",
+      "managedFlowAssessment": "pass",
+      "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+      "traceFiles": [
+        "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/goal-resume/3/resume/trace/sessions/session-session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6/session.json"
+      ],
+      "observations": {
+        "acceptedRuns": 11,
+        "succeededRuns": 11,
+        "images": 11,
+        "runIds": [
+          "run_10c5abff-c13c-4cfb-8d10-bfbd03f2fd2d",
+          "run_c0c70ed8-e55c-4ebf-a27f-506f0fff1fde",
+          "run_1ba03b2f-8f94-4381-95fd-65eaa59acfa5",
+          "run_158e103a-7b22-463d-b54f-dd6c4862f616",
+          "run_a5497262-97e3-46ac-abe5-c4b8c4f7679d",
+          "run_65c7cf05-139f-4bfe-995b-70f9e0cfb1f1",
+          "run_7b73388f-dd51-4e69-b8dd-7966f2619b23",
+          "run_a9d3cd98-c970-4dcd-a898-80133defb1b7",
+          "run_b68f08b7-9581-49b1-9458-586ba643aefb",
+          "run_13458596-605c-4563-9878-1384565c8f45",
+          "run_82cfd90e-e42a-46f9-9e01-95c372f0bf98"
+        ],
+        "actualDimensions": [
+          1,
+          1
+        ],
+        "requiredDimensions": [
+          512,
+          512
+        ],
+        "actualImageDimensionsVerifiedByModel": true,
+        "directHttpBypass": false,
+        "defaultStatusQueryContainsPromptBody": false,
+        "initialGoalPaused": true,
+        "goalResumedAfterRestart": true,
+        "resumeSubmitCalls": 0,
+        "sameRunIdsAndPaths": true,
+        "finalGoalStatus": "blocked",
+        "goalRoundsStarted": 3,
+        "businessComplete": false,
+        "usage": {
+          "inputTokens": 66930,
+          "outputTokens": 4317,
+          "totalTokens": 688847,
+          "cacheReadTokens": 617600
+        },
+        "toolCalls": {
+          "create_goal": 1,
+          "get_goal": 4,
+          "skill": 3,
+          "mcp__noobai__get_catalog_resource": 2,
+          "mcp__noobai__search_instances": 1,
+          "bash": 8,
+          "update_goal": 2
+        }
+      },
+      "evidence": {
+        "skillAndReferences": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 27
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 36
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 81
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 86
+          }
+        ],
+        "accepted": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 48
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 49
+          }
+        ],
+        "completed": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 53
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 54
+          }
+        ],
+        "initialDelivery": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 63
+          }
+        ],
+        "pause": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 59
+          }
+        ],
+        "resume": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 68
+          }
+        ],
+        "query": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 91
+          }
+        ],
+        "dimensions": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 92
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 135
+          }
+        ],
+        "history": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 115
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 116
+          }
+        ],
+        "blocked": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 139
+          },
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 140
+          }
+        ],
+        "final": [
+          {
+            "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+            "seq": 147
+          }
+        ]
+      },
+      "restartEvidence": {
+        "source": "docs/verification/generation-batch-20261028/model-traces/candidate/a8fced61-bf97-476a-a4eb-43aafdfb5d62/matrix.json",
+        "jsonPointer": "/cases/14/phases/1",
+        "initialRunId": "13a433cd-40d5-4e1f-b7b2-d1535665cc6e",
+        "resumeRunId": "deaf03a3-7e10-42f6-8291-3c758eb6c508",
+        "userAction": {
+          "action": "goal-bar"
+        }
+      },
+      "findings": [
+        {
+          "severity": "material",
+          "detail": "实际 11 张 PNG 均为 1×1，无法满足 512×512 的任务要求。模型恢复后核验原有 Run 与尺寸，连续 3 轮确认后将 Goal 标为 blocked，未新增 Run。",
+          "evidence": [
+            {
+              "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+              "seq": 92
+            },
+            {
+              "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+              "seq": 135
+            },
+            {
+              "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+              "seq": 139
+            },
+            {
+              "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+              "seq": 140
+            },
+            {
+              "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+              "seq": 147
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pending": [],
+  "limitations": [
+    "本报告只读取已结束会话的导出记录及矩阵元数据。",
+    "默认 resolve-media 无 Prompt 正文；显式 run-inputs 或 include_parameters=true 可返回正文。",
+    "图像业务验收需要有效尺寸夹具及最终图片核验。"
+  ],
+  "summary": {
+    "reviewed": 15,
+    "businessPassed": 0,
+    "managedFlowPassed": 15,
+    "dimensionFailures": 3,
+    "businessUnverifiedDueToFixture": 12,
+    "pending": 0,
+    "overallAssessment": "not-passed-fixture-output-dimensions"
+  },
+  "fixtureFinding": {
+    "detail": "Goal 第 1、2、3 次恢复均证实受控实例交付 70 字节的 1×1 PNG；任务要求 512×512。本轮不能作为图片业务完成验收。前 12 个会话未识别尺寸偏差。",
+    "evidence": [
+      {
+        "sessionId": "session-1a6e3b19-fbce-4069-a3bb-bcae55624bf1",
+        "seq": 97
+      },
+      {
+        "sessionId": "session-abd91ea9-9d39-4e1f-8091-2971a3e5543c",
+        "seq": 107
+      },
+      {
+        "sessionId": "session-f1af4a2c-2f0a-4dd0-82fb-ecac8f9347b6",
+        "seq": 92
+      }
+    ],
+    "scopeLimit": "前 12 个案例的导出会话没有实际尺寸读取，本审阅未把其他会话的测量伪称为逐文件测量。"
+  }
+}

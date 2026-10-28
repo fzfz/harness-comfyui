@@ -77,18 +77,123 @@ function createOptions(root: string, overrides: Partial<GenerationRuntimeOptions
 async function createSavedRun(root: string) {
   const options = createOptions(root)
   const runtime = new GenerationRuntime(options)
-  const accepted = await runtime.acceptGeneration({
+  const accepted = await runtime.acceptGenerations({
     workspaceId: 'workspace_initialization',
     sessionId: 'session_initialization',
     turn: 1,
     callId: 'call_initialization',
-  }, generationRequest)
+  }, [{ requestId: randomUUID(), request: generationRequest }])
   for (let step = 0; step < 4; step += 1) await runtime.advance()
   const [media] = runtime.queryMedia({ workspaceId: 'workspace_initialization', sessionId: 'session_initialization' })
   if (media === undefined) throw new Error('The initialization fixture did not save media.')
   runtime.close()
-  return { options, runId: accepted.runId, mediaId: media.mediaId }
+  return { options, runId: accepted.items[0]!.runId, mediaId: media.mediaId }
 }
+
+function restoreLegacySchema(repositoryFile: string): void {
+  const database = new DatabaseSync(repositoryFile)
+  database.exec(`
+    PRAGMA foreign_keys = OFF;
+    BEGIN IMMEDIATE;
+    CREATE TABLE generation_runs_legacy (
+      run_id TEXT PRIMARY KEY,
+      workspace_id TEXT NOT NULL,
+      session_id TEXT NOT NULL,
+      turn INTEGER NOT NULL,
+      call_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      instance_id TEXT,
+      instance_title TEXT,
+      instance_origin TEXT,
+      template_id TEXT NOT NULL,
+      template_title TEXT,
+      status TEXT NOT NULL,
+      revision INTEGER NOT NULL,
+      prompt_id TEXT,
+      request_json TEXT NOT NULL,
+      source_snapshot_path TEXT,
+      actual_workflow_path TEXT,
+      api_workflow_path TEXT,
+      expected_output_node_ids_json TEXT,
+      missing_observed_at INTEGER,
+      error_code TEXT,
+      error_message TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      UNIQUE(workspace_id, session_id, call_id)
+    );
+    INSERT INTO generation_runs_legacy SELECT
+      run_id, workspace_id, session_id, turn, call_id, title, instance_id, instance_title, instance_origin,
+      template_id, template_title, status, revision, prompt_id, request_json, source_snapshot_path,
+      actual_workflow_path, api_workflow_path, expected_output_node_ids_json, missing_observed_at,
+      error_code, error_message, created_at, updated_at
+    FROM generation_runs;
+    DROP TABLE generation_runs;
+    ALTER TABLE generation_runs_legacy RENAME TO generation_runs;
+    DELETE FROM schema_migrations WHERE version = 2;
+    COMMIT;
+  `)
+  database.close()
+}
+
+describe('GenerationRuntime request identity migration', () => {
+  it('preserves historical Run inputs, media, paths, and foreign keys across migration and restart', async () => {
+    const root = temporaryRoot('generation-request-identity-migration-')
+    const fixture = await createSavedRun(root)
+    restoreLegacySchema(fixture.options.runRepositoryFile)
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const migrated = new GenerationRuntime(fixture.options)
+      expect(migrated.queryRuns({ workspaceId: 'workspace_initialization', sessionId: 'session_initialization' }))
+        .toMatchObject([{ runId: fixture.runId, requestId: fixture.runId, callId: 'call_initialization', status: 'succeeded' }])
+      expect(migrated.queryMedia({ workspaceId: 'workspace_initialization', sessionId: 'session_initialization' }))
+        .toMatchObject([{ mediaId: fixture.mediaId, runId: fixture.runId }])
+      expect(readFileSync(migrated.mediaContentPath(fixture.mediaId))).toEqual(Buffer.from(mediaBytes))
+      await expect(migrated.readGenerationRunInputs({ workspaceId: 'workspace_initialization', runIds: [fixture.runId] }))
+        .resolves.toMatchObject({ runs: [{ lookup_status: 'available', workflow_status: 'available', arguments: { parameters: generationRequest.parameters } }] })
+      migrated.close()
+    }
+    const migrated = new GenerationRuntime(fixture.options)
+    const accepted = await migrated.acceptGenerations({
+      workspaceId: 'workspace_initialization', sessionId: 'session_initialization', turn: 2, callId: 'call_initialization',
+    }, [{ requestId: randomUUID(), request: generationRequest }, { requestId: randomUUID(), request: generationRequest }])
+    expect(accepted.items).toHaveLength(2)
+    expect(migrated.queryRuns({ workspaceId: 'workspace_initialization', sessionId: 'session_initialization' })).toHaveLength(3)
+    migrated.close()
+    const database = new DatabaseSync(fixture.options.runRepositoryFile)
+    expect(database.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    expect(database.prepare('SELECT COUNT(*) AS count FROM generation_run_outputs WHERE run_id = ?').get(fixture.runId)).toEqual({ count: 1 })
+    database.close()
+  })
+
+  it('rolls back the complete migration after a SQLite failure and retries on the next start', async () => {
+    const root = temporaryRoot('generation-request-identity-rollback-')
+    const fixture = await createSavedRun(root)
+    restoreLegacySchema(fixture.options.runRepositoryFile)
+    let database = new DatabaseSync(fixture.options.runRepositoryFile)
+    database.exec(`
+      CREATE TRIGGER reject_request_identity_migration BEFORE INSERT ON schema_migrations
+      WHEN NEW.version = 2 BEGIN SELECT RAISE(ABORT, 'migration fixture failure'); END;
+    `)
+    database.close()
+
+    expect(() => new GenerationRuntime(fixture.options)).toThrow(expect.objectContaining({ cause: expect.objectContaining({ message: 'migration fixture failure' }) }))
+    database = new DatabaseSync(fixture.options.runRepositoryFile)
+    expect(database.prepare('PRAGMA table_info(generation_runs)').all().some(column => column.name === 'request_id')).toBe(false)
+    expect(database.prepare('SELECT run_id, status FROM generation_runs').all()).toEqual([{ run_id: fixture.runId, status: 'succeeded' }])
+    expect(database.prepare('SELECT COUNT(*) AS count FROM generation_media WHERE run_id = ?').get(fixture.runId)).toEqual({ count: 1 })
+    expect(database.prepare("SELECT name FROM sqlite_master WHERE name = 'generation_runs_migration'").all()).toEqual([])
+    expect(database.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    database.exec('DROP TRIGGER reject_request_identity_migration')
+    database.close()
+
+    const restarted = new GenerationRuntime(fixture.options)
+    expect(restarted.queryRuns({ workspaceId: 'workspace_initialization', sessionId: 'session_initialization' }))
+      .toMatchObject([{ runId: fixture.runId, requestId: fixture.runId, status: 'succeeded' }])
+    expect(readFileSync(restarted.mediaContentPath(fixture.mediaId))).toEqual(Buffer.from(mediaBytes))
+    restarted.close()
+  })
+})
 
 function temporaryRoot(prefix: string): string {
   const root = mkdtempSync(join(tmpdir(), prefix))

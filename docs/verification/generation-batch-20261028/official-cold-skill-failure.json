@@ -1,0 +1,72 @@
+{
+  "classification": "official-desktop-cold-session-skill-registry",
+  "applicationVersion": "0.2.1-rc.3",
+  "observedSessionId": "12b44415-eed2-4d30-bfff-229a0bb4049e",
+  "facts": [
+    {
+      "fact": "The child session header retains agentPreset harness-comfyui-cli-candidate; event 87 is turn/end completed.",
+      "source": ".local/desktop-e2e/official-business-audit/37cbf6b4-ecd9-4097-a577-ec1823b407c8/328624e4-9905-42f1-81ae-de2d418cbb79/session-trace/completed/sessions/session-12b44415-eed2-4d30-bfff-229a0bb4049e/session.json"
+    },
+    {
+      "fact": "The saved ended-child catalog contains seven Office skills.",
+      "source": ".local/desktop-e2e/official-business-audit/37cbf6b4-ecd9-4097-a577-ec1823b407c8/b5d016ed-66fe-47c9-a268-e366ed7a9e0f/official-business-result.json",
+      "lines": [
+        2588,
+        2627
+      ]
+    },
+    {
+      "fact": "The test reads remote.skills.list for the child and later asserts the eight repository skills.",
+      "source": "tests/desktop/official-desktop-live.test.mjs",
+      "lines": [
+        [
+          1308,
+          1314
+        ],
+        [
+          4099,
+          4103
+        ]
+      ]
+    },
+    {
+      "fact": "The workbench mounts a separate isolated skills registry.",
+      "source": "agent-presets/shared/agent.cordis.yml",
+      "lines": [
+        33,
+        46
+      ]
+    },
+    {
+      "fact": "SessionSkillCatalog.list chooses preset serviceFor only for a live Agent; cold sessions use the host skills registry, then pass a preset lease key.",
+      "source": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-api-session-controller/lib/index.js",
+      "lines": [
+        2377,
+        2386
+      ]
+    },
+    {
+      "fact": "acquireScope returns the retained generation key and an async disposer, without an isolated service accessor.",
+      "source": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-agent-preset-registry/lib/index.js",
+      "lines": [
+        775,
+        786
+      ]
+    },
+    {
+      "fact": "Natural child settlement disposes the local handle before notifying the parent.",
+      "source": "/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-subagent/lib/index.js",
+      "lines": [
+        [
+          1920,
+          1960
+        ],
+        [
+          2025,
+          2048
+        ]
+      ]
+    }
+  ],
+  "reviewMode": "Read-only source and saved evidence inspection; no application patch or live model execution."
+}

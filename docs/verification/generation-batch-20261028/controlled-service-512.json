@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-10-28T13:58:01.875Z",
+  "identity": {
+    "comfyOrigin": "http://127.0.0.1:58149",
+    "sourcePort": "58149",
+    "mcpUrl": "http://127.0.0.1:58150/mcp",
+    "controlOrigin": "http://127.0.0.1:58150"
+  },
+  "width": 512,
+  "height": 512,
+  "format": "png",
+  "bytes": 6275
+}
