@@ -299,6 +299,37 @@ describe('official API Workflow cache', () => {
     expect(frontend.exportWorkflow).toHaveBeenCalledTimes(2)
   })
 
+  it('exports again instead of reusing a base saved before graph-load validation', async () => {
+    const cacheDirectory = await temporaryDirectory()
+    const previousCacheKey = '4d23c8378d96bbde5b808929ee937e1f3fa74f558d27c1442607df42b132b780'
+    const previousPath = join(cacheDirectory, `${previousCacheKey}.json`)
+    const previousContents = JSON.stringify({
+      schemaVersion: 2,
+      cacheKey: previousCacheKey,
+      identity: {
+        instanceId: 'win3080',
+        instanceOrigin: 'http://192.168.110.122:8188',
+        instanceCacheEpoch: '1',
+        compilerSchemaVersion: 2,
+        templateWorkflowHash: '65fee2598cc79126df38631f7d27d4bfdf7400086e0b0a04cf3c13af6145b66d',
+        executionStructureHash: 'f96db07ae930598b73ea14ebb9a6208abaffeca9364e61e474dbcb99247fb4b3',
+      },
+      apiWorkflow: officialApiWorkflow,
+    })
+    await writeFile(previousPath, previousContents, 'utf8')
+    const frontend = exporter()
+    const compiler = new OfficialApiWorkflowCompiler({ cacheDirectory, instanceCacheEpoch: '1', frontend })
+
+    const result = await compiler.compile(compileInput())
+
+    expect(result.cacheStatus).toBe('miss')
+    expect(result.cacheKey).not.toBe(previousCacheKey)
+    expect(frontend.exportWorkflow).toHaveBeenCalledOnce()
+    await expect(readFile(previousPath, 'utf8')).resolves.toBe(previousContents)
+    await expect(compiler.compile(compileInput())).resolves.toMatchObject({ cacheStatus: 'hit' })
+    expect(frontend.exportWorkflow).toHaveBeenCalledOnce()
+  })
+
   it('rejects a corrupted cache entry instead of silently exporting again', async () => {
     const cacheDirectory = await temporaryDirectory()
     const frontend = exporter()
@@ -402,13 +433,13 @@ describe('official API Workflow cache', () => {
     const parsed = JSON.parse(contents) as Record<string, unknown>
 
     expect(parsed).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       cacheKey: result.cacheKey,
       identity: {
         instanceId: 'win3080',
         instanceOrigin: 'http://192.168.110.122:8188',
         instanceCacheEpoch: 'epoch-7',
-        compilerSchemaVersion: 2,
+        compilerSchemaVersion: 3,
       },
     })
     expect(contents).not.toContain('Bearer secret')

@@ -74,6 +74,7 @@ const RETIRED_BUSINESS_TOOL_NAMES = ['query_semantic_comfyui_instances', 'query_
 const CORDIS_SKILL_NAMES = ['agent-experience', 'cordis-composition-reference', 'cordis-plugin-development', 'editing-cordis-compositions']
 const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'startup-ready.json',
+  'official-business-skill-requests.json',
   'stop-request.json',
   'stop-result.json',
   'official-plugin-install.json',
@@ -1191,7 +1192,7 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       controlledToolResponse([{ id: 'native-child-cwd', name: 'working_directory', arguments: {} }]))
     services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-cwd'),
       controlledToolResponse([{ id: 'native-child-cd', name: 'working_directory', arguments: { cd: native.childDirectory } }]))
-    const nativeReference = join(traceContext.installedPluginSkillDirectory, 'comfyui-generate/references/generation-cli.md')
+    const nativeReference = join(traceContext.installedPluginSkillDirectory, 'comfyui-generate/references/image-size-selection.md')
     services.enqueueModelResponse(request => isChildRequest(request) && hasControlledToolResult(request, 'native-child-cd'),
       controlledToolResponse([{ id: 'native-child-reference', name: 'bash', arguments: {
         description: 'Read packaged child generation reference', command: `cat ${shellQuoteArgument(nativeReference)}`,
@@ -1299,7 +1300,7 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     for (const [index, name] of [OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName, native.repositorySkill].entries()) {
       expect(controlledToolResult(childSkillRequest, `native-skill-${index}`)).toContain(name)
     }
-    expect(controlledToolResult(childSkillRequest, 'native-skill-0')).toContain('references/generation-cli.md')
+    expect(controlledToolResult(childSkillRequest, 'native-skill-0')).toContain('references/image-size-selection.md')
     expect(JSON.stringify(childSkillRequest.body.messages)).not.toContain('OFFICIAL_WORKSPACE_PRIORITY_MARKER')
     const childReference = services.requestLog.find(request => isChildRequest(request)
       && hasControlledToolResult(request, 'native-child-reference'))
@@ -2458,9 +2459,9 @@ async function verifyPackagedSkillReads(page, services, sessionId, skillPaths, e
   expect(selected).toMatchObject({ ok: true })
   await openBusinessSession(page, sessionId)
   const names = ['comfyui-generate', 'wai-sdxl-prompt-builder']
-  const referencePath = join(dirname(skillPaths.installed[names[0]]), 'references/generation-cli.md')
+  const referencePath = join(dirname(skillPaths.installed[names[0]]), 'references/image-size-selection.md')
   const referenceSource = await readFile(referencePath, 'utf8')
-  const prompt = 'Read the packaged comfyui-generate and wai-sdxl-prompt-builder Skills, then read the generation CLI reference.'
+  const prompt = 'Read the packaged comfyui-generate and wai-sdxl-prompt-builder Skills, then read the image size selection reference.'
   const requestStart = services.requestLog.length
   const matches = request => request.sequence >= requestStart && (request.body.messages ?? []).some(message =>
     message.role === 'user' && requestMessageText(message) === prompt)
@@ -2469,7 +2470,7 @@ async function verifyPackagedSkillReads(page, services, sessionId, skillPaths, e
   }))))
   services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'packaged-skill-1'),
     controlledToolResponse([{ id: 'packaged-reference', name: 'bash', arguments: {
-      description: 'Read the packaged generation CLI reference', command: `cat ${shellQuoteArgument(referencePath)}`,
+      description: 'Read the packaged image size selection reference', command: `cat ${shellQuoteArgument(referencePath)}`,
     } }]))
   services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'packaged-reference'),
     { role: 'assistant', content: 'OFFICIAL_PACKAGED_SKILLS_READ' })
@@ -2483,10 +2484,23 @@ async function verifyPackagedSkillReads(page, services, sessionId, skillPaths, e
     expect(isAbsolute(skillPaths.installed[name])).toBe(true)
     expect(await readFile(skillPaths.installed[name], 'utf8')).toContain(`name: ${name}`)
   }
-  expect(controlledToolResult(skillRequest, 'packaged-skill-0')).toContain('references/generation-cli.md')
+  expect(controlledToolResult(skillRequest, 'packaged-skill-0')).toContain('references/image-size-selection.md')
   const referenceRequest = await services.requestWhere(request => matches(request)
     && hasControlledToolResult(request, 'packaged-reference'), 30_000)
+  await writeFile(join(evidenceDirectory, 'official-business-skill-requests.json'), JSON.stringify({
+    classification: 'automated-regression', acceptanceClaim: false, sessionId,
+    requests: [firstRequest, skillRequest, referenceRequest].map(request => ({
+      sequence: request.sequence, body: request.body,
+    })),
+  }, null, 2) + '\n', { mode: 0o600 })
   expect(controlledToolResult(referenceRequest, 'packaged-reference')).toContain(referenceSource.trim())
+  expect(skillRequest.body.messages.slice(0, firstRequest.body.messages.length)).toEqual(firstRequest.body.messages)
+  expect(referenceRequest.body.messages.slice(0, skillRequest.body.messages.length)).toEqual(skillRequest.body.messages)
+  expect(skillRequest.body.tools).toEqual(firstRequest.body.tools)
+  expect(referenceRequest.body.tools).toEqual(firstRequest.body.tools)
+  for (const request of [firstRequest, skillRequest, referenceRequest]) {
+    expect(request.body.messages.filter(message => requestMessageText(message).includes('<available_skills>'))).toHaveLength(1)
+  }
   const requestText = JSON.stringify([firstRequest.body, skillRequest.body, referenceRequest.body])
   for (const marker of [WORKSPACE_SKILL_MARKER, USER_SKILL_MARKER, 'OFFICIAL_WORKSPACE_PRIORITY_MARKER']) {
     expect(requestText).not.toContain(marker)

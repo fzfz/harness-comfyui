@@ -1,3 +1,6 @@
+import Schema from '@deepseek-ai/schemastery'
+import help from '../../../config/managed-cli-help.json' with { type: 'json' }
+import { cliResultSchemas } from '../../cli/result-schema.ts'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { dispatch } from './dispatch.ts'
 
@@ -134,6 +137,13 @@ export function createCliHandler(options: CliHandlerOptions) {
       }
       const cliRequest = parseCliRequest(await readJsonBody(request))
       const data = await dispatch(options, identity, cliRequest, abortController.signal)
+      try {
+        const schema = cliResultSchemas[cliRequest.command.replaceAll('.', ' ') as keyof typeof cliResultSchemas]
+        Schema.resolve(data, schema, {})
+      } catch (error) {
+        const detail = `The Host result for ${cliRequest.command} is invalid: ${error instanceof Error ? error.message : 'result contract mismatch'}`
+        throw new CliHttpError(502, 'CLI_PROTOCOL_ERROR', help.messages.protocolFailure.replace('{detail}', detail))
+      }
       sendSuccess(response, data)
     } catch (error) {
       if (response.destroyed || response.writableEnded) return

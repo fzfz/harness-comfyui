@@ -4,19 +4,8 @@ export const GENERATION_MEDIA_URL_PREFIX = '/api/harness-comfyui/media'
 export const GENERATION_MEDIA_VIEWER_CURRENT_MESSAGE_TYPE = 'harness-comfyui.session-media-viewer.current.v1'
 export const GENERATION_IDENTIFIER_MAX_LENGTH = 10_000
 
-export const GENERATION_RUN_STATUSES = [
-  'created',
-  'prepared',
-  'submitting',
-  'submission_unknown',
-  'remote_pending',
-  'remote_running',
-  'downloading',
-  'succeeded',
-  'failed',
-  'cancelling',
-  'cancelled',
-] as const
+export { GENERATION_RUN_STATUSES } from './run-status.ts'
+import { GENERATION_RUN_STATUSES } from './run-status.ts'
 
 export type GenerationRunProjectionStatus = (typeof GENERATION_RUN_STATUSES)[number]
 export type GenerationMediaKind = 'image' | 'video'

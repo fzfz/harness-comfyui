@@ -6,7 +6,12 @@ import {
   type JsonValue,
   type PreparedGeneration,
 } from './generation-runtime.ts'
-import type { StandardRuntimeParameterKind } from './runtime-parameters.ts'
+import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
+export type {
+  WorkflowRuntimeParameterInspectionParameter, WorkflowWidthHeightSizeCandidate,
+  WorkflowAspectRatioMegapixelsSizeCandidate, WorkflowResolutionPresetMapping,
+  WorkflowResolutionPresetSizeCandidate, WorkflowRuntimeSizeCandidate, WorkflowRuntimeParameterInspection,
+} from '../../generation/inspection-contract.ts'
 
 export type WorkflowNode = Readonly<Record<string, JsonValue>>
 
@@ -48,54 +53,6 @@ export interface WorkflowRuntimeParameterInspectionInput {
   readonly workflow: UiWorkflow
   readonly connection: ComfyConnection
   readonly signal?: AbortSignal
-}
-
-export interface WorkflowRuntimeParameterInspectionParameter {
-  readonly parameter_id: string
-  readonly kind: StandardRuntimeParameterKind
-  readonly value_type: 'integer' | 'number' | 'string' | 'boolean' | 'choice'
-  readonly current_value: JsonValue
-  readonly minimum?: number
-  readonly maximum?: number
-  readonly allowed_values?: readonly JsonValue[]
-}
-
-export interface WorkflowWidthHeightSizeCandidate {
-  readonly candidate_id: string
-  readonly representation: 'width_height'
-  readonly width: WorkflowRuntimeParameterInspectionParameter
-  readonly height: WorkflowRuntimeParameterInspectionParameter
-}
-
-export interface WorkflowAspectRatioMegapixelsSizeCandidate {
-  readonly candidate_id: string
-  readonly representation: 'aspect_ratio_megapixels'
-  readonly aspect_ratio: WorkflowRuntimeParameterInspectionParameter
-  readonly megapixels: WorkflowRuntimeParameterInspectionParameter
-}
-
-export interface WorkflowResolutionPresetMapping {
-  readonly value: JsonValue
-  readonly width: number
-  readonly height: number
-}
-
-export interface WorkflowResolutionPresetSizeCandidate {
-  readonly candidate_id: string
-  readonly representation: 'resolution_preset'
-  readonly parameter: WorkflowRuntimeParameterInspectionParameter
-  readonly mapped_options: readonly WorkflowResolutionPresetMapping[]
-  readonly unmapped_values: readonly JsonValue[]
-}
-
-export type WorkflowRuntimeSizeCandidate =
-  | WorkflowWidthHeightSizeCandidate
-  | WorkflowAspectRatioMegapixelsSizeCandidate
-  | WorkflowResolutionPresetSizeCandidate
-
-export interface WorkflowRuntimeParameterInspection {
-  readonly parameters: readonly WorkflowRuntimeParameterInspectionParameter[]
-  readonly size_candidates: readonly WorkflowRuntimeSizeCandidate[]
 }
 
 export interface GenerationTemplateRuntimeParameterInspectionInput {

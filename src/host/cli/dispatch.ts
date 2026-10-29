@@ -2,7 +2,8 @@ import { toGenerationRequest, type CliRequest } from '../../cli/contract.ts'
 import { resolveGenerationWorkspaceId } from '../generation/workspace-access.ts'
 import type { CliHandlerOptions } from './schema.ts'
 import type { CliExecutionIdentity } from './shell-capability.ts'
-const RANDOM_SEED_MAX_EXCLUSIVE = 2_147_483_648
+import { RANDOM_SEED_MAX_EXCLUSIVE } from '../../generation/submission-contract.ts'
+
 function ordinaryRandomSeeds(count: number): readonly number[] {
   const seeds = new Set<number>()
   while (seeds.size < count) seeds.add(Math.floor(Math.random() * RANDOM_SEED_MAX_EXCLUSIVE))
@@ -48,6 +49,15 @@ export async function dispatch(
       }, signal)
     case 'generation.random-seeds':
       return Object.freeze({ seeds: ordinaryRandomSeeds(request.count) })
+    case 'generation.wait': {
+      const owner = await generationIdentity(options, identity)
+      return options.runWait.register({
+        workspaceId: owner.workspaceId,
+        sessionId: identity.sessionId,
+        callId: identity.callId,
+        rootCallId: identity.rootCallId,
+      }, request.run_ids, signal)
+    }
     case 'generation.run-inputs': {
       const owner = await generationIdentity(options, identity)
       return options.runtime.readGenerationRunInputs({

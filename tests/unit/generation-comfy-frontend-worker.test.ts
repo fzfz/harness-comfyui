@@ -72,7 +72,8 @@ async function waitForFile(path: string): Promise<string> {
   const deadline = Date.now() + 5_000
   while (Date.now() < deadline) {
     try {
-      return await readFile(path, 'utf8')
+      const contents = await readFile(path, 'utf8')
+      if (contents.length > 0) return contents
     } catch (error) {
       if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT') throw error
     }
@@ -82,6 +83,20 @@ async function waitForFile(path: string): Promise<string> {
 }
 
 describe('NodeWorkerComfyFrontend', () => {
+  it('waits for fixture file contents after the file is created', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'harness-comfyui-fixture-file-'))
+    const path = join(temporaryRoot, 'worker.pid')
+    await writeFile(path, '')
+    const contents = waitForFile(path)
+    try {
+      await new Promise(resolveDelay => setTimeout(resolveDelay, 50))
+      await writeFile(path, String(process.pid))
+      expect(await contents).toBe(String(process.pid))
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true })
+    }
+  })
+
   it('starts the .js worker with the Host executable in Electron Node mode', async () => {
     const descriptor = Object.getOwnPropertyDescriptor(process.versions, 'electron')
     Object.defineProperty(process.versions, 'electron', { configurable: true, value: '0.2.0' })

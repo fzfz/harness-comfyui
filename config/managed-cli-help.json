@@ -2,51 +2,37 @@
   "invocation": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\"",
   "nodes": {
     "": {
-      "summary": "检查模板参数、创建生成任务、读取历史结果或观察本地图片。",
-      "details": [],
-      "next": [
-        "查看生成任务帮助: {cli} generation --help",
-        "查看本地读图帮助: {cli} image --help"
-      ],
-      "after": [
-        "生成或读取 Run: {cli} generation --help",
-        "观察已有图片: {cli} image --help"
-      ]
+      "summary": "检查模板参数、创建生成任务、等待 Run 完成或读取图片。",
+      "details": []
     },
     "generation": {
-      "summary": "检查模板输入、提交生成、读取 Run 参数与媒体。",
-      "details": [],
-      "next": [
-        "先检查模板参数: {cli} generation inspect-template-parameters --help",
-        "已有 Run: {cli} generation run-inputs --help"
-      ],
-      "after": [
-        "先检查模板参数: {cli} generation inspect-template-parameters --help",
-        "已有 Run: {cli} generation run-inputs --help"
+      "summary": "检查模板输入、提交生成、登记完成观察、读取 Run 参数与媒体。",
+      "details": [
+        "请求需要等待已有 Run 完成时，选择 wait。读取当前状态、执行错误与本地图片时，选择 resolve-media。",
+        "run-inputs 与 resolve-media 的 Run ID 查询规则：",
+        "run_ids 来自用户或已保存的提交结果。",
+        "查询结果的复用条件：仅复用 lookup_status 为 available 的项。",
+        "lookup_status 为 error 时，按本节错误指引处理该项，继续使用其他可用项。查询结果含逐项错误时，命令退出码仍为 0。",
+        "Run ID 可使用完整值，或 run_ 加至少 {min_run_id_prefix_length} 个 UUID 字符、且在当前 Workspace 内唯一的前缀。",
+        "GENERATION_RUN_ID_INVALID 或 GENERATION_RUN_ID_AMBIGUOUS：取得完整或更长 ID 后，只重新查询该项。GENERATION_RUN_NOT_FOUND：报告当前 Workspace 中缺少该 Run，等待用户更换 ID。其他错误按消息处理。"
       ]
     },
     "image": {
       "summary": "使用当前图片读取配置的视觉模型观察本地图片。",
-      "details": [],
-      "next": [
-        "{cli} image inspect --help"
-      ],
-      "after": [
-        "{cli} image inspect --help"
+      "details": [
+        "已有本地图片且需要视觉观察时，选择 inspect。图片路径可来自用户输入或 resolve-media 的结果。"
       ]
     },
     "image inspect": {
       "summary": "观察一张本地图片，等待视觉模型完成。",
       "details": [
-        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
-        "file_path: 必填绝对路径字符串，最长 10000 字符，无控制字符，来自用户或真实媒体查询。目标为非空 PNG/JPEG/WebP/GIF 普通文件，受当前输入大小限制。prompt: 可选非空白字符串，最多 32768 字符。",
-        "输出与作用: provider、model、file_path、observation；每次调用产生一次视觉模型请求，不修改原图或生成记录。",
-        "示例（按实际查询结果替换值）:\n{cli} image inspect --stdin <<'JSON'\n{\"file_path\": \"/absolute/path/result.png\"}\nJSON",
-        "省略 prompt 使用当前图片读取配置的 defaultPrompt；可在 Harness 设置 → 图片读取中查看和修改。需要针对当前图提问时，在输入 JSON 中提供 prompt。",
-        "IMAGE_READER_OUTPUT_LIMIT 表示视觉模型达到输出 token 上限，图片观察尚未正常结束；检查本次 prompt、当前图片读取配置的默认提示词和输出上限，修正后重新读取图片。"
-      ],
-      "next": [
-        "按上方示例替换真实输入后执行命令。"
+        "调用：{cli} image inspect --stdin [--quiet]。",
+        "file_path 必须为本地绝对路径，来自用户或真实媒体查询。目标必须为非空 PNG、JPEG、WebP 或 GIF 普通文件，受宿主当前图片输入大小限制。",
+        "省略 prompt 时使用当前图片读取配置的 defaultPrompt；在 Harness 设置 → 图片读取中查看和修改。提供 prompt 时必须含非空白内容。",
+        "输入示例：\n{cli} image inspect --stdin <<'JSON'\n{\"file_path\":\"/absolute/path/result.png\"}\nJSON",
+        "每次调用发起一次视觉模型请求。结果示例：{\"provider\":\"example\",\"model\":\"vision\",\"file_path\":\"/absolute/path/result.png\",\"observation\":\"图片中有一个蓝色方块。\"}。",
+        "IMAGE_READER_OUTPUT_LIMIT 表示视觉模型达到输出 token 上限，观察尚未正常结束。核对本次 prompt、当前默认提示词和输出上限，修正后重新读取图片。",
+        "图片、prompt 和读取配置未变时，复用成功观察。用户要求重新观察时再调用。其他失败按错误指引处理；结果保存失败或响应不明确时，报告已完成或可能完成的调用，停止依赖观察结果的操作。"
       ],
       "after": [
         "读取已完成；从 observation 字段提取并复用观察文本。",
@@ -56,13 +42,16 @@
     "generation inspect-template-parameters": {
       "summary": "读取模板在指定实例上的参数与尺寸候选。",
       "details": [
-        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
-        "template_id、instance_id: 必填非空字符串，来自模板与实例目录。",
-        "输出与作用: parameters、size_candidates；只读，不创建 Run。",
-        "示例（按实际查询结果替换值）:\n{cli} generation inspect-template-parameters --stdin <<'JSON'\n{\"template_id\": \"1\", \"instance_id\": \"2\"}\nJSON"
-      ],
-      "next": [
-        "按上方示例替换真实输入后执行命令。"
+        "调用：{cli} generation inspect-template-parameters --stdin [--quiet]。",
+        "template_id 和 instance_id 来自当前会话的目录查询工具。工具入口见当前会话的工具声明和所用 Skill。",
+        "输入示例：{\"template_id\":\"1\",\"instance_id\":\"2\"}。",
+        "parameter_id 是提交参数名；kind 是参数用途；value_type 是取值类型。current_value 是模板当前值。minimum、maximum、allowed_values 存在时共同限制提交值。choice 的值必须来自 allowed_values。",
+        "size_candidates 中每项是一套可选尺寸表达。width_height 使用 width 与 height；aspect_ratio_megapixels 使用 aspect_ratio 与 megapixels；resolution_preset 使用 parameter。",
+        "mapped_options 将预设值映射为像素宽高；unmapped_values 列出尚无宽高映射的预设值。",
+        "构造单图请求前，确认 positive_prompt、seed、batch_size 各对应唯一参数。写入负向 Prompt 时，negative_prompt 也必须唯一。batch_size 必须接受整数 1，提交时写入 1。",
+        "参数缺失、重复或不接受所需值时，报告 template_id、instance_id 和该 kind 的全部 parameter_id；缺失时报告空列表。size_candidates 为空时，报告模板缺少可用尺寸参数。",
+        "结果示例：{\"parameters\":[],\"size_candidates\":[]}。此结果表示当前模板未提供可写参数和尺寸候选。",
+        "相同模板与实例的成功结果可复用。用户要求刷新或模板、实例发生变化时重新调用。失败时按错误指引处理。"
       ],
       "after": [
         "按 parameters 与 size_candidates 构造生成请求: {cli} generation submit --help"
@@ -71,28 +60,48 @@
     "generation random-seeds": {
       "summary": "生成本次需要的随机 Seed。",
       "details": [
-        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
-        "count: 必填整数，1 至 20。",
-        "输出与作用: seeds 整数数组；不创建 Run。",
-        "示例（按实际查询结果替换值）:\n{cli} generation random-seeds --stdin <<'JSON'\n{\"count\": 1}\nJSON"
-      ],
-      "next": [
-        "按上方示例替换真实输入后执行命令。"
+        "调用：{cli} generation random-seeds --stdin [--quiet]。",
+        "输入示例：{\"count\":1}。结果示例：{\"seeds\":[184273991]}。",
+        "本命令返回含 count 个互不重复值的 Seed 数组。",
+        "Seed 写入前必须满足模板 Seed 参数的整数类型和取值限制。约束入口：{cli} generation inspect-template-parameters --help。",
+        "图片集合未变且 Seed 已保存时，复用已保存的值。用户要求重新取值时再调用，并保存分配结果。调用结果丢失时，报告 Seed 尚未保存。再次调用会重新生成随机 Seed。"
       ],
       "after": [
         "将 seeds 值填入模板指定的 seed 参数: {cli} generation submit --help"
       ]
     },
+    "generation wait": {
+      "summary": "将已有 Run 登记为官方 Job，完成后通知当前 Agent。",
+      "details": [
+        "调用：{cli} generation wait --stdin [--quiet]。",
+        "run_ids 来自已保存的提交结果。Run ID 格式见 {cli} generation --help。Host 按当前会话原始项目目录校验 Workspace，任一 Run 无法读取时整次登记失败。",
+        "输入示例：{\"run_ids\":[\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}。",
+        "命令登记观察后立即返回。结果示例：{\"job_id\":\"generation-wait-0123456789abcdef\",\"run_ids\":[\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}。run_ids 是去重、排序后的完整 Run ID。job_id 表示观察已登记；Run 生成结果在观察结束后读取。",
+        "同一 Agent 在同一 Workspace 登记相同 Run 集合时，复用仍在活动的观察 Job。输入顺序、重复 ID 和唯一前缀不影响复用。已结束的观察可重新登记。",
+        "所有目标 Run 进入终态后，官方 Job 完成并通知拥有该 Job 的 Agent。主 Agent 必须使用自己的 CLI 调用登记子 Agent 返回的 Run。",
+        "通过 job_output 读取 Job；需要等待时使用 wait: true。通过 job_list 找回当前 Agent 的 Job。工具参数与等待期限以当前会话的官方工具声明为准。",
+        "Job 状态为 completed 时，job_output 的 text 包含本节所列 JSON 摘要；随后使用 {cli} generation resolve-media --help 读取图片和执行错误。",
+        "Job 状态为 failed 时，先通过 resolve-media 核对 Run，再按 Job 错误修正并重新登记。",
+        "killed 表示观察已停止；需要继续等待时，可用同一组 run_ids 重新登记。",
+        "前台调用超时、HTTP 断开或调用凭证撤销后，已登记观察继续运行。结果丢失时先用 job_list 查找，或用同一组 run_ids 重试登记。",
+        "job_output 的等待超时只结束本次等待。job_kill 只停止观察；Run 继续执行。",
+        "Agent 释放、应用退出或观察服务卸载时，活动观察结束。后续会话可查询持久 Run，再重新登记。",
+        "GENERATION_WAIT_UNAVAILABLE：按错误消息核对当前 Agent 的 Job 工具和活动 Job；修正后重试登记。Run 查询失败时，按 resolve-media 返回的错误处理。"
+      ],
+      "after": [
+        "保存 job_id，通过官方 job_output 读取观察结果；完成后查询 Run 媒体：{cli} generation resolve-media --help。"
+      ]
+    },
     "generation run-inputs": {
       "summary": "读取历史 Run 的生成请求和 Actual Workflow。",
       "details": [
-        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
-        "run_ids: 必填字符串数组，1 至 20 项；使用提交返回的 run_id，也接受 run_ 加至少八个 UUID 字符、且在当前 Workspace 内唯一的前缀。",
-        "输出与作用: runs 按输入顺序返回生成参数、workflow_status 和逐项错误。 只读。",
-        "示例（按实际查询结果替换值）:\n{cli} generation run-inputs --stdin <<'JSON'\n{\"run_ids\": [\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}\nJSON"
-      ],
-      "next": [
-        "按上方示例替换真实输入后执行命令。"
+        "调用：{cli} generation run-inputs --stdin [--quiet]。",
+        "Run ID 来源、格式与查询错误处理见 {cli} generation --help 的 Run ID 查询规则。",
+        "输入示例：{\"run_ids\":[\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}。",
+        "runs 与输入等长同序。lookup_status 为 available 时返回 arguments。workflow_status 为 available 时返回 Actual Workflow；unavailable 时返回 workflow_error。",
+        "arguments.model 省略时，历史请求没有显式模型覆盖。arguments.loras 为空时，历史请求没有显式选择 LoRA。实际活动模型与 LoRA 必须依据 Actual Workflow 判断。",
+        "结果示例：{\"runs\":[{\"run_id\":\"run_01234567-89ab-4cde-8fab-0123456789ab\",\"lookup_status\":\"error\",\"error\":{\"code\":\"GENERATION_RUN_NOT_FOUND\",\"message\":\"Run not found\"}}]}。",
+        "run_ids 内容和顺序相同时，按 Run ID 查询规则的复用条件使用已有结果。用户明确要求刷新时重新调用。"
       ],
       "after": [
         "使用 runs 中可用参数构造新请求；逐项处理缺失或歧义 Run。"
@@ -101,36 +110,59 @@
     "generation resolve-media": {
       "summary": "查询 Run 状态、执行错误与本地图片路径。",
       "details": [
-        "参数: --stdin 必填；--quiet 可选。stdin 必须为一个 JSON 对象，写入后关闭（EOF）；额外属性会被拒绝。",
-        "run_ids: 必填字符串数组，1 至 20 项；使用提交返回的 run_id，也接受 run_ 加至少八个 UUID 字符、且在当前 Workspace 内唯一的前缀。",
-        "include_parameters：可选布尔值，默认 false。true 返回保存的 parameters；读取 Actual Workflow 时使用 generation run-inputs。",
-        "输出：runs 按输入顺序返回 request_id、status、revision、updated_at、instance_id、prompt_id、run_error、images 与逐项查询错误。lookup_status 为 available 表示已找到 Run；status 表示执行状态。run_error 为错误码与消息或 null。",
-        "示例（按实际查询结果替换值）:\n{cli} generation resolve-media --stdin <<'JSON'\n{\"run_ids\": [\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}\nJSON"
-      ],
-      "next": [
-        "按上方示例替换真实输入后执行命令。"
+        "调用：{cli} generation resolve-media --stdin [--quiet]。",
+        "Run ID 来源、格式与查询错误处理见 {cli} generation --help 的 Run ID 查询规则。",
+        "输入示例：{\"run_ids\":[\"run_01234567-89ab-4cde-8fab-0123456789ab\"],\"include_parameters\":false}。",
+        "runs 与输入等长同序。lookup_status 表示查询是否找到 Run；status 表示 Run 的执行状态。",
+        "Run 处于以下状态且请求仍需生成结果时，通过 generation wait 登记完成观察：",
+        "created：已接纳。",
+        "prepared：Workflow 已准备。",
+        "submitting：正在提交远端。",
+        "remote_pending：远端排队。",
+        "remote_running：远端执行。",
+        "downloading：正在下载。",
+        "cancelling：正在取消。",
+        "succeeded 表示执行成功。核对 images 的实际数量与目标图片数量；图片缺失时报告 Run 状态与实际数量。failed 表示执行失败；cancelled 表示已取消。按 run_error 处理失败原因。",
+        "submission_unknown 表示远端是否接纳尚不明确。保留该 Run，按错误指引处理。需要创建替代请求时，读取 {cli} generation submit --help 中的 submission_unknown 处理条件。",
+        "revision 是数字修订号；updated_at 是毫秒时间戳。instance_id、prompt_id 尚未取得时为 null。run_error 无执行错误时为 null。images 在本地图片尚未保存时为空数组。",
+        "include_parameters 为 true 时返回已保存的 parameters。Actual Workflow 入口：{cli} generation run-inputs --help。",
+        "结果示例：{\"runs\":[{\"run_id\":\"run_01234567-89ab-4cde-8fab-0123456789ab\",\"lookup_status\":\"error\",\"error\":{\"code\":\"GENERATION_RUN_NOT_FOUND\",\"message\":\"Run not found\"}}]}。",
+        "run_ids 内容、顺序和 include_parameters 相同时，按 Run ID 查询规则的复用条件使用已有结果。收到完成通知或用户要求刷新时，重新查询状态。"
       ],
       "after": [
-        "按 status 判断等待、失败或完成；使用 images 中的 file_path 读取图片：{cli} image inspect --help。"
+        "尚需等待 Run 时读取 {cli} generation wait --help；图片已保存时，使用 file_path 读取图片：{cli} image inspect --help。"
       ]
     },
     "generation submit": {
       "summary": "提交生成清单，返回每项已接纳的 Run。",
       "details": [
-        "参数：--file <清单路径> 或 --stdin 必选其一；--quiet 可选。输入必须为 UTF-8 JSON 对象，--file 指向普通文件。",
-        "items：必填数组，1 至 {max_submission_items} 项。每项包含 request_id、request，可选 parameter_files。request_id 为首次提交前生成并保存的 UUID。",
-        "request：必填 title、instance_id、template_id、model、parameters、loras。title 最长 500 字符；ID 来自目录。model 为 null 或 {id,file_name}。parameters 使用模板参数名和值。loras 最多 100 项，每项包含 id、file_name、weight、trigger_words。weight 为有限数，trigger_words 最多 100 项且不重复。",
-        "parameter_files：参数 ID 到 UTF-8 普通文本文件路径的映射。--file 的相对引用按清单目录解析；--stdin 要求绝对路径。同一参数只在 parameters 或 parameter_files 中填写。CLI 保留文件原文。清单文件与展开后的请求均最多 {max_request_bytes} 字节。",
-        "输出：items 按输入顺序返回 request_id、run_id、acceptance。acceptance 为 accepted 或 reused。接纳后由 Host 继续执行；使用 resolve-media 查询状态。",
-        "重试：响应丢失或结果文件保存失败时，在同一 Workspace、Session 中使用原清单重试。相同 request_id 与相同请求返回原 Run。修改参数后重做或再次生成时，为该项保存新的 request_id。",
-        "示例：{cli} generation submit --file /absolute/path/manifest.json\n清单内容：{\"items\":[{\"request_id\":\"01234567-89ab-4cde-8fab-0123456789ab\",\"request\":{\"title\":\"example\",\"instance_id\":\"2\",\"template_id\":\"1\",\"model\":null,\"parameters\":{\"seed\":1},\"loras\":[]},\"parameter_files\":{\"positive_prompt\":\"prompt.txt\"}}]}",
-        "标准输入示例：cat /absolute/path/manifest.json | {cli} generation submit --stdin。文件引用须使用绝对路径。"
-      ],
-      "next": [
-        "保存清单与提示词文件后，按上方示例提交。"
+        "调用：{cli} generation submit --file <清单路径> [--quiet]。\n或 {cli} generation submit --stdin [--quiet]。",
+        "\n准备清单：",
+        "1. --file 与 --stdin 必选其一。清单文件必须为 UTF-8 普通文件。",
+        "2. 首次提交前，为每项生成并保存 UUID request_id。request_id 在同一清单中必须互不重复。已就绪且在单次上限内的项必须合并提交。",
+        "3. request 中的资源 ID 来自目录查询。model 为 null 时采用模板模型；指定模型时填写 id 与 file_name。未选择 LoRA 时填写空 loras。",
+        "4. parameters 按模板 parameter_id 填值，约束入口：{cli} generation inspect-template-parameters --help。",
+        "5. 长提示词通过 parameter_files 引用 UTF-8 普通文本文件。映射键为参数 ID，值为文件路径。同一参数只填写在 parameters 或 parameter_files 中。CLI 保留文件原文。",
+        "--file 的相对引用按清单目录解析；--stdin 的引用必须使用绝对路径。清单文件最多 {max_request_bytes} 字节；展开后的请求限制见根帮助。",
+        "\n调用示例：",
+        "使用示例前，必须将参数名替换为当前模板查询所得的 parameter_id。",
+        "输入示例：{cli} generation submit --file /absolute/path/manifest.json\n清单内容：{\"items\":[{\"request_id\":\"01234567-89ab-4cde-8fab-0123456789ab\",\"request\":{\"title\":\"图片 1\",\"instance_id\":\"2\",\"template_id\":\"1\",\"model\":null,\"parameters\":{\"seed\":1,\"batch_size\":1},\"loras\":[]},\"parameter_files\":{\"positive_prompt\":\"prompt.txt\"}}]}",
+        "使用标准输入前，必须将 parameter_files 的路径改为绝对路径。标准输入示例：cat /absolute/path/manifest.json | {cli} generation submit --stdin。",
+        "\n读取接纳结果：",
+        "结果示例：{\"items\":[{\"request_id\":\"01234567-89ab-4cde-8fab-0123456789ab\",\"run_id\":\"run_01234567-89ab-4cde-8fab-0123456789ab\",\"acceptance\":\"accepted\"}]}。",
+        "items 与输入等长同序。accepted 表示本次已持久接纳；reused 表示复用此前接纳的请求。接纳后由 Host 异步执行，完成状态入口：{cli} generation resolve-media --help。",
+        "同一 Workspace、Session 中，相同 request_id 与相同请求复用原 Run。",
+        "\n恢复与重新生成：",
+        "提交恢复规则：按原 request_id 与原请求重放原清单，恢复已接纳的 Run ID。重放必须保持清单和引用文件原文不变。",
+        "以下情况按提交恢复规则处理：",
+        "1. 跨 shell 调用、Host 重启或接纳响应丢失。",
+        "2. 结果文件保存失败、网络中断、协议解析失败或响应超限。",
+        "RUN_REQUEST_CONFLICT 表示同一标识对应不同请求。报告冲突项，并核对保存的请求和文件。整批接纳校验失败时，本次新增 Run 数为 0。",
+        "修改参数后重做，或用户明确要求相同参数再生成时，为指定项保存新的 request_id。已失败 Run 的重放仍返回原 Run；再次生成也必须使用新 request_id。",
+        "Run 状态为 submission_unknown 时，保留已有 Run；用户确认可能重复执行后，才能创建替代请求。"
       ],
       "after": [
-        "查询本次各项状态与图片路径：printf '%s\\n' {run_ids_json} | {cli} generation resolve-media --stdin"
+        "登记本次各项的完成观察：printf '%s\\n' {run_ids_json} | {cli} generation wait --stdin"
       ]
     }
   },
@@ -139,28 +171,41 @@
     "invalidProperties": "{label} has invalid properties; expected: {expected}; received: {actual}",
     "providerFailure": "打开 Harness 设置中的“图片读取”，核对当前配置的视觉模型、连接地址和服务状态；修正后重新执行本命令。",
     "invalidCommand": "CLI command is invalid; received argv: {argv}. Pass the command words and options shown by --help",
+    "generationWaitUnavailable": "Run observation is unavailable. Confirm this Agent is active with job_output, job_list, and job_kill loaded. Use job_list to inspect existing observations; stop an unneeded Job with job_kill or wait for it to finish, then retry generation wait --stdin with the same run_ids.",
     "resultFilePrepareFailed": "CLI_RESULT_FILE_PREPARE_FAILED: Cannot prepare result file at {path}: {system_error}. Host request was not sent. Fix temporary-directory access or free disk space before retrying.",
-    "resultFileWriteFailed": "CLI_RESULT_FILE_WRITE_FAILED: Host command {command} succeeded, but result file {path} could not be saved: {system_error}. {accepted_run_id_if_submit} Fix temporary-directory access or free disk space. For other commands, report the completed command and stop dependent work.",
+    "resultFileWriteFailed": "CLI_RESULT_FILE_WRITE_FAILED: Host command {command} succeeded, but result file {path} could not be saved: {system_error}. {accepted_run_id_if_submit} Fix temporary-directory access or free disk space, then apply this command's --help recovery steps.",
     "resultPathWriteFailed": "CLI_RESULT_PATH_WRITE_FAILED: Result was saved at {path}, but output could not be written to {stream}: {system_error}. Read the saved file; do not repeat the command.",
-    "requestTooLarge": "stdin exceeds the maximum request size ({max_bytes} bytes). Shorten stdin JSON; for a multi-Run query, reduce the number of Run IDs.",
+    "requestTooLarge": "stdin exceeds the maximum request size ({max_bytes} bytes). Split the manifest or multi-Run query into smaller batches; retain each saved request_id and parameter content.",
     "responseTooLarge": "CLI_RESPONSE_TOO_LARGE: Host response exceeds the maximum size ({max_bytes} bytes). The Host command may already have completed. Report this error and apply this command's existing retry conditions. For a Run query, use a smaller batch only when those conditions permit another query; if one Run still exceeds the limit, report it and stop dependent work.",
     "invalidApiUrl": "{name} is invalid. {action}",
     "nonLoopbackApi": "{name} is not the managed loopback endpoint. {action}",
-    "environmentRecovery": "Confirm that the Harness ComfyUI Host is running, then start a new managed foreground shell Tool call from the current Session."
+    "environmentRecovery": "Confirm that the Harness ComfyUI Host is running, then start a new managed foreground shell Tool call from the current Session.",
+    "protocolFailure": "{detail}. The Host command may have completed; apply this command's --help retry conditions."
   },
   "valueOptions": [
     "--file"
   ],
   "commonDetails": [
+    "\n调用前提：",
     "业务命令通过受管前台 shell 调用。--help 离线可用。",
+    "术语：Run 是生成记录，run_id 是其标识；Workspace 按会话原始项目目录确定；Actual Workflow 是该 Run 实际执行的 Workflow。",
+    "首次调用当前命令前，读取该命令帮助。",
+    "\n输入与结果文件：",
+    "输入使用 UTF-8 JSON 对象。--stdin 从标准输入读取，写入后必须关闭（EOF）。对象必须使用当前命令列出的属性。",
+    "单次输入与展开后的请求最多 {max_request_bytes} 字节。Host 响应最多 {max_response_bytes} 字节。",
     "业务命令成功时，CLI 将原始业务 JSON 保存到独立临时文件。stdout 只返回该文件的绝对路径和换行。读取该文件后处理业务结果。",
-    "业务命令退出码为 0 时，结果文件已写入并关闭。--quiet 省略成功后的 NEXT 提示；普通调用的 NEXT 写入 stderr。--help 仍直接输出帮助文本。",
-    "CLI 退出后保留成功文件。需要长期保存时，将该文件复制到任务产物目录。复用和刷新条件按当前 Skill 的业务合同执行。",
+    "业务命令退出码为 0 时，结果文件已写入并关闭。--quiet 省略成功后的 NEXT 提示；普通调用的 NEXT 写入 stderr。--help 直接输出帮助文本。",
+    "CLI 退出后保留成功文件。需要长期保存时，将文件复制到任务产物目录。",
+    "\n失败处理：",
     "CLI_RESULT_FILE_PREPARE_FAILED 表示请求尚未发送。修复临时目录权限或磁盘空间后再调用。",
-    "CLI_RESULT_FILE_WRITE_FAILED 表示 Host 已执行成功，但结果文件保存失败。提交命令同时报告已接纳的 request_id 与 run_id；修复临时目录权限或磁盘空间后，可使用原清单恢复结果。其他命令报告错误并停止依赖结果的操作。",
-    "CLI_RESULT_PATH_WRITE_FAILED 表示文件已保存，但路径输出失败。读取错误中给出的文件路径，不重新执行业务命令。",
+    "CLI_RESULT_FILE_WRITE_FAILED 表示 Host 已执行成功，但结果文件保存失败。提交命令同时报告已接纳的 request_id 与 run_id。修复临时目录权限或磁盘空间后，按 submit 帮助恢复结果。其他命令按各自帮助处理。",
+    "CLI_RESULT_PATH_WRITE_FAILED 表示文件已保存，但路径输出失败。读取错误中给出的文件路径。",
+    "CLI_RESPONSE_TOO_LARGE、网络中断或协议解析失败时，Host 可能已经执行请求。按当前命令的重试条件恢复结果。",
     "本地输入校验、环境读取或结果文件准备失败时，CLI 退出码为 2。Host 请求、Provider 调用、协议解析、结果保存或路径输出失败时，退出码为 1。帮助命令退出码为 0。",
-    "术语：Run 是生成记录，run_id 是其标识；Workspace 是按会话原始项目目录确定的业务分组；Actual Workflow 是该 Run 实际执行的工作流。"
+    "CLI_REQUEST_INVALID 可按报错修正后自动重试 1 次。其他失败按错误指引处理。",
+    "结果字段缺失或类型不符时，报告实际结构与预期结构的差异，停止依赖该结果的操作。提交结果不明确时保留原清单。",
+    "\n读取示例：",
+    "Python 结果文件读取示例：将业务命令的参数作为此程序的命令行参数，JSON 作为标准输入。\n```python\nimport json\nimport os\nfrom pathlib import Path\nimport subprocess\nimport sys\n\nresult = subprocess.run(\n    [os.environ[\"DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\"], \"--expose-internals\",\n     os.environ[\"DSH_HARNESS_COMFYUI_CLI\"], *sys.argv[1:]],\n    input=sys.stdin.read(), text=True, capture_output=True, check=True,\n    env={**os.environ, \"ELECTRON_RUN_AS_NODE\": \"1\"},\n)\ndata = json.loads(Path(result.stdout.rstrip(\"\\n\")).read_text(encoding=\"utf-8\"))\nprint(json.dumps(data, ensure_ascii=False))\n```"
   ],
   "providerErrorCodes": [
     "IMAGE_READER_MODEL_NOT_CONFIGURED",

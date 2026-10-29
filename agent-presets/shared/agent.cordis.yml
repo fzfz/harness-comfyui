@@ -6,6 +6,10 @@
   name: '@deepseek-ai/dsh-command-goal'
 - id: tool-goal
   name: '@deepseek-ai/dsh-tool-goal'
+- id: tool-jobs
+  name: '@deepseek-ai/dsh-tool-jobs'
+  config:
+    completionDelivery: wakeup
 - id: tool-working-directory
   name: '@deepseek-ai/dsh-tool-working-directory'
 - id: workbench-composition

@@ -34,39 +34,31 @@ describe('Prompt Builder generation output references', () => {
     expect(resources.requiredFiles).not.toContain(routeRegistry)
   })
 
-  it('uses the WAI validator CLI directly without removed Skill tools', () => {
-    const directory = skillDirectory('wai-sdxl-prompt-builder')
+  it.each(['anima-prompt-builder', 'wai-sdxl-prompt-builder'])('%s discovers format validation through mode help', name => {
+    const directory = skillDirectory(name)
     const skill = readFileSync(resolve(directory, 'SKILL.md'), 'utf8')
-    const validatorReference = readFileSync(
-      resolve(directory, 'references/prompt-format-validator.md'),
-      'utf8',
-    )
-    const executableDocuments = `${skill}\n${validatorReference}`
-
-    expect(executableDocuments).not.toMatch(/\brun_skill_script\b|\bfinalize_skill_error\b/u)
-    expect(validatorReference).toContain('ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals scripts/validate-output.mjs --quiet --prompt-format')
+    expect(skill).not.toMatch(/\brun_skill_script\b|\bfinalize_skill_error\b/u)
+    expect(skill).toContain('scripts/validate-output.mjs --prompt-format --help')
+    expect(skill).toContain('scripts/validate-output.mjs --generation-output --help')
+    expect(existsSync(resolve(directory, name.startsWith('anima') ? 'references/03-output-protocol.md' : 'references/prompt-format-validator.md'))).toBe(false)
   })
 
   it('keeps every Skill-owned reference linked from its SKILL.md', () => {
     const references = {
       'anima-prompt-builder': [
         'references/generation-output-contract.md',
-        'references/generation-output-schema.json',
         'references/generation-profiles.json',
       ],
       'wai-sdxl-prompt-builder': [
         'references/generation-output-contract.md',
-        'references/generation-output-schema.json',
         'references/generation-profiles.json',
       ],
       'krea2-anime-prompt-builder': [
         'references/generation-output-contract.md',
-        'references/generation-output-schema.json',
         'references/generation-profiles.json',
       ],
       'comfyui-generate': [
-        'references/template-parameter-inspection-cli.md',
-        'references/generation-cli.md',
+        'references/image-size-selection.md',
       ],
     }
     for (const name of allSkillNames) {

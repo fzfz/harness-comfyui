@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { GenerationRuntimeError, type ComfyConnection, type JsonValue } from './generation-runtime.ts'
 import type { UiWorkflow } from './source-preparer.ts'
 
-export const OFFICIAL_API_WORKFLOW_COMPILER_SCHEMA_VERSION = 2
+export const OFFICIAL_API_WORKFLOW_COMPILER_SCHEMA_VERSION = 3
 
 type JsonObject = Readonly<Record<string, JsonValue>>
 type MutableJsonObject = Record<string, JsonValue>

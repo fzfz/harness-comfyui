@@ -1,3 +1,4 @@
+import { imageReaderPromptIssue, IMAGE_READER_PROMPT_MAX_LENGTH } from '../../image-reader/prompt-contract.ts'
 import { imageReaderDiagnosticSchema, type ImageReaderDiagnostic } from '../../image-reader/diagnostics-schema.ts'
 
 import type { ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
@@ -12,7 +13,6 @@ declare module '@deepseek-ai/dsh-llm' {
 
 import {
   activeImageReaderProfile,
-  IMAGE_READER_PROMPT_MAX_LENGTH,
   type ImageReaderProfile,
 } from '../../image-reader/settings.ts'
 import {
@@ -136,10 +136,11 @@ export class ImageReaderService {
     if (profile.model.trim().length === 0 || (profile.provider.trim().length === 0 && this.options.scope.prepare === undefined)) {
       throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
     }
-    if (prompt !== undefined && prompt.trim().length === 0) {
+    const promptIssue = prompt === undefined ? undefined : imageReaderPromptIssue(prompt)
+    if (promptIssue === 'required') {
       throw new ImageReaderError('IMAGE_READER_PROMPT_REQUIRED', 'The per-call image reading prompt must contain non-whitespace text.')
     }
-    if (prompt !== undefined && prompt.length > IMAGE_READER_PROMPT_MAX_LENGTH) {
+    if (promptIssue === 'too-long') {
       throw new ImageReaderError(
         'IMAGE_READER_PROMPT_TOO_LONG',
         `The per-call image reading prompt must contain at most ${IMAGE_READER_PROMPT_MAX_LENGTH} characters.`,

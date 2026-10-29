@@ -4,6 +4,7 @@ import type { WorkspaceRegistryProjection } from '../generation/workspace-access
 import {
   type GenerationRuntime
 } from '../generation/generation-runtime.ts'
+import type { GenerationRunWaitService } from '../generation/run-wait-service.ts'
 import type { ImageReaderService } from '../image-reader/image-reader-service.ts'
 import type {
   CliShellCapabilityStore
@@ -15,6 +16,7 @@ export interface CliHandlerOptions {
     GenerationRuntime,
     'acceptGenerations' | 'inspectTemplateRuntimeParameters' | 'readGenerationRunInputs' | 'readGenerationRunMedia'
   >
+  readonly runWait: Pick<GenerationRunWaitService, 'register'>
   readonly imageReader: Pick<ImageReaderService, 'inspect'>
   readonly workspaceRegistry: WorkspaceRegistryProjection
 }

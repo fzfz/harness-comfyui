@@ -291,10 +291,16 @@ async function inspectRunOwnership(record, { inspect, portOwners }) {
 
 async function writeProfilePortPatch(path, patchRows, { persistent, initialProfilePatches, profilePatchAdapter: adapter, signal }) {
   const initialRows = persistent ? [...initialProfilePatches, ...patchRows] : patchRows
-  const initialContent = `${JSON.stringify(initialRows, null, 2)}\n`
+  const initialContent = async () => {
+    if (typeof adapter?.updateInitialProfilePatch === 'function') {
+      const updated = await adapter.updateInitialProfilePatch(initialRows)
+      return await adapter.serialize(updated)
+    }
+    return `${JSON.stringify(initialRows, null, 2)}\n`
+  }
   if (!persistent) {
     throwIfAborted(signal)
-    await writeFile(path, initialContent, { encoding: 'utf8', flag: 'wx', mode: 0o600 })
+    await writeFile(path, await initialContent(), { encoding: 'utf8', flag: 'wx', mode: 0o600 })
     return
   }
 
@@ -305,7 +311,7 @@ async function writeProfilePortPatch(path, patchRows, { persistent, initialProfi
     if (error?.code !== 'ENOENT') throw error
     try {
       throwIfAborted(signal)
-      await writeFile(path, initialContent, { encoding: 'utf8', flag: 'wx', mode: 0o600 })
+      await writeFile(path, await initialContent(), { encoding: 'utf8', flag: 'wx', mode: 0o600 })
       return
     } catch (writeError) {
       if (writeError?.code !== 'EEXIST') throw writeError

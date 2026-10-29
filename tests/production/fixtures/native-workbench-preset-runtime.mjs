@@ -9,14 +9,14 @@ import { fixtureTool } from './native-preset-tool.mjs'
 
 const sdkRequire = createRequire(process.argv[3])
 const [cordis, loader, include, presets, sessions, projections, prompt, tools, scope, group, skillRegistry,
-  agents, goals, commands, agentLoop, llm] = [
+  agents, goals, commands, agentLoop, llm, jobsLocal] = [
   '@deepseek-ai/cordis', '@deepseek-ai/cordis-plugin-loader',
   '@deepseek-ai/cordis-plugin-include', '@deepseek-ai/dsh-agent-preset-registry',
   '@deepseek-ai/dsh-session', '@deepseek-ai/dsh-session-projection',
   '@deepseek-ai/dsh-system-prompt', '@deepseek-ai/dsh-tools', '@deepseek-ai/dsh-scope',
   '@deepseek-ai/cordis-plugin-group', '@deepseek-ai/dsh-skill',
   '@deepseek-ai/dsh-agent', '@deepseek-ai/dsh-goal', '@deepseek-ai/dsh-commands',
-  '@deepseek-ai/dsh-agent-loop', '@deepseek-ai/dsh-llm',
+  '@deepseek-ai/dsh-agent-loop', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-jobs-local',
 ].map(name => sdkRequire(name))
 
 const directory = await mkdtemp(join(tmpdir(), 'native-workbench-preset-'))
@@ -88,6 +88,85 @@ async function assertTools(key, expected) {
 }
 
 const scenarios = {
+  async jobs() {
+    const { GenerationRunWaitService } = await import('../../../src/host/generation/run-wait-service.ts')
+    await declare()
+    const parent = await mountAgent('jobs-parent')
+    const child = composeChild('jobs-child', parent)
+    const notices = { parent: [], child: [] }
+    for (const [mounted, key] of [[parent, 'parent'], [child, 'child']]) {
+      Object.assign(mounted.agent, {
+        session: root.sessions.create(mounted.agent.id), options: {}, status: 'idle', ctx: mounted.scope.ctx,
+        followup(message) { notices[key].push({ kind: 'followup', message }) },
+        inject(message) { notices[key].push({ kind: 'inject', message }) },
+      })
+      registrations.push(root.agents.enter(mounted.agent, mounted === child ? parent.agent : undefined))
+      await root.agents.announce(mounted.agent, 'startup')
+    }
+    const statuses = new Map([['run_child', 'remote_running']])
+    const observation = new GenerationRunWaitService({
+      runtime: { readGenerationRunMedia: async ({ runIds }) => ({ runs: runIds.map(run_id => ({
+        run_id, lookup_status: 'available', status: statuses.get(run_id),
+      })) }) }, jobs: root.jobs, pollIntervalMs: 5,
+    })
+    const owner = { workspaceId: 'workspace-1', sessionId: parent.agent.id, callId: 'call-1', rootCallId: 'root-1' }
+    const foreground = new AbortController()
+    const receipt = await observation.register(owner, ['run_child'], foreground.signal)
+    foreground.abort()
+    assert.equal(root.jobs.get(receipt.job_id, parent.agent.id).status, 'running')
+    assert.deepEqual(parent.agent.session.snapshotEvents().find(event => event.type === 'job/registered' && event.data.jobId === receipt.job_id).data.toolCall, { callId: 'call-1', rootCallId: 'root-1' })
+    assert.equal((await root.jobs.wait(receipt.job_id, 1, parent.agent.id)).status, 'running')
+    const waiting = new AbortController()
+    const wait = root.jobs.wait(receipt.job_id, 1000, parent.agent.id, waiting.signal)
+    waiting.abort()
+    await assert.rejects(wait, /wait aborted/u)
+    assert.equal(root.jobs.get(receipt.job_id, parent.agent.id).status, 'running')
+    assert.throws(() => root.jobs.get(receipt.job_id, child.agent.id), /access|own|session|permission/iu)
+    async function settled(id) {
+      if (!['running', 'stopping'].includes(root.jobs.get(id, parent.agent.id).status)) return
+      await new Promise(resolve => {
+        const off = root.jobs.events.subscribe({ owner: parent.agent.id }, event => {
+          if (event.type === 'settled' && event.job.id === id) { off(); resolve() }
+        })
+      })
+    }
+    statuses.set('run_child', 'succeeded')
+    await settled(receipt.job_id)
+    assert.equal(notices.parent.length, 1)
+    assert.equal(notices.parent[0].kind, 'followup')
+    assert.equal(notices.child.length, 0)
+    assert.deepEqual(JSON.parse(root.jobs.read(receipt.job_id, parent.agent.id).result), { runs: [{ run_id: 'run_child', status: 'succeeded' }] })
+    parent.agent.status = 'running'
+    statuses.set('run_child', 'remote_running')
+    const second = await observation.register(owner, ['run_child'])
+    statuses.set('run_child', 'failed')
+    await settled(second.job_id)
+    assert.equal(notices.parent.length, 2)
+    assert.equal(notices.parent[1].kind, 'inject')
+    parent.agent.status = 'idle'
+    statuses.set('run_child', 'remote_running')
+    const third = await observation.register(owner, ['run_child'])
+    statuses.set('run_child', 'succeeded')
+    await settled(third.job_id)
+    assert.equal(notices.parent.length, 3)
+    assert.equal(notices.parent[2].kind, 'followup')
+    statuses.set('run_child', 'remote_running')
+    const killed = await observation.register(owner, ['run_child'])
+    const toolResult = await root.tools.execute({ name: 'job_kill', arguments: { job_id: killed.job_id },
+      agent: parent.agent, callId: 'kill-call', signal: new AbortController().signal })
+    assert.equal(toolResult.isError, false, JSON.stringify(toolResult))
+    await root.jobs.wait(killed.job_id, 1000, parent.agent.id)
+    assert.equal(root.jobs.get(killed.job_id, parent.agent.id).status, 'killed')
+    assert.equal(statuses.get('run_child'), 'remote_running')
+    assert.equal(notices.parent.length, 3)
+    const released = await observation.register(owner, ['run_child'])
+    await parent.scope.dispose()
+    assert.equal(root.jobs.list(parent.agent.id).length, 0)
+    assert.equal(statuses.get('run_child'), 'remote_running')
+    assert.equal(notices.parent.length, 3)
+    statuses.set('run_child', 'succeeded')
+    await observation.close()
+  },
   async goal() {
     const unregister = await declare()
     const parent = await mountAgent('goal-parent')
@@ -184,7 +263,7 @@ const scenarios = {
     await declare('other', { toolName: 'other_preset_tool' })
     const other = await mountAgent('other-parent', 'other')
     for (const key of [parent.agent, child.agent, standing.key]) {
-      await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+      await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
     }
     for (let registration = 0; registration < 2; registration++) {
       removeDependencies = root.tools.register(fixtureTool('load_workspace_dependencies'))
@@ -194,7 +273,7 @@ const scenarios = {
           agent: key, callId: 'late-denied-dependencies', signal: new AbortController().signal })
         assert.ok(result.error, JSON.stringify(result))
         assert.match(JSON.stringify(result), /unknown tool/u)
-        await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+        await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
       }
       await assertTools(other.agent, ['host_global', 'load_workspace_dependencies', 'other_preset_tool'])
       removeDependencies()
@@ -222,10 +301,10 @@ const scenarios = {
       assert.ok(result.error, JSON.stringify(result))
       assert.match(JSON.stringify(result), /unknown tool/u)
     }
-    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'preset_tool', 'skill', 'update_goal'])
-    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
     const standing = await root.agentPresets.acquireScope('workbench')
-    await assertTools(standing.key, ['create_goal', 'get_goal', 'host_global', 'host_late', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(standing.key, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
     await standing[Symbol.asyncDispose]()
     await declare('other', { toolName: 'other_preset_tool' })
     const other = await mountAgent('other-parent', 'other')
@@ -242,14 +321,14 @@ const scenarios = {
     await standing[Symbol.asyncDispose]()
     await unregister()
     await assert.rejects(root.agentPresets.resolve('workbench'), /Unknown agent preset/u)
-    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
-    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
     await child.scope.dispose()
     await parent.scope.dispose()
     await assertTools(retiredKey, ['host_global', 'load_workspace_dependencies'])
     await declare()
     const reloaded = await mountAgent('reloaded-parent')
-    await assertTools(reloaded.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(reloaded.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
   },
 
   async failure() {
@@ -263,9 +342,9 @@ const scenarios = {
     await unregister()
     await declare()
     await root.agentPresets.mount(rejected.scope.ctx, 'workbench')
-    await assertTools(rejected.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(rejected.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
     const child = composeChild('recovered-child', rejected)
-    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
   },
 
   async prompt() {
@@ -297,7 +376,7 @@ const scenarios = {
       assert.deepEqual(prompt.renderContextSections(assembly).map(entry => entry.name), expected)
       assert.deepEqual(prompt.renderContextSections(root.systemPrompt.refreshContext(assembly,
         { scope: mounted.agent })).map(entry => entry.name), expected)
-      await assertTools(mounted.agent, ['create_goal', 'get_goal', 'host_global', 'preset_tool', 'skill', 'update_goal'])
+      await assertTools(mounted.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
     }
     await declare('other')
     const other = await mountAgent('other-parent', 'other')
@@ -363,6 +442,7 @@ try {
   await root.plugin(sessions.default)
   await root.plugin(projections.default)
   await root.plugin(agents.default)
+  await root.plugin(jobsLocal.default)
   root.sessionProjections.register(agentLoop.turnBoundaryProjectionDefinition)
   await root.plugin(goals.default)
   await root.plugin(commands.default)

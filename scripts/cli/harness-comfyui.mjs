@@ -16,6 +16,9 @@ import {
 import { prepareResultFile, writeResultFile, discardUnpublishedResult } from './result-file.mjs'
 
 import { assertRequestSize, decodeUtf8, loadGenerationManifest } from './generation-manifest.mjs'
+import { renderCommandContract } from './contract-help.mjs'
+import { GENERATION_ACCEPTANCE_STATUSES } from '../../src/generation/submission-contract.ts'
+import { MIN_RUN_INPUT_ID_PREFIX_LENGTH } from '../../src/generation/run-input-contract.ts'
 import { GENERATION_MAX_SUBMISSION_ITEMS } from '../../src/cli/limits.ts'
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
 
@@ -73,13 +76,13 @@ async function responseJson(response) {
   try {
     body = JSON.parse(Buffer.from(bytes).toString('utf8'))
   } catch {
-    throw new Error('CLI_PROTOCOL_ERROR: Host response is not JSON')
+    throw new Error('CLI_PROTOCOL_ERROR: ' + message('protocolFailure', { detail: 'Host response is not JSON' }))
   }
   if (body === null || typeof body !== 'object' || Array.isArray(body) || typeof body.ok !== 'boolean') {
-    throw new Error('CLI_PROTOCOL_ERROR: Host response envelope is invalid')
+    throw new Error('CLI_PROTOCOL_ERROR: ' + message('protocolFailure', { detail: 'Host response envelope is invalid' }))
   }
   if (body.ok && (body.data === null || typeof body.data !== 'object' || Array.isArray(body.data))) {
-    throw new Error('CLI_PROTOCOL_ERROR: Host response success data is invalid')
+    throw new Error('CLI_PROTOCOL_ERROR: ' + message('protocolFailure', { detail: 'Host response success data is invalid' }))
   }
   return body
 }
@@ -116,7 +119,12 @@ async function main() {
   let output
   try {
     ({ args: argv, quiet } = presentationArguments(process.argv.slice(2), help.valueOptions))
-    output = renderHelp(help, argv, { max_submission_items: GENERATION_MAX_SUBMISSION_ITEMS, max_request_bytes: CLI_MAX_BODY_BYTES })
+    output = renderHelp(help, argv, {
+      max_submission_items: GENERATION_MAX_SUBMISSION_ITEMS,
+      max_request_bytes: CLI_MAX_BODY_BYTES,
+      max_response_bytes: MAX_RESPONSE_BYTES,
+      min_run_id_prefix_length: MIN_RUN_INPUT_ID_PREFIX_LENGTH,
+    }, renderCommandContract)
   } catch (error) {
     await reportFailure(`CLI_ARGUMENT_INVALID: ${error.message} ${helpHint(help, [])}`, 2)
     return
@@ -133,6 +141,7 @@ async function main() {
     || command === 'generation inspect-template-parameters --stdin'
     || command === 'generation random-seeds --stdin'
     || command === 'generation run-inputs --stdin'
+    || command === 'generation wait --stdin'
     || command === 'generation resolve-media --stdin'
     || command === 'image inspect --stdin'
   )
@@ -187,7 +196,7 @@ async function main() {
       const error = envelope.error
       if (error === null || typeof error !== 'object' || Array.isArray(error)
         || typeof error.code !== 'string' || typeof error.message !== 'string') {
-        throw new Error(`CLI_PROTOCOL_ERROR: Host returned HTTP ${response.status} without a valid error`)
+        throw new Error('CLI_PROTOCOL_ERROR: ' + message('protocolFailure', { detail: `Host returned HTTP ${response.status} without a valid error` }))
       }
       const message = `${error.code}: ${error.message} ${help.providerErrorCodes.includes(error.code) ? help.messages.providerFailure + ' ' : ''}${helpHint(help, argv)}`
       await reportFailure(await discardResult(handle, message))
@@ -198,9 +207,9 @@ async function main() {
       || envelope.data.items.length !== request.items.length
       || envelope.data.items.some((item, index) => item?.request_id !== request.items[index].request_id
         || typeof item.run_id !== 'string' || item.run_id.length === 0
-        || !['accepted', 'reused'].includes(item.acceptance))
+        || !GENERATION_ACCEPTANCE_STATUSES.includes(item.acceptance))
     )) {
-      throw new Error('CLI_PROTOCOL_ERROR: Host submit response has invalid acceptance items. Retry with the saved manifest.')
+      throw new Error('CLI_PROTOCOL_ERROR: ' + message('protocolFailure', { detail: 'Host submit response has invalid acceptance items' }))
     }
     data = envelope.data
   } catch (error) {

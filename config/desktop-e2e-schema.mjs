@@ -2,7 +2,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 
 const CONFIG_KEYS = [
   'schemaVersion', 'modes', 'application', 'paths', 'ports', 'startup', 'rendererCdp', 'readiness', 'invocation', 'profilePortPatch', 'capabilities',
-  'commandRunner', 'sessionTrace',
+  'commandRunner', 'sessionTrace', 'rawCapture',
 ]
 const MODES_KEYS = ['defaultMode', 'fresh', 'development']
 const EPHEMERAL_MODE_KEYS = ['persistent']
@@ -315,6 +315,7 @@ export function parseDesktopE2EConfig(value) {
   }
 
   parseSessionTraceConfig(config.sessionTrace)
+  parseRawCaptureConfig(config.rawCapture)
 
   const commandRunner = exactKeys(config.commandRunner, COMMAND_RUNNER_KEYS, 'desktop E2E config.commandRunner')
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(nonEmptyString(
@@ -337,6 +338,27 @@ export function parseDesktopE2EConfig(value) {
     throw new TypeError('desktop E2E config.commandRunner.pendingStartDrainTimeoutMs must cover startup, stop and kill timeouts')
   }
   return config
+}
+
+function parseRawCaptureConfig(value) {
+  const capture = exactKeys(value, ['filenames', 'sensitiveHeaders', 'hopHeaders', 'sessionHeaders', 'observer'], 'desktop E2E config.rawCapture')
+  const filenames = exactKeys(capture.filenames, ['index', 'state', 'requests', 'requestBody', 'responseBody', 'requestMetadata', 'sseIndex', 'observations', 'observerIndex', 'profileRestoration', 'spills'], 'desktop E2E config.rawCapture.filenames')
+  for (const [key, value] of Object.entries(filenames)) {
+    safeRelativePath(value, 'desktop E2E config.rawCapture.filenames.' + key)
+    if (value.includes('/') || value.includes('\\\\')) throw new TypeError('desktop E2E config.rawCapture.filenames.' + key + ' must be a path component')
+  }
+  if (new Set(Object.values(filenames)).size !== Object.keys(filenames).length) throw new TypeError('desktop E2E config.rawCapture.filenames must be unique')
+  for (const key of ['sensitiveHeaders', 'hopHeaders', 'sessionHeaders']) {
+    const headers = capture[key]
+    if (!Array.isArray(headers) || !headers.length || headers.some(value => typeof value !== 'string' || !/^[a-z][a-z0-9-]*$/u.test(value)) || new Set(headers).size !== headers.length) {
+      throw new TypeError('desktop E2E config.rawCapture.' + key + ' must contain unique lowercase HTTP header names')
+    }
+  }
+  const observer = exactKeys(capture.observer, ['entryId', 'providerEntryId'], 'desktop E2E config.rawCapture.observer')
+  for (const [key, value] of Object.entries(observer)) {
+    if (!/^[a-z][a-z0-9-]*$/u.test(nonEmptyString(value, 'desktop E2E config.rawCapture.observer.' + key))) throw new TypeError('desktop E2E config.rawCapture.observer.' + key + ' must start with a lowercase letter and contain only lowercase letters, digits and hyphens; example: raw-provider-observer')
+  }
+  return capture
 }
 
 export function parseSessionTraceFilenames(value) {

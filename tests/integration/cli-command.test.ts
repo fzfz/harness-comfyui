@@ -109,7 +109,7 @@ async function serveImageReader(imageReader: unknown) {
       },
     },
     capabilities: {
-      authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+      authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }),
     },
     runtime: {},
     imageReader,
@@ -265,7 +265,8 @@ it('recovers accepted manifest items through the Host route after the result fil
   })
   let call = 0
   const handler = createCliHandler({
-    capabilities: { authorize: () => ({ sessionId: 'session_manifest', turn: 2, callId: `call_${++call}`, cwd: '/workspace' }) },
+    runWait: { register: async () => { throw new Error('Unexpected Run wait') } },
+    capabilities: { authorize: () => ({ sessionId: 'session_manifest', turn: 2, callId: `call_${++call}`, rootCallId: 'root-test', cwd: '/workspace' }) },
     runtime,
     imageReader: { inspect: async () => { throw new Error('unreachable') } },
     workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_manifest', sessionIds: ['session_manifest'] }) },
@@ -438,30 +439,33 @@ describe('managed CLI result-file transport', () => {
     } finally { await host.close() }
   })
 
-  it('executes the documented Python consumer by reading the installed CLI result file', async () => {
-    const host = await serveCliData({ provider: 'test', model: 'vision', file_path: '/absolute/local/path/result.png', observation: 'blue square' })
+  it('executes the root help Python consumer against the installed CLI result file', async () => {
+    const data = { provider: 'test', model: 'vision', file_path: '/absolute/local/path/result.png', observation: 'blue square' }
+    const host = await serveCliData(data)
     const directory = await mkdtemp(join(temporaryRoot, 'python-中文 space-'))
     callDirectories.push(directory)
     try {
-      const reference = await readFile(resolve('.agents/skills/local-image-reader/references/image-inspection-cli.md'), 'utf8')
-      const body = reference.match(/```python\n([\s\S]*?)\n\s*```/u)?.[1]
-      if (!body) throw new Error('Documented Python example is unavailable')
-      const code = body.split('\n').map(line => line.slice(3)).join('\n')
+      const help = await runCli({ args: ['--help'], apiUrl: host.apiUrl })
+      const code = help.stdout.match(/```python\n([\s\S]*?)\n```/u)?.[1]
+      if (!code) throw new Error('Root help Python example is unavailable')
       const result = await new Promise<{ exitCode: number; stdout: string; stderr: string }>((resolve, reject) => {
-        const child = spawn('python3', ['-c', code], { env: {
+        const child = spawn('python3', ['-c', code, 'image', 'inspect', '--stdin', '--quiet'], { env: {
           ...process.env, TMPDIR: directory,
           DSH_HARNESS_COMFYUI_NODE_EXECUTABLE: process.execPath,
           DSH_HARNESS_COMFYUI_CLI: cliPath,
           DSH_HARNESS_COMFYUI_CLI_API: host.apiUrl,
           DSH_HARNESS_COMFYUI_CLI_CAPABILITY: 'python-capability',
         } })
+        child.stdin.end(JSON.stringify({ file_path: data.file_path }))
         const stdout: Buffer[] = []; const stderr: Buffer[] = []
         child.stdout.on('data', value => stdout.push(Buffer.from(value)))
         child.stderr.on('data', value => stderr.push(Buffer.from(value)))
         child.once('error', reject)
         child.once('close', code => resolve({ exitCode: code ?? 1, stdout: Buffer.concat(stdout).toString('utf8'), stderr: Buffer.concat(stderr).toString('utf8') }))
       })
-      expect(result).toEqual({ exitCode: 0, stdout: 'blue square\n', stderr: '' })
+      expect(result.exitCode).toBe(0)
+      expect(JSON.parse(result.stdout)).toEqual(data)
+      expect(result.stderr).toBe('')
       expect(host.requests).toHaveLength(1)
       expect(await readdir(directory)).toHaveLength(1)
     } finally { await host.close() }
@@ -547,7 +551,7 @@ describe('managed CLI result-file transport', () => {
       expect(result.stdout).toBe('')
       expect(result.stderr).toContain('CLI_RESPONSE_TOO_LARGE')
       expect(result.stderr).toContain('33554432')
-      expect(result.stderr).toContain('stop dependent work. Next:')
+      expect(result.stderr).toContain('Next:')
       expect(result.stderr).not.toContain('work..')
       expect(result.stderr).toContain('generation random-seeds --help')
       expect(requests).toBe(1)
@@ -567,7 +571,9 @@ describe('managed CLI result-file transport', () => {
       }
       const help = await runCli({ args: ['generation', 'random-seeds', '--help'], apiUrl: host.apiUrl, temporaryDirectory: join(temporaryRoot, 'missing'), keepStdinOpen: true })
       expect(help.exitCode).toBe(0)
-      expect(help.stdout).toContain('CLI_RESULT_FILE_PREPARE_FAILED')
+      expect(help.stdout).toContain('公共文件协议')
+      const rootHelp = await runCli({ args: ['--help'], apiUrl: host.apiUrl })
+      expect(rootHelp.stdout).toContain('CLI_RESULT_FILE_PREPARE_FAILED')
       expect(host.requests).toHaveLength(0)
     } finally { await host.close() }
   })
@@ -660,6 +666,16 @@ describe('managed CLI result-file transport', () => {
 })
 
 describe('installed managed Harness ComfyUI CLI executable', () => {
+  it('registers a Run completion Job through stdin and saves its receipt', async () => {
+    const receipt = { job_id: 'generation-wait-1', run_ids: ['run_1'] }
+    const server = await serveCliData(receipt)
+    try {
+      const result = await runCli({ args: ['generation', 'wait', '--stdin'], stdin: '{"run_ids":["run_1"]}', apiUrl: server.apiUrl })
+      expectCliResult(result, { exitCode: 0, resultFileContent: JSON.stringify(receipt) + '\n', stderr: '' })
+      expect(server.requests).toEqual([{ command: 'generation.wait', run_ids: ['run_1'] }])
+    } finally { await server.close() }
+  })
+
   it('rejects Catalog execution and help before contacting the Host', async () => {
     let requests = 0
     const server = createServer((_request, response) => { requests += 1; response.end() })
@@ -714,7 +730,12 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
   ])('provides offline help for %j', async (...command) => {
     const result = await runCli({ args: [...command, '--help'], apiUrl: '', keepStdinOpen: true })
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain('下一步')
+    const invocation = 'ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI"'
+    if (command.length === 1) {
+      expect(result.stdout.split(`${invocation} generation inspect-template-parameters --help`)).toHaveLength(2)
+    } else {
+      expect(result.stdout).toContain(`${invocation} ${command.join(' ')} ${command[1] === 'submit' ? '--file' : '--stdin'}`)
+    }
     expect(result.stdout).not.toContain('catalog')
     expect(result.stderr).toBe('')
   })
@@ -733,11 +754,13 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       const result = await runCli({ args, apiUrl: '', keepStdinOpen: true })
       expect(result.exitCode).toBe(0)
       expect(result.stderr).toBe('')
-      expect(result.stdout).toContain('下一步')
-      expect(result.stdout).toContain('image')
+      const invocation = 'ELECTRON_RUN_AS_NODE=1 "$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE" --expose-internals "$DSH_HARNESS_COMFYUI_CLI"'
+      const entry = args.length === 1 ? 'image --help' : args.length === 2 ? 'image inspect --help' : 'image inspect --stdin'
+      expect(result.stdout).toContain(`${invocation} ${entry}`)
+      if (args.length < 3) expect(result.stdout.split(`${invocation} ${entry}`)).toHaveLength(2)
       if (args.length === 3) {
         expect(result.stdout).toContain('file_path')
-        expect(result.stdout).toContain('EOF')
+        expect(result.stdout).toContain('公共文件协议')
         expect(result.stdout).toContain('observation')
       }
     }
@@ -1150,8 +1173,9 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       }),
     })
     const handler = createCliHandler({
+    runWait: { register: async () => { throw new Error('Unexpected Run wait') } },
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }),
       },
       runtime,
       imageReader: { inspect: async () => { throw new Error('unreachable') } },
@@ -1216,6 +1240,6 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
   })
 })
 
-function registerHarnessComfyuiCliRoute(options: Parameters<typeof createCliHandler>[0] & { webServer: { register(route: { kind: 'prefix'; path: string; handler: ReturnType<typeof createCliHandler> }): () => void } }) {
-  return options.webServer.register({ kind: 'prefix', path: '/api/harness-comfyui/cli/v1', handler: createCliHandler(options) })
+function registerHarnessComfyuiCliRoute(options: Omit<Parameters<typeof createCliHandler>[0], 'runWait'> & Partial<Pick<Parameters<typeof createCliHandler>[0], 'runWait'>> & { webServer: { register(route: { kind: 'prefix'; path: string; handler: ReturnType<typeof createCliHandler> }): () => void } }) {
+  return options.webServer.register({ kind: 'prefix', path: '/api/harness-comfyui/cli/v1', handler: createCliHandler({ ...options, runWait: options.runWait ?? { register: async () => { throw new Error('Unexpected Run wait') } } }) })
 }

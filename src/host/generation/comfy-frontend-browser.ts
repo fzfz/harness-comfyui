@@ -510,7 +510,8 @@ function exportExpression(workflow: UiWorkflow): string {
     const app = globalThis.comfyAPI?.app?.app ?? globalThis.app
     if (!app?.loadGraphData) throw new Error('ComfyUI app.loadGraphData is unavailable.')
     if (!app?.graphToPrompt) throw new Error('ComfyUI app.graphToPrompt is unavailable.')
-    await app.loadGraphData(${JSON.stringify(workflow)})
+    const loaded = await app.loadGraphData(${JSON.stringify(workflow)})
+    if (loaded === false) throw new Error('ComfyUI app.loadGraphData failed to load the workflow.')
     const prompt = await app.graphToPrompt()
     return { output: prompt?.output }
   })()`

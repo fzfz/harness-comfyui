@@ -44,5 +44,9 @@
       "test": { "width": 1024, "height": 576, "megapixels": 0.59 },
       "final": { "width": 1536, "height": 864, "megapixels": 1.33 }
     }
-  ]
+  ],
+  "validation": {
+    "megapixels_divisor": 1000000,
+    "maximum_megapixels_relative_difference": 0.05
+  }
 }
