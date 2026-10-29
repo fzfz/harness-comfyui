@@ -1,34 +1,34 @@
 [
   {
     "name": "anima-prompt-builder",
-    "description": "用户要求根据自然语言画面要求与当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录构建并校验十二槽 ANIMA3 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+    "description": "用户要求构建、改写或校验 ANIMA3 十二槽 Prompt 时使用。"
   },
   {
     "name": "character-portrait-prompt-designer",
-    "description": "根据书籍目录和人物名，从人物设定/调色盘/二次解释/三面性/证据包/events/greetings 中提取人物外观与剧情，设计外观基准和每个场景/事件/开场的独立立绘生图提示词，并写入 source/media/；也可按一个或多个 run_id 独立查询历史 ComfyUI Generation Run 的原始生成参数和 Actual Workflow。当用户要求为小说、角色卡、世界书人物设计“基本外观”“立绘提示词”“生图 prompt”“场景/事件/开场图像提示词”，要求“根据某个目录中的人物 md 和证据设计人物形象”，或要求查询历史 run_id 时使用。"
+    "description": "用户要求根据小说原文、人物设定、证据包或角色卡资料设计人物外观基准，或编写场景、事件、开场的立绘提示词时使用。"
   },
   {
     "name": "comfyui-generate",
-    "description": "用户要求用 ComfyUI Workflow 创建图片、提交提示词文件、批量生成或单项重做时使用。核对模板、模型及 LoRA 兼容性，或查询历史 Run 与复用 Seed 时也使用。"
+    "description": "用户要求创建 ComfyUI 图片、提交提示词文件、批量生成或单图重做时使用。核对资源兼容性，或查询历史 Run 参数、Seed、Workflow 与媒体时也使用。"
   },
   {
     "name": "comfyui-image-review",
-    "description": "用户要求按 run_id 分析生成图片、比较 Prompt 与图片或改写下一轮 Prompt 时使用。Skill 读取原始参数，逐图调用独立视觉模型，再给出改进 Prompt。"
+    "description": "用户要求按 Run ID 分析生成图片、比较 Prompt 与图片，或据此改写下一轮 Prompt 时使用。"
   },
   {
     "name": "krea2-anime-prompt-builder",
-    "description": "用户要求根据自然语言画面要求、当前消息 `comfyui-context` 中的 Character 或 Style 上下文记录、语义查询结果或用户指定的历史正向 Prompt，构建、改写或检查一条 Krea2 动漫 Prompt，或者要求读取一个或多个 run_id 保存的生成参数或 Actual Workflow 时使用。"
+    "description": "用户要求构建、改写或检查 Krea2 动漫 Prompt 时使用。"
   },
   {
     "name": "local-image-reader",
-    "description": "使用 Harness 当前“图片读取”配置中的视觉模型读取一张或多张本地图片，并按输入顺序返回逐图观察结果。用户提供本地图片绝对路径并要求识别、描述或分析图片内容时使用。"
+    "description": "用户提供或指代本地图片路径，并要求识别、描述或分析图片内容时使用。"
   },
   {
     "name": "moss-prompt-builder",
-    "description": "Expand an image-generation request into a detailed MOSS-Image caption or spatial layout, and compile a local JSON draft into a ready-to-paste prompt. Use for prompt enhancement, image composition and text placement; this skill does not generate images."
+    "description": "用户要求构建、改写或编译 MOSS-Image 的 Caption 或 Layout Prompt 时使用。"
   },
   {
     "name": "wai-sdxl-prompt-builder",
-    "description": "用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt，或者查询一个或多个 ComfyUI Generation Run 的生成参数或 Actual Workflow 时使用。"
+    "description": "用户要求生成、改写、补全或检查 WAI-illustrious-SDXL 英文 Prompt 时使用。"
   }
 ]

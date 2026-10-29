@@ -1,8 +1,10 @@
-import { runWithHelp, errorGuide } from './cli-help.mjs'
+import { runWithHelp, errorGuide, EXIT_CODES } from './cli-help.mjs'
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const INPUT_KEYS = Object.freeze(['slots', 'display_text']);
+const MINIMUM_TEXT_LENGTH = 1;
+const MINIMUM_POSITION_ITEMS = 0;
 
 const WEIGHT_POLICY = JSON.parse(readFileSync(
   new URL('../references/prompt-weight-policy.json', import.meta.url),
@@ -86,7 +88,7 @@ function assertSlotKeys(slots) {
 
 function assertDisplayText(displayText) {
   if (typeof displayText !== 'string') fail('display_text', 'display_text must be a string');
-  if (displayText.length === 0) fail('display_text', 'display_text must be non-empty');
+  if (displayText.length < MINIMUM_TEXT_LENGTH) fail('display_text', 'display_text must be non-empty');
 }
 
 function assertPayloadSyntax(payload, label) {
@@ -154,7 +156,7 @@ function parseTagElement(value, label) {
 function assertCommonElement(value, slotName, index) {
   const label = `${slotName}[${index}]`;
   if (typeof value !== 'string') fail(label, `${label} must be a string`);
-  if (value.length === 0 || value.trim() !== value || /[\r\n]/u.test(value)) {
+  if (value.length < MINIMUM_TEXT_LENGTH || value.trim() !== value || /[\r\n]/u.test(value)) {
     fail(label, `${label} must be a non-empty string without surrounding whitespace or newlines`);
   }
   if (value.includes(',')) fail(label, `${label} must not contain commas`);
@@ -163,7 +165,7 @@ function assertCommonElement(value, slotName, index) {
 function assertSlotElements(slots) {
   for (const slotName of SLOT_NAMES) {
     const values = slots[slotName];
-    if (!Array.isArray(values)) fail(slotName, `${slotName} must be an array`);
+    if (!Array.isArray(values) || values.length < MINIMUM_POSITION_ITEMS) fail(slotName, `${slotName} must be an array`);
     values.forEach((value, index) => {
       assertCommonElement(value, slotName, index);
       const label = `${slotName}[${index}]`;
@@ -302,9 +304,9 @@ export function validateGenerationOutput(input) {
   if (`${input.width / sizeDivisor}:${input.height / sizeDivisor}` !== input.aspect_ratio) {
     fail('aspect_ratio', 'aspect_ratio does not match width and height');
   }
-  const actualMegapixels = input.width * input.height / 1_000_000;
-  if (Math.abs(actualMegapixels - input.megapixels) / input.megapixels > 0.05) {
-    fail('megapixels', 'megapixels differs from width and height by more than five percent');
+  const actualMegapixels = input.width * input.height / GENERATION_PROFILES.validation.megapixels_divisor;
+  if (Math.abs(actualMegapixels - input.megapixels) / input.megapixels > GENERATION_PROFILES.validation.maximum_megapixels_relative_difference) {
+    fail('megapixels', `megapixels differs from width and height by more than ${GENERATION_PROFILES.validation.maximum_megapixels_relative_difference * 100} percent`);
   }
   return Object.freeze(structuredClone(input));
 }
@@ -355,14 +357,19 @@ async function runCli(args) {
 
 if (process.argv[1]
   && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) {
-  runWithHelp(runCli).catch((error) => {
+  runWithHelp(runCli, {
+    inputKeys: INPUT_KEYS, positionNames: SLOT_NAMES, requiredPositions: SLOT_NAMES,
+    minimumPositions: SLOT_NAMES.length, minimumItems: MINIMUM_POSITION_ITEMS,
+    minimumTextLength: MINIMUM_TEXT_LENGTH, outputFixed: OUTPUT_RULES.fixed,
+    policy: WEIGHT_POLICY, validate: validateOutput, template: emptyInputTemplate
+  }).catch((error) => {
     const normalized = error instanceof Error ? error : new Error(String(error));
     if (normalized instanceof PromptOutputValidationError) {
       process.stderr.write(`${JSON.stringify({ violations: [{ path: normalized.path, message: normalized.message }] })}\n`);
-      process.exitCode = 2;
+      process.exitCode = EXIT_CODES.validation;
       return;
     }
     process.stderr.write(`${normalized.name}: ${normalized.message}\n`);
-    process.exitCode = 1;
+    process.exitCode = EXIT_CODES.execution;
   }).finally(errorGuide);
 }

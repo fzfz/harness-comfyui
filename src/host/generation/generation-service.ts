@@ -1,3 +1,4 @@
+import { isGenerationRunTerminal } from '../../generation/run-status.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
@@ -6,7 +7,6 @@ import {
   GENERATION_REMOTE_NAMESPACE,
   type GenerationProjection,
   type GenerationProjectionRequest,
-  type GenerationRunProjectionStatus,
 } from '../../generation/contract.ts'
 import type { GenerationRuntime } from './generation-runtime.ts'
 import {
@@ -20,8 +20,6 @@ declare module '@deepseek-ai/cordis' {
     harnessComfyuiGeneration: GenerationRemoteService
   }
 }
-
-const terminalStatuses = new Set<GenerationRunProjectionStatus>(['succeeded', 'failed', 'cancelled', 'submission_unknown'])
 
 export class GenerationRemoteService extends TypertRemoteService {
   private readonly runtime: Pick<GenerationRuntime, 'queryRuns' | 'queryMedia'>
@@ -105,7 +103,7 @@ export class GenerationRemoteService extends TypertRemoteService {
       sessionId: request.sessionId,
       runs: Object.freeze(runs),
       media: Object.freeze(media),
-      hasActiveRuns: runs.some(run => !terminalStatuses.has(run.status)),
+      hasActiveRuns: runs.some(run => !isGenerationRunTerminal(run.status)),
       refreshAfterMs: this.refreshAfterMs,
     })
   }

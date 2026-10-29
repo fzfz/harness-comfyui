@@ -231,6 +231,44 @@ class PromptEnhancerTests(unittest.TestCase):
                     self.assertIn("--output", result.stderr)
                     self.assertEqual(target.read_text(encoding="utf-8"), "existing result")
 
+    def test_cli_help_owns_the_complete_compiler_contract(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            stdin=subprocess.DEVNULL, capture_output=True, encoding="utf-8",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+        for contract_term in (
+            "Input JSON", "caption", "width", "height", "bbox_coord_space",
+            "bbox_format", "summary", "items", "x_min", "y_max",
+            "abs_centralized", "yxyx", "Relative paths", "Retries",
+            "exit 0", "exit 2", "distinct output paths",
+        ):
+            with self.subTest(term=contract_term):
+                self.assertIn(contract_term, result.stdout)
+        self.assertNotIn("references/", result.stdout)
+
+    def test_cli_help_examples_compile_through_the_public_entry(self):
+        help_result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            capture_output=True, encoding="utf-8", check=True,
+        )
+        self.assertLessEqual(len(help_result.stdout), 8192)
+        with tempfile.TemporaryDirectory() as directory:
+            outputs = []
+            for name in ("Caption", "Layout"):
+                example_line = help_result.stdout.split(name + " example:" + chr(10))[1].splitlines()[0].strip()
+                json.loads(example_line)
+                result = subprocess.run(
+                    [sys.executable, str(SCRIPT), "-"],
+                    input=example_line, capture_output=True, encoding="utf-8",
+                    env={**os.environ, "TMPDIR": directory},
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                outputs.append(Path(result.stdout.strip()).read_text(encoding="utf-8"))
+            self.assertEqual(outputs[0], 'An ivory cup marked "Tea".' + chr(10))
+            self.assertEqual(json.loads(outputs[1])["items"][0]["bbox"], [-256, -256, 256, 256])
+
 
 if __name__ == "__main__":
     unittest.main()

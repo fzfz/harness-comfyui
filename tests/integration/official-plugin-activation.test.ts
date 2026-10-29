@@ -154,6 +154,7 @@ describe('official Host plugin activation', () => {
       services: {
         profile: {
           cliServer: { host: '127.0.0.1', port: 0, shutdownTimeoutMs: 1_000 },
+          jobs: { pollIntervalMs: 1_000 },
           paths: {},
         },
         catalog: { queryComfyuiInstances },
@@ -170,6 +171,7 @@ describe('official Host plugin activation', () => {
     context.provide('harnessComfyuiCore' as never, core as never)
     context.provide('imageReader' as never, { inspect: vi.fn() } as never)
     context.provide('shellEnv' as never, { register: registerEnvironment } as never)
+    context.provide('jobs' as never, { start: vi.fn() } as never)
     context.provide('tools' as never, { register: vi.fn() } as never)
     context.provide('workspaceRegistry', { resolveByPath: vi.fn(async () => undefined) })
 
@@ -178,6 +180,7 @@ describe('official Host plugin activation', () => {
 
     const execution = {
       callId: 'call_shell_1',
+      rootCallId: 'call_shell_1',
       name: 'bash',
       arguments: {},
       token: Symbol('shell-execution'),

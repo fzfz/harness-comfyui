@@ -1,3 +1,4 @@
+import { imageReaderPromptSchema, imageReaderPromptIssue } from './prompt-contract.ts'
 import bundledProfiles from '../../config/image-reader-profiles.json' with { type: 'json' }
 import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 import Schema from '@deepseek-ai/schemastery'
@@ -13,7 +14,7 @@ export const IMAGE_READER_CONNECTION_TYPES = Object.freeze(['runtime', 'openai-c
 export type ImageReaderConnectionType = typeof IMAGE_READER_CONNECTION_TYPES[number]
 
 export const IMAGE_READER_MAX_PROFILES = 20
-export const IMAGE_READER_PROMPT_MAX_LENGTH = 32_768
+export { IMAGE_READER_PROMPT_MAX_LENGTH } from './prompt-contract.ts'
 export const IMAGE_READER_PROFILE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/
 export const IMAGE_READER_PROFILE_ID_MAX_LENGTH = 80
 export const IMAGE_READER_PROFILE_NAME_MAX_LENGTH = 80
@@ -140,7 +141,7 @@ const imageReaderProfileSchema = Schema.object({
   endpoint: Schema.string().max(IMAGE_READER_ENDPOINT_MAX_LENGTH),
   model: Schema.string().max(IMAGE_READER_MODEL_MAX_LENGTH).required(),
   hasApiKey: Schema.boolean(),
-  defaultPrompt: Schema.string().min(1).max(IMAGE_READER_PROMPT_MAX_LENGTH).required(),
+  defaultPrompt: imageReaderPromptSchema.required(),
   temperature: Schema.number().min(IMAGE_READER_TEMPERATURE_MIN).max(IMAGE_READER_TEMPERATURE_MAX).required(),
   maxTokens: Schema.natural().min(IMAGE_READER_MAX_TOKENS_MIN).max(IMAGE_READER_MAX_TOKENS_MAX).required(),
 })
@@ -193,8 +194,7 @@ function decodeImageReaderProfile(value: unknown): ImageReaderProfile | undefine
     || source.model.length > IMAGE_READER_MODEL_MAX_LENGTH
     || typeof source.hasApiKey !== 'boolean'
     || typeof source.defaultPrompt !== 'string'
-    || source.defaultPrompt.trim().length === 0
-    || source.defaultPrompt.length > IMAGE_READER_PROMPT_MAX_LENGTH
+    || imageReaderPromptIssue(source.defaultPrompt) !== undefined
     || typeof source.temperature !== 'number'
     || !Number.isFinite(source.temperature)
     || source.temperature < IMAGE_READER_TEMPERATURE_MIN

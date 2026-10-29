@@ -1,8 +1,12 @@
-import { runWithHelp, errorGuide } from './cli-help.mjs'
+import { runWithHelp, errorGuide, EXIT_CODES } from './cli-help.mjs'
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const INPUT_KEYS = Object.freeze(['positions', 'display_text']);
+const MINIMUM_TEXT_LENGTH = 1;
+const MINIMUM_POSITION_ITEMS = 1;
+const MINIMUM_POSITIONS = 1;
+const OUTPUT_RESULT = 'success';
 const OUTPUT_KIND = 'noobai_assistant_prompt';
 const CONTRACT_VERSION = '1.0.0';
 
@@ -74,7 +78,7 @@ function addViolation(violations, path, message) {
 
 function validSingleLineString(value) {
   return typeof value === 'string'
-    && value.length > 0
+    && value.length >= MINIMUM_TEXT_LENGTH
     && value.trim() === value
     && !CONTROL_OR_LINE_SEPARATOR.test(value);
 }
@@ -176,7 +180,7 @@ function collectInputViolations(input) {
 
   const positions = input.positions;
   if (Object.hasOwn(input, 'positions')) {
-    if (!isObject(positions) || Object.keys(positions).length === 0) {
+    if (!isObject(positions) || Object.keys(positions).length < MINIMUM_POSITIONS) {
       addViolation(violations, 'positions', '必须是包含至少一个实际 Prompt 位置的对象');
     } else {
       for (const name of Object.keys(positions)) {
@@ -186,7 +190,7 @@ function collectInputViolations(input) {
       for (const name of POSITION_NAMES) {
         if (!Object.hasOwn(positions, name)) continue;
         const values = positions[name];
-        if (!Array.isArray(values) || values.length === 0) {
+        if (!Array.isArray(values) || values.length < MINIMUM_POSITION_ITEMS) {
           addViolation(violations, `positions.${name}`, '必须是非空字符串数组');
           continue;
         }
@@ -250,7 +254,7 @@ function assemblePromptText(positions) {
 function successOutput(input) {
   return Object.freeze({
     kind: OUTPUT_KIND,
-    result: 'success',
+    result: OUTPUT_RESULT,
     contract_version: CONTRACT_VERSION,
     prompt_text: assemblePromptText(input.positions),
     display_text: input.display_text
@@ -347,9 +351,9 @@ export function validateGenerationOutput(input) {
   if (`${input.width / sizeDivisor}:${input.height / sizeDivisor}` !== input.aspect_ratio) {
     failGeneration('aspect_ratio', 'aspect_ratio does not match width and height');
   }
-  const actualMegapixels = input.width * input.height / 1_000_000;
-  if (Math.abs(actualMegapixels - input.megapixels) / input.megapixels > 0.05) {
-    failGeneration('megapixels', 'megapixels differs from width and height by more than five percent');
+  const actualMegapixels = input.width * input.height / GENERATION_PROFILES.validation.megapixels_divisor;
+  if (Math.abs(actualMegapixels - input.megapixels) / input.megapixels > GENERATION_PROFILES.validation.maximum_megapixels_relative_difference) {
+    failGeneration('megapixels', `megapixels differs from width and height by more than ${GENERATION_PROFILES.validation.maximum_megapixels_relative_difference * 100} percent`);
   }
   return Object.freeze(structuredClone(input));
 }
@@ -430,20 +434,26 @@ async function runCli(args) {
     process.stdout.write(`${JSON.stringify(result.output)}\n`);
   } else {
     process.stderr.write(`${JSON.stringify({ violations: result.violations })}\n`);
-    process.exitCode = 2;
+    process.exitCode = EXIT_CODES.validation;
   }
 }
 
 if (process.argv[1]
   && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) {
-  runWithHelp(runCli).catch((error) => {
+  runWithHelp(runCli, {
+    inputKeys: INPUT_KEYS, positionNames: POSITION_NAMES, requiredPositions: [],
+    minimumPositions: MINIMUM_POSITIONS, minimumItems: MINIMUM_POSITION_ITEMS,
+    minimumTextLength: MINIMUM_TEXT_LENGTH,
+    outputFixed: { kind: OUTPUT_KIND, result: OUTPUT_RESULT, contract_version: CONTRACT_VERSION },
+    policy: WEIGHT_POLICY, validate: (input) => validatePromptInput(input).output
+  }).catch((error) => {
     const normalized = error instanceof Error ? error : new Error(String(error));
     if (normalized instanceof GenerationOutputValidationError) {
       process.stderr.write(`${JSON.stringify({ violations: [{ path: normalized.path, message: normalized.message }] })}\n`);
-      process.exitCode = 2;
+      process.exitCode = EXIT_CODES.validation;
       return;
     }
     process.stderr.write(`${normalized.name}: ${normalized.message}\n`);
-    process.exitCode = 1;
+    process.exitCode = EXIT_CODES.execution;
   }).finally(errorGuide);
 }

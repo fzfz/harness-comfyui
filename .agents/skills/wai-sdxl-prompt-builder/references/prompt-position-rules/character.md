@@ -1,64 +1,35 @@
 ---
-文档用途: 提供 WAI character 位置规则。
-读取时机: 按正文“用途和读取时机”读取。
+文档用途: 规定 WAI 角色识别、目录查询与多角色对应方式。
+读取时机: 采用 Character Prompt 来源或查询作品与角色素材时。
 ---
-# `character` 位置规则
 
-## 用途和读取时机
+# WAI 角色识别与查询
 
-本文件规定 Skill Agent 如何完成 `character` 位置。Skill Agent 采用一条或多条 Character Prompt 来源时，必须读取本文件。
+## 识别当前角色
 
-Character 上下文记录的字段和处理顺序由 [当前轮输入合同](../input-contract.md)定义。
-
-`character` 的唯一职责由 [WAI Prompt 位置顺序与职责](../wai-prompt-position-order.md)统一定义。
-
-## Character Prompt 来源
-
-Skill Agent 必须先确定画面中的每个角色，并分别处理每个角色。Skill Agent 按照 [WAI Prompt 位置顺序与职责](../wai-prompt-position-order.md)的“Character 和 Style Prompt 来源”一节，为当前角色确定一条已采用 Character Prompt 来源。当前角色没有可采用的非空完整角色 Prompt 时，Skill Agent 不为该角色创建 `character` 内容。
-
-用户本轮没有新增、替换或排除角色外貌或服装时，Skill Agent 把该角色已采用 Character Prompt 来源中的完整角色 Prompt 原样写入 `character`。
-
-## 新增、替换、排除与来源保留
-
-- 用户本轮明确要求新增某个角色的外貌或服装时，Skill Agent 保留该角色的完整角色 Prompt，并把新增内容写入 `appearance` 或 `outfit`。
-- 用户本轮明确要求替换某个角色的外貌或服装时，Skill Agent 从该角色本轮的 `character` 内容中删除与替换内容直接冲突的标签，并把该角色的替换内容写入 `appearance` 或 `outfit`。
-- 用户本轮明确要求排除某个角色的外貌或服装时，Skill Agent 从该角色本轮的 `character` 内容中删除被排除的标签，且不向 `appearance` 或 `outfit` 添加该排除内容。
-- 画面包含多个角色且用户要求新增、替换或排除外貌或服装时，Skill Agent 必须使用角色名称把要求对应到具体角色。用户没有提供角色名称时，Skill Agent 使用选定构图中已经确定的唯一画面位置和可见外貌共同标识目标角色。现有信息仍无法唯一确定目标角色时，Skill Agent 请求用户明确目标角色，并在收到回复前停止构造 Prompt。
-- Skill Agent 保留目标角色的角色名、作品名和其他不冲突的标签，并保留其他角色的全部标签。
-- Skill Agent 只修改本轮待输出的 `character` 内容，不修改输入来源中保存的 Prompt 文本。
+1. 先确定画面中的每个角色，再分别处理来源。
+2. 按 [Character 和 Style Prompt 来源](../wai-prompt-position-order.md#character-和-style-prompt-来源)确定已采用 Character Prompt 来源。
+3. 构造或修改角色内容时，按 [Character 来源内容](../wai-prompt-position-order.md#character-来源内容)执行。
+4. Character 上下文记录的读取方式见 [当前轮输入合同](../input-contract.md)。
 
 ## 查询作品与角色素材
 
-1. 用户只提供作品名称时，Skill Agent 按“用户只提供作品时”处理；其他情况下，当前输入来源未提供角色 Prompt 时，Skill Agent 通过 NoobAI MCP 获取角色素材。已有角色 ID 时优先获取对应记录；没有 ID 时按角色名称及已提供的作品信息查找。既没有 ID 也没有角色名称时，Skill Agent 报告缺少角色名称，并停止处理该角色。
-2. Skill Agent 根据用户给出的作品名称或别名核对作品候选；用户提供作品类别时，还须核对类别。多个候选均符合时，Skill Agent 报告候选标识、名称、别名和类别，并等待用户选择。确定作品后，角色查询限定在该作品内。
-3. Skill Agent 根据所属作品、角色名称和别名核对角色候选，只采用具有非空 Prompt 的候选。多个候选均符合时，Skill Agent 报告候选标识、所属作品、名称和别名，并等待用户选择。采用的角色 Prompt 按本文件“Character Prompt 来源”及“新增、替换、排除与来源保留”处理。
-4. 作品或角色没有可采用结果时，Skill Agent 核对当前消息和已采用结果是否已提供用户要求的作品名称、每个角色的名称和非空 Prompt；全部具备时继续构造，缺少任一项时报告具体缺失内容，请求用户补充并停止本次执行。
+1. 当前人物来自 [材料型输入](../input-contract.md#材料型输入)时，采用人物设计继续构造。用户还要求目录角色身份时，再查询该身份。
+2. 用户只提供作品名称时，按“用户只提供作品时”处理。
+3. 其余需要取得目录角色 Prompt 的请求，通过 NoobAI MCP 查询。已有角色 ID 时获取对应记录；没有 ID 时按角色名称和已提供的作品信息查找。
+4. 核对作品名称、别名和用户提供的类别。多个作品候选均符合时，报告候选标识、名称、别名和类别，等待用户选择。确定作品后，在该作品内查询角色。
+5. 核对角色所属作品、名称和别名，只采用 Prompt 非空的候选。多个角色候选均符合时，报告候选标识、作品、名称和别名，等待用户选择。
+6. 目录查询仍缺少用户要求的身份或 Prompt 时，报告具体缺失内容。人物设计已能表达所需外貌与场景时，继续构造。尚未确定且用户未授权决定的内容，向用户询问。
 
 ## 用户只提供作品时
 
-用户只提供作品名称而没有指定角色时，Skill Agent 通过 NoobAI MCP 查询作品，并按本文件“查询作品与角色素材”一节确定唯一符合的作品。Skill Agent 向用户报告所选作品的标识和名称，请求用户指定角色名称。用户指定角色名称后，Skill Agent 通过 NoobAI MCP 查询该作品中的指定角色。用户尚未指定角色名称时，Skill Agent 不得查询角色或创建 `character` 内容。
+1. 用户只提供作品名称且没有指定角色时，通过 NoobAI MCP 查询作品。
+2. 按“查询作品与角色素材”核对作品，报告确定的作品标识和名称，并请用户指定角色。
+3. 用户指定角色后，再查询该角色。收到角色选择前，不得查询角色或创建 Character Prompt 内容。
 
-## 多角色顺序
+## 多角色对应
 
-画面采用多个角色时，Skill Agent 按照选定构图中的主体顺序排列 `character` 中的各角色 Prompt。`appearance`、`outfit`、`action` 和 `expression_reaction` 按照相同的主体顺序排列角色相关内容，并使用角色名称标明每项内容的所属角色。角色没有名称时，Skill Agent 使用选定构图中已经确定的唯一画面位置和可见外貌共同标明所属角色。某项内容仍无法唯一对应到一个角色时，Skill Agent 请求用户确认所属角色，并在收到确认前停止构造 Prompt。
-
-## 位置边界
-
-- 用户新增角色外貌或服装时，`character` 保存已采用 Character Prompt 来源的完整角色 Prompt；用户替换或排除角色外貌或服装时，`character` 只保存按照“新增、替换、排除与来源保留”一节删除对应标签后的角色 Prompt。
-- 整幅画面的主体总数和主体类别进入 `subject`。
-- 用户明确要求且本轮 Character Prompt 没有包含的新增或替换外貌进入 `appearance`。
-- 用户明确要求且本轮 Character Prompt 没有包含的新增或替换服装或随身物件进入 `outfit`。
-
-## 完成检查
-
-Skill Agent 必须确认 `character`、`appearance`、`outfit`、`action` 和 `expression_reaction` 的角色内容：
-
-- `character` 中每个角色的角色 Prompt 都来自一条已采用 Character Prompt 来源；
-- `character`、`appearance`、`outfit`、`action` 和 `expression_reaction` 中按角色组织的内容都采用选定构图中的同一主体顺序；
-- 画面采用多个角色时，每项角色内容使用角色名称标明所属角色；角色没有名称时，该项内容使用唯一画面位置和可见外貌的组合标明所属角色；
-- 用户没有新增、替换或排除角色外貌或服装时，`character` 完整保留每个角色已采用 Character Prompt 来源中的角色 Prompt；
-- 用户新增角色外貌或服装时，`character` 完整保留来源 Prompt，新增内容进入 `appearance` 或 `outfit`；
-- 用户替换角色外貌或服装时，`character` 只删除直接冲突的原标签，替换内容进入 `appearance` 或 `outfit`；
-- 用户排除角色外貌或服装时，`character` 只删除被排除的标签，最终 Prompt 不加入排除内容；
-- `appearance` 和 `outfit` 没有重复写入 `character` 中保留的同一标签或同一项具体内容；
-- 输入来源中保存的 Prompt 文本保持不变。
+1. 按选定构图中的主体顺序，处理每名角色的外貌、服装、动作、表情和身体反应。
+2. 使用角色名称对应每项内容。角色没有名称时，用唯一画面位置和可见外貌的组合标识角色。
+3. 用户要求修改某个角色时，先按第 2 项确定目标。目标仍不唯一时，请用户明确目标，再继续构造。
+4. 完成后，逐项核对内容的所属角色及其处理顺序。

@@ -2,8 +2,19 @@ import { describe, expect, it } from 'vitest'
 import definition from '../../config/managed-cli-help.json' with { type: 'json' }
 import { parseHelpDefinition, parseManagedHelpDefinition } from '../../scripts/cli/help-schema.mjs'
 import { renderHelp, helpHint } from '../../scripts/cli/help.mjs'
+import { renderCommandContract } from '../../scripts/cli/contract-help.mjs'
 
 describe('managed CLI help contract', () => {
+  it('renders required nullable fields and nested template choices for CLI consumers', () => {
+    const lines = renderCommandContract('generation inspect-template-parameters')
+    expect(lines).toContain('parameters[].current_value: JSON value；必填。')
+    expect(lines).toContain('parameters[].allowed_values: JSON value[]；可选。')
+    expect(lines).toContain('size_candidates[].mapped_options[].value: JSON value；必填。')
+    expect(lines).toContain('size_candidates[].mapped_options[].width: integer；必填，数值至少 1。')
+    expect(renderCommandContract('generation submit')).toContain('items[].request.model: object | null；必填。')
+  })
+
+
   it('exposes only supported business commands through root, category and command help', () => {
     for (const command of [
       [], ['image'], ['image', 'inspect'], ['generation'], ['generation', 'submit'],
@@ -20,21 +31,18 @@ describe('managed CLI help contract', () => {
     expect(renderHelp(definition, ['generation', 'run-inputs', '--help'])).toContain(`${invocation} generation run-inputs`)
     expect(helpHint(definition, ['generation', 'run-inputs'])).toBe(`Next: ${invocation} generation run-inputs --help`)
   })
-  it('defines the result-file protocol once and exposes it from every business command help', () => {
+  it('keeps the result-file protocol at root and links command help to the root', () => {
+    expect(renderHelp(definition, ['--help'])).toContain('stdout 只返回该文件的绝对路径和换行')
     for (const command of [['image', 'inspect'], ['generation', 'submit'], ['generation', 'inspect-template-parameters'], ['generation', 'random-seeds'], ['generation', 'run-inputs'], ['generation', 'resolve-media']]) {
       const output = renderHelp(definition, [...command, '--help'])
-      expect(output).toContain('stdout 只返回该文件的绝对路径和换行')
-      expect(output).toContain('业务命令退出码为 0')
-      expect(output).toContain('CLI_RESULT_FILE_PREPARE_FAILED')
-      expect(output).toContain('CLI_RESULT_FILE_WRITE_FAILED')
-      expect(output).toContain('CLI_RESULT_PATH_WRITE_FAILED')
-      expect(output).not.toContain('stdout JSON')
+      expect(output).toContain('公共文件协议')
+      expect(output).not.toContain('stdout 只返回该文件的绝对路径和换行')
     }
   })
   it('accepts the configured command tree', () => {
     expect(parseManagedHelpDefinition(definition)).toBe(definition)
   })
-  it.each(['splitCommand', 'invalidProperties', 'providerFailure', 'resultFilePrepareFailed', 'resultFileWriteFailed', 'resultPathWriteFailed', 'requestTooLarge', 'responseTooLarge', 'invalidApiUrl', 'nonLoopbackApi', 'environmentRecovery'])('requires message %s', key => {
+  it.each(['splitCommand', 'invalidProperties', 'providerFailure', 'protocolFailure', 'resultFilePrepareFailed', 'resultFileWriteFailed', 'resultPathWriteFailed', 'requestTooLarge', 'responseTooLarge', 'invalidApiUrl', 'nonLoopbackApi', 'environmentRecovery', 'generationWaitUnavailable'])('requires message %s', key => {
     const data = structuredClone(definition)
     delete data.messages[key]
     expect(() => parseManagedHelpDefinition(data)).toThrow(key)

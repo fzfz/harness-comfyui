@@ -19,6 +19,7 @@ import { materializeHostModule } from '../../scripts/build/host-module.mjs'
 import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
 import { IMAGE_READER_PROFILE_ENTRY_ID } from '../../src/image-reader/settings.ts'
 import * as harnessComfyui from '../support/product-plugin.ts'
+import { inject as cliInject } from '../../src/host/cli/plugin.ts'
 import { SOURCE_PROFILE_ENTRY_ID } from '../../src/source-settings.ts'
 import { PLUGIN_RUNTIME_RESOURCE_PATHS } from '../../src/host/plugin-resources.ts'
 import {
@@ -98,6 +99,7 @@ function provideHostServices(ctx: Context) {
   ctx.provide('tools', { register: registerTool })
   ctx.provide('webServer', { host: '127.0.0.1', port: 43199, register: registerRoute })
   ctx.provide('shellEnv' as never, { register: registerShellEnvironment } as never)
+  ctx.provide('jobs', { start: vi.fn() } as never)
   const saveImage = vi.fn()
   ctx.provide('attachments' as never, {
     imageLimits: {
@@ -391,6 +393,7 @@ describe('Harness ComfyUI Host plugin', () => {
     expect(harnessComfyui.inject).toEqual([
       'tools', 'webServer', 'workspaceRegistry', 'shellEnv', 'attachments', 'llm', 'settings', 'credentials', 'sessionPersistence', 'subagents',
     ])
+    expect(cliInject).toContain('jobs')
     expect(typeof harnessComfyui.apply).toBe('function')
     expect(typeof harnessComfyui.Config?.['~standard'].validate).toBe('function')
   })
@@ -422,6 +425,7 @@ describe('Harness ComfyUI Host plugin', () => {
     const execution = {
       token: Symbol('host-plugin-shell'),
       callId: 'call_shell_1',
+      rootCallId: 'call_shell_1',
       name: 'bash',
       arguments: { command: 'node "$DSH_HARNESS_COMFYUI_CLI" generation --help' },
       signal: new AbortController().signal,
@@ -490,7 +494,7 @@ describe('Harness ComfyUI Host plugin', () => {
     try {
       const contributor = registerShellEnvironment.mock.calls[0]![0]
       const variables = contributor.resolve({
-        token: Symbol('host-image-shell'), callId: 'call_image_1', name: 'bash',
+        token: Symbol('host-image-shell'), callId: 'call_image_1', rootCallId: 'call_image_1', name: 'bash',
         arguments: {}, signal: new AbortController().signal,
         agent: { session: { id: 'session_1', header: { cwd: '/workspace' },
           snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'call_image_1', name: 'bash', turn: 1 } }] } },

@@ -65,6 +65,17 @@ function updateJson(root: string, path: string, update: (value: Record<string, a
 }
 
 describe('Harness source boundary', () => {
+  it.each(['@deepseek-ai/dsh-jobs', '@deepseek-ai/dsh-jobs/view'])('allows only type imports from the public Job API %s', specifier => {
+    const root = fixture(`import type { JobKindMap } from '${specifier}'\n`)
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+      writeFileSync(join(root, 'src/other.ts'), `import * as jobs from '${specifier}'\n`)
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('type-only')
+    } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+
   it('accepts the official plugin bundle without repository-owned Host Profiles', () => {
     const root = fixture()
     try {

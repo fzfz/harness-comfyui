@@ -1,17 +1,15 @@
 {
   "name": "krea2-anime",
   "modes": {
-    "": "校验完整生成目标 JSON，返回原结构。"
+    "": "省略模式参数时，按 --generation-output 校验完整生成结果 JSON，返回原结构。",
+    "--generation-output": "显式选择默认的完整生成结果校验。"
   },
-  "input": "从本 Skill 目录执行本校验器。写入一个 JSON 对象后关闭 stdin（EOF）。默认模式输入字段与约束如下；model_route 必须来自所列路由，negative_mode 必须与路由对应；native_negative 使用非空 negative_prompt 和 null positive_avoidance，positive_rewrite 使用 null negative_prompt 和非空 positive_avoidance。宽高比须约分并匹配 width/height，abs(width × height ÷ 1000000 - megapixels) ÷ megapixels 最多为 5%。",
-  "output": "成功 stdout 输出 JSON，退出 0；错误 stderr 输出字段位置与原因，退出非零。只校验输入，不生图、不修改文件。--quiet 省略成功 NEXT 提示。",
+  "input": "model_route 必须来自所列路由，negative_mode 必须与路由对应；native_negative 使用非空 negative_prompt 和 null positive_avoidance，positive_rewrite 使用 null negative_prompt 和非空 positive_avoidance。宽高比须约分并匹配 width/height，abs(width × height ÷ {megapixelsDivisor} - megapixels) ÷ megapixels 最多为 {megapixelsTolerancePercent}%。",
   "failure": "按错误中的字段位置修正输入后再次校验。从本 Skill 目录查看帮助: {cli} --help",
-  "next": "复制下方 JSON 示例并按用户要求修改，保存为 input.json 后，从本 Skill 目录执行: {cli} < input.json",
-  "format": "本校验器仅支持完整生成目标模式。",
-  "formatReference": "references/03-output-protocol.md",
+  "next": "按 references/generation-output-contract.md 构造生成结果，保存为 input.json 后执行: {cli} --generation-output < input.json",
   "example": {
     "model_route": "krea2-turbo",
-    "positive_prompt": "one adult dancer, full body",
+    "positive_prompt": "one adult dancer, full body, two complete hands with five fingers each",
     "negative_mode": "positive_rewrite",
     "negative_prompt": null,
     "positive_avoidance": "two complete hands with five fingers each",
@@ -21,8 +19,23 @@
     "height": 1024,
     "megapixels": 1
   },
-  "formatExample": null,
   "after": {
-    "": "校验通过。将 stdout JSON 交给生成步骤；本命令尚未创建图片。"
-  }
+    "--generation-output": "校验通过。按 SKILL.md 的“完成前自检”节返回 stdout JSON。"
+  },
+  "protocol": [
+    "执行规则:",
+    "校验模式输入为一个 JSON 对象；写入后关闭 stdin（EOF）。本命令只校验和组合文本，不创建图片或修改文件。",
+    "退出码与输出:",
+    "退出码 {success}：stdout 为一行 JSON。--quiet 下 stderr 为空；省略 --quiet 时 stderr 有 NEXT: 提示。",
+    "退出码 {validation}：stdout 为空，stderr 首行为 {\"violations\":[{\"path\":\"字段位置\",\"message\":\"原因\"}]}，后续行为 NEXT: 指引。violations 非空。path 为字段位置字符串；空字符串表示字段名为空。message 为非空原因字符串。",
+    "退出码 {execution}：报告 stderr 并停止；stderr 为空时报告退出码及缺少错误信息。其他退出码、缺少退出码或通道/JSON 不符合对应协议时，报告实际结果并停止。",
+    "重试方式:",
+    "输入校验失败时，按 path 和 message 修正输入，再按当前模式帮助的次数重试。修正需要用户选择或补充时，报告所需输入并停止。次数用尽后报告全部 violations 并停止。",
+    "结果复用:",
+    "成功结果可复用至输入变动。"
+  ],
+  "retries": {
+    "--generation-output": 1
+  },
+  "retryInstructions": "输入校验失败时，最多重试 {retries} 次。"
 }

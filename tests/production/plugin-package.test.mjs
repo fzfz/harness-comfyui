@@ -7,6 +7,7 @@ import { promisify } from 'node:util'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
+import managedCliLimits from '../../config/managed-cli-limits.json' with { type: 'json' }
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
 import { parsePluginPackageConfig } from '../../config/plugin-package-schema.mjs'
@@ -366,8 +367,8 @@ describe('plugin build and package entry points', () => {
         expect(result.stdout).toContain('template_id')
         if (args[1] === 'submit') {
           expect(result.stdout).toContain('--file')
-          expect(result.stdout).toContain('1 至 20 项')
-          expect(result.stdout).toContain('1048576')
+          expect(result.stdout).toContain(`items: object[]；必填，元素数量为 1 至 ${managedCliLimits.maxSubmissionItems} 项`)
+          expect(result.stdout).toContain(String(managedCliLimits.maxRequestBytes))
           expect(result.stdout).not.toContain('{max_')
         }
       }

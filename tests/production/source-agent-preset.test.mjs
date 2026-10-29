@@ -7,6 +7,16 @@ import { readProjectComposition as readProjectAgentPresetResources } from '../fi
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const PRODUCT_PRESET_ID = 'harness-comfyui-cli-candidate'
 describe('project Agent Preset resources', () => {
+  it('mounts official Job controls with wakeup delivery while keeping foreground shells', async () => {
+    const { composition } = await readProjectAgentPresetResources(repositoryRoot, PRODUCT_PRESET_ID)
+    expect(composition.find(row => row.id === 'tool-jobs')).toEqual({
+      id: 'tool-jobs', name: '@deepseek-ai/dsh-tool-jobs', config: { completionDelivery: 'wakeup' },
+    })
+    for (const id of ['tool-bash', 'tool-pwsh']) {
+      expect(composition.find(row => row.id === id).config.enableRunInBackground).toBe(false)
+    }
+  })
+
   it('keeps the workbench identity and persona in project resources', async () => {
     const { metadata, composition } = await readProjectAgentPresetResources(repositoryRoot, PRODUCT_PRESET_ID)
     const persona = composition.find(row => row.name === '@deepseek-ai/dsh-persona')

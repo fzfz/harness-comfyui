@@ -27,6 +27,7 @@ import {
 } from '../../generation/run-input-contract.ts'
 import type { GenerationRunMediaResult } from '../../image-reader/run-media-contract.ts'
 import { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
+import { isLoraWeight } from '../../generation/lora-contract.ts'
 import { PluginStorageError } from '../plugin-storage-error.ts'
 import type {
   GenerationTemplateRuntimeParameterInspectionInput,
@@ -356,8 +357,7 @@ function generationRequest(document: string): GenerationRequest {
     if (
       typeof selection.id !== 'string'
       || typeof selection.fileName !== 'string'
-      || typeof selection.weight !== 'number'
-      || !Number.isFinite(selection.weight)
+      || !isLoraWeight(selection.weight)
       || !Array.isArray(selection.triggerWords)
       || selection.triggerWords.some(word => typeof word !== 'string')
     ) {

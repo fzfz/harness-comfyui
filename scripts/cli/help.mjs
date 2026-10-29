@@ -20,7 +20,7 @@ export function presentationArguments(argv, valueOptions = []) {
   return { args, quiet, helpRequested }
 }
 
-export function renderHelp(definition, argv, values = {}) {
+export function renderHelp(definition, argv, values = {}, renderContract = () => []) {
   const help = parseHelpDefinition(definition)
   if (!presentationArguments(argv, help.valueOptions).helpRequested) return undefined
   const key = argv.slice(0, -1).join(' ')
@@ -30,9 +30,9 @@ export function renderHelp(definition, argv, values = {}) {
   const render = line => Object.entries({ cli: help.invocation, ...values }).reduce(
     (result, [name, value]) => result.replaceAll(`{${name}}`, String(value)), line,
   )
-  return [node.summary, '', `用法: ${help.invocation}${key ? ` ${key}` : ''} --help`, ...(help.commonDetails ?? []).concat(node.details).map(render),
+  return [node.summary, '', `用法: ${help.invocation}${key ? ` ${key}` : ''} --help`, ...(key ? [`公共文件协议与 JSON 类型: ${help.invocation} --help`] : (help.commonDetails ?? [])).concat(node.details, renderContract(key)).map(render),
     ...children.map(([name, child]) => `\n${name}: ${child.summary}\n  ${help.invocation} ${name} --help`),
-    '', '下一步:', ...node.next.map(render), ''].join('\n')
+    ''].join('\n')
 }
 
 export function helpHint(definition, argv) {
@@ -50,7 +50,7 @@ export function renderNextSteps(definition, key, quiet = false, values = {}) {
   if (quiet) return ''
   const help = parseHelpDefinition(definition)
   const node = help.nodes[key]
-  if (!node) throw new TypeError(`CLI result guidance is missing for ${key}`)
+  if (!node || !Array.isArray(node.after)) throw new TypeError(`CLI result guidance is missing for ${key}`)
   const lines = node.after.map(line => line.replaceAll('{cli}', help.invocation).replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? values[name] : match))
   return `NEXT: ${lines.join('\nNEXT: ')}\n`
 }

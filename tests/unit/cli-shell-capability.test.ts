@@ -10,6 +10,7 @@ function execution(overrides: Record<string, unknown> = {}) {
   return {
     token,
     callId: 'call_shell_1',
+    rootCallId: 'root_shell_1',
     name: 'bash',
     arguments: { command: 'node cli.mjs generation random-seeds --stdin', description: 'Generate a Seed' },
     signal: new AbortController().signal,
@@ -75,6 +76,7 @@ describe('CLI shell capability', () => {
       sessionId: 'session-1',
       turn: 4,
       callId: 'call_shell_1',
+      rootCallId: 'root_shell_1',
       cwd: '/workspace',
     })
 
@@ -97,7 +99,7 @@ describe('CLI shell capability', () => {
       } } })
       store.environment(exec)
       expect(store.authorize('directory-capability')).toEqual({
-        sessionId: 'session-1', cwd: '/workspace', turn: 4, callId: 'call_shell_1',
+        sessionId: 'session-1', cwd: '/workspace', turn: 4, callId: 'call_shell_1', rootCallId: 'root_shell_1',
       })
       store.revoke(exec)
       expect(store.authorize('directory-capability')).toBeUndefined()

@@ -87,7 +87,7 @@ describe('managed CLI manifest acceptance', () => {
     const request = { title: 'Batch', instance_id: '2', template_id: '39', model: null, parameters: { positive_prompt: 'line one\nline two\n' }, loras: [] }
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
-      capabilities: { authorize: () => ({ sessionId: 'session_child', turn: 4, callId: 'call_batch', cwd: '/workspace/current' }) },
+      capabilities: { authorize: () => ({ sessionId: 'session_child', turn: 4, callId: 'call_batch', rootCallId: 'root-test', cwd: '/workspace/current' }) },
       runtime: { acceptGenerations } as unknown as GenerationRuntime,
       imageReader: unusedImageReader(),
       workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: ['session_child'] }) },
@@ -119,7 +119,7 @@ it('rejects unexpanded files, duplicate IDs and caller ownership before Runtime 
   const item = { request_id: requestId, request: { title: 'Batch', instance_id: '2', template_id: '39', model: null, parameters: {}, loras: [] } }
   const server = await serve(webServer => registerHarnessComfyuiCliRoute({
     webServer,
-    capabilities: { authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }) },
+    capabilities: { authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }) },
     runtime: { acceptGenerations } as never,
     imageReader: unusedImageReader(),
     workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: ['session_1'] }) },
@@ -184,7 +184,64 @@ function unusedImageReader() {
   return { inspect: vi.fn() }
 }
 
+it.each(['instance_id', 'prompt_id', 'run_error'])('rejects an available media result without required nullable field %s', async field => {
+  const run: Record<string, unknown> = {
+    run_id: 'run_1', request_id: 'request_1', lookup_status: 'available', title: 'portrait',
+    status: 'succeeded', revision: 1, updated_at: 1000, instance_id: null, prompt_id: null,
+    run_error: null, images: [],
+  }
+  delete run[field]
+  const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+    webServer,
+    capabilities: { authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }) },
+    runtime: { readGenerationRunMedia: async () => ({ runs: [run] }) } as never,
+    imageReader: unusedImageReader(),
+    workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: ['session_1'] }) },
+  }))
+  try {
+    const response = await post(server.origin, 'capability', { command: 'generation.resolve-media', run_ids: ['run_1'] })
+    expect(response.status).toBe(502)
+    expect(await response.json()).toMatchObject({ ok: false, error: { code: 'CLI_PROTOCOL_ERROR' } })
+  } finally { await server.close() }
+})
+
+it('rejects a malformed nested Host result through the CLI result contract', async () => {
+  const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+    webServer,
+    capabilities: { authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }) },
+    runtime: { readGenerationRunMedia: async () => ({ runs: [{
+      run_id: 'run_1', lookup_status: 'error', error: { code: 'GENERATION_RUN_NOT_FOUND', message: 42 },
+    }] }) } as never,
+    imageReader: unusedImageReader(),
+    workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: ['session_1'] }) },
+  }))
+  try {
+    const response = await post(server.origin, 'capability', { command: 'generation.resolve-media', run_ids: ['run_1'] })
+    expect(response.status).toBe(502)
+    expect(await response.json()).toMatchObject({ ok: false, error: { code: 'CLI_PROTOCOL_ERROR' } })
+  } finally { await server.close() }
+})
+
 describe('Harness ComfyUI managed CLI route', () => {
+  it('registers observation with Host ownership and returns only a Job receipt', async () => {
+    const register = vi.fn(async (_identity: unknown, _runIds: unknown, _signal: AbortSignal) => ({ job_id: 'generation-wait-1', run_ids: ['run_1'] }))
+    const identity = { sessionId: 'session-parent', turn: 4, callId: 'shell-call', rootCallId: 'root-call', cwd: '/workspace' }
+    const options = {
+      capabilities: { authorize: () => identity },
+      runtime: {} as never, imageReader: unusedImageReader(),
+      workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: [] }) },
+      runWait: { register },
+    }
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({ webServer, ...options }))
+    try {
+      const response = await post(server.origin, 'capability', { command: 'generation.wait', run_ids: ['run_1'] })
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ ok: true, data: { job_id: 'generation-wait-1', run_ids: ['run_1'] } })
+      expect(register).toHaveBeenCalledWith({ workspaceId: 'workspace_1', sessionId: 'session-parent', callId: 'shell-call', rootCallId: 'root-call' }, ['run_1'], expect.any(AbortSignal))
+      expect(register.mock.calls[0]![2].aborted).toBe(false)
+    } finally { await server.close() }
+  })
+
   it('aborts only a CLI response that closes before it is fully written', () => {
     const incomplete = new AbortController()
     abortIncompleteCliResponse({ writableEnded: false }, incomplete)
@@ -209,7 +266,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }),
       },
       runtime: { acceptGenerations, readGenerationRunInputs: vi.fn(), readGenerationRunMedia: vi.fn() } as never,
       imageReader: unusedImageReader(),
@@ -234,7 +291,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }),
       },
       runtime: {
         acceptGenerations: vi.fn(async (_owner, _request, signal: AbortSignal) => {
@@ -290,7 +347,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace/current' }),
       },
       runtime,
       imageReader: unusedImageReader(),
@@ -332,7 +389,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace/current' }),
       },
       runtime: {
         acceptGenerations: vi.fn(),
@@ -377,7 +434,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace/current' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace/current' }),
       },
       runtime: {
         acceptGenerations: vi.fn(),
@@ -424,7 +481,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: {
         authorize: value => value === capability
-          ? { sessionId: 'session_7', turn: 4, callId: 'call_cli_9', cwd: '/workspace/current' }
+          ? { sessionId: 'session_7', turn: 4, callId: 'call_cli_9', rootCallId: 'root-test', cwd: '/workspace/current' }
           : undefined,
       },
       runtime,
@@ -537,8 +594,8 @@ describe('Harness ComfyUI managed CLI route', () => {
       },
     })
     const identities = {
-      capability_cli_1: { sessionId: 'session_7', turn: 4, callId: 'call_cli_1', cwd: '/workspace/current' },
-      capability_cli_2: { sessionId: 'session_7', turn: 4, callId: 'call_cli_2', cwd: '/workspace/current' },
+      capability_cli_1: { sessionId: 'session_7', turn: 4, callId: 'call_cli_1', rootCallId: 'root-test', cwd: '/workspace/current' },
+      capability_cli_2: { sessionId: 'session_7', turn: 4, callId: 'call_cli_2', rootCallId: 'root-test', cwd: '/workspace/current' },
     } as const
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
@@ -608,7 +665,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       webServer,
       capabilities: {
         authorize: value => value === 'trusted'
-          ? { sessionId: 'session_1', turn: 0, callId: 'call_1', cwd: '/workspace' }
+          ? { sessionId: 'session_1', turn: 0, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }
           : undefined,
       },
       runtime,
@@ -646,7 +703,11 @@ describe('Harness ComfyUI managed CLI route', () => {
 
   it('dispatches Run media under the current Workspace and inspects exactly one image', async () => {
     const readGenerationRunMedia = vi.fn(async () => ({
-      runs: [{ run_id: 'run_1', lookup_status: 'available', title: 'portrait', parameters: {}, images: [] }],
+      runs: [{
+        run_id: 'run_1', request_id: 'request_1', lookup_status: 'available', title: 'portrait',
+        status: 'succeeded', revision: 1, updated_at: 1000, instance_id: null, prompt_id: null,
+        run_error: null, parameters: {}, images: [],
+      }],
     }))
     const inspect = vi.fn(async () => ({
       provider: 'provider-a', model: 'vision-a', filePath: '/media/result.png', observation: '可见一名人物。',
@@ -654,7 +715,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', rootCallId: 'root-test', cwd: '/workspace/current' }),
       },
       runtime: { acceptGenerations: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia } as never,
       imageReader: { inspect } as never,
@@ -682,7 +743,11 @@ describe('Harness ComfyUI managed CLI route', () => {
     expect(mediaResponse.status).toBe(200)
     expect(await mediaResponse.json()).toEqual({
       ok: true,
-      data: { runs: [{ run_id: 'run_1', lookup_status: 'available', title: 'portrait', parameters: {}, images: [] }] },
+      data: { runs: [{
+        run_id: 'run_1', request_id: 'request_1', lookup_status: 'available', title: 'portrait',
+        status: 'succeeded', revision: 1, updated_at: 1000, instance_id: null, prompt_id: null,
+        run_error: null, parameters: {}, images: [],
+      }] },
     })
     expect(readGenerationRunMedia).toHaveBeenCalledWith(
       { workspaceId: 'workspace_1', runIds: ['run_1'], includeParameters: false },
@@ -725,7 +790,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', rootCallId: 'root-test', cwd: '/workspace/current' }),
       },
       runtime: { acceptGenerations, inspectTemplateRuntimeParameters, readGenerationRunInputs, readGenerationRunMedia },
       imageReader: { inspect } as never,
@@ -758,7 +823,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', rootCallId: 'root-test', cwd: '/workspace/current' }),
       },
       runtime: {
         acceptGenerations: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
@@ -788,7 +853,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', cwd: '/workspace/current' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 2, callId: 'call_3', rootCallId: 'root-test', cwd: '/workspace/current' }),
       },
       runtime: {
         acceptGenerations: vi.fn(), inspectTemplateRuntimeParameters: vi.fn(),
@@ -828,7 +893,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/missing' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/missing' }),
       },
       runtime: { ...runtime, readGenerationRunMedia: vi.fn() },
       imageReader: unusedImageReader(),
@@ -877,7 +942,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     const generationServer = await serve(webServer => registerHarnessComfyuiCliRoute({
       webServer,
       capabilities: {
-        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', cwd: '/workspace' }),
+        authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }),
       },
       runtime: { ...runtime, readGenerationRunMedia: vi.fn() },
       imageReader: unusedImageReader(),
@@ -896,6 +961,6 @@ describe('Harness ComfyUI managed CLI route', () => {
   })
 })
 
-function registerHarnessComfyuiCliRoute(options: Parameters<typeof createCliHandler>[0] & { webServer: { register(route: { kind: 'prefix'; path: string; handler: ReturnType<typeof createCliHandler> }): () => void } }) {
-  return options.webServer.register({ kind: 'prefix', path: '/api/harness-comfyui/cli/v1', handler: createCliHandler(options) })
+function registerHarnessComfyuiCliRoute(options: Omit<Parameters<typeof createCliHandler>[0], 'runWait'> & Partial<Pick<Parameters<typeof createCliHandler>[0], 'runWait'>> & { webServer: { register(route: { kind: 'prefix'; path: string; handler: ReturnType<typeof createCliHandler> }): () => void } }) {
+  return options.webServer.register({ kind: 'prefix', path: '/api/harness-comfyui/cli/v1', handler: createCliHandler({ ...options, runWait: options.runWait ?? { register: async () => { throw new Error('Unexpected Run wait') } } }) })
 }

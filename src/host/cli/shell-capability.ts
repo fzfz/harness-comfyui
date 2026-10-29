@@ -13,6 +13,7 @@ export interface CliExecutionIdentity {
   readonly sessionId: string
   readonly turn: number
   readonly callId: string
+  readonly rootCallId: string
   readonly cwd: string
 }
 
@@ -38,6 +39,7 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 
 function identityFor(execution: ToolExecution): CliExecutionIdentity | undefined {
   if (execution.name !== 'bash' && execution.name !== 'pwsh') return undefined
+  if (!nonEmpty(execution.rootCallId)) return undefined
   if (isRecord(execution.arguments) && execution.arguments.run_in_background === true) return undefined
   const session = execution.agent?.session
   if (session === undefined || !nonEmpty(session.id) || !nonEmpty(session.header.cwd)) return undefined
@@ -53,6 +55,7 @@ function identityFor(execution: ToolExecution): CliExecutionIdentity | undefined
     sessionId: String(session.id),
     turn,
     callId: String(execution.callId),
+    rootCallId: String(execution.rootCallId),
     cwd: session.header.cwd,
   })
 }

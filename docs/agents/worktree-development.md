@@ -27,9 +27,7 @@
 
 5. 开发环境凭据由 `config/desktop-e2e.json` 的 `environmentFilePath`、`credentialEnvironmentNames` 和 `requiredEnvironmentNames` 控制。开发者在 main checkout `.env` 中维护已声明的凭据；各 worktree 的 probe 从该文件读取，并传给本轮应用进程。开发者不得在 worktree 的宿主凭据库重复保存共享凭据；宿主优先读取凭据库，同名记录会覆盖启动环境变量。
 
-6. NoobAI MCP 凭据用于工作台的目录查询。
-
-7. 启动失败、端口冲突、取消、超时和清理失败的记录保存在本轮 evidence 目录。准备阶段失败写入配置所指定的 `preparation-failure.json`。开发者检查证据时使用 `run.json`、stdout/stderr 文件和 JSON 证据文件。
+6. 启动失败、端口冲突、取消、超时和清理失败的记录保存在本轮 evidence 目录。准备阶段失败写入配置所指定的 `preparation-failure.json`。开发者检查证据时使用 `run.json`、stdout/stderr 文件和 JSON 证据文件。
 
 ## 目录边界夹具
 
@@ -52,7 +50,18 @@
 4. 标准输出返回索引文件路径。开发者先读取索引，再按其中的路径读取主子会话记录。
 
 5. 开发者在同一应用实例中继续后续任务，每项任务结束后分别导出。全部任务完成后，按“交互调试”停止应用并核对清理结果。
-6. 开发者不得为轨迹导出向 Profile 注册采集插件，或拦截模型流、会话事件和工具执行。
+6. 上述导出直接读取官方会话记录。原始 Provider 请求和工具结构化结果的采集按下一节执行。
+
+### 经授权采集原始请求与工具结果
+
+1. 开发者须先取得用户对本轮采集范围的明确授权，再在独立 worktree 的隔离应用中使用采集夹具。采集配置由 `config/desktop-e2e.json` 的 `rawCapture` 定义，证据写入当前 worktree 的 `.local` 目录。
+2. 开发者调用 [startRawTraceCapture()](../../tests/desktop/fixtures/official-raw-capture.mjs)，传入隔离 Profile 中目标 Provider 的实际 `baseURL` 和证据目录。
+3. 开发者调用 [prepareRawCaptureProfile()](../../tests/desktop/fixtures/official-raw-capture-profile.mjs)，准备本轮 Profile 适配器。
+4. 开发者将返回的 `config` 和 `profilePatchAdapter` 传给官方 probe。应用启动和重启期间，采集进程须保持运行。
+5. 任务结束后，开发者先导出官方会话记录，再调用采集对象的 `collect({ officialIndexPath })`。索引列出原始请求与响应、只读观察结果、会话关联和缺失项。调用关联存在歧义时，调查者按索引保留歧义。
+6. 全部任务结束后，开发者停止官方应用。
+7. 开发者调用 Profile 适配器的 `restore({ profilePath })`。恢复仅移除本轮采集配置，保留其他 Profile 设置。
+8. 开发者调用采集对象的 `stop()`，并核对返回的 `portReleased`。
 
 ### 调查执行偏差
 

@@ -1,4 +1,5 @@
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
+import { isLoraWeight, loraTriggerWordsAreUnique, LORA_TRIGGER_WORDS_MAX_COUNT } from '../generation/lora-contract.ts'
 import { validateSourceSettingsSection, type SourceAddress } from '../source-settings.ts'
 import { ERROR_CATALOG } from '../../config/error-catalog-schema.ts'
 import sourceClientConfiguration from '../../config/source-client.json' with { type: 'json' }
@@ -238,8 +239,10 @@ export function parseCatalogPageNumber(value: unknown): number {
   return value as number
 }
 
+export const CATALOG_STABLE_ID_PATTERN = /^[1-9][0-9]{0,19}$/u
+
 export function parseCatalogStableId(value: unknown): string {
-  if (typeof value !== 'string' || !/^[1-9][0-9]{0,19}$/u.test(value)) {
+  if (typeof value !== 'string' || !CATALOG_STABLE_ID_PATTERN.test(value)) {
     throw new TypeError('catalog item id is invalid')
   }
   return value
@@ -421,11 +424,11 @@ export function parseCatalogResolvedTemplate(value: unknown): CatalogResolvedTem
 }
 
 function resolvedTriggerWords(value: unknown): readonly string[] {
-  if (!Array.isArray(value) || value.length > 100) {
+  if (!Array.isArray(value) || value.length > LORA_TRIGGER_WORDS_MAX_COUNT) {
     throw new TypeError('resolved LoRA trigger words are invalid')
   }
   const words = value.map((word, index) => itemText(word, `resolved LoRA trigger word ${index}`, 500))
-  if (new Set(words).size !== words.length) throw new TypeError('resolved LoRA trigger words are duplicated')
+  if (!loraTriggerWordsAreUnique(words)) throw new TypeError('resolved LoRA trigger words are duplicated')
   return Object.freeze(words)
 }
 
@@ -434,7 +437,7 @@ export function parseCatalogResolvedLora(value: unknown): CatalogResolvedLora {
   exactKeys(input, [
     'id', 'base_model_id', 'model_id', 'file_name', 'description', 'usage', 'trigger_words', 'weight',
   ], 'resolved LoRA')
-  if (typeof input.weight !== 'number' || !Number.isFinite(input.weight)) {
+  if (!isLoraWeight(input.weight)) {
     throw new TypeError('resolved LoRA weight is invalid')
   }
   return Object.freeze({

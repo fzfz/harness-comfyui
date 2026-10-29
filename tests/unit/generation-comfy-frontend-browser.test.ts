@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { runInNewContext } from 'node:vm'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -642,6 +643,48 @@ describe('ChromeComfyFrontend', () => {
     expect(cdp.close).toHaveBeenCalledOnce()
     expect(fixture.child.kill).toHaveBeenCalledWith('SIGTERM')
   }, 500)
+
+  it('rejects a failed graph load before exporting a partial workflow', async () => {
+    const graphToPrompt = vi.fn(async () => ({
+      output: { '1': { class_type: 'PromptNode', inputs: { text: 'partial graph' } } },
+    }))
+    const cdp = session()
+    cdp.evaluate.mockReset()
+      .mockResolvedValueOnce({ documentReady: true, hasApp: true, splashVisible: false })
+      .mockImplementationOnce(async expression => runInNewContext(expression, {
+        app: { loadGraphData: async () => false, graphToPrompt },
+      }))
+    const state = frontendOptions({ createCdpSession: vi.fn(() => cdp) })
+    state.options.preReadiness.infrastructureAttempts = 2
+
+    await expect(new ChromeComfyFrontend(state.options).exportWorkflow({
+      workflow: workflow(),
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })).rejects.toMatchObject({ code: 'COMFYUI_FRONTEND_EXPORT_FAILED', stage: 'export' })
+    expect(graphToPrompt).not.toHaveBeenCalled()
+    expect(state.options.spawnImplementation).toHaveBeenCalledOnce()
+    expect(cdp.close).toHaveBeenCalledOnce()
+    expect(state.child.exitCode).toBe(0)
+  })
+
+  it.each([undefined, null])('exports a successfully loaded graph with load result %s', async loadResult => {
+    const output = { '1': { class_type: 'PromptNode', inputs: { text: 'complete graph' } } }
+    const cdp = session()
+    cdp.evaluate.mockReset()
+      .mockResolvedValueOnce({ documentReady: true, hasApp: true, splashVisible: false })
+      .mockImplementationOnce(async expression => runInNewContext(expression, {
+        comfyAPI: { app: { app: {
+          loadGraphData: async () => loadResult,
+          graphToPrompt: async () => ({ output }),
+        } } },
+      }))
+    const state = frontendOptions({ createCdpSession: vi.fn(() => cdp) })
+
+    await expect(new ChromeComfyFrontend(state.options).exportWorkflow({
+      workflow: workflow(),
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+    })).resolves.toEqual(output)
+  })
 
   it('returns the export error code when graphToPrompt throws or returns an invalid output', async () => {
     const throwingSession = session()

@@ -1,21 +1,17 @@
 {
   "name": "anima",
   "modes": {
-    "": "校验完整生成目标 JSON，返回原结构。",
+    "": "省略模式参数时，按 --generation-output 校验完整生成结果 JSON，返回原结构。",
     "--prompt-format": "校验分槽提示词，返回 kind、result、contract_version、prompt_text 和 display_text。",
-    "--print-input-template": "输出分槽空模板。stdin 必须为空并关闭。填写模板后使用 --prompt-format。"
+    "--print-input-template": "输出分槽空模板。stdin 必须为空并关闭。填写模板后使用 --prompt-format。",
+    "--generation-output": "显式选择默认的完整生成结果校验。"
   },
-  "input": "从本 Skill 目录执行本校验器。写入一个 JSON 对象后关闭 stdin（EOF）。默认模式输入字段与约束如下；model_route 必须来自所列路由，negative_mode 必须与路由对应；native_negative 使用非空 negative_prompt 和 null positive_avoidance，positive_rewrite 使用 null negative_prompt 和非空 positive_avoidance。宽高比须约分并匹配 width/height，abs(width × height ÷ 1000000 - megapixels) ÷ megapixels 最多为 5%。",
-  "output": "成功 stdout 输出 JSON，退出 0；错误 stderr 输出字段位置与原因，退出非零。只校验输入，不生图、不修改文件。--quiet 省略成功 NEXT 提示。",
+  "input": "model_route 必须来自所列路由，negative_mode 必须与路由对应；native_negative 使用非空 negative_prompt 和 null positive_avoidance，positive_rewrite 使用 null negative_prompt 和非空 positive_avoidance。宽高比须约分并匹配 width/height，abs(width × height ÷ {megapixelsDivisor} - megapixels) ÷ megapixels 最多为 {megapixelsTolerancePercent}%。",
   "failure": "按错误中的字段位置修正输入后再次校验。从本 Skill 目录查看帮助: {cli} --help",
-  "next": "复制下方 JSON 示例并按用户要求修改，保存为 input.json 后，从本 Skill 目录执行: {cli} < input.json",
-  "format": "输入为 {slots,display_text}。每槽为字符串数组，空槽使用 []；display_text 为非空单行中文说明。标签使用 payload、(payload) 或 (payload:weight)；natural_language 使用英文小写完整句子。",
-  "formatReference": "references/03-output-protocol.md",
+  "next": "按 references/generation-output-contract.md 构造生成结果，保存为 input.json 后执行: {cli} --generation-output < input.json",
+  "format": "按输入结构提供全部槽位；空槽使用 []。display_text 提供面向用户的中文说明。",
   "example": {
     "model_route": "anima-aesthetic-v1.1",
-    "positive_prompt": "one adult dancer, full body",
-    "negative_mode": "native_negative",
-    "negative_prompt": "bad quality",
     "positive_avoidance": null,
     "generation_purpose": "test",
     "aspect_ratio": "1:1",
@@ -35,22 +31,73 @@
       "artist_style": [
         "@say_hana"
       ],
-      "count_gender": [],
+      "count_gender": [
+        "1girl",
+        "solo"
+      ],
       "character_series": [],
-      "appearance": [],
-      "clothing_state": [],
-      "pose_action_sex": [],
-      "expression_reaction": [],
-      "camera_shot": [],
-      "scene_environment": [],
-      "detail_mood": [],
+      "appearance": [
+        "adult woman",
+        "long brown hair",
+        "brown eyes",
+        "fair skin"
+      ],
+      "clothing_state": [
+        "white dress",
+        "cotton dress",
+        "flat shoes"
+      ],
+      "pose_action_sex": [
+        "standing",
+        "hands at sides"
+      ],
+      "expression_reaction": [
+        "gentle smile",
+        "direct eye contact"
+      ],
+      "camera_shot": [
+        "full body",
+        "facing viewer"
+      ],
+      "scene_environment": [
+        "garden",
+        "flowers",
+        "daylight"
+      ],
+      "detail_mood": [
+        "soft colors"
+      ],
       "natural_language": []
     },
-    "display_text": "提示词格式示例。"
+    "display_text": "白天的花园里，一名成年女性双手垂于身侧站立。她皮肤白皙，留棕色长发，长着棕色眼睛，穿白色棉质连衣裙和平底鞋。她微笑并直视镜头，周围有鲜花。画面采用正面全身构图和柔和配色。"
   },
   "after": {
-    "": "校验通过。将 stdout JSON 交给生成步骤；本命令尚未创建图片。",
-    "--prompt-format": "格式校验通过。将 stdout 中的 prompt_text 写入完整生成目标的 positive_prompt，补齐生成字段后从本 Skill 目录运行: {cli} < input.json",
-    "--print-input-template": "将 stdout 模板保存为 input.json，填写槽位后从本 Skill 目录运行: {cli} --prompt-format < input.json"
-  }
+    "--prompt-format": "格式校验通过。将 stdout 中的 prompt_text 写入完整生成结果的 positive_prompt，补齐生成字段后运行: {cli} --generation-output < input.json",
+    "--print-input-template": "将 stdout 模板保存为 input.json。按 SKILL.md 的“构建并校验提示词”节填写模板，再从本 Skill 目录运行: {cli} --prompt-format < input.json",
+    "--generation-output": "校验通过。按 SKILL.md 的“构造生成结果”节返回 stdout JSON。"
+  },
+  "protocol": [
+    "执行规则:",
+    "校验模式输入为一个 JSON 对象；写入后关闭 stdin（EOF）。本命令只校验和组合文本，不创建图片或修改文件。",
+    "退出码与输出:",
+    "退出码 {success}：stdout 为一行 JSON。--quiet 下 stderr 为空；省略 --quiet 时 stderr 有 NEXT: 提示。",
+    "退出码 {validation}：stdout 为空，stderr 首行为 {\"violations\":[{\"path\":\"字段位置\",\"message\":\"原因\"}]}，后续行为 NEXT: 指引。violations 非空。path 为字段位置字符串；空字符串表示字段名为空。message 为非空原因字符串。",
+    "退出码 {execution}：报告 stderr 并停止；stderr 为空时报告退出码及缺少错误信息。其他退出码、缺少退出码或通道/JSON 不符合对应协议时，报告实际结果并停止。",
+    "重试方式:",
+    "输入校验失败时，按 path 和 message 修正输入，再按当前模式帮助的次数重试。修正需要用户选择或补充时，报告所需输入并停止。次数用尽后报告全部 violations 并停止。",
+    "结果复用:",
+    "成功结果可复用至输入变动。"
+  ],
+  "retries": {
+    "--prompt-format": 1,
+    "--print-input-template": 0,
+    "--generation-output": 1
+  },
+  "formatRules": [
+    "标签元素为非空字符串，首尾无空白，不含换行或逗号；payload 为小写。natural_language 使用英文小写单行文本，不使用权重外层。",
+    "artist_style 的 payload 恰好以一个 @ 开头。quality 以质量规则中的 content 保持原顺序和未加权形式开头。",
+    "按列出的槽位顺序展开数组，保留元素顺序，以英文逗号和一个空格连接为非空 prompt_text。display_text 保留输入原文，不进入 prompt_text。",
+    "修正格式输入后，先重新完成 Skill 的冲突处理、权重设计和自检，再重试。"
+  ],
+  "retryInstructions": "输入校验失败时，最多重试 {retries} 次。"
 }

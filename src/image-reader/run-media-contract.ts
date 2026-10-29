@@ -1,3 +1,7 @@
+import Schema from '@deepseek-ai/schemastery'
+import { contractObject, requiredNullable } from '../shared/field-contract.ts'
+import { generationParametersSchema, generationRunErrorSchema, generationRunLookupErrorSchema } from '../generation/run-input-contract.ts'
+import { GENERATION_RUN_STATUSES } from '../generation/run-status.ts'
 import type { GenerationRunInputError, JsonValue } from '../generation/run-input-contract.ts'
 import type { GenerationRunStatus } from '../generation/run-status.ts'
 
@@ -36,3 +40,20 @@ export type GenerationRunMedia = AvailableGenerationRunMedia | FailedGenerationR
 export interface GenerationRunMediaResult {
   readonly runs: readonly GenerationRunMedia[]
 }
+
+export const generationRunMediaImageSchema = Schema.object({
+  media_id: Schema.string().required(), node_id: Schema.string().required(), output_index: Schema.natural().required(),
+  filename: Schema.string().required(), media_type: Schema.string().required(), file_path: Schema.string().required(),
+}).required()
+export const generationRunMediaSchema = Schema.union([
+  contractObject({
+    run_id: Schema.string().required(), request_id: Schema.string().required(), lookup_status: Schema.const('available').required(),
+    title: Schema.string().required(), status: Schema.union(GENERATION_RUN_STATUSES).required(), revision: Schema.natural().required(), updated_at: Schema.number().required(),
+    instance_id: requiredNullable(Schema.string().required()),
+    prompt_id: requiredNullable(Schema.string().required()),
+    run_error: requiredNullable(generationRunErrorSchema),
+    parameters: Schema(generationParametersSchema).required(false), images: Schema.array(generationRunMediaImageSchema).required(),
+  }).required(),
+  generationRunLookupErrorSchema,
+]).required()
+export const generationRunMediaResultSchema = Schema.object({ runs: Schema.array(generationRunMediaSchema).required() }).required() satisfies Schema<any, GenerationRunMediaResult>

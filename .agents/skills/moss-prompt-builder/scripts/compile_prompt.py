@@ -9,6 +9,72 @@ import tempfile
 from pathlib import Path
 
 
+CAPTION_FIELDS = frozenset(("caption",))
+LAYOUT_FIELDS = frozenset(("width", "height", "bbox_coord_space", "bbox_format", "summary", "items"))
+SUMMARY_FIELDS = frozenset(("caption", "meta", "canvas", "palette"))
+SUMMARY_REQUIRED = frozenset(("caption",))
+ITEM_FIELDS = frozenset(("label", "caption", "bbox", "text", "tags", "palette"))
+ITEM_REQUIRED = frozenset(("label", "caption", "bbox"))
+CANVAS_TYPES = ("single", "multi_panel", "collage")
+ITEM_LABELS = ("object", "character", "text")
+DIMENSION_MULTIPLE = 16
+INPUT_COORD_SPACE = "abs"
+INPUT_BOX_FORMAT = "xyxy"
+OUTPUT_COORD_SPACE = "abs_centralized"
+OUTPUT_BOX_FORMAT = "yxyx"
+BOX_FIELDS = ("x_min", "y_min", "x_max", "y_max")
+BOX_PRECISION = 9
+
+
+def compiler_help():
+    return f"""Input JSON:
+  Caption: exactly {sorted(CAPTION_FIELDS)}; caption is nonempty text.
+  Layout: exactly {sorted(LAYOUT_FIELDS)}.
+  width and height: required positive integers, multiples of {DIMENSION_MULTIPLE}.
+  bbox_coord_space: {INPUT_COORD_SPACE!r}; bbox_format: {INPUT_BOX_FORMAT!r}.
+  summary: object with allowed fields {sorted(SUMMARY_FIELDS)}.
+    Required: {sorted(SUMMARY_REQUIRED)}. caption is nonempty text.
+    meta and palette: optional arrays of nonempty strings; empty arrays are allowed.
+    canvas: optional enum {list(CANVAS_TYPES)}.
+  items: required nonempty flat array. Each item allows {sorted(ITEM_FIELDS)}.
+    Required: {sorted(ITEM_REQUIRED)}. label is one of {list(ITEM_LABELS)}.
+    caption is nonempty text. A text label also requires nonempty literal text.
+    text is optional on other labels. tags and palette are optional string arrays.
+    bbox: {list(BOX_FIELDS)}, four finite numbers measured from the top-left.
+    0 <= x_min < x_max <= width; 0 <= y_min < y_max <= height.
+    Fractional edges are accepted. JSON keys must be unique; NaN and Infinity fail.
+
+Output and side effects:
+  Success: exit 0; stderr is empty; stdout is the absolute result path plus newline.
+  Relative paths resolve from the command's working directory.
+  The UTF-8 result file contains Caption text, or one line of Layout JSON.
+  Layout preserves summary and items, converts boxes to {OUTPUT_COORD_SPACE}/{OUTPUT_BOX_FORMAT},
+  rounds edges to {BOX_PRECISION} decimals, encloses them with floor/ceil, then subtracts
+  half the canvas dimensions rounded down. Width and height are omitted from output.
+  Result files end with a newline. Existing --output files are replaced after validation.
+  The output path must differ from the draft and contain no carriage return or newline.
+  Parent directories are created. Omitting --output creates an independent temporary result.
+  Concurrent calls must use distinct output paths or omit --output.
+
+Retries and result reuse:
+  Invalid arguments, JSON, fields or files: exit 2; stdout is empty; stderr reports
+  the problem and help command. Correct the named field, path or permissions, then retry.
+  A failed file write may leave a partial result. Use the output only after a successful run.
+  After success, reuse the result until the draft changes.
+  Repeating --output replaces that result; omitting it allocates another result file.
+
+Examples (from the Skill directory):
+  %(prog)s draft.json
+  %(prog)s draft.json --output prompt.txt
+  cat draft.json | %(prog)s -
+
+Caption example:
+  {{"caption":"An ivory cup marked \\"Tea\\"."}}
+Layout example:
+  {{"width":1024,"height":1024,"bbox_coord_space":"abs","bbox_format":"xyxy","summary":{{"caption":"A cup on a table."}},"items":[{{"label":"object","caption":"An ivory cup.","bbox":[256,256,768,768]}}]}}
+"""
+
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -33,7 +99,7 @@ def strings(value, location):
 
 
 def centered_box(box, width, height, location):
-    require(isinstance(box, list) and len(box) == 4, f"{location} must be [x1,y1,x2,y2]")
+    require(isinstance(box, list) and len(box) == len(BOX_FIELDS), f"{location} must be [x1,y1,x2,y2]")
     require(
         all(type(v) in (int, float) and math.isfinite(v) for v in box),
         f"{location} must contain four finite numbers",
@@ -46,10 +112,10 @@ def centered_box(box, width, height, location):
     )
     # Enclose in pixel edges before centering, as in Echidna generation export.
     result = [
-        math.floor(round(y1, 9)) - height // 2,
-        math.floor(round(x1, 9)) - width // 2,
-        math.ceil(round(y2, 9)) - height // 2,
-        math.ceil(round(x2, 9)) - width // 2,
+        math.floor(round(y1, BOX_PRECISION)) - height // 2,
+        math.floor(round(x1, BOX_PRECISION)) - width // 2,
+        math.ceil(round(y2, BOX_PRECISION)) - height // 2,
+        math.ceil(round(x2, BOX_PRECISION)) - width // 2,
     ]
     require(result[0] < result[2] and result[1] < result[3],
             f"{location} is too small at export precision")
@@ -59,24 +125,24 @@ def centered_box(box, width, height, location):
 def compile_prompt(draft):
     require(isinstance(draft, dict), "Draft must be a JSON object")
     if "caption" in draft:
-        fields(draft, {"caption"}, {"caption"}, "Caption draft")
+        fields(draft, CAPTION_FIELDS, CAPTION_FIELDS, "Caption draft")
         text(draft["caption"], "caption")
         return draft["caption"]
 
-    root_fields = {"width", "height", "bbox_coord_space", "bbox_format", "summary", "items"}
+    root_fields = LAYOUT_FIELDS
     fields(draft, root_fields, root_fields, "Layout draft")
     width, height = draft["width"], draft["height"]
     for name, value in (("width", width), ("height", height)):
-        require(type(value) is int and value > 0 and value % 16 == 0,
+        require(type(value) is int and value > 0 and value % DIMENSION_MULTIPLE == 0,
                 f"{name} must be a positive integer multiple of 16")
-    require(draft["bbox_coord_space"] == "abs", "Draft bbox_coord_space must be abs")
-    require(draft["bbox_format"] == "xyxy", "Draft bbox_format must be xyxy")
+    require(draft["bbox_coord_space"] == INPUT_COORD_SPACE, "Draft bbox_coord_space must be abs")
+    require(draft["bbox_format"] == INPUT_BOX_FORMAT, "Draft bbox_format must be xyxy")
 
     summary = draft["summary"]
-    fields(summary, {"caption", "meta", "canvas", "palette"}, {"caption"}, "summary")
+    fields(summary, SUMMARY_FIELDS, SUMMARY_REQUIRED, "summary")
     text(summary["caption"], "summary.caption")
     if "canvas" in summary:
-        require(summary["canvas"] in ("single", "multi_panel", "collage"),
+        require(summary["canvas"] in CANVAS_TYPES,
                 "summary.canvas must be single, multi_panel or collage")
     for key in ("meta", "palette"):
         if key in summary:
@@ -87,9 +153,8 @@ def compile_prompt(draft):
     compiled_items = []
     for index, item in enumerate(items):
         location = f"items[{index}]"
-        fields(item, {"label", "caption", "bbox", "text", "tags", "palette"},
-               {"label", "caption", "bbox"}, location)
-        require(item["label"] in ("object", "character", "text"),
+        fields(item, ITEM_FIELDS, ITEM_REQUIRED, location)
+        require(item["label"] in ITEM_LABELS,
                 f"{location}.label must be object, character or text")
         text(item["caption"], f"{location}.caption")
         if item["label"] == "text":
@@ -105,7 +170,7 @@ def compile_prompt(draft):
         })
 
     result = {"summary": summary, "items": compiled_items,
-              "bbox_coord_space": "abs_centralized", "bbox_format": "yxyx"}
+              "bbox_coord_space": OUTPUT_COORD_SPACE, "bbox_format": OUTPUT_BOX_FORMAT}
     return json.dumps(result, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
 
 
@@ -134,15 +199,7 @@ def main():
         prog="python3 scripts/compile_prompt.py",
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=(
-            "The result file contains UTF-8 prompt text. On success, stdout contains only\n"
-            "its absolute path and a newline. Diagnostics go to stderr; errors exit nonzero.\n"
-            "An existing --output file is replaced after the draft passes validation.\n\n"
-            "Examples (from the Skill directory):\n"
-            "  %(prog)s draft.json\n"
-            "  %(prog)s draft.json --output prompt.txt\n"
-            "  cat draft.json | %(prog)s -\n"
-        ),
+        epilog=compiler_help(),
     )
     parser.add_argument(
         "draft",

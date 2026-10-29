@@ -178,6 +178,28 @@
       "sessionLogFilename": "session.v4.jsonl"
     }
   },
+  "rawCapture": {
+    "filenames": {
+      "index": "raw-capture-index.json",
+      "state": "raw-capture-state.json",
+      "requests": "requests",
+      "requestBody": "request.bin",
+      "responseBody": "response.bin",
+      "requestMetadata": "request.json",
+      "sseIndex": "sse-index.json",
+      "observations": "observations",
+      "observerIndex": "observer-index.json",
+      "profileRestoration": "profile-restoration.json",
+      "spills": "spills"
+    },
+    "sensitiveHeaders": ["authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key", "api-key"],
+    "hopHeaders": ["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"],
+    "sessionHeaders": ["x-session-id", "x-dsh-session-id", "session-id"],
+    "observer": {
+      "entryId": "isolated-raw-trace-observer",
+      "providerEntryId": "llm-pi-ai"
+    }
+  },
   "commandRunner": {
     "invocationDirectoryEnvironmentName": "HARNESS_COMFYUI_DESKTOP_TEST_INVOCATION_DIRECTORY",
     "invocationsRelativePath": ".local/desktop-e2e/desktop-test-runner/invocations",
