@@ -1265,6 +1265,8 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     })
     assertWorkbenchModelRequest(childModelRequest, services.personaPrefix)
     assertWorkbenchModelRequest(parentResultRequest, services.personaPrefix)
+    expect(JSON.stringify(childModelRequest.body.messages)).toContain('OFFICIAL_WORKSPACE_DEVELOPMENT_INSTRUCTIONS')
+    expect(JSON.stringify(parentResultRequest.body.messages)).toContain('OFFICIAL_WORKSPACE_DEVELOPMENT_INSTRUCTIONS')
     expect(childModelRequest.body.model).toBe(OFFICIAL_BUSINESS_FIXTURE.provider.modelId)
     const completed = await services.requestWhere(request => isChildRequest(request)
       && (request.body.messages ?? []).some(message => message.role === 'tool'
@@ -2443,8 +2445,7 @@ function assertWorkbenchModelRequest(request, personaPrefix) {
     forbidden: [...RETIRED_BUSINESS_TOOL_NAMES, 'load_workspace_dependencies'],
   })
   const messages = JSON.stringify(request.body.messages ?? [])
-  for (const marker of [WORKSPACE_SKILL_MARKER, USER_SKILL_MARKER, 'OFFICIAL_WORKSPACE_PRIORITY_MARKER',
-    'OFFICIAL_WORKSPACE_DEVELOPMENT_INSTRUCTIONS']) expect(messages).not.toContain(marker)
+  for (const marker of [WORKSPACE_SKILL_MARKER, USER_SKILL_MARKER, 'OFFICIAL_WORKSPACE_PRIORITY_MARKER']) expect(messages).not.toContain(marker)
   for (const name of HOST_BUNDLED_SKILL_NAMES) {
     expect(messages).not.toContain(`<skill name="${name}"`)
     expect(messages).not.toContain(`<skill_content name="${name}"`)
@@ -2807,6 +2808,7 @@ describe('official Desktop plugin regression', () => {
     await expect(lstat(join(fixtureRepositoryRoot, '.git'))).rejects.toMatchObject({ code: 'ENOENT' })
     await mkdir(resolve(fixtureRoot, 'artifacts'), { recursive: true, mode: 0o700 })
     await mkdir(workspacePath, { recursive: true, mode: 0o700 })
+    await mkdir(join(workspacePath, '.git'), { mode: 0o700 })
     await mkdir(agentsHome, { recursive: true, mode: 0o700 })
     await writeFile(join(workspacePath, 'AGENTS.md'), '---\n文档用途: 提供 Desktop 测试标记。\n读取时机: 读取工作区指令时。\n---\n# Workspace fixture\n\n1. OFFICIAL_WORKSPACE_DEVELOPMENT_INSTRUCTIONS\n', { encoding: 'utf8', mode: 0o600 })
     const mcp = await startOfficialMcpServices()
