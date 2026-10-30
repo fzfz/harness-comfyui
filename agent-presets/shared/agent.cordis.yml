@@ -10,6 +10,10 @@
   name: '@deepseek-ai/dsh-tool-jobs'
   config:
     completionDelivery: wakeup
+- id: agent-instructions
+  name: '@deepseek-ai/dsh-agent-instructions'
+  config:
+    maxBytes: 65536
 - id: tool-working-directory
   name: '@deepseek-ai/dsh-tool-working-directory'
 - id: workbench-composition
