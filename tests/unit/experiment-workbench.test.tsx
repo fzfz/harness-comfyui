@@ -1328,6 +1328,92 @@ const makeCatalog = (): CatalogApi => ({
 })
 
 
+describe.each([
+  { kind: 'model', label: '生成模型', nameA: 'A 模型', nameB: 'B 模型' },
+  { kind: 'lora', label: 'LoRA', nameA: 'A LoRA', nameB: 'B LoRA' },
+  { kind: 'comfyui-template', label: 'Workflow 模板', nameA: 'A 模板', nameB: 'B 模板' },
+] as const)('experiment workbench $kind base-model filter', ({ kind, label, nameA, nameB }) => {
+  const source = catalogItems.find(item => item.context.kind === kind)!
+  const itemA: CatalogItem = { ...source, baseModelId: '1', context: { ...source.context, id: '101' }, label: nameA }
+  const itemB: CatalogItem = { ...source, baseModelId: '2', context: { ...source.context, id: '201' }, label: nameB }
+  const createCatalog = () => {
+    const catalog = makeCatalog()
+    vi.mocked(catalog.baseModels).mockResolvedValue({ items: [{ id: '1', label: '底模 A' }, { id: '2', label: '底模 B' }] })
+    return catalog
+  }
+
+  it('queries both base models and restores the filter while preserving the Branch draft', async () => {
+    const data = fullProjection()
+    const originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const catalog = createCatalog()
+    vi.mocked(catalog.search).mockImplementation(async request => ({
+      ...request,
+      items: request.baseModelId === '1' ? [itemA] : request.baseModelId === '2' ? [itemB] : [],
+      totalCount: request.baseModelId ? 1 : 0,
+    }))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer, onAction } = await mount(data, { catalog, storage })
+    const inspectorState = () => {
+      const inspector = renderer.root.findByProps({ className: 'inspector' })
+      return {
+        text: nodeText(inspector),
+        fields: ['input', 'textarea', 'select'].flatMap(type => inspector.findAllByType(type).map(field => ({
+          label: field.props['aria-label'], value: field.props.value, defaultValue: field.props.defaultValue, checked: field.props.checked,
+        }))),
+      }
+    }
+    const originalInspector = inspectorState()
+    await click(renderer, '资源')
+    await click(renderer, label)
+    for (const [baseModelId, name] of [['1', nameA], ['2', nameB]] as const) {
+      await change(renderer, '筛选底模', baseModelId)
+      expect(catalog.search).toHaveBeenLastCalledWith({ kind, query: '', page: 1, baseModelId }, expect.any(AbortSignal))
+      expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe(baseModelId)
+      expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([name])
+      expect(inspectorState()).toEqual(originalInspector)
+      expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+      expect(onAction).not.toHaveBeenCalled()
+    }
+    await act(() => renderer.unmount())
+    const reopened = await mount(data, { catalog, storage })
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('2')
+    expect(reopened.renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([nameB])
+    expect(catalog.search).toHaveBeenLastCalledWith({ kind, query: '', page: 1, baseModelId: '2' }, expect.any(AbortSignal))
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+
+  it('keeps base-model B results after the cancelled A request returns late', async () => {
+    const catalog = createCatalog()
+    let finishA!: () => void
+    let signalA!: AbortSignal
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (request.baseModelId === '1') return new Promise(resolve => {
+        signalA = signal
+        finishA = () => resolve({ ...request, items: [itemA], totalCount: 1 })
+      })
+      return Promise.resolve({ ...request, items: request.baseModelId === '2' ? [itemB] : [], totalCount: request.baseModelId === '2' ? 1 : 0 })
+    })
+    const data = fullProjection()
+    const originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '资源')
+    await click(renderer, label)
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '筛选底模', '2')
+    expect(signalA.aborted).toBe(true)
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([nameB])
+    await act(async () => finishA())
+    expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('2')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([nameB])
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
+
 describe('experiment workbench Catalog image availability', () => {
   it.each([
     { coverUrl: null, expected: ['/sample-1.png', '/sample-2.png'] },

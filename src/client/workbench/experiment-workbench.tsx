@@ -2529,7 +2529,7 @@ function ExperimentCatalog({
               </form>
               <div className="row between catalog-results-head">
                 <b>{kind.label}</b>
-                <small>{result?.totalCount ?? 0} 项</small>
+                <small>{`${result?.totalCount ?? 0} 项`}</small>
               </div>
               {error ? (
                 <div className="empty">
