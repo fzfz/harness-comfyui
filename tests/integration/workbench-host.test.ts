@@ -11,6 +11,22 @@ async function fixture() {
   return result
 }
 
+it('uses the registered directory before checking workspace names and reports creation failures', async () => {
+  const { remote, createWorkspace } = await fixture()
+  await expect(remote.mutate({ type: 'new-workspace', workspaceId: '', value: { name: 'First project', path: '/workspace/third' } }, signal()))
+    .rejects.toMatchObject({ message: '已有同名工作区，请使用其他名称。', details: { code: 'WORKBENCH_WORKSPACE_NAME_CONFLICT', issues: [{ path: 'name', message: '已有同名工作区，请使用其他名称。' }] } })
+  expect(createWorkspace).not.toHaveBeenCalled()
+  expect(await remote.mutate({ type: 'new-workspace', workspaceId: '', value: { name: 'Second project', path: '/workspace/project' } }, signal()))
+    .toEqual({ workspaceId: 'workspace_1' })
+  const original = await remote.getEnvironment({}, signal())
+  expect(original.workspaces.map(workspace => workspace.name)).toEqual(['First project', 'Second project'])
+  await remote.mutate({ type: 'new-workspace', workspaceId: '', value: { name: '  Third project  ', path: '  /workspace/third  ' } }, signal())
+  expect(createWorkspace).toHaveBeenLastCalledWith('/workspace/third', 'Third project')
+  createWorkspace.mockRejectedValueOnce(Object.assign(new Error('ENOENT: directory not found'), { code: 'ENOENT' }))
+  await expect(remote.mutate({ type: 'new-workspace', workspaceId: '', value: { name: 'Missing', path: '/workspace/missing' } }, signal()))
+    .rejects.toMatchObject({ details: { code: 'WORKBENCH_WORKSPACE_CREATE_FAILED', issues: [{ path: 'path', message: '无法添加工作区，请填写已存在且可访问的项目目录。' }] } })
+})
+
 it('applies native aspect-ratio and preset size values and rejects an unrelated size candidate', async () => {
   const { remote, inspect, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())

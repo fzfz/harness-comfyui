@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button,
   IconSparkleRegular,
@@ -95,6 +95,7 @@ export function ExperimentWorkbenchHost({
   }, [catalog])
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
+  const environmentLoaded = useRef(false)
   const api = useMemo(
     () => ({
       getInputDescription: async (scope: WorkbenchInputDescriptionRequest) =>
@@ -113,8 +114,12 @@ export function ExperimentWorkbenchHost({
         const value = unwrap(reply)
         setEnvironment(value)
         setError(null)
-        if (!value.workspaces.some((workspace) => workspace.id === workspaceId))
+        if (
+          (!environmentLoaded.current || workspaceId !== null) &&
+          !value.workspaces.some((workspace) => workspace.id === workspaceId)
+        )
           setWorkspaceId(value.workspaces[0]?.id ?? null)
+        environmentLoaded.current = true
       })
       .catch((error) => {
         if (active)
@@ -138,14 +143,10 @@ export function ExperimentWorkbenchHost({
     request: ExperimentWorkbenchAction,
   ): Promise<ExperimentSelection> => {
     const selection = unwrap(await remote.mutate(request))
-    const next = unwrap(
-      await remote.getEnvironment({ workspaceId: selection.workspaceId }),
-    )
-    setEnvironment(next)
-    selectWorkspace(selection.workspaceId)
+    setAttempt((value) => value + 1)
     return selection
   }
-  if (error)
+  if (error && !environment)
     return (
       <div role="alert">
         <p>{error}</p>
@@ -161,6 +162,7 @@ export function ExperimentWorkbenchHost({
       catalog={catalog}
       workspaces={environment.workspaces}
       workspaceId={workspaceId}
+      environmentError={error}
       presets={environment.presets}
       instances={environment.instances}
       baseModels={baseModels}

@@ -45,6 +45,7 @@ export interface ExperimentWorkbenchProps {
   readonly remote: ExperimentRemote
   readonly workspaces: readonly ExperimentWorkspace[]
   readonly workspaceId: string | null
+  readonly environmentError?: string | null
   readonly onWorkspaceChange: (id: string) => void
   readonly onAction: (
     action: ExperimentWorkbenchAction,

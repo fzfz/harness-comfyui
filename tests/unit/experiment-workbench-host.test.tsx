@@ -75,6 +75,60 @@ const mount = async (api: ExperimentHostRemote) => {
   return renderer
 }
 describe('official experiment workbench adapter', () => {
+  it('refreshes the workspace list after creation and leaves navigation to the active form', async () => {
+    const api = remote(), renderer = await mount(api)
+    vi.mocked(api.mutate).mockResolvedValueOnce({ ok: true, value: { workspaceId: 'workspace-b' } })
+    vi.mocked(api.getEnvironment).mockResolvedValue({ ok: true, value: { ...environment, workspaces: [...environment.workspaces, { id: 'workspace-b', name: '新工作区', path: '/new-workspace' }] } })
+    await act(async () => {
+      await renderer.root.findByType(ExperimentWorkbench).props.onAction({
+        type: 'new-workspace', workspaceId: 'workspace-a', value: { name: '新工作区', path: '/new-workspace' },
+      })
+    })
+    const shell = renderer.root.findByType(ExperimentWorkbench).props
+    expect(shell.workspaceId).toBe('workspace-a')
+    expect(shell.workspaces).toHaveLength(2)
+  })
+
+  it('preserves the unselected workspace when an initial empty environment gains a workspace', async () => {
+    const api = remote()
+    vi.mocked(api.getEnvironment).mockResolvedValue({ ok: true, value: { ...environment, workspaces: [] } })
+    const renderer = await mount(api)
+    expect(renderer.root.findByType(ExperimentWorkbench).props.workspaceId).toBeNull()
+    vi.mocked(api.getEnvironment).mockResolvedValue({ ok: true, value: environment })
+    await act(async () => {
+      await renderer.root.findByType(ExperimentWorkbench).props.onAction({
+        type: 'new-workspace', workspaceId: '', value: { name: '画面项目', path: '/art' },
+      })
+    })
+    expect(renderer.root.findByType(ExperimentWorkbench).props.workspaceId).toBeNull()
+    expect(renderer.root.findByType(ExperimentWorkbench).props.workspaces).toHaveLength(1)
+  })
+
+  it('keeps the reopened form when a cancelled submission succeeds but environment refresh fails', async () => {
+    const api = remote(), renderer = await mount(api)
+    vi.stubGlobal('FormData', class { get(key: string) { return key === 'name' ? '首个工作区' : '/first' } })
+    let finish!: (value: Awaited<ReturnType<ExperimentHostRemote['mutate']>>) => void
+    vi.mocked(api.mutate).mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    const open = () => renderer.root.findAllByType('button').find((button: any) => button.children.includes('添加工作区')).props.onClick()
+    await act(open)
+    let pending: Promise<void> | undefined
+    await act(async () => {
+      pending = renderer.root.findByProps({ role: 'dialog' }).findByType('form').props.onSubmit({ preventDefault() {}, currentTarget: {} })
+    })
+    await act(() => renderer.root.findByProps({ 'aria-label': '关闭对话框' }).props.onClick())
+    await act(open)
+    const nextName = renderer.root.findByProps({ name: 'name' })
+    const nextPath = renderer.root.findByProps({ name: 'path' })
+    vi.mocked(api.getEnvironment).mockRejectedValue(new Error('工作区列表加载失败，请刷新页面重试。'))
+    await act(async () => {
+      finish({ ok: true, value: { workspaceId: 'workspace-created' } })
+      await pending
+    })
+    expect(renderer.root.findByProps({ name: 'name' })).toBe(nextName)
+    expect(renderer.root.findByProps({ name: 'path' })).toBe(nextPath)
+    expect(renderer.root.findByProps({ role: 'alert' }).findByType('span').children).toEqual(['工作区列表加载失败，请刷新页面重试。'])
+  })
+
   it('resolves an existing official workspace and returns mutation selection to the shell', async () => {
     const api = remote(),
       renderer = await mount(api)

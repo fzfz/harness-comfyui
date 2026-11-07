@@ -23,8 +23,21 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
   const { runtime } = ctx.harnessComfyuiCore.services
   if (request.type === 'new-workspace') {
     const value = fields(request.value)
-    const workspace = await ctx.workspaceRegistry.create(text(value.path, 'path'), text(value.name, 'name'))
-    return { workspaceId: String(workspace.id) }
+    const path = text(value.path, 'path').trim(), name = text(value.name, 'name').trim()
+    try {
+      const existing = await ctx.workspaceRegistry.resolveByPath(path)
+      if (existing) return { workspaceId: String(existing.id) }
+      if (ctx.workspaceRegistry.list().some(workspace => workspace.title === name)) {
+        throw new WorkbenchError('WORKBENCH_WORKSPACE_NAME_CONFLICT', '已有同名工作区，请使用其他名称。', 'name')
+      }
+      const workspace = await ctx.workspaceRegistry.create(path, name)
+      return { workspaceId: String(workspace.id) }
+    } catch (error) {
+      if (error instanceof WorkbenchError) throw error
+      const failure = new WorkbenchError('WORKBENCH_WORKSPACE_CREATE_FAILED', '无法添加工作区，请填写已存在且可访问的项目目录。', 'path')
+      failure.cause = error
+      throw failure
+    }
   }
   await ctx.harnessComfyuiWorkbench.initializeWorkspace(request.workspaceId)
   if (request.type === 'new-work') {

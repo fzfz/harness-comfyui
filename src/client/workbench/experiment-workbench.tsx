@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -84,6 +85,7 @@ function Button({
   icon,
   disabled,
   label,
+  autoFocus,
 }: {
   readonly children: ReactNode
   readonly onClick?: () => void
@@ -91,6 +93,7 @@ function Button({
   readonly icon?: keyof typeof icons
   readonly disabled?: boolean
   readonly label?: string
+  readonly autoFocus?: boolean
 }) {
   return (
     <button
@@ -99,6 +102,7 @@ function Button({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
+      autoFocus={autoFocus}
     >
       {icon && <Icon name={icon} />}
       {children}
@@ -174,10 +178,26 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     store.getSnapshot,
   )
   const [message, setMessage] = useState<string | null>(null)
+  useEffect(() => {
+    if (!message) return
+    const timer = setTimeout(() => setMessage(null), 6000)
+    return () => clearTimeout(timer)
+  }, [message])
+  useEffect(() => {
+    if (props.environmentError) setMessage(props.environmentError)
+  }, [props.environmentError])
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const formSubmissionPending = useRef<number | null>(null)
+  const modalInstance = useRef(0)
   const [sheet, setSheet] = useState(false)
-  const [modal, setModal] = useState<
+  const [modal, setModalState] = useState<
     'new-work' | 'new-workspace' | 'branch' | 'image' | null
   >(null)
+  const setModal = useCallback((value: typeof modal) => {
+    modalInstance.current++
+    setFormSubmitting(false)
+    setModalState(value)
+  }, [])
   const [search, setSearch] = useState('')
   const [draftEdits, setDraftEdits] = useState<Record<string, string>>({})
   const host = useRef<HTMLDivElement>(null)
@@ -350,8 +370,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const action = async (
     type: ExperimentActionType,
     extra: Partial<ExperimentWorkbenchAction> = {},
+    isCurrent?: () => boolean,
   ) => {
-    if (!state.workspaceId && type !== 'new-workspace') return
+    if (!state.workspaceId && type !== 'new-workspace') return false
     try {
       const selection = await props.onAction({
         type,
@@ -361,8 +382,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...(run ? { runId: run.run_id } : {}),
         ...extra,
       })
+      if (isCurrent && !isCurrent()) return false
       if (selection) {
         store.setWorkspace(selection.workspaceId)
+        props.onWorkspaceChange(selection.workspaceId)
+        if (type === 'new-workspace') changePage('workbench')
         if (selection.workId) store.selectWork(selection.workId)
         if (selection.branchId)
           store.updateView({
@@ -374,8 +398,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           })
       }
       await store.refresh()
+      return true
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
+      if (!isCurrent || isCurrent())
+        setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
+      return false
     }
   }
   const referenceRunIds =
@@ -2180,24 +2207,35 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       {modal && (
         <div
           className="modal-backdrop"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setModal(null)
-          }}
         >
           <section
             className={`modal ${modal === 'image' ? 'image-modal' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={modalTitle}
+            onKeyDown={(event) => {
+              if (event.key !== 'Tab') return
+              const elements = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input,textarea,select,a,summary')]
+                .filter(element => element.offsetParent !== null)
+              const first = elements[0], last = elements.at(-1)
+              if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault()
+                last?.focus()
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault()
+                first?.focus()
+              }
+            }}
           >
             <div className="modal-head">
               <h2>{modalTitle}</h2>
               <Button
                 kind="small quiet"
-                label={modal === 'image' ? '关闭原图' : '关闭弹窗'}
+                label={modal === 'image' ? '关闭原图' : '关闭对话框'}
+                autoFocus={modal !== 'image'}
                 onClick={() => setModal(null)}
               >
-                关闭
+                {modal === 'image' ? '关闭' : '×'}
               </Button>
             </div>
             {modal === 'image' ? (
@@ -2206,12 +2244,18 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               </div>
             ) : (
               <form
-                onSubmit={(event) => {
+                onSubmit={async (event) => {
                   event.preventDefault()
+                  const instance = modalInstance.current
+                  if (formSubmissionPending.current === instance) return
+                  const isCurrent = () => modalInstance.current === instance
+                  setMessage(null)
                   const data = new FormData(event.currentTarget),
                     type = modal === 'branch' ? 'create-branch' : modal
                   if (!type) return
-                  void action(type, {
+                  formSubmissionPending.current = instance
+                  setFormSubmitting(true)
+                  const saved = await action(type, {
                     value: {
                       name: data.get('name'),
                       ...(modal === 'new-workspace'
@@ -2220,8 +2264,13 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                           ? { original_request: data.get('goal') }
                           : { goal: data.get('goal') }),
                     },
-                  })
-                  setModal(null)
+                  }, isCurrent)
+                  if (formSubmissionPending.current === instance)
+                    formSubmissionPending.current = null
+                  if (isCurrent()) {
+                    setFormSubmitting(false)
+                    if (saved) setModal(null)
+                  }
                 }}
               >
                 {modal === 'new-work' && <p>工作区：{workspace?.name}</p>}
@@ -2240,6 +2289,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   </span>
                   <input
                     name="name"
+                    readOnly={formSubmitting}
                     aria-label={
                       modal === 'new-workspace'
                         ? '工作区名称'
@@ -2249,7 +2299,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     }
                     maxLength={40}
                     required
-                    autoFocus
+                    autoComplete={modal === 'new-workspace' ? 'off' : undefined}
                     defaultValue={
                       modal === 'branch'
                         ? `探索 ${(p?.branches.length ?? 0) + 1}`
@@ -2262,6 +2312,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     <span>项目目录</span>
                     <input
                       name="path"
+                      readOnly={formSubmitting}
                       aria-label="项目目录"
                       required
                       placeholder="/Users/用户名/Projects/项目目录"
@@ -2273,6 +2324,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     <span>{modal === 'branch' ? '原始需求' : '总目标'}</span>
                     <textarea
                       name="goal"
+                      readOnly={formSubmitting}
                       aria-label={modal === 'branch' ? '原始需求' : '总目标'}
                       required
                       defaultValue={
@@ -2282,8 +2334,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   </label>
                 )}
                 <div className="modal-actions">
-                  <Button onClick={() => setModal(null)}>取消</Button>
-                  <button className="btn primary" type="submit">
+                  <Button kind="quiet" onClick={() => setModal(null)}>取消</Button>
+                  <button className="btn primary" type="submit" disabled={formSubmitting}>
                     {modal === 'new-workspace'
                       ? '添加工作区'
                       : modal === 'branch'
@@ -2298,10 +2350,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       )}
       {message && (
         <div className="toast" role="alert">
-          {message}
-          <Button kind="small quiet" onClick={() => setMessage(null)}>
-            关闭
-          </Button>
+          <span>{message}</span>
         </div>
       )}
     </div>

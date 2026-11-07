@@ -10,7 +10,7 @@ import type {} from './plugin.ts'
 async function report<T>(operation: () => Promise<T>): Promise<T> {
   try { return await operation() }
   catch (error) {
-    if (error instanceof WorkbenchError) throw new RemoteError('workbench/operation-failed', error.message, { code: error.code, issues: error.issues })
+    if (error instanceof WorkbenchError) throw new RemoteError('workbench/operation-failed', error.issues.map(issue => issue.message).join('\n'), { code: error.code, issues: error.issues })
     throw error
   }
 }

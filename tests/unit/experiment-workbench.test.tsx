@@ -76,6 +76,7 @@ afterEach(async () => {
   await act(() => {
     for (const mount of mounts.splice(0)) mount.unmount()
   })
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 const mount = async (
@@ -406,7 +407,8 @@ describe('experiment workbench public interactions', () => {
     }
   })
 
-  it('keeps the selected page while mutations fail and lets the user close the error', async () => {
+  it('keeps the selected page and dismisses the reference error tip after six seconds', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const onAction = vi.fn(async () => {
       throw new Error('保存失败：连接中断')
     })
@@ -421,7 +423,10 @@ describe('experiment workbench public interactions', () => {
     expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain(
       '连接中断',
     )
-    await click(renderer, '关闭')
+    expect(renderer.root.findByProps({ role: 'alert' }).findAllByType('button')).toHaveLength(0)
+    await act(() => { vi.advanceTimersByTime(5999) })
+    expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(1)
+    await act(() => { vi.advanceTimersByTime(1) })
     expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(0)
   })
 
@@ -522,6 +527,105 @@ describe('experiment workbench public interactions', () => {
 })
 
 describe('experiment workbench forms and task results', () => {
+  it('matches the reference workspace dialog controls and cycles keyboard focus within the dialog', async () => {
+    const { renderer } = await mount(empty)
+    await click(renderer, '添加工作区')
+    const dialog = renderer.root.findByProps({ role: 'dialog' })
+    const close = dialog.findByProps({ 'aria-label': '关闭对话框' })
+    expect(nodeText(close)).toBe('×')
+    expect(close.props.autoFocus).toBe(true)
+    const cancel = dialog.findAllByType('button').find(button => nodeText(button) === '取消')!
+    expect(cancel.props.className).toBe('btn quiet')
+    const first = { offsetParent: {}, focus: vi.fn() }, last = { offsetParent: {}, focus: vi.fn() }
+    const preventDefault = vi.fn(), currentTarget = { querySelectorAll: () => [first, last] }
+    Object.defineProperty(document, 'activeElement', { configurable: true, value: last })
+    await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: false, currentTarget, preventDefault }))
+    expect(first.focus).toHaveBeenCalledOnce()
+    Object.defineProperty(document, 'activeElement', { configurable: true, value: first })
+    await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: true, currentTarget, preventDefault }))
+    expect(last.focus).toHaveBeenCalledOnce()
+    expect(preventDefault).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps workspace inputs mounted during submission and failure, then closes after success', async () => {
+    let rejectSubmission!: (error: Error) => void
+    const submit = vi.fn(() => new Promise<{ workspaceId: string }>((_, reject) => {
+      rejectSubmission = reject
+    }))
+    const { renderer } = await mount(empty, { onAction: submit })
+    await click(renderer, '添加工作区')
+    const form = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!
+    const nameInput = form.findByProps({ name: 'name' })
+    const pathInput = form.findByProps({ name: 'path' })
+    const values = { name: '场景设计', path: '/projects/scenes' }
+    let pending: Promise<void> | undefined
+    await act(async () => {
+      pending = form.props.onSubmit({ preventDefault() {}, currentTarget: values })
+    })
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
+    expect(form.findByProps({ type: 'submit' }).props.disabled).toBe(true)
+    expect(nameInput.props.readOnly).toBe(true)
+    expect(pathInput.props.readOnly).toBe(true)
+    await act(async () => {
+      void form.props.onSubmit({ preventDefault() {}, currentTarget: values })
+    })
+    expect(submit).toHaveBeenCalledOnce()
+    await act(async () => {
+      rejectSubmission(new Error('项目目录不存在，请修改路径。'))
+      await pending
+    })
+    expect(renderer.root.findByProps({ name: 'name' })).toBe(nameInput)
+    expect(renderer.root.findByProps({ name: 'path' })).toBe(pathInput)
+    expect(nameInput.props.readOnly).toBe(false)
+    expect(pathInput.props.readOnly).toBe(false)
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('项目目录不存在，请修改路径。')
+    submit.mockResolvedValueOnce({ workspaceId: 'workspace-scenes' })
+    await act(async () => {
+      await form.props.onSubmit({ preventDefault() {}, currentTarget: values })
+    })
+    expect(submit).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'new-workspace', value: values }))
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+  })
+
+  it('keeps a reopened workspace form when its previous request finishes', async () => {
+    let finish!: (value: { workspaceId: string }) => void
+    const onWorkspaceChange = vi.fn()
+    const { renderer } = await mount(empty, {
+      onWorkspaceChange,
+      onAction: vi.fn(() => new Promise<{ workspaceId: string }>(resolve => { finish = resolve })),
+    })
+    await click(renderer, '添加工作区')
+    const firstForm = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!
+    let pending: Promise<void> | undefined
+    await act(async () => {
+      pending = firstForm.props.onSubmit({ preventDefault() {}, currentTarget: { name: '前次提交', path: '/projects/first' } })
+    })
+    await click(renderer, '取消')
+    await click(renderer, '添加工作区')
+    const nextName = renderer.root.findByProps({ name: 'name' })
+    const nextPath = renderer.root.findByProps({ name: 'path' })
+    expect(renderer.root.findByProps({ type: 'submit' }).props.disabled).toBe(false)
+    await act(async () => { finish({ workspaceId: 'workspace-created' }); await pending })
+    expect(renderer.root.findByProps({ name: 'name' })).toBe(nextName)
+    expect(renderer.root.findByProps({ name: 'path' })).toBe(nextPath)
+    expect(onWorkspaceChange).not.toHaveBeenCalled()
+    expect(renderer.root.findByProps({ 'aria-label': '切换工作区' }).props.value).toBe('workspace-a')
+  })
+
+  it('opens the workbench after adding the current workspace from configuration', async () => {
+    const { renderer } = await mount(fullProjection(), {
+      onAction: vi.fn(async () => ({ workspaceId: 'workspace-a' })),
+    })
+    await click(renderer, '配置中心')
+    await click(renderer, '添加工作区')
+    const form = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!
+    await act(async () => {
+      await form.props.onSubmit({ preventDefault() {}, currentTarget: { name: '重复目录', path: '/projects/art' } })
+    })
+    expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+  })
+
   it('submits workspace, work and child branch forms and supports cancellation', async () => {
     const { renderer, onAction } = await mount(fullProjection())
     for (const [entry, type, values] of [
@@ -551,7 +655,7 @@ describe('experiment workbench forms and task results', () => {
     await click(renderer, '取消')
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
     await click(renderer, '添加工作区')
-    await click(renderer, '关闭弹窗')
+    await click(renderer, '关闭对话框')
     await change(renderer, '切换工作', 'work-b')
     await change(renderer, '切换工作区', 'workspace-a')
     const scroll = renderer.root.findByProps({ className: 'branch-list' })
@@ -838,7 +942,7 @@ describe('experiment workbench shared catalog', () => {
 })
 
 describe('experiment workbench overlay and loading lifecycle', () => {
-  it('closes overlays with backdrop or Escape and refreshes after visibility returns', async () => {
+  it('closes the sheet from its backdrop, keeps the form open until Escape and refreshes after visibility returns', async () => {
     const { renderer, remote } = await mount(fullProjection())
     await click(renderer, '查看运行记录')
     const backdrop = renderer.root.findByProps({ className: 'sheet-backdrop' })
@@ -848,8 +952,8 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     await act(() => backdrop.props.onClick({ target, currentTarget: target }))
     await click(renderer, '新建工作')
     const modal = renderer.root.findByProps({ className: 'modal-backdrop' })
-    await act(() => modal.props.onClick({ target, currentTarget: target }))
-    await click(renderer, '新建工作')
+    expect(modal.props.onClick).toBeUndefined()
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
     await act(() => {
       document.dispatchEvent(
         Object.assign(new Event('keydown'), { key: 'Escape' }),
