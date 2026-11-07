@@ -171,6 +171,7 @@ export interface WorkbenchViewState {
 }
 export interface WorkbenchProjection {
   workspace_id: string
+  total_branch_count: number
   work_id: string | null
   works: Work[]
   branches: Branch[]

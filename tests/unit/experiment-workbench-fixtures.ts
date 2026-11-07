@@ -165,6 +165,7 @@ export const treeProjection = (): WorkbenchProjection => {
     { id: 'cool', parent: 'root', name: '冷光', runs: 3 },
     { id: 'detail', parent: 'warm', name: '暖光细节', runs: 4 },
   ]
+  data.total_branch_count = nodes.length
   data.branches = nodes.map(node => {
     const branch = makeBranch(node.id, node.parent)
     branch.name = node.name
@@ -186,6 +187,7 @@ export const treeProjection = (): WorkbenchProjection => {
 
 export const fullProjection = (): WorkbenchProjection => ({
   workspace_id: 'workspace-a',
+  total_branch_count: 2,
   work_id: 'work-a',
   works: [
     {

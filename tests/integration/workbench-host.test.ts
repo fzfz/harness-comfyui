@@ -192,6 +192,48 @@ it('edits branch input through real actions, resolves catalog resources and disp
   expect(store.getBranch(selected.branchId!).draft).toMatchObject({ generation_input: { model: null, template_id: null, loras: [] }, context_refs: [] })
 })
 
+it('includes the total branch count across workspaces in each work projection', async () => {
+  const { remote } = await fixture()
+  const first = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'First', goal: 'Rain' } }, signal())
+  const second = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Second', goal: 'Light' } }, signal())
+  await remote.mutate({ type: 'new-work', workspaceId: 'workspace_2', value: { name: 'Other workspace', goal: 'Portrait' } }, signal())
+  expect(await remote.getProjection(second, signal())).toMatchObject({ total_branch_count: 3, branches: [expect.objectContaining({ branch_id: second.branchId })] })
+  await remote.mutate({ ...first, type: 'create-branch', value: { name: 'Warm', original_request: 'Warm rain' } }, signal())
+  expect(await remote.getProjection(second, signal())).toMatchObject({ total_branch_count: 4, branches: [expect.objectContaining({ branch_id: second.branchId })] })
+  expect(await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).toMatchObject({ total_branch_count: 4 })
+  expect(await remote.getProjection({ workspaceId: 'workspace_2' }, signal())).toMatchObject({ total_branch_count: 4 })
+})
+
+it('copies a Run-free branch input through child and grandchild branches with independent saved drafts', async () => {
+  const { remote, official } = await fixture()
+  const parent = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Glasshouse', goal: 'Keep the glass structure' } }, signal())
+  for (const [field, value] of [['positive_prompt', 'glasshouse'], ['negative_prompt', 'blur'], ['instance_id', '8']] as const)
+    await remote.mutate({ ...parent, type: 'update-draft', field, value }, signal())
+  for (const [kind, id] of [['model', '2'], ['lora', '3'], ['character', '4'], ['comfyui-template', '5']] as const)
+    await remote.mutate({ ...parent, type: 'resource-select', value: { kind, id } }, signal())
+  await remote.mutate({ ...parent, type: 'update-draft', field: 'seed', value: 42 }, signal())
+  const before = (await remote.getProjection(parent, signal())).branches[0]!
+  const child = await remote.mutate({ ...parent, type: 'create-branch', value: { name: 'Warm light', original_request: before.original_request } }, signal())
+  expect((await remote.getProjection(child, signal())).branches.find(item => item.branch_id === child.branchId)!.draft).toEqual(before.draft)
+  await remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: 'warm glasshouse' }, signal())
+  const childDraft = (await remote.getProjection(child, signal())).branches.find(item => item.branch_id === child.branchId)!.draft
+  const grandchild = await remote.mutate({ ...child, type: 'create-branch', value: { name: 'Warm details', original_request: before.original_request } }, signal())
+  const inherited = (await remote.getProjection(grandchild, signal())).branches.find(item => item.branch_id === grandchild.branchId)!
+  expect(inherited.draft).toEqual(childDraft)
+  await remote.mutate({ ...grandchild, type: 'update-branch', field: 'original_request', value: 'Keep the warm reflections', expectedValue: before.original_request }, signal())
+  await remote.mutate({ ...grandchild, type: 'update-draft', field: 'seed', value: 99 }, signal())
+  await remote.mutate({ ...grandchild, type: 'resource-remove', value: 'lora', id: '3' }, signal())
+  const result = await remote.getProjection(grandchild, signal())
+  expect(result.branches).toHaveLength(3)
+  expect(result.branches.find(item => item.branch_id === parent.branchId)).toEqual(before)
+  expect(result.branches.find(item => item.branch_id === child.branchId)).toMatchObject({ parent_branch_id: parent.branchId, original_request: before.original_request, draft: childDraft })
+  expect(result.branches.find(item => item.branch_id === grandchild.branchId)).toMatchObject({ parent_branch_id: child.branchId, original_request: 'Keep the warm reflections', draft: { prompt_input: childDraft.prompt_input, generation_input: { parameters: { seed: 99 }, loras: [] } } })
+  for (const branch of result.branches) expect(branch).toMatchObject({ work_id: parent.workId, source_run_id: null, source_artifact_id: null, source_experience_id: null })
+  expect(result.tasks).toEqual([])
+  expect(result.runs).toEqual([])
+  expect(official.controller.create).not.toHaveBeenCalled()
+})
+
 it('preserves user edits as candidates and applies an explicitly selected prompt artifact', async () => {
   const { ctx, remote, store, official } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Portrait', goal: 'Paint a portrait' } }, signal())

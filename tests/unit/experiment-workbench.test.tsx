@@ -35,6 +35,7 @@ const { act, create } = (await vi.importActual('react-test-renderer')) as {
 }
 const empty: WorkbenchProjection = {
   workspace_id: 'workspace-a',
+  total_branch_count: 0,
   work_id: null,
   works: [],
   branches: [],
@@ -962,6 +963,87 @@ describe('experiment workbench forms and task results', () => {
     })
     expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+  })
+
+  it('numbers the suggested child name across every work and workspace', async () => {
+    const data = { ...fullProjection(), total_branch_count: 4, tasks: [], runs: [] }
+    data.branches = [data.branches[0]!]
+    const { renderer } = await mount(data)
+    await click(renderer, '创建子分支')
+    expect(renderer.root.findByProps({ name: 'name' }).props.defaultValue).toBe('探索 5')
+  })
+
+  it('reveals a child created from a collapsed parent without a Run and displays its inherited input', async () => {
+    const data = fullProjection()
+    data.tasks = []
+    data.runs = []
+    const parent = data.branches[0]!
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      const value = request.value as { name: string; original_request: string }
+      data.branches.push({
+        ...structuredClone(parent), branch_id: 'created-child', parent_branch_id: parent.branch_id,
+        ...value, source_run_id: null, source_artifact_id: null, source_experience_id: null,
+      })
+      return { workspaceId: data.workspace_id, workId: parent.work_id, branchId: 'created-child' }
+    })
+    const { renderer } = await mount(data, { onAction })
+    await click(renderer, '收起主分支')
+    await click(renderer, '创建子分支')
+    const dialog = renderer.root.findByProps({ role: 'dialog' })
+    expect(nodeText(dialog)).toContain('主分支 · 任务输入')
+    expect(dialog.findByProps({ name: 'name' }).props).toMatchObject({ required: true, maxLength: 40 })
+    expect(dialog.findByProps({ name: 'goal' }).props).toMatchObject({ required: true, defaultValue: parent.original_request })
+    await act(async () => dialog.findAllByType('form')[0]!.props.onSubmit({
+      preventDefault() {}, currentTarget: { name: '暖光子分支', goal: parent.original_request },
+    }))
+    expect(onAction).toHaveBeenCalledWith({
+      type: 'create-branch', workspaceId: data.workspace_id, workId: parent.work_id, branchId: parent.branch_id,
+      value: { name: '暖光子分支', original_request: parent.original_request },
+    })
+    expect(renderer.root.findByProps({ 'aria-label': '切换分支 暖光子分支' })).toBeDefined()
+    expect(renderer.root.findByProps({ role: 'treeitem', 'aria-selected': true }).props['aria-level']).toBe(2)
+    expect(renderer.root.findByProps({ 'aria-label': '收起主分支' })).toBeDefined()
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光子分支')
+    expect(renderer.root.findByProps({ 'aria-label': '原始需求' }).props.value).toBe(parent.original_request)
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(parent.draft.prompt_input.positive_prompt)
+    expect(renderer.root.findByProps({ className: 'run-strip' }).findAllByType('button')).toHaveLength(0)
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+  })
+
+  it.each(['submission', 'refresh'])('keeps a later branch selection while child creation awaits %s', async stage => {
+    const data = fullProjection()
+    data.tasks = []
+    data.runs = []
+    let finish!: () => void
+    const pending = new Promise<void>(resolve => { finish = resolve })
+    let submitted = false
+    const onAction = vi.fn(async () => {
+      if (stage === 'submission') await pending
+      data.branches.push({ ...structuredClone(data.branches[0]!), branch_id: 'created-child', parent_branch_id: 'root', name: '新建子分支' })
+      submitted = true
+      return { workspaceId: data.workspace_id, workId: 'work-a', branchId: 'created-child' }
+    })
+    const { renderer } = await mount(data, {
+      onAction,
+      remote: {
+        getProjection: async () => {
+          if (stage === 'refresh' && submitted) await pending
+          return structuredClone(data)
+        },
+        getInputDescription: async () => inputDescription,
+      },
+    })
+    await click(renderer, '创建子分支')
+    let submission: Promise<void> | undefined
+    await act(async () => {
+      submission = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({
+        preventDefault() {}, currentTarget: { name: '新建子分支', goal: '玻璃花房' },
+      })
+    })
+    await click(renderer, '切换分支 暖光探索')
+    await act(async () => { finish(); await submission })
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光探索')
+    expect(nodeText(renderer.root.findByProps({ role: 'treeitem', 'aria-selected': true }))).toContain('暖光探索')
   })
 
   it('submits workspace, work and child branch forms and supports cancellation', async () => {

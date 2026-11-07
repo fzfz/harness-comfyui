@@ -8,6 +8,7 @@ const projection = (
   workId: string,
 ): WorkbenchProjection => ({
   workspace_id: workspaceId,
+  total_branch_count: 0,
   work_id: workId,
   works: [
     { work_id: workId, workspace_id: workspaceId, name: workId, goal: '目标' },

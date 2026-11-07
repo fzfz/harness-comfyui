@@ -434,10 +434,11 @@ export class WorkbenchStore {
   }
   getProjection(input: { workspaceId: string; workId?: string; branchId?: string; refreshAfterMs?: number }): WorkbenchProjection {
     if (input.workId) this.assertScope(input.workspaceId, input.workId, input.branchId)
+    const totalBranchCount = this.row('SELECT COUNT(*) AS count FROM workbench_branches')!.count as number
     const tasks = this.listTasks(input.workspaceId, input.workId, input.branchId).map(task => this.refreshTask(task.task_id))
     const workIds = input.workId ? [input.workId] : this.listWorks(input.workspaceId).map(work => work.work_id)
     const branches = workIds.flatMap(id => this.listBranches(id)); const runs = tasks.flatMap(task => this.listRuns(task.task_id)); const experiences = workIds.flatMap(id => this.listExperiences(id))
     const favorites = this.rows('SELECT * FROM workbench_favorites').filter(row => row.target_type === 'run' ? runs.some(run => run.run_id === row.target_id) : experiences.some(experience => experience.experience_id === row.target_id)) as unknown as Favorite[]
-    return { workspace_id: input.workspaceId, work_id: input.workId ?? null, works: this.listWorks(input.workspaceId), branches, tasks, artifacts: tasks.flatMap(task => this.listArtifacts(task.task_id)), runs, experiments: tasks.flatMap(task => { const experiment = this.getExperiment(task.task_id); return experiment ? [experiment] : [] }), experiences, favorites, functions: this.listFunctionBindings(input.workspaceId), refreshAfterMs: input.refreshAfterMs ?? 1000 }
+    return { workspace_id: input.workspaceId, total_branch_count: totalBranchCount, work_id: input.workId ?? null, works: this.listWorks(input.workspaceId), branches, tasks, artifacts: tasks.flatMap(task => this.listArtifacts(task.task_id)), runs, experiments: tasks.flatMap(task => { const experiment = this.getExperiment(task.task_id); return experiment ? [experiment] : [] }), experiences, favorites, functions: this.listFunctionBindings(input.workspaceId), refreshAfterMs: input.refreshAfterMs ?? 1000 }
   }
 }

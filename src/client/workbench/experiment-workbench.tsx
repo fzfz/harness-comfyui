@@ -498,7 +498,10 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       }
       const refreshNavigation = store.getNavigationSequence()
       await store.refresh()
-      return store.getNavigationSequence() === refreshNavigation && (!isCurrent || isCurrent())
+      if (store.getNavigationSequence() !== refreshNavigation) return false
+      if (selection?.branchId && selection.branchId !== view.branchId)
+        store.selectBranch(selection.branchId)
+      return !isCurrent || isCurrent()
     } catch (error) {
       if (stillCurrent())
         setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
@@ -2375,7 +2378,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     autoComplete={modal === 'new-workspace' ? 'off' : undefined}
                     defaultValue={
                       modal === 'branch'
-                        ? `探索 ${(p?.branches.length ?? 0) + 1}`
+                        ? `探索 ${(p?.total_branch_count ?? 0) + 1}`
                         : ''
                     }
                   />
