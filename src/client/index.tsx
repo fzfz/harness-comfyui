@@ -42,6 +42,8 @@ import { ContextDialogNavigationStore } from './workbench/context-dialog-navigat
 import { GenerationProjectionStore } from './workbench/generation-store.ts'
 import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
 import { WorkbenchDetails } from './workbench/results-drawer.tsx'
+import { WORKBENCH_REMOTE_SERVICE } from '../workbench-remote.ts'
+import { EXPERIMENT_PANEL_ID, ExperimentWorkbenchEntry, ExperimentWorkbenchHost } from './workbench/experiment-host.tsx'
 
 export const name = pluginPackage.packageName
 export const inject = [
@@ -52,6 +54,7 @@ export const inject = [
   'sidebarRight',
   'sidebarRightTabs',
   'configForms',
+  'layout',
 ] as const
 
 interface ClientSessions {
@@ -137,8 +140,10 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       GENERATION_REMOTE_SERVICE,
       IMAGE_READER_REMOTE_SERVICE,
       BROWSER_SETTINGS_REMOTE_SERVICE,
+      WORKBENCH_REMOTE_SERVICE,
     ], (remoteContext) => {
       const remoteCatalog = getRemoteNamespace(remoteContext, CATALOG_REMOTE_SERVICE)
+      const remoteWorkbench = getRemoteNamespace(remoteContext, WORKBENCH_REMOTE_SERVICE)
       const remoteGeneration = getRemoteNamespace(remoteContext, GENERATION_REMOTE_SERVICE)
       const remoteImageReader = getRemoteNamespace(remoteContext, IMAGE_READER_REMOTE_SERVICE)
       const remoteBrowserSettings = getRemoteNamespace(remoteContext, BROWSER_SETTINGS_REMOTE_SERVICE)
@@ -253,6 +258,17 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
         () => imageReaderForm.dispose(),
         () => sourceForm.dispose(),
         () => generationStore.dispose(),
+        ctx.slots.inject('main', () => ctx.slots.register({
+          name: 'main',
+          key: EXPERIMENT_PANEL_ID,
+          inject: () => ({ remote: remoteWorkbench, catalog }),
+        }, ExperimentWorkbenchHost)),
+        ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+          name: 'sidebar.footer.action',
+          id: `${EXPERIMENT_PANEL_ID}-entry`,
+          order: 11,
+          inject: () => ({ open: () => ctx.layout.selectPanel(EXPERIMENT_PANEL_ID as Parameters<typeof ctx.layout.selectPanel>[0]) }),
+        }, ExperimentWorkbenchEntry)),
         ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
           name: 'sidebar.footer.action',
           id: WORKBENCH_ENTRY_ID,

@@ -109,6 +109,16 @@
 
 5. [media-viewer-page.ts](../../src/host/generation/media-viewer-page.ts) 展示同一 Session 的媒体，按 Runtime 返回顺序切换并更新当前 URL。图片和视频按原始宽高比完整显示，像素尺寸来自媒体文件。承载查看页 iframe 的 Client 界面提供完整 Run ID、Run ID 复制与原文件下载。iframe 当前媒体消息的结构由 [src/generation/contract.ts](../../src/generation/contract.ts) 定义。[ProjectionMediaGallery](../../src/client/workbench/results-drawer.tsx)负责校验该消息的来源与媒体归属。
 
+## 实验工作台
+
+1. [ExperimentWorkbenchHost](../../src/client/workbench/experiment-host.tsx) 在官方主面板承载实验工作台。[ExperimentWorkbenchStore](../../src/client/workbench/experiment-store.ts) 管理工作区内的浏览选择、轮询和滚动位置；界面通过 [Workbench Remote](../../src/workbench-remote.ts) 读取工作范围内的数据。
+
+2. [WorkbenchService](../../src/workbench/service.ts) 处理任务输入、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。Agent 通过受管 CLI 的 `workbench task get` 与 `workbench task publish` 读写指定任务。
+
+3. [Core](../../src/host/core/plugin.ts) 管理 Generation Runtime 与 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 共用的数据库连接。产物文件保存在插件 Run 目录下的 `task-artifacts` 中。
+
+4. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 复用 Workflow 编译器的参数与资源校验。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID 和尺寸候选。
+
 ## 图片读取与 Prompt 对比职责
 
 1. [ImageReaderService.inspect()](../../src/host/image-reader/image-reader-service.ts) 一次读取一个本地图片路径。该服务按活动配置选择独立视觉模型，并返回图片观察文本。CLI 传入的 `sessionId` 来自已验证的调用身份。

@@ -1,0 +1,2750 @@
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
+import {
+  CATALOG_KIND_DEFINITIONS,
+  catalogPageCount,
+  type CatalogItem,
+  type CatalogKind,
+  type CatalogPage,
+  type BaseModelItem,
+} from '../../catalog/contract.ts'
+import type {
+  Branch,
+  FunctionBinding,
+  JsonValue,
+  Task,
+  TaskDraft,
+  WorkbenchRun,
+} from '../../workbench/contract.ts'
+import type {
+  ExperimentActionType,
+  ExperimentPage,
+  ExperimentWorkbenchAction,
+  ExperimentWorkbenchProps,
+} from './experiment-contract.ts'
+import {
+  ExperimentInputDescriptionCache,
+  readExperimentParameter,
+  experimentSizeOptions,
+} from './experiment-input.ts'
+import type {
+  WorkflowRuntimeParameterInspection,
+  StandardRuntimeParameterKind,
+} from '../../generation/inspection-contract.ts'
+import { ExperimentWorkbenchStore } from './experiment-store.ts'
+import { experimentWorkbenchStyles } from './experiment-style.ts'
+import {
+  CATALOG_FIELDS,
+  type CatalogDetails,
+} from '../../catalog/details-schema.ts'
+
+export type {
+  ExperimentWorkbenchAction,
+  ExperimentWorkbenchProps,
+} from './experiment-contract.ts'
+const icons = {
+  branch: 'M5 3v12a3 3 0 0 0 3 3h8M5 7h6a4 4 0 0 0 4-4',
+  run: 'm7 4 11 8-11 8Z',
+  star: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9Z',
+  plus: 'M12 5v14M5 12h14',
+  history: 'M3 11a9 9 0 1 1 3 8M3 4v7h7M12 7v6l4 2',
+  compare: 'M9 3v18M15 3v18M4 7h4M16 17h4',
+  grid: 'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z',
+}
+const shortId = (value: string) => value.length > 16 ? `${value.slice(0, 12)}…` : value
+function Identifier({ value }: { readonly value: string }) {
+  return <span title={value}>{shortId(value)}</span>
+}
+function Icon({ name }: { readonly name: keyof typeof icons }) {
+  return (
+    <svg
+      className="icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={icons[name]} />
+    </svg>
+  )
+}
+function Button({
+  children,
+  onClick,
+  kind = '',
+  icon,
+  disabled,
+  label,
+}: {
+  readonly children: ReactNode
+  readonly onClick?: () => void
+  readonly kind?: string
+  readonly icon?: keyof typeof icons
+  readonly disabled?: boolean
+  readonly label?: string
+}) {
+  return (
+    <button
+      type="button"
+      className={`btn ${kind}`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+    >
+      {icon && <Icon name={icon} />}
+      {children}
+    </button>
+  )
+}
+const pendingRun = (run: WorkbenchRun) =>
+  !['succeeded', 'failed', 'cancelled', 'canceled'].includes(run.status)
+const busyTask = (task: Task) =>
+  ['pending', 'running', 'waiting_input', 'waiting_generation'].includes(
+    task.status,
+  )
+function Status({ run }: { readonly run: WorkbenchRun }) {
+  const running = pendingRun(run)
+  return (
+    <span
+      className={`pill ${run.status === 'failed' ? 'red' : running ? 'amber' : ''}`}
+    >
+      <i className="dot" />
+      {run.status === 'succeeded'
+        ? '成功'
+        : run.status === 'failed'
+          ? '运行失败'
+          : running
+            ? '运行中'
+            : '已取消'}
+    </span>
+  )
+}
+function PanelHead({
+  title,
+  description,
+  children,
+}: {
+  readonly title: string
+  readonly description?: string
+  readonly children?: ReactNode
+}) {
+  return (
+    <div className="workbench-head">
+      <div className="row between">
+        <h1>{title}</h1>
+        {children}
+      </div>
+      {description && <p>{description}</p>}
+    </div>
+  )
+}
+
+export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
+  const storage = useMemo(() => {
+    if (props.storage) return props.storage
+    try {
+      return typeof localStorage === 'undefined' ? undefined : localStorage
+    } catch {
+      return undefined
+    }
+  }, [props.storage])
+  const store = useMemo(
+    () => new ExperimentWorkbenchStore(props.remote, storage),
+    [props.remote, storage],
+  )
+  const inputDescriptionCache = useMemo(
+    () => new ExperimentInputDescriptionCache(props.remote.getInputDescription),
+    [props.remote],
+  )
+  const [inputDescriptions, setInputDescriptions] = useState<
+    Readonly<Record<string, WorkflowRuntimeParameterInspection | null>>
+  >({})
+  const state = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot,
+  )
+  const [message, setMessage] = useState<string | null>(null)
+  const [sheet, setSheet] = useState(false)
+  const [modal, setModal] = useState<
+    'new-work' | 'new-workspace' | 'branch' | 'image' | null
+  >(null)
+  const [search, setSearch] = useState('')
+  const [draftEdits, setDraftEdits] = useState<Record<string, string>>({})
+  const host = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    store.setWorkspace(props.workspaceId)
+  }, [store, props.workspaceId])
+  useEffect(() => {
+    const sync = () =>
+      store.setVisible(
+        props.visible !== false &&
+          (typeof document === 'undefined' || !document.hidden),
+      )
+    sync()
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
+  }, [store, props.visible])
+  useEffect(() => () => store.dispose(), [store])
+  useEffect(() => {
+    setDraftEdits({})
+    setModal(null)
+    setSheet(false)
+    setMessage(null)
+  }, [state.workspaceId, state.view.workId, state.view.branchId])
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setModal(null)
+        setSheet(false)
+      }
+    }
+    document.addEventListener('keydown', keydown)
+    return () => document.removeEventListener('keydown', keydown)
+  }, [])
+  const p = state.projection,
+    view = state.view
+  const workspace = props.workspaces.find(
+    (item) => item.id === state.workspaceId,
+  )
+  const work = p?.works.find((item) => item.work_id === view.workId)
+  const branch = p?.branches.find((item) => item.branch_id === view.branchId)
+  const run = p?.runs.find((item) => item.run_id === view.selectedRunId)
+  const taskFor = (item: WorkbenchRun) =>
+    p?.tasks.find((task) => task.task_id === item.workbench_task_id)
+  const branchFor = (item: WorkbenchRun) =>
+    p?.branches.find((branch) => branch.branch_id === taskFor(item)?.branch_id)
+  const branchRuns = (id: string) =>
+    p?.runs.filter((item) => taskFor(item)?.branch_id === id) ?? []
+  useEffect(() => {
+    if (
+      !state.workspaceId ||
+      !view.workId ||
+      !branch ||
+      props.visible === false
+    )
+      return
+    let active = true
+    const workspaceId = state.workspaceId,
+      workId = view.workId
+    const requests = [
+      {
+        scope: { workspaceId, workId, branchId: branch.branch_id },
+        input: branch.draft.generation_input,
+      },
+      ...(p?.runs ?? []).flatMap((run) => {
+        const task = p?.tasks.find(
+          (task) => task.task_id === run.workbench_task_id,
+        )
+        return task
+          ? [
+              {
+                scope: {
+                  workspaceId,
+                  workId,
+                  branchId: task.branch_id,
+                  runId: run.run_id,
+                },
+                input: run.generation_input,
+              },
+            ]
+          : []
+      }),
+    ]
+    for (const request of requests)
+      void inputDescriptionCache
+        .load(request.scope, request.input)
+        .then((description) => {
+          if (active)
+            setInputDescriptions((current) => ({
+              ...current,
+              [inputDescriptionCache.key(workspaceId, request.input)]:
+                description,
+            }))
+        })
+        .catch((error) => {
+          if (active)
+            setMessage(
+              error instanceof Error
+                ? error.message
+                : '输入字段读取失败，请刷新工作台。',
+            )
+        })
+    return () => {
+      active = false
+    }
+  }, [
+    inputDescriptionCache,
+    state.workspaceId,
+    view.workId,
+    branch?.branch_id,
+    branch?.draft.generation_input.instance_id,
+    branch?.draft.generation_input.template_id,
+    p?.runs,
+    p?.tasks,
+    props.visible,
+  ])
+  const descriptionFor = (input: WorkbenchRun['generation_input']) =>
+    state.workspaceId
+      ? inputDescriptions[inputDescriptionCache.key(state.workspaceId, input)]
+      : undefined
+  const runParameter = (
+    run: WorkbenchRun,
+    kind: StandardRuntimeParameterKind,
+  ) =>
+    readExperimentParameter(
+      descriptionFor(run.generation_input),
+      run.generation_input.parameters,
+      kind,
+    )
+  const binding = (kind: string) =>
+    p?.functions.find((item) => item.kind === kind && item.builtin) ??
+    p?.functions.find((item) => item.kind === kind)
+  const presetName = (id?: string) =>
+    props.presets?.find((preset) => preset.id === id)?.name ?? id ?? '未配置'
+  const modelLabel = (draft: TaskDraft) =>
+    props.baseModels?.find((item) => item.id === draft.base_model_id)?.label ||
+    draft.base_model_id ||
+    draft.generation_input.model?.file_name ||
+    '未选择底模'
+  const formatAgentModel = (
+    model: FunctionBinding['agent_model'] | undefined,
+  ) => {
+    if (!model) return '未配置'
+    const provider = props.agentModelGroups?.find(
+      (group) => group.id === model.provider,
+    )
+    const selected = provider?.models.find((item) => item.id === model.model)
+    const effort = selected?.reasoning?.efforts.find(
+      (item) => item.id === model.reasoningEffort,
+    )
+    return [
+      provider?.name ?? model.provider,
+      selected?.name ?? model.model,
+      effort?.name ?? model.reasoningEffort,
+    ]
+      .filter(Boolean)
+      .join(' · ')
+  }
+  const agentModel = (binding: FunctionBinding | undefined) =>
+    formatAgentModel(binding?.agent_model)
+  const runModelLabel = (item: WorkbenchRun) => {
+    const draft = taskFor(item)?.input
+    return draft
+      ? modelLabel(draft)
+      : item.generation_input.model?.file_name || '未选择底模'
+  }
+  const changePage = (page: ExperimentPage) => {
+    store.updateView({ page })
+    setSearch('')
+  }
+  const action = async (
+    type: ExperimentActionType,
+    extra: Partial<ExperimentWorkbenchAction> = {},
+  ) => {
+    if (!state.workspaceId && type !== 'new-workspace') return
+    try {
+      const selection = await props.onAction({
+        type,
+        workspaceId: state.workspaceId ?? '',
+        ...(view.workId ? { workId: view.workId } : {}),
+        ...(view.branchId ? { branchId: view.branchId } : {}),
+        ...(run ? { runId: run.run_id } : {}),
+        ...extra,
+      })
+      if (selection) {
+        store.setWorkspace(selection.workspaceId)
+        if (selection.workId) store.selectWork(selection.workId)
+        if (selection.branchId)
+          store.updateView({
+            branchId: selection.branchId,
+            selectedRunId: null,
+            inspectRun: false,
+            compareRunId: null,
+            page: 'workbench',
+          })
+      }
+      await store.refresh()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
+    }
+  }
+  const referenceRunIds =
+    run && view.compareRunId ? [run.run_id, view.compareRunId] : []
+  const agentButton = (label: string, kind: string, disabled = false) => (
+    <Button
+      kind="small agent-action"
+      disabled={disabled || !binding(kind)}
+      onClick={() =>
+        void action('agent-action', {
+          id: binding(kind)?.function_id,
+          ...(kind === 'compare' ? { referenceRunIds } : {}),
+        })
+      }
+    >
+      {label}
+    </Button>
+  )
+  const customActions = (kinds: readonly string[], disabled = false) =>
+    p?.functions
+      .filter((item) => !item.builtin && kinds.includes(item.kind))
+      .map((item) => (
+        <Button
+          key={item.function_id}
+          kind="small agent-action"
+          disabled={disabled}
+          onClick={() =>
+            void action('agent-action', {
+              id: item.function_id,
+              ...(item.kind === 'compare' ? { referenceRunIds } : {}),
+            })
+          }
+        >
+          {item.name}
+        </Button>
+      ))
+  const back = (
+    <Button kind="small" onClick={() => changePage('workbench')}>
+      返回结果
+    </Button>
+  )
+  const media = (item: WorkbenchRun) =>
+    (item as WorkbenchRun & { media?: readonly { url: string }[] }).media?.[0]
+      ?.url
+  const runVisual = (item: WorkbenchRun, large = false) =>
+    item.status === 'succeeded' ? (
+      media(item) ? (
+        large ? (
+          <button
+            type="button"
+            className="artwork preview-image"
+            onClick={() => {
+              store.selectRun(item.run_id, view.inspectRun)
+              setModal('image')
+            }}
+            aria-label={`查看原图 ${item.run_id}`}
+          >
+            <img src={media(item)} alt={item.title} />
+          </button>
+        ) : (
+          <img src={media(item)} alt={item.title} />
+        )
+      ) : (
+        <span className="muted">暂无图片</span>
+      )
+    ) : pendingRun(item) ? (
+      <span className="loading-ring" aria-hidden="true" />
+    ) : (
+      <span className="run-failure-symbol" aria-hidden="true">
+        ×
+      </span>
+    )
+  const renderRunCard = (item: WorkbenchRun, comparing = false) => (
+    <button
+      key={item.run_id}
+      type="button"
+      className={`run-card status-${pendingRun(item) ? 'running' : item.status} ${(comparing ? view.compareRunId : view.selectedRunId) === item.run_id ? 'active' : ''}`}
+      aria-label={`${comparing ? '比较运行' : '查看运行'} ${item.run_id}`}
+      aria-pressed={
+        (comparing ? view.compareRunId : view.selectedRunId) === item.run_id
+      }
+      onClick={() =>
+        comparing
+          ? store.updateView({ compareRunId: item.run_id })
+          : store.selectRun(item.run_id)
+      }
+    >
+      <div className="run-card-art">{runVisual(item)}</div>
+      <div className="run-card-heading">
+        <b className="mono"><Identifier value={item.run_id} /></b>
+        <Status run={item} />
+      </div>
+      <small>任务 <Identifier value={item.workbench_task_id} /></small>
+      <small>发起者：{item.initiator === 'human' ? '人工' : 'Agent'}</small>
+      <small>
+        {new Date(item.created_at).toLocaleTimeString('zh-CN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })}
+        {item.retry_of_run_id ? ` · 重试来源 ${item.retry_of_run_id}` : ''}
+      </small>
+      <small className="run-preset">
+        {presetName(taskFor(item)?.binding_snapshot.preset_id)}
+      </small>
+    </button>
+  )
+  const treeNode = (item: Branch, depth: number): ReactNode => {
+    const children = p!.branches.filter(
+        (child) => child.parent_branch_id === item.branch_id,
+      ),
+      open = view.expandedBranches.includes(item.branch_id),
+      active = item.branch_id === view.branchId
+    return (
+      <div
+        key={item.branch_id}
+        role="treeitem"
+        aria-selected={active}
+        aria-level={depth + 1}
+        aria-expanded={children.length ? open : undefined}
+      >
+        <div className={`tree-row ${active ? 'active' : ''}`}>
+          {children.length ? (
+            <button
+              type="button"
+              className="tree-toggle"
+              aria-label={`${open ? '收起' : '展开'}${item.name}`}
+              onClick={() =>
+                store.updateView({
+                  expandedBranches: open
+                    ? view.expandedBranches.filter(
+                        (id) => id !== item.branch_id,
+                      )
+                    : [...view.expandedBranches, item.branch_id],
+                })
+              }
+            >
+              {open ? '⌄' : '›'}
+            </button>
+          ) : (
+            <span className="tree-toggle" />
+          )}
+          <button
+            type="button"
+            className={`branch-item ${active ? 'active' : ''}`}
+            aria-label={`切换分支 ${item.name}`}
+            onClick={() => store.selectBranch(item.branch_id)}
+          >
+            <span className="branch-name">
+              {item.name}
+              {branchRuns(item.branch_id).some(pendingRun) && (
+                <span className="pill amber">
+                  <i className="dot" />
+                  运行中
+                </span>
+              )}
+              {p!.tasks.some(
+                (task) => task.branch_id === item.branch_id && busyTask(task),
+              ) && <span className="pill amber">Agent 执行中</span>}
+            </span>
+            <small>
+              {modelLabel(item.draft)} · {branchRuns(item.branch_id).length}{' '}
+              次运行
+            </small>
+            <span className="branch-origin" title={item.source_run_id ?? item.source_artifact_id ?? undefined}>
+              {item.parent_branch_id
+                ? `来源 ${p!.branches.find((parent) => parent.branch_id === item.parent_branch_id)?.name ?? ''} · ${shortId(item.source_run_id || item.source_artifact_id || '任务输入')}`
+                : '主分支'}
+            </span>
+          </button>
+        </div>
+        {children.length > 0 && open && (
+          <div className="tree-children" role="group">
+            {children.map((child) => treeNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+  const scrollPanel = (key: string) => ({
+    ref: (element: HTMLDivElement | null) => {
+      const position = view.scrollPositions[key]
+      if (element && position && element.dataset.restored !== key) {
+        element.scrollTop = position.top
+        element.scrollLeft = position.left
+        element.dataset.restored = key
+      }
+    },
+    onScroll: (event: React.UIEvent<HTMLDivElement>) => {
+      const element = event.currentTarget
+      store.updateView({
+        scrollPositions: {
+          ...store.getSnapshot().view.scrollPositions,
+          [key]: { top: element.scrollTop, left: element.scrollLeft },
+        },
+      })
+    },
+  })
+  const sidebar = (
+    <aside className="sidebar">
+      <div className="sidebar-head">
+        <div className="row between">
+          <h3>当前工作的分支</h3>
+          <small>共 {p?.branches.length ?? 0} 条</small>
+        </div>
+      </div>
+      <div
+        className="branch-list"
+        role="tree"
+        aria-label="当前工作分支树"
+        {...scrollPanel(`branches:${view.workId}`)}
+      >
+        {p?.branches
+          .filter((item) => !item.parent_branch_id)
+          .map((item) => treeNode(item, 0))}
+      </div>
+      <div className="sidebar-foot">
+        <Button icon="grid" onClick={() => changePage('graph')}>
+          查看分支图
+        </Button>
+      </div>
+    </aside>
+  )
+  const compare = p?.runs.find((item) => item.run_id === view.compareRunId)
+  const results = (
+    <main className="center">
+      <PanelHead title={work?.name ?? ''} description={work?.goal}>
+        <Button
+          kind="small"
+          icon="compare"
+          disabled={!run || (p?.runs.length ?? 0) < 2}
+          onClick={() =>
+            store.updateView({
+              compareRunId:
+                p?.runs.find((item) => item.run_id !== run?.run_id)?.run_id ??
+                null,
+            })
+          }
+        >
+          比较运行
+        </Button>
+      </PanelHead>
+      <div className="contextbar">
+        <Icon name="branch" />
+        <b>{branch?.name}</b>
+        {run && (
+          <>
+            <span className="muted">/</span>
+            <b className="mono"><Identifier value={run.run_id} /></b>
+            <span>任务 <Identifier value={run.workbench_task_id} /></span>
+          </>
+        )}
+        <span className="spacer" />
+        <Button
+          kind="small quiet"
+          icon="branch"
+          onClick={() => setModal('branch')}
+        >
+          {run ? '从此运行创建分支' : '创建子分支'}
+        </Button>
+      </div>
+      {compare && run ? (
+        <>
+          <div className="contextbar">
+            <span className="muted">比较</span>
+            <b className="mono">
+              <Identifier value={compare.run_id} /> / <Identifier value={run.run_id} />
+            </b>
+            <span className="spacer" />
+            {agentButton(
+              '比较结果',
+              'compare',
+              [compare, run].some((item) => item.status !== 'succeeded'),
+            )}
+            {customActions(['compare'])}
+            <Button
+              kind="small quiet"
+              onClick={() => store.updateView({ compareRunId: null })}
+            >
+              结束比较
+            </Button>
+          </div>
+          <div className="canvas">
+            <div className="compare-grid">
+              {[compare, run].map((item) => (
+                <div key={item.run_id} className="compare-cell">
+                  {runVisual(item, true)}
+                  <h3>
+                    <Identifier value={item.run_id} /> · {branchFor(item)?.name}
+                  </h3>
+                  <p>
+                    {runModelLabel(item)} · Seed{' '}
+                    {String(runParameter(item, 'seed') ?? '')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="canvas">
+          {!run ? (
+            <div className="empty">当前分支暂无运行记录。</div>
+          ) : run.status === 'failed' ? (
+            <div className="error-stage">
+              <span className="pill red"><Identifier value={run.run_id} /></span>
+              <h3 style={{ marginTop: 12 }}>运行失败</h3>
+              <p>{run.error?.message}</p>
+              <Button
+                kind="primary"
+                icon="run"
+                onClick={() => void action('retry')}
+              >
+                重试任务
+              </Button>
+              {agentButton('诊断失败', 'diagnose')}
+              {customActions(['diagnose'])}
+            </div>
+          ) : pendingRun(run) ? (
+            <div className="empty running-stage">
+              <span className="loading-ring" aria-hidden="true" />
+              <h3>运行中</h3>
+            </div>
+          ) : (
+            runVisual(run, true)
+          )}
+        </div>
+      )}
+      {run && (
+        <div className="stage-caption">
+          <div>
+            <div className="row">
+              <h3>{run.title}</h3>
+              <span role="status" aria-live="polite">
+                <Status run={run} />
+              </span>
+            </div>
+            <small>
+              <Identifier value={run.run_id} /> · 发起者：
+              {run.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
+              {runModelLabel(run)} · Seed{' '}
+              {String(runParameter(run, 'seed') ?? '')} ·{' '}
+              {String(runParameter(run, 'steps') ?? '')} 步
+            </small>
+            <small className="preset-provenance">
+              执行预设：{presetName(taskFor(run)?.binding_snapshot.preset_id)}
+            </small>
+            <small className="run-agent-model">
+              Agent 模型：
+              {formatAgentModel(taskFor(run)?.binding_snapshot.agentModel)}
+            </small>
+          </div>
+          <div className="actions">
+            <Button
+              kind="small"
+              icon="star"
+              disabled={run.status !== 'succeeded'}
+              onClick={() =>
+                void action('favorite', { id: run.run_id, value: 'run' })
+              }
+            >
+              {p?.favorites.some(
+                (item) =>
+                  item.target_type === 'run' && item.target_id === run.run_id,
+              )
+                ? '移除收藏'
+                : '收藏运行'}
+            </Button>
+            <Button
+              kind="small"
+              disabled={pendingRun(run)}
+              onClick={() => void action('evaluate')}
+            >
+              记录评价与经验
+            </Button>
+          </div>
+        </div>
+      )}
+      {run?.review && (
+        <details className="saved-review">
+          <summary>运行评价</summary>
+          {run.review.observation && <p>观察：{run.review.observation}</p>}
+          <p>评价：{run.review.conclusion}</p>
+        </details>
+      )}
+      <section
+        className="run-strip"
+        aria-label={compare ? '比较对象' : '当前分支的运行'}
+      >
+        <div className="strip-head">
+          <span>{compare ? '比较对象' : '当前分支的运行'}</span>
+          <span className="muted">
+            {
+              (compare
+                ? p?.runs.filter((item) => item.run_id !== run?.run_id)
+                : branchRuns(branch?.branch_id ?? '')
+              )?.length
+            }{' '}
+            次运行
+          </span>
+        </div>
+        <div
+          className="run-cards"
+          {...scrollPanel(`runs:${view.workId}:${view.branchId}:${!!compare}`)}
+        >
+          {(compare
+            ? p?.runs.filter((item) => item.run_id !== run?.run_id)
+            : branchRuns(branch?.branch_id ?? '')
+          )?.map((item) => renderRunCard(item, !!compare))}
+          {!branchRuns(branch?.branch_id ?? '').length && (
+            <span className="muted">暂无运行记录</span>
+          )}
+        </div>
+      </section>
+    </main>
+  )
+
+  const graphNode = (item: Branch): ReactNode => {
+    const children = p!.branches.filter(
+      (child) => child.parent_branch_id === item.branch_id,
+    )
+    return (
+      <li key={item.branch_id}>
+        <article className="branch-graph-node">
+          <div className="row between">
+            <h3>{item.name}</h3>
+            <Button
+              kind="small"
+              onClick={() => {
+                store.selectBranch(item.branch_id)
+                changePage('workbench')
+              }}
+            >
+              进入分支
+            </Button>
+          </div>
+          <p title={item.source_run_id ?? item.source_artifact_id ?? undefined}>
+            {item.parent_branch_id
+              ? `来源：${p!.branches.find((parent) => parent.branch_id === item.parent_branch_id)?.name} · ${shortId(item.source_run_id || item.source_artifact_id || '任务输入')}`
+              : '主分支'}
+          </p>
+          <div className="branch-graph-runs">
+            {branchRuns(item.branch_id).map((item) => (
+              <Button
+                key={item.run_id}
+                kind="small"
+                onClick={() => store.selectRun(item.run_id)}
+              >
+                <Identifier value={item.run_id} /> ·{' '}
+                {item.status === 'succeeded'
+                  ? '成功'
+                  : item.status === 'failed'
+                    ? '运行失败'
+                    : '运行中'}
+              </Button>
+            ))}
+            {!branchRuns(item.branch_id).length && <small>暂无运行记录</small>}
+          </div>
+        </article>
+        {children.length > 0 && <ul>{children.map(graphNode)}</ul>}
+      </li>
+    )
+  }
+  const graph = (
+    <main className="center">
+      <PanelHead title="分支图">{back}</PanelHead>
+      <div className="graph" {...scrollPanel(`graph:${view.workId}`)}>
+        <ul className="branch-graph">
+          {p?.branches.filter((item) => !item.parent_branch_id).map(graphNode)}
+        </ul>
+      </div>
+    </main>
+  )
+  const favoritePage = view.page === 'favorites'
+  const experiences =
+    p?.experiences.filter(
+      (item) =>
+        (!favoritePage ||
+          p.favorites.some(
+            (favorite) =>
+              favorite.target_type === 'experience' &&
+              favorite.target_id === item.experience_id,
+          )) &&
+        [item.title, item.conditions, item.note, item.base_model_id]
+          .join(' ')
+          .toLowerCase()
+          .includes(search.toLowerCase()),
+    ) ?? []
+  const library = (
+    <main className="center">
+      <PanelHead title={favoritePage ? '收藏' : '经验'}>{back}</PanelHead>
+      <div className="library" {...scrollPanel(`${view.page}:${view.workId}`)}>
+        <div className="library-tools">
+          <input
+            type="search"
+            placeholder="搜索结论、底模或适用条件"
+            aria-label="搜索经验与收藏"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+        {favoritePage && (
+          <div className="eyebrow" style={{ margin: '5px 0 14px' }}>
+            收藏的经验
+          </div>
+        )}
+        <div>
+          {experiences.map((item) => (
+            <article className="experience-card" key={item.experience_id}>
+              <span className="eyebrow">{item.base_model_id}</span>
+              <h3>{item.title}</h3>
+              <p>
+                {item.conditions}
+                <br />
+                {item.note}
+              </p>
+              <div className="evidence">
+                <span className="muted">支持记录</span>
+                {item.evidence_run_ids.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => store.selectRun(id)}
+                  >
+                    {id} ↗
+                  </button>
+                ))}
+              </div>
+              <div className="row">
+                <Button
+                  kind="small"
+                  icon="branch"
+                  onClick={() =>
+                    void action('reuse', { id: item.experience_id })
+                  }
+                >
+                  复用经验
+                </Button>
+                <Button
+                  kind="small quiet"
+                  icon="star"
+                  onClick={() =>
+                    void action('favorite', {
+                      id: item.experience_id,
+                      value: 'experience',
+                    })
+                  }
+                >
+                  {p?.favorites.some(
+                    (favorite) =>
+                      favorite.target_type === 'experience' &&
+                      favorite.target_id === item.experience_id,
+                  )
+                    ? '移除收藏'
+                    : '添加收藏'}
+                </Button>
+              </div>
+            </article>
+          ))}
+          {!experiences.length && (
+            <div className="empty">
+              <h3>{favoritePage ? '尚未收藏经验' : '尚未保存经验'}</h3>
+              <Button
+                kind="small"
+                onClick={() =>
+                  changePage(favoritePage ? 'experiences' : 'workbench')
+                }
+              >
+                {favoritePage ? '查看经验' : '查看结果'}
+              </Button>
+            </div>
+          )}
+          {favoritePage &&
+            p?.favorites
+              .filter((item) => item.target_type === 'run')
+              .map((item) =>
+                p.runs.find((run) => run.run_id === item.target_id),
+              )
+              .filter((item): item is WorkbenchRun => !!item)
+              .map((item) => (
+                <article className="experience-card" key={item.run_id}>
+                  <h3>
+                    <Identifier value={item.run_id} /> · {item.title}
+                  </h3>
+                  <p>
+                    {item.generation_input.model?.file_name} ·{' '}
+                    {branchFor(item)?.name} · 任务 {item.workbench_task_id}
+                  </p>
+                  <div className="row">
+                    <Button
+                      kind="small"
+                      onClick={() => store.selectRun(item.run_id)}
+                    >
+                      查看运行
+                    </Button>
+                    <Button
+                      kind="small quiet"
+                      onClick={() =>
+                        void action('favorite', {
+                          id: item.run_id,
+                          value: 'run',
+                        })
+                      }
+                    >
+                      移除收藏
+                    </Button>
+                  </div>
+                </article>
+              ))}
+        </div>
+      </div>
+    </main>
+  )
+  const taskStatus: Record<Task['status'], string> = {
+    pending: '等待执行',
+    running: 'Agent 执行中',
+    waiting_input: '等待输入',
+    waiting_generation: '等待生成',
+    needs_attention: '需要处理',
+    paused: '已暂停',
+    succeeded: '已完成',
+    failed: '失败',
+    interrupted: '已中断',
+  }
+  const tasks = (
+    <main className="center">
+      <PanelHead title="任务">{back}</PanelHead>
+      <div className="agent-task-list" {...scrollPanel(`tasks:${view.workId}`)}>
+        {p?.tasks
+          .slice()
+          .reverse()
+          .map((item) => {
+            const artifacts = p.artifacts.filter(
+                (artifact) => artifact.task_id === item.task_id,
+              ),
+              question = artifacts
+                .slice()
+                .reverse()
+                .find((artifact) => artifact.type === 'question'),
+              taskRuns = p.runs.filter(
+                (run) => run.workbench_task_id === item.task_id,
+              )
+            return (
+              <article
+                className="agent-task-card"
+                data-task={item.task_id}
+                data-session={item.session_id ?? undefined}
+                key={item.task_id}
+              >
+                <div className="row between">
+                  <h2>{item.title}</h2>
+                  <span
+                    className={`pill ${item.status === 'succeeded' ? '' : item.status === 'failed' ? 'red' : 'amber'}`}
+                  >
+                    {taskStatus[item.status]}
+                  </span>
+                </div>
+                <div className="task-meta">
+                  <span className="mono"><Identifier value={item.task_id} /></span>
+                  <Button
+                    kind="small quiet"
+                    onClick={() => {
+                      store.selectBranch(item.branch_id)
+                      changePage('workbench')
+                    }}
+                  >
+                    {
+                      p.branches.find(
+                        (branch) => branch.branch_id === item.branch_id,
+                      )?.name
+                    }
+                  </Button>
+                </div>
+                <p className="task-preset">
+                  Agent 预设：{presetName(item.binding_snapshot.preset_id)}
+                </p>
+                <p className="task-model">
+                  Agent 模型：
+                  {formatAgentModel(item.binding_snapshot.agentModel)}
+                </p>
+                <p className="task-request">
+                  {item.input.requirements.instructions ||
+                    item.input.requirements.original_request}
+                </p>
+                <div className="task-skills">
+                  {item.input.requested_skill ? (
+                    <>
+                      <span>Skill</span>
+                      <code>{item.input.requested_skill}</code>
+                    </>
+                  ) : (
+                    <span>使用预设中的工具</span>
+                  )}
+                </div>
+                {item.status === 'running' && (
+                  <div className="task-progress">
+                    <span className="loading-ring" />
+                    Agent 执行中
+                  </div>
+                )}
+                {item.error && (
+                  <p className="task-conflict">{item.error.message}</p>
+                )}
+                {item.status === 'waiting_input' &&
+                  question?.artifact.type === 'question' && (
+                    <form
+                      className="task-answer"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        const form = event.currentTarget
+                        void action('task-answer', {
+                          taskId: item.task_id,
+                          id: question.artifact_id,
+                          value: new FormData(form).get('answer'),
+                        })
+                      }}
+                    >
+                      <label className="field">
+                        <span>{question.artifact.question}</span>
+                        <textarea
+                          aria-label="补充需求"
+                          name="answer"
+                          required
+                        />
+                      </label>
+                      <button className="btn primary" type="submit">
+                        回复并继续
+                      </button>
+                    </form>
+                  )}
+                {artifacts
+                  .filter((artifact) => artifact.type !== 'question')
+                  .map((artifact) => (
+                    <div className="task-output" key={artifact.artifact_id}>
+                      {artifact.artifact.type === 'prompt' ? (
+                        <>
+                          <h3>正向提示词</h3>
+                          <p>{artifact.artifact.positive_prompt}</p>
+                          <h3>负向提示词</h3>
+                          <p>{artifact.artifact.negative_prompt || '—'}</p>
+                        </>
+                      ) : artifact.artifact.type === 'review' ? (
+                        <>
+                          <h3>观察</h3>
+                          <p>{artifact.artifact.observation}</p>
+                          <h3>评价结论</h3>
+                          <p>{artifact.artifact.conclusion}</p>
+                        </>
+                      ) : artifact.artifact.type === 'experience' ? (
+                        <>
+                          <h3>{artifact.artifact.title}</h3>
+                          <p>{artifact.artifact.conditions}</p>
+                          <p>{artifact.artifact.note}</p>
+                        </>
+                      ) : (
+                        <pre>{JSON.stringify(artifact.artifact, null, 2)}</pre>
+                      )}
+                      {artifact.disposition === 'candidate' && (
+                        <Button
+                          kind="small primary"
+                          onClick={() =>
+                            void action('task-apply', {
+                              taskId: item.task_id,
+                              id: artifact.artifact_id,
+                            })
+                          }
+                        >
+                          {artifact.type === 'prompt'
+                            ? '采用提示词'
+                            : artifact.type === 'parameters'
+                              ? '采用参数'
+                              : artifact.type === 'resources'
+                                ? '采用资源'
+                                : artifact.type === 'review'
+                                  ? '填入评价'
+                                  : artifact.type === 'experience'
+                                    ? '填入经验'
+                                    : '采用建议输入'}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                {taskRuns.map((run) => (
+                  <div className="task-output" key={run.run_id}>
+                    <Button
+                      kind="small"
+                      onClick={() => store.selectRun(run.run_id)}
+                    >
+                      查看运行 <Identifier value={run.run_id} />
+                    </Button>
+                  </div>
+                ))}
+                <details className="task-input">
+                  <summary>查看任务详情</summary>
+                  <p>执行要求</p>
+                  <pre className="request-snapshot">{item.request_text}</pre>
+                  <p>任务输入</p>
+                  <pre className="request-snapshot" aria-label="任务输入 JSON">
+                    {JSON.stringify(item.input, null, 2)}
+                  </pre>
+                </details>
+                <div className="row task-actions">
+                  {item.status === 'running' && (
+                    <Button
+                      kind="small"
+                      onClick={() =>
+                        void action('task-interrupt', { taskId: item.task_id })
+                      }
+                    >
+                      中断任务
+                    </Button>
+                  )}
+                  {item.status === 'interrupted' && (
+                    <Button
+                      kind="small primary"
+                      onClick={() =>
+                        void action('task-resume', { taskId: item.task_id })
+                      }
+                    >
+                      继续任务
+                    </Button>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        {!p?.tasks.length && (
+          <div className="empty">
+            <h3>暂无任务</h3>
+            {agentButton('生成提示词', 'prompt')}
+          </div>
+        )}
+      </div>
+    </main>
+  )
+  const inputs =
+    view.inspectRun && run && branch
+      ? {
+          ...branch.draft,
+          generation_input: run.generation_input,
+          prompt_input: {
+            positive_prompt: String(runParameter(run, 'positive_prompt') ?? ''),
+            negative_prompt: String(runParameter(run, 'negative_prompt') ?? ''),
+          },
+        }
+      : branch?.draft
+  const inputDescription = inputs
+    ? descriptionFor(inputs.generation_input)
+    : null
+  const inputParameter = (kind: StandardRuntimeParameterKind) =>
+    inputs
+      ? readExperimentParameter(
+          inputDescription,
+          inputs.generation_input.parameters,
+          kind,
+        )
+      : undefined
+  const sizes = inputs
+    ? experimentSizeOptions(
+        inputDescription,
+        inputs.generation_input.parameters,
+      )
+    : []
+  const currentSize = sizes.find((size) => size.current)?.value ?? ''
+  const experiment = p?.experiments.find(
+    (item) =>
+      p.tasks.find((task) => task.task_id === item.task_id)?.branch_id ===
+        branch?.branch_id && ['running', 'paused'].includes(item.control_state),
+  )
+  const locked = view.inspectRun || !!experiment
+  const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
+  const field = (
+    label: string,
+    id: string,
+    value: JsonValue | undefined,
+    options: {
+      multiline?: boolean
+      short?: boolean
+      type?: string
+      min?: number
+      max?: number
+      step?: number
+      maxLength?: number
+      branch?: boolean
+    } = {},
+  ) => {
+    const text =
+        (!locked ? draftEdits[id] : undefined) ??
+        (value === null || value === undefined ? '' : String(value)),
+      commit = (value: string) =>
+        void action(options.branch ? 'update-branch' : 'update-draft', {
+          field: id,
+          value: options.type === 'number' ? Number(value) : value,
+        })
+    const common = {
+      id,
+      'aria-label': label,
+      value: text,
+      onChange: (
+        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      ) =>
+        setDraftEdits((current) => ({ ...current, [id]: event.target.value })),
+      onBlur: (
+        event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+      ) => {
+        if (event.target.value !== String(value ?? ''))
+          commit(event.target.value)
+      },
+    }
+    return (
+      <label className="field">
+        <span>{label}</span>
+        {options.multiline ? (
+          <textarea
+            {...common}
+            className={
+              options.short
+                ? id === 'original_request'
+                  ? 'short branch-goal'
+                  : 'short'
+                : ''
+            }
+          />
+        ) : (
+          <input
+            {...common}
+            type={options.type ?? 'text'}
+            min={options.min}
+            max={options.max}
+            step={options.step}
+            maxLength={options.maxLength}
+          />
+        )}
+      </label>
+    )
+  }
+  const openCatalog = (kind: CatalogKind) => {
+    store.updateView({
+      page: 'resources',
+      catalogFilters: { ...view.catalogFilters, kind, page: 1 },
+    })
+  }
+  const inspector = branch && inputs && (
+    <aside className="inspector">
+      <header className="config-head">
+        <span className="muted">当前分支</span>
+        <h2>{branch.name}</h2>
+        <p>所属工作：{work?.name}</p>
+        <p title={branch.source_run_id ?? branch.source_artifact_id ?? undefined}>
+          起点：
+          {branch.parent_branch_id
+            ? `${p?.branches.find((item) => item.branch_id === branch.parent_branch_id)?.name} / ${shortId(branch.source_run_id || branch.source_artifact_id || '任务输入')}`
+            : '新建主分支'}
+        </p>
+      </header>
+      <div
+        className="inspector-body"
+        {...scrollPanel(`inspector:${view.workId}:${view.branchId}`)}
+      >
+        {run && (
+          <label className="snapshot-toggle">
+            <input
+              type="checkbox"
+              aria-label="查看运行输入"
+              checked={view.inspectRun}
+              onChange={(event) =>
+                store.updateView({ inspectRun: event.target.checked })
+              }
+            />
+            查看运行输入 · <Identifier value={run.run_id} />
+          </label>
+        )}
+        <div className="section-label">
+          <span title={view.inspectRun ? run?.run_id : undefined}>
+            {view.inspectRun
+              ? `${shortId(run?.run_id ?? '')} · 运行输入`
+              : experiment
+                ? '实验初始输入'
+                : '任务输入'}
+          </span>
+        </div>
+        {experiment && (
+          <div className="taskbox">
+            <span className="pill amber">
+              {experiment.control_state === 'paused' ? '已暂停' : '实验运行中'}
+            </span>
+            <p>
+              已完成 {experiment.submitted_count} / {experiment.max_runs} 次
+            </p>
+          </div>
+        )}
+        <fieldset className="configuration" disabled={locked}>
+          {field('分支名称', 'name', branch.name, {
+            maxLength: 40,
+            branch: true,
+          })}
+          {field('原始需求', 'original_request', branch.original_request, {
+            multiline: true,
+            short: true,
+            branch: true,
+          })}
+          <div className="agent-inputs">
+            {agentButton('生成提示词', 'prompt', locked)}
+            <small className="function-preset">
+              Agent 预设：{presetName(binding('prompt')?.preset_id)}
+            </small>
+            <small className="execution-model">
+              Agent 模型：{agentModel(binding('prompt'))}
+            </small>
+            {customActions(['prompt'], locked)}
+          </div>
+          <label className="field">
+            <span>ComfyUI 实例</span>
+            <select
+              aria-label="ComfyUI 实例"
+              value={inputs.generation_input.instance_id ?? ''}
+              onChange={(event) =>
+                void action('update-draft', {
+                  field: 'instance_id',
+                  value: event.target.value || null,
+                })
+              }
+            >
+              <option value="">请选择</option>
+              {props.instances?.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+              {inputs.generation_input.instance_id &&
+                !props.instances?.some(
+                  (item) => item.id === inputs.generation_input.instance_id,
+                ) && (
+                  <option value={inputs.generation_input.instance_id}>
+                    {inputs.generation_input.instance_id}
+                  </option>
+                )}
+            </select>
+          </label>
+          <section aria-label="已选资源" className="selected-resources">
+            <div className="row between">
+              <h3>已选资源</h3>
+              <Button
+                kind="small quiet"
+                icon="plus"
+                onClick={() => openCatalog('model')}
+              >
+                选择资源
+              </Button>
+            </div>
+            <div className="agent-field-action">
+              {agentButton('推荐资源', 'resources', locked)}
+            </div>
+            <div className="picked-item">
+              <span>生成模型 · {modelLabel(inputs)}</span>
+              <b>{inputs.generation_input.model?.file_name ?? '未选择'}</b>
+              <Button
+                kind="small quiet"
+                label="更换生成模型"
+                onClick={() => openCatalog('model')}
+              >
+                更换
+              </Button>
+            </div>
+            <div className="picked-item">
+              <span>Workflow 模板</span>
+              <b>{inputs.generation_input.template_id ?? '未选择'}</b>
+              <Button
+                kind="small quiet"
+                label="选择 Workflow 模板"
+                onClick={() => openCatalog('comfyui-template')}
+              >
+                {inputs.generation_input.template_id ? '更换' : '选择'}
+              </Button>
+            </div>
+            <div className="picked-loras">
+              <div className="row between">
+                <span>LoRA</span>
+                <Button
+                  kind="small quiet"
+                  icon="plus"
+                  label="添加 LoRA"
+                  onClick={() => openCatalog('lora')}
+                >
+                  添加
+                </Button>
+              </div>
+              {inputs.generation_input.loras.map((item) => (
+                <div className="picked-lora" key={item.id}>
+                  <b>{item.file_name}</b>
+                  <label>
+                    <span>权重</span>
+                    <input
+                      type="number"
+                      aria-label={`${item.file_name} 权重`}
+                      defaultValue={item.weight}
+                      step="0.05"
+                      onBlur={(event) =>
+                        void action('update-draft', {
+                          field: 'lora-weight',
+                          id: item.id,
+                          value: Number(event.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <Button
+                    kind="quiet small"
+                    label={`移除 ${item.file_name}`}
+                    onClick={() =>
+                      void action('resource-remove', {
+                        id: item.id,
+                        value: 'lora',
+                      })
+                    }
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
+              {!inputs.generation_input.loras.length && (
+                <p className="muted">未选择 LoRA</p>
+              )}
+            </div>
+          </section>
+          <section aria-label="参考上下文" className="selected-contexts">
+            <div className="row between">
+              <h3>参考上下文</h3>
+              <Button
+                kind="small quiet"
+                icon="plus"
+                label="添加参考上下文"
+                onClick={() => openCatalog('character')}
+              >
+                添加
+              </Button>
+            </div>
+            {inputs.context_refs.map((item) => (
+              <div className="context-item" key={`${item.kind}:${item.id}`}>
+                <Button
+                  kind="quiet small"
+                  onClick={() => openCatalog(item.kind)}
+                >
+                  {item.id}
+                </Button>
+                <small>
+                  {
+                    CATALOG_KIND_DEFINITIONS.find(
+                      (kind) => kind.kind === item.kind,
+                    )?.label
+                  }
+                </small>
+                <Button
+                  kind="quiet small"
+                  label={`移除 ${item.id}`}
+                  onClick={() =>
+                    void action('resource-remove', {
+                      id: item.id,
+                      value: item.kind,
+                    })
+                  }
+                >
+                  ×
+                </Button>
+              </div>
+            ))}
+            {!inputs.context_refs.length && (
+              <p className="muted">未添加参考上下文</p>
+            )}
+          </section>
+          {customActions(['resources'], locked)}
+          <details className="config-section" open>
+            <summary>提示词与参考图路径</summary>
+            <div className="agent-field-action">
+              {agentButton('改写提示词', 'rewrite', locked)}
+              {customActions(['rewrite'], locked)}
+            </div>
+            {field(
+              '正向提示词',
+              'positive_prompt',
+              inputs.prompt_input.positive_prompt,
+              { multiline: true },
+            )}
+            {field(
+              '负向提示词',
+              'negative_prompt',
+              inputs.prompt_input.negative_prompt,
+              { multiline: true, short: true },
+            )}
+            {field(
+              '参考图路径',
+              'references',
+              inputParameter('reference_image'),
+            )}
+          </details>
+          <details className="config-section" open>
+            <summary>生成参数</summary>
+            <div className="agent-field-action">
+              {agentButton('建议参数', 'parameters', locked)}
+              {customActions(['parameters'], locked)}
+            </div>
+            <div className="fields2">
+              {field('采样步数', 'steps', inputParameter('steps'), {
+                type: 'number',
+                min: 1,
+                max: 100,
+              })}
+              {field('引导强度', 'cfg', inputParameter('cfg'), {
+                type: 'number',
+                min: 0,
+                max: 30,
+                step: 0.5,
+              })}
+            </div>
+            <div className="fields2">
+              {field('Seed', 'seed', inputParameter('seed'), {
+                type: 'number',
+                min: 0,
+              })}
+              <label className="field">
+                <span>画面尺寸</span>
+                <select
+                  aria-label="画面尺寸"
+                  value={currentSize}
+                  onChange={(event) => {
+                    const size = sizes.find(
+                      (size) => size.value === event.target.value,
+                    )
+                    if (size)
+                      void action('update-draft', {
+                        field: 'size',
+                        value: {
+                          candidate_id: size.candidate_id,
+                          parameters: size.parameters,
+                        },
+                      })
+                  }}
+                >
+                  {!currentSize && <option value="">请选择</option>}
+                  {sizes.map((size) => (
+                    <option key={size.value} value={size.value}>
+                      {size.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </details>
+        </fieldset>
+        {branch.source_experience_id && (
+          <div className="note">
+            <Button
+              kind="small quiet"
+              onClick={() => changePage('experiences')}
+            >
+              查看来源经验
+            </Button>
+          </div>
+        )}
+      </div>
+      <div className="inspector-foot execution-controls">
+        {!experiment && !view.inspectRun && (
+          <div className="preset-picker">
+            <label className="field">
+              <span>
+                {branch.execution.mode === 'continuous'
+                  ? '持续实验'
+                  : '运行任务'}{' '}
+                · 本次预设
+              </span>
+              <select
+                aria-label="本次执行预设"
+                value={view.presetOverride ?? ''}
+                onChange={(event) =>
+                  store.updateView({
+                    presetOverride: event.target.value || null,
+                  })
+                }
+              >
+                <option value="">
+                  默认 ·{' '}
+                  {presetName(
+                    binding(
+                      branch.execution.mode === 'continuous'
+                        ? 'experiment'
+                        : 'run',
+                    )?.preset_id,
+                  )}
+                </option>
+                {props.presets?.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="execution-model">
+              Agent 模型：
+              {agentModel(
+                binding(
+                  branch.execution.mode === 'continuous' ? 'experiment' : 'run',
+                ),
+              )}
+            </p>
+          </div>
+        )}
+        {experiment ? (
+          <div className="row">
+            <Button
+              kind="primary"
+              icon={experiment.control_state === 'paused' ? 'run' : 'history'}
+              onClick={() =>
+                void action(
+                  experiment.control_state === 'paused'
+                    ? 'resume-experiment'
+                    : 'pause-experiment',
+                  { taskId: experiment.task_id },
+                )
+              }
+            >
+              {experiment.control_state === 'paused' ? '继续实验' : '暂停实验'}
+            </Button>
+            <Button
+              kind="small"
+              onClick={() =>
+                void action('stop-experiment', { taskId: experiment.task_id })
+              }
+            >
+              结束实验
+            </Button>
+          </div>
+        ) : view.inspectRun ? (
+          <Button
+            kind="primary"
+            onClick={() => store.updateView({ inspectRun: false })}
+          >
+            编辑任务输入
+          </Button>
+        ) : (
+          <>
+            <fieldset className="configuration">
+              <legend>执行方式</legend>
+              <div className="execution-modes">
+                {[
+                  ['once', '运行一次'],
+                  ['continuous', '持续实验'],
+                ].map(([value, label]) => (
+                  <label key={value}>
+                    <input
+                      type="radio"
+                      name="execution-mode"
+                      value={value}
+                      aria-label={label}
+                      checked={branch.execution.mode === value}
+                      disabled={pending}
+                      onChange={() =>
+                        void action('update-execution', {
+                          field: 'mode',
+                          value,
+                        })
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {branch.execution.mode === 'continuous' && (
+              <div className="experiment-options">
+                <label className="row between">
+                  最多运行次数
+                  <select
+                    aria-label="最多运行次数"
+                    value={branch.execution.max_runs}
+                    onChange={(event) =>
+                      void action('update-execution', {
+                        field: 'max_runs',
+                        value: Number(event.target.value),
+                      })
+                    }
+                  >
+                    {[2, 3, 5].map((count) => (
+                      <option key={count} value={count}>
+                        {count} 次
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+            <Button
+              kind="primary"
+              icon="run"
+              disabled={
+                pending ||
+                !binding(
+                  branch.execution.mode === 'continuous' ? 'experiment' : 'run',
+                )
+              }
+              onClick={() => {
+                void action(
+                  branch.execution.mode === 'continuous' ? 'experiment' : 'run',
+                  { value: { preset_override: view.presetOverride } },
+                )
+                store.updateView({ presetOverride: null })
+              }}
+            >
+              {pending
+                ? '正在运行'
+                : branch.execution.mode === 'continuous'
+                  ? '开始实验'
+                  : '运行任务'}
+            </Button>
+            <div className="custom-run-actions">
+              {customActions(
+                [branch.execution.mode === 'continuous' ? 'experiment' : 'run'],
+                pending,
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </aside>
+  )
+
+  const settings = (
+    <main className="settings-page">
+      <div className="settings-head">
+        <div>
+          <h1>配置中心</h1>
+          <p>{workspace?.name} · 功能默认配置</p>
+        </div>
+        <div className="row">
+          <Button
+            kind="primary"
+            icon="plus"
+            onClick={() => void action('function-add')}
+          >
+            添加功能
+          </Button>
+          <Button onClick={() => changePage('workbench')}>返回工作台</Button>
+        </div>
+      </div>
+      <div className="settings-table-wrap">
+        <table className="settings-table">
+          <thead>
+            <tr>
+              {[
+                '功能',
+                '功能位置',
+                '默认 Agent 预设',
+                'Agent 模型',
+                '指定 Skill',
+                '配置',
+              ].map((label) => (
+                <th scope="col" key={label}>
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {p?.functions.map((item) => (
+              <tr key={item.function_id} data-function={item.function_id}>
+                <td>
+                  <strong>{item.name}</strong>
+                  <small>{item.builtin ? '内置功能' : '自定义功能'}</small>
+                </td>
+                <td>
+                  {['run', 'experiment'].includes(item.kind)
+                    ? '任务输入底部'
+                    : ['prompt', 'rewrite', 'parameters', 'resources'].includes(
+                          item.kind,
+                        )
+                      ? '任务输入'
+                      : '运行结果'}
+                </td>
+                <td>
+                  <select
+                    aria-label={`${item.name}的默认预设`}
+                    value={item.preset_id}
+                    onChange={(event) =>
+                      void action('function-preset', {
+                        id: item.function_id,
+                        value: event.target.value,
+                      })
+                    }
+                  >
+                    {!props.presets?.some(
+                      (preset) => preset.id === item.preset_id,
+                    ) && (
+                      <option value={item.preset_id}>
+                        {presetName(item.preset_id)}
+                      </option>
+                    )}
+                    {props.presets?.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className="agent-model-summary">{agentModel(item)}</td>
+                <td>{item.requested_skill || 'Agent 自选'}</td>
+                <td>
+                  <Button
+                    kind="small"
+                    label={`编辑${item.name}`}
+                    onClick={() =>
+                      void action('function-edit', { id: item.function_id })
+                    }
+                  >
+                    编辑
+                  </Button>
+                  {!item.builtin && (
+                    <Button
+                      kind="small quiet"
+                      label={`移除${item.name}`}
+                      onClick={() =>
+                        void action('function-remove', { id: item.function_id })
+                      }
+                    >
+                      移除
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </main>
+  )
+  const modalTitle =
+    modal === 'new-work'
+      ? '新建工作'
+      : modal === 'new-workspace'
+        ? '添加工作区'
+        : modal === 'branch'
+          ? '创建子分支'
+          : `${run?.run_id} · 图片 1`
+  return (
+    <div className="experiment-workbench" ref={host}>
+      <style>{experimentWorkbenchStyles}</style>
+      <header className="titlebar">
+        <span className="brandmark">h</span>
+        <span className="brand">
+          HARNESS{' '}
+          <span style={{ fontWeight: 400, color: '#8a958c' }}>/ COMFYUI</span>
+        </span>
+        <span className="divider" />
+        <div className="row workspace-switch">
+          <label className="muted" htmlFor="experiment-workspace-picker">
+            工作区
+          </label>
+          <select
+            id="experiment-workspace-picker"
+            aria-label="切换工作区"
+            title={workspace?.path}
+            value={state.workspaceId ?? ''}
+            onChange={(event) => {
+              store.setWorkspace(event.target.value)
+              props.onWorkspaceChange(event.target.value)
+            }}
+          >
+            {!state.workspaceId && <option value="">请选择工作区</option>}
+            {props.workspaces.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <Button
+            kind="small quiet"
+            icon="plus"
+            onClick={() => setModal('new-workspace')}
+          >
+            添加工作区
+          </Button>
+          <small className="workspace-path">{workspace?.path}</small>
+        </div>
+        <span className="divider" />
+        <b>实验工作台</b>
+        <span className="spacer" />
+        <Button kind="small quiet" onClick={() => changePage('settings')}>
+          配置中心
+        </Button>
+      </header>
+      {work && (
+        <div className="workbar">
+          <div className="row">
+            <label className="muted" htmlFor="experiment-work-picker">
+              工作
+            </label>
+            <select
+              className="work-picker"
+              id="experiment-work-picker"
+              aria-label="切换工作"
+              value={view.workId ?? ''}
+              onChange={(event) => store.selectWork(event.target.value)}
+            >
+              {p?.works.map((item) => (
+                <option key={item.work_id} value={item.work_id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              kind="small quiet"
+              icon="plus"
+              onClick={() => setModal('new-work')}
+            >
+              新建工作
+            </Button>
+          </div>
+          <nav className="nav" aria-label="工作导航">
+            {(
+              [
+                ['workbench', '运行结果'],
+                ['resources', '资源'],
+                ['tasks', '任务'],
+                ['experiences', '经验'],
+                ['favorites', '收藏'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                aria-label={label}
+                className={
+                  view.page === id ||
+                  (id === 'workbench' && view.page === 'graph')
+                    ? 'active'
+                    : ''
+                }
+                onClick={() => changePage(id)}
+              >
+                {label}
+                {['tasks', 'experiences', 'favorites'].includes(id) && (
+                  <span className="count">
+                    {id === 'tasks'
+                      ? p?.tasks.length
+                      : id === 'experiences'
+                        ? p?.experiences.length
+                        : p?.favorites.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <span className="spacer" />
+          <Button
+            kind={
+              p?.runs.some(pendingRun) ? 'small running-link' : 'small quiet'
+            }
+            icon="history"
+            label="查看运行记录"
+            onClick={() => setSheet(true)}
+          >
+            {p?.runs.some(pendingRun)
+              ? `运行记录 · ${p.runs.filter(pendingRun).length} 项运行中`
+              : '运行记录'}
+          </Button>
+        </div>
+      )}
+      {state.error ? (
+        <main className="empty workspace-empty">
+          <h1>工作台加载失败</h1>
+          <p role="alert">{state.error}</p>
+          <Button onClick={() => void store.refresh()}>重试</Button>
+        </main>
+      ) : view.page === 'settings' ? (
+        settings
+      ) : state.loading && !p ? (
+        <main className="empty workspace-empty" aria-label="加载工作台">
+          <span className="loading-ring" />
+        </main>
+      ) : !work ? (
+        <main className="empty workspace-empty">
+          <h1>{workspace?.name ?? '实验工作台'}</h1>
+          <p>{state.workspaceId ? '尚未创建工作' : '请选择工作区'}</p>
+          <Button
+            kind="primary"
+            icon="plus"
+            disabled={!state.workspaceId}
+            onClick={() => setModal('new-work')}
+          >
+            新建工作
+          </Button>
+        </main>
+      ) : (
+        <div className="layout">
+          {sidebar}
+          {view.page === 'resources' ? (
+            <ExperimentCatalog
+              catalog={props.catalog}
+              filters={view.catalogFilters}
+              onFilters={(catalogFilters) =>
+                store.updateView({ catalogFilters })
+              }
+              back={back}
+              selected={inputs}
+              onSelect={(item) =>
+                void action('resource-select', {
+                  id: item.context.id,
+                  value: item.context,
+                })
+              }
+              locked={locked}
+              scroll={scrollPanel(
+                `catalog:${view.workId}:${JSON.stringify(view.catalogFilters)}`,
+              )}
+            />
+          ) : view.page === 'tasks' ? (
+            tasks
+          ) : view.page === 'graph' ? (
+            graph
+          ) : ['favorites', 'experiences'].includes(view.page) ? (
+            library
+          ) : (
+            results
+          )}
+          {inspector}
+        </div>
+      )}
+      {sheet && (
+        <div
+          className="sheet-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setSheet(false)
+          }}
+        >
+          <section
+            className="sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="运行记录"
+          >
+            <div className="sheet-head">
+              <h2>运行记录</h2>
+              <Button
+                kind="small"
+                label="关闭面板"
+                onClick={() => setSheet(false)}
+              >
+                关闭
+              </Button>
+            </div>
+            <div className="sheet-body">
+              {p?.runs
+                .slice()
+                .reverse()
+                .map((item) => (
+                  <article className="run-row" key={item.run_id}>
+                    <div className="row between">
+                      <h3>
+                        <Identifier value={item.run_id} /> · {branchFor(item)?.name}
+                      </h3>
+                      <Status run={item} />
+                    </div>
+                    <p>
+                      任务 {item.workbench_task_id} · 发起者：
+                      {item.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
+                      {runModelLabel(item)} · Seed{' '}
+                      {String(runParameter(item, 'seed') ?? '')}
+                    </p>
+                    <p>
+                      执行预设：
+                      {presetName(taskFor(item)?.binding_snapshot.preset_id)}
+                    </p>
+                    <p>
+                      Agent 模型：
+                      {formatAgentModel(
+                        taskFor(item)?.binding_snapshot.agentModel,
+                      )}
+                    </p>
+                    {item.error && (
+                      <p style={{ color: 'var(--red)' }}>
+                        {item.error.message}
+                      </p>
+                    )}
+                    {item.review && <p>评价：{item.review.conclusion}</p>}
+                    {item.retry_of_run_id && (
+                      <p>重试来源：{item.retry_of_run_id}</p>
+                    )}
+                    <Button
+                      kind="small"
+                      onClick={() => {
+                        store.selectRun(item.run_id)
+                        setSheet(false)
+                      }}
+                    >
+                      查看运行
+                    </Button>
+                  </article>
+                ))}
+              {!p?.runs.length && <div className="empty">暂无运行记录</div>}
+            </div>
+          </section>
+        </div>
+      )}
+      {modal && (
+        <div
+          className="modal-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setModal(null)
+          }}
+        >
+          <section
+            className={`modal ${modal === 'image' ? 'image-modal' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={modalTitle}
+          >
+            <div className="modal-head">
+              <h2>{modalTitle}</h2>
+              <Button
+                kind="small quiet"
+                label={modal === 'image' ? '关闭原图' : '关闭弹窗'}
+                onClick={() => setModal(null)}
+              >
+                关闭
+              </Button>
+            </div>
+            {modal === 'image' ? (
+              <div className="original-image">
+                {run && media(run) && <img src={media(run)} alt={run.title} />}
+              </div>
+            ) : (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  const data = new FormData(event.currentTarget),
+                    type = modal === 'branch' ? 'create-branch' : modal
+                  if (!type) return
+                  void action(type, {
+                    value: {
+                      name: data.get('name'),
+                      ...(modal === 'new-workspace'
+                        ? { path: data.get('path') }
+                        : modal === 'branch'
+                          ? { original_request: data.get('goal') }
+                          : { goal: data.get('goal') }),
+                    },
+                  })
+                  setModal(null)
+                }}
+              >
+                {modal === 'new-work' && <p>工作区：{workspace?.name}</p>}
+                {modal === 'branch' && (
+                  <p>
+                    来源：{branch?.name} · {run ? <Identifier value={run.run_id} /> : '任务输入'}
+                  </p>
+                )}
+                <label className="field">
+                  <span>
+                    {modal === 'new-workspace'
+                      ? '工作区名称'
+                      : modal === 'new-work'
+                        ? '工作名称'
+                        : '分支名称'}
+                  </span>
+                  <input
+                    name="name"
+                    aria-label={
+                      modal === 'new-workspace'
+                        ? '工作区名称'
+                        : modal === 'new-work'
+                          ? '工作名称'
+                          : '分支名称'
+                    }
+                    maxLength={40}
+                    required
+                    autoFocus
+                    defaultValue={
+                      modal === 'branch'
+                        ? `探索 ${(p?.branches.length ?? 0) + 1}`
+                        : ''
+                    }
+                  />
+                </label>
+                {modal === 'new-workspace' ? (
+                  <label className="field">
+                    <span>项目目录</span>
+                    <input
+                      name="path"
+                      aria-label="项目目录"
+                      required
+                      placeholder="/Users/用户名/Projects/项目目录"
+                      autoComplete="off"
+                    />
+                  </label>
+                ) : (
+                  <label className="field">
+                    <span>{modal === 'branch' ? '原始需求' : '总目标'}</span>
+                    <textarea
+                      name="goal"
+                      aria-label={modal === 'branch' ? '原始需求' : '总目标'}
+                      required
+                      defaultValue={
+                        modal === 'branch' ? branch?.original_request : ''
+                      }
+                    />
+                  </label>
+                )}
+                <div className="modal-actions">
+                  <Button onClick={() => setModal(null)}>取消</Button>
+                  <button className="btn primary" type="submit">
+                    {modal === 'new-workspace'
+                      ? '添加工作区'
+                      : modal === 'branch'
+                        ? '创建分支'
+                        : '创建工作'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </section>
+        </div>
+      )}
+      {message && (
+        <div className="toast" role="alert">
+          {message}
+          <Button kind="small quiet" onClick={() => setMessage(null)}>
+            关闭
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface ExperimentCatalogProps {
+  readonly catalog: ExperimentWorkbenchProps['catalog']
+  readonly filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters']
+  readonly onFilters: (
+    filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters'],
+  ) => void
+  readonly back: ReactNode
+  readonly selected?: TaskDraft
+  readonly locked: boolean
+  readonly onSelect: (item: CatalogItem) => void
+  readonly scroll: {
+    readonly ref: (element: HTMLDivElement | null) => void
+    readonly onScroll: (event: React.UIEvent<HTMLDivElement>) => void
+  }
+}
+function ExperimentCatalog({
+  catalog,
+  filters,
+  onFilters,
+  back,
+  selected,
+  locked,
+  onSelect,
+  scroll,
+}: ExperimentCatalogProps) {
+  const kind =
+    CATALOG_KIND_DEFINITIONS.find((item) => item.kind === filters.kind) ??
+    CATALOG_KIND_DEFINITIONS[0]
+  const [result, setResult] = useState<CatalogPage | null>(null)
+  const [bases, setBases] = useState<readonly BaseModelItem[]>([])
+  const [models, setModels] = useState<readonly CatalogItem[]>([])
+  const [query, setQuery] = useState(filters.query)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [detail, setDetail] = useState<CatalogItem | null>(null)
+  const [details, setDetails] = useState<CatalogDetails | null>(null)
+  const [gallery, setGallery] = useState<{
+    item: CatalogItem
+    index: number
+  } | null>(null)
+  const [retry, setRetry] = useState(0)
+  useEffect(() => {
+    setQuery(filters.query)
+    setDetail(null)
+    setGallery(null)
+  }, [
+    filters.kind,
+    filters.query,
+    filters.baseModelId,
+    filters.modelId,
+    filters.page,
+  ])
+  useEffect(() => {
+    if (!catalog) return
+    const abort = new AbortController()
+    void catalog
+      .baseModels(abort.signal)
+      .then((result) => {
+        if (!abort.signal.aborted) setBases(result.items)
+      })
+      .catch((error) => {
+        if (!abort.signal.aborted)
+          setError(
+            error instanceof Error ? error.message : '底模加载失败，请重试。',
+          )
+      })
+    return () => abort.abort()
+  }, [catalog])
+  useEffect(() => {
+    if (!catalog) return
+    const abort = new AbortController()
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    void catalog
+      .search(
+        {
+          kind: kind.kind,
+          query: filters.query,
+          page: filters.page,
+          baseModelId: kind.baseModelScoped
+            ? filters.baseModelId || null
+            : null,
+        },
+        abort.signal,
+      )
+      .then((result) => {
+        if (!abort.signal.aborted) {
+          setResult(result)
+          if (kind.kind === 'model') setModels(result.items)
+        }
+      })
+      .catch((error) => {
+        if (!abort.signal.aborted)
+          setError(
+            error instanceof Error ? error.message : '资源加载失败，请重试。',
+          )
+      })
+      .finally(() => {
+        if (!abort.signal.aborted) setLoading(false)
+      })
+    return () => abort.abort()
+  }, [
+    catalog,
+    kind.kind,
+    kind.baseModelScoped,
+    filters.query,
+    filters.page,
+    filters.baseModelId,
+    retry,
+  ])
+  useEffect(() => {
+    if (!detail || !catalog) {
+      setDetails(null)
+      return
+    }
+    const abort = new AbortController()
+    setDetails(null)
+    setError(null)
+    void catalog
+      .details(
+        { kind: detail.context.kind, id: detail.context.id },
+        abort.signal,
+      )
+      .then((value) => {
+        if (!abort.signal.aborted) setDetails(value)
+      })
+      .catch((error) => {
+        if (!abort.signal.aborted)
+          setError(
+            error instanceof Error
+              ? error.message
+              : '资源详情加载失败，请重试。',
+          )
+      })
+    return () => abort.abort()
+  }, [detail, catalog, retry])
+  const chosen = (item: CatalogItem) =>
+    item.context.kind === 'model'
+      ? selected?.generation_input.model?.id === item.context.id
+      : item.context.kind === 'comfyui-template'
+        ? selected?.generation_input.template_id === item.context.id
+        : item.context.kind === 'lora'
+          ? selected?.generation_input.loras.some(
+              (lora) => lora.id === item.context.id,
+            )
+          : selected?.context_refs.some(
+              (ref) =>
+                ref.kind === item.context.kind && ref.id === item.context.id,
+            )
+  const selectButton = (item: CatalogItem) => (
+    <Button kind="small" disabled={locked} onClick={() => onSelect(item)}>
+      {chosen(item)
+        ? '已选择'
+        : ['model', 'comfyui-template'].includes(item.context.kind)
+          ? '选择'
+          : '添加'}
+    </Button>
+  )
+  const pages = catalogPageCount(result?.totalCount ?? 0)
+  const reset = () =>
+    onFilters({ ...filters, baseModelId: '', modelId: '', query: '', page: 1 })
+  return (
+    <main className="center">
+      <PanelHead title="资源目录">{back}</PanelHead>
+      <div className="catalog-browser">
+        <nav className="catalog-kinds" aria-label="资源类型">
+          {CATALOG_KIND_DEFINITIONS.map((item) => (
+            <button
+              type="button"
+              key={item.kind}
+              aria-pressed={kind.kind === item.kind}
+              onClick={() =>
+                onFilters({ ...filters, kind: item.kind, query: '', page: 1 })
+              }
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="catalog-content" {...scroll}>
+          {gallery ? (
+            <div className="catalog-gallery">
+              <div className="row between">
+                <Button kind="small quiet" onClick={() => setGallery(null)}>
+                  {detail ? '返回详情' : '返回资源列表'}
+                </Button>
+                <h3>{gallery.item.label}</h3>
+                <span className="mono">
+                  {gallery.index + 1} / {gallery.item.sampleImageUrls.length}
+                </span>
+              </div>
+              <div className="gallery-stage">
+                <Button
+                  kind="quiet"
+                  label="上一张图片"
+                  disabled={gallery.index === 0}
+                  onClick={() =>
+                    setGallery({ ...gallery, index: gallery.index - 1 })
+                  }
+                >
+                  ‹
+                </Button>
+                <div className="artwork">
+                  <img
+                    src={gallery.item.sampleImageUrls[gallery.index]}
+                    alt={gallery.item.label}
+                  />
+                </div>
+                <Button
+                  kind="quiet"
+                  label="下一张图片"
+                  disabled={
+                    gallery.index >= gallery.item.sampleImageUrls.length - 1
+                  }
+                  onClick={() =>
+                    setGallery({ ...gallery, index: gallery.index + 1 })
+                  }
+                >
+                  ›
+                </Button>
+              </div>
+            </div>
+          ) : detail ? (
+            <div className="catalog-detail">
+              <div className="row between">
+                <Button kind="small quiet" onClick={() => setDetail(null)}>
+                  返回资源列表
+                </Button>
+                {selectButton(detail)}
+              </div>
+              <h2>{detail.label}</h2>
+              {detail.coverUrl && (
+                <button
+                  className="detail-cover"
+                  type="button"
+                  aria-label={`预览图片 ${detail.label}`}
+                  onClick={() => {
+                    if (detail.sampleImageUrls.length)
+                      setGallery({ item: detail, index: 0 })
+                  }}
+                >
+                  <img src={detail.coverUrl} alt={detail.label} />
+                </button>
+              )}
+              {error ? (
+                <div className="empty">
+                  <p role="alert">{error}</p>
+                  <Button
+                    kind="small"
+                    onClick={() => setRetry((value) => value + 1)}
+                  >
+                    重试
+                  </Button>
+                </div>
+              ) : details ? (
+                <dl>
+                  {details.fields.map((field) => (
+                    <div key={field.key}>
+                      <dt>{CATALOG_FIELDS[field.key]?.label ?? field.key}</dt>
+                      <dd>
+                        {Array.isArray(field.value)
+                          ? field.value.join('、')
+                          : String(field.value ?? '—')}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <div className="empty">
+                  <span className="loading-ring" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="catalog-list-panel">
+              {kind.baseModelScoped && (
+                <div className="catalog-filters">
+                  <label>
+                    底模
+                    <select
+                      aria-label="筛选底模"
+                      value={filters.baseModelId}
+                      onChange={(event) =>
+                        onFilters({
+                          ...filters,
+                          baseModelId: event.target.value,
+                          modelId: '',
+                          page: 1,
+                        })
+                      }
+                    >
+                      <option value="">全部底模</option>
+                      {bases.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    生成模型
+                    <select
+                      aria-label="筛选生成模型"
+                      value={filters.modelId}
+                      onChange={(event) =>
+                        onFilters({
+                          ...filters,
+                          modelId: event.target.value,
+                          page: 1,
+                        })
+                      }
+                    >
+                      <option value="">全部生成模型</option>
+                      {models.map((item) => (
+                        <option key={item.context.id} value={item.context.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+              <form
+                className="catalog-search"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  onFilters({ ...filters, query, page: 1 })
+                }}
+              >
+                <input
+                  aria-label="搜索资源"
+                  placeholder={`搜索${kind.label}`}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <button className="btn" type="submit">
+                  搜索
+                </button>
+              </form>
+              <div className="row between catalog-results-head">
+                <b>{kind.label}</b>
+                <small>{result?.totalCount ?? 0} 项</small>
+              </div>
+              {error ? (
+                <div className="empty">
+                  <p role="alert">{error}</p>
+                  <Button
+                    kind="small"
+                    onClick={() => setRetry((value) => value + 1)}
+                  >
+                    重试
+                  </Button>
+                </div>
+              ) : loading ? (
+                <div className="empty">
+                  <span className="loading-ring" />
+                </div>
+              ) : (
+                <div className="catalog-grid">
+                  {result?.items
+                    .filter(
+                      (item) =>
+                        !filters.modelId ||
+                        kind.kind !== 'model' ||
+                        item.context.id === filters.modelId,
+                    )
+                    .map((item) => (
+                      <article
+                        key={`${item.context.kind}:${item.context.id}`}
+                        className={`catalog-card ${chosen(item) ? 'chosen' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          className={`catalog-cover ${item.coverUrl ? '' : 'no-cover'}`}
+                          aria-label={`查看 ${item.label}`}
+                          onClick={() => setDetail(item)}
+                        >
+                          {item.coverUrl ? (
+                            <img src={item.coverUrl} alt={item.label} />
+                          ) : (
+                            <Icon name="grid" />
+                          )}
+                        </button>
+                        <div className="catalog-card-body">
+                          <span className="pill neutral">{kind.label}</span>
+                          <h3>{item.label}</h3>
+                          <p>{item.subtitle}</p>
+                          <div className="row between">
+                            <Button
+                              kind="small quiet"
+                              onClick={() => setDetail(item)}
+                            >
+                              查看详情
+                            </Button>
+                            {selectButton(item)}
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  {!result?.items.length && (
+                    <div className="empty">
+                      <h3>{catalog ? '没有匹配的资源' : '资源目录尚未连接'}</h3>
+                      <Button kind="small" onClick={reset}>
+                        清除筛选
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="catalog-pagination">
+                <Button
+                  kind="small"
+                  disabled={filters.page <= 1 || loading}
+                  onClick={() =>
+                    onFilters({ ...filters, page: filters.page - 1 })
+                  }
+                >
+                  上一页
+                </Button>
+                <span>
+                  {filters.page} / {pages}
+                </span>
+                <Button
+                  kind="small"
+                  disabled={filters.page >= pages || loading}
+                  onClick={() =>
+                    onFilters({ ...filters, page: filters.page + 1 })
+                  }
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  )
+}

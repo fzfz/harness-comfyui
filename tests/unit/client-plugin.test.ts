@@ -29,6 +29,8 @@ import type { ImageReaderSettingsApi } from '../../src/client/image-reader/image
 import type { SaveImageReaderProfileRequest } from '../../src/image-reader/contract.ts'
 import type { ImageReaderConfiguration } from '../../src/image-reader/settings.ts'
 import { BROWSER_SETTINGS_REMOTE_SERVICE } from '../../src/browser-settings-schema.ts'
+import { WORKBENCH_REMOTE_SERVICE } from '../../src/workbench-remote.ts'
+import { EXPERIMENT_PANEL_ID } from '../../src/client/workbench/experiment-host.tsx'
 
 type Registration = {
   name: string
@@ -61,6 +63,8 @@ afterEach(() => {
 
 function installImmediateInject(context: Record<string, any>): void {
   context.sidebarRight ??= { openTab: vi.fn() }
+  context.layout ??= { selectPanel: vi.fn() }
+  context.remote.harnessComfyuiWorkbenchRemote ??= { getEnvironment: vi.fn(), getProjection: vi.fn(), mutate: vi.fn() }
   context.sidebarRightTabs ??= { register: vi.fn(() => vi.fn()) }
   context.remote.harnessComfyuiCatalog.sourceAddress ??= vi.fn(async () => ({
     ok: true,
@@ -143,6 +147,7 @@ function installImmediateInject(context: Record<string, any>): void {
     if (service === 'remote.harnessComfyuiGeneration') return context.remote.harnessComfyuiGeneration
     if (service === 'remote.harnessComfyuiImageReader') return context.remote.harnessComfyuiImageReader
     if (service === BROWSER_SETTINGS_REMOTE_SERVICE) return context.remote.harnessComfyuiBrowserSettings
+    if (service === WORKBENCH_REMOTE_SERVICE) return context.remote.harnessComfyuiWorkbenchRemote
     return undefined
   })
   context.inject = vi.fn((_services: readonly string[], callback: (scope: unknown) => unknown) => {
@@ -226,13 +231,14 @@ describe('Harness Client plugin registration', () => {
     expect(name).toBe('harness-comfyui')
     expect(name).toBe(pluginPackage.packageName)
     expect(inject).toEqual([
-      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms',
+      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms', 'layout',
     ])
     expect((context as any).inject).toHaveBeenCalledWith([
       'remote.harnessComfyuiCatalog',
       'remote.harnessComfyuiGeneration',
       'remote.harnessComfyuiImageReader',
       BROWSER_SETTINGS_REMOTE_SERVICE,
+      WORKBENCH_REMOTE_SERVICE,
     ], expect.any(Function))
     expect(registerResultsTab).toHaveBeenCalledWith({
       id: WORKBENCH_RESULTS_TAB.id,
@@ -241,12 +247,21 @@ describe('Harness Client plugin registration', () => {
     })
     expect(registerResultsTab.mock.calls[0]![0].title()).toBe(WORKBENCH_RESULTS_TAB.title)
     expect([...registrations.keys()]).toEqual([
+      'main',
       'sidebar.footer.action',
       'conversation.input.dock',
       'conversation.session.header.actions',
       'sidebar.right.pane.tab',
       'plugins.bundle.config',
     ])
+    expect(registrations.get('main')).toMatchObject({ key: EXPERIMENT_PANEL_ID })
+    expect(registrations.get('main')!.inject()).toEqual({
+      remote: (context as any).remote.harnessComfyuiWorkbenchRemote,
+      catalog: expect.objectContaining({ search: expect.any(Function), details: expect.any(Function), baseModels: expect.any(Function) }),
+    })
+    const experimentEntry = register.mock.calls.find(([registration]) => registration.id === `${EXPERIMENT_PANEL_ID}-entry`)![0]
+    ;(experimentEntry.inject() as { open: () => void }).open()
+    expect((context as any).layout.selectPanel).toHaveBeenCalledWith(EXPERIMENT_PANEL_ID)
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
       id: WORKBENCH_ENTRY_ID,
       order: 10,
@@ -518,6 +533,8 @@ describe('Harness Client plugin registration', () => {
 
     await dispose()
 
+    expect(injectionDisposers.get('main')).toHaveBeenCalledOnce()
+    expect(registrationDisposers.get('main')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
