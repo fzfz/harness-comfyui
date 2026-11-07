@@ -65,6 +65,7 @@ export interface PreparedGeneration {
 }
 
 export interface GenerationPreparationAdapter {
+  validateInput?(request: GenerationRequest, signal?: AbortSignal): Promise<void>
   inspectRuntimeParameters(
     input: GenerationTemplateRuntimeParameterInspectionInput,
     signal?: AbortSignal,
@@ -167,7 +168,27 @@ export interface GenerationRunInputLookupErrorReport {
   readonly error: unknown
 }
 
+export interface WorkbenchGenerationAcceptance {
+  readonly taskId: string | null
+  readonly workspaceId: string
+  readonly input: import('../../workbench/contract.ts').GenerationInput
+  readonly runId?: string
+  readonly reused: boolean
+}
+
+export interface WorkbenchGenerationPort {
+  assertGenerationAcceptance(input: WorkbenchGenerationAcceptance): {
+    readonly iterationIndex: number | null
+    readonly candidateArtifactId: string | null
+    readonly initiator: 'human' | 'agent' | null
+    readonly retryOfRunId: string | null
+  }
+  registerGenerationRun(input: WorkbenchGenerationAcceptance & { readonly runId: string }): void
+}
+
 export interface GenerationRuntimeOptions {
+  readonly database?: DatabaseSync
+  readonly workbench?: WorkbenchGenerationPort
   readonly runRepositoryFile: string
   readonly runDirectory: string
   readonly savedMediaDirectory: string
@@ -203,6 +224,7 @@ interface RunRow {
   revision: number
   prompt_id: string | null
   request_json: string
+  workbench_task_id: string | null
   api_workflow_path: string | null
   actual_workflow_path: string | null
   expected_output_node_ids_json: string | null
@@ -414,7 +436,7 @@ function runInputArguments(request: GenerationRequest): GenerationRunInputArgume
       id: lora.id,
       file_name: lora.fileName,
       weight: lora.weight,
-      trigger_words: lora.triggerWords,
+      trigger_words: [...lora.triggerWords],
     }))),
   })
 }
@@ -534,7 +556,7 @@ export class GenerationRuntime {
     mkdirSync(options.savedMediaDirectory, { recursive: true })
     let database: DatabaseSync
     try {
-      database = new DatabaseSync(options.runRepositoryFile)
+      database = options.database ?? new DatabaseSync(options.runRepositoryFile)
     } catch (error) {
       throw storageInitializationFailure(error, options.runRepositoryFile)
     }
@@ -544,7 +566,7 @@ export class GenerationRuntime {
     } catch (error) {
       const failure = storageInitializationFailure(error, options.runRepositoryFile)
       try {
-        this.database.close()
+        if (options.database === undefined) this.database.close()
       } catch (closeError) {
         if (failure !== null && (typeof failure === 'object' || typeof failure === 'function') && Object.isExtensible(failure)) {
           Object.defineProperty(failure, 'databaseCloseError', { value: closeError })
@@ -622,6 +644,16 @@ export class GenerationRuntime {
         this.database.exec('ALTER TABLE generation_runs ADD COLUMN instance_origin TEXT')
       }
       this.migrateRequestIdentity()
+      for (const [name, type] of Object.entries({
+        workbench_task_id: 'TEXT', iteration_index: 'INTEGER', initiator: 'TEXT',
+        candidate_artifact_id: 'TEXT', retry_of_run_id: 'TEXT', review_artifact_id: 'TEXT',
+        review_json: 'TEXT', review_draft_json: 'TEXT',
+      })) {
+        if (!runColumns.some(column => column.name === name)) {
+          this.database.exec(`ALTER TABLE generation_runs ADD COLUMN ${name} ${type}`)
+        }
+      }
+      this.database.exec('CREATE INDEX IF NOT EXISTS generation_runs_workbench_task ON generation_runs(workbench_task_id)')
       const violations = this.database.prepare('PRAGMA foreign_key_check').all()
       if (violations.length > 0) throw new Error('Generation repository migration failed foreign key validation.')
       this.database.exec('COMMIT')
@@ -661,6 +693,12 @@ export class GenerationRuntime {
     this.database.prepare('INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (2, ?)').run(this.now())
   }
 
+  async validateGenerationRequest(request: GenerationRequest, signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted()
+    if (!this.options.preparer.validateInput) throw new GenerationRuntimeError('GENERATION_VALIDATION_UNAVAILABLE', 'Generation preparer does not provide generation input validation.')
+    await this.options.preparer.validateInput(request, signal)
+  }
+
   async inspectTemplateRuntimeParameters(
     input: GenerationTemplateRuntimeParameterInspectionInput,
     signal?: AbortSignal,
@@ -674,6 +712,7 @@ export class GenerationRuntime {
     identity: GenerationIdentity,
     items: readonly GenerationSubmissionItem[],
     signal?: AbortSignal,
+    workbenchTaskId?: string,
   ): Promise<GenerationSubmissionResult> {
     signal?.throwIfAborted()
     assertPathId(identity.workspaceId, 'workspaceId')
@@ -682,6 +721,9 @@ export class GenerationRuntime {
     if (identity.callId.trim().length === 0) throw new TypeError('callId is invalid')
     if (!Array.isArray(items) || items.length < 1 || items.length > GENERATION_MAX_SUBMISSION_ITEMS) {
       throw new GenerationRuntimeError('GENERATION_SUBMISSION_INVALID', `Submit between 1 and ${GENERATION_MAX_SUBMISSION_ITEMS} Generation requests.`)
+    }
+    if (workbenchTaskId !== undefined && (workbenchTaskId.trim().length === 0 || !this.options.workbench)) {
+      throw new GenerationRuntimeError('GENERATION_SUBMISSION_INVALID', 'The workbench task is unavailable. Read workbench task get --help and verify task_id.')
     }
     const requestIds = new Set<string>()
     const normalized = items.map(item => {
@@ -710,13 +752,28 @@ export class GenerationRuntime {
       `)
       for (const item of normalized) {
         const row = find.get(identity.workspaceId, identity.sessionId, item.requestId) as unknown as RunRow | undefined
+        const acceptance: WorkbenchGenerationAcceptance = {
+          taskId: workbenchTaskId ?? null, workspaceId: identity.workspaceId, reused: row !== undefined,
+          ...(row === undefined ? {} : { runId: row.run_id }),
+          input: {
+            title: item.request.title, instance_id: item.request.instanceId, template_id: item.request.templateId,
+            model: item.request.model === null ? null : { id: item.request.model.id, file_name: item.request.model.fileName },
+            parameters: item.request.parameters,
+            loras: item.request.loras.map(lora => ({ id: lora.id, file_name: lora.fileName, weight: lora.weight, trigger_words: [...lora.triggerWords] })),
+          },
+        }
         if (row !== undefined) {
+          if (row.workbench_task_id !== (workbenchTaskId ?? null)) {
+            throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', `Request ${item.requestId} belongs to a different workbench task.`)
+          }
           if (row.request_json !== item.requestJson) {
             throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', `Request ${item.requestId} was already accepted with a different Generation request.`)
           }
+          this.options.workbench?.assertGenerationAcceptance(acceptance)
           accepted.push(Object.freeze({ requestId: item.requestId, runId: row.run_id, acceptance: 'reused' }))
           continue
         }
+        this.options.workbench?.assertGenerationAcceptance(acceptance)
         const runId = this.createRunId()
         assertPathId(runId, 'runId')
         const createdAt = this.now()
@@ -724,6 +781,7 @@ export class GenerationRuntime {
           runId, item.requestId, identity.workspaceId, identity.sessionId, identity.turn, identity.callId,
           item.request.title, item.request.templateId, item.requestJson, createdAt, createdAt,
         )
+        if (workbenchTaskId !== undefined) this.options.workbench!.registerGenerationRun({ ...acceptance, runId })
         accepted.push(Object.freeze({ requestId: item.requestId, runId, acceptance: 'accepted' }))
       }
       this.database.exec('COMMIT')
@@ -933,7 +991,7 @@ export class GenerationRuntime {
   }
 
   close(): void {
-    this.database.close()
+    if (this.options.database === undefined) this.database.close()
   }
 
   private async readGenerationRunInput(

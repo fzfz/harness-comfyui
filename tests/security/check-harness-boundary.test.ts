@@ -94,6 +94,17 @@ describe('Harness source boundary', () => {
     }
   })
 
+  it('allows preset registry declarations while keeping runtime composition owned by Harness', () => {
+    const root = fixture("import type {} from '@deepseek-ai/dsh-agent-preset-registry'\n")
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+      writeFileSync(join(root, 'src/index.ts'), "import * as registry from '@deepseek-ai/dsh-agent-preset-registry'\n")
+      expect(run(root).stderr).toContain("must import '@deepseek-ai/dsh-agent-preset-registry' as a type-only specifier")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('accepts public SubagentRuntime type-only imports for descendant queries', () => {
     const root = fixture("import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'\n")
     try {

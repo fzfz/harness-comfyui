@@ -108,6 +108,7 @@ describe('managed CLI manifest acceptance', () => {
           { requestId: secondId, request: { title: 'Batch', instanceId: '2', templateId: '39', model: null, parameters: request.parameters, loras: [] } },
         ],
         expect.any(AbortSignal),
+        undefined,
       )
     } finally { await server.close() }
   })

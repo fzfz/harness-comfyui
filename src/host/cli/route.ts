@@ -12,11 +12,13 @@ import {
 import {
   GenerationRuntimeError
 } from '../generation/generation-runtime.ts'
+import { WorkbenchError } from '../../workbench/validation.ts'
 import { ImageReaderError } from '../image-reader/errors.ts'
 
 import type { CliHandlerOptions } from './schema.ts'
 
 interface CliErrorBody {
+  readonly issues?: readonly { readonly path: string; readonly message: string }[]
   readonly code: string
   readonly message: string
 }
@@ -90,6 +92,7 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
 }
 
 function reportedError(error: unknown): { readonly status: number; readonly error: CliErrorBody } {
+  if (error instanceof WorkbenchError) return { status: 409, error: { code: error.code, message: error.message, issues: error.issues } }
   if (error instanceof CliHttpError) {
     return { status: error.status, error: { code: error.code, message: error.message } }
   }

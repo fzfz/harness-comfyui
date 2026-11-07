@@ -6,12 +6,15 @@ import { GenerationRemoteService } from '../generation/generation-service.ts'
 import { registerGenerationMediaRoutes, type GenerationWebServer } from '../generation/media-routes.ts'
 import { ImageReaderRemoteService } from '../image-reader/image-reader-host.ts'
 import type { } from '../image-reader/plugin.ts'
+import { WorkbenchRemoteService } from '../workbench/remote-service.ts'
+import type {} from '../workbench/plugin.ts'
 import { BrowserSettingsRemoteService } from '../core/browser-settings-service.ts'
 
 export const name = 'harness-comfyui-web'
-export const inject = ['harnessComfyuiCore', 'imageReader', 'webServer', 'workspaceRegistry', 'sessionPersistence', 'subagents'] as const
+export const inject = ['harnessComfyuiCore', 'imageReader', 'webServer', 'workspaceRegistry', 'sessionPersistence', 'subagents', 'harnessComfyuiWorkbench'] as const
 export function apply(ctx: Context): void {
   const { catalog, runtime, profile, sourceAddress } = ctx.harnessComfyuiCore.services
+  new WorkbenchRemoteService(ctx)
   new CatalogRemoteService(ctx, catalog, sourceAddress)
   new GenerationRemoteService(ctx, runtime, profile.client.runRefreshIntervalMs, ctx.workspaceRegistry)
   new ImageReaderRemoteService(ctx, ctx.imageReader)

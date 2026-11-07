@@ -1,4 +1,5 @@
 import { createTestCredentialProvider } from '../support/credential-provider.ts'
+import { provideWorkbenchOfficialServices } from '../support/workbench-host.ts'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -37,6 +38,8 @@ async function disposeFiber(fiber: { dispose(): Promise<void> }): Promise<void> 
 describe('official Host plugin activation', () => {
   it('registers strict Browser settings Remotes and releases web routes with the plugin fiber', async () => {
     const context = new Context()
+    provideWorkbenchOfficialServices(context)
+    context.provide('harnessComfyuiWorkbench' as never, { service: {} } as never)
     let browserExecutablePath = process.execPath
     const unregisterRoute = vi.fn()
     const registerRoute = vi.fn(() => unregisterRoute)
@@ -148,6 +151,8 @@ describe('official Host plugin activation', () => {
 
   it('binds the foreground shell capability to the CLI listener and revokes it on result and shutdown', async () => {
     const context = new Context()
+    provideWorkbenchOfficialServices(context)
+    context.provide('harnessComfyuiWorkbench' as never, { service: {} } as never)
     const queryComfyuiInstances = vi.fn(async () => ({ items: [{ id: 'instance-1' }], totalCount: 1 }))
     const sourceAddress = vi.fn(() => ({ url: 'http://127.0.0.1', port: 18093 }))
     const core = {
@@ -297,6 +302,7 @@ describe('official Host plugin activation', () => {
       const core = await import('../../src/host/core/plugin.ts')
       const activateCore = async (label: string, configuration: { url: string; port: number }, browserExecutablePath?: string) => {
         const context = new Context()
+        provideWorkbenchOfficialServices(context)
         context.provide('tools' as never, { register: vi.fn(() => vi.fn()) } as never)
         context.provide('workspaceRegistry', { resolveByPath: vi.fn(async () => undefined) })
         context.provide('dshHomePath' as never, ((...segments: string[]) => join(directory, 'home', ...segments)) as never)

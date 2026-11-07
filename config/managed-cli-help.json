@@ -2,7 +2,7 @@
   "invocation": "ELECTRON_RUN_AS_NODE=1 \"$DSH_HARNESS_COMFYUI_NODE_EXECUTABLE\" --expose-internals \"$DSH_HARNESS_COMFYUI_CLI\"",
   "nodes": {
     "": {
-      "summary": "检查模板参数、创建生成任务、等待 Run 完成或读取图片。",
+      "summary": "查询生成资源参数、提交生成、读取图片，以及读写工作台任务。",
       "details": []
     },
     "generation": {
@@ -137,6 +137,7 @@
       "summary": "提交生成清单，返回每项已接纳的 Run。",
       "details": [
         "调用：{cli} generation submit --file <清单路径> [--quiet]。\n或 {cli} generation submit --stdin [--quiet]。",
+        "从工作台任务发起时，在清单根级填写 workbench_task_id，值取任务 ID；普通聊天生成可省略。提交内容须符合任务输入要求，生成数量须在任务剩余运行次数内。",
         "\n准备清单：",
         "1. --file 与 --stdin 必选其一。清单文件必须为 UTF-8 普通文件。",
         "2. 首次提交前，为每项生成并保存 UUID request_id。request_id 在同一清单中必须互不重复。已就绪且在单次上限内的项必须合并提交。",
@@ -163,6 +164,61 @@
       ],
       "after": [
         "登记本次各项的完成观察：printf '%s\\n' {run_ids_json} | {cli} generation wait --stdin"
+      ]
+    },
+    "workbench": {
+      "summary": "按任务 ID 读取任务、提交产物和结束实验。",
+      "details": [
+        "任务 ID 来自本次执行要求。先读取 task 下的命令帮助，再读取该任务。"
+      ]
+    },
+    "workbench task": {
+      "summary": "读取任务的固定输入与输出范围，或向该任务提交产物和问题。",
+      "details": [
+        "get 返回固定输入、已接纳产物、运行轮次和补充回答。publish 保存本次产物并返回采用结果。"
+      ]
+    },
+    "workbench task get": {
+      "summary": "读取执行会话有权访问的任务。",
+      "details": [
+        "调用：{cli} workbench task get --stdin；也可使用 --file <task.json>。",
+        "输入示例：{\"task_id\":\"本次执行要求中的任务 ID\"}。",
+        "使用 output_contract.artifact_types 选择产物类型，使用 output_contract.parameter_ids 确定可建议的参数。"
+      ],
+      "after": [
+        "读取产物提交结构：{cli} workbench task publish --help"
+      ]
+    },
+    "workbench task publish": {
+      "summary": "向指定任务提交结构化产物或补充问题。",
+      "details": [
+        "调用：{cli} workbench task publish --file <artifact.json>；也可使用 --stdin。",
+        "输入示例：{\"task_id\":\"本次执行要求中的任务 ID\",\"artifact\":{\"type\":\"prompt\",\"positive_prompt\":\"warm light\",\"negative_prompt\":\"\"}}。",
+        "source_files 保存需要随产物保留的本地文件。使用 --file 时，相对路径以产物 JSON 文件所在目录为基准；使用 --stdin 时填写绝对路径。",
+        "返回 disposition：applied 表示已回填；candidate 表示保留为待采用候选；recorded 表示已保存；waiting_input 表示等待用户回答。",
+        "同一前台 Tool Call 内，相同 task_id 和产物再次提交会返回原回执。更换 Tool Call 前先通过 get 核对已接纳产物。",
+        "字段错误返回 error.issues，各项 path 指向需要修正的字段。修正后重新提交。"
+      ],
+      "after": [
+        "读取任务当前输入与已接纳产物：{cli} workbench task get --help"
+      ]
+    },
+    "workbench experiment": {
+      "summary": "管理指定任务的持续实验。",
+      "details": [
+        "每轮提交前读取任务，核对已接纳运行与剩余次数。"
+      ]
+    },
+    "workbench experiment end": {
+      "summary": "结束已完成当前轮次评价的实验。",
+      "details": [
+        "调用：{cli} workbench experiment end --stdin。",
+        "输入示例：{\"task_id\":\"实验任务 ID\",\"reason\":\"goal_met\"}。",
+        "reason 为 goal_met 时记录目标已达到；用户要求结束时填写 user_ended。",
+        "结束后保留已接纳运行与产物。重复调用可读取已保存的结束结果。"
+      ],
+      "after": [
+        "读取实验轮次和评价：{cli} workbench task get --help"
       ]
     }
   },

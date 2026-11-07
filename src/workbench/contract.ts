@@ -1,0 +1,191 @@
+import type { CatalogKind as CatalogResourceKind } from '../catalog/contract.ts'
+import type { JsonValue } from '../shared/json-contract.ts'
+
+export type { JsonValue }
+export type TaskKind = 'prompt' | 'rewrite' | 'parameters' | 'resources' | 'review' | 'compare' | 'diagnose' | 'experience' | 'run' | 'experiment'
+export type TaskStatus = 'pending' | 'running' | 'waiting_input' | 'waiting_generation' | 'needs_attention' | 'paused' | 'interrupted' | 'succeeded' | 'failed'
+export type ArtifactType = ArtifactPayload['type']
+export type ArtifactDisposition = 'applied' | 'candidate' | 'recorded' | 'waiting_input'
+export type ExecutionState = 'pending' | 'running' | 'idle' | 'interrupted' | 'failed'
+export type CatalogKind = CatalogResourceKind
+export type ContextKind = Exclude<CatalogKind, 'model' | 'lora' | 'comfyui-template'>
+export interface ContextRef { kind: ContextKind; id: string }
+export interface ResourceRef { kind: CatalogKind; id: string }
+export interface PromptInput { positive_prompt: string; negative_prompt: string }
+export interface GenerationInput {
+  title: string
+  instance_id: string | null
+  template_id: string | null
+  model: { id: string; file_name: string } | null
+  parameters: Record<string, JsonValue>
+  loras: { id: string; file_name: string; weight: number; trigger_words: string[] }[]
+}
+export interface TaskDraft { prompt_input: PromptInput; generation_input: GenerationInput; context_refs: ContextRef[]; base_model_id: string | null }
+export interface ExecutionDraft { mode: 'once' | 'continuous'; max_runs: number }
+export interface AgentModel { provider: string; model: string; reasoningEffort?: string }
+export interface ReviewDraft {
+  verdict: 'unrated' | 'met' | 'needs-work'
+  observation: string
+  conclusion: string
+  title: string
+  conditions: string
+  note: string
+  evidence_run_ids: string[]
+  review_artifact_id: string | null
+  experience_artifact_id: string | null
+  experience_id: string | null
+}
+export interface SavedReview { verdict: ReviewDraft['verdict']; observation: string; conclusion: string; source_artifact_id: string | null }
+export interface EvaluationInput { run_id: string; verdict: ReviewDraft['verdict']; observation: string; conclusion: string; experience: { title: string; conditions: string; note: string } }
+export interface TaskInput extends TaskDraft {
+  requirements: { original_request: string; instructions: string }
+  reference_run_ids: string[]
+  evaluation_input?: EvaluationInput
+  requested_skill: string | null
+  max_runs: number
+}
+export interface OutputContract {
+  artifact_types: ArtifactType[]
+  required_artifact_types: ArtifactType[]
+  parameter_ids: string[]
+  apply_mode: 'automatic' | 'candidate' | 'record'
+  requires_finished_runs: boolean
+}
+export interface FunctionDescriptor { kind: TaskKind; name: string; default_request_template: string; output_contract: OutputContract; ui_location: string }
+export interface FunctionBinding {
+  workspace_id: string
+  function_id: string
+  name: string
+  kind: TaskKind
+  builtin: boolean
+  preset_id: string
+  agent_model: AgentModel
+  requested_skill: string | null
+  request_template: string
+}
+export interface BindingSnapshot { function_id: string; name: string; kind: TaskKind; preset_id: string; agentModel: AgentModel; requested_skill: string | null; request_template: string }
+export interface ApplyTarget { kind: 'branch' | 'run_review'; id: string; expected: Record<string, JsonValue> }
+export interface Work { work_id: string; workspace_id: string; name: string; goal: string }
+export interface Branch {
+  branch_id: string
+  work_id: string
+  parent_branch_id: string | null
+  name: string
+  original_request: string
+  source_run_id: string | null
+  source_artifact_id: string | null
+  source_experience_id: string | null
+  draft: TaskDraft
+  execution: ExecutionDraft
+}
+export interface TaskAnswer { question_artifact_id: string; answer: string }
+export interface Task {
+  task_id: string
+  branch_id: string
+  function_id: string
+  title: string
+  kind: TaskKind
+  status: TaskStatus
+  input: TaskInput
+  output_contract: OutputContract
+  apply_target: ApplyTarget
+  binding_snapshot: BindingSnapshot
+  session_id: string | null
+  request_text: string
+  selected_model: Record<string, JsonValue> | null
+  answers: TaskAnswer[]
+  error: { code: string; message: string } | null
+  created_at: number
+  updated_at: number
+  execution_state: ExecutionState
+  initiator: 'human' | 'agent'
+  retry_of_run_id: string | null
+}
+export type ArtifactPayload = (
+  | { type: 'prompt'; positive_prompt: string; negative_prompt: string }
+  | { type: 'parameters'; parameters: Record<string, JsonValue> }
+  | { type: 'generation_input'; generation_input: GenerationInput; context_refs: ContextRef[] }
+  | { type: 'resources'; refs: ResourceRef[]; reason?: string }
+  | { type: 'review'; observation: string; conclusion: string; run_ids: string[]; candidate?: { generation_input: GenerationInput; context_refs: ContextRef[] } }
+  | { type: 'experience'; title: string; conditions: string; note: string; base_model_id: string | null; model_id: string | null; run_ids: string[] }
+  | { type: 'question'; question: string; options: string[] }
+) & { source_files?: string[] }
+export interface SkillReadRef { name: string; session_id: string; turn: number; call_id: string; source_file: string | null }
+export interface StoredArtifact {
+  artifact_id: string
+  task_id: string
+  type: ArtifactType
+  artifact: ArtifactPayload
+  source_files: string[]
+  session_id: string
+  turn: number
+  call_id: string
+  skill_refs: SkillReadRef[]
+  disposition: ArtifactDisposition
+  applied_target: { kind: string; id: string; fields: string[] } | null
+  created_at: number
+}
+export interface PublishReceipt { task_id: string; artifact_id: string; disposition: ArtifactDisposition }
+export interface WorkbenchIdentity { workspaceId: string; sessionId: string; turn: number; callId: string }
+export interface WorkbenchRunMedia { media_id: string; run_id: string; filename: string; media_type: string; media_kind: string; byte_size: number; url?: string; download_url?: string }
+export interface WorkbenchRun {
+  session_id: string
+  created_at: number
+  updated_at: number
+  media: WorkbenchRunMedia[]
+  run_id: string
+  workbench_task_id: string
+  iteration_index: number | null
+  status: string
+  title: string
+  generation_input: GenerationInput
+  candidate_artifact_id: string | null
+  review_artifact_id: string | null
+  retry_of_run_id: string | null
+  initiator: 'human' | 'agent'
+  review: SavedReview | null
+  review_draft: ReviewDraft | null
+  error: { code: string; message: string } | null
+}
+export interface Experiment { task_id: string; control_state: 'running' | 'paused' | 'ended' | 'completed'; end_reason: 'goal_met' | 'budget_used' | 'user_ended' | null; submitted_count: number; max_runs: number }
+export interface Experience {
+  experience_id: string
+  work_id: string
+  branch_id: string
+  task_id: string | null
+  title: string
+  conditions: string
+  note: string
+  base_model_id: string | null
+  model_id: string | null
+  evidence_run_ids: string[]
+  source_run_id: string
+  source_experience_id: string | null
+  source_artifact_id: string | null
+}
+export interface Favorite { target_type: 'run' | 'experience'; target_id: string }
+export interface WorkbenchViewState {
+  workspace_id: string | null; work_id: string | null; branch_id: string | null
+  page: string; selected_run_id: string | null; inspect_run: boolean; compare_run_id: string | null
+  catalog_filters: Record<string, JsonValue>; scroll_positions: Record<string, JsonValue>; expanded_branches: string[]; preset_override: string | null
+}
+export interface WorkbenchProjection {
+  workspace_id: string
+  work_id: string | null
+  works: Work[]
+  branches: Branch[]
+  tasks: Task[]
+  artifacts: StoredArtifact[]
+  runs: WorkbenchRun[]
+  experiments: Experiment[]
+  experiences: Experience[]
+  favorites: Favorite[]
+  functions: FunctionBinding[]
+  refreshAfterMs: number
+}
+export interface TaskGetResult extends TaskInput {
+  task_id: string; kind: TaskKind; status: TaskStatus; output_contract: OutputContract
+  artifacts: { artifact_id: string; artifact: ArtifactPayload; disposition: ArtifactDisposition }[]
+  iterations: { index: number; run_id: string; generation_input: GenerationInput; context_refs: ContextRef[]; review_artifact_id: string | null }[]
+  answers: TaskAnswer[]
+}

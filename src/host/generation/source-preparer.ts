@@ -67,6 +67,7 @@ export interface WorkflowCompilerResult {
 }
 
 export interface WorkflowCompiler {
+  validateInput?(input: WorkflowCompilerInput): Promise<void>
   inspectRuntimeParameters(input: WorkflowRuntimeParameterInspectionInput): Promise<WorkflowRuntimeParameterInspection>
   compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult>
 }
@@ -129,33 +130,28 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
     })
   }
 
-  async prepare(request: GenerationRequest, signal?: AbortSignal): Promise<PreparedGeneration> {
+  private async compilerInput(request: GenerationRequest, signal?: AbortSignal) {
     const bundle = await this.options.source.readTemplate(request.templateId, signal)
-    const instanceId = request.instanceId ?? this.options.defaultInstanceId
-    const instance = await this.options.source.readInstance(instanceId, signal)
-    const connection = Object.freeze({
-      url: instance.url,
-      origin: comfyInstanceOrigin(instance.url),
-      authorization: instance.authorization,
-    })
-    const compiled = await this.options.compiler.compile({
-      instanceId: instance.id,
-      workflow: bundle.workflow,
-      connection,
-      runtimeParameters: request.parameters,
-      model: request.model,
-      loras: request.loras,
-      signal,
-    })
+    const instance = await this.options.source.readInstance(request.instanceId ?? this.options.defaultInstanceId, signal)
+    const connection = Object.freeze({ url: instance.url, origin: comfyInstanceOrigin(instance.url), authorization: instance.authorization })
+    const input: WorkflowCompilerInput = { instanceId: instance.id, workflow: bundle.workflow, connection, runtimeParameters: request.parameters, model: request.model, loras: request.loras, signal }
+    return { bundle, instance, connection, input }
+  }
+
+  async validateInput(request: GenerationRequest, signal?: AbortSignal): Promise<void> {
+    if (!this.options.compiler.validateInput) throw new GenerationRuntimeError('GENERATION_VALIDATION_UNAVAILABLE', 'Workflow compiler does not provide generation input validation.')
+    const { input } = await this.compilerInput(request, signal)
+    await this.options.compiler.validateInput(input)
+  }
+
+  async prepare(request: GenerationRequest, signal?: AbortSignal): Promise<PreparedGeneration> {
+    const { bundle, instance, connection, input } = await this.compilerInput(request, signal)
+    const compiled = await this.options.compiler.compile(input)
     return Object.freeze({
-      instanceId: instance.id,
-      instanceTitle: instance.title,
-      templateTitle: bundle.title,
+      instanceId: instance.id, instanceTitle: instance.title, templateTitle: bundle.title,
       sourceSnapshot: safeSourceSnapshot(bundle, instance, connection.origin),
-      actualWorkflow: compiled.actualWorkflow,
-      apiWorkflow: compiled.apiWorkflow,
-      expectedOutputNodeIds: compiled.activeOutputNodeIds,
-      connection,
+      actualWorkflow: compiled.actualWorkflow, apiWorkflow: compiled.apiWorkflow,
+      expectedOutputNodeIds: compiled.activeOutputNodeIds, connection,
     })
   }
 }

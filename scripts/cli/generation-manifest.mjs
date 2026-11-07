@@ -15,7 +15,7 @@ export function decodeUtf8(bytes) {
   return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes)
 }
 
-async function readUtf8File(path, maxBytes = CLI_MAX_BODY_BYTES) {
+export async function readUtf8File(path, maxBytes = CLI_MAX_BODY_BYTES) {
   const file = await open(path, constants.O_RDONLY | constants.O_NONBLOCK)
   const tooLarge = () => Object.assign(new TypeError(`File exceeds the remaining input limit (${maxBytes} bytes)`), { code: 'CLI_REQUEST_TOO_LARGE' })
   try {
@@ -72,7 +72,7 @@ export async function loadGenerationManifest(argv, stdin) {
     }
     items.push({ request_id: item.request_id, request: { ...item.request, parameters: Object.fromEntries(parameters) } })
   }
-  const request = parseCliRequest({ command: 'generation.submit', items })
+  const request = parseCliRequest({ command: 'generation.submit', items, ...(value.workbench_task_id === undefined ? {} : { workbench_task_id: value.workbench_task_id }) })
   assertRequestSize(request)
   return request
 }

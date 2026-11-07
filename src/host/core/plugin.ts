@@ -1,4 +1,9 @@
 import { Service, type Context, type Logger } from '@deepseek-ai/cordis'
+import { DatabaseSync } from 'node:sqlite'
+import { dirname, join } from 'node:path'
+import { mkdirSync } from 'node:fs'
+import { WorkbenchStore } from '../storage/workbench-store.ts'
+import * as workbenchPlugin from '../workbench/plugin.ts'
 
 import { loadProfile } from '../../config/load-profile.ts'
 import {
@@ -105,7 +110,16 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     instanceCacheEpoch: effectiveProfile.comfyui.frontendCompiler.instanceCacheEpoch,
     frontend: frontendCompiler,
   })
+  mkdirSync(dirname(effectiveProfile.paths.runRepositoryFile), { recursive: true })
+  const database = new DatabaseSync(effectiveProfile.paths.runRepositoryFile)
+  ctx.effect(() => () => database.close(), 'Plugin SQLite repository')
+  let workbenchStore: WorkbenchStore
   const runtime = new GenerationRuntime({
+    database,
+    workbench: {
+      assertGenerationAcceptance: input => workbenchStore.assertGenerationAcceptance(structuredClone(input)),
+      registerGenerationRun: input => workbenchStore.registerGenerationRun(structuredClone(input)),
+    },
     runRepositoryFile: effectiveProfile.paths.runRepositoryFile,
     runDirectory: effectiveProfile.paths.runDirectory,
     savedMediaDirectory: effectiveProfile.paths.savedMediaDirectory,
@@ -121,6 +135,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     missingObservationMs: effectiveProfile.jobs.missingObservationMs,
     reportRunInputLookupError: reportGenerationRunInputLookupError.bind(undefined, generationLogger),
   })
+  workbenchStore = new WorkbenchStore({ database, artifactDirectory: join(effectiveProfile.paths.runDirectory, 'task-artifacts') })
   const coordinator = new GenerationCoordinator({
     runtime,
     pollIntervalMs: effectiveProfile.jobs.pollIntervalMs,
@@ -134,6 +149,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     }
   }, 'Generation coordinator')
   new ComfyuiCoreService(ctx, {
-    catalog, runtime, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings),
+    catalog, runtime, workbenchStore, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings),
   })
+  ctx.plugin(workbenchPlugin)
 }
