@@ -373,6 +373,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     isCurrent?: () => boolean,
   ) => {
     if (!state.workspaceId && type !== 'new-workspace') return false
+    const navigation = store.getNavigationSequence()
+    const stillCurrent = () => store.getNavigationSequence() === navigation &&
+      (!isCurrent || isCurrent())
     try {
       const selection = await props.onAction({
         type,
@@ -382,7 +385,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...(run ? { runId: run.run_id } : {}),
         ...extra,
       })
-      if (isCurrent && !isCurrent()) return false
+      if (!stillCurrent()) return false
       if (selection) {
         store.setWorkspace(selection.workspaceId)
         props.onWorkspaceChange(selection.workspaceId)
@@ -400,7 +403,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       await store.refresh()
       return true
     } catch (error) {
-      if (!isCurrent || isCurrent())
+      if (stillCurrent())
         setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
       return false
     }

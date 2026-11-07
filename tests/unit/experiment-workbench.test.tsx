@@ -169,6 +169,39 @@ describe('experiment workbench shell', () => {
     expect(second.findAllByType('small').map(nodeText)).toContain('20:40')
   })
 
+  it.each([
+    { outcome: 'success', returnToSource: false },
+    { outcome: 'failure', returnToSource: false },
+    { outcome: 'success', returnToSource: true },
+    { outcome: 'failure', returnToSource: true },
+  ])('keeps user navigation after an earlier save: $outcome, return $returnToSource', async ({ outcome, returnToSource }) => {
+    let finish!: (value: { workspaceId: string; workId: string; branchId: string }) => void
+    let fail!: (error: Error) => void
+    const onAction = vi.fn(() => new Promise<{ workspaceId: string; workId: string; branchId: string }>((resolve, reject) => { finish = resolve; fail = reject }))
+    const onWorkspaceChange = vi.fn()
+    const { renderer } = await mount(fullProjection(), {
+      onAction, onWorkspaceChange,
+      workspaces: [{ id: 'workspace-a', name: '画面实验', path: '/projects/art' }, { id: 'workspace-b', name: '人物实验', path: '/projects/characters' }],
+      remote: { getProjection: async ({ workspaceId }) => workspaceId === 'workspace-a' ? fullProjection() : { ...empty, workspace_id: 'workspace-b' }, getInputDescription: async () => inputDescription },
+    })
+    await change(renderer, 'ComfyUI 实例', '2')
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: 'update-draft', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' }))
+    await change(renderer, '切换工作区', 'workspace-b')
+    if (returnToSource) {
+      await change(renderer, '切换工作区', 'workspace-a')
+      await click(renderer, '配置中心')
+    }
+    await act(async () => {
+      if (outcome === 'success') finish({ workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' })
+      else fail(new Error('前一工作区保存失败'))
+    })
+    expect(renderer.root.findByProps({ 'aria-label': '切换工作区' }).props.value).toBe(returnToSource ? 'workspace-a' : 'workspace-b')
+    expect(onWorkspaceChange).toHaveBeenCalledTimes(returnToSource ? 2 : 1)
+    expect(onWorkspaceChange).toHaveBeenLastCalledWith(returnToSource ? 'workspace-a' : 'workspace-b')
+    if (returnToSource) expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('')
+    expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(0)
+  })
+
   it('shows the reference empty workspace and opens the work form', async () => {
     const { renderer } = await mount(empty)
     expect(

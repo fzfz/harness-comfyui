@@ -113,6 +113,47 @@ describe('experiment workbench browsing', () => {
     expect(remote.getProjection).toHaveBeenCalledTimes(3)
   })
 
+  it('keeps pending navigation valid through a projection refresh and expires it after user navigation', async () => {
+    const data = fullProjection()
+    let available = { ...data, runs: [] as WorkbenchProjection['runs'] }
+    const store = new ExperimentWorkbenchStore({ getProjection: async () => available })
+    store.setWorkspace('workspace-a')
+    await flush()
+    const pendingNavigation = store.getNavigationSequence()
+    available = data
+    await store.refresh()
+    expect(store.getSnapshot().view.selectedRunId).toBe('r1')
+    expect(store.getNavigationSequence()).toBe(pendingNavigation)
+    store.updateView({ page: 'settings' })
+    expect(store.getNavigationSequence()).not.toBe(pendingNavigation)
+    store.dispose()
+  })
+
+  it('keeps configuration open across workspaces while restoring their saved browsing positions', async () => {
+    const memory = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => { memory.set(key, value) },
+    }
+    const remote = { getProjection: vi.fn(async ({ workspaceId }: { workspaceId: string }) => projection(workspaceId, `work-${workspaceId}`)) }
+    const store = new ExperimentWorkbenchStore(remote, storage)
+    store.setWorkspace('a')
+    await flush()
+    store.updateView({ page: 'tasks', scrollPositions: { 'tasks:work-a': { top: 120, left: 0 } } })
+    store.setWorkspace('b')
+    await flush()
+    store.updateView({ page: 'settings', scrollPositions: { 'tasks:work-b': { top: 240, left: 0 } }, compareRunId: 'previous-comparison' })
+    store.setWorkspace('a')
+    await flush()
+    expect(store.getSnapshot().view).toMatchObject({ page: 'settings', workId: 'work-a', compareRunId: null, scrollPositions: { 'tasks:work-a': { top: 120, left: 0 } } })
+    expect(store.getSnapshot().projection?.workspace_id).toBe('a')
+    store.updateView({ page: 'workbench' })
+    store.setWorkspace('b')
+    await flush()
+    expect(store.getSnapshot().view).toMatchObject({ page: 'settings', workId: 'work-b', compareRunId: null, scrollPositions: { 'tasks:work-b': { top: 240, left: 0 } } })
+    store.dispose()
+  })
+
   it('keeps each workspace browsing position and rejects a previous scope response', async () => {
     const memory = new Map<string, string>()
     const storage = {

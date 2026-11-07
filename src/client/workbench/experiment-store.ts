@@ -50,6 +50,7 @@ export class ExperimentWorkbenchStore {
   }
   private readonly listeners = new Set<() => void>()
   private sequence = 0
+  private navigationSequence = 0
   private timer: ReturnType<typeof setTimeout> | undefined
   private visible = true
   private disposed = false
@@ -58,6 +59,7 @@ export class ExperimentWorkbenchStore {
     private readonly storage?: Pick<Storage, 'getItem' | 'setItem'>,
   ) {}
   readonly getSnapshot = (): ExperimentSnapshot => this.snapshot
+  readonly getNavigationSequence = (): number => this.navigationSequence
   readonly subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
@@ -118,20 +120,31 @@ export class ExperimentWorkbenchStore {
   }
   setWorkspace(workspaceId: string | null): void {
     if (this.disposed || workspaceId === this.snapshot.workspaceId) return
+    this.navigationSequence++
     this.save()
     this.sequence++
     clearTimeout(this.timer)
+    const view = workspaceId ? this.restore(workspaceId) : initialView()
     this.emit({
       workspaceId,
       projection: null,
-      view: workspaceId ? this.restore(workspaceId) : initialView(),
+      view: this.snapshot.view.page === 'settings' ? { ...view, page: 'settings' } : view,
       loading: !!workspaceId,
       error: null,
     })
     if (workspaceId && this.visible) void this.refresh(true)
   }
   updateView(patch: Partial<ExperimentViewState>): void {
-    this.emit({ view: { ...this.snapshot.view, ...patch } })
+    const previous = this.snapshot.view, next = { ...previous, ...patch }
+    if (
+      next.workId !== previous.workId ||
+      next.branchId !== previous.branchId ||
+      next.page !== previous.page ||
+      next.selectedRunId !== previous.selectedRunId ||
+      next.inspectRun !== previous.inspectRun ||
+      next.compareRunId !== previous.compareRunId
+    ) this.navigationSequence++
+    this.emit({ view: next })
     this.save()
   }
   selectWork(workId: string): void {
