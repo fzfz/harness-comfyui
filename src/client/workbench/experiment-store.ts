@@ -21,7 +21,7 @@ const initialView = (): ExperimentViewState => ({
   selectedRunId: null,
   inspectRun: false,
   compareRunId: null,
-  expandedBranches: [],
+  collapsedBranches: [],
   catalogFilters: {
     kind: 'model',
     baseModelId: '',
@@ -98,8 +98,8 @@ export class ExperimentWorkbenchStore {
         selectedRunId:
           typeof raw.selectedRunId === 'string' ? raw.selectedRunId : null,
         inspectRun: raw.inspectRun === true,
-        expandedBranches: Array.isArray(raw.expandedBranches)
-          ? raw.expandedBranches.filter(
+        collapsedBranches: Array.isArray(raw.collapsedBranches)
+          ? raw.collapsedBranches.filter(
               (id): id is string => typeof id === 'string',
             )
           : [],
@@ -158,10 +158,19 @@ export class ExperimentWorkbenchStore {
       selectedRunId: null,
       inspectRun: false,
       compareRunId: null,
-      expandedBranches: [],
     })
     this.emit({ projection: null, loading: true, error: null })
     if (this.visible) void this.refresh()
+  }
+  private revealBranch(branchId: string): readonly string[] {
+    const projection = this.snapshot.projection
+    const collapsed = new Set(this.snapshot.view.collapsedBranches)
+    for (
+      let branch = projection?.branches.find(item => item.branch_id === branchId);
+      branch;
+      branch = projection?.branches.find(parent => parent.branch_id === branch?.parent_branch_id)
+    ) collapsed.delete(branch.branch_id)
+    return [...collapsed]
   }
   selectBranch(branchId: string): void {
     const projection = this.snapshot.projection
@@ -174,9 +183,11 @@ export class ExperimentWorkbenchStore {
       projection?.runs.filter((run) => taskIds.has(run.workbench_task_id)) ?? []
     this.updateView({
       branchId,
+      page: 'workbench',
       selectedRunId: runs.at(-1)?.run_id ?? null,
       inspectRun: false,
       compareRunId: null,
+      collapsedBranches: this.revealBranch(branchId),
     })
   }
   selectRun(runId: string, inspectRun = true): void {
@@ -186,23 +197,12 @@ export class ExperimentWorkbenchStore {
       (task) => task.task_id === run?.workbench_task_id,
     )
     if (!run || !task) return
-    const expanded = new Set(this.snapshot.view.expandedBranches)
-    for (
-      let branch = projection?.branches.find(
-        (branch) => branch.branch_id === task.branch_id,
-      );
-      branch;
-      branch = projection?.branches.find(
-        (parent) => parent.branch_id === branch?.parent_branch_id,
-      )
-    )
-      expanded.add(branch.branch_id)
     this.updateView({
       branchId: task.branch_id,
       selectedRunId: runId,
       inspectRun,
       page: 'workbench',
-      expandedBranches: [...expanded],
+      collapsedBranches: this.revealBranch(task.branch_id),
     })
   }
   setVisible(visible: boolean): void {
@@ -283,12 +283,6 @@ export class ExperimentWorkbenchStore {
         )
           ? previous.compareRunId
           : null,
-        expandedBranches:
-          previous.workId === workId
-            ? previous.expandedBranches.filter((id) =>
-                branches.some((branch) => branch.branch_id === id),
-              )
-            : branches.map((branch) => branch.branch_id),
       }
       this.emit({ projection, view, loading: false, error: null })
       this.save()

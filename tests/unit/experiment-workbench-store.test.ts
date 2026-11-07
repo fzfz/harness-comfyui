@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fullProjection } from './experiment-workbench-fixtures.ts'
+import { fullProjection, treeProjection } from './experiment-workbench-fixtures.ts'
 import { ExperimentWorkbenchStore } from '../../src/client/workbench/experiment-store.ts'
 import type { WorkbenchProjection } from '../../src/workbench/contract.ts'
 
@@ -66,7 +66,7 @@ describe('experiment workbench browsing', () => {
       getItem: () =>
         JSON.stringify({
           workId: 'work-b',
-          expandedBranches: ['root', 12],
+          collapsedBranches: ['root', 12],
           page: 'graph',
           catalogFilters: { kind: 'model' },
         }),
@@ -89,6 +89,7 @@ describe('experiment workbench browsing', () => {
     })
     expect(store.getSnapshot().view.workId).toBe('work-b')
     expect(store.getSnapshot().view.page).toBe('graph')
+    expect(store.getSnapshot().view.collapsedBranches).toEqual(['root'])
     store.dispose()
   })
   it('opens the selected work results and clears the previous work inspection', async () => {
@@ -119,6 +120,20 @@ describe('experiment workbench browsing', () => {
     expect(store.getSnapshot().projection?.tasks).toEqual([])
     expect(store.getSnapshot().projection?.experiences).toEqual([])
     expect(store.getSnapshot().projection?.favorites).toEqual([])
+    store.dispose()
+  })
+
+  it('reveals a selected Run branch through all collapsed ancestors', async () => {
+    const data = treeProjection()
+    const store = new ExperimentWorkbenchStore({ getProjection: async () => data })
+    store.setWorkspace('workspace-a')
+    await flush()
+    store.updateView({ page: 'tasks', collapsedBranches: ['root', 'warm', 'cool', 'detail'] })
+    store.selectRun('detail-r4')
+    expect(store.getSnapshot().view).toMatchObject({
+      page: 'workbench', branchId: 'detail', selectedRunId: 'detail-r4',
+      inspectRun: true, collapsedBranches: ['cool'],
+    })
     store.dispose()
   })
 

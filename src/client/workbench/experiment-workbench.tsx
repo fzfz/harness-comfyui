@@ -614,7 +614,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     const children = p!.branches.filter(
         (child) => child.parent_branch_id === item.branch_id,
       ),
-      open = view.expandedBranches.includes(item.branch_id),
+      open = !view.collapsedBranches.includes(item.branch_id),
       active = item.branch_id === view.branchId
     return (
       <div
@@ -632,11 +632,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               aria-label={`${open ? '收起' : '展开'}${item.name}`}
               onClick={() =>
                 store.updateView({
-                  expandedBranches: open
-                    ? view.expandedBranches.filter(
+                  collapsedBranches: open
+                    ? [...view.collapsedBranches, item.branch_id]
+                    : view.collapsedBranches.filter(
                         (id) => id !== item.branch_id,
-                      )
-                    : [...view.expandedBranches, item.branch_id],
+                      ),
                 })
               }
             >

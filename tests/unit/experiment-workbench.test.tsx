@@ -7,6 +7,7 @@ import type { ExperimentWorkbenchProps } from '../../src/client/workbench/experi
 import { ExperimentWorkbench } from '../../src/client/workbench/experiment-workbench.tsx'
 import {
   fullProjection,
+  treeProjection,
   inputDescription,
   makeRun,
   makeTask,
@@ -218,6 +219,79 @@ describe('experiment workbench shell', () => {
       renderer.root.findByProps({ 'aria-label': '工作名称' }),
     ).toBeDefined()
     expect(renderer.root.findByProps({ 'aria-label': '总目标' })).toBeDefined()
+  })
+
+  it('renders three branch levels with their own run counts and keeps selection when folding a subtree', async () => {
+    const data = treeProjection()
+    const { renderer, onAction } = await mount(data)
+    expect(renderer.root.findAllByProps({ role: 'treeitem' }).map(node => node.props['aria-level'])).toEqual([1, 2, 3, 2])
+    for (const [name, count] of [['主分支', 1], ['暖光', 2], ['冷光', 3], ['暖光细节', 4]] as const)
+      expect(nodeText(renderer.root.findByProps({ 'aria-label': `切换分支 ${name}` }))).toContain(` · ${count} 次运行`)
+    for (const selected of data.branches) {
+      await click(renderer, `切换分支 ${selected.name}`)
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(selected.name)
+      expect(renderer.root.findByProps({ 'aria-label': '原始需求' }).props.value).toBe(selected.original_request)
+      const runs = data.runs.filter(run => run.workbench_task_id === `${selected.branch_id}-task`)
+      const strip = renderer.root.findByProps({ className: 'run-strip' })
+      expect(strip.findAllByType('button').map(node => node.props['aria-label'])).toEqual(runs.map(run => `查看运行 ${run.run_id}`))
+      expect(renderer.root.findByProps({ 'aria-label': `查看运行 ${runs.at(-1)!.run_id}` }).props['aria-pressed']).toBe(true)
+      expect(renderer.root.findAllByProps({ role: 'treeitem', 'aria-selected': true })).toHaveLength(1)
+    }
+    await click(renderer, '收起暖光')
+    expect(renderer.root.findAllByProps({ 'aria-label': '切换分支 暖光细节' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光细节')
+    await click(renderer, '展开暖光')
+    expect(renderer.root.findAllByProps({ role: 'treeitem', 'aria-selected': true })[0]!.props['aria-level']).toBe(3)
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '切换分支 暖光细节' }))).toContain(' · 4 次运行')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('opens all branch levels after resolving the selected work query', async () => {
+    const data = treeProjection()
+    const { renderer } = await mount(data, {
+      remote: {
+        getProjection: async scope => scope.workId ? data : {
+          ...data, work_id: null, branches: [], tasks: [], runs: [],
+        },
+        getInputDescription: async () => inputDescription,
+      },
+    })
+    expect(renderer.root.findAllByProps({ role: 'treeitem' }).map(node => node.props['aria-level'])).toEqual([1, 2, 3, 2])
+  })
+
+  it('opens results and reveals children when selecting a collapsed branch from resources', async () => {
+    const { renderer } = await mount(treeProjection())
+    await click(renderer, '收起暖光')
+    await click(renderer, '资源')
+    await click(renderer, '切换分支 暖光')
+    expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ 'aria-label': '收起暖光' })).toBeDefined()
+    expect(renderer.root.findByProps({ 'aria-label': '切换分支 暖光细节' })).toBeDefined()
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光')
+    expect(renderer.root.findByProps({ 'aria-label': '查看运行 warm-r2' }).props['aria-pressed']).toBe(true)
+  })
+
+  it('retains folded subtrees when switching away from a work and back', async () => {
+    const first = treeProjection()
+    const second = {
+      ...first, work_id: 'work-b',
+      branches: [{ ...first.branches[0]!, branch_id: 'other-root', work_id: 'work-b', name: '另一个主分支' }],
+      tasks: [], runs: [], experiences: [], favorites: [],
+    }
+    const { renderer } = await mount(first, {
+      remote: {
+        getProjection: async ({ workId }) => workId === 'work-b' ? second : first,
+        getInputDescription: async () => inputDescription,
+      },
+    })
+    await click(renderer, '收起暖光')
+    await change(renderer, '切换工作', 'work-b')
+    await change(renderer, '切换工作', 'work-a')
+    expect(renderer.root.findByProps({ 'aria-label': '收起主分支' })).toBeDefined()
+    expect(renderer.root.findByProps({ 'aria-label': '展开暖光' })).toBeDefined()
+    expect(renderer.root.findAllByProps({ 'aria-label': '切换分支 暖光细节' })).toHaveLength(0)
+    await click(renderer, '展开暖光')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '切换分支 暖光细节' }))).toContain(' · 4 次运行')
   })
 
   it('browses the recursive tree and every page tab using one workspace projection', async () => {

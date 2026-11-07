@@ -65,7 +65,7 @@ export interface ExperimentViewState {
   readonly selectedRunId: string | null
   readonly inspectRun: boolean
   readonly compareRunId: string | null
-  readonly expandedBranches: readonly string[]
+  readonly collapsedBranches: readonly string[]
   readonly catalogFilters: {
     readonly kind: string
     readonly baseModelId: string

@@ -157,6 +157,33 @@ export const makeRun = (
         ]
       : [],
 })
+export const treeProjection = (): WorkbenchProjection => {
+  const data = fullProjection()
+  const nodes = [
+    { id: 'root', parent: null, name: '主分支', runs: 1 },
+    { id: 'warm', parent: 'root', name: '暖光', runs: 2 },
+    { id: 'cool', parent: 'root', name: '冷光', runs: 3 },
+    { id: 'detail', parent: 'warm', name: '暖光细节', runs: 4 },
+  ]
+  data.branches = nodes.map(node => {
+    const branch = makeBranch(node.id, node.parent)
+    branch.name = node.name
+    branch.original_request = `比较${node.name}的表现。`
+    branch.draft.prompt_input.positive_prompt = `${node.id} prompt`
+    branch.source_run_id = node.parent ? `${node.parent}-r1` : null
+    return branch
+  })
+  data.tasks = nodes.map(node => makeTask(`${node.id}-task`, node.id))
+  data.runs = nodes.flatMap(node =>
+    Array.from({ length: node.runs }, (_, index) =>
+      makeRun(`${node.id}-r${index + 1}`, `${node.id}-task`),
+    ),
+  )
+  data.experiences = []
+  data.favorites = []
+  return data
+}
+
 export const fullProjection = (): WorkbenchProjection => ({
   workspace_id: 'workspace-a',
   work_id: 'work-a',
