@@ -103,7 +103,7 @@
 
 2. [workspaceSessionScopeForSession()](../../src/host/generation/workspace-access.ts) 使用官方 `subagents.listDescendants()` 查询后代会话。当前 Session 可读取自身结果，以及原始项目目录解析到同一 Workspace 的本地后代结果。后代会话查询返回分支错误，或缺少后代会话头信息时，接口报告对应分支不可读取。调用取消信号传给官方查询；应用重启后，持久化会话信息支持恢复相同的访问范围。
 
-3. Catalog 列表、详情与封面画廊由 [native-surfaces.tsx](../../src/client/workbench/native-surfaces.tsx) 和 [catalog-details.tsx](../../src/client/workbench/catalog-details.tsx) 展示。用户打开预览或详情后，Catalog 界面保留查询条件、选中项和返回位置。展示字段与详情接口定义分别由 [src/catalog/presentation.json](../../src/catalog/presentation.json) 和 [src/catalog/details-schema.ts](../../src/catalog/details-schema.ts) 定义；`coverUrl` 与 `sampleImageUrls` 属于 Client 展示投影。
+3. 聊天上下文弹窗和实验工作台共用 [catalog-browser.tsx](../../src/client/workbench/catalog-browser.tsx) 的目录组件。两个入口分别位于 [native-surfaces.tsx](../../src/client/workbench/native-surfaces.tsx) 和 [experiment-workbench.tsx](../../src/client/workbench/experiment-workbench.tsx)。用户打开预览或详情后，Catalog 界面保留查询条件、选中项和返回位置。展示字段与详情接口分别由 [src/catalog/presentation.json](../../src/catalog/presentation.json) 和 [src/catalog/details-schema.ts](../../src/catalog/details-schema.ts) 定义；`coverUrl` 与 `sampleImageUrls` 属于 Client 展示投影。
 
 4. [media-routes.ts](../../src/host/generation/media-routes.ts) 经官方 `webServer` 提供查看页、媒体内容、原文件下载与 Actual Workflow 路由。每次访问校验 HTTP 方法、Session、Workspace 和媒体归属。查看页的启动数据包含媒体展示字段、Run ID 与保存的正向 Prompt。
 

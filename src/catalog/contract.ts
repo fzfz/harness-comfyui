@@ -167,6 +167,7 @@ export type CatalogContext =
 
 export interface CatalogItem {
   readonly context: CatalogContext
+  readonly baseModelId: string | null
   readonly label: string
   readonly subtitle: string
   readonly coverUrl: string | null
@@ -471,10 +472,11 @@ export function parseCatalogResolvedGenerationModel(value: unknown): CatalogReso
 
 export function parseCatalogItem(value: unknown): CatalogItem {
   const input = record(value, 'catalog item')
-  exactKeys(input, ['context', 'label', 'subtitle', 'coverUrl', 'sampleImageUrls'], 'catalog item')
+  exactKeys(input, ['context', 'baseModelId', 'label', 'subtitle', 'coverUrl', 'sampleImageUrls'], 'catalog item')
   const parsedCoverUrl = coverUrl(input.coverUrl)
   return Object.freeze({
     context: parseCatalogContext(input.context),
+    baseModelId: nullableStableId(input.baseModelId),
     label: itemText(input.label, 'catalog item label', 500),
     subtitle: input.subtitle === '' ? '' : itemText(input.subtitle, 'catalog item subtitle', 500),
     coverUrl: parsedCoverUrl,

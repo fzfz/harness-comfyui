@@ -2,7 +2,7 @@ import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest } fr
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
-import type { CatalogApi } from './native-surfaces.tsx'
+import type { CatalogApi } from './catalog-browser.tsx'
 import type { WorkbenchProjection } from '../../workbench/contract.ts'
 
 export type ExperimentPage =

@@ -8,7 +8,7 @@ import type { WorkflowRuntimeParameterInspection } from '../../generation/inspec
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
 import type { WorkbenchProjection } from '../../workbench/contract.ts'
-import type { CatalogApi } from './native-surfaces.tsx'
+import type { CatalogApi } from './catalog-browser.tsx'
 import type {
   ExperimentScope,
   ExperimentSelection,

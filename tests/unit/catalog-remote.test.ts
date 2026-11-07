@@ -185,6 +185,7 @@ describe('Catalog Remote contribution', () => {
         page: 1,
         items: [{
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          baseModelId: '2',
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,
@@ -200,6 +201,7 @@ describe('Catalog Remote contribution', () => {
         page: 1,
         items: [{
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          baseModelId: '2',
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,
@@ -214,6 +216,28 @@ describe('Catalog Remote contribution', () => {
       .toEqual({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } })
   })
 
+  it('rejects card responses that omit baseModelId', () => {
+    const descriptor = CATALOG_REMOTE.descriptors[0]!
+    const result = descriptor.result
+    if (result.mode !== 'strict') throw new Error('strict codec required')
+    expect(() => result.create().parse({
+      ok: true,
+      value: {
+        kind: 'model',
+        query: '',
+        page: 1,
+        items: [{
+          context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          label: 'model.safetensors',
+          subtitle: 'safetensors',
+          coverUrl: null,
+          sampleImageUrls: [],
+        }],
+        totalCount: 1,
+      },
+    })).toThrow('properties')
+  })
+
   it('rejects an old Host result that omits sampleImageUrls', () => {
     const descriptor = CATALOG_REMOTE.descriptors[0]!
     const result = descriptor.result
@@ -226,6 +250,7 @@ describe('Catalog Remote contribution', () => {
         page: 1,
         items: [{
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          baseModelId: '2',
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,

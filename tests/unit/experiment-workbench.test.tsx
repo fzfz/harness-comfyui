@@ -1,7 +1,7 @@
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CatalogItem, CatalogKind } from '../../src/catalog/contract.ts'
-import type { CatalogApi } from '../../src/client/workbench/native-surfaces.tsx'
+import type { CatalogApi } from '../../src/client/workbench/catalog-browser.tsx'
 import type { ArtifactPayload } from '../../src/workbench/contract.ts'
 import type { ExperimentWorkbenchProps } from '../../src/client/workbench/experiment-contract.ts'
 import { ExperimentWorkbench } from '../../src/client/workbench/experiment-workbench.tsx'
@@ -1228,6 +1228,7 @@ describe('experiment workbench forms and task results', () => {
 
 const catalogItems: readonly CatalogItem[] = [
   {
+    baseModelId: '1',
     context: { kind: 'model', id: '11', file_name: 'model.safetensors' },
     label: '模型',
     subtitle: '生成模型',
@@ -1235,6 +1236,7 @@ const catalogItems: readonly CatalogItem[] = [
     sampleImageUrls: ['/one.png', '/two.png'],
   },
   {
+    baseModelId: null,
     context: { kind: 'lora', id: '13', file_name: 'glass.safetensors' },
     label: '玻璃 LoRA',
     subtitle: '玻璃细节',
@@ -1242,6 +1244,7 @@ const catalogItems: readonly CatalogItem[] = [
     sampleImageUrls: [],
   },
   {
+    baseModelId: null,
     context: { kind: 'work', id: '14', name: '花房作品' },
     label: '花房作品',
     subtitle: '玻璃建筑',
@@ -1249,6 +1252,7 @@ const catalogItems: readonly CatalogItem[] = [
     sampleImageUrls: ['/one.png'],
   },
   {
+    baseModelId: null,
     context: {
       kind: 'character',
       id: '15',
@@ -1262,6 +1266,7 @@ const catalogItems: readonly CatalogItem[] = [
     sampleImageUrls: [],
   },
   {
+    baseModelId: null,
     context: {
       kind: 'style',
       id: '16',
@@ -1274,6 +1279,7 @@ const catalogItems: readonly CatalogItem[] = [
     sampleImageUrls: [],
   },
   {
+    baseModelId: null,
     context: { kind: 'prompt-term', id: '17', tag: 'glass' },
     label: 'glass',
     subtitle: '提示词',
@@ -1281,6 +1287,7 @@ const catalogItems: readonly CatalogItem[] = [
     sampleImageUrls: [],
   },
   {
+    baseModelId: null,
     context: {
       kind: 'artist-string',
       id: '18',
@@ -1293,6 +1300,7 @@ const catalogItems: readonly CatalogItem[] = [
     sampleImageUrls: [],
   },
   {
+    baseModelId: null,
     context: { kind: 'comfyui-template', id: '12', title: '文生图' },
     label: '文生图',
     subtitle: 'Workflow',
@@ -1319,6 +1327,153 @@ const makeCatalog = (): CatalogApi => ({
   })),
 })
 
+
+describe('experiment workbench Catalog image availability', () => {
+  it.each([
+    { coverUrl: null, expected: ['/sample-1.png', '/sample-2.png'] },
+    { coverUrl: '/cover.png', expected: ['/cover.png', '/sample-1.png', '/sample-2.png'] },
+  ])('previews all available images from the card and details with cover $coverUrl', async ({ coverUrl, expected }) => {
+    const catalog = makeCatalog()
+    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: [{ ...catalogItems[0]!, coverUrl, sampleImageUrls: ['/sample-1.png', '/sample-2.png'] }], totalCount: 1 }))
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    const preview = renderer.root.findByProps({ 'aria-label': '预览图片 模型' })
+    expect(preview.findAllByType('img')[0]!.props.src).toBe(expected[0])
+    for (const entry of ['card', 'details']) {
+      if (entry === 'details') await click(renderer, '查看详情 模型')
+      await click(renderer, '预览图片 模型')
+      for (const url of expected) {
+        const gallery = renderer.root.findByProps({ className: 'catalog-gallery' })
+        expect(gallery.findAllByType('img')[0]!.props.src).toBe(url)
+        if (url !== expected.at(-1)) await click(renderer, '下一张图片')
+      }
+      expect(renderer.root.findByProps({ 'aria-label': '下一张图片' }).props.disabled).toBe(true)
+      for (const url of expected.slice(0, -1).reverse()) {
+        await click(renderer, '上一张图片')
+        expect(renderer.root.findByProps({ className: 'catalog-gallery' }).findAllByType('img')[0]!.props.src).toBe(url)
+      }
+      expect(renderer.root.findByProps({ 'aria-label': '上一张图片' }).props.disabled).toBe(true)
+      await click(renderer, entry === 'card' ? '返回资源列表' : '返回详情')
+    }
+  })
+})
+
+
+describe('experiment workbench Catalog removal persistence', () => {
+  it.each(['card', 'details'] as const)('toggles LoRA and context from the %s while preserving another LoRA weight', async entry => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture()
+    const signal = new AbortController().signal
+    try {
+      const created = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '资源选择', goal: '验证目录选择' } }, signal)
+      const scope = { workspaceId: created.workspaceId, workId: created.workId!, branchId: created.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '13' } }, signal)
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '19' } }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'lora-weight', id: '13', value: 0.35 }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'lora-weight', id: '19', value: 0.8 }, signal)
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'work', id: '14' } }, signal)
+      const before = await host.remote.getProjection(scope, signal)
+      const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
+      const { renderer } = await mount(before, {
+        workspaceId: scope.workspaceId,
+        workspaces: [{ id: scope.workspaceId, name: '资源项目', path: '/workspace/project' }],
+        remote: {
+          getProjection: request => host.remote.getProjection(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getEnvironment: request => host.remote.getEnvironment(request, signal),
+        },
+        catalog: makeCatalog(), onAction,
+      })
+      await click(renderer, '资源')
+      await click(renderer, 'LoRA')
+      if (entry === 'details') await click(renderer, '查看详情 玻璃 LoRA')
+      await click(renderer, '移除 玻璃 LoRA')
+      const saved = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
+      expect(saved.generation_input.loras).toEqual([{ id: '19', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] }])
+      expect(saved.base_model_id).toBe(before.branches[0]!.draft.base_model_id)
+      expect(saved.generation_input.parameters).toEqual(before.branches[0]!.draft.generation_input.parameters)
+      expect(saved.context_refs).toEqual(before.branches[0]!.draft.context_refs)
+      expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+      expect(renderer.root.findByProps({ 'aria-label': '选择 玻璃 LoRA' }).props['aria-pressed']).toBe(false)
+      if (entry === 'details') expect(renderer.root.findByProps({ className: 'catalog-detail' })).toBeDefined()
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ ...scope, type: 'resource-remove', id: '13', value: 'lora' }))
+      expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(1)
+      await click(renderer, '选择 玻璃 LoRA')
+      expect(renderer.root.findByProps({ 'aria-label': '移除 玻璃 LoRA' }).props['aria-pressed']).toBe(true)
+      expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(2)
+      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft.generation_input.loras).toEqual([
+        { id: '19', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] },
+        { id: '13', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] },
+      ])
+      await click(renderer, '移除 玻璃 LoRA')
+      expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(1)
+      await click(renderer, '作品')
+      if (entry === 'details') await click(renderer, '查看详情 花房作品')
+      await click(renderer, '移除 花房作品')
+      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft.context_refs).toEqual([])
+      expect(renderer.root.findAllByProps({ className: 'context-item' })).toHaveLength(0)
+      await click(renderer, '选择 花房作品')
+      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft.context_refs).toEqual([{ kind: 'work', id: '14' }])
+      expect(renderer.root.findAllByProps({ className: 'context-item' })).toHaveLength(1)
+      expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+      await act(() => renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
+describe('experiment workbench resource cards', () => {
+  it('shows the selected model and opens the cover gallery separately from details', async () => {
+    const { renderer } = await mount(fullProjection(), { catalog: makeCatalog() })
+    await click(renderer, '资源')
+    const card = renderer.root.findAllByType('article').find(node => node.props.className === 'catalog-card chosen')!
+    expect(card.findAllByType('small').map(nodeText)).toContain('SDXL')
+    expect(card.findByProps({ className: 'pill' }).children.map(String).join('')).toContain('已选')
+    expect(card.findByProps({ title: '模型' })).toBeDefined()
+    const buttons = card.findAllByType('button')
+    expect(buttons.slice(1).map(nodeText)).toEqual(['已选择', '查看详情'])
+    expect(buttons[1]!.props).toMatchObject({ 'aria-label': '已选择 模型', 'aria-pressed': true, disabled: true })
+    await click(renderer, '预览图片 模型')
+    expect(renderer.root.findByProps({ className: 'catalog-gallery' })).toBeDefined()
+    expect(renderer.root.findAllByType('img').some(node => node.props.src === '/cover.png')).toBe(true)
+    await click(renderer, '返回资源列表')
+    await click(renderer, '查看详情 模型')
+    expect(renderer.root.findByProps({ className: 'catalog-detail' })).toBeDefined()
+    await click(renderer, '返回资源列表')
+    await click(renderer, 'LoRA')
+    const loraCard = renderer.root.findAllByType('article').find(node => node.props.className === 'catalog-card chosen')!
+    expect(loraCard.findByProps({ className: 'catalog-cover no-cover' })).toBeDefined()
+    expect(loraCard.findAllByType('button').map(nodeText)).toEqual(['移除', '查看详情'])
+  })
+})
+
+describe('experiment workbench Catalog detail values', () => {
+  it('preserves empty fields and zero while omitting null fields in resource details', async () => {
+    const catalog = makeCatalog()
+    vi.mocked(catalog.details).mockResolvedValue({
+      kind: 'lora', id: '13',
+      fields: [
+        { key: 'id', value: '13' },
+        { key: 'base_model_id', value: null },
+        { key: 'model_id', value: null },
+        { key: 'file_name', value: '' },
+        { key: 'file_format', value: null },
+        { key: 'precision_or_quantization', value: null },
+        { key: 'author', value: null },
+        { key: 'version', value: null },
+        { key: 'description', value: null },
+        { key: 'usage', value: null },
+        { key: 'trigger_words_json', value: [] },
+        { key: 'weight', value: 0 },
+      ],
+    })
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, 'LoRA')
+    await click(renderer, '查看详情')
+    expect(renderer.root.findAllByType('dd').map(nodeText)).toEqual(['13', '', '', '0'])
+  })
+})
+
 describe('experiment workbench shared catalog', () => {
   it('uses Catalog query, filters, pagination, details and media navigation without creating another backend', async () => {
     const catalog = makeCatalog()
@@ -1342,15 +1497,12 @@ describe('experiment workbench shared catalog', () => {
     )
     await click(renderer, '下一页')
     await click(renderer, '上一页')
-    await click(renderer, '查看 模型')
+    await click(renderer, '查看详情 模型')
     expect(catalog.details).toHaveBeenLastCalledWith(
       { kind: 'model', id: '11' },
       expect.any(AbortSignal),
     )
-    await click(renderer, '已选择')
-    expect(onAction).toHaveBeenLastCalledWith(
-      expect.objectContaining({ type: 'resource-select', id: '11' }),
-    )
+    expect(renderer.root.findByProps({ 'aria-label': '已选择 模型' }).props.disabled).toBe(true)
     await click(renderer, '预览图片 模型')
     await click(renderer, '下一张图片')
     await click(renderer, '上一张图片')
@@ -1358,6 +1510,9 @@ describe('experiment workbench shared catalog', () => {
     await click(renderer, '返回资源列表')
     await click(renderer, '查看详情')
     await click(renderer, '返回资源列表')
+    await click(renderer, 'LoRA')
+    await click(renderer, '移除 玻璃 LoRA')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'resource-remove', id: '13', value: 'lora' }))
     for (const label of [
       'LoRA',
       '作品',

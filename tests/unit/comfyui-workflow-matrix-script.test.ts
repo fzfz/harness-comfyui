@@ -206,7 +206,7 @@ describe('Workflow matrix official compiler configuration', () => {
         case '/internal/semantic': result = discovery; break
         case '/internal/comfyui-source': result = { openapi: '3.1.0', paths: {} }; break
         case '/internal/semantic/comfyui-templates': result = { ...envelope({
-          id: 43, title: 'Matrix fixture', template_type: 'text_to_image',
+          id: 43, base_model_id: 1, title: 'Matrix fixture', template_type: 'text_to_image',
           cover_url: null, sample_image_urls: [],
         }), page_size: 8 }; break
         case '/internal/comfyui-source/instances/2': result = envelope({

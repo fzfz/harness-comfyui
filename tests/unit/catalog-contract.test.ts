@@ -46,6 +46,7 @@ describe('catalog Remote contract', () => {
       page: 2,
       items: [{
         context: { kind: 'model', id: '15', file_name: 'rinSoftsketch_v20.safetensors' },
+        baseModelId: '2',
         label: 'rinSoftsketch_v20.safetensors',
         subtitle: 'safetensors',
         coverUrl: COVER,
@@ -63,6 +64,42 @@ describe('catalog Remote contract', () => {
     expect(contextLabel(page.items[0].context)).toBe('生成模型 · rinSoftsketch_v20.safetensors')
     expect(catalogPageCount(0)).toBe(1)
     expect(catalogPageCount(13)).toBe(2)
+  })
+
+  it.each([null, '2', '12345678901234567890'])('preserves nullable base-model ids in public card pages: %j', baseModelId => {
+    const page = {
+      kind: 'model',
+      query: '',
+      page: 1,
+      items: [{
+        context: { kind: 'model', id: '15', file_name: 'model.safetensors' },
+        baseModelId,
+        label: 'model.safetensors',
+        subtitle: '',
+        coverUrl: null,
+        sampleImageUrls: [],
+      }],
+      totalCount: 1,
+    }
+
+    expect(parseCatalogPage(page)).toEqual(page)
+  })
+
+  it.each([undefined, 2, '0', '02', 'model-2', '123456789012345678901'])('rejects malformed public card base-model ids: %j', baseModelId => {
+    expect(() => parseCatalogPage({
+      kind: 'model',
+      query: '',
+      page: 1,
+      items: [{
+        context: { kind: 'model', id: '15', file_name: 'model.safetensors' },
+        baseModelId,
+        label: 'model.safetensors',
+        subtitle: '',
+        coverUrl: null,
+        sampleImageUrls: [],
+      }],
+      totalCount: 1,
+    })).toThrow('id')
   })
 
   it('exposes the query scalar contract for persisted Client navigation state', () => {
@@ -120,6 +157,7 @@ describe('catalog Remote contract', () => {
   it('accepts one complete eight-card page and rejects a ninth card', () => {
     const items = Array.from({ length: 8 }, (_, index) => ({
       context: { kind: 'model' as const, id: String(index + 1), file_name: `model-${index + 1}` },
+      baseModelId: '2',
       label: `model-${index + 1}`,
       subtitle: 'safetensors',
       coverUrl: COVER,
@@ -244,17 +282,17 @@ describe('catalog Remote contract', () => {
   })
 
   it.each([
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'lora', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'kind'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '0', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'id'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: '', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'label'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: false, coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'subtitle'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: 'file:///tmp/x.png', sampleImageUrls: [] }], totalCount: 1 }, 'cover URL'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 0 }, 'total count'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null }], totalCount: 1 }, 'properties'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: null }], totalCount: 1 }, 'sample image URLs'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: ['data:image/png;base64,AAAA'] }], totalCount: 1 }, 'sample image URL'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [SAMPLE, SAMPLE] }], totalCount: 1 }, 'duplicated'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, label: 'x', subtitle: 'y', coverUrl: COVER, sampleImageUrls: [COVER] }], totalCount: 1 }, 'cover URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'lora', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'kind'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '0', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'id'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: '', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'label'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: false, coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'subtitle'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: 'file:///tmp/x.png', sampleImageUrls: [] }], totalCount: 1 }, 'cover URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 0 }, 'total count'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null }], totalCount: 1 }, 'properties'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: null }], totalCount: 1 }, 'sample image URLs'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: ['data:image/png;base64,AAAA'] }], totalCount: 1 }, 'sample image URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [SAMPLE, SAMPLE] }], totalCount: 1 }, 'duplicated'],
+    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: COVER, sampleImageUrls: [COVER] }], totalCount: 1 }, 'cover URL'],
   ])('rejects invalid catalog page %j', (value, message) => {
     expect(() => parseCatalogPage(value)).toThrow(message)
   })

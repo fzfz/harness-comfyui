@@ -8,6 +8,8 @@ const icons = {
   history: 'M3 11a9 9 0 1 1 3 8M3 4v7h7M12 7v6l4 2',
   compare: 'M9 3v18M15 3v18M4 7h4M16 17h4',
   grid: 'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z',
+  check: 'm5 12 4 4L19 6',
+  book: 'M4 4h7l1 2 1-2h7v15h-7l-1 2-1-2H4Z',
 }
 
 export function useToastMessage() {
@@ -23,13 +25,13 @@ export function useToastMessage() {
 
 export function Icon({ name }: { readonly name: keyof typeof icons }) {
   return (
-    <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={icons[name]} />
     </svg>
   )
 }
 
-export function Button({ children, onClick, kind = '', icon, disabled, label, autoFocus }: {
+export function Button({ children, onClick, kind = '', icon, disabled, label, autoFocus, pressed }: {
   readonly children: ReactNode
   readonly onClick?: () => void
   readonly kind?: string
@@ -37,9 +39,10 @@ export function Button({ children, onClick, kind = '', icon, disabled, label, au
   readonly disabled?: boolean
   readonly label?: string
   readonly autoFocus?: boolean
+  readonly pressed?: boolean
 }) {
   return (
-    <button type="button" className={`btn ${kind}`} onClick={onClick} disabled={disabled} aria-label={label} autoFocus={autoFocus}>
+    <button type="button" className={`btn ${kind}`} onClick={onClick} disabled={disabled} aria-label={label} aria-pressed={pressed} autoFocus={autoFocus}>
       {icon && <Icon name={icon} />}
       {children}
     </button>

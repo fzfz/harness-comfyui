@@ -1,5 +1,6 @@
 import { CatalogDetailsPanel } from './catalog-details.tsx'
-import { CATALOG_PRESENTATION, type CatalogDetails, type CatalogDetailsRequest } from '../../catalog/details-schema.ts'
+import { CATALOG_PRESENTATION } from '../../catalog/details-schema.ts'
+import { catalogImageUrls, CatalogItems, CatalogKinds, useCatalogBrowser, type CatalogApi } from './catalog-browser.tsx'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import {
@@ -17,21 +18,16 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
 import {
-  CATALOG_KIND_DEFINITIONS,
   catalogDefinition,
   catalogPageCount,
   contextLabel,
-  type BaseModelList,
   type CatalogContext,
   type CatalogItem,
   type CatalogKind,
-  type CatalogPage,
-  type CatalogQueryRequest,
 } from '../../catalog/contract.ts'
 
 import {
   WORKBENCH_COPY,
-  catalogFailureText,
   workbenchErrorText,
   workbenchContextsFromDraft,
   workbenchContextKey,
@@ -70,12 +66,6 @@ export function WorkbenchEntry({ wide, workbench }: WorkbenchEntryProps) {
       {wide ? WORKBENCH_COPY.entry : null}
     </Button>
   )
-}
-
-export interface CatalogApi {
-  readonly details: (request: CatalogDetailsRequest, signal: AbortSignal) => Promise<CatalogDetails>
-  readonly search: (request: CatalogQueryRequest, signal: AbortSignal) => Promise<CatalogPage>
-  readonly baseModels: (signal: AbortSignal) => Promise<BaseModelList>
 }
 
 export interface WorkbenchDockProps {
@@ -126,14 +116,18 @@ function WorkbenchDockSession({
   const selectedContexts = workbenchContextsFromDraft(input.draft)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [baseModelMenuOpen, setBaseModelMenuOpen] = useState(false)
-  const [baseModels, setBaseModels] = useState<BaseModelList | null>(null)
-  const [baseModelStatus, setBaseModelStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
-  const [baseModelError, setBaseModelError] = useState<string | null>(null)
-  const [requestVersion, setRequestVersion] = useState(0)
-  const [page, setPage] = useState<CatalogPage | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<ReadonlyMap<string, CatalogContext>>(new Map())
-  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
-  const [catalogError, setCatalogError] = useState<string | null>(null)
+  const resetInvalidBaseModel = useCallback((id: string) => {
+    dialogNavigation.update(navigation => navigation.selectedBaseModelId === id
+      ? { ...navigation, selectedBaseModelId: null, currentPage: 1 }
+      : navigation)
+  }, [dialogNavigation])
+  const { baseModels, baseModelStatus, baseModelError, page, status, error: catalogError, retry } = useCatalogBrowser({
+    catalog,
+    enabled: dialogOpen,
+    query: { kind: selectedKind, query: submittedQuery, page: currentPage, baseModelId: selectedBaseModelId },
+    onInvalidBaseModel: resetInvalidBaseModel,
+  })
   const [detailsItem, setDetailsItem] = useState<CatalogItem | null>(null)
   const detailOpenerRef = useRef<HTMLButtonElement | null>(null)
   const listRef = useRef<HTMLDivElement | null>(null)
@@ -149,92 +143,6 @@ function WorkbenchDockSession({
   const galleryOpenerKeyRef = useRef<string | null>(null)
   const restoreGalleryFocusRef = useRef(false)
 
-  useEffect(() => {
-    if (!dialogOpen) return
-    const controller = new AbortController()
-    let current = true
-    setBaseModelStatus('loading')
-    setBaseModelError(null)
-    setBaseModels(null)
-    void catalog.baseModels(controller.signal).then(result => {
-      if (!current || controller.signal.aborted) return
-      setBaseModels(result)
-      setBaseModelStatus('ready')
-      if (
-        selectedBaseModelId !== null
-        && !result.items.some(item => item.id === selectedBaseModelId)
-      ) {
-        setPage(null)
-        setStatus('idle')
-        dialogNavigation.update(navigation => (
-          navigation.selectedBaseModelId === selectedBaseModelId
-            ? { ...navigation, selectedBaseModelId: null, currentPage: 1 }
-            : navigation
-        ))
-      }
-    }).catch((error: unknown) => {
-      if (!current || controller.signal.aborted) return
-      setBaseModelError(catalogFailureText(error))
-      setBaseModelStatus('error')
-    })
-    return () => {
-      current = false
-      controller.abort()
-    }
-  }, [catalog, dialogOpen])
-
-  const selectedCatalogDefinition = catalogDefinition(selectedKind)
-  const baseModelQueryReadiness = !selectedCatalogDefinition.baseModelScoped || selectedBaseModelId === null
-    ? 'ready'
-    : baseModelStatus !== 'ready'
-      ? 'pending'
-      : baseModels?.items.some(item => item.id === selectedBaseModelId)
-        ? 'ready'
-        : 'invalid'
-
-  useEffect(() => {
-    if (!dialogOpen) return
-    if (baseModelQueryReadiness !== 'ready') {
-      setStatus('idle')
-      setCatalogError(null)
-      setPage(null)
-      return
-    }
-    const controller = new AbortController()
-    let current = true
-    setStatus('loading')
-    setCatalogError(null)
-    setPage(null)
-    void catalog.search({
-      kind: selectedKind,
-      query: submittedQuery,
-      page: currentPage,
-      baseModelId: selectedCatalogDefinition.baseModelScoped ? selectedBaseModelId : null,
-    }, controller.signal).then(result => {
-      if (!current || controller.signal.aborted) return
-      setPage(result)
-      setStatus('ready')
-    }).catch((error: unknown) => {
-      if (!current || controller.signal.aborted) return
-      setCatalogError(catalogFailureText(error))
-      setStatus('error')
-    })
-    return () => {
-      current = false
-      controller.abort()
-    }
-  }, [
-    baseModelQueryReadiness,
-    catalog,
-    currentPage,
-    dialogOpen,
-    requestVersion,
-    selectedBaseModelId,
-    selectedKind,
-    selectedCatalogDefinition,
-    submittedQuery,
-  ])
-
   const activeBaseModelLabel = selectedBaseModelId === null
     ? WORKBENCH_COPY.allBaseModels
     : baseModels?.items.find(item => item.id === selectedBaseModelId)?.label ?? WORKBENCH_COPY.allBaseModels
@@ -246,11 +154,7 @@ function WorkbenchDockSession({
   const navigationPersistenceError = navigationSnapshot.persistenceErrorCode === null
     ? null
     : workbenchErrorText(navigationSnapshot.persistenceErrorCode)
-  const galleryImageUrls = useMemo(() => (
-    galleryItem?.coverUrl === null || galleryItem?.coverUrl === undefined
-      ? []
-      : [galleryItem.coverUrl, ...galleryItem.sampleImageUrls]
-  ), [galleryItem])
+  const galleryImageUrls = useMemo(() => catalogImageUrls(galleryItem), [galleryItem])
   const galleryCurrentUrl = galleryImageUrls[galleryIndex] ?? null
   const moveGallery = useCallback((offset: -1 | 1) => {
     setGalleryIndex(current => Math.max(0, Math.min(galleryImageUrls.length - 1, current + offset)))
@@ -316,12 +220,6 @@ function WorkbenchDockSession({
 
   const openDialog = () => {
     setDetailsItem(null)
-    setBaseModels(null)
-    setBaseModelStatus('idle')
-    setBaseModelError(null)
-    setPage(null)
-    setStatus('idle')
-    setCatalogError(null)
     restoreGalleryFocusRef.current = false
     galleryOpenerCardRef.current = null
     galleryOpenerKeyRef.current = null
@@ -353,7 +251,7 @@ function WorkbenchDockSession({
       submittedQuery: current.queryText.trim(),
       currentPage: 1,
     }))
-    setRequestVersion(version => version + 1)
+    retry()
   }
 
   const toggleOption = (option: CatalogItem) => {
@@ -367,7 +265,7 @@ function WorkbenchDockSession({
   }
 
   const openGallery = (option: CatalogItem) => {
-    if (option.coverUrl === null) return
+    if (catalogImageUrls(option).length === 0) return
     galleryScroll.current = (detailsItem !== null ? detailPanelRef.current?.querySelector('.harness-comfyui-catalog-detail') : listRef.current?.closest('.harness-comfyui-catalog-modal-content'))?.scrollTop ?? 0
     galleryOpenerKeyRef.current = workbenchContextKey(option.context)
     setGalleryIndex(0)
@@ -478,18 +376,18 @@ function WorkbenchDockSession({
 
             <div className="harness-comfyui-catalog">
           <nav className="harness-comfyui-catalog-kinds" aria-label="资源类型">
-            {CATALOG_KIND_DEFINITIONS.map(definition => (
+            <CatalogKinds selected={selectedKind}>{(definition, selected) => (
               <Button
                 key={definition.kind}
-                variant={definition.kind === selectedKind ? 'primary' : 'toolbar'}
+                variant={selected ? 'primary' : 'toolbar'}
                 size="sm"
-                icon={definition.kind === selectedKind ? <IconCheckOutlineRegular size={16} /> : undefined}
-                aria-pressed={definition.kind === selectedKind}
+                icon={selected ? <IconCheckOutlineRegular size={16} /> : undefined}
+                aria-pressed={selected}
                 onClick={() => selectKind(definition.kind)}
               >
                 {definition.label}
               </Button>
-            ))}
+            )}</CatalogKinds>
           </nav>
           <div className="harness-comfyui-catalog-results">
             <form
@@ -519,9 +417,8 @@ function WorkbenchDockSession({
               {status === 'loading' ? <span className="harness-comfyui-catalog-state">{WORKBENCH_COPY.loading}</span> : null}
               {status === 'error' ? <span className="harness-comfyui-catalog-state">{catalogError}</span> : null}
               {status === 'ready' && page?.items.length === 0 ? <span className="harness-comfyui-catalog-state">{WORKBENCH_COPY.empty}</span> : null}
-              {status === 'ready' ? page?.items.map(option => {
-                const optionKey = workbenchContextKey(option.context)
-                const selected = selectedOptions.has(optionKey)
+              {status === 'ready' ? <CatalogItems items={page?.items ?? []} selection={selectedOptions.values()}>{(option, selected, optionKey) => {
+                const previewUrl = catalogImageUrls(option)[0]
                 return (
                   <div
                     key={optionKey}
@@ -529,7 +426,7 @@ function WorkbenchDockSession({
                     className="harness-comfyui-catalog-card"
                     data-selected={selected ? 'true' : 'false'}
                   >
-                    {option.coverUrl === null ? (
+                    {previewUrl === undefined ? (
                       <span className="harness-comfyui-card-cover harness-comfyui-card-cover-placeholder">
                         <span className="harness-comfyui-card-placeholder">{WORKBENCH_COPY.noCover}</span>
                       </span>
@@ -540,7 +437,7 @@ function WorkbenchDockSession({
                         aria-label={`${WORKBENCH_COPY.openGallery} ${option.label}`}
                         onClick={() => openGallery(option)}
                       >
-                        <img src={option.coverUrl} alt={`${option.label} 封面`} loading="lazy" />
+                        <img src={previewUrl} alt={`${option.label} 封面`} loading="lazy" />
                       </Button>
                     )}
                     <span className="harness-comfyui-card-copy">
@@ -563,8 +460,7 @@ function WorkbenchDockSession({
                       </Button>
                     </div>
                   </div>
-                )
-              }) : null}
+                )}}</CatalogItems> : null}
             </div>
 
             <div className="harness-comfyui-catalog-pagination">
@@ -597,7 +493,7 @@ function WorkbenchDockSession({
           </div>
         {detailsItem !== null && <div ref={detailPanelRef} hidden={galleryItem !== null} className="harness-comfyui-detail-container">
           <CatalogDetailsPanel request={{ kind: detailsItem.context.kind, id: detailsItem.context.id }} load={catalog.details}
-            preview={detailsItem.coverUrl === null ? null : () => openGallery(detailsItem)} />
+            preview={catalogImageUrls(detailsItem).length === 0 ? null : () => openGallery(detailsItem)} />
         </div>}
         {galleryItem !== null && (
           <div className="harness-comfyui-gallery">

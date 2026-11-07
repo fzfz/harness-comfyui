@@ -57,7 +57,6 @@ import { ContextDialogNavigationStore } from '../../src/client/workbench/context
 import {
   WorkbenchDock,
   WorkbenchEntry,
-  type CatalogApi,
 } from '../../src/client/workbench/native-surfaces.tsx'
 
 const { act, create } = await vi.importActual('react-test-renderer') as {
@@ -76,6 +75,7 @@ const { act, create } = await vi.importActual('react-test-renderer') as {
 
 const CONTEXT_OPTIONS: readonly CatalogItem[] = [
   {
+    baseModelId: null,
     context: { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
     label: 'wai_txt2img_lora',
     subtitle: 'text_to_image',
@@ -86,6 +86,7 @@ const CONTEXT_OPTIONS: readonly CatalogItem[] = [
     ],
   },
   {
+    baseModelId: null,
     context: { kind: 'comfyui-template', id: '36', title: 'wai_txt2img' },
     label: 'wai_txt2img',
     subtitle: 'text_to_image',
@@ -93,6 +94,7 @@ const CONTEXT_OPTIONS: readonly CatalogItem[] = [
     sampleImageUrls: [],
   },
   {
+    baseModelId: null,
     context: { kind: 'lora', id: '91', file_name: 'StS_Age_Slider_Illustrious_v1.safetensors' },
     label: 'StS_Age_Slider_Illustrious_v1.safetensors',
     subtitle: 'Shed_The_Skin',
@@ -173,6 +175,41 @@ async function openDialog(renderer: ReturnType<typeof create>): Promise<void> {
     await Promise.resolve()
   })
 }
+
+
+it.each([
+  { coverUrl: null, expected: ['/sample-1.png', '/sample-2.png'] },
+  { coverUrl: '/cover.png', expected: ['/cover.png', '/sample-1.png', '/sample-2.png'] },
+])('previews every chat Catalog image from cards and details with cover $coverUrl', async ({ coverUrl, expected }) => {
+  const option: CatalogItem = { ...CONTEXT_OPTIONS[0]!, coverUrl, sampleImageUrls: ['/sample-1.png', '/sample-2.png'] }
+  const input = sessionInput()
+  let renderer!: ReturnType<typeof create>
+  act(() => { renderer = create(createElement(WorkbenchDock, {
+    catalog: catalog([option]), dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+    sessionId: 'images-session', sessionInput: input as never, workbench: activeController(),
+  })) })
+  try {
+    await openDialog(renderer)
+    expect(renderer.root.findAllByType('img')[0]!.props.src).toBe(expected[0])
+    for (const entry of ['card', 'details']) {
+      if (entry === 'details') await act(async () => { (renderer.root.findByProps({ 'aria-label': `详情 ${option.label}` }).props.onClick as Function)({ currentTarget: { focus() {} } }) })
+      const preview = entry === 'card' ? renderer.root.findByProps({ 'aria-label': `${WORKBENCH_COPY.openGallery} ${option.label}` }) : buttonByText(renderer, WORKBENCH_COPY.openGallery)
+      act(() => { (preview.props.onClick as Function)() })
+      for (const url of expected) {
+        expect(renderer.root.findByProps({ alt: `${option.label} ${WORKBENCH_COPY.image} ${expected.indexOf(url) + 1}` }).props.src).toBe(url)
+        if (url !== expected.at(-1)) act(() => { (renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as Function)() })
+      }
+      expect(renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.disabled).toBe(true)
+      for (const url of expected.slice(0, -1).reverse()) {
+        act(() => { (renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.onClick as Function)() })
+        expect(renderer.root.findByProps({ alt: `${option.label} ${WORKBENCH_COPY.image} ${expected.indexOf(url) + 1}` }).props.src).toBe(url)
+      }
+      expect(renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.disabled).toBe(true)
+      act(() => { (renderer.root.findByProps({ role: 'dialog' }).props.onClick as Function)() })
+    }
+    expect(input.setDraft).not.toHaveBeenCalled()
+  } finally { act(() => renderer.unmount()) }
+})
 
 describe('native Harness workbench surfaces', () => {
   let documentTarget: EventTarget
@@ -988,6 +1025,7 @@ describe('native Harness workbench surfaces', () => {
   })
 })
 
+import type { CatalogApi } from '../../src/client/workbench/catalog-browser.tsx'
 import { CatalogDetailsPanel } from '../../src/client/workbench/catalog-details.tsx'
 import type { CatalogDetails } from '../../src/catalog/details-schema.ts'
 

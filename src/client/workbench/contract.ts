@@ -55,7 +55,7 @@ export function workbenchErrorText(code: string): string {
   return `${entry.code}：${entry.reason}${entry.next_step}`
 }
 
-export function workbenchContextKey(context: CatalogContext): string {
+export function workbenchContextKey(context: Pick<CatalogContext, 'kind' | 'id'>): string {
   return `${context.kind}:${context.id}`
 }
 

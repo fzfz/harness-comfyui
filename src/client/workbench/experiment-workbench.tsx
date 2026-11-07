@@ -12,8 +12,6 @@ import {
   catalogPageCount,
   type CatalogItem,
   type CatalogKind,
-  type CatalogPage,
-  type BaseModelItem,
 } from '../../catalog/contract.ts'
 import type {
   Branch,
@@ -42,10 +40,8 @@ import { Button, Icon, useToastMessage } from './experiment-controls.tsx'
 import { ExperimentFunctionSettings, formatExperimentAgentModel } from './experiment-function-settings.tsx'
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
 import { experimentWorkbenchStyles } from './experiment-style.ts'
-import {
-  CATALOG_FIELDS,
-  type CatalogDetails,
-} from '../../catalog/details-schema.ts'
+import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogReference } from './catalog-browser.tsx'
+import { workbenchContextKey } from './contract.ts'
 
 export type {
   ExperimentWorkbenchAction,
@@ -408,7 +404,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...extra,
       })
       if (!stillCurrent()) return false
-      if (selection) {
+      const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
+        && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
+      if (selection && !keepsCatalogNavigation) {
         store.setWorkspace(selection.workspaceId)
         props.onWorkspaceChange(selection.workspaceId)
         if (type === 'new-workspace') changePage('workbench')
@@ -2047,6 +2045,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     value: item.context,
                   })
                 }
+                onRemove={(item) =>
+                  void action('resource-remove', {
+                    id: item.context.id,
+                    value: item.context.kind,
+                  })
+                }
                 locked={locked}
                 scroll={scrollPanel(
                   `catalog:${view.workId}:${JSON.stringify(view.catalogFilters)}`,
@@ -2304,6 +2308,7 @@ interface ExperimentCatalogProps {
   readonly selected?: TaskDraft
   readonly locked: boolean
   readonly onSelect: (item: CatalogItem) => void
+  readonly onRemove: (item: CatalogItem) => void
   readonly scroll: {
     readonly ref: (element: HTMLDivElement | null) => void
     readonly onScroll: (event: React.UIEvent<HTMLDivElement>) => void
@@ -2317,142 +2322,44 @@ function ExperimentCatalog({
   selected,
   locked,
   onSelect,
+  onRemove,
   scroll,
 }: ExperimentCatalogProps) {
-  const kind =
-    CATALOG_KIND_DEFINITIONS.find((item) => item.kind === filters.kind) ??
-    CATALOG_KIND_DEFINITIONS[0]
-  const [result, setResult] = useState<CatalogPage | null>(null)
-  const [bases, setBases] = useState<readonly BaseModelItem[]>([])
+  const { definition: kind, page: result, baseModels, status, error: listError, baseModelError, retry } = useCatalogBrowser({
+    catalog,
+    query: { kind: filters.kind, query: filters.query, page: filters.page, baseModelId: filters.baseModelId || null },
+  })
   const [models, setModels] = useState<readonly CatalogItem[]>([])
   const [query, setQuery] = useState(filters.query)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const [detail, setDetail] = useState<CatalogItem | null>(null)
-  const [details, setDetails] = useState<CatalogDetails | null>(null)
-  const [gallery, setGallery] = useState<{
-    item: CatalogItem
-    index: number
-  } | null>(null)
-  const [retry, setRetry] = useState(0)
+  const [gallery, setGallery] = useState<{ item: CatalogItem; index: number } | null>(null)
+  const { details, error: detailError, retry: retryDetails } = useCatalogDetails(detail === null ? null : detail.context, catalog?.details)
+  const error = detail === null ? listError ?? baseModelError : detailError
+  const loading = status === 'loading'
+  const bases = baseModels?.items ?? []
   useEffect(() => {
     setQuery(filters.query)
     setDetail(null)
     setGallery(null)
-  }, [
-    filters.kind,
-    filters.query,
-    filters.baseModelId,
-    filters.modelId,
-    filters.page,
-  ])
+  }, [filters.kind, filters.query, filters.baseModelId, filters.modelId, filters.page])
   useEffect(() => {
-    if (!catalog) return
-    const abort = new AbortController()
-    void catalog
-      .baseModels(abort.signal)
-      .then((result) => {
-        if (!abort.signal.aborted) setBases(result.items)
-      })
-      .catch((error) => {
-        if (!abort.signal.aborted)
-          setError(
-            error instanceof Error ? error.message : '底模加载失败，请重试。',
-          )
-      })
-    return () => abort.abort()
-  }, [catalog])
-  useEffect(() => {
-    if (!catalog) return
-    const abort = new AbortController()
-    setLoading(true)
-    setError(null)
-    setResult(null)
-    void catalog
-      .search(
-        {
-          kind: kind.kind,
-          query: filters.query,
-          page: filters.page,
-          baseModelId: kind.baseModelScoped
-            ? filters.baseModelId || null
-            : null,
-        },
-        abort.signal,
-      )
-      .then((result) => {
-        if (!abort.signal.aborted) {
-          setResult(result)
-          if (kind.kind === 'model') setModels(result.items)
-        }
-      })
-      .catch((error) => {
-        if (!abort.signal.aborted)
-          setError(
-            error instanceof Error ? error.message : '资源加载失败，请重试。',
-          )
-      })
-      .finally(() => {
-        if (!abort.signal.aborted) setLoading(false)
-      })
-    return () => abort.abort()
-  }, [
-    catalog,
-    kind.kind,
-    kind.baseModelScoped,
-    filters.query,
-    filters.page,
-    filters.baseModelId,
-    retry,
-  ])
-  useEffect(() => {
-    if (!detail || !catalog) {
-      setDetails(null)
-      return
-    }
-    const abort = new AbortController()
-    setDetails(null)
-    setError(null)
-    void catalog
-      .details(
-        { kind: detail.context.kind, id: detail.context.id },
-        abort.signal,
-      )
-      .then((value) => {
-        if (!abort.signal.aborted) setDetails(value)
-      })
-      .catch((error) => {
-        if (!abort.signal.aborted)
-          setError(
-            error instanceof Error
-              ? error.message
-              : '资源详情加载失败，请重试。',
-          )
-      })
-    return () => abort.abort()
-  }, [detail, catalog, retry])
-  const chosen = (item: CatalogItem) =>
-    item.context.kind === 'model'
-      ? selected?.generation_input.model?.id === item.context.id
-      : item.context.kind === 'comfyui-template'
-        ? selected?.generation_input.template_id === item.context.id
-        : item.context.kind === 'lora'
-          ? selected?.generation_input.loras.some(
-              (lora) => lora.id === item.context.id,
-            )
-          : selected?.context_refs.some(
-              (ref) =>
-                ref.kind === item.context.kind && ref.id === item.context.id,
-            )
-  const selectButton = (item: CatalogItem) => (
-    <Button kind="small" disabled={locked} onClick={() => onSelect(item)}>
-      {chosen(item)
-        ? '已选择'
-        : ['model', 'comfyui-template'].includes(item.context.kind)
-          ? '选择'
-          : '添加'}
-    </Button>
-  )
+    if (kind.kind === 'model' && result !== null) setModels(result.items)
+  }, [kind.kind, result])
+  const selection: CatalogReference[] = [
+    ...(selected?.generation_input.model ? [{ kind: 'model' as const, id: selected.generation_input.model.id }] : []),
+    ...(selected?.generation_input.template_id ? [{ kind: 'comfyui-template' as const, id: selected.generation_input.template_id }] : []),
+    ...(selected?.generation_input.loras.map(lora => ({ kind: 'lora' as const, id: lora.id })) ?? []),
+    ...(selected?.context_refs ?? []),
+  ]
+  const chosen = (item: CatalogItem) => selection.some(ref => workbenchContextKey(ref) === workbenchContextKey(item.context))
+  const selectButton = (item: CatalogItem, selected = chosen(item)) => {
+    const multiple = item.context.kind !== 'model' && item.context.kind !== 'comfyui-template'
+    const label = selected ? multiple ? '移除' : '已选择' : '选择'
+    return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || selected && !multiple}
+      label={`${label} ${item.label}`} pressed={selected} onClick={() => selected && multiple ? onRemove(item) : onSelect(item)}>{label}</Button>
+  }
+  const galleryImages = catalogImageUrls(gallery?.item ?? null)
+  const detailPreviewUrl = catalogImageUrls(detail)[0]
   const pages = catalogPageCount(result?.totalCount ?? 0)
   const reset = () =>
     onFilters({ ...filters, baseModelId: '', modelId: '', query: '', page: 1 })
@@ -2461,18 +2368,18 @@ function ExperimentCatalog({
       <PanelHead title="资源目录">{back}</PanelHead>
       <div className="catalog-browser">
         <nav className="catalog-kinds" aria-label="资源类型">
-          {CATALOG_KIND_DEFINITIONS.map((item) => (
+          <CatalogKinds selected={kind.kind}>{(item, selected) => (
             <button
               type="button"
               key={item.kind}
-              aria-pressed={kind.kind === item.kind}
+              aria-pressed={selected}
               onClick={() =>
                 onFilters({ ...filters, kind: item.kind, query: '', page: 1 })
               }
             >
               {item.label}
             </button>
-          ))}
+          )}</CatalogKinds>
         </nav>
         <div className="catalog-content" {...scroll}>
           {gallery ? (
@@ -2483,7 +2390,7 @@ function ExperimentCatalog({
                 </Button>
                 <h3>{gallery.item.label}</h3>
                 <span className="mono">
-                  {gallery.index + 1} / {gallery.item.sampleImageUrls.length}
+                  {gallery.index + 1} / {galleryImages.length}
                 </span>
               </div>
               <div className="gallery-stage">
@@ -2499,7 +2406,7 @@ function ExperimentCatalog({
                 </Button>
                 <div className="artwork">
                   <img
-                    src={gallery.item.sampleImageUrls[gallery.index]}
+                    src={galleryImages[gallery.index]}
                     alt={gallery.item.label}
                   />
                 </div>
@@ -2507,7 +2414,7 @@ function ExperimentCatalog({
                   kind="quiet"
                   label="下一张图片"
                   disabled={
-                    gallery.index >= gallery.item.sampleImageUrls.length - 1
+                    gallery.index >= galleryImages.length - 1
                   }
                   onClick={() =>
                     setGallery({ ...gallery, index: gallery.index + 1 })
@@ -2526,17 +2433,14 @@ function ExperimentCatalog({
                 {selectButton(detail)}
               </div>
               <h2>{detail.label}</h2>
-              {detail.coverUrl && (
+              {detailPreviewUrl !== undefined && (
                 <button
                   className="detail-cover"
                   type="button"
                   aria-label={`预览图片 ${detail.label}`}
-                  onClick={() => {
-                    if (detail.sampleImageUrls.length)
-                      setGallery({ item: detail, index: 0 })
-                  }}
+                  onClick={() => setGallery({ item: detail, index: 0 })}
                 >
-                  <img src={detail.coverUrl} alt={detail.label} />
+                  <img src={detailPreviewUrl} alt={detail.label} />
                 </button>
               )}
               {error ? (
@@ -2544,24 +2448,13 @@ function ExperimentCatalog({
                   <p role="alert">{error}</p>
                   <Button
                     kind="small"
-                    onClick={() => setRetry((value) => value + 1)}
+                    onClick={detail ? retryDetails : retry}
                   >
                     重试
                   </Button>
                 </div>
               ) : details ? (
-                <dl>
-                  {details.fields.map((field) => (
-                    <div key={field.key}>
-                      <dt>{CATALOG_FIELDS[field.key]?.label ?? field.key}</dt>
-                      <dd>
-                        {Array.isArray(field.value)
-                          ? field.value.join('、')
-                          : String(field.value ?? '—')}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
+                <CatalogDetailFields details={details} presentation="resource" />
               ) : (
                 <div className="empty">
                   <span className="loading-ring" />
@@ -2643,7 +2536,7 @@ function ExperimentCatalog({
                   <p role="alert">{error}</p>
                   <Button
                     kind="small"
-                    onClick={() => setRetry((value) => value + 1)}
+                    onClick={detail ? retryDetails : retry}
                   >
                     重试
                   </Button>
@@ -2654,46 +2547,25 @@ function ExperimentCatalog({
                 </div>
               ) : (
                 <div className="catalog-grid">
-                  {result?.items
-                    .filter(
-                      (item) =>
-                        !filters.modelId ||
-                        kind.kind !== 'model' ||
-                        item.context.id === filters.modelId,
-                    )
-                    .map((item) => (
-                      <article
-                        key={`${item.context.kind}:${item.context.id}`}
-                        className={`catalog-card ${chosen(item) ? 'chosen' : ''}`}
-                      >
-                        <button
-                          type="button"
-                          className={`catalog-cover ${item.coverUrl ? '' : 'no-cover'}`}
-                          aria-label={`查看 ${item.label}`}
-                          onClick={() => setDetail(item)}
-                        >
-                          {item.coverUrl ? (
-                            <img src={item.coverUrl} alt={item.label} />
-                          ) : (
-                            <Icon name="grid" />
-                          )}
-                        </button>
-                        <div className="catalog-card-body">
-                          <span className="pill neutral">{kind.label}</span>
-                          <h3>{item.label}</h3>
-                          <p>{item.subtitle}</p>
-                          <div className="row between">
-                            <Button
-                              kind="small quiet"
-                              onClick={() => setDetail(item)}
-                            >
-                              查看详情
-                            </Button>
-                            {selectButton(item)}
-                          </div>
+                  <CatalogItems items={(result?.items ?? []).filter(item => !filters.modelId || kind.kind !== 'model' || item.context.id === filters.modelId)} selection={selection}>{(item, selected, key) => {
+                    const previewUrl = catalogImageUrls(item)[0]
+                    return (
+                    <article key={key} className={`catalog-card ${selected ? 'chosen' : ''}`}>
+                      {previewUrl !== undefined ? <button type="button" className="catalog-cover"
+                        aria-label={`预览图片 ${item.label}`} onClick={() => setGallery({ item, index: 0 })}>
+                        <img src={previewUrl} alt={item.label} />
+                      </button> : <div className="catalog-cover no-cover"><span><Icon name={item.context.kind === 'comfyui-template' ? 'grid' : 'book'} /></span></div>}
+                      <div className="catalog-card-body">
+                        <div className="row between"><small>{bases.find(base => base.id === item.baseModelId)?.label ?? kind.label}</small>{selected ? <span className="pill"><Icon name="check" />已选</span> : null}</div>
+                        <h3 title={item.label}>{item.label}</h3>
+                        <p>{item.subtitle}</p>
+                        <div className="row between">
+                          {selectButton(item, selected)}
+                          <Button kind="small quiet" label={`查看详情 ${item.label}`} onClick={() => setDetail(item)}>查看详情</Button>
                         </div>
-                      </article>
-                    ))}
+                      </div>
+                    </article>
+                  )}}</CatalogItems>
                   {!result?.items.length && (
                     <div className="empty">
                       <h3>{catalog ? '没有匹配的资源' : '资源目录尚未连接'}</h3>

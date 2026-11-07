@@ -258,6 +258,7 @@ function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): Catalo
     const id = sourceId(result.id)
     return Object.freeze({
       context: sourceContext(request.kind, id, result),
+      baseModelId: definition.baseModelScoped ? sourceNullableId(result.base_model_id) : null,
       label: sourceLabel(result[definition.labelField]),
       subtitle: sourceSubtitle(result, definition.subtitleFields, sourceLabel(result[definition.labelField])),
       coverUrl: sourceCoverUrl(result.cover_url),

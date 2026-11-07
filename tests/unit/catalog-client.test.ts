@@ -98,6 +98,7 @@ describe('Catalog client', () => {
           context: {
             kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
           },
+          baseModelId: '2',
           label: 'wai_txt2img_lora',
           subtitle: '模板类型：text_to_image',
           coverUrl: 'http://127.0.0.1:18092/media/images/template.webp',
@@ -208,22 +209,22 @@ describe('Catalog client', () => {
   })
 
   it.each([
-    ['model', { id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'model', id: '15', file_name: 'model.safetensors' }],
-    ['lora', { id: 91, file_name: 'lora.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'lora', id: '91', file_name: 'lora.safetensors' }],
+    ['model', { id: 15, base_model_id: 2, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'model', id: '15', file_name: 'model.safetensors' }],
+    ['lora', { id: 91, base_model_id: '2', file_name: 'lora.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'lora', id: '91', file_name: 'lora.safetensors' }],
     ['work', { id: 3761, name: '.flow', category_name: '.flow', cover_url: null, sample_image_urls: [] }, { kind: 'work', id: '3761', name: '.flow' }],
     ['character', { id: 39933, name: '2b', 'works.name': '尼尔机械纪元', prompt_text: '2b, yorha no. 2 type b', cover_url: null, sample_image_urls: [] }, {
       kind: 'character', id: '39933', work_name: '尼尔机械纪元', character_name: '2b', prompt_text: '2b, yorha no. 2 type b',
     }],
-    ['style', { id: 12415, name: 'say_hana', prompt_text: 'say_hana', cover_url: null, sample_image_urls: [] }, {
+    ['style', { id: 12415, base_model_id: 1, name: 'say_hana', prompt_text: 'say_hana', cover_url: null, sample_image_urls: [] }, {
       kind: 'style', id: '12415', name: 'say_hana', prompt_text: 'say_hana',
     }],
     ['prompt-term', { id: 49856, canonical_tag: 'ryuujin_no_senpai', post_count: 50, sample_image_urls: [] }, {
       kind: 'prompt-term', id: '49856', tag: 'ryuujin_no_senpai',
     }],
-    ['artist-string', { id: 7, title: 'watercolor', description: 'watercolor artists', artist_string: '@artist_a, @artist_b', cover_url: null, sample_image_urls: [] }, {
+    ['artist-string', { id: 7, base_model_id: '1', title: 'watercolor', description: 'watercolor artists', artist_string: '@artist_a, @artist_b', cover_url: null, sample_image_urls: [] }, {
       kind: 'artist-string', id: '7', title: 'watercolor', prompt_text: '@artist_a, @artist_b',
     }],
-    ['comfyui-template', { id: 37, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, sample_image_urls: [], parameters_json: [] }, {
+    ['comfyui-template', { id: 37, base_model_id: 2, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, sample_image_urls: [], parameters_json: [] }, {
       kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
     }],
   ] as const)('projects the %s source record into exact Agent context data', async (kind, source, context) => {
@@ -234,15 +235,49 @@ describe('Catalog client', () => {
     )
 
     expect(result.items[0]?.context).toEqual(context)
-    expect(JSON.stringify(result.items[0]?.context)).not.toMatch(/label|subtitle|coverUrl|sampleImageUrls|description/u)
+    expect(JSON.stringify(result.items[0]?.context)).not.toMatch(/baseModelId|base_model_id|label|subtitle|coverUrl|sampleImageUrls|description/u)
   })
 
   it.each([
-    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null }, 'sample image URLs'],
-    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: null }, 'sample image URLs'],
-    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['file:///tmp/x.webp'] }, 'sample image URL'],
-    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['http://127.0.0.1:18092/x.webp', 'http://127.0.0.1:18092/x.webp'] }, 'duplicated'],
-    [{ id: 15, file_name: 'model.safetensors', author: 'author', cover_url: 'http://127.0.0.1:18092/x.webp', sample_image_urls: ['http://127.0.0.1:18092/x.webp'] }, 'cover URL'],
+    ['model', { file_name: 'model.safetensors', base_model_id: 2 }, '2'],
+    ['lora', { file_name: 'lora.safetensors', base_model_id: '12345678901234567890' }, '12345678901234567890'],
+    ['style', { name: 'style', prompt_text: 'style', base_model_id: null }, null],
+    ['artist-string', { title: 'artists', artist_string: '@artist', base_model_id: '1' }, '1'],
+    ['comfyui-template', { title: 'template', base_model_id: 4 }, '4'],
+    ['work', { name: 'work' }, null],
+    ['character', { name: 'character', 'works.name': 'work', prompt_text: 'character' }, null],
+    ['prompt-term', { canonical_tag: 'tag' }, null],
+  ] as const)('exposes the structured base-model id for %s cards independently of the query filter', async (kind, source, baseModelId) => {
+    const execute: CatalogQuery = async () => response([{
+      id: 1, cover_url: null, sample_image_urls: [], ...source,
+    }])
+    const result = await catalog(execute).search(
+      { kind, query: '', page: 1, baseModelId: null },
+      new AbortController().signal,
+    )
+
+    expect(result.items[0]?.baseModelId).toBe(baseModelId)
+  })
+
+  it.each([
+    undefined, 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1, '0', '02', 'model-2', '123456789012345678901',
+  ])('rejects malformed source base-model ids %j', async baseModelId => {
+    const execute: CatalogQuery = async () => response([{
+      id: 1, file_name: 'model.safetensors', base_model_id: baseModelId, cover_url: null, sample_image_urls: [],
+    }])
+
+    await expect(catalog(execute).search(
+      { kind: 'model', query: '', page: 1, baseModelId: null },
+      new AbortController().signal,
+    )).rejects.toMatchObject({ code: 'CATALOG_PROTOCOL_ERROR', message: expect.stringContaining('id') })
+  })
+
+  it.each([
+    [{ id: 15, base_model_id: 2, file_name: 'model.safetensors', author: 'author', cover_url: null }, 'sample image URLs'],
+    [{ id: 15, base_model_id: 2, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: null }, 'sample image URLs'],
+    [{ id: 15, base_model_id: 2, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['file:///tmp/x.webp'] }, 'sample image URL'],
+    [{ id: 15, base_model_id: 2, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: ['http://127.0.0.1:18092/x.webp', 'http://127.0.0.1:18092/x.webp'] }, 'duplicated'],
+    [{ id: 15, base_model_id: 2, file_name: 'model.safetensors', author: 'author', cover_url: 'http://127.0.0.1:18092/x.webp', sample_image_urls: ['http://127.0.0.1:18092/x.webp'] }, 'cover URL'],
   ])('rejects invalid sample image projection %#', async (source, message) => {
     const execute: CatalogQuery = async () => (response([source]))
     await expect(catalog(execute).search(
@@ -299,11 +334,11 @@ describe('Catalog client', () => {
 })
 
 it('omits repeated titles and empty metadata from card summaries', async () => {
-  const execute: CatalogQuery = async () => (response([{ id: 1, file_name: 'name', author: 'name', file_format: '', cover_url: null, sample_image_urls: [] }]))
+  const execute: CatalogQuery = async () => (response([{ id: 1, base_model_id: 2, file_name: 'name', author: 'name', file_format: '', cover_url: null, sample_image_urls: [] }]))
   expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('')
 })
 it('shows distinct model metadata once and keeps a zero LoRA weight', async () => {
-  const execute: CatalogQuery = async () => (response([{ id: 1, file_name: 'name', author: 'A', file_format: 'A', version: 'v1', weight: 0, cover_url: null, sample_image_urls: [] }]))
+  const execute: CatalogQuery = async () => (response([{ id: 1, base_model_id: 2, file_name: 'name', author: 'A', file_format: 'A', version: 'v1', weight: 0, cover_url: null, sample_image_urls: [] }]))
   expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('作者：A')
   expect((await catalog(execute).search({ kind: 'lora', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('版本：v1 · 建议权重：0')
 })
