@@ -460,7 +460,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       : item.generation_input.model?.file_name || '未选择底模'
   }
   const changePage = (page: ExperimentPage) => {
-    store.updateView({ page })
+    store.updateView({ page, compareRunId: null })
     setSearch('')
   }
   const action = async (
@@ -954,12 +954,13 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 kind="small"
                 onClick={() => store.selectRun(item.run_id)}
               >
-                <Identifier value={item.run_id} /> ·{' '}
-                {item.status === 'succeeded'
-                  ? '成功'
-                  : item.status === 'failed'
-                    ? '运行失败'
-                    : '运行中'}
+                <span title={item.run_id}>
+                  {`${shortId(item.run_id)} · ${item.status === 'succeeded'
+                    ? '成功'
+                    : item.status === 'failed'
+                      ? '运行失败'
+                      : '运行中'}`}
+                </span>
               </Button>
             ))}
             {!branchRuns(item.branch_id).length && <small>暂无运行记录</small>}

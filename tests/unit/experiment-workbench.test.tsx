@@ -1415,6 +1415,104 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     ).toBe('主分支')
   })
 
+  it('renders graph ancestry, Run and artifact sources and each branch own run states', async () => {
+    const data = treeProjection()
+    data.branches.find(branch => branch.branch_id === 'detail')!.source_run_id = null
+    data.branches.find(branch => branch.branch_id === 'detail')!.source_artifact_id = 'artifact-detail'
+    data.branches.find(branch => branch.branch_id === 'cool')!.source_run_id = null
+    data.runs = data.runs.filter(run => run.workbench_task_id !== 'cool-task')
+    data.runs.find(run => run.run_id === 'warm-r1')!.status = 'failed'
+    data.runs.find(run => run.run_id === 'warm-r2')!.status = 'running'
+    const { renderer, onAction } = await mount(data)
+    await click(renderer, '收起主分支')
+    await click(renderer, '查看分支图')
+    const graph = renderer.root.findByProps({ className: 'branch-graph' })
+    expect(graph.findAllByType('ul').map(list => list.findAllByType('h3').map(nodeText))).toEqual([
+      ['主分支', '暖光', '暖光细节', '冷光'], ['暖光', '暖光细节', '冷光'], ['暖光细节'],
+    ])
+    const cards = graph.findAllByProps({ className: 'branch-graph-node' })
+    expect(cards.map(card => nodeText(card.findAllByType('p')[0]!))).toEqual([
+      '主分支', '来源：主分支 · root-r1', '来源：暖光 · artifact-detail', '来源：主分支 · 任务输入',
+    ])
+    expect(cards[2]!.findAllByType('p')[0]!.props.title).toBe('artifact-detail')
+    expect(cards.map(card => card.findByProps({ className: 'branch-graph-runs' }).findAllByType('button').map(nodeText))).toEqual([
+      ['root-r1 · 成功'], ['warm-r1 · 运行失败', 'warm-r2 · 运行中'],
+      ['detail-r1 · 成功', 'detail-r2 · 成功', 'detail-r3 · 成功', 'detail-r4 · 成功'], [],
+    ])
+    expect(nodeText(cards[3]!.findByProps({ className: 'branch-graph-runs' }))).toBe('暂无运行记录')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it.each([true, false])('enters a graph grandchild and shows its own input and Runs (hasRuns=%s)', async hasRuns => {
+    const data = treeProjection()
+    if (!hasRuns) data.runs = data.runs.filter(run => run.workbench_task_id !== 'detail-task')
+    const { renderer, onAction } = await mount(data)
+    await click(renderer, '收起暖光')
+    await click(renderer, '收起主分支')
+    await click(renderer, '查看分支图')
+    const card = renderer.root.findAllByProps({ className: 'branch-graph-node' })
+      .find(item => nodeText(item.findAllByType('h3')[0]!) === '暖光细节')!
+    await act(() => card.findAllByType('button').find(button => nodeText(button) === '进入分支')!.props.onClick())
+    expect(renderer.root.findAllByProps({ className: 'branch-graph' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+    const selected = renderer.root.findByProps({ role: 'treeitem', 'aria-selected': true })
+    expect(selected.props['aria-level']).toBe(3)
+    expect(nodeText(selected)).toContain('暖光细节')
+    expect(renderer.root.findByProps({ 'aria-label': '收起主分支' })).toBeDefined()
+    expect(renderer.root.findByProps({ 'aria-label': '收起暖光' })).toBeDefined()
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光细节')
+    expect(renderer.root.findByProps({ 'aria-label': '原始需求' }).props.value).toBe('比较暖光细节的表现。')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('detail prompt')
+    const runs = renderer.root.findByProps({ className: 'run-strip' }).findAllByType('button')
+    expect(runs.map(button => button.props['aria-label'])).toEqual(hasRuns
+      ? ['查看运行 detail-r1', '查看运行 detail-r2', '查看运行 detail-r3', '查看运行 detail-r4'] : [])
+    if (hasRuns) expect(runs.at(-1)!.props['aria-pressed']).toBe(true)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('ends comparison when opening the graph and returning to results', async () => {
+    const { renderer } = await mount(treeProjection())
+    await click(renderer, '比较运行')
+    await click(renderer, '查看分支图')
+    await click(renderer, '返回结果')
+    expect(renderer.root.findAllByProps({ className: 'compare-grid' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '查看运行 root-r1' }).props['aria-pressed']).toBe(true)
+  })
+
+  it('keeps comparison when previewing and closing its selected Run image', async () => {
+    const { renderer } = await mount(treeProjection())
+    await click(renderer, '比较运行')
+    await click(renderer, '查看原图 root-r1')
+    expect(renderer.root.findByProps({ role: 'dialog', 'aria-label': 'root-r1 · 图片 1' })).toBeDefined()
+    await click(renderer, '关闭原图')
+    expect(renderer.root.findAllByProps({ className: 'compare-grid' })).toHaveLength(1)
+  })
+
+  it.each(['root-r1', 'warm-r1'])('leaves comparison when opening %s from the branch graph', async runId => {
+    const { renderer } = await mount(treeProjection())
+    await click(renderer, '比较运行')
+    expect(renderer.root.findAllByProps({ className: 'compare-grid' })).toHaveLength(1)
+    await click(renderer, '查看分支图')
+    await click(renderer, `${runId} · 成功`)
+    expect(renderer.root.findAllByProps({ className: 'compare-grid' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': `查看运行 ${runId}` }).props['aria-pressed']).toBe(true)
+    expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true)
+  })
+
+  it('returns from the graph to the same selected failure and branch', async () => {
+    const data = treeProjection()
+    data.runs.find(run => run.run_id === 'warm-r1')!.status = 'failed'
+    const { renderer, onAction } = await mount(data)
+    await click(renderer, '切换分支 暖光')
+    await click(renderer, '查看运行 warm-r1')
+    await click(renderer, '查看分支图')
+    await click(renderer, '返回结果')
+    expect(renderer.root.findByProps({ 'aria-label': '查看运行 warm-r1' }).props['aria-pressed']).toBe(true)
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光')
+    expect(nodeText(renderer.root.findByProps({ role: 'treeitem', 'aria-selected': true }))).toContain('暖光')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
   it('returns to a favorite run and navigates a run from the branch graph', async () => {
     const { renderer, onAction } = await mount(fullProjection())
     await click(renderer, '收藏')
