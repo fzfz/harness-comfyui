@@ -152,6 +152,103 @@ function PanelHead({
   )
 }
 
+interface FieldOptions {
+  multiline?: boolean
+  short?: boolean
+  type?: string
+  min?: number
+  max?: number
+  step?: number
+  maxLength?: number
+  branch?: boolean
+}
+
+type SaveField = (value: string, expectedValue: string) => Promise<boolean>
+
+function createFieldEditor() {
+  let edit: { value: string; expected: string } | undefined
+  let queued: { value: string; original: string; save: SaveField } | undefined
+  let saving = false
+  const listeners = new Set<() => void>()
+  const update = (next: typeof edit) => {
+    edit = next
+    for (const listener of listeners) listener()
+  }
+  const flush = async () => {
+    if (saving) return
+    saving = true
+    while (queued) {
+      const submission = queued
+      queued = undefined
+      const expected = edit?.expected ?? submission.original
+      if (submission.value !== expected) {
+        const saved = await submission.save(submission.value, expected)
+        if (!saved) { queued = undefined; break }
+        if (edit) update({ ...edit, expected: submission.value })
+      }
+      if (edit?.value === submission.value && !queued) update(undefined)
+    }
+    saving = false
+  }
+  return {
+    getSnapshot: () => edit?.value,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    change: (value: string, original: string) =>
+      update({ value, expected: edit?.expected ?? original }),
+    blur: (value: string, original: string, save: SaveField) => {
+      queued = { value, original, save }
+      void flush()
+    },
+  }
+}
+
+function useBranchFieldEdits(workspaceId: string | null, workId: string | null, branchId: string | null) {
+  const fields = useMemo(
+    () => new Map<string, ReturnType<typeof createFieldEditor>>(),
+    [workspaceId, workId, branchId],
+  )
+  return (id: string) => {
+    let editor = fields.get(id)
+    if (!editor) {
+      editor = createFieldEditor()
+      fields.set(id, editor)
+    }
+    return editor
+  }
+}
+
+function AutosaveField({ label, id, value, options, save, editor, locked }: {
+  readonly label: string
+  readonly id: string
+  readonly value: string
+  readonly options: FieldOptions
+  readonly save: SaveField
+  readonly editor: ReturnType<typeof createFieldEditor>
+  readonly locked: boolean
+}) {
+  const edited = useSyncExternalStore(editor.subscribe, editor.getSnapshot, editor.getSnapshot)
+  const common = {
+    id,
+    'aria-label': label,
+    value: (!locked ? edited : undefined) ?? value,
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      editor.change(event.target.value, value),
+    onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      editor.blur(event.target.value, value, save),
+  }
+  return <label className="field">
+    <span>{label}</span>
+    {options.multiline ? (
+      <textarea {...common} className={options.short ? id === 'original_request' ? 'short branch-goal' : 'short' : ''} />
+    ) : (
+      <input {...common} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} maxLength={options.maxLength} />
+    )}
+  </label>
+}
+
 export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const storage = useMemo(() => {
     if (props.storage) return props.storage
@@ -199,7 +296,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     setModalState(value)
   }, [])
   const [search, setSearch] = useState('')
-  const [draftEdits, setDraftEdits] = useState<Record<string, string>>({})
+  const fieldEditor = useBranchFieldEdits(state.workspaceId, state.view.workId, state.view.branchId)
   const host = useRef<HTMLDivElement>(null)
   useEffect(() => {
     store.setWorkspace(props.workspaceId)
@@ -216,7 +313,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   }, [store, props.visible])
   useEffect(() => () => store.dispose(), [store])
   useEffect(() => {
-    setDraftEdits({})
     setModal(null)
     setSheet(false)
     setMessage(null)
@@ -400,8 +496,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             page: 'workbench',
           })
       }
+      const refreshNavigation = store.getNavigationSequence()
       await store.refresh()
-      return true
+      return store.getNavigationSequence() === refreshNavigation && (!isCurrent || isCurrent())
     } catch (error) {
       if (stillCurrent())
         setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
@@ -1277,71 +1374,44 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   )
   const locked = view.inspectRun || !!experiment
   const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
+  const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string) => {
+    const currentBranch = () => {
+      const current = store.getSnapshot()
+      return current.workspaceId === state.workspaceId &&
+        current.view.workId === view.workId && current.view.branchId === view.branchId
+    }
+    try {
+      await props.onAction({
+        type: options.branch ? 'update-branch' : 'update-draft',
+        workspaceId: state.workspaceId ?? '',
+        workId: view.workId ?? undefined,
+        branchId: view.branchId ?? undefined,
+        field: id,
+        value: options.type === 'number' ? Number(value) : value,
+        ...(options.branch ? { expectedValue } : {}),
+      })
+    } catch (error) {
+      if (currentBranch()) setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
+      return false
+    }
+    if (currentBranch()) await store.refresh()
+    return true
+  }
   const field = (
     label: string,
     id: string,
     value: JsonValue | undefined,
-    options: {
-      multiline?: boolean
-      short?: boolean
-      type?: string
-      min?: number
-      max?: number
-      step?: number
-      maxLength?: number
-      branch?: boolean
-    } = {},
-  ) => {
-    const text =
-        (!locked ? draftEdits[id] : undefined) ??
-        (value === null || value === undefined ? '' : String(value)),
-      commit = (value: string) =>
-        void action(options.branch ? 'update-branch' : 'update-draft', {
-          field: id,
-          value: options.type === 'number' ? Number(value) : value,
-        })
-    const common = {
-      id,
-      'aria-label': label,
-      value: text,
-      onChange: (
-        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-      ) =>
-        setDraftEdits((current) => ({ ...current, [id]: event.target.value })),
-      onBlur: (
-        event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
-      ) => {
-        if (event.target.value !== String(value ?? ''))
-          commit(event.target.value)
-      },
-    }
-    return (
-      <label className="field">
-        <span>{label}</span>
-        {options.multiline ? (
-          <textarea
-            {...common}
-            className={
-              options.short
-                ? id === 'original_request'
-                  ? 'short branch-goal'
-                  : 'short'
-                : ''
-            }
-          />
-        ) : (
-          <input
-            {...common}
-            type={options.type ?? 'text'}
-            min={options.min}
-            max={options.max}
-            step={options.step}
-            maxLength={options.maxLength}
-          />
-        )}
-      </label>
-    )
-  }
+    options: FieldOptions = {},
+  ) => <AutosaveField
+    key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, locked, id])}
+    label={label}
+    id={id}
+    value={value === null || value === undefined ? '' : String(value)}
+    options={options}
+    editor={fieldEditor(id)}
+    locked={locked}
+    save={(nextValue, expectedValue) => saveField(id, options, nextValue, expectedValue)}
+  />
   const openCatalog = (kind: CatalogKind) => {
     store.updateView({
       page: 'resources',

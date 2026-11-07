@@ -102,6 +102,19 @@ it('stops already cancelled calls and cancels a projection completed after the c
   await expect(remote.getProjection(request, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
 })
 
+it('requires the edited branch field and its original string in update requests', () => {
+  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
+  const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
+  for (const field of ['name', 'original_request']) {
+    const request = { ...scope, type: 'update-branch', field, value: 'Edited text', expectedValue: '  Original text\nSecond line  ' }
+    expect(codec.parse(request)).toMatchObject(request)
+    expect(() => codec.parse({ ...scope, type: 'update-branch', field, value: 'Edited text' })).toThrow()
+    for (const expectedValue of [undefined, null, 7]) expect(() => codec.parse({ ...request, expectedValue })).toThrow()
+  }
+  for (const field of [undefined, 'goal']) expect(() => codec.parse({ ...scope, type: 'update-branch', field, value: 'Edited text', expectedValue: 'Original text' })).toThrow()
+  expect(codec.parse({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Rain' })).toMatchObject({ type: 'update-draft' })
+})
+
 it('validates each RPC request from JSON with exact field names and identifier constraints', () => {
   const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, descriptor.parameters[0]!.codec.create()]))
   expect(codecs.getProjection!.parse({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })).toEqual({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })

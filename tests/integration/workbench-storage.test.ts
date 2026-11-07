@@ -37,6 +37,38 @@ function acceptRun(f: ReturnType<typeof fixture>, taskId: string, runId: string,
 }
 
 describe('workbench storage public boundary', () => {
+  it.each(['name', 'original_request'] as const)('preserves the saved %s when another caller submits its original value', field => {
+    const f = fixture()
+    const scope = { workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id }
+    const windowA = f.store.getBranch(f.branch.branch_id)
+    const windowB = f.store.getBranch(f.branch.branch_id)
+    const save = (value: string, expectedValue: string) => f.store.saveBranchDraft({
+      ...scope, expected: f.branch.draft, draft: f.branch.draft,
+      ...(field === 'name' ? { name: value, expectedName: expectedValue } : { originalRequest: value, expectedOriginalRequest: expectedValue }),
+    })
+    save('Window B saved text', windowB[field])
+    expect(() => save('Window A stale text', windowA[field])).toThrowError(expect.objectContaining({
+      code: 'WORKBENCH_EDIT_CONFLICT', issues: [{ path: field, message: expect.any(String) }],
+    }))
+    const reopened = new WorkbenchStore({ database: f.database, artifactDirectory: f.directory })
+    expect(reopened.getBranch(scope.branchId)[field]).toBe('Window B saved text')
+    expect(reopened.getProjection(scope).branches[0]![field]).toBe('Window B saved text')
+  })
+
+  it.each([
+    { change: { name: 'Changed name' }, path: 'expectedName' },
+    { change: { originalRequest: 'Changed request' }, path: 'expectedOriginalRequest' },
+    { change: { name: '', expectedName: '主分支' }, path: 'name' },
+    { change: { name: '名'.repeat(41), expectedName: '主分支' }, path: 'name' },
+    { change: { originalRequest: '  ', expectedOriginalRequest: 'paint rain' }, path: 'original_request' },
+  ])('rejects invalid branch metadata at $path without persisting it', ({ change, path }) => {
+    const f = fixture()
+    expect(() => f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft: f.branch.draft, ...change })).toThrowError(expect.objectContaining({
+      code: 'WORKBENCH_INVALID_INPUT', issues: [{ path, message: expect.any(String) }],
+    }))
+    expect(f.store.getBranch(f.branch.branch_id)).toEqual(f.branch)
+  })
+
   it('creates a work and its single main branch atomically, including a failed branch write', () => {
     const f = fixture()
     const originalWorks = f.store.listWorks('workspace')

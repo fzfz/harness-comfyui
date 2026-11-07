@@ -156,8 +156,8 @@ it('edits branch input through real actions, resolves catalog resources and disp
   expect(createdWorkspace).toEqual({ workspaceId: 'workspace_3' })
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const action = (type: ExperimentWorkbenchAction['type'], value?: unknown, field?: string, id?: string) => remote.mutate({ ...selected, type, value, field, id }, signal())
-  await action('update-branch', 'Wet glass', 'name')
-  await action('update-branch', 'Paint rain at night', 'original_request')
+  await remote.mutate({ ...selected, type: 'update-branch', field: 'name', value: 'Wet glass', expectedValue: '主分支' }, signal())
+  await remote.mutate({ ...selected, type: 'update-branch', field: 'original_request', value: 'Paint rain at night', expectedValue: 'Paint rain' }, signal())
   await action('update-draft', 'rain at night', 'positive_prompt')
   await action('update-draft', 'blur', 'negative_prompt')
   await action('update-draft', '8', 'instance_id')
@@ -217,13 +217,76 @@ it('preserves user edits as candidates and applies an explicitly selected prompt
   expect((await remote.getProjection(selected, signal())).tasks.find(item => item.task_id === unfinished.task_id)).toMatchObject({ execution_state: 'failed', status: 'failed' })
 })
 
+it.each([
+  { field: 'name', saved: 'Window B name', stale: 'Window A name' },
+  { field: 'original_request', saved: 'Window B requirements', stale: 'Window A requirements' },
+] as const)('rejects a stale $field edit from another window and preserves the saved value', async ({ field, saved, stale }) => {
+  const { remote } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
+  const windowA = (await remote.getProjection(selected, signal())).branches[0]!
+  const windowB = (await remote.getProjection(selected, signal())).branches[0]!
+  await remote.mutate({ ...selected, type: 'update-branch', field, value: saved, expectedValue: windowB[field] }, signal())
+  await expect(remote.mutate({ ...selected, type: 'update-branch', field, value: stale, expectedValue: windowA[field] }, signal())).rejects.toMatchObject({
+    code: 'workbench/operation-failed',
+    details: { code: 'WORKBENCH_EDIT_CONFLICT', issues: [{ path: field, message: expect.any(String) }] },
+  })
+  expect((await remote.getProjection(selected, signal())).branches[0]![field]).toBe(saved)
+})
+
+it.each([
+  { field: 'name', expectedValue: undefined, path: 'expectedValue' },
+  { field: 'original_request', expectedValue: undefined, path: 'expectedValue' },
+  { field: undefined, expectedValue: 'Paint rain', path: 'field' },
+  { field: 'goal', expectedValue: 'Paint rain', path: 'field' },
+])('rejects branch edits with invalid request metadata: $field / $path', async ({ field, expectedValue, path }) => {
+  const { remote } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
+  const original = (await remote.getProjection(selected, signal())).branches[0]!
+  await expect(remote.mutate({ ...selected, type: 'update-branch', field, value: 'Changed text', expectedValue }, signal())).rejects.toMatchObject({
+    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path, message: expect.any(String) }] },
+  })
+  expect((await remote.getProjection(selected, signal())).branches[0]).toEqual(original)
+})
+
+it.each([
+  { first: 'name', second: 'original_request' },
+  { first: 'original_request', second: 'name' },
+] as const)('saves $first and $second independently and refreshes the exact saved text', async ({ first, second }) => {
+  const { remote } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
+  const windowA = (await remote.getProjection(selected, signal())).branches[0]!
+  const windowB = (await remote.getProjection(selected, signal())).branches[0]!
+  const values = { name: '名'.repeat(40), original_request: '  Paint rain at night.\nKeep the reflections.  ' }
+  await remote.mutate({ ...selected, type: 'update-branch', field: first, value: values[first], expectedValue: windowA[first] }, signal())
+  await remote.mutate({ ...selected, type: 'update-branch', field: second, value: values[second], expectedValue: windowB[second] }, signal())
+  const refreshed = await remote.getProjection(selected, signal())
+  expect(refreshed.branches[0]).toMatchObject(values)
+  expect(refreshed.works[0]).toMatchObject({ name: 'Rain', goal: 'Paint rain' })
+})
+
+it.each([
+  { field: 'name', value: '' },
+  { field: 'name', value: '  ' },
+  { field: 'name', value: '名'.repeat(41) },
+  { field: 'original_request', value: '' },
+  { field: 'original_request', value: '  ' },
+] as const)('rejects invalid $field text without changing the branch: $value', async ({ field, value }) => {
+  const { remote } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
+  const original = (await remote.getProjection(selected, signal())).branches[0]!
+  await expect(remote.mutate({ ...selected, type: 'update-branch', field, value, expectedValue: original[field] }, signal())).rejects.toMatchObject({
+    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: field, message: expect.any(String) }] },
+  })
+  expect((await remote.getProjection(selected, signal())).branches[0]).toEqual(original)
+})
+
 it('rejects invalid action input and cross-workspace targets before changing a branch', async () => {
   const { remote, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const original = store.getBranch(selected.branchId!)
   const invalid: ExperimentWorkbenchAction[] = [
     { ...selected, type: 'new-work', value: [] },
-    { ...selected, type: 'update-branch', field: 'name', value: '' },
+    { ...selected, type: 'update-branch', field: 'name', value: '', expectedValue: original.name },
     { ...selected, type: 'update-draft', field: 'seed', value: 10 },
     { ...selected, type: 'update-draft', field: 'lora-weight', id: 'missing', value: 1 },
     { ...selected, workspaceId: 'workspace_2', type: 'update-draft', field: 'positive_prompt', value: 'Wrong project' },

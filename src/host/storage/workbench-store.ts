@@ -106,10 +106,13 @@ export class WorkbenchStore {
     return transaction(this.database, () => {
       this.assertScope(input.workspaceId, input.workId, input.branchId)
       const branch = this.getBranch(input.branchId)
-      if (!equalValue(branch.draft, input.expected) || (input.originalRequest !== undefined && branch.original_request !== input.expectedOriginalRequest)) fail('WORKBENCH_EDIT_CONFLICT', '分支内容已改变，请刷新后重新保存。', 'expected')
+      if (input.name !== undefined && typeof input.expectedName !== 'string') fail('WORKBENCH_INVALID_INPUT', '缺少编辑前的分支名称，请刷新页面后保存。', 'expectedName')
+      if (input.originalRequest !== undefined && typeof input.expectedOriginalRequest !== 'string') fail('WORKBENCH_INVALID_INPUT', '缺少编辑前的原始需求，请刷新页面后保存。', 'expectedOriginalRequest')
+      if (!equalValue(branch.draft, input.expected)) fail('WORKBENCH_EDIT_CONFLICT', '分支内容已改变，请刷新后重新保存。', 'expected')
+      if (input.originalRequest !== undefined && branch.original_request !== input.expectedOriginalRequest) fail('WORKBENCH_EDIT_CONFLICT', '原始需求已改变，请刷新后重新保存。', 'original_request')
       if (input.name !== undefined && (!input.name.trim() || input.name.length > 40)) fail('WORKBENCH_INVALID_INPUT', '请填写分支名称；名称最多 40 字。', 'name')
-      if (input.name !== undefined && input.expectedName !== undefined && branch.name !== input.expectedName) fail('WORKBENCH_EDIT_CONFLICT', '分支名称已改变，请刷新后重新保存。', 'expectedName')
-      if (input.originalRequest !== undefined && !input.originalRequest.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写原始需求。', 'originalRequest')
+      if (input.name !== undefined && branch.name !== input.expectedName) fail('WORKBENCH_EDIT_CONFLICT', '分支名称已改变，请刷新后重新保存。', 'name')
+      if (input.originalRequest !== undefined && !input.originalRequest.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写原始需求。', 'original_request')
       const draft = validateTaskDraft(input.draft)
       const execution = input.execution ?? branch.execution
       if (!['once', 'continuous'].includes(execution.mode) || !Number.isSafeInteger(execution.max_runs) || execution.max_runs < 1) fail('WORKBENCH_INVALID_INPUT', '请选择执行方式并填写正整数运行次数。', 'execution')

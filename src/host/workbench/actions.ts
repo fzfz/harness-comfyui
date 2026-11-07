@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { ExperimentWorkbenchAction } from '../../workbench-remote.ts'
+import { WORKBENCH_BRANCH_EDIT_FIELDS, type ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import type { WorkbenchScope } from '../../workbench-remote.ts'
 import type { FunctionBinding, ReviewDraft, ResourceRef } from '../../workbench/contract.ts'
 import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
@@ -72,7 +72,9 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       return { ...selection, branchId: created.branch_id }
     }
     case 'update-branch': {
-      store.saveBranchDraft({ ...selection, expected: branch.draft, draft: branch.draft, ...(request.field === 'name' ? { name: text(request.value, 'name') } : { originalRequest: text(request.value, 'original_request'), expectedOriginalRequest: branch.original_request }) })
+      if (!WORKBENCH_BRANCH_EDIT_FIELDS.some(field => field === request.field)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择要编辑的内容：分支名称或原始需求。', 'field')
+      if (typeof request.expectedValue !== 'string') throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '缺少编辑前的内容，请刷新页面后保存。', 'expectedValue')
+      store.saveBranchDraft({ ...selection, expected: branch.draft, draft: branch.draft, ...(request.field === 'name' ? { name: text(request.value, 'name'), expectedName: request.expectedValue } : { originalRequest: text(request.value, 'original_request'), expectedOriginalRequest: request.expectedValue }) })
       break
     }
     case 'update-execution': {

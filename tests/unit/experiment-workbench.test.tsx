@@ -560,6 +560,237 @@ describe('experiment workbench public interactions', () => {
 })
 
 describe('experiment workbench forms and task results', () => {
+  it.each([
+    ['name', '分支名称'],
+    ['original_request', '原始需求'],
+  ] as const)('retains the original %s and typed text when another window saves during editing', async (field, label) => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let available = { ...fullProjection(), refreshAfterMs: 100 }
+    const originalValue = available.branches[0]![field]
+    const onAction = vi.fn(async () => { throw new Error('分支内容已改变，请刷新后重新保存。') })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, label, '当前窗口填写的文字')
+    available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, [field]: '其他窗口保存的文字' } : branch) }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(renderer.root.findByProps({ 'aria-label': label }).props.value).toBe('当前窗口填写的文字')
+    await blur(renderer, label, '当前窗口填写的文字')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'update-branch', field, value: '当前窗口填写的文字', expectedValue: originalValue }))
+    expect(renderer.root.findByProps({ 'aria-label': label }).props.value).toBe('当前窗口填写的文字')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('分支内容已改变')
+  })
+
+  it('shows later saved branch values after its own edit is saved', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let available = { ...fullProjection(), refreshAfterMs: 100 }
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: String(request.value) } : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, '分支名称', '本窗口保存的名称')
+    await blur(renderer, '分支名称', '本窗口保存的名称')
+    available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: '另一个窗口保存的名称' } : branch) }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('另一个窗口保存的名称')
+    await change(renderer, '分支名称', '再次编辑')
+    await blur(renderer, '分支名称', '再次编辑')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ expectedValue: '另一个窗口保存的名称', value: '再次编辑' }))
+  })
+
+  it('keeps newer typing while a branch save completes and uses the saved value for the next save', async () => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) await response
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: String(request.value) } : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, '分支名称', '第一次编辑')
+    await blur(renderer, '分支名称', '第一次编辑')
+    await change(renderer, '分支名称', '继续填写的文字')
+    await act(async () => { finish(); await response })
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('继续填写的文字')
+    await blur(renderer, '分支名称', '继续填写的文字')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ expectedValue: '第一次编辑', value: '继续填写的文字' }))
+  })
+
+  it.each(['主分支', '继续填写的名称'])('saves the last blurred value %s after an earlier save finishes', async (lastValue) => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) await response
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: String(request.value) } : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, '分支名称', '第一次提交')
+    await blur(renderer, '分支名称', '第一次提交')
+    await change(renderer, '分支名称', '中间输入')
+    await blur(renderer, '分支名称', '中间输入')
+    await change(renderer, '分支名称', lastValue)
+    await blur(renderer, '分支名称', lastValue)
+    expect(onAction).toHaveBeenCalledTimes(1)
+    await act(async () => { finish(); await response })
+    expect(onAction).toHaveBeenCalledTimes(2)
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ value: lastValue, expectedValue: '第一次提交' }))
+    expect(available.branches[0]!.name).toBe(lastValue)
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(lastValue)
+  })
+
+  it.each(['前一分支提交', '新分支输入'])('retains the selected branch edit %s when an earlier save refresh completes', async (nextValue) => {
+    let available = fullProjection()
+    let finishRefresh!: (value: WorkbenchProjection) => void
+    let deferRefresh = false
+    const refreshed = new Promise<WorkbenchProjection>(resolve => { finishRefresh = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId ? { ...branch, name: String(request.value) } : branch) }
+      if (onAction.mock.calls.length === 1) deferRefresh = true
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => {
+        if (deferRefresh) { deferRefresh = false; return refreshed }
+        return structuredClone(available)
+      }, getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, '分支名称', '前一分支提交')
+    await blur(renderer, '分支名称', '前一分支提交')
+    const originalChildName = available.branches[1]!.name
+    await act(() => renderer.root.findByProps({ 'aria-label': `切换分支 ${originalChildName}` }).props.onClick())
+    await change(renderer, '分支名称', nextValue)
+    await act(async () => { finishRefresh(structuredClone(available)); await refreshed })
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(nextValue)
+    await blur(renderer, '分支名称', nextValue)
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ branchId: available.branches[1]!.branch_id, value: nextValue, expectedValue: originalChildName }))
+  })
+
+  it('keeps the latest input and stops queued saves when the active save fails', async () => {
+    const available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async () => { await response; throw new Error('连接中断，请重试。') })
+    const { renderer } = await mount(available, { onAction })
+    await change(renderer, '分支名称', '第一次提交')
+    await blur(renderer, '分支名称', '第一次提交')
+    await change(renderer, '分支名称', '后来输入')
+    await blur(renderer, '分支名称', '后来输入')
+    await act(async () => { finish(); await response })
+    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('后来输入')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('连接中断')
+    await blur(renderer, '分支名称', '后来输入')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ value: '后来输入', expectedValue: available.branches[0]!.name }))
+  })
+
+  it('persists already blurred edits to their branch after selecting another branch', async () => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) await response
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId ? { ...branch, name: String(request.value) } : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, '分支名称', '第一次提交')
+    await blur(renderer, '分支名称', '第一次提交')
+    await change(renderer, '分支名称', '最后提交')
+    await blur(renderer, '分支名称', '最后提交')
+    await act(() => renderer.root.findByProps({ 'aria-label': '切换分支 暖光探索' }).props.onClick())
+    await change(renderer, '分支名称', '新分支输入')
+    await act(async () => { finish(); await response })
+    expect(available.branches[0]!.name).toBe('最后提交')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ branchId: 'root', value: '最后提交', expectedValue: '第一次提交' }))
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('新分支输入')
+    await blur(renderer, '分支名称', '新分支输入')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ branchId: 'child', value: '新分支输入', expectedValue: '暖光探索' }))
+  })
+
+  it('retains branch typing through a failed projection poll and retry', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const available = { ...fullProjection(), refreshAfterMs: 100 }
+    let failProjection = false
+    const { renderer, onAction } = await mount(available, {
+      remote: { getProjection: async () => {
+        if (failProjection) throw new Error('连接中断')
+        return structuredClone(available)
+      }, getInputDescription: async () => inputDescription },
+    })
+    await change(renderer, '分支名称', '尚未提交的名称')
+    failProjection = true
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(nodeText(renderer.root)).toContain('工作台加载失败')
+    failProjection = false
+    await click(renderer, '重试')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('尚未提交的名称')
+    await blur(renderer, '分支名称', '尚未提交的名称')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ value: '尚未提交的名称', expectedValue: available.branches[0]!.name }))
+  })
+
+  it('finishes sequential branch saves without leaving the page selected during saving', async () => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) await response
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: String(request.value) } : branch) }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, '分支名称', '第一次提交')
+    await blur(renderer, '分支名称', '第一次提交')
+    await click(renderer, '资源')
+    await change(renderer, '分支名称', '资源页继续填写')
+    await blur(renderer, '分支名称', '资源页继续填写')
+    await act(async () => { finish(); await response })
+    expect(available.branches[0]!.name).toBe('资源页继续填写')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ value: '资源页继续填写', expectedValue: '第一次提交' }))
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+  })
+
+  it('keeps same-branch typing when visiting another workbench page', async () => {
+    const { renderer } = await mount(fullProjection())
+    await change(renderer, '分支名称', '尚未提交的名称')
+    await click(renderer, '配置中心')
+    await click(renderer, '返回工作台')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('尚未提交的名称')
+  })
+
+  it('releases an unchanged edit so subsequent remote values remain visible', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    let available = { ...fullProjection(), refreshAfterMs: 100 }
+    const originalValue = available.branches[0]!.name
+    const onAction = vi.fn()
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      onAction,
+    })
+    await change(renderer, '分支名称', '临时输入')
+    await change(renderer, '分支名称', originalValue)
+    await blur(renderer, '分支名称', originalValue)
+    expect(onAction).not.toHaveBeenCalled()
+    available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: '其他窗口的新名称' } : branch) }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('其他窗口的新名称')
+  })
+
   it('matches the reference workspace dialog controls and cycles keyboard focus within the dialog', async () => {
     const { renderer } = await mount(empty)
     await click(renderer, '添加工作区')

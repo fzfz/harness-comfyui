@@ -10,6 +10,7 @@ export const WORKBENCH_REMOTE_SERVICE = `remote.${WORKBENCH_REMOTE_NAMESPACE}`
 export interface WorkbenchScope { workspaceId: string; workId?: string; branchId?: string }
 export const WORKBENCH_ACTION_TYPES = ["new-workspace", "new-work", "create-branch", "update-branch", "update-draft", "update-execution", "run", "experiment", "pause-experiment", "resume-experiment", "stop-experiment", "retry", "favorite", "evaluate", "reuse", "agent-action", "function-add", "function-edit", "function-remove", "function-preset", "resource-select", "resource-remove", "task-interrupt", "task-resume", "task-answer", "task-apply", "task-branch"] as const
 export type ExperimentActionType = typeof WORKBENCH_ACTION_TYPES[number]
+export const WORKBENCH_BRANCH_EDIT_FIELDS = ['name', 'original_request'] as const
 export interface ExperimentWorkbenchAction extends WorkbenchScope {
   readonly type: ExperimentActionType
   readonly runId?: string
@@ -18,6 +19,7 @@ export interface ExperimentWorkbenchAction extends WorkbenchScope {
   readonly id?: string
   readonly field?: string
   readonly value?: unknown
+  readonly expectedValue?: string
 }
 export interface WorkbenchEnvironment {
   workspaces: { id: string; name: string; path: string }[]
@@ -61,7 +63,7 @@ const environmentSchema = contractObject({ workspaceId: identifier(), presetId: 
 const actionSchema = contractObject({
   workspaceId: Schema.string().required(), workId: identifier(), branchId: identifier(),
   type: Schema.union([...WORKBENCH_ACTION_TYPES]).required(), referenceRunIds: Schema.array(identifier()).max(20), runId: identifier(), taskId: identifier(), id: identifier(),
-  field: Schema.string().min(1), value: json,
+  field: Schema.string().min(1), value: json, expectedValue: Schema.string(),
 }, { exact: true })
 const inputDescriptionResultSchema = contractObject({ value: requiredNullable(workflowRuntimeParameterInspectionSchema) }, { exact: true })
 const inputDescriptionSchema = contractObject({ workspaceId: identifier().required(), workId: identifier().required(), branchId: identifier().required(), runId: identifier() }, { exact: true })
@@ -71,6 +73,10 @@ function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
   if (method === 'mutate') {
     const action = parsed as ExperimentWorkbenchAction
     if (action.type !== 'new-workspace') Schema.resolve(action.workspaceId, identifier().required(), {})
+    if (action.type === 'update-branch') {
+      Schema.resolve(action.field, Schema.union([...WORKBENCH_BRANCH_EDIT_FIELDS]).required(), {})
+      Schema.resolve(action.expectedValue, Schema.string().required(), {})
+    }
   }
   return parsed
 }
