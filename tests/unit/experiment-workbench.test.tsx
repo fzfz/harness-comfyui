@@ -1897,6 +1897,95 @@ describe('experiment workbench function editor lifecycle', () => {
   })
 })
 
+describe('experiment workbench agent model choices', () => {
+  it('saves separate function models across reopening and projection reload and distinguishes identical model ids from different providers', async () => {
+    const data = fullProjection()
+    const environment: WorkbenchEnvironment = {
+      ...functionEnvironment,
+      models: {
+        ...functionEnvironment.models,
+        groups: [
+          { id: 'provider', name: '提供商', models: [{ id: 'model', name: '模型', reasoning: { efforts: [{ id: 'medium', name: '中' }, { id: 'high', name: '高' }], defaultEffort: 'high' } }] },
+          { id: 'provider-other', name: '其他提供商', models: [
+            { id: 'model', name: '同编号模型', reasoning: { efforts: [{ id: 'xhigh', name: '极高' }] } },
+            { id: 'other-only', name: '备用模型' },
+          ] },
+        ],
+        routableProviders: ['provider', 'provider-other'],
+      },
+    }
+    const remote = { getEnvironment: async () => environment, getProjection: async () => structuredClone(data), getInputDescription: async () => inputDescription }
+    const onAction = vi.fn(async request => { Object.assign(data.functions.find(item => item.function_id === request.id)!, structuredClone(request.value)) })
+    const { renderer } = await mount(data, { remote, onAction })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, '推理等级', 'medium')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    await click(renderer, '编辑run')
+    await change(renderer, 'Agent 提供商', 'provider-other')
+    const model = renderer.root.findByProps({ 'aria-label': 'Agent 模型' })
+    expect(model.props.value).toBe('model')
+    expect(model.findAllByType('option').map(option => [option.props.value, nodeText(option)])).toEqual([['model', '同编号模型'], ['other-only', '备用模型']])
+    const effort = renderer.root.findByProps({ 'aria-label': '推理等级' })
+    expect(effort.props.value).toBe('xhigh')
+    expect(effort.findAllByType('option').map(option => option.props.value)).toEqual(['xhigh'])
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction.mock.calls.map(([request]) => [request.id, request.value.agent_model])).toEqual([
+      ['prompt', { provider: 'provider', model: 'model', reasoningEffort: 'medium' }],
+      ['run', { provider: 'provider-other', model: 'model', reasoningEffort: 'xhigh' }],
+    ])
+    const verifySavedChoices = async (view: typeof renderer) => {
+      for (const [functionId, provider, reasoningEffort] of [['prompt', 'provider', 'medium'], ['run', 'provider-other', 'xhigh']] as const) {
+        await click(view, '编辑' + functionId)
+        expect(view.root.findByProps({ 'aria-label': 'Agent 提供商' }).props.value).toBe(provider)
+        expect(view.root.findByProps({ 'aria-label': 'Agent 模型' }).props.value).toBe('model')
+        expect(view.root.findByProps({ 'aria-label': '推理等级' }).props.value).toBe(reasoningEffort)
+        await click(view, '取消')
+      }
+    }
+    await verifySavedChoices(renderer)
+    const refreshed = await mount(structuredClone(data), { remote, onAction })
+    await click(refreshed.renderer, '配置中心')
+    await verifySavedChoices(refreshed.renderer)
+  })
+
+  it('keeps a shared reasoning level and otherwise uses the model default or first level before clearing it for a model without reasoning', async () => {
+    const data = fullProjection()
+    const environment: WorkbenchEnvironment = {
+      ...functionEnvironment,
+      models: {
+        ...functionEnvironment.models,
+        groups: [{
+          id: 'provider', name: '提供商', models: [
+            ...functionEnvironment.models.groups[0].models,
+            { id: 'shared', name: '共同等级模型', reasoning: { efforts: [{ id: 'low', name: '低' }, { id: 'high', name: '高' }], defaultEffort: 'low' } },
+            { id: 'default', name: '默认等级模型', reasoning: { efforts: [{ id: 'low', name: '低' }, { id: 'medium', name: '中' }], defaultEffort: 'medium' } },
+            { id: 'first', name: '首个等级模型', reasoning: { efforts: [{ id: 'minimal', name: '最小' }, { id: 'low', name: '低' }] } },
+            { id: 'fast', name: '快速模型' },
+          ],
+        }],
+      },
+    }
+    const { renderer, onAction } = await mount(data, { remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, 'Agent 模型', 'shared')
+    expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.value).toBe('high')
+    await change(renderer, 'Agent 模型', 'default')
+    expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.value).toBe('medium')
+    await change(renderer, 'Agent 模型', 'first')
+    expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.value).toBe('minimal')
+    await change(renderer, 'Agent 模型', 'fast')
+    const effort = renderer.root.findByProps({ 'aria-label': '推理等级' })
+    expect(effort.props.disabled).toBe(true)
+    expect(effort.props.value).toBe('')
+    expect(effort.findAllByType('option').map(option => option.props.value)).toEqual([''])
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'function-edit', id: 'prompt' }))
+    expect(onAction.mock.lastCall![0].value.agent_model).toStrictEqual({ provider: 'provider', model: 'fast' })
+  })
+})
+
 describe('experiment workbench function editor controls', () => {
   it('selects a model and reasoning level, restores requirements and saves the selected values', async () => {
     const data = fullProjection()
@@ -1968,21 +2057,37 @@ describe('experiment workbench function editor controls', () => {
     [{ provider: 'provider', model: 'removed' }, '请选择该提供商下的 Agent 模型。'],
     [{ provider: 'provider', model: 'model', reasoningEffort: 'removed' }, '请选择该模型支持的推理等级。'],
     [{ provider: 'provider', model: 'fast', reasoningEffort: 'high' }, '该模型未提供推理等级，请重新选择模型。'],
-  ])('requires a valid model selection after the saved model changes availability: %j', async (agent_model, message) => {
+  ])('preserves other edits and saves after repairing an unavailable model selection: %j', async (agent_model, message) => {
     const data = fullProjection()
     data.functions.find(item => item.function_id === 'prompt')!.agent_model = agent_model
     const environment = {
       ...functionEnvironment,
       models: { ...functionEnvironment.models, groups: [{ ...functionEnvironment.models.groups[0], models: [...functionEnvironment.models.groups[0].models, { id: 'fast', name: '快速模型' }] }] },
     }
-    const { renderer } = await mount(data, { remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    const { renderer, onAction } = await mount(data, { remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
     expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe(message)
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await change(renderer, '指定 Skill', '')
+    await change(renderer, '执行要求', '修复模型后保留 {{task_id}}')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).not.toHaveBeenCalled()
     await change(renderer, 'Agent 提供商', 'provider')
     expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-other')
+    expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).props.value).toBe('')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('修复模型后保留 {{task_id}}')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      type: 'function-edit', id: 'prompt',
+      value: expect.objectContaining({
+        preset_id: 'preset-other', requested_skill: null, request_template: '修复模型后保留 {{task_id}}',
+        agent_model: { provider: 'provider', model: 'model', reasoningEffort: 'high' },
+      }),
+    }))
   })
 
   it('keeps keyboard focus inside the function dialog and closes with Escape', async () => {

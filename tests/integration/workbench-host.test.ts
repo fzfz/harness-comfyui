@@ -125,6 +125,72 @@ it.each([
   expect(official.disposeScope).toHaveBeenCalledOnce()
 })
 
+it('preserves each saved function model in Task snapshots, sends its exact selection and stores the official receipt across later binding edits', async () => {
+  const { remote, official } = await fixture()
+  const modelCatalog = {
+    default: { provider: 'provider-a', model: 'model-a' },
+    groups: [
+      { id: 'provider-a', name: 'Provider A', models: [
+        { id: 'model-a', name: 'Default model' },
+        { id: 'shared', name: 'Reasoning model', reasoning: { efforts: [{ id: 'medium', name: 'Medium' }, { id: 'high', name: 'High' }], defaultEffort: 'medium' } },
+      ] },
+      { id: 'provider-b', name: 'Provider B', models: [{ id: 'shared', name: 'Fast model' }] },
+    ],
+    routableProviders: ['provider-a', 'provider-b'], failures: [],
+  }
+  official.controller.modelCatalog.mockResolvedValue(modelCatalog)
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Model choices', goal: 'Paint rain' } }, signal())
+  expect((await remote.getEnvironment({ workspaceId: 'workspace_1' }, signal())).models).toEqual(modelCatalog)
+  const initial = await remote.getProjection(selected, signal())
+  const promptBinding = {
+    ...initial.functions.find(item => item.function_id === 'prompt')!, preset_id: 'preset-a',
+    agent_model: { provider: 'provider-a', model: 'shared', reasoningEffort: 'high' },
+  }
+  const rewriteBinding = {
+    ...initial.functions.find(item => item.function_id === 'rewrite')!, preset_id: 'preset-a',
+    agent_model: { provider: 'provider-b', model: 'shared' },
+  }
+  await remote.mutate({ ...selected, type: 'function-edit', value: promptBinding }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', value: rewriteBinding }, signal())
+  const saved = await remote.getProjection(selected, signal())
+  expect(saved.functions.find(item => item.function_id === 'prompt')).toEqual(promptBinding)
+  expect(saved.functions.find(item => item.function_id === 'rewrite')).toEqual(rewriteBinding)
+
+  official.controller.selectModel.mockResolvedValueOnce({ selected: { provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' } })
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  const promptTask = (await remote.getProjection(selected, signal())).tasks.find(item => item.binding_snapshot.function_id === 'prompt')!
+  expect(promptTask).toMatchObject({
+    execution_state: 'running',
+    binding_snapshot: { agentModel: { provider: 'provider-a', model: 'shared', reasoningEffort: 'high' } },
+    selected_model: { provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' },
+  })
+  expect(official.controller.selectModel.mock.calls[0]).toStrictEqual([{ sessionId: promptTask.session_id, provider: 'provider-a', model: 'shared', reasoningEffort: 'high' }])
+
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'rewrite' }, signal())
+  const rewriteTask = (await remote.getProjection(selected, signal())).tasks.find(item => item.binding_snapshot.function_id === 'rewrite')!
+  expect(rewriteTask.binding_snapshot.agentModel).toStrictEqual({ provider: 'provider-b', model: 'shared' })
+  expect(rewriteTask.selected_model).toStrictEqual({ provider: 'provider-b', model: 'shared' })
+  expect(official.controller.selectModel.mock.calls[1]).toStrictEqual([{ sessionId: rewriteTask.session_id, provider: 'provider-b', model: 'shared' }])
+
+  await remote.mutate({ ...selected, type: 'function-edit', value: { ...promptBinding, agent_model: { provider: 'provider-b', model: 'shared' } } }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', value: { ...rewriteBinding, agent_model: { provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' } } }, signal())
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  const updated = await remote.getProjection(selected, signal())
+  expect(updated.tasks.find(item => item.task_id === promptTask.task_id)).toMatchObject({
+    binding_snapshot: { agentModel: { provider: 'provider-a', model: 'shared', reasoningEffort: 'high' } },
+    selected_model: { provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' },
+  })
+  const storedRewrite = updated.tasks.find(item => item.task_id === rewriteTask.task_id)!
+  expect(storedRewrite.binding_snapshot.agentModel).toStrictEqual({ provider: 'provider-b', model: 'shared' })
+  expect(storedRewrite.selected_model).toStrictEqual({ provider: 'provider-b', model: 'shared' })
+  const nextPromptTask = updated.tasks.find(item => item.task_id !== promptTask.task_id && item.binding_snapshot.function_id === 'prompt')!
+  expect(nextPromptTask.binding_snapshot.agentModel).toStrictEqual({ provider: 'provider-b', model: 'shared' })
+  expect(nextPromptTask.selected_model).toStrictEqual({ provider: 'provider-b', model: 'shared' })
+  expect(official.controller.selectModel.mock.calls[2]).toStrictEqual([{ sessionId: nextPromptTask.session_id, provider: 'provider-b', model: 'shared' }])
+  expect(updated.functions.find(item => item.function_id === 'prompt')!.agent_model).toStrictEqual({ provider: 'provider-b', model: 'shared' })
+  expect(updated.functions.find(item => item.function_id === 'rewrite')!.agent_model).toStrictEqual({ provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' })
+})
+
 it('stores prompt and run presets independently for each Workspace', async () => {
   const { remote, official } = await fixture()
   official.listPresets.mockResolvedValue([{ id: 'preset-a' }, { id: 'preset-b' }])
