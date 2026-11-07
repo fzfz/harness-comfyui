@@ -153,6 +153,7 @@ export class ExperimentWorkbenchStore {
     clearTimeout(this.timer)
     this.updateView({
       workId,
+      page: 'workbench',
       branchId: null,
       selectedRunId: null,
       inspectRun: false,

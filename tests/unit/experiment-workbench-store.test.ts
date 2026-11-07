@@ -91,6 +91,37 @@ describe('experiment workbench browsing', () => {
     expect(store.getSnapshot().view.page).toBe('graph')
     store.dispose()
   })
+  it('opens the selected work results and clears the previous work inspection', async () => {
+    const first = fullProjection()
+    const second: WorkbenchProjection = {
+      ...projection('workspace-a', 'work-b'),
+      works: first.works,
+      branches: [{ ...first.branches[0]!, work_id: 'work-b', branch_id: 'second-root' }],
+      refreshAfterMs: 0,
+    }
+    const remote = {
+      getProjection: vi.fn(async ({ workId }: { workspaceId: string; workId?: string }) =>
+        workId === 'work-b' ? second : first),
+    }
+    const store = new ExperimentWorkbenchStore(remote)
+    store.setWorkspace('workspace-a')
+    await flush()
+    store.selectRun('r2')
+    store.updateView({ page: 'resources', compareRunId: 'r1' })
+    store.selectWork('work-b')
+    expect(store.getSnapshot().projection).toBeNull()
+    await flush()
+    expect(remote.getProjection).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', workId: 'work-b' })
+    expect(store.getSnapshot().view).toMatchObject({
+      workId: 'work-b', branchId: 'second-root', page: 'workbench',
+      selectedRunId: null, inspectRun: false, compareRunId: null,
+    })
+    expect(store.getSnapshot().projection?.tasks).toEqual([])
+    expect(store.getSnapshot().projection?.experiences).toEqual([])
+    expect(store.getSnapshot().projection?.favorites).toEqual([])
+    store.dispose()
+  })
+
   it('follows the server refresh interval and stops in a hidden page', async () => {
     vi.useFakeTimers()
     const remote = { getProjection: vi.fn(async () => projection('a', 'wa')) }
