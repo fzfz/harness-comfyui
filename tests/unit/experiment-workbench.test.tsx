@@ -1897,6 +1897,49 @@ describe('experiment workbench function editor lifecycle', () => {
   })
 })
 
+describe('experiment workbench function Skill choices', () => {
+  it('saves a named Skill and Agent choice independently and restores both after reopening and projection reload', async () => {
+    const data = fullProjection()
+    const getEnvironment = vi.fn(async ({ presetId }: { presetId?: string }): Promise<WorkbenchEnvironment> => ({
+      ...functionEnvironment,
+      skills: presetId === 'preset'
+        ? [...functionEnvironment.skills, { name: 'prompt-skill', description: '提示词编写' }]
+        : presetId === 'preset-other' ? [{ name: 'run-skill', description: '生成执行' }] : [],
+    }))
+    const remote = { getEnvironment, getProjection: async () => structuredClone(data), getInputDescription: async () => inputDescription }
+    const onAction = vi.fn(async request => { Object.assign(data.functions.find(item => item.function_id === request.id)!, structuredClone(request.value)) })
+    const { renderer } = await mount(data, { remote, onAction })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).findAllByType('option').map(option => option.props.value)).toEqual(['', 'comfyui-generate', 'prompt-skill'])
+    await change(renderer, '指定 Skill', 'prompt-skill')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    await click(renderer, '编辑run')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset-other' })
+    expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).findAllByType('option').map(option => option.props.value)).toEqual(['', 'run-skill'])
+    await change(renderer, '指定 Skill', 'run-skill')
+    await change(renderer, '指定 Skill', '')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction.mock.calls.map(([request]) => [request.id, request.value.preset_id, request.value.requested_skill])).toStrictEqual([
+      ['prompt', 'preset', 'prompt-skill'],
+      ['run', 'preset-other', null],
+    ])
+    const verifySavedChoices = async (view: typeof renderer) => {
+      for (const [functionId, presetId, skill] of [['prompt', 'preset', 'prompt-skill'], ['run', 'preset-other', '']] as const) {
+        await click(view, '编辑' + functionId)
+        expect(view.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe(presetId)
+        expect(view.root.findByProps({ 'aria-label': '指定 Skill' }).props.value).toBe(skill)
+        await click(view, '取消')
+      }
+    }
+    await verifySavedChoices(renderer)
+    const refreshed = await mount(structuredClone(data), { remote, onAction })
+    await click(refreshed.renderer, '配置中心')
+    await verifySavedChoices(refreshed.renderer)
+  })
+})
+
 describe('experiment workbench agent model choices', () => {
   it('saves separate function models across reopening and projection reload and distinguishes identical model ids from different providers', async () => {
     const data = fullProjection()

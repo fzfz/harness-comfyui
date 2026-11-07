@@ -307,8 +307,55 @@ it('saves edited and inline function presets with sibling official service provi
   expect((await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')).toEqual(edited)
 })
 
+it.each(['missing', 'not-model-invocable'] as const)('rejects a specified Skill that is %s in the actual Session and dispatches after saving Agent choice', async availability => {
+  const { ctx, remote, official } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Skill choices', goal: 'Paint rain' } }, signal())
+  const environment = await remote.getEnvironment({ workspaceId: 'workspace_1', presetId: 'preset-a' }, signal())
+  expect(environment.skills).toEqual([{ name: 'prompt-builder', description: 'Compose prompts' }])
+  const original = (await remote.getProjection(selected, signal())).functions.find(item => item.function_id === 'prompt')!
+  const binding = { ...original, preset_id: 'preset-a', requested_skill: 'prompt-builder' }
+  await remote.mutate({ ...selected, type: 'function-edit', value: binding }, signal())
+  const createSession = official.controller.create.getMockImplementation()!
+  official.controller.create.mockImplementation(async input => {
+    const session = await createSession(input)
+    official.agents.get(session.sessionId)!.ctx.skills.list.mockResolvedValue(availability === 'missing'
+      ? [] : [{ name: 'prompt-builder', description: 'Unavailable to model', invocation: { modelInvocable: false } }])
+    return session
+  })
+  await expect(remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal()))
+    .rejects.toThrow('当前预设无法调用 Skill prompt-builder。请在功能配置中选择可用 Skill。')
+  const rejected = await remote.getProjection(selected, signal())
+  expect(rejected.tasks).toHaveLength(1)
+  expect(rejected.tasks[0]).toMatchObject({
+    status: 'failed', execution_state: 'failed',
+    input: { requested_skill: 'prompt-builder' },
+    binding_snapshot: { preset_id: 'preset-a', requested_skill: 'prompt-builder' },
+    error: { code: 'WORKBENCH_DISPATCH_FAILED', message: '当前预设无法调用 Skill prompt-builder。请在功能配置中选择可用 Skill。' },
+  })
+  expect(official.controller.create).toHaveBeenCalledWith({ workspaceId: 'workspace_1', agentPreset: 'preset-a' })
+  expect(official.controller.prompt).not.toHaveBeenCalled()
+
+  await remote.mutate({ ...selected, type: 'function-edit', value: { ...binding, requested_skill: null } }, signal())
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  const repaired = await remote.getProjection(selected, signal())
+  expect(repaired.functions.find(item => item.function_id === 'prompt')!.requested_skill).toBeNull()
+  const task = repaired.tasks.find(item => item.task_id !== rejected.tasks[0]!.task_id)!
+  expect(task).toMatchObject({
+    status: 'running', execution_state: 'running',
+    input: { requested_skill: null },
+    binding_snapshot: { preset_id: 'preset-a', requested_skill: null },
+  })
+  expect(official.controller.prompt).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ sessionId: task.session_id, content: [{ type: 'text', text: task.request_text }] }), expect.any(AbortSignal))
+  expect(await ctx.harnessComfyuiWorkbench.service.getTask({ taskId: task.task_id }, {
+    workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'read-task',
+  })).toMatchObject({ task_id: task.task_id, requested_skill: null })
+  expect(repaired.tasks.find(item => item.task_id === rejected.tasks[0]!.task_id)).toMatchObject({
+    status: 'failed', input: { requested_skill: 'prompt-builder' }, binding_snapshot: { requested_skill: 'prompt-builder' },
+  })
+})
+
 it('saves Workspace function bindings and verifies the requested Skill in the actual execution Session', async () => {
-  const { remote, official, store } = await fixture()
+  const { ctx, remote, official, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Portrait', goal: 'Paint a portrait' } }, signal())
   const binding = { ...store.getFunctionBinding('workspace_1', 'prompt'), function_id: 'custom-prompt', builtin: false, name: 'Portrait prompt', preset_id: 'preset-a', requested_skill: 'prompt-builder' }
   await remote.mutate({ ...selected, type: 'function-add', value: binding }, signal())
@@ -316,8 +363,16 @@ it('saves Workspace function bindings and verifies the requested Skill in the ac
   await remote.mutate({ ...selected, type: 'function-edit', value: { ...store.getFunctionBinding('workspace_1', binding.function_id), request_template: 'Read task {{task_id}} and draw rain.' } }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: binding.function_id }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
-  expect(task).toMatchObject({ binding_snapshot: { function_id: 'custom-prompt', preset_id: 'preset-a', requested_skill: 'prompt-builder' } })
+  expect(task).toMatchObject({
+    execution_state: 'running',
+    input: { requested_skill: 'prompt-builder' },
+    binding_snapshot: { function_id: 'custom-prompt', preset_id: 'preset-a', requested_skill: 'prompt-builder' },
+  })
   expect(official.agents.get(task.session_id!)!.ctx.skills.list).toHaveBeenCalledWith({ cwd: '/workspace/project' })
+  expect(official.controller.prompt).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ sessionId: task.session_id, content: [{ type: 'text', text: task.request_text }] }), expect.any(AbortSignal))
+  expect(await ctx.harnessComfyuiWorkbench.service.getTask({ taskId: task.task_id }, {
+    workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'read-task',
+  })).toMatchObject({ task_id: task.task_id, requested_skill: 'prompt-builder' })
   await remote.mutate({ ...selected, type: 'function-remove', id: binding.function_id }, signal())
   expect((await remote.getProjection(selected, signal())).functions.some(item => item.function_id === binding.function_id)).toBe(false)
   expect(store.getTask(task.task_id).binding_snapshot.requested_skill).toBe('prompt-builder')
@@ -450,9 +505,20 @@ it('reads official presets, models and invocable Skills and always releases the 
   })
   expect(official.listSkills).toHaveBeenCalledWith({ cwd: workspaces[0]!.path, scope: 'preset-scope' })
   expect(official.disposeScope).toHaveBeenCalledOnce()
+  official.listPresets.mockResolvedValue([{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-b', name: 'Preset B' }])
+  official.acquireScope.mockResolvedValueOnce({ key: 'preset-b-scope', [Symbol.asyncDispose]: official.disposeScope })
+  official.listSkills.mockResolvedValueOnce([
+    { name: 'alternate-skill', description: 'Alternate preset skill', invocation: { modelInvocable: true } },
+    { name: 'prompt-builder', description: 'Unavailable to model', invocation: { modelInvocable: false } },
+    { name: 'internal-only', description: 'Internal skill', invocation: { modelInvocable: false } },
+  ])
+  expect((await remote.getEnvironment({ workspaceId: 'workspace_1', presetId: 'preset-b' }, signal())).skills)
+    .toEqual([{ name: 'alternate-skill', description: 'Alternate preset skill' }])
+  expect(official.acquireScope).toHaveBeenLastCalledWith('preset-b')
+  expect(official.listSkills).toHaveBeenLastCalledWith({ cwd: workspaces[0]!.path, scope: 'preset-b-scope' })
   official.listSkills.mockRejectedValueOnce(new Error('Skill provider unavailable'))
   await expect(remote.getEnvironment({ workspaceId: 'workspace_1', presetId: 'preset-a' }, signal())).rejects.toThrow('Skill provider unavailable')
-  expect(official.disposeScope).toHaveBeenCalledTimes(2)
+  expect(official.disposeScope).toHaveBeenCalledTimes(3)
   catalog.queryComfyuiInstances.mockRejectedValueOnce(new Error('Catalog offline'))
   expect((await remote.getEnvironment({}, signal())).instances).toEqual([])
   expect((await remote.getEnvironment({ workspaceId: 'missing', presetId: 'preset-a' }, signal())).skills).toEqual([])
