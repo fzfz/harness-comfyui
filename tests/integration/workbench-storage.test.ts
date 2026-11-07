@@ -37,6 +37,25 @@ function acceptRun(f: ReturnType<typeof fixture>, taskId: string, runId: string,
 }
 
 describe('workbench storage public boundary', () => {
+  it('creates a work and its single main branch atomically, including a failed branch write', () => {
+    const f = fixture()
+    const originalWorks = f.store.listWorks('workspace')
+    const input = { workspaceId: 'workspace', name: 'Glasshouse study', goal: 'Keep the glass structure.\nCompare daylight and warm light.' }
+    f.database.exec("CREATE TRIGGER reject_main_branch BEFORE INSERT ON workbench_branches BEGIN SELECT RAISE(ABORT,'branch write failed'); END")
+    expect(() => f.store.createWork(input)).toThrow('branch write failed')
+    expect(f.store.listWorks('workspace')).toEqual(originalWorks)
+    f.database.exec('DROP TRIGGER reject_main_branch')
+    const created = f.store.createWork(input)
+    expect(f.store.getWork(created.work.work_id)).toEqual({ work_id: created.work.work_id, workspace_id: 'workspace', name: input.name, goal: input.goal })
+    expect(f.store.listBranches(created.work.work_id)).toEqual([created.branch])
+    expect(created.branch).toMatchObject({
+      work_id: created.work.work_id, name: '主分支', original_request: input.goal,
+      parent_branch_id: null, source_run_id: null, source_artifact_id: null, source_experience_id: null,
+      draft: { generation_input: { title: input.name }, prompt_input: { positive_prompt: '', negative_prompt: '' } },
+      execution: { mode: 'once', max_runs: 3 },
+    })
+    expect(f.store.listWorks('workspace')).toHaveLength(originalWorks.length + 1)
+  })
   it('adopts actual candidate prompts and model metadata before the next run without replacing manual edits', async () => {
     const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt', value_type: 'string', current_value: 'template positive' }, { parameter_id: 'negative_prompt_10', kind: 'negative_prompt', value_type: 'string', current_value: '' }], size_candidates: [] }), validateGenerationRequest: async () => {} }, catalog: { details: async () => ({} as never), resolveTemplate: async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: '3' }), resolveGenerationModel: async id => ({ id, file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null }), resolveLora: async () => ({} as never) } })
     const f = fixture({ prepareGenerationInput: adapter.prepareGenerationInput, resolveGenerationDraft: adapter.resolveGenerationDraft })
