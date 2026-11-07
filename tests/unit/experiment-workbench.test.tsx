@@ -577,6 +577,37 @@ describe('experiment workbench public interactions', () => {
     ).toBe('active')
   })
 
+  it('shows the prototype function locations and saved bindings when settings reopen', async () => {
+    const data = fullProjection()
+    data.functions.find(binding => binding.function_id === 'rewrite')!.requested_skill = null
+    const { renderer, onAction } = await mount(data)
+    const locations = {
+      run: '任务输入', prompt: '原始需求', rewrite: '提示词',
+      parameters: '生成参数', resources: '资源', review: '评价与经验',
+      compare: '结果比较', diagnose: '失败结果', experience: '评价与经验',
+      experiment: '任务输入',
+    }
+    for (let visit = 0; visit < 2; visit++) {
+      await click(renderer, '配置中心')
+      const table = renderer.root.findByProps({ className: 'settings-table' })
+      expect(table.findAllByType('th').map(nodeText)).toEqual([
+        '功能', '功能位置', '默认 Agent 预设', 'Agent 模型', '指定 Skill', '配置',
+      ])
+      for (const [kind, location] of Object.entries(locations)) {
+        const row = table.findByProps({ 'data-function': kind })
+        const cells = row.findAllByType('td')
+        expect(nodeText(cells[1]!)).toBe(location)
+        expect(row.findByProps({ 'aria-label': `${kind}的默认预设` }).props.value).toBe('preset')
+        expect(nodeText(cells[3]!)).toBe('提供商 · 模型 · 高')
+        expect(nodeText(cells[4]!)).toBe(kind === 'rewrite' ? 'Agent 自选' : 'comfyui-generate')
+        expect(row.findByProps({ 'aria-label': `编辑${kind}` })).toBeDefined()
+      }
+      expect(nodeText(table.findByProps({ 'data-function': 'custom-prompt' }).findAllByType('td')[1]!)).toBe('原始需求')
+      await click(renderer, '返回工作台')
+    }
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
   it('browses function settings and forwards function changes', async () => {
     const { renderer, onAction } = await mount(fullProjection())
     await click(renderer, '配置中心')

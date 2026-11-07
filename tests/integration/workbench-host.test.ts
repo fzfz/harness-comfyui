@@ -101,6 +101,48 @@ it('asks and answers a task question and pauses, continues and ends the same exp
 })
 const signal = () => new AbortController().signal
 
+it('lists default function bindings in prototype order across repeated workspace reads', async () => {
+  const { remote, official } = await fixture()
+  const expectedOrder = ['run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment']
+  const first = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())
+  expect(first.functions.map(binding => binding.function_id)).toEqual(expectedOrder)
+  expect(first.functions).toHaveLength(10)
+  for (const binding of first.functions) expect(binding).toMatchObject({
+    workspace_id: 'workspace_1', builtin: true, preset_id: 'harness-comfyui-cli-candidate',
+    agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null,
+  })
+  const second = await remote.getProjection({ workspaceId: 'workspace_2' }, signal())
+  expect(second.functions.map(binding => binding.function_id)).toEqual(expectedOrder)
+  expect(second.functions.every(binding => binding.workspace_id === 'workspace_2')).toBe(true)
+  expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions).toEqual(first.functions)
+  expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions).toEqual(first.functions)
+  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(2)
+  expect(official.controller.create).not.toHaveBeenCalled()
+})
+
+it('fills missing builtin bindings without replacing saved workspace configuration', async () => {
+  const { remote, store, official } = await fixture()
+  const { functions } = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())
+  const template = functions.find(binding => binding.function_id === 'rewrite')!
+  const saved = store.saveFunctionBinding({ ...template, workspace_id: 'workspace_2', preset_id: 'preset-a',
+    agent_model: { provider: 'saved-provider', model: 'saved-model', reasoningEffort: 'high' },
+    requested_skill: 'prompt-builder', request_template: 'Read task {{task_id}} and rewrite its prompts.',
+  })
+  const custom = store.saveFunctionBinding({ ...saved, function_id: 'custom-rewrite', builtin: false, name: 'Rewrite glass' })
+  const initialized = await remote.getProjection({ workspaceId: 'workspace_2' }, signal())
+  expect(initialized.functions.map(binding => binding.function_id)).toEqual([
+    'run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment', 'custom-rewrite',
+  ])
+  expect(initialized.functions.find(binding => binding.function_id === 'rewrite')).toEqual(saved)
+  expect(initialized.functions.find(binding => binding.function_id === 'custom-rewrite')).toEqual(custom)
+  expect(initialized.functions.find(binding => binding.function_id === 'run')).toMatchObject({
+    preset_id: 'harness-comfyui-cli-candidate', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null,
+  })
+  expect((await remote.getProjection({ workspaceId: 'workspace_2' }, signal())).functions).toEqual(initialized.functions)
+  expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions).toEqual(functions)
+  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(2)
+})
+
 it('mounts Workbench Remotes, creates one main branch and isolates Workspace projections', async () => {
   const { ctx, remote, official, fiber, remoteFiber } = await fixture()
   expect(remoteMethods(remote)).toEqual([

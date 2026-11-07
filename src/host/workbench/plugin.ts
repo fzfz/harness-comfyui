@@ -69,7 +69,8 @@ export function apply(ctx: Context): void {
     service, resolveResources: input.resolveResourceRefs, resolveGenerationDraft: input.resolveGenerationDraft,
     async initializeWorkspace(workspaceId) {
       if (!ctx.workspaceRegistry.list().some(workspace => String(workspace.id) === workspaceId)) throw new WorkbenchError('WORKBENCH_NOT_FOUND', '工作区不存在，请重新选择工作区。', 'workspace_id')
-      if (store.listFunctionBindings(workspaceId).length > 0) return
+      const existing = new Set(store.listFunctionBindings(workspaceId).map(binding => binding.function_id))
+      if (defaults.every(descriptor => existing.has(descriptor.kind))) return
       const models = await controller.modelCatalog()
       store.ensureFunctionBindings(workspaceId, defaults, { presetId: productAgent.preset.id, agentModel: models.default })
     },

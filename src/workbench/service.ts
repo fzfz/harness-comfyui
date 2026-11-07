@@ -129,7 +129,11 @@ export class WorkbenchService {
       const current = this.store.refreshTask(task.task_id)
       if (shouldTrackExecution(current, this.store.getExperiment(task.task_id)) && status !== current.execution_state) this.store.markExecution(task.task_id, status)
     }))
-    return this.store.getProjection({ ...request, refreshAfterMs: this.options.refreshAfterMs })
+    const projection = this.store.getProjection({ ...request, refreshAfterMs: this.options.refreshAfterMs })
+    const order = new Map(this.options.descriptors.map((descriptor, index) => [descriptor.kind, index]))
+    const position = (binding: typeof projection.functions[number]) => binding.builtin ? order.get(binding.kind) ?? order.size : order.size
+    projection.functions.sort((a, b) => position(a) - position(b))
+    return projection
   }
   async replyTask(request: { taskId: string; questionArtifactId: string; answer: string }): Promise<Task> {
     const task = this.store.replyTask(request.taskId, request.questionArtifactId, request.answer)

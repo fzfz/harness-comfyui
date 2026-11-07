@@ -38,6 +38,7 @@ import type {
   WorkflowRuntimeParameterInspection,
   StandardRuntimeParameterKind,
 } from '../../generation/inspection-contract.ts'
+import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
 import { experimentWorkbenchStyles } from './experiment-style.ts'
 import {
@@ -1949,13 +1950,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   <small>{item.builtin ? '内置功能' : '自定义功能'}</small>
                 </td>
                 <td>
-                  {['run', 'experiment'].includes(item.kind)
-                    ? '任务输入底部'
-                    : ['prompt', 'rewrite', 'parameters', 'resources'].includes(
-                          item.kind,
-                        )
-                      ? '任务输入'
-                      : '运行结果'}
+                  {WORKBENCH_FUNCTIONS.find(descriptor => descriptor.kind === item.kind)?.ui_location}
                 </td>
                 <td>
                   <select
