@@ -1,12 +1,232 @@
-[
-  {"kind":"run","name":"运行任务","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入与已接纳运行。已有运行时等待并查询结果；尚未提交时先读取 generation submit --help，使用固定 generation_input、明确的任务 ID 和保存的 request_id 提交一次生成。","output_contract":{"artifact_types":[],"required_artifact_types":[],"parameter_ids":[],"apply_mode":"record","requires_finished_runs":true},"ui_location":"任务输入","ui_result":"运行状态与图片"},
-  {"kind":"prompt","name":"生成提示词","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。读取素材和适用的提示词 Skill，编写正向与负向提示词，保留 Skill 原生产物。交付前读取 workbench task publish --help，向该任务发布 prompt 产物。","output_contract":{"artifact_types":["prompt"],"required_artifact_types":["prompt"],"parameter_ids":[],"apply_mode":"automatic","requires_finished_runs":false},"ui_location":"原始需求","ui_result":"正向与负向提示词"},
-  {"kind":"rewrite","name":"改写提示词","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。读取适用 Skill，按任务要求改写已有提示词，保留 Skill 原生产物。交付前读取 workbench task publish --help，向该任务发布 prompt 产物。","output_contract":{"artifact_types":["prompt"],"required_artifact_types":["prompt"],"parameter_ids":[],"apply_mode":"automatic","requires_finished_runs":false},"ui_location":"提示词","ui_result":"正向与负向提示词"},
-  {"kind":"parameters","name":"建议参数","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。查询所选模板的参数与尺寸候选，按任务要求给出参数取值。交付前读取 workbench task publish --help，仅发布授权参数的 parameters 产物。","output_contract":{"artifact_types":["parameters"],"required_artifact_types":["parameters"],"parameter_ids":[],"apply_mode":"automatic","requires_finished_runs":false},"ui_location":"生成参数","ui_result":"生成参数"},
-  {"kind":"resources","name":"推荐资源","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。通过资源 MCP 搜索并读取详情，核对底模、模型、模板和资源的兼容关系。交付前读取 workbench task publish --help，发布资源引用与理由。","output_contract":{"artifact_types":["resources"],"required_artifact_types":["resources"],"parameter_ids":[],"apply_mode":"candidate","requires_finished_runs":false},"ui_location":"资源","ui_result":"资源候选"},
-  {"kind":"review","name":"分析结果","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。读取参考运行的输入与媒体，观察图片。结合原始目标和已有评价撰写观察结果与结论，并列出支持结论的运行 ID。交付前读取 workbench task publish --help，发布 review 产物，有改进输入时，将生成输入写入该产物的候选字段。","output_contract":{"artifact_types":["review"],"required_artifact_types":["review"],"parameter_ids":[],"apply_mode":"automatic","requires_finished_runs":false},"ui_location":"评价与经验","ui_result":"观察与评价结论"},
-  {"kind":"compare","name":"比较结果","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。分别读取参考运行的输入与媒体。对照输入差异和图片观察结果，撰写比较结论并列出对应运行 ID。交付前读取 workbench task publish --help，发布 review 产物。","output_contract":{"artifact_types":["review"],"required_artifact_types":["review"],"parameter_ids":[],"apply_mode":"automatic","requires_finished_runs":false},"ui_location":"结果比较","ui_result":"观察、评价结论与建议输入"},
-  {"kind":"diagnose","name":"诊断失败","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。读取失败运行的输入和执行错误。查询错误指向的实例、模型、模板或参数。区分已观察到的事实和待验证的原因。交付前读取 workbench task publish --help，发布诊断 review 产物。","output_contract":{"artifact_types":["review"],"required_artifact_types":["review"],"parameter_ids":[],"apply_mode":"automatic","requires_finished_runs":false},"ui_location":"失败结果","ui_result":"失败原因与处理建议"},
-  {"kind":"experience","name":"整理经验","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入。读取参考运行的输入与结果，结合人工评价整理经验标题、适用条件、结论、底模、模型和运行依据。交付前读取 workbench task publish --help，发布 experience 产物。","output_contract":{"artifact_types":["experience"],"required_artifact_types":["experience"],"parameter_ids":[],"apply_mode":"automatic","requires_finished_runs":false},"ui_location":"评价与经验","ui_result":"经验标题、适用条件和经验结论"},
-  {"kind":"experiment","name":"持续实验","default_request_template":"先读取 workbench task get --help，再读取任务 {{task_id}} 的固定输入、产物、轮次与剩余运行次数。首轮使用固定输入。生成前读取 generation submit --help，填写任务 ID 并保存 request_id。每轮结束后读取输入与媒体，交付前读取 workbench task publish --help，发布 review 产物。继续时先发布下一轮 generation_input，再提交相同输入。达到目标时读取 workbench experiment end --help，按同一任务 ID 结束实验；次数用尽时结束。","output_contract":{"artifact_types":["generation_input","review"],"required_artifact_types":["review"],"parameter_ids":[],"apply_mode":"record","requires_finished_runs":true},"ui_location":"任务输入","ui_result":"每轮生成输入、图片与评价"}
-]
+{
+  "request_prefix": [
+    "工作台任务 ID：{{task_id}}",
+    "先读取 workbench task get --help，再按上述 Task ID 读取本次输入。",
+    "根据 requested_skill 读取指定 Skill；为空时按所选预设的 Skill 目录选择。"
+  ],
+  "request_suffix": [
+    "提交产物前读取 workbench task publish --help，使用声明的输入格式，并填写同一个 Task ID。缺少必需输入时提交 type 为 question 的产物。"
+  ],
+  "functions": [
+    {
+      "kind": "run",
+      "name": "运行任务",
+      "output_contract": {
+        "artifact_types": [],
+        "required_artifact_types": [],
+        "parameter_ids": [],
+        "apply_mode": "record",
+        "requires_finished_runs": true
+      },
+      "ui_location": "任务输入",
+      "ui_result": "运行状态与图片",
+      "request_steps": [
+        "先查看 iterations 中的 run_id；已有 Run 时等待或读取结果。尚未提交时核对 generation_input，并读取 generation submit --help 后提交。",
+        "每项 request_id 使用新 UUID；清单根字段 workbench_task_id 填写本次工作台任务 ID。最多提交 1 个 Run。",
+        "登记 generation wait，完成后通过 generation resolve-media 读取状态与媒体。失败时保留错误，不自行重复提交。"
+      ]
+    },
+    {
+      "kind": "prompt",
+      "name": "生成提示词",
+      "output_contract": {
+        "artifact_types": [
+          "prompt"
+        ],
+        "required_artifact_types": [
+          "prompt"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "automatic",
+        "requires_finished_runs": false
+      },
+      "ui_location": "原始需求",
+      "ui_result": "正向与负向提示词",
+      "request_steps": [
+        "根据 requirements 和 prompt_input 编写提示词，结合 base_model_id、generation_input.model 与 context_refs 读取所需素材。",
+        "读取适用的 Prompt Builder Skill，保留 Skill 原生产物。",
+        "通过 workbench task publish 提交 type 为 prompt 的产物。"
+      ]
+    },
+    {
+      "kind": "rewrite",
+      "name": "改写提示词",
+      "output_contract": {
+        "artifact_types": [
+          "prompt"
+        ],
+        "required_artifact_types": [
+          "prompt"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "automatic",
+        "requires_finished_runs": false
+      },
+      "ui_location": "提示词",
+      "ui_result": "正向与负向提示词",
+      "request_steps": [
+        "根据 requirements.instructions 改写 prompt_input，结合 requirements.original_request 与 context_refs 读取所需素材。",
+        "读取适用的 Prompt Builder Skill，保留 Skill 原生产物。",
+        "通过 workbench task publish 提交 type 为 prompt 的产物。"
+      ]
+    },
+    {
+      "kind": "parameters",
+      "name": "建议参数",
+      "output_contract": {
+        "artifact_types": [
+          "parameters"
+        ],
+        "required_artifact_types": [
+          "parameters"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "automatic",
+        "requires_finished_runs": false
+      },
+      "ui_location": "生成参数",
+      "ui_result": "生成参数",
+      "request_steps": [
+        "根据 requirements 中的画面目标与调整要求，查询 generation_input 所用实例和模板的参数描述。",
+        "按 value_type、可用范围及尺寸候选决定参数值，只提交 output_contract.parameter_ids 中的参数。",
+        "通过 workbench task publish 提交 type 为 parameters 的产物。"
+      ]
+    },
+    {
+      "kind": "resources",
+      "name": "推荐资源",
+      "output_contract": {
+        "artifact_types": [
+          "resources"
+        ],
+        "required_artifact_types": [
+          "resources"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "candidate",
+        "requires_finished_runs": false
+      },
+      "ui_location": "资源",
+      "ui_result": "资源候选",
+      "request_steps": [
+        "根据 requirements 查询所需资源，结合 base_model_id、generation_input 与 context_refs 核对已有选择。",
+        "通过 MCP 查询目录和详情，核对模型、模板与 LoRA 的兼容关系，并记录选择依据。",
+        "通过 workbench task publish 提交 type 为 resources 的产物。"
+      ]
+    },
+    {
+      "kind": "review",
+      "name": "分析结果",
+      "output_contract": {
+        "artifact_types": [
+          "review"
+        ],
+        "required_artifact_types": [
+          "review"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "automatic",
+        "requires_finished_runs": false
+      },
+      "ui_location": "评价与经验",
+      "ui_result": "观察与评价结论",
+      "request_steps": [
+        "按 reference_run_ids 调用 generation run-inputs 与 generation resolve-media，取得实际输入和媒体。",
+        "读取图片审阅 Skill，结合 requirements 与 evaluation_input 中的已有观察检查图片，分别记录可见观察与结论。",
+        "通过 workbench task publish 提交 type 为 review 的产物。确有参数修改建议时附 candidate，使用实际模板参数 ID。"
+      ]
+    },
+    {
+      "kind": "compare",
+      "name": "比较结果",
+      "output_contract": {
+        "artifact_types": [
+          "review"
+        ],
+        "required_artifact_types": [
+          "review"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "automatic",
+        "requires_finished_runs": false
+      },
+      "ui_location": "结果比较",
+      "ui_result": "观察、评价结论与建议输入",
+      "request_steps": [
+        "逐个读取 reference_run_ids 对应的输入与图片，围绕 requirements 中的目标和关注点比较。",
+        "分别记录各 Run 的资源、参数和可见结果差异；样本不足以证明因果时保留不确定性。",
+        "通过 workbench task publish 提交 type 为 review 的产物，run_ids 引用比较对象；可在 candidate 中填写下一轮生成输入与资源引用。"
+      ]
+    },
+    {
+      "kind": "diagnose",
+      "name": "诊断失败",
+      "output_contract": {
+        "artifact_types": [
+          "review"
+        ],
+        "required_artifact_types": [
+          "review"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "automatic",
+        "requires_finished_runs": false
+      },
+      "ui_location": "失败结果",
+      "ui_result": "失败原因与处理建议",
+      "request_steps": [
+        "按 reference_run_ids 调用 generation run-inputs 与 generation resolve-media，读取失败运行的输入、状态与错误。",
+        "按调查需要查询实例、模型或节点状态，区分已知证据与待验证判断，给出具体处理步骤。",
+        "通过 workbench task publish 提交 type 为 review 的产物。本次请求不自动重试生成。"
+      ]
+    },
+    {
+      "kind": "experience",
+      "name": "整理经验",
+      "output_contract": {
+        "artifact_types": [
+          "experience"
+        ],
+        "required_artifact_types": [
+          "experience"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "automatic",
+        "requires_finished_runs": false
+      },
+      "ui_location": "评价与经验",
+      "ui_result": "经验标题、适用条件和经验结论",
+      "request_steps": [
+        "读取 reference_run_ids 对应的输入与媒体，结合 evaluation_input 中的观察、评价和经验草稿，以及 requirements 整理可复用的结论。",
+        "适用模型从实际生成输入读取；区分已观察效果和仍需复验的判断。",
+        "通过 workbench task publish 提交 type 为 experience 的产物，run_ids 引用使用的证据。"
+      ]
+    },
+    {
+      "kind": "experiment",
+      "name": "持续实验",
+      "output_contract": {
+        "artifact_types": [
+          "generation_input",
+          "review"
+        ],
+        "required_artifact_types": [
+          "review"
+        ],
+        "parameter_ids": [],
+        "apply_mode": "record",
+        "requires_finished_runs": true
+      },
+      "ui_location": "任务输入",
+      "ui_result": "每轮生成输入、图片与评价",
+      "request_steps": [
+        "根据 requirements、max_runs、iterations、artifacts 与 answers 确定下一步。已接纳的 Run 继续等待或评价。",
+        "生成前读取 generation submit --help。首轮使用 generation_input 提交生成；清单根字段 workbench_task_id 填写本次工作台任务 ID。通过 generation wait 等待 Run，再读取输入与媒体。",
+        "每轮通过 workbench task publish 提交 type 为 review 的产物，run_ids 引用当轮 Run。",
+        "未达到目标且次数有剩余时，提交 type 为 generation_input 的产物，再用其中的 generation_input 生成下一轮。",
+        "可调整实例、模型、模板、LoRA、参考图路径、提示词和全部模板参数；换模板后重新查询参数 ID。",
+        "达到目标时，读取 experiment end --help，并按同一 Task ID 提交结束请求；次数用尽时读取任务状态并交付结果。"
+      ]
+    }
+  ]
+}

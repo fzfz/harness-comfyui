@@ -277,6 +277,39 @@ it('renders every whitespace and repeated task token in the actual dispatched re
   )
 })
 
+it('keeps each dispatched template snapshot when requirements are edited for the next Task', async () => {
+  const { remote, official } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Requirements', goal: 'Paint rain' } }, signal())
+  const original = (await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'prompt')!
+  const firstTemplate = '  Read {{task_id}}.\nKeep {branch_id}, ${session_id}, $& and "quoted".  \n'
+  const firstBinding = { ...original, preset_id: 'preset-a', request_template: firstTemplate }
+  await remote.mutate({ ...selected, type: 'function-edit', value: firstBinding }, signal())
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  const firstTask = (await remote.getProjection(selected, signal())).tasks[0]!
+  const firstRequest = '  Read ' + firstTask.task_id + '.\nKeep {branch_id}, ${session_id}, $& and "quoted".  \n'
+  expect(firstTask.request_text).toBe(firstRequest)
+  expect(firstTask.binding_snapshot.request_template).toBe(firstTemplate)
+
+  const nextTemplate = 'Next {{task_id}}:\n\tretain {branch_id} and ${session_id}.\n'
+  await remote.mutate({ ...selected, type: 'function-edit', value: { ...firstBinding, request_template: nextTemplate } }, signal())
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  const updated = await remote.getProjection(selected, signal())
+  expect(updated.functions.find(binding => binding.function_id === 'prompt')!.request_template).toBe(nextTemplate)
+  expect(updated.tasks.find(task => task.task_id === firstTask.task_id)).toMatchObject({
+    request_text: firstRequest, binding_snapshot: firstTask.binding_snapshot,
+  })
+  const nextTask = updated.tasks.find(task => task.task_id !== firstTask.task_id)!
+  const nextRequest = 'Next ' + nextTask.task_id + ':\n\tretain {branch_id} and ${session_id}.\n'
+  expect(nextTask.request_text).toBe(nextRequest)
+  expect(nextTask.binding_snapshot.request_template).toBe(nextTemplate)
+  expect(official.controller.prompt).toHaveBeenNthCalledWith(1,
+    expect.objectContaining({ sessionId: firstTask.session_id, content: [{ type: 'text', text: firstRequest }] }), expect.any(AbortSignal),
+  )
+  expect(official.controller.prompt).toHaveBeenNthCalledWith(2,
+    expect.objectContaining({ sessionId: nextTask.session_id, content: [{ type: 'text', text: nextRequest }] }), expect.any(AbortSignal),
+  )
+})
+
 it.each([
   { template: '', message: '请填写本功能的执行要求。' },
   { template: 'Read task.', message: '请在执行要求中保留 {{task_id}}，用于定位工作台任务。' },

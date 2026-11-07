@@ -1,9 +1,10 @@
 import data from './functions.json' with { type: 'json' }
-import cliHelp from '../../config/managed-cli-help.json' with { type: 'json' }
 import type { FunctionDescriptor } from './contract.ts'
 
-export const WORKBENCH_FUNCTIONS: readonly FunctionDescriptor[] = (data as FunctionDescriptor[]).map(descriptor => ({
+type FunctionDefinition = Omit<FunctionDescriptor, 'default_request_template'> & { request_steps: readonly string[] }
+
+export const WORKBENCH_FUNCTIONS: readonly FunctionDescriptor[] = (data.functions as FunctionDefinition[]).map(({ request_steps, ...descriptor }) => ({
   ...descriptor,
-  default_request_template: `使用受管 CLI：${cliHelp.invocation} --help。\n${descriptor.default_request_template}`,
+  default_request_template: [...data.request_prefix, ...request_steps, ...data.request_suffix].join('\n\n'),
 }))
 export const TASK_KINDS = WORKBENCH_FUNCTIONS.map(descriptor => descriptor.kind)

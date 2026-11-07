@@ -1779,8 +1779,9 @@ describe('experiment workbench comparison evidence', () => {
 })
 
 describe('experiment workbench function defaults', () => {
-  it('saves each function preset through the editor and keeps the configuration page selected', async () => {
+  it('saves each function preset and preserves the literal requirements after reopening and projection reload', async () => {
     const data = fullProjection()
+    const template = '  绘图要求 {{task_id}}。\n\n\t保留 {branch_id}、${session_id} 与原始标点。  \n'
     const onAction = vi.fn(async (request) => {
       if (request.type === 'function-edit') Object.assign(data.functions.find(item => item.function_id === request.id)!, request.value)
       if (request.type === 'function-preset') data.functions.find(item => item.function_id === request.id)!.preset_id = request.value
@@ -1793,11 +1794,11 @@ describe('experiment workbench function defaults', () => {
     expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.readOnly).toBe(true)
     expect(renderer.root.findByProps({ 'aria-label': '任务类型' }).props.disabled).toBe(true)
     await change(renderer, 'Agent 预设', 'preset-other')
-    await change(renderer, '执行要求', '绘图要求 {{task_id}}')
+    await change(renderer, '执行要求', template)
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
       type: 'function-edit', id: 'prompt',
-      value: expect.objectContaining({ preset_id: 'preset-other', request_template: '绘图要求 {{task_id}}' }),
+      value: expect.objectContaining({ preset_id: 'preset-other', request_template: template }),
     }))
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
     expect(renderer.root.findByProps({ className: 'settings-page' })).toBeTruthy()
@@ -1811,11 +1812,15 @@ describe('experiment workbench function defaults', () => {
     expect(data.functions.find(item => item.function_id === 'prompt')!.preset_id).toBe('preset-other')
     await click(renderer, '编辑prompt')
     expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-other')
-    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('绘图要求 {{task_id}}')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe(template)
     await click(renderer, '取消')
     await click(renderer, '编辑run')
     expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset')
     expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('{{task_id}}')
+    const refreshed = await mount(structuredClone(data))
+    await click(refreshed.renderer, '配置中心')
+    await click(refreshed.renderer, '编辑prompt')
+    expect(refreshed.renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe(template)
   })
 })
 
@@ -2057,12 +2062,37 @@ describe('experiment workbench function editor controls', () => {
     await change(renderer, '执行要求', '当前要求 {{task_id}}')
     await click(renderer, '恢复默认要求')
     const restored = renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value
-    expect(restored).toContain('先读取 workbench task get --help')
-    expect(restored).toContain('任务 {{task_id}}')
-    expect(restored).not.toContain('当前要求')
+    expect(restored).toBe(`工作台任务 ID：{{task_id}}
+
+先读取 workbench task get --help，再按上述 Task ID 读取本次输入。
+
+根据 requested_skill 读取指定 Skill；为空时按所选预设的 Skill 目录选择。
+
+根据 requirements 和 prompt_input 编写提示词，结合 base_model_id、generation_input.model 与 context_refs 读取所需素材。
+
+读取适用的 Prompt Builder Skill，保留 Skill 原生产物。
+
+通过 workbench task publish 提交 type 为 prompt 的产物。
+
+提交产物前读取 workbench task publish --help，使用声明的输入格式，并填写同一个 Task ID。缺少必需输入时提交 type 为 question 的产物。`)
     await change(renderer, '任务类型', 'parameters')
     const parameterTemplate = renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value
-    expect(parameterTemplate).toContain('仅发布授权参数的 parameters 产物')
+    expect(parameterTemplate).toBe(`工作台任务 ID：{{task_id}}
+
+先读取 workbench task get --help，再按上述 Task ID 读取本次输入。
+
+根据 requested_skill 读取指定 Skill；为空时按所选预设的 Skill 目录选择。
+
+根据 requirements 中的画面目标与调整要求，查询 generation_input 所用实例和模板的参数描述。
+
+按 value_type、可用范围及尺寸候选决定参数值，只提交 output_contract.parameter_ids 中的参数。
+
+通过 workbench task publish 提交 type 为 parameters 的产物。
+
+提交产物前读取 workbench task publish --help，使用声明的输入格式，并填写同一个 Task ID。缺少必需输入时提交 type 为 question 的产物。`)
+    await change(renderer, '执行要求', '调整参数 {{task_id}}')
+    await click(renderer, '恢复默认要求')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe(parameterTemplate)
     expect(nodeText(renderer.root.findByProps({ id: 'function-location' }))).toBe('生成参数')
     expect(nodeText(renderer.root.findByProps({ id: 'function-result' }))).toBe('生成参数')
     await change(renderer, '指定 Skill', '')
@@ -2079,8 +2109,8 @@ describe('experiment workbench function editor controls', () => {
     await click(renderer, '编辑prompt')
     const samples = [
       ['', '请填写本功能的执行要求。'],
-      ['读取任务', '请在执行要求中保留 {{task_id}}，用于定位工作台任务。'],
-      ['读取 {{task_id}} 与 {{branch_id}}', '请将其他定位符替换为具体执行要求，并保留 {{task_id}}。'],
+      ['  读取任务。\n\n\t保留这一行。  \n', '请在执行要求中保留 {{task_id}}，用于定位工作台任务。'],
+      ['  读取 {{task_id}}。\n\n保留 {{branch_id}} 与尾部。  \n', '请将其他定位符替换为具体执行要求，并保留 {{task_id}}。'],
       ['读取 {{task_id}} {{', 'Task ID 定位符格式不完整，请使用 {{task_id}}。'],
     ]
     for (const [value, message] of samples) {
@@ -2088,11 +2118,16 @@ describe('experiment workbench function editor controls', () => {
       expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe(message)
       expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
       await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+      expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe(value)
     }
     expect(onAction).not.toHaveBeenCalled()
     await click(renderer, '恢复默认要求')
     expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
+    await click(renderer, '取消')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('{{task_id}}')
+    expect(onAction).not.toHaveBeenCalled()
   })
 
   it.each([
