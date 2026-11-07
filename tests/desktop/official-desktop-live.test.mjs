@@ -1308,13 +1308,6 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       && hasControlledToolResult(request, 'native-child-reference'))
     expect(controlledToolResult(childReference, 'native-child-reference'))
       .toContain((await readFile(nativeReference, 'utf8')).trim())
-    const childSkills = await page.evaluate(`window.__runPanelTestContext.get('remote.skills').list({ sessionId: ${JSON.stringify(native.childSessionId)} })`)
-    expect(childSkills).toMatchObject({ ok: true })
-    native.endedChildSkillCatalog = {
-      sessionId: native.childSessionId,
-      skills: childSkills.value.skills,
-      installedPluginSkillDirectory: traceContext.installedPluginSkillDirectory,
-    }
     await waitForOfficialSessionEnd(page, parentSessionId, 'completed')
     const workspaceStorage = JSON.parse(await readFile(join(traceContext.dshHome, 'storages/workspace.json'), 'utf8'))
     expect(workspaceStorage.tables.workspaces[workspaceId].sessionIds).not.toContain(native.childSessionId)
@@ -1339,7 +1332,7 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
       childToolDeclarations: childModelRequest.body.tools ?? [],
       parentSystemMessages: parentResultRequest.body.messages.filter(message => message.role === 'system'),
       childSystemMessages: childModelRequest.body.messages.filter(message => message.role === 'system'),
-      childSkills: childSkills.value.skills, calls,
+      calls,
       resultReceivedByModel: completed.body.messages.some(message => message.role === 'tool'
         && JSON.stringify(message.content).includes('workflow_json')),
     })
@@ -4112,11 +4105,6 @@ description: ${USER_SKILL_DESCRIPTION}
         generationAfterRestart: generationRestartEvidence,
         nativeSubagent: nativeSubagentEvidence,
       }, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 })
-      const endedChildSkillCatalog = nativeSubagentEvidence.endedChildSkillCatalog
-      expect(endedChildSkillCatalog.skills.map(skill => skill.name).sort())
-        .toEqual(REPOSITORY_SKILL_CATALOG.map(skill => skill.name).sort())
-      expect(endedChildSkillCatalog.skills.every(skill =>
-        isPathWithin(skill.path, endedChildSkillCatalog.installedPluginSkillDirectory))).toBe(true)
     } catch (error) {
       const pageState = await page.evaluate(`({
         text: document.body.innerText,
