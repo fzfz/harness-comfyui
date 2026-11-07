@@ -47,10 +47,17 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
   }
   if (request.type.startsWith('function-')) {
     if (request.type === 'function-remove') store.removeFunctionBinding(request.workspaceId, text(request.id, 'function_id'))
-    else if (request.type === 'function-preset') {
-      const binding = store.getFunctionBinding(request.workspaceId, text(request.id, 'function_id'))
-      store.saveFunctionBinding({ ...binding, preset_id: text(request.value, 'preset_id') })
-    } else store.saveFunctionBinding({ ...fields(request.value), workspace_id: request.workspaceId } as unknown as FunctionBinding)
+    else {
+      const value = request.type === 'function-preset' ? { preset_id: request.value } : fields(request.value)
+      const presetId = text(value.preset_id, 'preset_id')
+      await ctx.harnessComfyuiWorkbench.validateFunctionPreset(presetId)
+      const skills = request.type === 'function-preset' ? await ctx.harnessComfyuiWorkbench.presetSkills(request.workspaceId, presetId) : null
+      const binding = request.type === 'function-preset'
+        ? { ...store.getFunctionBinding(request.workspaceId, text(request.id, 'function_id')), preset_id: presetId }
+        : { ...value, workspace_id: request.workspaceId } as unknown as FunctionBinding
+      if (skills && binding.requested_skill && !skills.some(skill => skill.name === binding.requested_skill)) binding.requested_skill = null
+      store.saveFunctionBinding(binding)
+    }
     return { workspaceId: request.workspaceId, ...(request.workId ? { workId: request.workId } : {}), ...(request.branchId ? { branchId: request.branchId } : {}) }
   }
   const workId = text(request.workId, 'work_id'), branchId = text(request.branchId, 'branch_id')

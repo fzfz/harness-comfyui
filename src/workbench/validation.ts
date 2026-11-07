@@ -2,6 +2,7 @@ import { contractFields } from '../shared/field-contract.ts'
 import { artifactSchemas } from './schema.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { TASK_KINDS } from './functions.ts'
+import { requestTemplateProblem } from './request-template.ts'
 import type { ArtifactPayload, ContextRef, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, TaskDraft, TaskInput, TaskKind } from './contract.ts'
 
 export interface FieldIssue { path: string; message: string }
@@ -157,14 +158,17 @@ export function validateReviewDraft(value: unknown): ReviewDraft {
 
 export function validateFunctionBinding(value: FunctionBinding): FunctionBinding {
   const v = new Validator()
-  for (const key of ['workspace_id', 'function_id', 'name', 'preset_id', 'request_template'] as const) v.text(value[key], `binding.${key}`, true)
+  for (const key of ['workspace_id', 'function_id', 'name', 'preset_id'] as const) v.text(value[key], `binding.${key}`, true)
   if (value.name.length > 30) v.issue('binding.name', '功能名称最多 30 字。')
   if (typeof value.builtin !== 'boolean') v.issue('binding.builtin', '请填写布尔值。')
   if (!TASK_KINDS.includes(value.kind)) v.issue('binding.kind', '请选择功能类型。')
   v.text(value.agent_model?.provider, 'binding.agent_model.provider', true); v.text(value.agent_model?.model, 'binding.agent_model.model', true)
   if (value.agent_model?.reasoningEffort !== undefined) v.text(value.agent_model.reasoningEffort, 'binding.agent_model.reasoningEffort', true)
   if (value.requested_skill !== null) v.text(value.requested_skill, 'binding.requested_skill', true)
-  if (!value.request_template.includes('{{task_id}}') || /\{\{(?!task_id\}\})[^]*?\}\}/.test(value.request_template)) v.issue('binding.request_template', '请保留 {{task_id}}，并移除其他双花括号定位符。')
+  if (v.text(value.request_template, 'binding.request_template')) {
+    const problem = requestTemplateProblem(value.request_template)
+    if (problem) v.issue('binding.request_template', problem)
+  }
   return v.finish(value)
 }
 

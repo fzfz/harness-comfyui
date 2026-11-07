@@ -1,4 +1,4 @@
-import type { WorkbenchInputDescriptionRequest } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
@@ -24,6 +24,7 @@ export interface ExperimentScope {
   readonly branchId?: string
 }
 export interface ExperimentRemote {
+  readonly getEnvironment: (request: WorkbenchEnvironmentRequest) => Promise<WorkbenchEnvironment>
   readonly getInputDescription: (
     scope: WorkbenchInputDescriptionRequest,
   ) => Promise<WorkflowRuntimeParameterInspection | null>
@@ -54,7 +55,7 @@ export interface ExperimentWorkbenchProps {
   readonly baseModels?: readonly BaseModelItem[]
   readonly agentModelGroups?: WorkbenchEnvironment['models']['groups']
   readonly instances?: readonly { readonly id: string; readonly name: string }[]
-  readonly presets?: readonly { readonly id: string; readonly name: string }[]
+  readonly presets?: ReadonlyArray<WorkbenchEnvironment['presets'][number]>
   readonly storage?: Pick<Storage, 'getItem' | 'setItem'>
   readonly visible?: boolean
 }

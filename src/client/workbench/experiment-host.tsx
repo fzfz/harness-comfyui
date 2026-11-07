@@ -3,7 +3,7 @@ import {
   Button,
   IconSparkleRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { WorkbenchInputDescriptionRequest } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
@@ -98,6 +98,8 @@ export function ExperimentWorkbenchHost({
   const environmentLoaded = useRef(false)
   const api = useMemo(
     () => ({
+      getEnvironment: async (request: WorkbenchEnvironmentRequest) =>
+        unwrap(await remote.getEnvironment(request)),
       getInputDescription: async (scope: WorkbenchInputDescriptionRequest) =>
         unwrap(await remote.getInputDescription(scope)),
       getProjection: async (scope: ExperimentScope) =>

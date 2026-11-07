@@ -223,3 +223,14 @@ describe('official experiment workbench adapter', () => {
     expect(renderer.root.findByType(ExperimentWorkbench).props).toBeDefined()
   })
 })
+
+describe('official function environment adapter', () => {
+  it('unwraps the selected preset environment and preserves actionable remote errors', async () => {
+    const api = remote(), renderer = await mount(api)
+    const shell = renderer.root.findByType(ExperimentWorkbench).props as ExperimentWorkbenchProps
+    await expect(shell.remote.getEnvironment({ workspaceId: 'workspace-a', presetId: 'preset' })).resolves.toEqual(environment)
+    expect(api.getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset' })
+    vi.mocked(api.getEnvironment).mockResolvedValueOnce({ ok: false, error: { code: 'SKILL_UNAVAILABLE', message: 'Skill 目录读取失败，请重试。' } })
+    await expect(shell.remote.getEnvironment({ workspaceId: 'workspace-a', presetId: 'preset' })).rejects.toThrow('Skill 目录读取失败，请重试。')
+  })
+})

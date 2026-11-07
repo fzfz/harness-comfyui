@@ -45,14 +45,15 @@ export function provideWorkbenchOfficialServices(ctx: Context, workspaces = [
   const disposeScope = vi.fn(async () => {})
   const acquireScope = vi.fn(async () => ({ key: 'preset-scope', [Symbol.asyncDispose]: disposeScope }))
   const listSkills = vi.fn(async () => skills)
+  const listPresets = vi.fn(async (): Promise<{ id: string; name?: string; broken?: string }[]> => [{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-broken', broken: 'Missing component' }])
   ctx.provide('sessionController' as never, controller as never)
   ctx.provide('agents' as never, agents as never)
   ctx.provide('agentPresets' as never, {
-    list: vi.fn(async () => [{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-broken', broken: 'Missing component' }]),
+    list: listPresets,
     acquireScope,
   } as never)
   ctx.provide('skills' as never, { list: listSkills } as never)
-  return { sessions, events, agents, controller, acquireScope, disposeScope, listSkills }
+  return { sessions, events, agents, controller, acquireScope, disposeScope, listSkills, listPresets }
 }
 
 export async function createWorkbenchHostFixture() {
@@ -88,20 +89,26 @@ export async function createWorkbenchHostFixture() {
     { id: 'workspace_1', title: 'First project', path: '/workspace/project' },
     { id: 'workspace_2', title: 'Second project', path: '/workspace/other' },
   ]
-  const official = provideWorkbenchOfficialServices(ctx, workspaces)
+  let official!: ReturnType<typeof provideWorkbenchOfficialServices>
   const descendants = new Map<string, { id: string; mode: string }[]>()
   const createWorkspace = vi.fn(async (path: string, title: string) => {
     const workspace = { id: `workspace_${workspaces.length + 1}`, title, path }
     workspaces.push(workspace)
     return workspace
   })
-  ctx.provide('workspaceRegistry' as never, {
-    list: () => workspaces,
-    resolveByPath: async (path: string) => workspaces.find(workspace => workspace.path === path),
-    create: createWorkspace,
-  } as never)
-  ctx.provide('sessionPersistence' as never, { stat: async (id: string) => official.sessions.get(id) } as never)
-  ctx.provide('subagents' as never, { listDescendants: async (id: string) => descendants.get(id) ?? [] } as never)
+  const officialFiber = await ctx.plugin({
+    name: 'test-workbench-official-services',
+    apply(context: Context) {
+      official = provideWorkbenchOfficialServices(context, workspaces)
+      context.provide('workspaceRegistry' as never, {
+        list: () => workspaces,
+        resolveByPath: async (path: string) => workspaces.find(workspace => workspace.path === path),
+        create: createWorkspace,
+      } as never)
+      context.provide('sessionPersistence' as never, { stat: async (id: string) => official.sessions.get(id) } as never)
+      context.provide('subagents' as never, { listDescendants: async (id: string) => descendants.get(id) ?? [] } as never)
+    },
+  })
   const catalog = {
     queryComfyuiInstances: vi.fn(async () => ({ results: [{ id: '8' }] })),
     resolveGenerationModel: vi.fn(async (id: string) => ({ id, file_name: 'paint.safetensors', base_model_id: '1' })),
@@ -117,10 +124,11 @@ export async function createWorkbenchHostFixture() {
   const remoteFiber = await ctx.plugin({ name: 'test-workbench-remote', inject: ['harnessComfyuiWorkbench', 'harnessComfyuiCore', 'workspaceRegistry'], apply(context: Context) { new WorkbenchRemoteService(context) } })
   const remote = ctx.reflect.get('harnessComfyuiWorkbenchRemote') as WorkbenchRemoteService
   return {
-    ctx, store, runtime, directory, database, description, inspect, catalog, official, workspaces, descendants, createWorkspace, fiber, remoteFiber, remote,
+    ctx, store, runtime, directory, database, description, inspect, catalog, official, workspaces, descendants, createWorkspace, officialFiber, fiber, remoteFiber, remote,
     async dispose() {
       await remoteFiber.dispose()
       await fiber.dispose()
+      await officialFiber.dispose()
       runtime.close()
       database.close()
       rmSync(directory, { recursive: true, force: true })

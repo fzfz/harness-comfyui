@@ -51,7 +51,7 @@ export interface OutputContract {
   apply_mode: 'automatic' | 'candidate' | 'record'
   requires_finished_runs: boolean
 }
-export interface FunctionDescriptor { kind: TaskKind; name: string; default_request_template: string; output_contract: OutputContract; ui_location: string }
+export interface FunctionDescriptor { kind: TaskKind; name: string; default_request_template: string; output_contract: OutputContract; ui_location: string; ui_result: string }
 export interface FunctionBinding {
   workspace_id: string
   function_id: string

@@ -38,7 +38,8 @@ import type {
   WorkflowRuntimeParameterInspection,
   StandardRuntimeParameterKind,
 } from '../../generation/inspection-contract.ts'
-import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
+import { Button, Icon, useToastMessage } from './experiment-controls.tsx'
+import { ExperimentFunctionSettings, formatExperimentAgentModel } from './experiment-function-settings.tsx'
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
 import { experimentWorkbenchStyles } from './experiment-style.ts'
 import {
@@ -50,65 +51,9 @@ export type {
   ExperimentWorkbenchAction,
   ExperimentWorkbenchProps,
 } from './experiment-contract.ts'
-const icons = {
-  branch: 'M5 3v12a3 3 0 0 0 3 3h8M5 7h6a4 4 0 0 0 4-4',
-  run: 'm7 4 11 8-11 8Z',
-  star: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9Z',
-  plus: 'M12 5v14M5 12h14',
-  history: 'M3 11a9 9 0 1 1 3 8M3 4v7h7M12 7v6l4 2',
-  compare: 'M9 3v18M15 3v18M4 7h4M16 17h4',
-  grid: 'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z',
-}
 const shortId = (value: string) => value.length > 16 ? `${value.slice(0, 12)}…` : value
 function Identifier({ value }: { readonly value: string }) {
   return <span title={value}>{shortId(value)}</span>
-}
-function Icon({ name }: { readonly name: keyof typeof icons }) {
-  return (
-    <svg
-      className="icon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={icons[name]} />
-    </svg>
-  )
-}
-function Button({
-  children,
-  onClick,
-  kind = '',
-  icon,
-  disabled,
-  label,
-  autoFocus,
-}: {
-  readonly children: ReactNode
-  readonly onClick?: () => void
-  readonly kind?: string
-  readonly icon?: keyof typeof icons
-  readonly disabled?: boolean
-  readonly label?: string
-  readonly autoFocus?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      className={`btn ${kind}`}
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      autoFocus={autoFocus}
-    >
-      {icon && <Icon name={icon} />}
-      {children}
-    </button>
-  )
 }
 const pendingRun = (run: WorkbenchRun) =>
   !['succeeded', 'failed', 'cancelled', 'canceled'].includes(run.status)
@@ -275,12 +220,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     store.getSnapshot,
     store.getSnapshot,
   )
-  const [message, setMessage] = useState<string | null>(null)
-  useEffect(() => {
-    if (!message) return
-    const timer = setTimeout(() => setMessage(null), 6000)
-    return () => clearTimeout(timer)
-  }, [message])
+  const [message, setMessage] = useToastMessage()
+  const functionWrites = useRef(new Map<string, Promise<void>>())
+  const [functionBindings, setFunctionBindings] = useState<ReadonlyMap<string, FunctionBinding>>(() => new Map())
   useEffect(() => {
     if (props.environmentError) setMessage(props.environmentError)
   }, [props.environmentError])
@@ -433,25 +375,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     draft.base_model_id ||
     draft.generation_input.model?.file_name ||
     '未选择底模'
-  const formatAgentModel = (
-    model: FunctionBinding['agent_model'] | undefined,
-  ) => {
-    if (!model) return '未配置'
-    const provider = props.agentModelGroups?.find(
-      (group) => group.id === model.provider,
-    )
-    const selected = provider?.models.find((item) => item.id === model.model)
-    const effort = selected?.reasoning?.efforts.find(
-      (item) => item.id === model.reasoningEffort,
-    )
-    return [
-      provider?.name ?? model.provider,
-      selected?.name ?? model.model,
-      effort?.name ?? model.reasoningEffort,
-    ]
-      .filter(Boolean)
-      .join(' · ')
-  }
+  const formatAgentModel = (model: FunctionBinding['agent_model'] | undefined) =>
+    formatExperimentAgentModel(model, props.agentModelGroups ?? [])
   const agentModel = (binding: FunctionBinding | undefined) =>
     formatAgentModel(binding?.agent_model)
   const runModelLabel = (item: WorkbenchRun) => {
@@ -1907,106 +1832,44 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   )
 
   const settings = (
-    <main className="settings-page">
-      <div className="settings-head">
-        <div>
-          <h1>配置中心</h1>
-          <p>{workspace?.name} · 功能默认配置</p>
-        </div>
-        <div className="row">
-          <Button
-            kind="primary"
-            icon="plus"
-            onClick={() => void action('function-add')}
-          >
-            添加功能
-          </Button>
-          <Button onClick={() => changePage('workbench')}>返回工作台</Button>
-        </div>
-      </div>
-      <div className="settings-table-wrap">
-        <table className="settings-table">
-          <thead>
-            <tr>
-              {[
-                '功能',
-                '功能位置',
-                '默认 Agent 预设',
-                'Agent 模型',
-                '指定 Skill',
-                '配置',
-              ].map((label) => (
-                <th scope="col" key={label}>
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {p?.functions.map((item) => (
-              <tr key={item.function_id} data-function={item.function_id}>
-                <td>
-                  <strong>{item.name}</strong>
-                  <small>{item.builtin ? '内置功能' : '自定义功能'}</small>
-                </td>
-                <td>
-                  {WORKBENCH_FUNCTIONS.find(descriptor => descriptor.kind === item.kind)?.ui_location}
-                </td>
-                <td>
-                  <select
-                    aria-label={`${item.name}的默认预设`}
-                    value={item.preset_id}
-                    onChange={(event) =>
-                      void action('function-preset', {
-                        id: item.function_id,
-                        value: event.target.value,
-                      })
-                    }
-                  >
-                    {!props.presets?.some(
-                      (preset) => preset.id === item.preset_id,
-                    ) && (
-                      <option value={item.preset_id}>
-                        {presetName(item.preset_id)}
-                      </option>
-                    )}
-                    {props.presets?.map((preset) => (
-                      <option key={preset.id} value={preset.id}>
-                        {preset.name}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="agent-model-summary">{agentModel(item)}</td>
-                <td>{item.requested_skill || 'Agent 自选'}</td>
-                <td>
-                  <Button
-                    kind="small"
-                    label={`编辑${item.name}`}
-                    onClick={() =>
-                      void action('function-edit', { id: item.function_id })
-                    }
-                  >
-                    编辑
-                  </Button>
-                  {!item.builtin && (
-                    <Button
-                      kind="small quiet"
-                      label={`移除${item.name}`}
-                      onClick={() =>
-                        void action('function-remove', { id: item.function_id })
-                      }
-                    >
-                      移除
-                    </Button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </main>
+    <ExperimentFunctionSettings
+      key={state.workspaceId}
+      workspaceId={state.workspaceId ?? ''}
+      workspaceName={workspace?.name}
+      functions={p?.functions.map(item => functionBindings.get(JSON.stringify([item.workspace_id, item.function_id])) ?? item) ?? []}
+      presets={props.presets ?? []}
+      models={props.agentModelGroups ?? []}
+      remote={props.remote}
+      onToast={setMessage}
+      onBack={() => changePage('workbench')}
+      onChange={async change => {
+        if (!state.workspaceId) return
+        const request: ExperimentWorkbenchAction = {
+          workspaceId: state.workspaceId,
+          ...(view.workId ? { workId: view.workId } : {}),
+          ...(view.branchId ? { branchId: view.branchId } : {}),
+          ...change,
+        }
+        const save = async () => { await props.onAction(request); await store.refresh() }
+        if (!('id' in change)) return save()
+        const key = JSON.stringify([request.workspaceId, change.id])
+        const currentBinding = functionBindings.get(key) ?? p?.functions.find(item => item.function_id === change.id)
+        const submittedBinding = change.type === 'function-edit' ? change.value : change.type === 'function-preset' && currentBinding ? { ...currentBinding, preset_id: change.value } : null
+        if (submittedBinding) setFunctionBindings(current => new Map(current).set(key, submittedBinding))
+        const pending = (functionWrites.current.get(key) ?? Promise.resolve()).then(save, save)
+        functionWrites.current.set(key, pending)
+        try { await pending }
+        finally {
+          if (functionWrites.current.get(key) === pending) functionWrites.current.delete(key)
+          if (submittedBinding) setFunctionBindings(current => {
+            if (current.get(key) !== submittedBinding) return current
+            const next = new Map(current)
+            next.delete(key)
+            return next
+          })
+        }
+      }}
+    />
   )
   const modalTitle =
     modal === 'new-work'
@@ -2019,65 +1882,31 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   return (
     <div className="experiment-workbench" ref={host}>
       <style>{experimentWorkbenchStyles}</style>
-      <header className="titlebar">
-        <span className="brandmark">h</span>
-        <span className="brand">
-          HARNESS{' '}
-          <span style={{ fontWeight: 400, color: '#8a958c' }}>/ COMFYUI</span>
-        </span>
-        <span className="divider" />
-        <div className="row workspace-switch">
-          <label className="muted" htmlFor="experiment-workspace-picker">
-            工作区
-          </label>
-          <select
-            id="experiment-workspace-picker"
-            aria-label="切换工作区"
-            title={workspace?.path}
-            value={state.workspaceId ?? ''}
-            onChange={(event) => {
-              store.setWorkspace(event.target.value)
-              props.onWorkspaceChange(event.target.value)
-            }}
-          >
-            {!state.workspaceId && <option value="">请选择工作区</option>}
-            {props.workspaces.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-          <Button
-            kind="small quiet"
-            icon="plus"
-            onClick={() => setModal('new-workspace')}
-          >
-            添加工作区
-          </Button>
-          <small className="workspace-path">{workspace?.path}</small>
-        </div>
-        <span className="divider" />
-        <b>实验工作台</b>
-        <span className="spacer" />
-        <Button kind="small quiet" onClick={() => changePage('settings')}>
-          配置中心
-        </Button>
-      </header>
-      {work && (
-        <div className="workbar">
-          <div className="row">
-            <label className="muted" htmlFor="experiment-work-picker">
-              工作
+      <div className="experiment-workbench-content">
+        <header className="titlebar">
+          <span className="brandmark">h</span>
+          <span className="brand">
+            HARNESS{' '}
+            <span style={{ fontWeight: 400, color: '#8a958c' }}>/ COMFYUI</span>
+          </span>
+          <span className="divider" />
+          <div className="row workspace-switch">
+            <label className="muted" htmlFor="experiment-workspace-picker">
+              工作区
             </label>
             <select
-              className="work-picker"
-              id="experiment-work-picker"
-              aria-label="切换工作"
-              value={view.workId ?? ''}
-              onChange={(event) => store.selectWork(event.target.value)}
+              id="experiment-workspace-picker"
+              aria-label="切换工作区"
+              title={workspace?.path}
+              value={state.workspaceId ?? ''}
+              onChange={(event) => {
+                store.setWorkspace(event.target.value)
+                props.onWorkspaceChange(event.target.value)
+              }}
             >
-              {p?.works.map((item) => (
-                <option key={item.work_id} value={item.work_id}>
+              {!state.workspaceId && <option value="">请选择工作区</option>}
+              {props.workspaces.map((item) => (
+                <option key={item.id} value={item.id}>
                   {item.name}
                 </option>
               ))}
@@ -2085,346 +1914,382 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             <Button
               kind="small quiet"
               icon="plus"
+              onClick={() => setModal('new-workspace')}
+            >
+              添加工作区
+            </Button>
+            <small className="workspace-path">{workspace?.path}</small>
+          </div>
+          <span className="divider" />
+          <b>实验工作台</b>
+          <span className="spacer" />
+          <Button kind="small quiet" onClick={() => changePage('settings')}>
+            配置中心
+          </Button>
+        </header>
+        {work && (
+          <div className="workbar">
+            <div className="row">
+              <label className="muted" htmlFor="experiment-work-picker">
+                工作
+              </label>
+              <select
+                className="work-picker"
+                id="experiment-work-picker"
+                aria-label="切换工作"
+                value={view.workId ?? ''}
+                onChange={(event) => store.selectWork(event.target.value)}
+              >
+                {p?.works.map((item) => (
+                  <option key={item.work_id} value={item.work_id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                kind="small quiet"
+                icon="plus"
+                onClick={() => setModal('new-work')}
+              >
+                新建工作
+              </Button>
+            </div>
+            <nav className="nav" aria-label="工作导航">
+              {(
+                [
+                  ['workbench', '运行结果'],
+                  ['resources', '资源'],
+                  ['tasks', '任务'],
+                  ['experiences', '经验'],
+                  ['favorites', '收藏'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-label={label}
+                  className={
+                    view.page === id ||
+                    (id === 'workbench' && view.page === 'graph')
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() => changePage(id)}
+                >
+                  {label}
+                  {['tasks', 'experiences', 'favorites'].includes(id) && (
+                    <span className="count">
+                      {id === 'tasks'
+                        ? p?.tasks.length
+                        : id === 'experiences'
+                          ? p?.experiences.length
+                          : p?.favorites.length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+            <span className="spacer" />
+            <Button
+              kind={
+                p?.runs.some(pendingRun) ? 'small running-link' : 'small quiet'
+              }
+              icon="history"
+              label="查看运行记录"
+              onClick={() => setSheet(true)}
+            >
+              {p?.runs.some(pendingRun)
+                ? `运行记录 · ${p.runs.filter(pendingRun).length} 项运行中`
+                : '运行记录'}
+            </Button>
+          </div>
+        )}
+        {state.error ? (
+          <main className="empty workspace-empty">
+            <h1>工作台加载失败</h1>
+            <p role="alert">{state.error}</p>
+            <Button onClick={() => void store.refresh()}>重试</Button>
+          </main>
+        ) : view.page === 'settings' ? (
+          settings
+        ) : state.loading && !p ? (
+          <main className="empty workspace-empty" aria-label="加载工作台">
+            <span className="loading-ring" />
+          </main>
+        ) : !work ? (
+          <main className="empty workspace-empty">
+            <h1>{workspace?.name ?? '实验工作台'}</h1>
+            <p>{state.workspaceId ? '尚未创建工作' : '请选择工作区'}</p>
+            <Button
+              kind="primary"
+              icon="plus"
+              disabled={!state.workspaceId}
               onClick={() => setModal('new-work')}
             >
               新建工作
             </Button>
-          </div>
-          <nav className="nav" aria-label="工作导航">
-            {(
-              [
-                ['workbench', '运行结果'],
-                ['resources', '资源'],
-                ['tasks', '任务'],
-                ['experiences', '经验'],
-                ['favorites', '收藏'],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                aria-label={label}
-                className={
-                  view.page === id ||
-                  (id === 'workbench' && view.page === 'graph')
-                    ? 'active'
-                    : ''
+          </main>
+        ) : (
+          <div className="layout">
+            {sidebar}
+            {view.page === 'resources' ? (
+              <ExperimentCatalog
+                catalog={props.catalog}
+                filters={view.catalogFilters}
+                onFilters={(catalogFilters) =>
+                  store.updateView({ catalogFilters })
                 }
-                onClick={() => changePage(id)}
-              >
-                {label}
-                {['tasks', 'experiences', 'favorites'].includes(id) && (
-                  <span className="count">
-                    {id === 'tasks'
-                      ? p?.tasks.length
-                      : id === 'experiences'
-                        ? p?.experiences.length
-                        : p?.favorites.length}
-                  </span>
+                back={back}
+                selected={inputs}
+                onSelect={(item) =>
+                  void action('resource-select', {
+                    id: item.context.id,
+                    value: item.context,
+                  })
+                }
+                locked={locked}
+                scroll={scrollPanel(
+                  `catalog:${view.workId}:${JSON.stringify(view.catalogFilters)}`,
                 )}
-              </button>
-            ))}
-          </nav>
-          <span className="spacer" />
-          <Button
-            kind={
-              p?.runs.some(pendingRun) ? 'small running-link' : 'small quiet'
-            }
-            icon="history"
-            label="查看运行记录"
-            onClick={() => setSheet(true)}
-          >
-            {p?.runs.some(pendingRun)
-              ? `运行记录 · ${p.runs.filter(pendingRun).length} 项运行中`
-              : '运行记录'}
-          </Button>
-        </div>
-      )}
-      {state.error ? (
-        <main className="empty workspace-empty">
-          <h1>工作台加载失败</h1>
-          <p role="alert">{state.error}</p>
-          <Button onClick={() => void store.refresh()}>重试</Button>
-        </main>
-      ) : view.page === 'settings' ? (
-        settings
-      ) : state.loading && !p ? (
-        <main className="empty workspace-empty" aria-label="加载工作台">
-          <span className="loading-ring" />
-        </main>
-      ) : !work ? (
-        <main className="empty workspace-empty">
-          <h1>{workspace?.name ?? '实验工作台'}</h1>
-          <p>{state.workspaceId ? '尚未创建工作' : '请选择工作区'}</p>
-          <Button
-            kind="primary"
-            icon="plus"
-            disabled={!state.workspaceId}
-            onClick={() => setModal('new-work')}
-          >
-            新建工作
-          </Button>
-        </main>
-      ) : (
-        <div className="layout">
-          {sidebar}
-          {view.page === 'resources' ? (
-            <ExperimentCatalog
-              catalog={props.catalog}
-              filters={view.catalogFilters}
-              onFilters={(catalogFilters) =>
-                store.updateView({ catalogFilters })
-              }
-              back={back}
-              selected={inputs}
-              onSelect={(item) =>
-                void action('resource-select', {
-                  id: item.context.id,
-                  value: item.context,
-                })
-              }
-              locked={locked}
-              scroll={scrollPanel(
-                `catalog:${view.workId}:${JSON.stringify(view.catalogFilters)}`,
-              )}
-            />
-          ) : view.page === 'tasks' ? (
-            tasks
-          ) : view.page === 'graph' ? (
-            graph
-          ) : ['favorites', 'experiences'].includes(view.page) ? (
-            library
-          ) : (
-            results
-          )}
-          {inspector}
-        </div>
-      )}
-      {sheet && (
-        <div
-          className="sheet-backdrop"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setSheet(false)
-          }}
-        >
-          <section
-            className="sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="运行记录"
-          >
-            <div className="sheet-head">
-              <h2>运行记录</h2>
-              <Button
-                kind="small"
-                label="关闭面板"
-                onClick={() => setSheet(false)}
-              >
-                关闭
-              </Button>
-            </div>
-            <div className="sheet-body">
-              {p?.runs
-                .slice()
-                .reverse()
-                .map((item) => (
-                  <article className="run-row" key={item.run_id}>
-                    <div className="row between">
-                      <h3>
-                        <Identifier value={item.run_id} /> · {branchFor(item)?.name}
-                      </h3>
-                      <Status run={item} />
-                    </div>
-                    <p>
-                      任务 {item.workbench_task_id} · 发起者：
-                      {item.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
-                      {runModelLabel(item)} · Seed{' '}
-                      {String(runParameter(item, 'seed') ?? '')}
-                    </p>
-                    <p>
-                      执行预设：
-                      {presetName(taskFor(item)?.binding_snapshot.preset_id)}
-                    </p>
-                    <p>
-                      Agent 模型：
-                      {formatAgentModel(
-                        taskFor(item)?.binding_snapshot.agentModel,
-                      )}
-                    </p>
-                    {item.error && (
-                      <p style={{ color: 'var(--red)' }}>
-                        {item.error.message}
-                      </p>
-                    )}
-                    {item.review && <p>评价：{item.review.conclusion}</p>}
-                    {item.retry_of_run_id && (
-                      <p>重试来源：{item.retry_of_run_id}</p>
-                    )}
-                    <Button
-                      kind="small"
-                      onClick={() => {
-                        store.selectRun(item.run_id)
-                        setSheet(false)
-                      }}
-                    >
-                      查看运行
-                    </Button>
-                  </article>
-                ))}
-              {!p?.runs.length && <div className="empty">暂无运行记录</div>}
-            </div>
-          </section>
-        </div>
-      )}
-      {modal && (
-        <div
-          className="modal-backdrop"
-        >
-          <section
-            className={`modal ${modal === 'image' ? 'image-modal' : ''}`}
-            role="dialog"
-            aria-modal="true"
-            aria-label={modalTitle}
-            onKeyDown={(event) => {
-              if (event.key !== 'Tab') return
-              const elements = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input,textarea,select,a,summary')]
-                .filter(element => element.offsetParent !== null)
-              const first = elements[0], last = elements.at(-1)
-              if (event.shiftKey && document.activeElement === first) {
-                event.preventDefault()
-                last?.focus()
-              } else if (!event.shiftKey && document.activeElement === last) {
-                event.preventDefault()
-                first?.focus()
-              }
+              />
+            ) : view.page === 'tasks' ? (
+              tasks
+            ) : view.page === 'graph' ? (
+              graph
+            ) : ['favorites', 'experiences'].includes(view.page) ? (
+              library
+            ) : (
+              results
+            )}
+            {inspector}
+          </div>
+        )}
+        {sheet && (
+          <div
+            className="sheet-backdrop"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setSheet(false)
             }}
           >
-            <div className="modal-head">
-              <h2>{modalTitle}</h2>
-              <Button
-                kind="small quiet"
-                label={modal === 'image' ? '关闭原图' : '关闭对话框'}
-                autoFocus={modal !== 'image'}
-                onClick={() => setModal(null)}
-              >
-                {modal === 'image' ? '关闭' : '×'}
-              </Button>
-            </div>
-            {modal === 'image' ? (
-              <div className="original-image">
-                {run && media(run) && <img src={media(run)} alt={run.title} />}
+            <section
+              className="sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label="运行记录"
+            >
+              <div className="sheet-head">
+                <h2>运行记录</h2>
+                <Button
+                  kind="small"
+                  label="关闭面板"
+                  onClick={() => setSheet(false)}
+                >
+                  关闭
+                </Button>
               </div>
-            ) : (
-              <form
-                onSubmit={async (event) => {
+              <div className="sheet-body">
+                {p?.runs
+                  .slice()
+                  .reverse()
+                  .map((item) => (
+                    <article className="run-row" key={item.run_id}>
+                      <div className="row between">
+                        <h3>
+                          <Identifier value={item.run_id} /> · {branchFor(item)?.name}
+                        </h3>
+                        <Status run={item} />
+                      </div>
+                      <p>
+                        任务 {item.workbench_task_id} · 发起者：
+                        {item.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
+                        {runModelLabel(item)} · Seed{' '}
+                        {String(runParameter(item, 'seed') ?? '')}
+                      </p>
+                      <p>
+                        执行预设：
+                        {presetName(taskFor(item)?.binding_snapshot.preset_id)}
+                      </p>
+                      <p>
+                        Agent 模型：
+                        {formatAgentModel(
+                          taskFor(item)?.binding_snapshot.agentModel,
+                        )}
+                      </p>
+                      {item.error && (
+                        <p style={{ color: 'var(--red)' }}>
+                          {item.error.message}
+                        </p>
+                      )}
+                      {item.review && <p>评价：{item.review.conclusion}</p>}
+                      {item.retry_of_run_id && (
+                        <p>重试来源：{item.retry_of_run_id}</p>
+                      )}
+                      <Button
+                        kind="small"
+                        onClick={() => {
+                          store.selectRun(item.run_id)
+                          setSheet(false)
+                        }}
+                      >
+                        查看运行
+                      </Button>
+                    </article>
+                  ))}
+                {!p?.runs.length && <div className="empty">暂无运行记录</div>}
+              </div>
+            </section>
+          </div>
+        )}
+        {modal && (
+          <div
+            className="modal-backdrop"
+          >
+            <section
+              className={`modal ${modal === 'image' ? 'image-modal' : ''}`}
+              role="dialog"
+              aria-modal="true"
+              aria-label={modalTitle}
+              onKeyDown={(event) => {
+                if (event.key !== 'Tab') return
+                const elements = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input,textarea,select,a,summary')]
+                  .filter(element => element.offsetParent !== null)
+                const first = elements[0], last = elements.at(-1)
+                if (event.shiftKey && document.activeElement === first) {
                   event.preventDefault()
-                  const instance = modalInstance.current
-                  if (formSubmissionPending.current === instance) return
-                  const isCurrent = () => modalInstance.current === instance
-                  setMessage(null)
-                  const data = new FormData(event.currentTarget),
-                    type = modal === 'branch' ? 'create-branch' : modal
-                  if (!type) return
-                  formSubmissionPending.current = instance
-                  setFormSubmitting(true)
-                  const saved = await action(type, {
-                    value: {
-                      name: data.get('name'),
-                      ...(modal === 'new-workspace'
-                        ? { path: data.get('path') }
-                        : modal === 'branch'
-                          ? { original_request: data.get('goal') }
-                          : { goal: data.get('goal') }),
-                    },
-                  }, isCurrent)
-                  if (formSubmissionPending.current === instance)
-                    formSubmissionPending.current = null
-                  if (isCurrent()) {
-                    setFormSubmitting(false)
-                    if (saved) setModal(null)
-                  }
-                }}
-              >
-                {modal === 'new-work' && <p>工作区：{workspace?.name}</p>}
-                {modal === 'branch' && (
-                  <p>
-                    来源：{branch?.name} · {run ? <Identifier value={run.run_id} /> : '任务输入'}
-                  </p>
-                )}
-                <label className="field">
-                  <span>
-                    {modal === 'new-workspace'
-                      ? '工作区名称'
-                      : modal === 'new-work'
-                        ? '工作名称'
-                        : '分支名称'}
-                  </span>
-                  <input
-                    name="name"
-                    readOnly={formSubmitting}
-                    aria-label={
-                      modal === 'new-workspace'
+                  last?.focus()
+                } else if (!event.shiftKey && document.activeElement === last) {
+                  event.preventDefault()
+                  first?.focus()
+                }
+              }}
+            >
+              <div className="modal-head">
+                <h2>{modalTitle}</h2>
+                <Button
+                  kind="small quiet"
+                  label={modal === 'image' ? '关闭原图' : '关闭对话框'}
+                  autoFocus={modal !== 'image'}
+                  onClick={() => setModal(null)}
+                >
+                  {modal === 'image' ? '关闭' : '×'}
+                </Button>
+              </div>
+              {modal === 'image' ? (
+                <div className="original-image">
+                  {run && media(run) && <img src={media(run)} alt={run.title} />}
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (event) => {
+                    event.preventDefault()
+                    const instance = modalInstance.current
+                    if (formSubmissionPending.current === instance) return
+                    const isCurrent = () => modalInstance.current === instance
+                    setMessage(null)
+                    const data = new FormData(event.currentTarget),
+                      type = modal === 'branch' ? 'create-branch' : modal
+                    if (!type) return
+                    formSubmissionPending.current = instance
+                    setFormSubmitting(true)
+                    const saved = await action(type, {
+                      value: {
+                        name: data.get('name'),
+                        ...(modal === 'new-workspace'
+                          ? { path: data.get('path') }
+                          : modal === 'branch'
+                            ? { original_request: data.get('goal') }
+                            : { goal: data.get('goal') }),
+                      },
+                    }, isCurrent)
+                    if (formSubmissionPending.current === instance)
+                      formSubmissionPending.current = null
+                    if (isCurrent()) {
+                      setFormSubmitting(false)
+                      if (saved) setModal(null)
+                    }
+                  }}
+                >
+                  {modal === 'new-work' && <p>工作区：{workspace?.name}</p>}
+                  {modal === 'branch' && (
+                    <p>
+                      来源：{branch?.name} · {run ? <Identifier value={run.run_id} /> : '任务输入'}
+                    </p>
+                  )}
+                  <label className="field">
+                    <span>
+                      {modal === 'new-workspace'
                         ? '工作区名称'
                         : modal === 'new-work'
                           ? '工作名称'
-                          : '分支名称'
-                    }
-                    maxLength={40}
-                    required
-                    autoComplete={modal === 'new-workspace' ? 'off' : undefined}
-                    defaultValue={
-                      modal === 'branch'
-                        ? `探索 ${(p?.total_branch_count ?? 0) + 1}`
-                        : ''
-                    }
-                  />
-                </label>
-                {modal === 'new-workspace' ? (
-                  <label className="field">
-                    <span>项目目录</span>
+                          : '分支名称'}
+                    </span>
                     <input
-                      name="path"
+                      name="name"
                       readOnly={formSubmitting}
-                      aria-label="项目目录"
+                      aria-label={
+                        modal === 'new-workspace'
+                          ? '工作区名称'
+                          : modal === 'new-work'
+                            ? '工作名称'
+                            : '分支名称'
+                      }
+                      maxLength={40}
                       required
-                      placeholder="/Users/用户名/Projects/项目目录"
-                      autoComplete="off"
-                    />
-                  </label>
-                ) : (
-                  <label className="field">
-                    <span>{modal === 'branch' ? '原始需求' : '总目标'}</span>
-                    <textarea
-                      name="goal"
-                      readOnly={formSubmitting}
-                      aria-label={modal === 'branch' ? '原始需求' : '总目标'}
-                      required
+                      autoComplete={modal === 'new-workspace' ? 'off' : undefined}
                       defaultValue={
-                        modal === 'branch' ? branch?.original_request : ''
+                        modal === 'branch'
+                          ? `探索 ${(p?.total_branch_count ?? 0) + 1}`
+                          : ''
                       }
                     />
                   </label>
-                )}
-                <div className="modal-actions">
-                  <Button kind="quiet" onClick={() => setModal(null)}>取消</Button>
-                  <button className="btn primary" type="submit" disabled={formSubmitting}>
-                    {modal === 'new-workspace'
-                      ? '添加工作区'
-                      : modal === 'branch'
-                        ? '创建分支'
-                        : '创建工作'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </section>
-        </div>
-      )}
-      {message && (
-        <div className="toast" role="alert">
-          <span>{message}</span>
-        </div>
-      )}
+                  {modal === 'new-workspace' ? (
+                    <label className="field">
+                      <span>项目目录</span>
+                      <input
+                        name="path"
+                        readOnly={formSubmitting}
+                        aria-label="项目目录"
+                        required
+                        placeholder="/Users/用户名/Projects/项目目录"
+                        autoComplete="off"
+                      />
+                    </label>
+                  ) : (
+                    <label className="field">
+                      <span>{modal === 'branch' ? '原始需求' : '总目标'}</span>
+                      <textarea
+                        name="goal"
+                        readOnly={formSubmitting}
+                        aria-label={modal === 'branch' ? '原始需求' : '总目标'}
+                        required
+                        defaultValue={
+                          modal === 'branch' ? branch?.original_request : ''
+                        }
+                      />
+                    </label>
+                  )}
+                  <div className="modal-actions">
+                    <Button kind="quiet" onClick={() => setModal(null)}>取消</Button>
+                    <button className="btn primary" type="submit" disabled={formSubmitting}>
+                      {modal === 'new-workspace'
+                        ? '添加工作区'
+                        : modal === 'branch'
+                          ? '创建分支'
+                          : '创建工作'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </section>
+          </div>
+        )}
+        {message && (
+          <div className="toast" role="alert">
+            <span>{message}</span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

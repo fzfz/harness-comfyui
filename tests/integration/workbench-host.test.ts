@@ -11,6 +11,32 @@ async function fixture() {
   return result
 }
 
+it.each(['', '   ', ' 生成提示词 '])('rejects a blank or duplicate function name through Remote and preserves saved input: %j', async name => {
+  const { remote, store } = await fixture()
+  const scope = { workspaceId: 'workspace_1' }
+  await remote.getProjection(scope, signal())
+  const binding = { ...store.getFunctionBinding(scope.workspaceId, 'prompt'), function_id: 'named-prompt', builtin: false, name: '自定义功能', preset_id: 'preset-a' }
+  await remote.mutate({ ...scope, type: 'function-add', value: binding }, signal())
+  await expect(remote.mutate({ ...scope, type: 'function-edit', value: { ...binding, name, request_template: 'Rejected edit {{task_id}}' } }, signal())).rejects.toMatchObject({
+    details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'binding.name', message: '请填写与已有功能不同的名称。' }] },
+  })
+  expect(store.getFunctionBinding(scope.workspaceId, binding.function_id)).toEqual(binding)
+})
+
+it('trims saved function names, permits the original name and permits matching names in another Workspace', async () => {
+  const { remote, store } = await fixture()
+  for (const workspaceId of ['workspace_1', 'workspace_2']) {
+    await remote.getProjection({ workspaceId }, signal())
+    const binding = { ...store.getFunctionBinding(workspaceId, 'prompt'), function_id: 'shared-name', builtin: false, name: '  共享名称  ', preset_id: 'preset-a' }
+    await remote.mutate({ workspaceId, type: 'function-add', value: binding }, signal())
+    const saved = store.getFunctionBinding(workspaceId, binding.function_id)
+    expect(saved.name).toBe('共享名称')
+    await remote.mutate({ workspaceId, type: 'function-edit', value: { ...saved, name: ' 共享名称 ', request_template: 'Edited task {{task_id}}' } }, signal())
+    expect(store.getFunctionBinding(workspaceId, binding.function_id)).toEqual({ ...saved, request_template: 'Edited task {{task_id}}' })
+  }
+  expect(store.getFunctionBinding('workspace_1', 'shared-name').name).toBe(store.getFunctionBinding('workspace_2', 'shared-name').name)
+})
+
 it('uses the registered directory before checking workspace names and reports creation failures', async () => {
   const { remote, createWorkspace } = await fixture()
   await expect(remote.mutate({ type: 'new-workspace', workspaceId: '', value: { name: 'First project', path: '/workspace/third' } }, signal()))
@@ -54,10 +80,171 @@ it('applies native aspect-ratio and preset size values and rejects an unrelated 
   expect(store.getBranch(selected.branchId!).draft.generation_input.parameters).toEqual({ resolution: 'portrait' })
 })
 
+it.each([
+  { type: 'function-preset', broken: false },
+  { type: 'function-preset', broken: true },
+  { type: 'function-edit', broken: false },
+  { type: 'function-edit', broken: true },
+] as const)('rejects $type when its selected preset becomes unavailable (broken=$broken)', async ({ type, broken }) => {
+  const { remote, official } = await fixture()
+  const scope = { workspaceId: 'workspace_1' }
+  await remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal())
+  const before = await remote.getProjection(scope, signal())
+  const binding = before.functions.find(item => item.function_id === 'prompt')!
+  official.listPresets.mockResolvedValue(broken ? [{ id: 'preset-a', broken: 'Missing component' }] : [])
+  await expect(remote.mutate({
+    ...scope, type, id: 'prompt',
+    value: type === 'function-preset' ? 'preset-a' : { ...binding, request_template: 'Read task {{task_id}} and paint stars.' },
+  }, signal())).rejects.toMatchObject({
+    details: { code: 'WORKBENCH_PRESET_UNAVAILABLE', issues: [{ path: 'preset_id', message: '所选 Agent 预设当前不可用，请重新选择预设。' }] },
+  })
+  expect((await remote.getProjection(scope, signal())).functions).toEqual(before.functions)
+})
+
+it.each([
+  { name: 'prompt-builder', modelInvocable: true, expected: 'prompt-builder' },
+  { name: 'prompt-builder', modelInvocable: false, expected: null },
+  { name: 'other-skill', modelInvocable: true, expected: null },
+])('keeps the requested Skill only when the replacement preset can invoke it ($name, $modelInvocable)', async ({ name, modelInvocable, expected }) => {
+  const { remote, official } = await fixture()
+  const scope = { workspaceId: 'workspace_1' }
+  official.listPresets.mockResolvedValue([{ id: 'preset-a' }, { id: 'preset-b' }])
+  const original = (await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')!
+  const binding = {
+    ...original, preset_id: 'preset-a', requested_skill: 'prompt-builder',
+    request_template: 'Read task {{task_id}} and compose rain.',
+    agent_model: { provider: 'saved-provider', model: 'saved-model', reasoningEffort: 'high' },
+  }
+  await remote.mutate({ ...scope, type: 'function-edit', value: binding }, signal())
+  official.listSkills.mockResolvedValue([{ name, description: 'Preset skill', invocation: { modelInvocable } }])
+  await remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-b' }, signal())
+  expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual({
+    ...binding, preset_id: 'preset-b', requested_skill: expected,
+  })
+  expect(official.listSkills).toHaveBeenCalledWith({ cwd: '/workspace/project', scope: 'preset-scope' })
+  expect(official.disposeScope).toHaveBeenCalledOnce()
+})
+
+it('stores prompt and run presets independently for each Workspace', async () => {
+  const { remote, official } = await fixture()
+  official.listPresets.mockResolvedValue([{ id: 'preset-a' }, { id: 'preset-b' }])
+  await remote.mutate({ workspaceId: 'workspace_1', type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal())
+  await remote.mutate({ workspaceId: 'workspace_1', type: 'function-preset', id: 'run', value: 'preset-b' }, signal())
+  await remote.mutate({ workspaceId: 'workspace_2', type: 'function-preset', id: 'prompt', value: 'preset-b' }, signal())
+  await remote.mutate({ workspaceId: 'workspace_2', type: 'function-preset', id: 'run', value: 'preset-a' }, signal())
+  const first = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())
+  const second = await remote.getProjection({ workspaceId: 'workspace_2' }, signal())
+  expect(first.functions.find(binding => binding.function_id === 'prompt')?.preset_id).toBe('preset-a')
+  expect(first.functions.find(binding => binding.function_id === 'run')?.preset_id).toBe('preset-b')
+  expect(second.functions.find(binding => binding.function_id === 'prompt')?.preset_id).toBe('preset-b')
+  expect(second.functions.find(binding => binding.function_id === 'run')?.preset_id).toBe('preset-a')
+  expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions).toEqual(first.functions)
+  expect((await remote.getProjection({ workspaceId: 'workspace_2' }, signal())).functions).toEqual(second.functions)
+})
+
+it.each([
+  { waitFor: 'presets', initialSkill: null, supported: true },
+  { waitFor: 'presets', initialSkill: null, supported: false },
+  { waitFor: 'presets', initialSkill: 'prompt-builder', supported: true },
+  { waitFor: 'presets', initialSkill: 'prompt-builder', supported: false },
+  { waitFor: 'skills', initialSkill: null, supported: true },
+  { waitFor: 'skills', initialSkill: null, supported: false },
+  { waitFor: 'skills', initialSkill: 'prompt-builder', supported: true },
+  { waitFor: 'skills', initialSkill: 'prompt-builder', supported: false },
+] as const)('preserves edits saved while inline preset selection awaits $waitFor (initialSkill=$initialSkill, supported=$supported)', async ({ waitFor, initialSkill, supported }) => {
+  const { remote, official } = await fixture()
+  const scope = { workspaceId: 'workspace_1' }
+  const presets = [{ id: 'preset-a' }, { id: 'preset-b' }]
+  const skills = [{ name: 'changed-skill', description: 'Replacement preset skill', invocation: { modelInvocable: supported } }]
+  official.listPresets.mockResolvedValue(presets)
+  official.listSkills.mockResolvedValue(skills)
+  const original = (await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')!
+  const binding = { ...original, preset_id: 'preset-a', requested_skill: initialSkill }
+  await remote.mutate({ ...scope, type: 'function-edit', value: binding }, signal())
+  let entered!: () => void, release!: () => void
+  const started = new Promise<void>(resolve => { entered = resolve })
+  const blocked = new Promise<void>(resolve => { release = resolve })
+  if (waitFor === 'presets') official.listPresets.mockImplementationOnce(async () => { entered(); await blocked; return presets })
+  else official.listSkills.mockImplementationOnce(async () => { entered(); await blocked; return skills })
+  const pending = remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-b' }, signal())
+  const edited = {
+    ...binding, request_template: 'Read task {{task_id}} and compose stars.',
+    agent_model: { provider: 'changed-provider', model: 'changed-model', reasoningEffort: 'high' },
+    requested_skill: 'changed-skill',
+  }
+  try {
+    expect(await Promise.race([started.then(() => 'waiting'), pending.then(() => 'completed')])).toBe('waiting')
+    await remote.mutate({ ...scope, type: 'function-edit', value: edited }, signal())
+    expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual(edited)
+  } finally { release(); await pending }
+  expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual({
+    ...edited, preset_id: 'preset-b', requested_skill: supported ? 'changed-skill' : null,
+  })
+})
+
+it('keeps the saved binding when replacement preset Skills cannot be read', async () => {
+  const { remote, official } = await fixture()
+  const scope = { workspaceId: 'workspace_1' }
+  const before = await remote.getProjection(scope, signal())
+  const binding = { ...before.functions.find(item => item.function_id === 'prompt')!, preset_id: 'preset-a', requested_skill: 'prompt-builder' }
+  await remote.mutate({ ...scope, type: 'function-edit', value: binding }, signal())
+  official.listSkills.mockRejectedValueOnce(new Error('Skill provider unavailable'))
+  await expect(remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal())).rejects.toThrow('Skill provider unavailable')
+  expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual(binding)
+  expect(official.disposeScope).toHaveBeenCalledOnce()
+})
+
+it('renders every whitespace and repeated task token in the actual dispatched request', async () => {
+  const { remote, official } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
+  const original = (await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'prompt')!
+  const template = 'Read {{ task_id }}, compare {{task_id}}, publish {{\ttask_id\n}}.'
+  await remote.mutate({ ...selected, type: 'function-edit', value: { ...original, preset_id: 'preset-a', request_template: template } }, signal())
+  expect((await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'prompt')?.request_template).toBe(template)
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  const task = (await remote.getProjection(selected, signal())).tasks[0]!
+  const expected = `Read ${task.task_id}, compare ${task.task_id}, publish ${task.task_id}.`
+  expect(task.request_text).toBe(expected)
+  expect(task.binding_snapshot.request_template).toBe(template)
+  expect(official.controller.prompt).toHaveBeenCalledWith(
+    expect.objectContaining({ sessionId: task.session_id, content: [{ type: 'text', text: expected }] }), expect.any(AbortSignal),
+  )
+})
+
+it.each([
+  { template: '', message: '请填写本功能的执行要求。' },
+  { template: 'Read task.', message: '请在执行要求中保留 {{task_id}}，用于定位工作台任务。' },
+  { template: 'Read {{task_id}} and {{branch_id}}.', message: '请将其他定位符替换为具体执行要求，并保留 {{task_id}}。' },
+  { template: 'Read {{task_id}} {{', message: 'Task ID 定位符格式不完整，请使用 {{task_id}}。' },
+  { template: 'Read {{task_id}} }}', message: 'Task ID 定位符格式不完整，请使用 {{task_id}}。' },
+  { template: 'Read {{task_id}} {{ task_id }', message: 'Task ID 定位符格式不完整，请使用 {{task_id}}。' },
+])('rejects invalid request template "$template" while retaining the saved binding', async ({ template, message }) => {
+  const { remote } = await fixture()
+  const scope = { workspaceId: 'workspace_1' }
+  const original = (await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')!
+  await remote.mutate({ ...scope, type: 'function-edit', value: { ...original, preset_id: 'preset-a', request_template: 'Read {{task_id}}.' } }, signal())
+  const before = await remote.getProjection(scope, signal())
+  const binding = before.functions.find(item => item.function_id === 'prompt')!
+  await expect(remote.mutate({ ...scope, type: 'function-edit', value: { ...binding, request_template: template } }, signal()))
+    .rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'binding.request_template', message }] } })
+  expect((await remote.getProjection(scope, signal())).functions).toEqual(before.functions)
+})
+
+it('saves edited and inline function presets with sibling official service providers', async () => {
+  const { remote } = await fixture()
+  const scope = { workspaceId: 'workspace_1' }
+  const original = (await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')!
+  const edited = { ...original, preset_id: 'preset-a', requested_skill: 'prompt-builder', request_template: 'Read task {{task_id}} and compose stars.' }
+  await remote.mutate({ ...scope, type: 'function-edit', value: edited }, signal())
+  expect((await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')).toEqual(edited)
+  await remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal())
+  expect((await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')).toEqual(edited)
+})
+
 it('saves Workspace function bindings and verifies the requested Skill in the actual execution Session', async () => {
   const { remote, official, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Portrait', goal: 'Paint a portrait' } }, signal())
-  const binding = { ...store.getFunctionBinding('workspace_1', 'prompt'), function_id: 'custom-prompt', builtin: false, name: 'Portrait prompt', requested_skill: 'prompt-builder' }
+  const binding = { ...store.getFunctionBinding('workspace_1', 'prompt'), function_id: 'custom-prompt', builtin: false, name: 'Portrait prompt', preset_id: 'preset-a', requested_skill: 'prompt-builder' }
   await remote.mutate({ ...selected, type: 'function-add', value: binding }, signal())
   await remote.mutate({ ...selected, type: 'function-preset', id: binding.function_id, value: 'preset-a' }, signal())
   await remote.mutate({ ...selected, type: 'function-edit', value: { ...store.getFunctionBinding('workspace_1', binding.function_id), request_template: 'Read task {{task_id}} and draw rain.' } }, signal())
@@ -170,6 +357,20 @@ it('mounts Workbench Remotes, creates one main branch and isolates Workspace pro
   expect(ctx.reflect.get('harnessComfyuiWorkbenchRemote')).toBeUndefined()
   await fiber.dispose()
   expect(ctx.reflect.get('harnessComfyuiWorkbench')).toBeUndefined()
+})
+
+it.each(['preset-missing', 'preset-broken'])('keeps the environment available for reselecting %s', async presetId => {
+  const { remote, official } = await fixture()
+  official.acquireScope.mockRejectedValueOnce(new Error('Preset cannot be loaded'))
+  const environment = await remote.getEnvironment({ workspaceId: 'workspace_1', presetId }, signal())
+  expect(environment).toMatchObject({
+    workspaces: [{ id: 'workspace_1' }, { id: 'workspace_2' }],
+    presets: [{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-broken', broken: 'Missing component' }],
+    models: { default: { provider: 'provider-a', model: 'model-a' } },
+    instances: [{ id: '8' }], skills: [],
+  })
+  expect(official.acquireScope).not.toHaveBeenCalled()
+  expect(official.listSkills).not.toHaveBeenCalled()
 })
 
 it('reads official presets, models and invocable Skills and always releases the acquired preset scope', async () => {

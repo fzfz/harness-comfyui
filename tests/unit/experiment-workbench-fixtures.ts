@@ -10,6 +10,24 @@ import type {
   WorkbenchRun,
 } from '../../src/workbench/contract.ts'
 
+export const functionEnvironment = {
+  workspaces: [{ id: 'workspace-a', name: '画面实验', path: '/projects/art' }],
+  presets: [
+    { id: 'preset', name: '工作台预设' },
+    { id: 'preset-other', name: '绘图预设' },
+  ],
+  models: {
+    default: { provider: 'provider', model: 'model', reasoningEffort: 'high' },
+    groups: [{
+      id: 'provider', name: '提供商',
+      models: [{ id: 'model', name: '模型', reasoning: { efforts: [{ id: 'high', name: '高' }] } }],
+    }],
+    failures: [], routableProviders: ['provider'],
+  },
+  skills: [{ name: 'comfyui-generate', description: '生成图片' }],
+  instances: [{ id: '2', name: 'win3080' }],
+}
+
 export const agentModel: AgentModel = {
   provider: 'provider',
   model: 'model',

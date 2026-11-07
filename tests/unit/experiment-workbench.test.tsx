@@ -7,6 +7,7 @@ import type { ExperimentWorkbenchProps } from '../../src/client/workbench/experi
 import { ExperimentWorkbench } from '../../src/client/workbench/experiment-workbench.tsx'
 import {
   fullProjection,
+  functionEnvironment,
   treeProjection,
   inputDescription,
   makeRun,
@@ -17,6 +18,8 @@ import type {
   TaskDraft,
   WorkbenchProjection,
 } from '../../src/workbench/contract.ts'
+
+import type { WorkbenchEnvironment } from '../../src/workbench-remote.ts'
 
 interface RenderNode {
   readonly props: Record<string, any>
@@ -101,6 +104,7 @@ const mount = async (
         ...data,
         work_id: scope.workId ?? data.work_id,
       })),
+      getEnvironment: async () => functionEnvironment,
       getInputDescription: vi.fn(async () => inputDescription),
     }
   let renderer!: ReturnType<typeof create>
@@ -184,7 +188,8 @@ describe('experiment workbench shell', () => {
     const { renderer } = await mount(fullProjection(), {
       onAction, onWorkspaceChange,
       workspaces: [{ id: 'workspace-a', name: '画面实验', path: '/projects/art' }, { id: 'workspace-b', name: '人物实验', path: '/projects/characters' }],
-      remote: { getProjection: async ({ workspaceId }) => workspaceId === 'workspace-a' ? fullProjection() : { ...empty, workspace_id: 'workspace-b' }, getInputDescription: async () => inputDescription },
+      remote: { getProjection: async ({ workspaceId }) => workspaceId === 'workspace-a' ? fullProjection() : { ...empty, workspace_id: 'workspace-b' }, getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
     })
     await change(renderer, 'ComfyUI 实例', '2')
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: 'update-draft', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' }))
@@ -254,7 +259,8 @@ describe('experiment workbench shell', () => {
         getProjection: async scope => scope.workId ? data : {
           ...data, work_id: null, branches: [], tasks: [], runs: [],
         },
-        getInputDescription: async () => inputDescription,
+        getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription,
       },
     })
     expect(renderer.root.findAllByProps({ role: 'treeitem' }).map(node => node.props['aria-level'])).toEqual([1, 2, 3, 2])
@@ -282,7 +288,8 @@ describe('experiment workbench shell', () => {
     const { renderer } = await mount(first, {
       remote: {
         getProjection: async ({ workId }) => workId === 'work-b' ? second : first,
-        getInputDescription: async () => inputDescription,
+        getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription,
       },
     })
     await click(renderer, '收起暖光')
@@ -621,9 +628,8 @@ describe('experiment workbench public interactions', () => {
       }),
     )
     await click(renderer, '编辑prompt')
-    expect(onAction).toHaveBeenLastCalledWith(
-      expect.objectContaining({ type: 'function-edit', id: 'prompt' }),
-    )
+    expect(renderer.root.findByProps({ role: 'dialog' })).toBeTruthy()
+    await click(renderer, '取消')
     await click(renderer, '移除自定义prompt')
     expect(onAction).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: 'function-remove', id: 'custom-prompt' }),
@@ -675,7 +681,8 @@ describe('experiment workbench forms and task results', () => {
     const originalValue = available.branches[0]![field]
     const onAction = vi.fn(async () => { throw new Error('分支内容已改变，请刷新后重新保存。') })
     const { renderer } = await mount(available, {
-      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      remote: { getProjection: async () => structuredClone(available), getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, label, '当前窗口填写的文字')
@@ -695,7 +702,8 @@ describe('experiment workbench forms and task results', () => {
       available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: String(request.value) } : branch) }
     })
     const { renderer } = await mount(available, {
-      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      remote: { getProjection: async () => structuredClone(available), getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, '分支名称', '本窗口保存的名称')
@@ -717,7 +725,8 @@ describe('experiment workbench forms and task results', () => {
       available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: String(request.value) } : branch) }
     })
     const { renderer } = await mount(available, {
-      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      remote: { getProjection: async () => structuredClone(available), getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, '分支名称', '第一次编辑')
@@ -738,7 +747,8 @@ describe('experiment workbench forms and task results', () => {
       available = { ...available, branches: available.branches.map(branch => branch.branch_id === 'root' ? { ...branch, name: String(request.value) } : branch) }
     })
     const { renderer } = await mount(available, {
-      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      remote: { getProjection: async () => structuredClone(available), getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, '分支名称', '第一次提交')
@@ -768,7 +778,8 @@ describe('experiment workbench forms and task results', () => {
       remote: { getProjection: async () => {
         if (deferRefresh) { deferRefresh = false; return refreshed }
         return structuredClone(available)
-      }, getInputDescription: async () => inputDescription },
+      }, getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, '分支名称', '前一分支提交')
@@ -809,7 +820,8 @@ describe('experiment workbench forms and task results', () => {
       available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId ? { ...branch, name: String(request.value) } : branch) }
     })
     const { renderer } = await mount(available, {
-      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      remote: { getProjection: async () => structuredClone(available), getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, '分支名称', '第一次提交')
@@ -834,7 +846,8 @@ describe('experiment workbench forms and task results', () => {
       remote: { getProjection: async () => {
         if (failProjection) throw new Error('连接中断')
         return structuredClone(available)
-      }, getInputDescription: async () => inputDescription },
+      }, getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
     })
     await change(renderer, '分支名称', '尚未提交的名称')
     failProjection = true
@@ -857,7 +870,8 @@ describe('experiment workbench forms and task results', () => {
       return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' }
     })
     const { renderer } = await mount(available, {
-      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      remote: { getProjection: async () => structuredClone(available), getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, '分支名称', '第一次提交')
@@ -885,7 +899,8 @@ describe('experiment workbench forms and task results', () => {
     const originalValue = available.branches[0]!.name
     const onAction = vi.fn()
     const { renderer } = await mount(available, {
-      remote: { getProjection: async () => structuredClone(available), getInputDescription: async () => inputDescription },
+      remote: { getProjection: async () => structuredClone(available), getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription },
       onAction,
     })
     await change(renderer, '分支名称', '临时输入')
@@ -1061,7 +1076,8 @@ describe('experiment workbench forms and task results', () => {
           if (stage === 'refresh' && submitted) await pending
           return structuredClone(data)
         },
-        getInputDescription: async () => inputDescription,
+        getEnvironment: async () => functionEnvironment,
+      getInputDescription: async () => inputDescription,
       },
     })
     await click(renderer, '创建子分支')
@@ -1430,6 +1446,7 @@ describe('experiment workbench overlay and loading lifecycle', () => {
 
   it('shows a projection failure and retries the current workspace', async () => {
     const remote = {
+      getEnvironment: async () => functionEnvironment,
       getInputDescription: vi.fn(async () => inputDescription),
       getProjection: vi
         .fn()
@@ -1680,6 +1697,7 @@ describe('experiment workbench input inspection lifecycle', () => {
     const data = fullProjection()
     const remote = {
       getProjection: vi.fn(async () => data),
+      getEnvironment: async () => functionEnvironment,
       getInputDescription: vi.fn(async () => {
         throw new Error('模板字段不可用')
       }),
@@ -1715,6 +1733,7 @@ describe('experiment workbench input inspection lifecycle', () => {
     }
     const remote = {
       getProjection: vi.fn(async () => data),
+      getEnvironment: async () => functionEnvironment,
       getInputDescription: vi.fn(async (scope: { branchId: string }) =>
         scope.branchId === 'root' ? later : second,
       ),
@@ -1756,5 +1775,781 @@ describe('experiment workbench comparison evidence', () => {
         referenceRunIds: ['r2', 'r1'],
       }),
     )
+  })
+})
+
+describe('experiment workbench function defaults', () => {
+  it('saves each function preset through the editor and keeps the configuration page selected', async () => {
+    const data = fullProjection()
+    const onAction = vi.fn(async (request) => {
+      if (request.type === 'function-edit') Object.assign(data.functions.find(item => item.function_id === request.id)!, request.value)
+      if (request.type === 'function-preset') data.functions.find(item => item.function_id === request.id)!.preset_id = request.value
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child' }
+    })
+    const { renderer } = await mount(data, { onAction, presets: functionEnvironment.presets })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    expect(onAction).not.toHaveBeenCalled()
+    expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.readOnly).toBe(true)
+    expect(renderer.root.findByProps({ 'aria-label': '任务类型' }).props.disabled).toBe(true)
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await change(renderer, '执行要求', '绘图要求 {{task_id}}')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: 'function-edit', id: 'prompt',
+      value: expect.objectContaining({ preset_id: 'preset-other', request_template: '绘图要求 {{task_id}}' }),
+    }))
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ className: 'settings-page' })).toBeTruthy()
+    expect(data.functions.find(item => item.function_id === 'run')!.preset_id).toBe('preset')
+    await change(renderer, 'run的默认预设', 'preset-other')
+    expect(renderer.root.findByProps({ className: 'settings-page' })).toBeTruthy()
+    await click(renderer, '编辑run')
+    await change(renderer, 'Agent 预设', 'preset')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(data.functions.find(item => item.function_id === 'run')!.preset_id).toBe('preset')
+    expect(data.functions.find(item => item.function_id === 'prompt')!.preset_id).toBe('preset-other')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-other')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('绘图要求 {{task_id}}')
+    await click(renderer, '取消')
+    await click(renderer, '编辑run')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('{{task_id}}')
+  })
+})
+
+describe('experiment workbench function editor lifecycle', () => {
+  it('retains failed edits and leaves stored values unchanged when cancelled, closed or escaped', async () => {
+    const data = fullProjection()
+    const onAction = vi.fn(async () => { throw Error('保存失败，请重试。') })
+    const { renderer } = await mount(data, { onAction })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await change(renderer, '执行要求', '保留输入 {{task_id}}')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-other')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('保留输入 {{task_id}}')
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('保存失败，请重试。')
+    await click(renderer, '取消')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('{{task_id}}')
+    await change(renderer, '执行要求', '关闭后丢弃 {{task_id}}')
+    await click(renderer, '关闭对话框')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('{{task_id}}')
+    await change(renderer, '执行要求', 'Escape 后丢弃 {{task_id}}')
+    await act(() => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(onAction).toHaveBeenCalledOnce()
+    expect(data.functions.find(item => item.function_id === 'prompt')!.preset_id).toBe('preset')
+  })
+
+  it('loads the selected preset skills and saves every visible edited field', async () => {
+    const data = fullProjection()
+    const getEnvironment = vi.fn(async ({ presetId }) => ({
+      ...functionEnvironment,
+      skills: presetId === 'preset-other' ? [{ name: 'prompt-skill', description: '提示词' }] : functionEnvironment.skills,
+      models: {
+        ...functionEnvironment.models,
+        groups: [...functionEnvironment.models.groups, { id: 'provider-other', name: '其他提供商', models: [{ id: 'fast', name: '快速模型' }] }],
+      },
+    }))
+    const { renderer, onAction } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑自定义prompt')
+    await change(renderer, '功能名称', '自定义绘图')
+    await change(renderer, '任务类型', 'run')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset-other' })
+    expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).props.value).toBe('')
+    await change(renderer, '指定 Skill', 'prompt-skill')
+    await change(renderer, 'Agent 提供商', 'provider-other')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 模型' }).props.value).toBe('fast')
+    expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.disabled).toBe(true)
+    await change(renderer, '执行要求', '执行任务 {{task_id}}')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: 'function-edit', id: 'custom-prompt',
+      value: expect.objectContaining({ name: '自定义绘图', kind: 'run', preset_id: 'preset-other', agent_model: { provider: 'provider-other', model: 'fast' }, requested_skill: 'prompt-skill', request_template: '执行任务 {{task_id}}' }),
+    }))
+  })
+
+  it('keeps the environment failure visible and blocks saving until the preset environment loads', async () => {
+    const data = fullProjection()
+    const getEnvironment = vi.fn(async ({ presetId }) => {
+      if (presetId === 'preset-other') throw Error('Skill 目录读取失败，请重试。')
+      return functionEnvironment
+    })
+    const { renderer, onAction } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await change(renderer, '执行要求', '读取失败后保留 {{task_id}}')
+    const save = renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!
+    expect(save.props.disabled).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('Skill 目录读取失败，请重试。')
+    expect(onAction).not.toHaveBeenCalled()
+    await change(renderer, 'Agent 预设', 'preset')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('读取失败后保留 {{task_id}}')
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
+  })
+})
+
+describe('experiment workbench function editor controls', () => {
+  it('selects a model and reasoning level, restores requirements and saves the selected values', async () => {
+    const data = fullProjection()
+    const environment = {
+      ...functionEnvironment,
+      models: {
+        ...functionEnvironment.models,
+        groups: [{
+          id: 'provider', name: '提供商', models: [
+            ...functionEnvironment.models.groups[0].models,
+            { id: 'fast', name: '快速模型' },
+            { id: 'deep', name: '深度模型', reasoning: { efforts: [{ id: 'medium', name: '中' }, { id: 'high', name: '高' }], defaultEffort: 'medium' } },
+          ],
+        }],
+      },
+    }
+    const { renderer, onAction } = await mount(data, { remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑自定义prompt')
+    await change(renderer, 'Agent 模型', 'fast')
+    expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.disabled).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '推理等级' }))).toBe('该模型未提供推理等级')
+    await change(renderer, 'Agent 模型', 'deep')
+    expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.value).toBe('medium')
+    await change(renderer, '推理等级', 'high')
+    await change(renderer, '执行要求', '当前要求 {{task_id}}')
+    await click(renderer, '恢复默认要求')
+    const restored = renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value
+    expect(restored).toContain('先读取 workbench task get --help')
+    expect(restored).toContain('任务 {{task_id}}')
+    expect(restored).not.toContain('当前要求')
+    await change(renderer, '任务类型', 'parameters')
+    const parameterTemplate = renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value
+    expect(parameterTemplate).toContain('仅发布授权参数的 parameters 产物')
+    expect(nodeText(renderer.root.findByProps({ id: 'function-location' }))).toBe('生成参数')
+    expect(nodeText(renderer.root.findByProps({ id: 'function-result' }))).toBe('生成参数')
+    await change(renderer, '指定 Skill', '')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: 'function-edit', id: 'custom-prompt',
+      value: expect.objectContaining({ kind: 'parameters', agent_model: { provider: 'provider', model: 'deep', reasoningEffort: 'high' }, requested_skill: null, request_template: parameterTemplate }),
+    }))
+  })
+
+  it('explains invalid requirements and enables saving after restoring the default', async () => {
+    const { renderer, onAction } = await mount(fullProjection())
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    const samples = [
+      ['', '请填写本功能的执行要求。'],
+      ['读取任务', '请在执行要求中保留 {{task_id}}，用于定位工作台任务。'],
+      ['读取 {{task_id}} 与 {{branch_id}}', '请将其他定位符替换为具体执行要求，并保留 {{task_id}}。'],
+      ['读取 {{task_id}} {{', 'Task ID 定位符格式不完整，请使用 {{task_id}}。'],
+    ]
+    for (const [value, message] of samples) {
+      await change(renderer, '执行要求', value)
+      expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe(message)
+      expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
+      await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    }
+    expect(onAction).not.toHaveBeenCalled()
+    await click(renderer, '恢复默认要求')
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
+  })
+
+  it.each([
+    [{ provider: 'removed', model: 'model' }, '请选择可用的 Agent 提供商。'],
+    [{ provider: 'provider', model: 'removed' }, '请选择该提供商下的 Agent 模型。'],
+    [{ provider: 'provider', model: 'model', reasoningEffort: 'removed' }, '请选择该模型支持的推理等级。'],
+    [{ provider: 'provider', model: 'fast', reasoningEffort: 'high' }, '该模型未提供推理等级，请重新选择模型。'],
+  ])('requires a valid model selection after the saved model changes availability: %j', async (agent_model, message) => {
+    const data = fullProjection()
+    data.functions.find(item => item.function_id === 'prompt')!.agent_model = agent_model
+    const environment = {
+      ...functionEnvironment,
+      models: { ...functionEnvironment.models, groups: [{ ...functionEnvironment.models.groups[0], models: [...functionEnvironment.models.groups[0].models, { id: 'fast', name: '快速模型' }] }] },
+    }
+    const { renderer } = await mount(data, { remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe(message)
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
+    await change(renderer, 'Agent 提供商', 'provider')
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
+  })
+
+  it('keeps keyboard focus inside the function dialog and closes with Escape', async () => {
+    const data = fullProjection()
+    const getEnvironment = vi.fn(async () => functionEnvironment)
+    const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    const dialog = renderer.root.findByProps({ role: 'dialog' })
+    const first = { offsetParent: {}, focus: vi.fn() }
+    const hidden = { offsetParent: null, focus: vi.fn() }
+    const last = { offsetParent: {}, focus: vi.fn() }
+    const currentTarget = { querySelectorAll: () => [first, hidden, last] }
+    const preventDefault = vi.fn()
+    Object.assign(document, { activeElement: last })
+    await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: false, currentTarget, preventDefault }))
+    expect(first.focus).toHaveBeenCalledOnce()
+    Object.assign(document, { activeElement: first })
+    await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: true, currentTarget, preventDefault }))
+    expect(last.focus).toHaveBeenCalledOnce()
+    expect(preventDefault).toHaveBeenCalledTimes(2)
+    await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: false, currentTarget, preventDefault }))
+    expect(preventDefault).toHaveBeenCalledTimes(2)
+    await act(() => dialog.props.onKeyDown({ key: 'Enter', currentTarget, preventDefault }))
+    expect(hidden.focus).not.toHaveBeenCalled()
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
+    const beforeClose = getEnvironment.mock.calls.length
+    await act(() => {
+      dialog.props.onKeyDown({ key: 'Escape', currentTarget, preventDefault })
+      document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' }))
+    })
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(getEnvironment).toHaveBeenCalledTimes(beforeClose + 1)
+  })
+
+  it('shows the function save error when an inline preset selection fails', async () => {
+    const onAction = vi.fn(async () => { throw Error('配置保存失败，请重试。') })
+    const { renderer } = await mount(fullProjection(), { onAction })
+    await click(renderer, '配置中心')
+    await change(renderer, 'prompt的默认预设', 'preset-other')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe('配置保存失败，请重试。')
+    expect(renderer.root.findByProps({ className: 'settings-page' })).toBeTruthy()
+  })
+})
+
+describe('experiment workbench current function directory', () => {
+  it('reloads the official preset roster on entry and marks missing or broken function presets', async () => {
+    const data = fullProjection()
+    data.functions.find(item => item.function_id === 'run')!.preset_id = 'preset-other'
+    let environment: WorkbenchEnvironment = functionEnvironment
+    const getEnvironment = vi.fn(async () => environment)
+    const { renderer } = await mount(data, { presets: functionEnvironment.presets, remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a' })
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('工作台预设')
+    await click(renderer, '返回工作台')
+    environment = { ...functionEnvironment, presets: [{ id: 'preset-other', name: '绘图预设', broken: '配置不可用' }, { id: 'preset-added', name: '新增预设' }] }
+    await click(renderer, '配置中心')
+    const prompt = renderer.root.findByProps({ 'data-function': 'prompt' })
+    const run = renderer.root.findByProps({ 'data-function': 'run' })
+    expect(nodeText(prompt.findByProps({ className: 'binding-problem' }))).toBe('该功能的 Agent 预设已不可用，请到配置中心重新选择。')
+    expect(nodeText(run.findByProps({ className: 'binding-problem' }))).toBe('该功能的 Agent 预设已不可用，请到配置中心重新选择。')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toBe('预设不可用新增预设')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'run的默认预设' }))).toBe('预设不可用新增预设')
+  })
+})
+
+describe('experiment workbench function directory lifecycle', () => {
+  it('refreshes after cancelling and saving an editor without replacing its edited requirements', async () => {
+    const data = fullProjection()
+    let environment: WorkbenchEnvironment = functionEnvironment
+    const getEnvironment = vi.fn(async () => environment)
+    const onAction = vi.fn(async (request) => {
+      Object.assign(data.functions.find(item => item.function_id === request.id)!, request.value)
+      environment = { ...functionEnvironment, presets: [{ id: 'preset-other', name: '绘图预设' }, { id: 'saved-preset', name: '保存后新增预设' }] }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, '执行要求', '取消前编辑 {{task_id}}')
+    environment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'added-preset', name: '关闭前新增预设' }] }
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('取消前编辑 {{task_id}}')
+    await click(renderer, '取消')
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a' })
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('关闭前新增预设')
+    expect(data.functions.find(item => item.function_id === 'prompt')!.request_template).toBe('{{task_id}}')
+    await click(renderer, '编辑prompt')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }))).toContain('关闭前新增预设')
+    await change(renderer, '执行要求', '保存时保留 {{task_id}}')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('保存时保留 {{task_id}}')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a' })
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toBe('绘图预设保存后新增预设')
+    expect(data.functions.find(item => item.function_id === 'prompt')!.request_template).toBe('保存时保留 {{task_id}}')
+  })
+
+  it('uses the latest selected preset directory when earlier table and editor requests arrive later', async () => {
+    const data = fullProjection()
+    let finishTable!: (value: WorkbenchEnvironment) => void
+    let finishEditor!: (value: WorkbenchEnvironment) => void
+    const latest: WorkbenchEnvironment = {
+      ...functionEnvironment,
+      presets: [...functionEnvironment.presets, { id: 'latest-preset', name: '当前目录预设' }],
+      skills: [{ name: 'latest-skill', description: '当前目录 Skill' }],
+    }
+    const getEnvironment = vi.fn(({ presetId }: { presetId?: string }) => {
+      if (!presetId) return new Promise<WorkbenchEnvironment>(resolve => { finishTable = resolve })
+      if (presetId === 'preset') return new Promise<WorkbenchEnvironment>(resolve => { finishEditor = resolve })
+      return Promise.resolve(latest)
+    })
+    const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, '执行要求', '等待目录期间保留 {{task_id}}')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await act(async () => { finishTable({ ...functionEnvironment, presets: [] }); finishEditor(functionEnvironment) })
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('当前目录预设')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }))).toContain('当前目录预设')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选latest-skill')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('等待目录期间保留 {{task_id}}')
+  })
+
+  it('discards an editor directory response that arrives after closing the editor', async () => {
+    const data = fullProjection()
+    let finishEditor!: (value: WorkbenchEnvironment) => void
+    const current: WorkbenchEnvironment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'current-preset', name: '关闭后的名册' }] }
+    const getEnvironment = vi.fn(({ presetId }: { presetId?: string }) => presetId
+      ? new Promise<WorkbenchEnvironment>(resolve => { finishEditor = resolve })
+      : Promise.resolve(current))
+    const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await click(renderer, '关闭对话框')
+    await act(async () => finishEditor({ ...functionEnvironment, presets: [] }))
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('关闭后的名册')
+  })
+
+  it('ignores a directory response from a configuration page that has been left', async () => {
+    const data = fullProjection()
+    let finishOldPage!: (value: WorkbenchEnvironment) => void
+    const current: WorkbenchEnvironment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'returned-preset', name: '重新进入后的名册' }] }
+    const getEnvironment = vi.fn()
+      .mockImplementationOnce(() => new Promise<WorkbenchEnvironment>(resolve => { finishOldPage = resolve }))
+      .mockResolvedValue(current)
+    const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '返回工作台')
+    await click(renderer, '配置中心')
+    await act(async () => finishOldPage({ ...functionEnvironment, presets: [] }))
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('重新进入后的名册')
+  })
+
+  it('shows a current directory failure and ignores a failure from a page that has been left', async () => {
+    const data = fullProjection()
+    let failOldPage!: (error: Error) => void
+    const getEnvironment = vi.fn()
+      .mockRejectedValueOnce(new Error('官方预设名册读取失败，请重新进入配置中心。'))
+      .mockImplementationOnce(() => new Promise<WorkbenchEnvironment>((_resolve, reject) => { failOldPage = reject }))
+      .mockResolvedValue(functionEnvironment)
+    const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe('官方预设名册读取失败，请重新进入配置中心。')
+    await click(renderer, '返回工作台')
+    await click(renderer, '配置中心')
+    await click(renderer, '返回工作台')
+    await click(renderer, '配置中心')
+    await act(async () => failOldPage(new Error('已离开的页面读取失败。')))
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe('官方预设名册读取失败，请重新进入配置中心。')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('工作台预设')
+  })
+})
+
+describe('experiment workbench function names', () => {
+  it.each(['  prompt  ', '   ', ''])('keeps all editor input and shows the prototype toast for invalid name %j', async name => {
+    const { renderer, onAction } = await mount(fullProjection())
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑自定义prompt')
+    await change(renderer, '功能名称', name)
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await change(renderer, '执行要求', '保留其余输入 {{task_id}}')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).not.toHaveBeenCalled()
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe('请填写与已有功能不同的名称。')
+    expect(renderer.root.findByProps({ role: 'dialog' }).findAllByProps({ className: 'toast' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.value).toBe(name)
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-other')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('保留其余输入 {{task_id}}')
+    await change(renderer, '功能名称', '  自定义prompt  ')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'function-edit', value: expect.objectContaining({ name: '自定义prompt', preset_id: 'preset-other', request_template: '保留其余输入 {{task_id}}' }) }))
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+  })
+})
+
+describe('experiment workbench function name toast lifecycle', () => {
+  it('dismisses the name toast after 6000 ms and restarts its timeout for the same failed name', async () => {
+    vi.useFakeTimers()
+    const { renderer } = await mount(fullProjection())
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑自定义prompt')
+    await change(renderer, '功能名称', 'prompt')
+    const submit = () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} })
+    await act(submit)
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe('请填写与已有功能不同的名称。')
+    await act(() => { vi.advanceTimersByTime(4000) })
+    await act(submit)
+    await act(() => { vi.advanceTimersByTime(5999) })
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe('请填写与已有功能不同的名称。')
+    await act(() => { vi.advanceTimersByTime(1) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.value).toBe('prompt')
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
+  })
+})
+
+describe('experiment workbench global function toast', () => {
+  it('keeps the name toast after cancelling and returning to the workbench until its 6000 ms timeout', async () => {
+    vi.useFakeTimers()
+    const { renderer } = await mount(fullProjection())
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑自定义prompt')
+    await change(renderer, '功能名称', 'prompt')
+    await act(() => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    await click(renderer, '取消')
+    await click(renderer, '返回工作台')
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(1)
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe('请填写与已有功能不同的名称。')
+    await act(() => { vi.advanceTimersByTime(5999) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(1)
+    await act(() => { vi.advanceTimersByTime(1) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+  })
+})
+
+describe('experiment workbench function preset write order', () => {
+  it('persists consecutive preset selections in user order even when the later request is ready first', async () => {
+    const data = fullProjection()
+    const environment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'preset-last', name: '最后选择预设' }] }
+    let finishFirst!: () => void
+    let finishLast!: () => void
+    const first = new Promise<void>(resolve => { finishFirst = resolve })
+    const last = new Promise<void>(resolve => { finishLast = resolve })
+    const writes: string[] = []
+    const onAction = vi.fn(async request => {
+      await (request.value === 'preset-other' ? first : last)
+      data.functions.find(item => item.function_id === request.id)!.preset_id = request.value
+      writes.push(request.value)
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await change(renderer, 'prompt的默认预设', 'preset-other')
+    await change(renderer, 'prompt的默认预设', 'preset-last')
+    const selectedWhileSaving = renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value
+    await act(async () => finishLast())
+    await act(async () => finishFirst())
+    expect(writes).toEqual(['preset-other', 'preset-last'])
+    expect(selectedWhileSaving).toBe('preset-last')
+    expect(data.functions.find(item => item.function_id === 'prompt')!.preset_id).toBe('preset-last')
+    expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe('preset-last')
+  })
+})
+
+describe('experiment workbench function write lifecycle', () => {
+  it('continues the next preset save after a failure and lets another function save independently', async () => {
+    const data = fullProjection()
+    const environment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'preset-last', name: '最后选择预设' }] }
+    let failFirst!: (error: Error) => void
+    const blocked = new Promise<void>((_resolve, reject) => { failFirst = reject })
+    let first = true
+    const starts: string[] = []
+    const writes: string[] = []
+    const onAction = vi.fn(async request => {
+      starts.push(request.id + ':' + request.value)
+      if (request.id === 'prompt' && first) { first = false; await blocked }
+      data.functions.find(item => item.function_id === request.id)!.preset_id = request.value
+      writes.push(request.id + ':' + request.value)
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await change(renderer, 'prompt的默认预设', 'preset-other')
+    await change(renderer, 'prompt的默认预设', 'preset-last')
+    await change(renderer, 'run的默认预设', 'preset-other')
+    expect(starts).toEqual(['prompt:preset-other', 'run:preset-other'])
+    expect(writes).toEqual(['run:preset-other'])
+    expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe('preset-last')
+    await act(async () => failFirst(new Error('首个预设保存失败，请重试。')))
+    expect(writes).toEqual(['run:preset-other', 'prompt:preset-last'])
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe('首个预设保存失败，请重试。')
+    await change(renderer, 'prompt的默认预设', 'preset-other')
+    expect(writes).toEqual(['run:preset-other', 'prompt:preset-last', 'prompt:preset-other'])
+    expect(data.functions.find(item => item.function_id === 'prompt')!.preset_id).toBe('preset-other')
+  })
+
+  it('keeps pending selection across page changes and saves a following editor submission in its original work scope', async () => {
+    const data = fullProjection()
+    data.works.push({ ...data.works[0]!, work_id: 'work-b', name: '另一个工作' })
+    data.branches.push({ ...data.branches[0]!, work_id: 'work-b', branch_id: 'branch-b' })
+    const environment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'preset-last', name: '最后选择预设' }] }
+    let finishFirst!: () => void
+    const blocked = new Promise<void>(resolve => { finishFirst = resolve })
+    const onAction = vi.fn(async request => {
+      const binding = data.functions.find(item => item.function_id === request.id)!
+      if (request.type === 'function-preset') { await blocked; binding.preset_id = request.value }
+      else Object.assign(binding, request.value)
+    })
+    const { renderer } = await mount(data, { onAction, remote: {
+      getEnvironment: async () => environment,
+      getProjection: async scope => ({ ...data, work_id: scope.workId ?? data.work_id, branches: data.branches.filter(branch => branch.work_id === (scope.workId ?? data.work_id)) }),
+      getInputDescription: async () => inputDescription,
+    } })
+    await click(renderer, '配置中心')
+    await change(renderer, 'prompt的默认预设', 'preset-other')
+    await click(renderer, '返回工作台')
+    await click(renderer, '配置中心')
+    expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe('preset-other')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-other')
+    await change(renderer, 'Agent 预设', 'preset-last')
+    await change(renderer, '执行要求', '排队期间保留 {{task_id}}')
+    let saving!: Promise<void>
+    await act(() => { saving = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
+    expect(onAction).toHaveBeenCalledOnce()
+    await click(renderer, '取消')
+    await click(renderer, '返回工作台')
+    await change(renderer, '切换工作', 'work-b')
+    await act(async () => { finishFirst(); await saving })
+    expect(onAction.mock.calls[1]![0]).toMatchObject({ type: 'function-edit', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' })
+    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ preset_id: 'preset-last', request_template: '排队期间保留 {{task_id}}' })
+    expect(renderer.root.findByProps({ 'aria-label': '切换工作' }).props.value).toBe('work-b')
+  })
+
+  it('keeps a following inline selection after a pending full editor save completes', async () => {
+    const data = fullProjection()
+    const environment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'preset-last', name: '最后选择预设' }] }
+    let finishEditor!: () => void
+    const blocked = new Promise<void>(resolve => { finishEditor = resolve })
+    const writes: string[] = []
+    const onAction = vi.fn(async request => {
+      const binding = data.functions.find(item => item.function_id === request.id)!
+      if (request.type === 'function-edit') { await blocked; Object.assign(binding, request.value); writes.push('editor') }
+      else { binding.preset_id = request.value; writes.push('inline') }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await change(renderer, '执行要求', '先保存的完整配置 {{task_id}}')
+    let saving!: Promise<void>
+    await act(() => { saving = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
+    await click(renderer, '取消')
+    await change(renderer, 'prompt的默认预设', 'preset-last')
+    expect(onAction).toHaveBeenCalledOnce()
+    expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe('preset-last')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('先保存的完整配置 {{task_id}}')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-last')
+    await click(renderer, '取消')
+    await act(async () => { finishEditor(); await saving })
+    expect(writes).toEqual(['editor', 'inline'])
+    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ preset_id: 'preset-last', request_template: '先保存的完整配置 {{task_id}}' })
+    expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe('preset-last')
+  })
+})
+
+describe('experiment workbench complete pending function input', () => {
+  it.each([false, true])('reopens the last submitted requirements before a second model edit so both changes persist (first save fails=%s)', async failFirst => {
+    const data = fullProjection()
+    const environment = { ...functionEnvironment, models: { ...functionEnvironment.models, groups: [{ ...functionEnvironment.models.groups[0], models: [...functionEnvironment.models.groups[0].models, { id: 'fast', name: '快速模型' }] }] } }
+    let finishFirst!: () => void
+    const first = new Promise<void>((resolve, reject) => { finishFirst = () => failFirst ? reject(new Error('首次保存失败。')) : resolve() })
+    let saves = 0
+    const onAction = vi.fn(async request => {
+      if (++saves === 1) await first
+      Object.assign(data.functions.find(item => item.function_id === request.id)!, request.value)
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, '执行要求', 'first saved {{task_id}}')
+    let savingFirst!: Promise<void>
+    await act(() => { savingFirst = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
+    await click(renderer, '取消')
+    await click(renderer, '编辑prompt')
+    const reopenedRequirements = renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value
+    await change(renderer, 'Agent 模型', 'fast')
+    let savingSecond!: Promise<void>
+    await act(() => { savingSecond = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
+    await act(async () => { finishFirst(); await savingFirst; await savingSecond })
+    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ request_template: 'first saved {{task_id}}', agent_model: { provider: 'provider', model: 'fast' } })
+    expect(reopenedRequirements).toBe('first saved {{task_id}}')
+    expect(onAction).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('experiment workbench pending function binding display', () => {
+  it('uses every submitted field in the list and the reopened editor before the first write completes', async () => {
+    const data = fullProjection()
+    const environment = {
+      ...functionEnvironment,
+      skills: [...functionEnvironment.skills, { name: 'parameter-skill', description: '建议参数' }],
+      models: { ...functionEnvironment.models, groups: [{ ...functionEnvironment.models.groups[0], models: [...functionEnvironment.models.groups[0].models, { id: 'fast', name: '快速模型' }] }] },
+    }
+    let finishFirst!: () => void
+    const first = new Promise<void>(resolve => { finishFirst = resolve })
+    let saves = 0
+    const onAction = vi.fn(async request => {
+      if (++saves === 1) await first
+      Object.assign(data.functions.find(item => item.function_id === request.id)!, request.value)
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑自定义prompt')
+    await change(renderer, '功能名称', '已提交功能')
+    await change(renderer, '任务类型', 'parameters')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    await change(renderer, 'Agent 模型', 'fast')
+    await change(renderer, '指定 Skill', 'parameter-skill')
+    await change(renderer, '执行要求', '完整提交 {{task_id}}')
+    let savingFirst!: Promise<void>
+    await act(() => { savingFirst = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
+    await click(renderer, '取消')
+    await click(renderer, '返回工作台')
+    await click(renderer, '配置中心')
+    const row = renderer.root.findByProps({ 'data-function': 'custom-prompt' })
+    expect(nodeText(row.findAllByType('strong')[0]!)).toBe('已提交功能')
+    expect(nodeText(row)).toContain('生成参数')
+    expect(nodeText(row)).toContain('快速模型')
+    expect(nodeText(row)).toContain('parameter-skill')
+    expect(row.findByProps({ 'aria-label': '已提交功能的默认预设' }).props.value).toBe('preset-other')
+    await click(renderer, '编辑已提交功能')
+    for (const [label, value] of [
+      ['功能名称', '已提交功能'], ['任务类型', 'parameters'], ['Agent 预设', 'preset-other'],
+      ['Agent 模型', 'fast'], ['指定 Skill', 'parameter-skill'], ['执行要求', '完整提交 {{task_id}}'],
+    ]) expect(renderer.root.findByProps({ 'aria-label': label }).props.value).toBe(value)
+    await change(renderer, 'Agent 模型', 'model')
+    let savingSecond!: Promise<void>
+    await act(() => { savingSecond = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
+    await act(async () => { finishFirst(); await savingFirst; await savingSecond })
+    expect(data.functions.find(item => item.function_id === 'custom-prompt')).toMatchObject({
+      name: '已提交功能', kind: 'parameters', preset_id: 'preset-other',
+      agent_model: { provider: 'provider', model: 'model', reasoningEffort: 'high' },
+      requested_skill: 'parameter-skill', request_template: '完整提交 {{task_id}}',
+    })
+  })
+})
+
+describe('experiment workbench delayed function save errors', () => {
+  it.each(['open', 'closed', 'left-settings'])('shows one save error in the surviving UI when the editor is %s', async view => {
+    let rejectSave!: (error: Error) => void
+    const onAction = vi.fn(() => new Promise<void>((_resolve, reject) => { rejectSave = reject }))
+    const { renderer } = await mount(fullProjection(), { onAction })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    await change(renderer, '执行要求', '失败时保留 {{task_id}}')
+    await change(renderer, 'Agent 预设', 'preset-other')
+    let saving!: Promise<void>
+    await act(() => { saving = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
+    if (view !== 'open') await click(renderer, '关闭对话框')
+    if (view === 'left-settings') await click(renderer, '返回工作台')
+    await act(async () => { rejectSave(new Error('功能保存失败，请重试。')); await saving })
+    if (view === 'open') {
+      expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+      expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('功能保存失败，请重试。')
+      expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('失败时保留 {{task_id}}')
+      expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset-other')
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
+    } else {
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(1)
+      expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe('功能保存失败，请重试。')
+    }
+  })
+})
+
+describe('experiment workbench unavailable preset editor', () => {
+  it.each(['missing', 'broken'])('matches the prototype when the stored preset is %s and only changes storage on save', async state => {
+    const data = fullProjection()
+    const storedId = state === 'missing' ? 'removed-preset' : 'broken-preset'
+    const binding = data.functions.find(item => item.function_id === 'prompt')!
+    Object.assign(binding, { preset_id: storedId, requested_skill: 'comfyui-generate', request_template: '保留原有执行要求 {{task_id}}' })
+    const original = structuredClone(binding)
+    const environment: WorkbenchEnvironment = {
+      ...functionEnvironment,
+      presets: [{ id: 'broken-preset', name: '损坏预设', broken: 'Missing component' }, ...functionEnvironment.presets],
+    }
+    const getEnvironment = vi.fn(async ({ presetId }: { presetId?: string }) => ({
+      ...environment, skills: presetId === 'preset' ? functionEnvironment.skills : [],
+    }))
+    const onAction = vi.fn(async request => { Object.assign(data.functions.find(item => item.function_id === request.id)!, request.value) })
+    const { renderer } = await mount(data, { onAction, remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe(storedId)
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).findAllByType('option').map(option => option.props.value)).toEqual(['preset', 'preset-other'])
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选')
+    expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).props.value).toBe('')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe(original.request_template)
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 提供商' }).props.value).toBe(original.agent_model.provider)
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 模型' }).props.value).toBe(original.agent_model.model)
+    expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.value).toBe(original.agent_model.reasoningEffort)
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
+    expect(getEnvironment.mock.calls.filter(([request]) => request.presetId === 'preset')).toHaveLength(0)
+    await click(renderer, '取消')
+    expect(onAction).not.toHaveBeenCalled()
+    expect(binding).toEqual(original)
+    expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe(storedId)
+    await click(renderer, '编辑prompt')
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(binding).toEqual({ ...original, preset_id: 'preset', requested_skill: null })
+    await click(renderer, '编辑prompt')
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset' })
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选comfyui-generate')
+    expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).props.value).toBe('')
+  })
+})
+
+describe('experiment workbench unavailable preset choices', () => {
+  it.each(['empty', 'all-broken'])('keeps an empty preset select and blocks saving when the available roster is %s', async state => {
+    const data = fullProjection()
+    const binding = data.functions.find(item => item.function_id === 'prompt')!
+    binding.preset_id = 'removed-preset'
+    const original = structuredClone(binding)
+    const environment: WorkbenchEnvironment = {
+      ...functionEnvironment, skills: [], presets: state === 'empty' ? [] : [{ id: 'broken-preset', name: '损坏预设', broken: 'Missing component' }],
+    }
+    const { renderer, onAction } = await mount(data, { remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).findAllByType('option')).toHaveLength(0)
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选')
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
+    await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).not.toHaveBeenCalled()
+    await click(renderer, '取消')
+    expect(binding).toEqual(original)
+  })
+
+  it('loads a replacement preset Skill directory only after the user explicitly changes the selected preset', async () => {
+    const data = fullProjection()
+    const binding = data.functions.find(item => item.function_id === 'prompt')!
+    binding.preset_id = 'removed-preset'
+    binding.request_template = '手工切换后保留 {{task_id}}'
+    const getEnvironment = vi.fn(async ({ presetId }: { presetId?: string }) => ({
+      ...functionEnvironment,
+      skills: presetId === 'preset' ? functionEnvironment.skills : presetId === 'preset-other' ? [{ name: 'other-skill', description: '其他预设 Skill' }] : [],
+    }))
+    const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
+    await click(renderer, '配置中心')
+    await click(renderer, '编辑prompt')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选')
+    expect(getEnvironment.mock.calls.filter(([request]) => request.presetId === 'preset')).toHaveLength(0)
+    await change(renderer, 'Agent 预设', 'preset-other')
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset-other' })
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选other-skill')
+    await change(renderer, '指定 Skill', 'other-skill')
+    await change(renderer, 'Agent 预设', 'preset')
+    expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset' })
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选comfyui-generate')
+    expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).props.value).toBe('')
+    expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('手工切换后保留 {{task_id}}')
   })
 })

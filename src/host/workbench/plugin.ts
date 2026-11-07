@@ -32,6 +32,8 @@ interface WorkbenchHost {
   readonly resolveResources: (refs: ResourceRef[], draft: TaskDraft) => Promise<TaskDraft>
   readonly environment: (workspaceId?: string, presetId?: string) => Promise<WorkbenchEnvironment>
   readonly initializeWorkspace: (workspaceId: string) => Promise<void>
+  readonly presetSkills: (workspaceId: string, presetId: string) => Promise<WorkbenchEnvironment['skills']>
+  readonly validateFunctionPreset: (presetId: string) => Promise<void>
 }
 declare module '@deepseek-ai/cordis' { interface Context { harnessComfyuiWorkbench: WorkbenchHost } }
 
@@ -56,6 +58,13 @@ export function apply(ctx: Context): void {
     },
   })
   const input = createWorkbenchInputAdapter({ runtime, catalog, signal })
+  const presetSkills = async (workspaceId: string, presetId: string): Promise<WorkbenchEnvironment['skills']> => {
+    const workspace = ctx.workspaceRegistry.list().find(candidate => String(candidate.id) === workspaceId)
+    if (!workspace) return []
+    const scope = await ctx.agentPresets.acquireScope(presetId)
+    try { return (await skillsFor(ctx).list({ cwd: workspace.path, scope: scope.key })).filter(skill => skill.invocation.modelInvocable).map(skill => ({ name: skill.name, description: skill.description })) }
+    finally { await scope[Symbol.asyncDispose]() }
+  }
   const service = new WorkbenchService({
     store, sessions, descriptors: defaults,
     refreshAfterMs: profile.client.runRefreshIntervalMs,
@@ -66,7 +75,11 @@ export function apply(ctx: Context): void {
   })
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
   ctx.provide('harnessComfyuiWorkbench', {
-    service, resolveResources: input.resolveResourceRefs, resolveGenerationDraft: input.resolveGenerationDraft,
+    service, resolveResources: input.resolveResourceRefs, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
+    async validateFunctionPreset(presetId) {
+      const preset = (await ctx.agentPresets.list()).find(candidate => candidate.id === presetId)
+      if (!preset || preset.broken) throw new WorkbenchError('WORKBENCH_PRESET_UNAVAILABLE', '所选 Agent 预设当前不可用，请重新选择预设。', 'preset_id')
+    },
     async initializeWorkspace(workspaceId) {
       if (!ctx.workspaceRegistry.list().some(workspace => String(workspace.id) === workspaceId)) throw new WorkbenchError('WORKBENCH_NOT_FOUND', '工作区不存在，请重新选择工作区。', 'workspace_id')
       const existing = new Set(store.listFunctionBindings(workspaceId).map(binding => binding.function_id))
@@ -77,13 +90,8 @@ export function apply(ctx: Context): void {
     async environment(workspaceId, presetId) {
       const [presets, models] = await Promise.all([ctx.agentPresets.list(), controller.modelCatalog()])
       const workspaces = ctx.workspaceRegistry.list().map(workspace => ({ id: String(workspace.id), name: workspace.title, path: workspace.path }))
-      const workspace = workspaces.find(candidate => candidate.id === workspaceId)
-      let skills: { name: string; description: string }[] = []
-      if (presetId && workspace) {
-        const scope = await ctx.agentPresets.acquireScope(presetId)
-        try { skills = (await skillsFor(ctx).list({ cwd: workspace.path, scope: scope.key })).filter(skill => skill.invocation.modelInvocable).map(skill => ({ name: skill.name, description: skill.description })) }
-        finally { await scope[Symbol.asyncDispose]() }
-      }
+      const skills = workspaceId && presetId && presets.some(preset => preset.id === presetId && !preset.broken)
+        ? await presetSkills(workspaceId, presetId) : []
       const instances = await catalog.queryComfyuiInstances(CATALOG_COMFYUI_INSTANCE_QUERY, signal)
         .then(page => page.results.map(item => ({ id: item.id, name: item.id })))
         .catch(error => { ctx.logger('harness-comfyui').warn('Workbench instance catalog unavailable: %s', error instanceof Error ? error.message : String(error)); return [] })

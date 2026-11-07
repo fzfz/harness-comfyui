@@ -6,6 +6,8 @@ import type { GenerationRequest } from '../../generation/submission-contract.ts'
 import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PublishReceipt, ReviewDraft, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
 import { equalValue, jsonValue, validateArtifact, validateFunctionBinding, validateTaskDraft, validateTaskInput, validateReviewDraft, WorkbenchError } from '../../workbench/validation.ts'
 import { deriveTaskStatus, isFinishedRun } from '../../workbench/state.ts'
+import { functionNameProblem } from '../../workbench/function-name.ts'
+import { renderRequestTemplate } from '../../workbench/request-template.ts'
 import { transaction } from './transaction.ts'
 
 type Row = Record<string, unknown>
@@ -124,7 +126,9 @@ export class WorkbenchStore {
   listFunctionBindings(workspaceId: string): FunctionBinding[] { return this.rows('SELECT * FROM workbench_function_bindings WHERE workspace_id=? ORDER BY rowid', workspaceId).map(row => this.binding(row)) }
   getFunctionBinding(workspaceId: string, functionId: string): FunctionBinding { const row = this.row('SELECT * FROM workbench_function_bindings WHERE workspace_id=? AND function_id=?', workspaceId, functionId); return row ? this.binding(row) : fail('WORKBENCH_FUNCTION_NOT_FOUND', '功能已移除，请在配置中心选择功能。', 'function_id') }
   saveFunctionBinding(input: FunctionBinding): FunctionBinding {
-    const value = validateFunctionBinding(input)
+    const problem = functionNameProblem(input, this.listFunctionBindings(input.workspace_id))
+    if (problem) fail('WORKBENCH_INVALID_INPUT', problem, 'binding.name')
+    const value = validateFunctionBinding({ ...input, name: input.name.trim() })
     this.run('INSERT INTO workbench_function_bindings VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(workspace_id,function_id) DO UPDATE SET name=excluded.name,kind=excluded.kind,builtin=excluded.builtin,preset_id=excluded.preset_id,agent_model_json=excluded.agent_model_json,requested_skill=excluded.requested_skill,request_template=excluded.request_template', value.workspace_id, value.function_id, value.name, value.kind, Number(value.builtin), value.preset_id, JSON.stringify(value.agent_model), value.requested_skill, value.request_template)
     return value
   }
@@ -152,7 +156,7 @@ export class WorkbenchStore {
       if (input.applyTarget.kind === 'branch' ? input.applyTarget.id !== branch.branch_id : input.applyTarget.id !== fixed.evaluation_input?.run_id) fail('WORKBENCH_SCOPE_MISMATCH', '任务写入目标与固定输入不一致，请核对 apply_target 和任务固定输入后重试。', 'apply_target')
       if (input.retryOfRunId) { const source = this.assertRunInWork(input.retryOfRunId, branch.work_id); if (source.status !== 'failed' && source.status !== 'cancelled') fail('WORKBENCH_INVALID_INPUT', '请选择失败或已取消的运行重试。', 'retry_of_run_id') }
       const id = randomUUID(); const now = Date.now()
-      const requestText = input.bindingSnapshot.request_template.replaceAll('{{task_id}}', id)
+      const requestText = renderRequestTemplate(input.bindingSnapshot.request_template, id)
       this.run('INSERT INTO workbench_tasks VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', id, input.branchId, input.functionId, input.title, input.kind, 'pending', JSON.stringify(fixed), JSON.stringify(input.outputContract), JSON.stringify(input.applyTarget), JSON.stringify(input.bindingSnapshot), null, requestText, null, '[]', null, now, now, 'pending', input.initiator ?? 'human', input.retryOfRunId ?? null)
       if (input.kind === 'experiment') this.run('INSERT INTO workbench_experiments VALUES(?,?,?)', id, 'running', null)
       this.run('DELETE FROM workbench_task_drafts WHERE branch_id=? AND function_id=?', branch.branch_id, input.functionId)
