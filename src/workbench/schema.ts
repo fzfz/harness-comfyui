@@ -4,6 +4,7 @@ import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import { jsonValueSchema } from '../shared/json-contract.ts'
 import type { ArtifactType } from './contract.ts'
 
+import { workflowRuntimeParameterInspectionSchema } from '../generation/inspection-contract.ts'
 const text = () => Schema.string().required()
 const id = () => Schema.string().pattern(/^[1-9]\d*$/).required()
 const nonempty = () => Schema.string().min(1).required()
@@ -24,8 +25,10 @@ export const generationInputSchema = object({
   loras: Schema.array(object({ id: id(), file_name: nonempty(), weight: Schema.number().required(), trigger_words: strings() })).required(),
 })
 const candidateSchema = object({ generation_input: generationInputSchema, context_refs: Schema.array(contextRefSchema).required() })
+const promptInputFields = { positive_prompt: requiredNullable(text()), negative_prompt: requiredNullable(text()) }
+export const promptInputSchema = object(promptInputFields)
 export const artifactSchemas = {
-  prompt: object({ type: Schema.const('prompt').required(), positive_prompt: text(), negative_prompt: text(), source_files: Schema.array(text()).default(undefined as never) }),
+  prompt: object({ type: Schema.const('prompt').required(), ...promptInputFields, source_files: Schema.array(text()).default(undefined as never) }),
   parameters: object({ type: Schema.const('parameters').required(), parameters: jsonObject(), source_files: Schema.array(text()).default(undefined as never) }),
   generation_input: object({ type: Schema.const('generation_input').required(), generation_input: generationInputSchema, context_refs: Schema.array(contextRefSchema).required(), source_files: Schema.array(text()).default(undefined as never) }),
   resources: object({ type: Schema.const('resources').required(), refs: Schema.array(resourceRefSchema).required(), reason: Schema.string(), source_files: Schema.array(text()).default(undefined as never) }),
@@ -38,9 +41,14 @@ export const taskGetRequestSchema = object({ task_id: nonempty() })
 export const taskPublishRequestSchema = object({ task_id: nonempty(), artifact: taskArtifactSchema })
 export const taskPublishReceiptSchema = object({ task_id: nonempty(), artifact_id: nonempty(), disposition: Schema.union(['applied', 'candidate', 'recorded', 'waiting_input']).required() })
 export const experimentEndRequestSchema = object({ task_id: nonempty(), reason: Schema.union(['goal_met', 'user_ended']).required() })
+export const workbenchRunInputSchema = object({
+  run_id: nonempty(), branch_id: nonempty(), generation_input: generationInputSchema.required(),
+  context_refs: Schema.array(contextRefSchema).required(), input_description: requiredNullable(workflowRuntimeParameterInspectionSchema),
+  prompt_input: promptInputSchema,
+})
 export const taskGetResultSchema = object({
   task_id: nonempty(), kind: text(), status: text(),
-  prompt_input: object({ positive_prompt: text(), negative_prompt: text() }), generation_input: generationInputSchema,
+  prompt_input: promptInputSchema, generation_input: generationInputSchema,
   context_refs: Schema.array(contextRefSchema).required(), base_model_id: requiredNullable(id()),
   requirements: object({ original_request: text(), instructions: text() }), reference_run_ids: strings(),
   evaluation_input: object({ run_id: nonempty(), verdict: text(), observation: text(), conclusion: text(), experience: object({ title: text(), conditions: text(), note: text() }) }).required(false).default(undefined as never),

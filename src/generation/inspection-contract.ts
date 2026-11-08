@@ -1,7 +1,8 @@
 import Schema from '@deepseek-ai/schemastery'
 import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import { jsonArraySchema } from '../shared/json-contract.ts'
-import { GENERATION_JSON_CONTRACT, generationJsonValueSchema, type JsonValue } from './run-input-contract.ts'
+import { GENERATION_JSON_CONTRACT, generationJsonValueSchema } from './json-contract.ts'
+import type { JsonValue } from '../shared/json-contract.ts'
 
 export interface WorkflowRuntimeParameterInspectionParameter {
   readonly parameter_id: string

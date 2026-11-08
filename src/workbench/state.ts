@@ -1,6 +1,8 @@
 import type { Experiment, StoredArtifact, Task, TaskStatus, WorkbenchRun } from './contract.ts'
 
-export function isFinishedRun(status: string): boolean { return ['succeeded', 'failed', 'cancelled'].includes(status) }
+import { isGenerationRunTerminal } from '../generation/run-status.ts'
+
+export function isFinishedRun(status: WorkbenchRun['status']): boolean { return isGenerationRunTerminal(status) }
 
 export function shouldTrackExecution(task: Task, experiment: Experiment | null = null): boolean {
   return task.session_id !== null
@@ -14,6 +16,7 @@ export function deriveTaskStatus(task: Task, artifacts: StoredArtifact[], runs: 
   if (experiment?.control_state === 'paused') return 'paused'
   if (task.error || task.execution_state === 'failed') return 'failed'
   if (artifacts.some(a => a.type === 'question' && !task.answers.some(answer => answer.question_artifact_id === a.artifact_id))) return 'waiting_input'
+  if (runs.some(run => run.status === 'submission_unknown')) return 'needs_attention'
   if (runs.some(run => !isFinishedRun(run.status))) return 'waiting_generation'
   const required = task.output_contract.required_artifact_types.every(type => artifacts.some(artifact => artifact.type === type))
   if (task.kind === 'experiment') {

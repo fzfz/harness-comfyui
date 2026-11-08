@@ -16,6 +16,8 @@ import { workspaceSessionScopeForSession } from '../generation/workspace-access.
 import { HarnessWorkbenchSessions, type OfficialSessionController } from './harness-adapter.ts'
 import type {} from '../core/plugin.ts'
 
+import { CatalogError } from '../catalog/catalog-client.ts'
+
 interface SkillCatalog {
   list(options: { cwd?: string; scope?: unknown }): Promise<readonly { name: string; description: string; invocation: { modelInvocable: boolean } }[]>
 }
@@ -77,6 +79,18 @@ export function apply(ctx: Context): void {
     validateContextRefs: input.validateReferences, validateResourceRefs: input.validateReferences,
     parameterIds: input.parameterIds, validateGenerationInput: input.validateGenerationInput,
     validateParameters: input.validateParameters, resolveGenerationDraft: input.resolveGenerationDraft,
+    resolveRunModelBaseId: async modelId => {
+      try { return (await catalog.resolveGenerationModel(modelId, signal)).base_model_id }
+      catch (error) {
+        if (error instanceof CatalogError) return null
+        throw error
+      }
+    },
+    readRunInputDescription: async (workspaceId, runId) => {
+      const result = (await runtime.readGenerationRunInputs({ workspaceId, runIds: [runId] })).runs[0]!
+      if (result.lookup_status === 'error') throw new WorkbenchError(result.error.code, result.error.message, 'run_id')
+      return result.input_description
+    },
   })
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
   ctx.provide('harnessComfyuiWorkbench', {

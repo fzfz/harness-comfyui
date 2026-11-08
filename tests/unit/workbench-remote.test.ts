@@ -44,7 +44,7 @@ function fixture() {
   return { remote: new WorkbenchRemoteService(context), initializeWorkspace, getProjection, environment }
 }
 
-it('describes the current branch or a fixed Run input and rejects another Workspace or Work', async () => {
+it('describes the current Branch and reads historical Run input through its scoped saved-input method', async () => {
   const host = await createWorkbenchHostFixture()
   try {
     const { remote, inspect, description, runtime } = host
@@ -65,14 +65,15 @@ it('describes the current branch or a fixed Run input and rejects another Worksp
     await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '9' }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal)
     inspect.mockClear()
-    expect(await remote.getInputDescription({ ...scope, runId }, signal)).toEqual(description)
-    expect(inspect).toHaveBeenLastCalledWith({ templateId: '5', instanceId: '8' }, signal)
+    const runScope = { workspaceId: scope.workspaceId, workId: scope.workId, runId }
+    expect(await remote.getRunInput(runScope, signal)).toMatchObject({ run_id: runId, generation_input: task.input.generation_input, input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } })
+    expect(inspect).not.toHaveBeenCalled()
     expect(await remote.getInputDescription(scope, signal)).toEqual(description)
     expect(inspect).toHaveBeenLastCalledWith({ templateId: '6', instanceId: '9' }, signal)
     inspect.mockClear()
-    await expect(remote.getInputDescription({ ...scope, workspaceId: 'workspace_2', runId }, signal)).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+    await expect(remote.getRunInput({ ...runScope, workspaceId: 'workspace_2' }, signal)).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
     const other = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Other', goal: 'Paint clouds' } }, signal)
-    await expect(remote.getInputDescription({ workspaceId: other.workspaceId, workId: other.workId!, branchId: other.branchId!, runId }, signal)).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+    await expect(remote.getRunInput({ workspaceId: other.workspaceId, workId: other.workId!, runId }, signal)).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
     await expect(remote.getInputDescription(scope, AbortSignal.abort())).rejects.toMatchObject({ name: 'AbortError' })
     expect(inspect).not.toHaveBeenCalled()
   } finally { await host.dispose() }
@@ -433,8 +434,8 @@ it('validates each RPC request from JSON with exact field names and identifier c
   const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, descriptor.parameters[0]!.codec.create()]))
   expect(codecs.getProjection!.parse({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })).toEqual({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })
   const inputScope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
-  expect(codecs.getInputDescription!.parse({ ...inputScope, runId: 'run_1' })).toEqual({ ...inputScope, runId: 'run_1' })
-  for (const value of [{ workspaceId: 'workspace_1' }, { ...inputScope, runId: '' }, { ...inputScope, workspaceId: '' }, { ...inputScope, extra: true }]) expect(() => codecs.getInputDescription!.parse(value)).toThrow()
+  expect(codecs.getInputDescription!.parse(inputScope)).toEqual(inputScope)
+  for (const value of [{ workspaceId: 'workspace_1' }, { ...inputScope, runId: 'run_1' }, { ...inputScope, runId: '' }, { ...inputScope, runId: null }, { ...inputScope, workspaceId: '' }, { ...inputScope, extra: true }]) expect(() => codecs.getInputDescription!.parse(value)).toThrow()
   expect(codecs.getEnvironment!.parse({})).toEqual({})
   expect(codecs.getEnvironment!.parse({ workspaceId: 'workspace_1', presetId: 'preset-a' })).toEqual({ workspaceId: 'workspace_1', presetId: 'preset-a' })
   expect(codecs.mutate!.parse({ workspaceId: '', type: 'new-workspace', value: { name: 'New project', path: '/project' } })).toMatchObject({ type: 'new-workspace' })
@@ -452,6 +453,11 @@ it('round trips a complete projection through the declared result codec and reje
       if (descriptor.method === 'getTaskDraft') expect(codec.parse(null)).toBeNull()
       else expect(() => codec.parse(null)).toThrow()
       for (const invalid of [undefined, [], {}, { instructions: 'Request' }, { instructions: '', resources: { template_id: 7 } }, { instructions: '', resources: { unknown: true } }]) expect(() => codec.parse(invalid)).toThrow()
+      continue
+    }
+    if (descriptor.method === 'getRunInput') {
+      const input = { run_id: 'run_1', branch_id: 'branch_1', generation_input: projection().runs[0]!.generation_input, context_refs: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } }
+      expect(codec.parse(input)).toEqual(input)
       continue
     }
     if (descriptor.method === 'getInputDescription') {
@@ -475,4 +481,15 @@ it('validates task-draft scope and resource overrides through the public request
   expect(codecs.saveTaskDraft!.parse({ ...scope, draft })).toEqual({ ...scope, draft })
   for (const invalid of [{ ...scope, functionId: '' }, { ...scope, branchId: undefined }, { ...scope, workId: undefined }, { ...scope, extra: true }]) expect(() => codecs.getTaskDraft!.parse(invalid)).toThrow()
   for (const invalid of [null, {}, { instructions: '', resources: [] }, { instructions: '', resources: { template_id: '0' } }, { instructions: '', resources: { template_id: 7 } }, { instructions: '', resources: { instance_id: false } }, { instructions: '', resources: { parameters: {} } }]) expect(() => codecs.saveTaskDraft!.parse({ ...scope, draft: invalid })).toThrow()
+})
+
+it('validates the historical Run request and nullable saved-input result through its Remote codecs', () => {
+  const descriptor = WORKBENCH_REMOTE.descriptors.find(item => item.method === 'getRunInput')!
+  const request = descriptor.parameters[0].codec.create(), result = descriptor.result.create()
+  const scope = { workspaceId: 'workspace_1', workId: 'work_1', runId: 'run_1' }
+  expect(request.parse(scope)).toEqual(scope)
+  for (const value of [{ ...scope, runId: '' }, { ...scope, workId: undefined }, { ...scope, branchId: 'current_branch' }]) expect(() => request.parse(value)).toThrow()
+  const input = { run_id: 'run_1', branch_id: 'branch_1', generation_input: projection().runs[0]!.generation_input, context_refs: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } }
+  expect(result.parse(input)).toEqual(input)
+  for (const value of [{}, { ...input, generation_input: null }, { ...input, input_description: [] }, { ...input, prompt_input: { positive_prompt: 1 } }, { ...input, extra: true }]) expect(() => result.parse(value)).toThrow()
 })

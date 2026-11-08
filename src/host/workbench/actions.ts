@@ -72,13 +72,10 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
   switch (request.type) {
     case 'create-branch': {
       const value = fields(request.value)
-      let draft = structuredClone(branch.draft)
-      if (request.runId) {
-        const run = store.getRun(request.runId), task = store.getTask(run.workbench_task_id)
-        const candidate = run.candidate_artifact_id ? store.getArtifact(run.candidate_artifact_id).artifact : null
-        draft = await ctx.harnessComfyuiWorkbench.resolveGenerationDraft(run.generation_input, candidate?.type === 'generation_input' ? candidate.context_refs : task.input.context_refs)
-      }
-      const created = store.createBranch({ workId, parentBranchId: branchId, name: text(value.name, 'name'), originalRequest: text(value.original_request, 'original_request'), draft, ...(request.runId ? { sourceRunId: request.runId } : {}) })
+      const name = text(value.name, 'name'), originalRequest = text(value.original_request, 'original_request')
+      const created = request.runId
+        ? await service.createBranchFromRun({ workspaceId: request.workspaceId, workId, runId: request.runId, name, originalRequest })
+        : store.createBranch({ workId, parentBranchId: branchId, name, originalRequest, draft: branch.draft })
       return { ...selection, branchId: created.branch_id }
     }
     case 'update-branch': {
@@ -95,7 +92,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     case 'update-draft': {
       const draft = structuredClone(branch.draft)
       const field = text(request.field, 'field')
-      if (field === 'positive_prompt' || field === 'negative_prompt') draft.prompt_input[field] = String(request.value ?? '')
+      if (field === 'positive_prompt' || field === 'negative_prompt') draft.prompt_input[field] = request.value as string | null
       else if (field === 'instance_id') draft.generation_input.instance_id = request.value ? String(request.value) : null
       else if (field === 'lora-weight') {
         const lora = draft.generation_input.loras.find(item => item.id === request.id)
@@ -215,11 +212,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     case 'reuse': {
       const experience = store.getExperience(text(request.id, 'experience_id'))
       if (experience.work_id !== workId) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的经验。', 'experience_id')
-      const run = store.getRun(experience.source_run_id)
-      const task = store.getTask(run.workbench_task_id)
-      const candidate = run.candidate_artifact_id ? store.getArtifact(run.candidate_artifact_id).artifact : null
-      const draft = await ctx.harnessComfyuiWorkbench.resolveGenerationDraft(run.generation_input, candidate?.type === 'generation_input' ? candidate.context_refs : task.input.context_refs)
-      const created = store.createBranch({ workId, parentBranchId: branchId, name: experience.title.slice(0, 40), originalRequest: experience.note, draft, sourceRunId: run.run_id, sourceExperienceId: experience.experience_id })
+      const created = await service.createBranchFromRun({ workspaceId: request.workspaceId, workId, runId: experience.source_run_id, name: experience.title.slice(0, 40), originalRequest: experience.note, sourceExperienceId: experience.experience_id })
       return { ...selection, branchId: created.branch_id }
     }
     case 'task-branch': {

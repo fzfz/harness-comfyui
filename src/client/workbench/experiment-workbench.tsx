@@ -45,7 +45,7 @@ import type {
   StandardRuntimeParameterKind,
 } from '../../generation/inspection-contract.ts'
 import { Button, Icon, trapDialogFocus, useToastMessage } from './experiment-controls.tsx'
-import { ExperimentFunctionSettings, formatExperimentAgentModel } from './experiment-function-settings.tsx'
+import { ExperimentFunctionSettings, formatExperimentAgentModel, agentModelProblem } from './experiment-function-settings.tsx'
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
 import { AutosaveField, useBranchFieldEdits, type FieldOptions, type SaveField } from './experiment-fields.tsx'
 import { RuntimeParameterField, RuntimeSizeField } from './experiment-parameter-fields.tsx'
@@ -55,6 +55,9 @@ import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useC
 import { workbenchContextKey } from './contract.ts'
 import inputOptions from './experiment-input-options.json' with { type: 'json' }
 import taskPresentation from './experiment-task-presentation.json' with { type: 'json' }
+import { isGenerationRunTerminal } from '../../generation/run-status.ts'
+import runPresentation from './experiment-run-presentation.json' with { type: 'json' }
+import { useRunInputs } from './experiment-run-input.ts'
 
 export type {
   ExperimentWorkbenchAction,
@@ -64,8 +67,9 @@ const shortId = (value: string) => value.length > 16 ? `${value.slice(0, 12)}…
 function Identifier({ value }: { readonly value: string }) {
   return <span title={value}>{shortId(value)}</span>
 }
-const pendingRun = (run: WorkbenchRun) =>
-  !['succeeded', 'failed', 'cancelled', 'canceled'].includes(run.status)
+const pendingRun = (run: WorkbenchRun) => !isGenerationRunTerminal(run.status)
+const runTime = (run: WorkbenchRun) => new Date(run.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+const runStatusLabel = (run: WorkbenchRun) => runPresentation[run.status]
 const busyTask = (task: Task) =>
   ['pending', 'running', 'waiting_input', 'waiting_generation'].includes(
     task.status,
@@ -77,13 +81,7 @@ function Status({ run }: { readonly run: WorkbenchRun }) {
       className={`pill ${run.status === 'failed' ? 'red' : running ? 'amber' : ''}`}
     >
       <i className="dot" />
-      {run.status === 'succeeded'
-        ? '成功'
-        : run.status === 'failed'
-          ? '运行失败'
-          : running
-            ? '运行中'
-            : '已取消'}
+      {runStatusLabel(run)}
     </span>
   )
 }
@@ -126,6 +124,16 @@ function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
       options={{ type: 'number', step: 0.05 }} editor={editor} save={save} locked={locked} />
     <Button kind="quiet small" label={`移除 ${name}`} onClick={onRemove}>×</Button>
   </div>
+}
+
+function RunModelName({ model, load, baseModels }: {
+  readonly model: WorkbenchRun['generation_input']['model']
+  readonly load?: CatalogApi['details']
+  readonly baseModels: ExperimentWorkbenchProps['baseModels']
+}) {
+  const { details } = useCatalogDetails(model ? { kind: 'model', id: model.id } : null, load)
+  const baseModel = baseModels?.find(item => details?.id === model?.id && item.id === details?.item.baseModelId)
+  return <>{baseModel?.label ?? model?.file_name ?? model?.id ?? taskPresentation.unrecorded}</>
 }
 
 function ContextSummary({ item, load, onError, onDetail, onRemove }: {
@@ -237,6 +245,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     readonly preview: WorkbenchModelChangePreview
     readonly navigation: number
   } | null>(null)
+  const [imageRunId, setImageRunId] = useState<string | null>(null)
   const [modal, setModalState] = useState<
     'new-work' | 'new-workspace' | 'branch' | 'image' | 'model-change' | null
   >(null)
@@ -244,6 +253,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     modalInstance.current++
     setFormSubmitting(false)
     if (value !== 'model-change') setModelChange(null)
+    if (value !== 'image') setImageRunId(null)
     setModalState(value)
   }, [])
   const [search, setSearch] = useState('')
@@ -301,6 +311,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     p?.tasks.find((task) => task.task_id === item.workbench_task_id)
   const branchFor = (item: WorkbenchRun) =>
     p?.branches.find((branch) => branch.branch_id === taskFor(item)?.branch_id)
+  const runInputs = useRunInputs(props.remote.getRunInput, state.workspaceId, view.workId,
+    p?.runs.filter(item => sheet || item.run_id === view.selectedRunId || item.run_id === view.compareRunId) ?? [], setMessage)
   const branchRuns = (id: string) =>
     p?.runs.filter((item) => taskFor(item)?.branch_id === id) ?? []
   useEffect(() => {
@@ -308,55 +320,27 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       !state.workspaceId ||
       !view.workId ||
       !branch ||
+      view.inspectRun ||
       props.visible === false
     )
       return
     let active = true
     const workspaceId = state.workspaceId,
       workId = view.workId
-    const requests = [
-      {
-        scope: { workspaceId, workId, branchId: branch.branch_id },
-        input: branch.draft.generation_input,
-      },
-      ...(p?.runs ?? []).flatMap((run) => {
-        const task = p?.tasks.find(
-          (task) => task.task_id === run.workbench_task_id,
-        )
-        return task
-          ? [
-              {
-                scope: {
-                  workspaceId,
-                  workId,
-                  branchId: task.branch_id,
-                  runId: run.run_id,
-                },
-                input: run.generation_input,
-              },
-            ]
-          : []
-      }),
-    ]
-    for (const request of requests)
-      void inputDescriptionCache
-        .load(request.scope, request.input)
-        .then((description) => {
-          if (active)
-            setInputDescriptions((current) => ({
-              ...current,
-              [inputDescriptionCache.key(workspaceId, request.input)]:
-                description,
-            }))
-        })
-        .catch((error) => {
-          if (active)
-            setMessage(
-              error instanceof Error
-                ? error.message
-                : '输入字段读取失败，请刷新工作台。',
-            )
-        })
+    const input = branch.draft.generation_input
+    void inputDescriptionCache
+      .load({ workspaceId, workId, branchId: branch.branch_id }, input)
+      .then(description => {
+        if (active)
+          setInputDescriptions(current => ({
+            ...current,
+            [inputDescriptionCache.key(workspaceId, input)]: description,
+          }))
+      })
+      .catch(error => {
+        if (active)
+          setMessage(error instanceof Error ? error.message : '输入字段读取失败，请刷新工作台。')
+      })
     return () => {
       active = false
     }
@@ -367,43 +351,51 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     branch?.branch_id,
     branch?.draft.generation_input.instance_id,
     branch?.draft.generation_input.template_id,
-    p?.runs,
-    p?.tasks,
+    view.inspectRun,
     props.visible,
   ])
   const descriptionFor = (input: WorkbenchRun['generation_input']) =>
     state.workspaceId
       ? inputDescriptions[inputDescriptionCache.key(state.workspaceId, input)]
       : undefined
+  const runParameterValues = (run: WorkbenchRun) => {
+    const description = runInputs.get(run.run_id)?.input_description
+    return description
+      ? Object.fromEntries(flattenWorkflowRuntimeParameters(description).map(parameter => [parameter.parameter_id, parameter.current_value]))
+      : run.generation_input.parameters
+  }
   const runParameter = (
     run: WorkbenchRun,
     kind: StandardRuntimeParameterKind,
   ) =>
     readExperimentParameter(
-      descriptionFor(run.generation_input),
-      run.generation_input.parameters,
+      runInputs.get(run.run_id)?.input_description,
+      runParameterValues(run),
       kind,
     )
   const binding = (kind: string) =>
     p?.functions.find((item) => item.kind === kind && item.builtin) ??
     p?.functions.find((item) => item.kind === kind)
+  const functionProblem = (selected: FunctionBinding | undefined, override?: string | null) => {
+    if (!selected) return '请先在配置中心配置此功能。'
+    const preset = props.presets?.find(item => item.id === (override || selected.preset_id))
+    if (!preset || preset.broken) return preset?.broken || '执行预设不可用，请重新选择预设。'
+    return agentModelProblem(selected.agent_model, props.agentModelGroups ?? [], props.routableProviders ?? [])
+  }
+  const executionProblem = functionProblem(binding(branch?.execution.mode === 'continuous' ? 'experiment' : 'run'), view.presetOverride)
   const presetName = (id?: string) =>
     props.presets?.find((preset) => preset.id === id)?.name ?? id ?? '未配置'
-  const modelLabel = (draft: TaskDraft) =>
+  const modelLabel = (draft: Pick<TaskDraft, 'base_model_id' | 'generation_input'>) =>
     props.baseModels?.find((item) => item.id === draft.base_model_id)?.label ||
     draft.base_model_id ||
-    draft.generation_input.model?.file_name ||
+    draft.generation_input.model?.id ||
     '未选择底模'
   const formatAgentModel = (model: FunctionBinding['agent_model'] | undefined) =>
     formatExperimentAgentModel(model, props.agentModelGroups ?? [])
   const agentModel = (binding: FunctionBinding | undefined) =>
     formatAgentModel(binding?.agent_model)
-  const runModelLabel = (item: WorkbenchRun) => {
-    const draft = taskFor(item)?.input
-    return draft
-      ? modelLabel(draft)
-      : item.generation_input.model?.file_name || '未选择底模'
-  }
+  const runModelLabel = (item: WorkbenchRun) =>
+    <RunModelName model={item.generation_input.model} load={props.catalog?.details} baseModels={props.baseModels} />
   const notifyTask = (title: string, taskId: string, workId: string, kind: Exclude<keyof typeof taskPresentation.notifications, 'open'>) => {
     if (!state.workspaceId) return
     setMessage(taskPresentation.notifications[kind].replace('{title}', title).replace('{taskId}', taskId), { workspaceId: state.workspaceId, taskId, workId })
@@ -532,6 +524,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     run && view.compareRunId ? [run.run_id, view.compareRunId] : []
   const invokeAgentFunction = (selected: FunctionBinding | undefined) => {
     if (!selected) return
+    const problem = functionProblem(selected)
+    if (problem) { setMessage(problem); return }
     if (inputOptions.taskRequest.kinds.includes(selected.kind) && state.workspaceId && view.workId && view.branchId && branch) {
       const scope = { workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId, functionId: selected.function_id }
       const key = JSON.stringify(Object.values(scope))
@@ -546,7 +540,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const agentButton = (label: string, kind: string, disabled = false) => (
     <Button
       kind="small agent-action"
-      disabled={disabled || !binding(kind)}
+      disabled={disabled || !!functionProblem(binding(kind))}
       onClick={() => invokeAgentFunction(binding(kind))}
     >
       {label}
@@ -559,7 +553,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         <Button
           key={item.function_id}
           kind="small agent-action"
-          disabled={disabled}
+          disabled={disabled || !!functionProblem(item)}
           onClick={() => invokeAgentFunction(item)}
         >
           {item.name}
@@ -581,7 +575,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             type="button"
             className="artwork preview-image"
             onClick={() => {
-              selectRun(item.run_id, view.inspectRun)
+              setImageRunId(item.run_id)
               setModal('image')
             }}
             aria-label={`查看原图 ${item.run_id}`}
@@ -624,11 +618,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       <small>任务 <Identifier value={item.workbench_task_id} /></small>
       <small>发起者：{item.initiator === 'human' ? '人工' : 'Agent'}</small>
       <small>
-        {new Date(item.created_at).toLocaleTimeString('zh-CN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        })}
+        {runTime(item)}
         {item.retry_of_run_id ? ` · 重试来源 ${item.retry_of_run_id}` : ''}
       </small>
       <small className="run-preset">
@@ -768,7 +758,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           onClick={() =>
             store.updateView({
               compareRunId:
-                p?.runs.find((item) => item.run_id !== run?.run_id)?.run_id ??
+                p?.runs.filter((item) => item.run_id !== run?.run_id).at(-1)?.run_id ??
                 null,
             })
           }
@@ -808,7 +798,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               'compare',
               [compare, run].some((item) => item.status !== 'succeeded'),
             )}
-            {customActions(['compare'])}
+            {customActions(['compare'], [compare, run].some(item => item.status !== 'succeeded'))}
             <Button
               kind="small quiet"
               onClick={() => store.updateView({ compareRunId: null })}
@@ -820,14 +810,19 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             <div className="compare-grid">
               {[compare, run].map((item) => (
                 <div key={item.run_id} className="compare-cell">
-                  {runVisual(item, true)}
+                  {item.status === 'succeeded' ? runVisual(item, true) : <div className={`compare-run-state ${item.status}`}>
+                    {pendingRun(item) && <span className="loading-ring" />}
+                    <Status run={item} />
+                    {item.error && <p>{item.error.message}</p>}
+                  </div>}
                   <h3>
                     <Identifier value={item.run_id} /> · {branchFor(item)?.name}
                   </h3>
                   <p>
-                    {runModelLabel(item)} · Seed{' '}
-                    {String(runParameter(item, 'seed') ?? '')}
+                    {runModelLabel(item)} · 引导强度 {String(runParameter(item, 'cfg') ?? taskPresentation.unrecorded)} · Seed{' '}
+                    {String(runParameter(item, 'seed') ?? taskPresentation.unrecorded)}
                   </p>
+                  <p style={{ marginTop: 6, color: 'var(--green)' }}>{runInputs.get(item.run_id)?.prompt_input?.positive_prompt ?? inputOptions.unresolved}</p>
                 </div>
               ))}
             </div>
@@ -837,12 +832,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         <div className="canvas">
           {!run ? (
             <div className="empty">当前分支暂无运行记录。</div>
-          ) : run.status === 'failed' ? (
+          ) : run.status === 'failed' || run.status === 'submission_unknown' ? (
             <div className="error-stage">
               <span className="pill red"><Identifier value={run.run_id} /></span>
-              <h3 style={{ marginTop: 12 }}>运行失败</h3>
+              <h3 style={{ marginTop: 12 }}>{runStatusLabel(run)}</h3>
               <p>{run.error?.message}</p>
-              <Button
+              {run.status === 'failed' && <><Button
                 kind="primary"
                 icon="run"
                 onClick={() => void action('retry')}
@@ -850,12 +845,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 重试任务
               </Button>
               {agentButton('诊断失败', 'diagnose')}
-              {customActions(['diagnose'])}
+              {customActions(['diagnose'])}</>}
             </div>
           ) : pendingRun(run) ? (
             <div className="empty running-stage">
               <span className="loading-ring" aria-hidden="true" />
-              <h3>运行中</h3>
+              <h3>{runStatusLabel(run)}</h3>
             </div>
           ) : (
             runVisual(run, true)
@@ -875,8 +870,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               <Identifier value={run.run_id} /> · 发起者：
               {run.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
               {runModelLabel(run)} · Seed{' '}
-              {String(runParameter(run, 'seed') ?? '')} ·{' '}
-              {String(runParameter(run, 'steps') ?? '')} 步
+              {String(runParameter(run, 'seed') ?? taskPresentation.unrecorded)} ·{' '}
+              {String(runParameter(run, 'steps') ?? taskPresentation.unrecorded)} 步
             </small>
             <small className="preset-provenance">
               执行预设：{presetName(taskFor(run)?.binding_snapshot.preset_id)}
@@ -1403,37 +1398,32 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       </div>
     </main>
   )
-  const inputs =
-    view.inspectRun && run && branch
-      ? {
-          ...branch.draft,
-          generation_input: run.generation_input,
-          prompt_input: {
-            positive_prompt: String(runParameter(run, 'positive_prompt') ?? ''),
-            negative_prompt: String(runParameter(run, 'negative_prompt') ?? ''),
-          },
-        }
-      : branch?.draft
+  const historical = run ? runInputs.get(run.run_id) : undefined
+  const { details: historicalModel } = useCatalogDetails(
+    historical?.generation_input.model ? { kind: 'model', id: historical.generation_input.model.id } : null, props.catalog?.details)
+  const inputs = view.inspectRun && run
+    ? historical ? { generation_input: historical.generation_input, prompt_input: historical.prompt_input,
+      context_refs: historical.context_refs, base_model_id: historicalModel?.id === historical.generation_input.model?.id ? historicalModel?.item.baseModelId ?? null : null } : undefined
+    : branch?.draft
   const selectedTemplateId = inputs?.generation_input.template_id ?? null
   const { details: selectedTemplate, error: selectedTemplateError } = useCatalogDetails(
     selectedTemplateId ? { kind: 'comfyui-template', id: selectedTemplateId } : null,
     props.catalog?.details,
   )
   const selectedTemplateName = selectedTemplate?.kind === 'comfyui-template' && selectedTemplate.id === selectedTemplateId
-    ? selectedTemplate.item.label : ''
+    ? selectedTemplate.item.label : selectedTemplateId ?? ''
   useEffect(() => {
     if (selectedTemplateError) setMessage(selectedTemplateError)
   }, [selectedTemplateError, setMessage])
   const parameterScope = branch && state.workspaceId
     ? inputDescriptionCache.key(state.workspaceId, branch.draft.generation_input) : ''
   const parameterFieldEditor = useBranchFieldEdits(state.workspaceId, view.workId, view.branchId, parameterScope)
-  const inputDescription = inputs
-    ? descriptionFor(inputs.generation_input)
-    : null
+  const inputDescription = view.inspectRun ? historical?.input_description : inputs ? descriptionFor(inputs.generation_input) : null
+  const displayedParameters = inputs ? view.inspectRun && run ? runParameterValues(run) : inputs.generation_input.parameters : {}
   const sizes = inputs
     ? experimentSizeOptions(
         inputDescription,
-        inputs.generation_input.parameters,
+        displayedParameters,
       )
     : []
   const currentSize = sizes.find((size) => size.current)?.value ?? ''
@@ -1444,7 +1434,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   )
   const locked = view.inspectRun || !!experiment
   const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
-  const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string, resourceId?: string) => {
+  const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string | null, resourceId?: string) => {
     const currentWork = () => {
       const current = store.getSnapshot()
       return current.workspaceId === state.workspaceId && current.view.workId === view.workId
@@ -1459,7 +1449,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         field: id,
         ...(resourceId === undefined ? {} : { id: resourceId }),
         value: options.type === 'number' ? Number(value) : value,
-        ...(options.branch ? { expectedValue } : {}),
+        ...(options.branch && expectedValue !== null ? { expectedValue } : {}),
       })
     } catch (error) {
       if (currentBranch()) setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
@@ -1478,7 +1468,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     label={label}
     className="field"
     id={id}
-    value={value === null || value === undefined ? '' : String(value)}
+    value={value === null ? null : value === undefined ? '' : String(value)}
     options={options}
     editor={fieldEditor(id)}
     locked={locked}
@@ -1493,7 +1483,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const renderParameter = (label: string, id: string, parameter: WorkflowRuntimeParameterInspectionParameter | undefined) =>
     <RuntimeParameterField key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, parameterScope, locked, id])}
       label={label} id={id} parameter={parameter} locked={locked}
-      value={parameter && inputs ? readExperimentParameterValue(parameter, inputs.generation_input.parameters) : undefined}
+      value={parameter && inputs ? readExperimentParameterValue(parameter, displayedParameters) : undefined}
       editor={parameterFieldEditor(JSON.stringify(['parameter', parameter?.parameter_id ?? id]))}
       save={async value => {
         if (parameter) await saveGenerationInput({ field: 'parameter', id: parameter.parameter_id, value })
@@ -1730,13 +1720,13 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             {field(
               inputOptions.parameterLabels.positive_prompt,
               'positive_prompt',
-              inputs.prompt_input.positive_prompt,
+              inputs.prompt_input?.positive_prompt ?? null,
               { multiline: true, saveOnChange: true },
             )}
             {field(
               inputOptions.parameterLabels.negative_prompt,
               'negative_prompt',
-              inputs.prompt_input.negative_prompt,
+              inputs.prompt_input?.negative_prompt ?? null,
               { multiline: true, short: true, saveOnChange: true },
             )}
             {parameterField('reference_image')}
@@ -1747,7 +1737,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {agentButton('建议参数', 'parameters', locked)}
               {customActions(['parameters'], locked)}
             </div>
-            <div className="fields2">
+            {view.inspectRun && !inputDescription ? <div className="fields2">
+              {Object.entries(inputs.generation_input.parameters).map(([id, value]) => field(id, id, typeof value === 'string' ? value : JSON.stringify(value)))}
+            </div> : <><div className="fields2">
               {parameterField('steps')}
               {parameterField('cfg')}
             </div>
@@ -1761,7 +1753,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {additionalParameters.map(parameter => renderParameter(
                 parameterLabel(parameter),
                 parameter.parameter_id, parameter))}
-            </div>}
+            </div>}</>}
           </details>
         </fieldset>
         {branch.source_experience_id && (
@@ -1819,6 +1811,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 ),
               )}
             </p>
+            {executionProblem && <p className="preset-unavailable">{executionProblem}</p>}
           </div>
         )}
         {experiment ? (
@@ -1909,10 +1902,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               kind="primary"
               icon="run"
               disabled={
-                pending ||
-                !binding(
-                  branch.execution.mode === 'continuous' ? 'experiment' : 'run',
-                )
+                pending || !!executionProblem
               }
               onClick={() => {
                 void action(
@@ -1980,6 +1970,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       }}
     />
   )
+  const imageRun = p?.runs.find(item => item.run_id === imageRunId)
+  const ModalHeading = modal === 'image' ? 'header' : 'div'
+  const modalHeadingId = modal === 'image' ? 'image-title' : modal === 'model-change' ? 'modal-title' : undefined
   const modalTitle =
     modal === 'new-work'
       ? '新建工作'
@@ -1989,7 +1982,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           ? '创建子分支'
           : modal === 'model-change'
             ? '更换生成模型'
-            : `${run?.run_id} · 图片 1`
+            : `${imageRun?.run_id} · 图片 1`
   return (
     <div className="experiment-workbench" ref={host}>
       <div className="experiment-workbench-content">
@@ -2223,7 +2216,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                         任务 {item.workbench_task_id} · 发起者：
                         {item.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
                         {runModelLabel(item)} · Seed{' '}
-                        {String(runParameter(item, 'seed') ?? '')}
+                        {String(runParameter(item, 'seed') ?? taskPresentation.unrecorded)}
                       </p>
                       <p>
                         执行预设：
@@ -2244,6 +2237,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       {item.retry_of_run_id && (
                         <p>重试来源：{item.retry_of_run_id}</p>
                       )}
+                      <div className="detail-line"><span>{runTime(item)}</span></div>
                       <Button
                         kind="small"
                         onClick={() => {
@@ -2283,24 +2277,24 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               className={`modal ${modal === 'image' ? 'image-modal' : ''}`}
               role="dialog"
               aria-modal="true"
-              aria-label={modal === 'model-change' ? undefined : modalTitle}
-              aria-labelledby={modal === 'model-change' ? 'modal-title' : undefined}
+              aria-label={modalHeadingId ? undefined : modalTitle}
+              aria-labelledby={modalHeadingId}
               onKeyDown={trapDialogFocus}
             >
-              <div className="modal-head">
-                <h2 id={modal === 'model-change' ? 'modal-title' : undefined}>{modalTitle}</h2>
+              <ModalHeading className={modal === 'image' ? 'row between' : 'modal-head'}>
+                <h2 id={modalHeadingId}>{modalTitle}</h2>
                 <Button
-                  kind="small quiet"
+                  kind={modal === 'image' ? 'small' : 'small quiet'}
                   label={modal === 'image' ? '关闭原图' : '关闭对话框'}
                   autoFocus={modal !== 'image'}
                   onClick={() => setModal(null)}
                 >
                   {modal === 'image' ? '关闭' : '×'}
                 </Button>
-              </div>
+              </ModalHeading>
               {modal === 'image' ? (
                 <div className="original-image">
-                  {run && media(run) && <img src={media(run)} alt={run.title} />}
+                  {imageRun && media(imageRun) && <img src={media(imageRun)} alt={imageRun.title} />}
                 </div>
               ) : modal === 'model-change' ? (
                 <form id="modal-form" onSubmit={async event => {
@@ -2469,7 +2463,7 @@ interface ExperimentCatalogProps {
   readonly queryText: string
   readonly onQueryChange: (query: string) => void
   readonly back: ReactNode
-  readonly selected?: TaskDraft
+  readonly selected?: Pick<TaskDraft, 'base_model_id' | 'generation_input' | 'context_refs'>
   readonly locked: boolean
   readonly onSelect: (item: CatalogItem) => void
   readonly onRemove: (item: CatalogItem) => void

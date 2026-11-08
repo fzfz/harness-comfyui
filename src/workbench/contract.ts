@@ -11,7 +11,7 @@ export type CatalogKind = CatalogResourceKind
 export type ContextKind = Exclude<CatalogKind, 'model' | 'lora' | 'comfyui-template'>
 export interface ContextRef { kind: ContextKind; id: string }
 export interface ResourceRef { kind: CatalogKind; id: string }
-export interface PromptInput { positive_prompt: string; negative_prompt: string }
+export interface PromptInput { positive_prompt: string | null; negative_prompt: string | null }
 export interface GenerationInput {
   title: string
   instance_id: string | null
@@ -20,6 +20,15 @@ export interface GenerationInput {
   parameters: Record<string, JsonValue>
   loras: { id: string; file_name: string; weight: number; trigger_words: string[] }[]
 }
+export interface WorkbenchRunInput {
+  run_id: string
+  branch_id: string
+  generation_input: GenerationInput
+  context_refs: ContextRef[]
+  input_description: import('../generation/inspection-contract.ts').WorkflowRuntimeParameterInspection | null
+  prompt_input: PromptInput
+}
+
 export interface TaskDraft { prompt_input: PromptInput; generation_input: GenerationInput; context_refs: ContextRef[]; base_model_id: string | null }
 
 export interface TaskRequestDraft {
@@ -107,7 +116,7 @@ export interface Task {
   retry_of_run_id: string | null
 }
 export type ArtifactPayload = (
-  | { type: 'prompt'; positive_prompt: string; negative_prompt: string }
+  | ({ type: 'prompt' } & PromptInput)
   | { type: 'parameters'; parameters: Record<string, JsonValue> }
   | { type: 'generation_input'; generation_input: GenerationInput; context_refs: ContextRef[] }
   | { type: 'resources'; refs: ResourceRef[]; reason?: string }
@@ -141,7 +150,7 @@ export interface WorkbenchRun {
   run_id: string
   workbench_task_id: string
   iteration_index: number | null
-  status: string
+  status: import('../generation/run-status.ts').GenerationRunStatus
   title: string
   generation_input: GenerationInput
   candidate_artifact_id: string | null

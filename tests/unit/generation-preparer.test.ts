@@ -64,7 +64,7 @@ function workflowCompiler(compile: WorkflowCompiler['compile']): WorkflowCompile
 describe('SourceGenerationPreparer', () => {
   it.each(['inspect', 'validate', 'prepare'])('keeps source failure identity and cancellation during %s', async (entry) => {
     const generationSource = source(template())
-    const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({ actualWorkflow: template().workflow, apiWorkflow: {}, activeOutputNodeIds: [] }))
+    const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({ inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: template().workflow, apiWorkflow: {}, activeOutputNodeIds: [] }))
     const compiler = { ...workflowCompiler(compile), validateInput: vi.fn(async () => {}) }
     const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source: generationSource, compiler })
     const call = (signal?: AbortSignal) => entry === 'inspect'
@@ -124,7 +124,7 @@ describe('SourceGenerationPreparer', () => {
 
   it('passes request parameters directly to the compiler and excludes connection secrets from the source snapshot', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
-      actualWorkflow: input.workflow,
+      inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: input.workflow,
       apiWorkflow: {
         '3': { class_type: 'SaveImage', inputs: { source: '2' } },
         actual_prompt: Array.isArray(input.workflow.nodes[0]?.widgets_values)
@@ -171,7 +171,7 @@ describe('SourceGenerationPreparer', () => {
 
   it('uses the compiler active output nodes as the runtime output filter', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({
-      actualWorkflow: template().workflow,
+      inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: template().workflow,
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       activeOutputNodeIds: ['3'],
     }))
@@ -189,7 +189,7 @@ describe('SourceGenerationPreparer', () => {
 
   it('does not require request parameters to be declared by Source metadata', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
-      actualWorkflow: input.workflow,
+      inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: input.workflow,
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       activeOutputNodeIds: ['3'],
     }))

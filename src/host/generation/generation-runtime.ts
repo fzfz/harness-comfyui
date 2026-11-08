@@ -40,6 +40,9 @@ export { GenerationRuntimeError, GenerationSubmissionNotSentError } from './gene
 export type { GenerationRunStatus } from '../../generation/run-status.ts'
 export type { GenerationLoraSelection, GenerationModelSelection, GenerationRequest } from '../../generation/submission-contract.ts'
 
+import Schema from '@deepseek-ai/schemastery'
+import { workflowRuntimeParameterInspectionSchema } from '../../generation/inspection-contract.ts'
+
 export interface GenerationIdentity {
   readonly workspaceId: string
   readonly sessionId: string
@@ -57,6 +60,7 @@ export interface PreparedGeneration {
   readonly instanceId: string
   readonly instanceTitle: string
   readonly templateTitle: string
+  readonly inputDescription: WorkflowRuntimeParameterInspection | null
   readonly sourceSnapshot: Readonly<Record<string, JsonValue>>
   readonly actualWorkflow: Readonly<Record<string, JsonValue>>
   readonly apiWorkflow: Readonly<Record<string, JsonValue>>
@@ -225,6 +229,7 @@ interface RunRow {
   prompt_id: string | null
   request_json: string
   workbench_task_id: string | null
+  source_snapshot_path: string | null
   api_workflow_path: string | null
   actual_workflow_path: string | null
   expected_output_node_ids_json: string | null
@@ -994,6 +999,20 @@ export class GenerationRuntime {
     if (this.options.database === undefined) this.database.close()
   }
 
+  private async readRunInputDescription(row: RunRow, signal?: AbortSignal): Promise<WorkflowRuntimeParameterInspection | null> {
+    if (!row.source_snapshot_path) return null
+    let source: Readonly<Record<string, JsonValue>>
+    try { source = await this.readJsonArtifact(join(this.options.runDirectory, row.source_snapshot_path), 'Source snapshot', signal) }
+    catch (error) {
+      if (signal?.aborted || error instanceof DOMException && error.name === 'AbortError') throw error
+      if (error instanceof GenerationRuntimeError) return null
+      throw error
+    }
+    if (!Object.hasOwn(source, 'input_description')) return null
+    try { return Schema.resolve(source.input_description, workflowRuntimeParameterInspectionSchema, {})[0] as WorkflowRuntimeParameterInspection }
+    catch { return null }
+  }
+
   private async readGenerationRunInput(
     workspaceId: string,
     requestedRunId: string,
@@ -1002,11 +1021,13 @@ export class GenerationRuntime {
     const row = this.resolveGenerationRunRow(workspaceId, requestedRunId)
     const request = historicalGenerationRequest(row.request_json)
     const argumentsValue = runInputArguments(request)
+    const inputDescription = await this.readRunInputDescription(row, signal)
     if (row.actual_workflow_path === null) {
       return Object.freeze({
         run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
+        input_description: inputDescription,
         workflow_status: 'unavailable',
         workflow_error: runInputError(
           row.error_code ?? 'GENERATION_ARTIFACT_NOT_READY',
@@ -1024,6 +1045,7 @@ export class GenerationRuntime {
         run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
+        input_description: inputDescription,
         workflow_status: 'available',
         workflow,
       })
@@ -1033,6 +1055,7 @@ export class GenerationRuntime {
         run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
+        input_description: inputDescription,
         workflow_status: 'unavailable',
         workflow_error: runInputError(error.code, error.message),
       })
@@ -1423,7 +1446,7 @@ export class GenerationRuntime {
       }
       await Promise.all([
         this.writeAtomic(join(this.options.runDirectory, files.request), request as unknown as JsonValue),
-        this.writeAtomic(join(this.options.runDirectory, files.source), prepared.sourceSnapshot),
+        this.writeAtomic(join(this.options.runDirectory, files.source), { ...prepared.sourceSnapshot, input_description: prepared.inputDescription } as unknown as JsonValue),
         this.writeAtomic(join(this.options.runDirectory, files.actual), prepared.actualWorkflow),
         this.writeAtomic(join(this.options.runDirectory, files.api), prepared.apiWorkflow),
       ])

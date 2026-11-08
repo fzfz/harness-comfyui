@@ -62,6 +62,7 @@ export interface GenerationTemplateRuntimeParameterInspectionInput {
 }
 
 export interface WorkflowCompilerResult {
+  readonly inputDescription: WorkflowRuntimeParameterInspection | null
   readonly actualWorkflow: UiWorkflow
   readonly apiWorkflow: Readonly<Record<string, JsonValue>>
   readonly activeOutputNodeIds: readonly string[]
@@ -159,6 +160,7 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
     return Object.freeze({
       instanceId: instance.id, instanceTitle: instance.title, templateTitle: bundle.title,
       sourceSnapshot: safeSourceSnapshot(bundle, instance, connection.origin),
+      inputDescription: compiled.inputDescription,
       actualWorkflow: compiled.actualWorkflow, apiWorkflow: compiled.apiWorkflow,
       expectedOutputNodeIds: compiled.activeOutputNodeIds, connection,
     })

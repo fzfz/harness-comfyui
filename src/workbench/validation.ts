@@ -74,8 +74,8 @@ class Validator {
   draft(value: unknown, path: string, ready = false): void {
     if (!this.object(value, path)) return
     if (this.object(value.prompt_input, `${path}.prompt_input`, ['positive_prompt', 'negative_prompt'])) {
-      this.text(value.prompt_input.positive_prompt, `${path}.prompt_input.positive_prompt`)
-      this.text(value.prompt_input.negative_prompt, `${path}.prompt_input.negative_prompt`)
+      if (value.prompt_input.positive_prompt !== null) this.text(value.prompt_input.positive_prompt, `${path}.prompt_input.positive_prompt`)
+      if (value.prompt_input.negative_prompt !== null) this.text(value.prompt_input.negative_prompt, `${path}.prompt_input.negative_prompt`)
     }
     this.generation(value.generation_input, `${path}.generation_input`, ready)
     this.refs(value.context_refs, `${path}.context_refs`); this.id(value.base_model_id, `${path}.base_model_id`, true)
@@ -131,7 +131,10 @@ export function validateArtifact(value: unknown): ArtifactPayload {
   v.object(value, 'artifact', ['type', 'source_files', ...keys])
   if (value.source_files !== undefined) v.strings(value.source_files, 'artifact.source_files')
   switch (value.type) {
-    case 'prompt': v.text(value.positive_prompt, 'artifact.positive_prompt'); v.text(value.negative_prompt, 'artifact.negative_prompt'); break
+    case 'prompt':
+      if (value.positive_prompt !== null) v.text(value.positive_prompt, 'artifact.positive_prompt')
+      if (value.negative_prompt !== null) v.text(value.negative_prompt, 'artifact.negative_prompt')
+      break
     case 'parameters': if (v.object(value.parameters, 'artifact.parameters')) for (const [key, item] of Object.entries(value.parameters)) v.json(item, `artifact.parameters.${key}`); break
     case 'generation_input': v.generation(value.generation_input, 'artifact.generation_input', true); v.refs(value.context_refs, 'artifact.context_refs'); break
     case 'resources': v.refs(value.refs, 'artifact.refs', true); if (value.reason !== undefined) v.text(value.reason, 'artifact.reason'); break

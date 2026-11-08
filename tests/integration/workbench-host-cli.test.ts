@@ -45,7 +45,7 @@ async function fixture() {
   return { ...host, run, variables, unregister, cliFiber }
 }
 
-it('keeps source prompts, context and base model when running a branch from a Run, experience or generation candidate', async () => {
+it('keeps fixed source inputs, context and base model when running a branch from a Run, experience or generation candidate', async () => {
   const { remote, catalog, runtime, store, run, variables } = await fixture()
   const models = {
     '2': { id: '2', file_name: 'source.safetensors', base_model_id: '1' },
@@ -100,7 +100,7 @@ it('keeps source prompts, context and base model when running a branch from a Ru
   const fromRun = await remote.mutate({ ...selected, type: 'create-branch', runId: source.actual.run_id, value: { name: 'From source Run', original_request: 'Repeat the source Run' } }, signal())
   const fromExperience = await remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id }, signal())
   for (const scope of [fromRun, fromExperience]) {
-    expect(store.getBranch(scope.branchId!).draft).toMatchObject({ base_model_id: '1', prompt_input: { positive_prompt: 'Source rain on glass', negative_prompt: 'Source blur' }, context_refs: [{ kind: 'character', id: '4' }] })
+    expect(store.getBranch(scope.branchId!).draft).toMatchObject({ base_model_id: '1', prompt_input: { positive_prompt: null, negative_prompt: null }, context_refs: [{ kind: 'character', id: '4' }], generation_input: source.actual.generation_input })
     const started = await startRun(scope)
     expect(started.task.input.base_model_id).toBe('1')
     expect(started.task.input.context_refs).toEqual([{ kind: 'character', id: '4' }])

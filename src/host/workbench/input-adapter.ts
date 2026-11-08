@@ -1,4 +1,4 @@
-import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeParameterInspectionParameter } from '../../generation/inspection-contract.ts'
+import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
 import type { WorkbenchModelChangePreview, WorkbenchModelChangeRef } from '../../workbench-remote.ts'
 import { catalogDefinition, catalogResourceCompatible, catalogResourceConflicts } from '../../catalog/contract.ts'
 import type { CatalogClient } from '../catalog/catalog-client.ts'
@@ -9,6 +9,8 @@ import type { ContextRef, GenerationInput, JsonValue, ResourceRef, TaskDraft } f
 import { validateGenerationInput as validateStructure, validateContextRefs, WorkbenchError } from '../../workbench/validation.ts'
 
 import resourceSelectionErrors from '../../workbench/resource-selection-errors.json' with { type: 'json' }
+
+import { promptParameter, readGenerationPromptInput } from '../../workbench/prompt-input.ts'
 
 export interface WorkbenchInputAdapterOptions {
   runtime: Pick<GenerationRuntime, 'inspectTemplateRuntimeParameters' | 'validateGenerationRequest'>
@@ -63,39 +65,28 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
     }
     await generationAt(() => runtime.validateGenerationRequest(toGenerationRequest(parseCliGenerationRequest(input)), operationSignal), path, operationSignal)
   }
-  const promptParameter = (parameters: readonly WorkflowRuntimeParameterInspectionParameter[], kind: 'positive_prompt' | 'negative_prompt', allowMissing: boolean) => {
-    const matching = parameters.filter(parameter => parameter.kind === kind)
-    if (matching.length === 0 && allowMissing) return undefined
-    if (matching.length !== 1) throw new WorkbenchError('WORKBENCH_PROMPT_PARAMETER_REQUIRED', `模板必须提供 1 个 ${kind} 参数，请重新选择模板。`, `prompt_input.${kind}`)
-    return matching[0]!
-  }
   const prepareGenerationInput = async (draft: TaskDraft): Promise<GenerationInput> => {
     const input = structuredClone(draft.generation_input)
+    if (draft.prompt_input.positive_prompt === null && draft.prompt_input.negative_prompt === null) return input
     const parameters = flattenWorkflowRuntimeParameters(await inspect(input))
     for (const kind of ['positive_prompt', 'negative_prompt'] as const) {
-      const descriptor = promptParameter(parameters, kind, kind === 'negative_prompt' && !draft.prompt_input[kind])
-      if (descriptor) input.parameters[descriptor.parameter_id] = draft.prompt_input[kind]
+      const value = draft.prompt_input[kind]
+      if (value === null) continue
+      const descriptor = promptParameter(parameters, kind, kind === 'negative_prompt' && value === '')
+      if (descriptor) input.parameters[descriptor.parameter_id] = value
     }
     return input
+  }
+  const resolveGenerationBaseModelId = async (input: GenerationInput): Promise<string> => {
+    if (input.model) return (await resourceAt(catalog.resolveGenerationModel(input.model.id, signal), 'generation_input.model.id')).base_model_id
+    const template = await resourceAt(catalog.resolveTemplate(input.template_id!, signal), 'generation_input.template_id')
+    return template.model_id ? (await resourceAt(catalog.resolveGenerationModel(template.model_id, signal), 'generation_input.template_id')).base_model_id : template.base_model_id
   }
   const resolveGenerationDraft = async (generationInput: GenerationInput, contextRefs: ContextRef[]): Promise<TaskDraft> => {
     const input = validateStructure(generationInput, 'generation_input', true)
     const parameters = flattenWorkflowRuntimeParameters(await inspect(input))
-    const promptInput = { positive_prompt: '', negative_prompt: '' }
-    for (const kind of ['positive_prompt', 'negative_prompt'] as const) {
-      const descriptor = promptParameter(parameters, kind, kind === 'negative_prompt')
-      if (!descriptor) continue
-      const value = Object.hasOwn(input.parameters, descriptor.parameter_id) ? input.parameters[descriptor.parameter_id] : descriptor.current_value
-      if (typeof value !== 'string') throw new WorkbenchError('WORKBENCH_PROMPT_VALUE_INVALID', '请填写提示词文本。', `generation_input.parameters.${descriptor.parameter_id}`)
-      promptInput[kind] = value
-    }
-    let baseModelId: string
-    if (input.model) baseModelId = (await resourceAt(catalog.resolveGenerationModel(input.model.id, signal), 'generation_input.model.id')).base_model_id
-    else {
-      const template = await resourceAt(catalog.resolveTemplate(input.template_id!, signal), 'generation_input.template_id')
-      baseModelId = template.model_id ? (await resourceAt(catalog.resolveGenerationModel(template.model_id, signal), 'generation_input.template_id')).base_model_id : template.base_model_id
-    }
-    return { prompt_input: promptInput, generation_input: input, context_refs: validateContextRefs(contextRefs), base_model_id: baseModelId }
+    const promptInput = readGenerationPromptInput(input, parameters)
+    return { prompt_input: promptInput, generation_input: input, context_refs: validateContextRefs(contextRefs), base_model_id: await resolveGenerationBaseModelId(input) }
   }
   const validateParameters = async (input: GenerationInput, parameters: Record<string, JsonValue>, path = 'artifact.parameters', requestSignal?: AbortSignal): Promise<void> => {
     const operationSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal

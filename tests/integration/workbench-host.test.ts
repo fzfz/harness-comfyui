@@ -528,6 +528,7 @@ it('fills missing builtin bindings without replacing saved workspace configurati
 it('mounts Workbench Remotes, creates one main branch and isolates Workspace projections', async () => {
   const { ctx, remote, official, fiber, remoteFiber } = await fixture()
   expect(remoteMethods(remote)).toEqual([
+    { method: 'getRunInput', invocation: { kind: 'direct' } },
     { method: 'getEnvironment', invocation: { kind: 'direct' } },
     { method: 'getProjection', invocation: { kind: 'direct' } },
     { method: 'getInputDescription', invocation: { kind: 'direct' } },

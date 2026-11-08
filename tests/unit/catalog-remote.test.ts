@@ -14,6 +14,7 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiCatalog/sourceAddress',
       'harness-comfyui#harnessComfyuiCatalog/details',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/getRunInput',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/getProjection',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/getEnvironment',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/getInputDescription',

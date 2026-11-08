@@ -46,7 +46,7 @@ const preparer: GenerationPreparationAdapter = {
       instanceId: '2',
       instanceTitle: 'ComfyUI',
       templateTitle: 'Template',
-      sourceSnapshot: { template_id: '34' },
+      inputDescription: { parameters: [], size_candidates: [] }, sourceSnapshot: { template_id: '34' },
       actualWorkflow: { version: 0.4, marker: 'first prompt' },
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       expectedOutputNodeIds: ['3'],

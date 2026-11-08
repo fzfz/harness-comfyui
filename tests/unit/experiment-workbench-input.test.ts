@@ -137,7 +137,7 @@ describe('experiment input metadata', () => {
     const first = { workspaceId: 'ws', workId: 'work', branchId: 'one' }
     await cache.load(first, draft.generation_input)
     await cache.load(
-      { ...first, branchId: 'two', runId: 'run' },
+      { ...first, branchId: 'two' },
       draft.generation_input,
     )
     expect(load).toHaveBeenCalledTimes(1)

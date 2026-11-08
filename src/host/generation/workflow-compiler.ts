@@ -2182,7 +2182,7 @@ function projectRuntimeOutputNodes(
 function compile(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
-): Omit<WorkflowCompilerResult, 'actualWorkflow'> {
+): Pick<WorkflowCompilerResult, 'apiWorkflow' | 'activeOutputNodeIds'> {
   const apiWorkflow = projectRuntimeApiWorkflow(workflow, nodeDefinitions)
   const outputProjection = projectRuntimeOutputNodes(apiWorkflow, nodeDefinitions)
   const activeOutputNodeIds = [...outputProjection.active]
@@ -2349,6 +2349,12 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
       runtimeProjection: compiled.apiWorkflow,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     })
-    return Object.freeze({ apiWorkflow: finalized.apiWorkflow, activeOutputNodeIds: compiled.activeOutputNodeIds, actualWorkflow: plan.workflow })
+    let inputDescription: WorkflowRuntimeParameterInspection | null
+    try { inputDescription = inspectRuntimeParameterPlan(plan) }
+    catch (error) {
+      if (!(error instanceof GenerationInputValidationError) || error.code !== 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED') throw error
+      inputDescription = null
+    }
+    return Object.freeze({ apiWorkflow: finalized.apiWorkflow, activeOutputNodeIds: compiled.activeOutputNodeIds, actualWorkflow: plan.workflow, inputDescription })
   }
 }

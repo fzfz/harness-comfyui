@@ -1,7 +1,10 @@
-import type { AgentModel, ArtifactPayload, ContextRef, EvaluationInput, ExecutionState, FunctionDescriptor, GenerationInput, JsonValue, SkillReadRef, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity } from './contract.ts'
+import type { AgentModel, ArtifactPayload, ContextRef, EvaluationInput, ExecutionState, FunctionDescriptor, GenerationInput, JsonValue, SkillReadRef, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRun, WorkbenchRunInput } from './contract.ts'
 import type { WorkbenchStore } from '../host/storage/workbench-store.ts'
 import { shouldTrackExecution } from './state.ts'
 import { equalValue, jsonValue, validateArtifact, validateTaskRequestDraft, WorkbenchError } from './validation.ts'
+
+import { readSavedPromptInput } from './prompt-input.ts'
+import type { WorkflowRuntimeParameterInspection } from '../generation/inspection-contract.ts'
 
 export interface WorkbenchSessionBoundary {
   authorize(input: { task: Task; identity: WorkbenchIdentity }): Promise<boolean>
@@ -24,6 +27,8 @@ export interface WorkbenchServiceOptions {
   resolveGenerationDraft?: (input: GenerationInput, contextRefs: ContextRef[]) => Promise<TaskDraft>
   resolveResourceRefs?: (refs: import('./contract.ts').ResourceRef[], draft: TaskDraft) => Promise<TaskDraft>
   resolveResourceSelection?: (ref: import('./contract.ts').ResourceRef, draft: TaskDraft) => Promise<TaskDraft>
+  resolveRunModelBaseId?: (modelId: string) => Promise<string | null>
+  readRunInputDescription?: (workspaceId: string, runId: string) => Promise<WorkflowRuntimeParameterInspection | null>
   refreshAfterMs?: number
 }
 export interface CreateTaskRequest {
@@ -73,9 +78,8 @@ export class WorkbenchService {
     if (request.retryOfRunId) {
       if (binding.kind !== 'run') throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '重试请选择运行任务。', 'function_id')
       const source = this.store.assertRunInWork(request.retryOfRunId, request.workId)
-      const sourceTask = this.store.getTask(source.workbench_task_id)
-      const candidate = source.candidate_artifact_id ? this.store.getArtifact(source.candidate_artifact_id).artifact : null
-      draft = { prompt_input: sourceTask.input.prompt_input, generation_input: source.generation_input, base_model_id: sourceTask.input.base_model_id, context_refs: candidate?.type === 'generation_input' ? candidate.context_refs : sourceTask.input.context_refs }
+      const input = await this.getRunInput({ workspaceId: request.workspaceId, workId: request.workId, runId: source.run_id })
+      draft = await this.mappedRunDraft(input)
     }
     if (binding.kind === 'diagnose' && request.evaluationInput) {
       const target = this.store.assertRunInWork(request.evaluationInput.run_id, request.workId)
@@ -115,13 +119,28 @@ export class WorkbenchService {
       throw error
     }
   }
+  private runContextRefs(run: WorkbenchRun): ContextRef[] {
+    const candidate = run.candidate_artifact_id ? this.store.getArtifact(run.candidate_artifact_id).artifact : null
+    return candidate?.type === 'generation_input' ? candidate.context_refs : this.store.getTask(run.workbench_task_id).input.context_refs
+  }
+  private async mappedRunDraft(input: WorkbenchRunInput): Promise<TaskDraft> {
+    return { generation_input: input.generation_input, context_refs: input.context_refs, prompt_input: input.prompt_input, base_model_id: input.generation_input.model ? await this.options.resolveRunModelBaseId?.(input.generation_input.model.id) ?? null : null }
+  }
+
+  async getRunInput(request: { workspaceId: string; workId: string; runId: string }): Promise<WorkbenchRunInput> {
+    this.store.assertScope(request.workspaceId, request.workId)
+    const run = this.store.assertRunInWork(request.runId, request.workId)
+    const task = this.store.getTask(run.workbench_task_id)
+    const description = await this.options.readRunInputDescription?.(request.workspaceId, run.run_id) ?? null
+    return { run_id: run.run_id, branch_id: task.branch_id, generation_input: run.generation_input, context_refs: this.runContextRefs(run), input_description: description, prompt_input: readSavedPromptInput(run.generation_input, description?.parameters ?? []) }
+  }
+
   async getTask(request: { taskId: string }, identity: WorkbenchIdentity): Promise<TaskGetResult> {
     await this.authorize(request.taskId, identity)
     const task = this.store.refreshTask(request.taskId)
     const artifacts = this.store.listArtifacts(task.task_id)
     return { task_id: task.task_id, kind: task.kind, status: task.status, ...task.input, output_contract: task.output_contract, artifacts: artifacts.map(a => ({ artifact_id: a.artifact_id, artifact: a.artifact, disposition: a.disposition })), iterations: this.store.listRuns(task.task_id).map(run => {
-      const candidate = run.candidate_artifact_id ? this.store.getArtifact(run.candidate_artifact_id).artifact : null
-      return { index: run.iteration_index ?? 1, run_id: run.run_id, generation_input: run.generation_input, context_refs: candidate?.type === 'generation_input' ? candidate.context_refs : task.input.context_refs, review_artifact_id: run.review_artifact_id }
+      return { index: run.iteration_index ?? 1, run_id: run.run_id, generation_input: run.generation_input, context_refs: this.runContextRefs(run), review_artifact_id: run.review_artifact_id }
     }), answers: task.answers }
   }
   async publish(request: { taskId: string; artifact: unknown }, identity: WorkbenchIdentity) {
@@ -145,6 +164,16 @@ export class WorkbenchService {
     if (generation && this.options.resolveGenerationDraft) resolvedDraft = await this.options.resolveGenerationDraft(generation.generation_input, generation.context_refs)
     if (artifact.type === 'parameters') await this.options.validateParameters?.(task.input.generation_input, artifact.parameters, 'artifact.parameters')
     return this.store.adoptArtifact({ ...request, resolvedDraft })
+  }
+
+  async createBranchFromRun(request: { workspaceId: string; workId: string; runId: string; name: string; originalRequest: string; sourceExperienceId?: string }) {
+    const input = await this.getRunInput(request)
+    if (request.sourceExperienceId) {
+      const experience = this.store.getExperience(request.sourceExperienceId)
+      if (experience.work_id !== request.workId || experience.source_run_id !== input.run_id) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作中来自此运行的经验。', 'experience_id')
+    }
+    const draft = await this.mappedRunDraft(input)
+    return this.store.createBranch({ workId: request.workId, parentBranchId: input.branch_id, sourceRunId: input.run_id, sourceExperienceId: request.sourceExperienceId, name: request.name, originalRequest: request.originalRequest, draft })
   }
 
   async createBranchFromArtifact(request: { workspaceId: string; workId: string; artifactId: string; name: string }) {

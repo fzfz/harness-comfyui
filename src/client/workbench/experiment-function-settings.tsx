@@ -22,9 +22,10 @@ export function formatExperimentAgentModel(selection: AgentModel | undefined, gr
   return [provider?.name ?? selection.provider, model?.name ?? selection.model, effort?.name ?? selection.reasoningEffort].filter(Boolean).join(' · ')
 }
 
-function agentModelProblem(selection: AgentModel, groups: ModelGroups) {
+export function agentModelProblem(selection: AgentModel, groups: ModelGroups, routableProviders: readonly string[]) {
   const provider = groups.find(item => item.id === selection.provider)
   if (!provider) return '请选择可用的 Agent 提供商。'
+  if (!routableProviders.includes(provider.id)) return '该 Agent 提供商当前无法执行任务，请选择可用的提供商。'
   const model = provider.models.find(item => item.id === selection.model)
   if (!model) return '请选择该提供商下的 Agent 模型。'
   const efforts = model.reasoning?.efforts ?? []
@@ -78,7 +79,7 @@ function FunctionEditor({ binding, functions, loadEnvironment, onSave, onClose, 
   const efforts = model?.reasoning?.efforts ?? []
   const presets = environment?.presets.filter(item => !item.broken) ?? []
   const preset = presets.find(item => item.id === draft.preset_id) ?? presets[0]
-  const problem = requestTemplateProblem(draft.request_template) || (environment ? agentModelProblem(draft.agent_model, groups) : '')
+  const problem = requestTemplateProblem(draft.request_template) || (environment ? agentModelProblem(draft.agent_model, groups, environment.models.routableProviders) : '')
   const update = (value: Partial<FunctionBinding>) => { setDraft(before => ({ ...before, ...value })); setError('') }
   const selectModel = (providerId: string, modelId?: string) => {
     const selectedProvider = groups.find(item => item.id === providerId)

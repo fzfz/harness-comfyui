@@ -19,6 +19,7 @@ import { ExperimentWorkbench } from '../../src/client/workbench/experiment-workb
 import {
   fullProjection,
   inputDescription,
+  runInputDescription,
 } from './experiment-workbench-fixtures.ts'
 import type { CatalogApi } from '../../src/client/workbench/catalog-browser.tsx'
 import type { ExperimentWorkbenchProps } from '../../src/client/workbench/experiment-contract.ts'
@@ -53,6 +54,12 @@ const environment = {
   instances: [{ id: '2', name: 'win3080' }],
 }
 const remote = (): ExperimentHostRemote => ({
+  getRunInput: vi.fn(async request => {
+    const data = fullProjection(), run = data.runs.find(run => run.run_id === request.runId)!, task = data.tasks.find(task => task.task_id === run.workbench_task_id)!
+    return { ok: true as const, value: { run_id: run.run_id, branch_id: task.branch_id, generation_input: run.generation_input,
+      context_refs: task.input.context_refs, input_description: runInputDescription(run.generation_input.parameters),
+      prompt_input: { positive_prompt: String(run.generation_input.parameters.positive_1 ?? ''), negative_prompt: String(run.generation_input.parameters.negative_1 ?? '') } } }
+  }),
   getTaskDraft: vi.fn(async () => ({ ok: true as const, value: null })),
   saveTaskDraft: vi.fn(async request => ({ ok: true as const, value: request.draft })),
   previewModelChange: vi.fn(async request => ({ ok: true as const, value: { model: { id: request.modelId, label: 'ANIMA3' }, removed: [] } })),

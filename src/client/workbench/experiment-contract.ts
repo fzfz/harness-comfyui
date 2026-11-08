@@ -5,7 +5,7 @@ import type { BaseModelItem } from '../../catalog/contract.ts'
 import type { CatalogApi } from './catalog-browser.tsx'
 import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 
-import type { WorkbenchProjection, TaskRequestDraft } from '../../workbench/contract.ts'
+import type { WorkbenchProjection, TaskRequestDraft, WorkbenchRunInput } from '../../workbench/contract.ts'
 
 export const EXPERIMENT_CATALOG_SCROLL_PREFIX = 'catalog:'
 
@@ -28,6 +28,7 @@ export interface ExperimentScope {
   readonly branchId?: string
 }
 export interface ExperimentRemote {
+  readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<WorkbenchRunInput>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<TaskRequestDraft | null>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<TaskRequestDraft>
   readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<WorkbenchModelChangePreview>
@@ -57,6 +58,7 @@ export interface ExperimentWorkbenchProps {
   readonly catalog?: CatalogApi
   readonly baseModels?: readonly BaseModelItem[]
   readonly agentModelGroups?: WorkbenchEnvironment['models']['groups']
+  readonly routableProviders?: readonly string[]
   readonly instances?: readonly { readonly id: string; readonly name: string }[]
   readonly presets?: ReadonlyArray<WorkbenchEnvironment['presets'][number]>
   readonly storage?: Pick<Storage, 'getItem' | 'setItem'>

@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchModelChangeRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope, type WorkbenchTaskDraftRequest, type WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
+import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchRunInputRequest, type WorkbenchModelChangeRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope, type WorkbenchTaskDraftRequest, type WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
 import type { ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import { generationMediaContentUrl, generationMediaDownloadUrl } from '../../generation/contract.ts'
@@ -50,14 +50,21 @@ export class WorkbenchRemoteService extends TypertRemoteService {
     })
   }
 
+  async getRunInput(request: WorkbenchRunInputRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => {
+      const input = await this.host.harnessComfyuiWorkbench.service.getRunInput(request)
+      signal.throwIfAborted()
+      return input
+    })
+  }
+
   async getInputDescription(request: WorkbenchInputDescriptionRequest, signal: AbortSignal) {
     signal.throwIfAborted()
     return report(async () => {
       const { store } = this.host.harnessComfyuiWorkbench.service
       store.assertScope(request.workspaceId, request.workId, request.branchId)
-      const input = request.runId
-        ? store.assertRunInWork(request.runId, request.workId).generation_input
-        : store.getBranch(request.branchId).draft.generation_input
+      const input = store.getBranch(request.branchId).draft.generation_input
       if (!input.template_id || !input.instance_id) return null
       return this.host.harnessComfyuiCore.services.runtime.inspectTemplateRuntimeParameters({ templateId: input.template_id, instanceId: input.instance_id }, signal)
     })
@@ -77,7 +84,7 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []
-for (const name of ['getEnvironment', 'getProjection', 'getInputDescription', 'previewModelChange', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
+for (const name of ['getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'previewModelChange', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
   Remote(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
     addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
   } as never)

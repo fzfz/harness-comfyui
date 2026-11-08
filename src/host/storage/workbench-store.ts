@@ -373,7 +373,7 @@ export class WorkbenchStore {
     }
   }
   private runSnapshot(row: Row): WorkbenchRun {
-    return { session_id: String(row.session_id), created_at: Number(row.created_at), updated_at: Number(row.updated_at), media: this.runMedia(String(row.run_id)), run_id: String(row.run_id), workbench_task_id: String(row.workbench_task_id ?? ''), iteration_index: row.iteration_index as number | null, status: String(row.status), title: String(row.title), generation_input: this.generationInput(row), candidate_artifact_id: row.candidate_artifact_id as string | null, review_artifact_id: row.review_artifact_id as string | null, retry_of_run_id: row.retry_of_run_id as string | null, initiator: row.initiator as 'human' | 'agent', review: row.review_json ? parse(row.review_json) : null, review_draft: row.review_draft_json ? parse(row.review_draft_json) : null, error: row.error_code ? { code: String(row.error_code), message: String(row.error_message) } : null }
+    return { session_id: String(row.session_id), created_at: Number(row.created_at), updated_at: Number(row.updated_at), media: this.runMedia(String(row.run_id)), run_id: String(row.run_id), workbench_task_id: String(row.workbench_task_id ?? ''), iteration_index: row.iteration_index as number | null, status: row.status as WorkbenchRun['status'], title: String(row.title), generation_input: this.generationInput(row), candidate_artifact_id: row.candidate_artifact_id as string | null, review_artifact_id: row.review_artifact_id as string | null, retry_of_run_id: row.retry_of_run_id as string | null, initiator: row.initiator as 'human' | 'agent', review: row.review_json ? parse(row.review_json) : null, review_draft: row.review_draft_json ? parse(row.review_draft_json) : null, error: row.error_code ? { code: String(row.error_code), message: String(row.error_message) } : null }
   }
   private runMedia(runId: string): WorkbenchRun['media'] {
     return this.rows('SELECT media_id,run_id,filename,media_type,media_kind,byte_size FROM generation_media WHERE run_id=? ORDER BY rowid', runId) as unknown as WorkbenchRun['media']
@@ -400,7 +400,7 @@ export class WorkbenchStore {
     if (runs.length === 0) {
       if (!equalValue(input.input, task.input.generation_input)) fail('WORKBENCH_INPUT_MISMATCH', '首轮必须使用 task get 返回的固定 generation_input。', 'request')
     } else {
-      if (runs.some(run => !isFinishedRun(run.status) || !run.review_artifact_id)) fail('WORKBENCH_ITERATION_INCOMPLETE', '请等待上一轮结束并发布评价后再提交。', 'workbench_task_id')
+      if (runs.some(run => run.status === 'submission_unknown' || !isFinishedRun(run.status) || !run.review_artifact_id)) fail('WORKBENCH_ITERATION_INCOMPLETE', '请等待上一轮结束并发布评价后再提交。', 'workbench_task_id')
       const previous = runs.at(-1)!
       const artifacts = this.listArtifacts(task.task_id)
       const reviewIndex = artifacts.findIndex(artifact => artifact.artifact_id === previous.review_artifact_id)
@@ -420,7 +420,7 @@ export class WorkbenchStore {
     const task = this.getTask(taskId); const artifacts = this.listArtifacts(taskId); const runs = this.listRuns(taskId); const experiment = this.getExperiment(taskId)
     const status = deriveTaskStatus(task, artifacts, runs, experiment)
     if (status !== task.status) this.run('UPDATE workbench_tasks SET status=?,updated_at=? WHERE task_id=?', status, Date.now(), taskId)
-    if (experiment && experiment.control_state === 'running' && runs.length >= task.input.max_runs && runs.every(run => isFinishedRun(run.status) && run.review_artifact_id)) this.run('UPDATE workbench_experiments SET control_state=?,end_reason=? WHERE task_id=?', 'completed', 'budget_used', taskId)
+    if (experiment && experiment.control_state === 'running' && runs.length >= task.input.max_runs && runs.every(run => run.status !== 'submission_unknown' && isFinishedRun(run.status) && run.review_artifact_id)) this.run('UPDATE workbench_experiments SET control_state=?,end_reason=? WHERE task_id=?', 'completed', 'budget_used', taskId)
     return this.getTask(taskId)
   }
   getRunReviewDraft(runId: string): ReviewDraft {
@@ -479,7 +479,7 @@ export class WorkbenchStore {
     const tasks = this.listTasks(input.workspaceId, input.workId, input.branchId).map(task => this.refreshTask(task.task_id))
     const workIds = input.workId ? [input.workId] : this.listWorks(input.workspaceId).map(work => work.work_id)
     const branches = workIds.flatMap(id => this.listBranches(id))
-    const runs = tasks.flatMap(task => this.listRuns(task.task_id)).map(run => ({ ...run, review_draft: this.getRunReviewDraft(run.run_id) }))
+    const runs = tasks.flatMap(task => this.listRuns(task.task_id)).map(run => ({ ...run, review_draft: this.getRunReviewDraft(run.run_id) })).sort((left, right) => left.created_at - right.created_at)
     const experiences = workIds.flatMap(id => this.listExperiences(id))
     const favorites = this.rows('SELECT * FROM workbench_favorites').filter(row => row.target_type === 'run' ? runs.some(run => run.run_id === row.target_id) : experiences.some(experience => experience.experience_id === row.target_id)) as unknown as Favorite[]
     return { workspace_id: input.workspaceId, total_branch_count: totalBranchCount, work_id: input.workId ?? null, works: this.listWorks(input.workspaceId), branches, tasks, artifacts: tasks.flatMap(task => this.listArtifacts(task.task_id)), runs, experiments: tasks.flatMap(task => { const experiment = this.getExperiment(task.task_id); return experiment ? [experiment] : [] }), experiences, favorites, functions: this.listFunctionBindings(input.workspaceId), refreshAfterMs: input.refreshAfterMs ?? 1000 }

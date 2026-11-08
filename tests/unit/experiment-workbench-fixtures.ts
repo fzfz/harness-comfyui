@@ -1,4 +1,4 @@
-import type { WorkflowRuntimeParameterInspection } from '../../src/generation/inspection-contract.ts'
+import type { WorkflowRuntimeParameterInspection, WorkflowRuntimeParameterInspectionParameter } from '../../src/generation/inspection-contract.ts'
 import type {
   AgentModel,
   Branch,
@@ -136,7 +136,7 @@ export const makeTask = (
 export const makeRun = (
   id: string,
   taskId: string,
-  status = 'succeeded',
+  status: WorkbenchRun['status'] = 'succeeded',
 ): WorkbenchRun => ({
   run_id: id,
   workbench_task_id: taskId,
@@ -267,6 +267,20 @@ export const fullProjection = (): WorkbenchProjection => ({
   ).flatMap((kind) => [makeBinding(kind), makeBinding(kind, false)]),
   refreshAfterMs: 0,
 })
+
+export function runInputDescription(parameters: WorkbenchRun['generation_input']['parameters']): WorkflowRuntimeParameterInspection {
+  const current = (parameter: WorkflowRuntimeParameterInspectionParameter) => ({
+    ...parameter, current_value: Object.hasOwn(parameters, parameter.parameter_id) ? parameters[parameter.parameter_id]! : parameter.current_value,
+  })
+  return {
+    parameters: inputDescription.parameters.map(current),
+    size_candidates: inputDescription.size_candidates.map(candidate => candidate.representation === 'width_height'
+      ? { ...candidate, width: current(candidate.width), height: current(candidate.height) }
+      : candidate.representation === 'aspect_ratio_megapixels'
+        ? { ...candidate, aspect_ratio: current(candidate.aspect_ratio), megapixels: current(candidate.megapixels) }
+        : { ...candidate, parameter: current(candidate.parameter) }),
+  }
+}
 
 export const inputDescription: WorkflowRuntimeParameterInspection = {
   parameters: [

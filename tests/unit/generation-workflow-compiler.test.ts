@@ -1515,6 +1515,7 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled).toEqual({
+      inputDescription: { parameters: [{ parameter_id: 'positive_prompt', kind: 'positive_prompt', value_type: 'string', current_value: '1girl, white hair' }], size_candidates: [] },
       actualWorkflow: workflow,
       apiWorkflow: {
         '1': {
@@ -5277,6 +5278,12 @@ describe('ComfyWorkflowCompiler', () => {
     })
 
     expect(compiled.actualWorkflow.nodes.find(node => node.id === 45)?.widgets_values).toEqual([{ a: 1, b: [2] }])
+    expect(compiled.inputDescription).toBeNull()
+    await expect(compiler.compile({
+      instanceId: 'test-instance', workflow: actual,
+      connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+      runtimeParameters: { sampler_name: { a: 9, b: [2] } }, loras: [],
+    })).rejects.toMatchObject({ code: 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED' })
   })
 
   it('uses the upstream sampling stage as the canonical unsuffixed parameter target', async () => {
@@ -6762,4 +6769,26 @@ describe('ComfyWorkflowCompiler', () => {
     }).compile({ instanceId: 'test-instance', workflow, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null }, loras: [] }))
       .rejects.toMatchObject({ code: 'COMFYUI_PROTOCOL_ERROR' })
   })
+})
+
+it.each([
+  { runtimeParameters: {} as Record<string, JsonValue>, expectedPrompt: '1girl, white hair' },
+  { runtimeParameters: { positive_prompt: 'Saved actual prompt' }, expectedPrompt: 'Saved actual prompt' },
+])('returns the effective input description from the same compiled plan: $expectedPrompt', async ({ runtimeParameters, expectedPrompt }) => {
+  const actual = structuredClone(workflow)
+  const producer = actual.nodes[0] as Record<string, JsonValue>
+  producer.inputs = ['source', 'ckpt_name', 'lora_name', 'strength_model', 'steps'].map(name => ({ name, type: 'COMBO', link: null, widget: { name } }))
+  producer.widgets_values = ['source.png', 'old.safetensors', 'old-lora.safetensors', 0.3, 30]
+  const compiler = createCompiler({ fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+    ...objectInfo,
+    ImageProducer: { input: { required: { source: ['STRING', {}], ckpt_name: [['models/selected.safetensors'], {}], lora_name: [['lora/rain.safetensors'], {}], strength_model: ['FLOAT', { min: -20, max: 20 }], steps: ['INT', { min: 1, max: 100 }] } }, input_order: { required: ['source', 'ckpt_name', 'lora_name', 'strength_model', 'steps'], optional: [] }, output_node: false },
+  }))) })
+  const result = await compiler.compile({ instanceId: '8', workflow: actual, connection: { url: 'http://comfy.test', origin: 'http://comfy.test', authorization: null }, runtimeParameters,
+    model: { id: '2', fileName: 'selected.safetensors' }, loras: [{ id: '3', fileName: 'rain.safetensors', weight: 0.7, triggerWords: ['rain'] }],
+  })
+  expect(result.actualWorkflow.nodes[0]!.widgets_values).toEqual(['source.png', 'models/selected.safetensors', 'lora/rain.safetensors', 0.7, 30])
+  expect(result.inputDescription?.parameters).toEqual(expect.arrayContaining([
+    expect.objectContaining({ kind: 'positive_prompt', current_value: expectedPrompt }),
+    expect.objectContaining({ kind: 'steps', current_value: 30 }),
+  ]))
 })

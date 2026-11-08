@@ -17,11 +17,11 @@ export interface FieldOptions {
   disabled?: boolean
 }
 
-export type SaveField = (value: string, expectedValue: string) => Promise<boolean>
+export type SaveField = (value: string, expectedValue: string | null) => Promise<boolean>
 
 function createFieldEditor(isCurrent = () => true) {
-  let edit: { value: string; expected: string } | undefined
-  let queued: { value: string; original: string; save: SaveField } | undefined
+  let edit: { value: string; expected: string | null } | undefined
+  let queued: { value: string; original: string | null; save: SaveField } | undefined
   let saving = false
   let error = ''
   const listeners = new Set<() => void>()
@@ -37,7 +37,7 @@ function createFieldEditor(isCurrent = () => true) {
       const submission = queued
       queued = undefined
       if (!isCurrent()) break
-      const expected = edit?.expected ?? submission.original
+      const expected = edit ? edit.expected : submission.original
       if (submission.value !== expected) {
         const saved = await submission.save(submission.value, expected)
         if (!isCurrent()) { queued = undefined; break }
@@ -64,9 +64,9 @@ function createFieldEditor(isCurrent = () => true) {
       listeners.add(listener)
       return () => { listeners.delete(listener) }
     },
-    change: (value: string, original: string) =>
-      update({ value, expected: edit?.expected ?? original }),
-    commit: (value: string, original: string, save: SaveField) => {
+    change: (value: string, original: string | null) =>
+      update({ value, expected: edit ? edit.expected : original }),
+    commit: (value: string, original: string | null, save: SaveField) => {
       queued = { value, original, save }
       void flush()
     },
@@ -103,7 +103,7 @@ export function AutosaveField({ label, inputLabel = label, className, id, value,
   readonly inputLabel?: string
   readonly className?: string
   readonly id?: string
-  readonly value: string
+  readonly value: string | null
   readonly options: FieldOptions
   readonly save: SaveField
   readonly editor: ReturnType<typeof createFieldEditor>
@@ -116,7 +116,8 @@ export function AutosaveField({ label, inputLabel = label, className, id, value,
     'aria-label': inputLabel,
     'aria-invalid': error ? true : undefined,
     'aria-describedby': error && id ? `${id}-error` : undefined,
-    value: (!locked ? edited : undefined) ?? value,
+    value: (!locked ? edited : undefined) ?? value ?? '',
+    placeholder: value === null ? inputOptions.unresolved : id ? fieldPlaceholders[id] : undefined,
     disabled: options.disabled,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       if (options.disabled) return
@@ -124,7 +125,7 @@ export function AutosaveField({ label, inputLabel = label, className, id, value,
       if (options.saveOnChange) editor.commit(event.target.value, value, save)
     },
     onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-      if (!options.disabled) editor.commit(event.target.value, value, save)
+      if (!options.disabled && (value !== null || editor.getSnapshot() !== undefined)) editor.commit(event.target.value, value, save)
     },
   }
   return <label className={className}>
@@ -134,7 +135,7 @@ export function AutosaveField({ label, inputLabel = label, className, id, value,
     ) : options.multiline ? (
       <textarea {...common} className={options.short ? id === 'original_request' ? 'short branch-goal' : 'short' : ''} />
     ) : (
-      <input {...common} placeholder={id ? fieldPlaceholders[id] : undefined} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} maxLength={options.maxLength} />
+      <input {...common} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} maxLength={options.maxLength} />
     )}
     {error && <p id={id ? `${id}-error` : undefined} className="binding-problem" role="alert">{error}</p>}
   </label>

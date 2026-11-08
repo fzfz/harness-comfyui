@@ -11,6 +11,7 @@ import {
   functionEnvironment,
   treeProjection,
   inputDescription,
+  runInputDescription,
   makeRun,
   makeTask,
 } from './experiment-workbench-fixtures.ts'
@@ -104,6 +105,13 @@ const mount = async (
   const taskDrafts = new Map<string, TaskRequestDraft>()
   const onAction = vi.fn(),
     remote = {
+      getRunInput: vi.fn(async (request: { runId: string }) => {
+        const run = data.runs.find(run => run.run_id === request.runId)!
+        const task = data.tasks.find(task => task.task_id === run.workbench_task_id)!
+        return { run_id: run.run_id, branch_id: task.branch_id, generation_input: structuredClone(run.generation_input),
+          context_refs: structuredClone(task.input.context_refs), input_description: runInputDescription(run.generation_input.parameters),
+          prompt_input: { positive_prompt: String(run.generation_input.parameters.positive_1 ?? ''), negative_prompt: String(run.generation_input.parameters.negative_1 ?? '') } }
+      }),
       getProjection: vi.fn(async (scope: { workId?: string }) => ({
         ...data,
         work_id: scope.workId ?? data.work_id,
@@ -114,7 +122,7 @@ const mount = async (
         return request.draft
       }),
       getEnvironment: async () => functionEnvironment,
-      getInputDescription: vi.fn(async () => inputDescription),
+      getInputDescription: vi.fn(async (_request: import('../../src/workbench-remote.ts').WorkbenchInputDescriptionRequest) => inputDescription),
       previewModelChange: vi.fn(async (request: { modelId: string }) => ({ model: { id: request.modelId, label: 'ANIMA3' }, removed: [] })),
     }
   let renderer!: ReturnType<typeof create>
@@ -130,6 +138,7 @@ const mount = async (
         presets={[{ id: 'preset', name: '工作台预设' }]}
         instances={[{ id: '2', name: 'win3080' }]}
         baseModels={[{ id: '1', label: 'SDXL' }]}
+        routableProviders={['provider']}
         agentModelGroups={[
           {
             id: 'provider',
@@ -245,7 +254,7 @@ describe('experiment workbench prompt editing', () => {
         remote: {
           previewModelChange: request => host.remote.previewModelChange(request, signal),
           getEnvironment: request => host.remote.getEnvironment(request, signal),
-          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
           getProjection: request => host.remote.getProjection(request, signal),
         },
         onAction: request => host.remote.mutate(request, signal),
@@ -772,7 +781,7 @@ describe('experiment workbench instance selection', () => {
         workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, storage,
         remote: {
           previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
-          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
           getProjection: request => host.remote.getProjection(request, signal),
         },
         onAction: request => host.remote.mutate(request, signal),
@@ -812,7 +821,7 @@ describe('experiment workbench shell', () => {
     const source = renderer.root.findByProps({ 'aria-label': '切换分支 暖光探索' })
     expect(nodeText(source.findByProps({ title: runId }))).toContain('run_4ca2c6af…')
     await act(() => renderer.root.findByProps({ 'aria-label': `查看原图 ${runId}` }).props.onClick())
-    expect(renderer.root.findByProps({ role: 'dialog', 'aria-label': `${runId} · 图片 1` })).toBeDefined()
+    expect(nodeText(renderer.root.findByProps({ role: 'dialog', 'aria-labelledby': 'image-title' }).findByProps({ id: 'image-title' }))).toBe(`${runId} · 图片 1`)
   })
 
   it('shows each Run creation time in the reference 24-hour format', async () => {
@@ -1065,7 +1074,7 @@ describe('experiment workbench public interactions', () => {
     expect(
       renderer.root.findByProps({
         role: 'dialog',
-        'aria-label': 'r2 · 图片 1',
+        'aria-labelledby': 'image-title',
       }),
     ).toBeDefined()
     await click(renderer, '关闭原图')
@@ -1203,7 +1212,7 @@ describe('experiment workbench public interactions', () => {
   it('shows real failures and running records and forwards retry, review and favorites', async () => {
     const data = fullProjection()
     data.tasks.push(makeTask('t4'))
-    data.runs.push(makeRun('r4', 't4', 'running'))
+    data.runs.push(makeRun('r4', 't4', 'remote_running'))
     const { renderer, onAction } = await mount(data)
     await click(renderer, '切换分支 暖光探索')
     expect(
@@ -1331,7 +1340,7 @@ describe('experiment workbench task list states', () => {
     vi.useFakeTimers()
     const data = fullProjection()
     data.tasks = [{ ...makeTask('render'), status: 'waiting_generation', execution_state: 'idle' }]
-    data.runs = [makeRun('render-run', 'render', 'running')]
+    data.runs = [makeRun('render-run', 'render', 'remote_running')]
     data.refreshAfterMs = 100
     let current = data
     const { renderer } = await mount(data, {
@@ -3005,7 +3014,7 @@ describe('experiment workbench Catalog removal persistence', () => {
         workspaces: [{ id: scope.workspaceId, name: '资源项目', path: '/workspace/project' }],
         remote: {
           getProjection: request => host.remote.getProjection(request, signal),
-          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
           previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
         },
         catalog: makeCatalog(), onAction,
@@ -3241,7 +3250,7 @@ describe('experiment workbench LoRA draft persistence', () => {
       const options: NonNullable<Parameters<typeof mount>[1]> = {
         workspaceId: scope.workspaceId, workspaces: environment.workspaces, catalog,
         storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
@@ -3332,7 +3341,7 @@ describe('experiment workbench selected template names', () => {
       const environment = await host.remote.getEnvironment({}, signal)
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces,
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       })
       await click(renderer, '选择 Workflow 模板')
@@ -3389,7 +3398,7 @@ describe('experiment workbench selected template names', () => {
       })
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces, onAction,
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
       })
       await click(renderer, '选择 Workflow 模板')
       await click(renderer, '选择 模板 A')
@@ -3478,7 +3487,7 @@ describe('experiment workbench selected template names', () => {
       const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
       const options: NonNullable<Parameters<typeof mount>[1]> = {
         catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces,
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const data = await host.remote.getProjection(scope, signal)
@@ -3519,12 +3528,12 @@ describe('experiment workbench selected template names', () => {
     await act(async () => failB(new Error('Catalog template metadata returned HTTP 503.')))
     const toast = nodeText(renderer.root.findByProps({ className: 'toast' }))
     expect(toast).toContain('Catalog template metadata returned HTTP 503.')
-    expect(templateSummary(renderer)).toEqual([''])
+    expect(templateSummary(renderer)).toEqual(['41'])
     expect(data.branches[0]!.draft).toEqual(expectedDraft)
     expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(expectedDraft.prompt_input.positive_prompt)
     await act(async () => finishA())
     expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe(toast)
-    expect(templateSummary(renderer)).toEqual([''])
+    expect(templateSummary(renderer)).toEqual(['41'])
     expect(data.branches[0]!.draft).toEqual(expectedDraft)
     expect(onAction).toHaveBeenCalledTimes(1)
   })
@@ -3627,7 +3636,7 @@ describe('experiment workbench generation model change confirmation', () => {
         remote: {
           previewModelChange: request => host.remote.previewModelChange(request, signal),
           getProjection: request => host.remote.getProjection(request, signal),
-          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
         },
         onAction,
       })
@@ -3826,7 +3835,7 @@ describe('experiment workbench generation model selection', () => {
         catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, presets: environment.presets,
         baseModels: [{ id: '1', label: 'anima' }],
         agentModelGroups: [{ id: run.agent_model.provider, name: '提供商 A', models: [{ id: run.agent_model.model, name: 'Agent 模型 A' }] }],
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const data = await host.remote.getProjection(scope, signal)
@@ -4423,7 +4432,7 @@ describe('experiment workbench overlay and loading lifecycle', () => {
   it('shows a projection failure and retries the current workspace', async () => {
     const remote = {
       getEnvironment: async () => functionEnvironment,
-      getInputDescription: vi.fn(async () => inputDescription),
+      getInputDescription: vi.fn(async (_request: import('../../src/workbench-remote.ts').WorkbenchInputDescriptionRequest) => inputDescription),
       getProjection: vi
         .fn()
         .mockRejectedValueOnce(new Error('读取失败'))
@@ -4446,7 +4455,7 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     data.branches.find(branch => branch.branch_id === 'cool')!.source_run_id = null
     data.runs = data.runs.filter(run => run.workbench_task_id !== 'cool-task')
     data.runs.find(run => run.run_id === 'warm-r1')!.status = 'failed'
-    data.runs.find(run => run.run_id === 'warm-r2')!.status = 'running'
+    data.runs.find(run => run.run_id === 'warm-r2')!.status = 'remote_running'
     const { renderer, onAction } = await mount(data)
     await click(renderer, '收起主分支')
     await click(renderer, '查看分支图')
@@ -4507,7 +4516,7 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     const { renderer } = await mount(treeProjection())
     await click(renderer, '比较运行')
     await click(renderer, '查看原图 root-r1')
-    expect(renderer.root.findByProps({ role: 'dialog', 'aria-label': 'root-r1 · 图片 1' })).toBeDefined()
+    expect(nodeText(renderer.root.findByProps({ role: 'dialog', 'aria-labelledby': 'image-title' }).findByProps({ id: 'image-title' }))).toBe('root-r1 · 图片 1')
     await click(renderer, '关闭原图')
     expect(renderer.root.findAllByProps({ className: 'compare-grid' })).toHaveLength(1)
   })
@@ -4696,7 +4705,7 @@ describe('experiment workbench selected context summaries', () => {
         storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
         remote: {
           getProjection: request => host.remote.getProjection(request, signal),
-          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
           previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
         },
         onAction: request => host.remote.mutate(request, signal),
@@ -4932,6 +4941,7 @@ describe('experiment workbench comparison evidence', () => {
     await click(renderer, '切换分支 暖光探索')
     await click(renderer, '查看运行 r2')
     await click(renderer, '比较运行')
+    await click(renderer, '比较运行 r1')
     await click(renderer, '比较结果')
     expect(onAction).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -5032,6 +5042,7 @@ describe('experiment workbench function editor lifecycle', () => {
       models: {
         ...functionEnvironment.models,
         groups: [...functionEnvironment.models.groups, { id: 'provider-other', name: '其他提供商', models: [{ id: 'fast', name: '快速模型' }] }],
+        routableProviders: ['provider', 'provider-other'],
       },
     }))
     const { renderer, onAction } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
@@ -5987,7 +5998,7 @@ describe('experiment workbench task status notifications', () => {
 describe('experiment workbench task controls preserve navigation', () => {
   it('interrupts an Agent with an in-flight Run and retains its original task card and results', async () => {
     const task = { ...makeTask('in-flight-task', 'child'), status: 'waiting_generation' as const, execution_state: 'running' as const }
-    let data: WorkbenchProjection = { ...fullProjection(), tasks: [task], runs: [makeRun('in-flight-run', task.task_id, 'running')] }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [task], runs: [makeRun('in-flight-run', task.task_id, 'remote_running')] }
     const onAction = vi.fn(async () => {
       data = { ...data, tasks: [{ ...task, status: 'interrupted', execution_state: 'interrupted' }] }
       return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child' }
@@ -6001,7 +6012,7 @@ describe('experiment workbench task controls preserve navigation', () => {
     expect(nodeText(card)).toContain('已中断')
     expect(nodeText(card)).toContain('继续任务')
     expect(nodeText(card)).toContain('查看运行 in-flight-run')
-    expect(data.runs[0]!.status).toBe('running')
+    expect(data.runs[0]!.status).toBe('remote_running')
   })
 
   it('continues the original interrupted task without leaving the task page', async () => {
@@ -6472,7 +6483,7 @@ describe('experiment workbench artifact adoption through Remote', () => {
         workspaceId: root.workspaceId, workspaces: [{ id: root.workspaceId, name: '测试工作区', path: '/workspace/project' }],
         onAction,
         remote: { getProjection: async scope => frozen ? structuredClone(shown) : host.remote.getProjection(scope, signal),
-          getInputDescription: scope => host.remote.getInputDescription(scope, signal) },
+          getInputDescription: scope => host.remote.getInputDescription(scope, signal), getRunInput: request => host.remote.getRunInput(request, signal) },
       })
       await click(renderer, '任务')
       if (version === 'stale') await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '第二窗口手工文本' }, signal)
@@ -6548,6 +6559,7 @@ describe('experiment workbench Agent result delivery through Remote', () => {
     try {
       const root = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Agent 结果', goal: '玻璃花房' } }, signal)
       const workScope = { workspaceId: root.workspaceId, workId: root.workId! }
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: kind, value: 'preset-a' }, signal)
       const other = await host.remote.mutate({ type: 'new-work', workspaceId: root.workspaceId, value: { name: '刷新来源', goal: '验证结果刷新' } }, signal)
       await host.remote.mutate({ ...root, type: 'resource-select', id: '2', value: { kind: 'model', id: '2' } }, signal)
       if (kind === 'rewrite') {
@@ -6562,11 +6574,13 @@ describe('experiment workbench Agent result delivery through Remote', () => {
       const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
       const { renderer } = await mount(await host.remote.getProjection(workScope, signal), {
         workspaceId: root.workspaceId, workspaces: environment.workspaces, presets: environment.presets, instances: environment.instances,
+        agentModelGroups: environment.models.groups, routableProviders: environment.models.routableProviders,
         baseModels: [{ id: '1', label: 'SDXL' }], catalog: { ...makeCatalog(), search: host.catalog.search, details: host.catalog.details }, onAction,
-        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal),
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
           getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) },
       })
       await click(renderer, { prompt: '生成提示词', rewrite: '改写提示词', parameters: '建议参数' }[kind])
+      expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)).toEqual([])
       const instructions = '  保留窗框\n调整自然光  '
       await change(renderer, '任务要求', instructions)
       if (kind === 'parameters') {
@@ -6652,7 +6666,7 @@ describe('experiment workbench resource adoption through Remote', () => {
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         workspaceId: root.workspaceId, workspaces: [{ id: root.workspaceId, name: '测试工作区', path: '/workspace/project' }],
         catalog: { ...makeCatalog(), details: host.catalog.details }, onAction,
-        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal) },
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal) },
       })
       const picked = () => renderer.root.findAllByProps({ className: 'picked-lora' })
       expect(picked()).toHaveLength(1)
@@ -6715,7 +6729,7 @@ describe('experiment workbench artifact branch through Remote', () => {
       const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         workspaceId: source.workspaceId, workspaces: [{ id: source.workspaceId, name: '测试工作区', path: '/workspace/project' }], onAction,
-        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal) },
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal) },
       })
       await click(renderer, '切换分支 其他分支')
       await click(renderer, '任务')
@@ -6799,7 +6813,7 @@ describe('experiment workbench long artifact branch name', () => {
       const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         workspaceId: source.workspaceId, workspaces: [{ id: source.workspaceId, name: '测试工作区', path: '/workspace/project' }], onAction,
-        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal) },
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal) },
       })
       await click(renderer, '任务')
       await click(renderer, '从产物创建分支')
@@ -6819,5 +6833,455 @@ describe('experiment workbench long artifact branch name', () => {
       expect(projection.branches.find(branch => branch.branch_id === source.branchId)!.draft.prompt_input.positive_prompt).toBe('父分支手工输入')
       await act(() => renderer.unmount())
     } finally { await host.dispose() }
+  })
+})
+
+
+describe('experiment workbench independent comparison preview', () => {
+  it.each(['close', 'escape'] as const)('previews the comparison Run without changing the primary Run and returns with %s', async close => {
+    const data = treeProjection()
+    const { renderer } = await mount(data)
+    await click(renderer, '比较运行')
+    await click(renderer, '比较运行 warm-r1')
+    const headings = () => renderer.root.findByProps({ className: 'compare-grid' }).findAllByType('h3').map(nodeText)
+    expect(headings()).toEqual(['warm-r1 · 暖光', 'root-r1 · 主分支'])
+    await click(renderer, '查看原图 warm-r1')
+    const dialog = renderer.root.findByProps({ role: 'dialog', 'aria-labelledby': 'image-title' })
+    expect(nodeText(dialog.findByProps({ id: dialog.props['aria-labelledby'] }))).toBe('warm-r1 · 图片 1')
+    expect(dialog.findAllByType('img')[0]!.props.src).toBe(data.runs.find(run => run.run_id === 'warm-r1')!.media[0]!.url)
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('主分支')
+    expect(headings()).toEqual(['warm-r1 · 暖光', 'root-r1 · 主分支'])
+    if (close === 'close') await click(renderer, '关闭原图')
+    else await act(async () => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
+    expect(headings()).toEqual(['warm-r1 · 暖光', 'root-r1 · 主分支'])
+    await click(renderer, '结束比较')
+    expect(renderer.root.findByProps({ 'aria-label': '查看运行 root-r1' }).props['aria-pressed']).toBe(true)
+  })
+})
+
+
+describe('experiment workbench Run actions through Remote', () => {
+  type Host = Awaited<ReturnType<typeof import('../support/workbench-host.ts').createWorkbenchHostFixture>>
+  const signal = new AbortController().signal
+  const liveOptions = async (host: Host, workspaceId: string) => {
+    const environment = await host.remote.getEnvironment({ workspaceId }, signal)
+    return {
+      workspaceId, workspaces: environment.workspaces, presets: environment.presets, instances: environment.instances,
+      agentModelGroups: environment.models.groups, routableProviders: environment.models.routableProviders,
+      catalog: { ...makeCatalog(), details: host.catalog.details },
+      onAction: vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal)),
+      remote: { getProjection: request => host.remote.getProjection(request, signal),
+        getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal) },
+    } satisfies NonNullable<Parameters<typeof mount>[1]>
+  }
+  const acceptTask = async (host: Host, workspaceId: string, task: WorkbenchProjection['tasks'][number]) => {
+    const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+    const result = await host.runtime.acceptGenerations({ workspaceId, sessionId: task.session_id!, turn: 1, callId: 'visible-run' },
+      [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+    return result.items[0]!.runId
+  }
+
+  it('keeps missing-input text and creates two independent Tasks and Runs from repeated visible submissions', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture()
+    try {
+      const scope = await host.remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: '独立运行', goal: '固定每次输入' } }, signal)
+      await host.remote.mutate({ workspaceId: scope.workspaceId, type: 'function-preset', id: 'run', value: 'preset-a' }, signal)
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: '保留缺参时的提示词' }, signal)
+      const options = await liveOptions(host, scope.workspaceId)
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
+      await click(renderer, '运行任务')
+      expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('实例')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('保留缺参时的提示词')
+      expect((await host.remote.getProjection(scope, signal)).tasks).toHaveLength(0)
+      await change(renderer, 'ComfyUI 实例', '8')
+      const ids: string[] = []
+      for (let index = 0; index < 2; index++) {
+        expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '运行任务')!.props.disabled).toBe(false)
+        await click(renderer, '运行任务')
+        const tasks = (await host.remote.getProjection(scope, signal)).tasks
+        const task = tasks.at(-1)!
+        ids.push(await acceptTask(host, scope.workspaceId, task))
+        await host.runtime.advance()
+        await click(renderer, '查看运行记录')
+        await click(renderer, '关闭面板')
+        await act(async () => { await new Promise(resolve => setTimeout(resolve, 800)) })
+        expect(renderer.root.findAllByType('button').some(node => node.props['aria-label'] === '查看运行 ' + ids[index])).toBe(true)
+      }
+      expect(new Set(ids).size).toBe(2)
+      const after = await host.remote.getProjection(scope, signal)
+      expect(after.tasks).toHaveLength(2)
+      expect(after.runs.map(run => run.run_id)).toEqual(ids)
+      expect(after.runs.map(run => run.generation_input)).toEqual([after.tasks[0]!.input.generation_input, after.tasks[1]!.input.generation_input])
+    } finally { await host.dispose() }
+  })
+
+  it('forks an unmapped Run and maps only each prompt slot explicitly edited through the existing inputs', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture()
+    try {
+      const root = await host.remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: '未知映射来源', goal: '保留每个原始参数' } }, signal)
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'run', value: 'preset-a' }, signal)
+      for (const [field, value] of [['instance_id', '8'], ['positive_prompt', '原始正向'], ['negative_prompt', '原始负向']] as const)
+        await host.remote.mutate({ ...root, type: 'update-draft', field, value }, signal)
+      for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }])
+        await host.remote.mutate({ ...root, type: 'resource-select', value }, signal)
+      const receipt = await host.remote.mutate({ ...root, type: 'run' }, signal)
+      const sourceTask = (await host.remote.getProjection(root, signal)).tasks.find(task => task.task_id === receipt.taskId)!
+      const runId = await acceptTask(host, root.workspaceId, sourceTask)
+      const raw = structuredClone(sourceTask.input.generation_input)
+      const options = await liveOptions(host, root.workspaceId)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '从此运行创建分支')
+      await act(async () => renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({
+        preventDefault() {}, currentTarget: { name: '未解析输入分支', goal: '逐槽填写' },
+      }))
+      const getCreated = async () => (await host.remote.getProjection(root, signal)).branches.find(branch => branch.name === '未解析输入分支')!
+      const created = await getCreated()
+      expect(created.draft.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null })
+      expect(created.draft.generation_input).toEqual(raw)
+      for (const label of ['正向提示词', '负向提示词']) {
+        const input = renderer.root.findByProps({ 'aria-label': label })
+        expect(input.props.value).toBe('')
+        expect(input.props.placeholder).toBe('未解析')
+        await act(async () => input.props.onBlur({ target: { value: '' } }))
+      }
+      expect((await getCreated()).draft.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null })
+      await change(renderer, '正向提示词', '明确填写的正向')
+      expect((await getCreated()).draft.prompt_input).toEqual({ positive_prompt: '明确填写的正向', negative_prompt: null })
+      await click(renderer, '运行任务')
+      expect(options.onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'run', branchId: created.branch_id }))
+      expect(await options.onAction.mock.results.at(-1)!.value).toMatchObject({ branchId: created.branch_id })
+      const first = (await host.remote.getProjection({ workspaceId: root.workspaceId, workId: root.workId }, signal)).tasks.filter(task => task.branch_id === created.branch_id).at(-1)!
+      expect(first, renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' / ')).toBeDefined()
+      expect(first.input.generation_input).toEqual({ ...raw, parameters: { ...raw.parameters, positive: '明确填写的正向' } })
+      await change(renderer, '负向提示词', '')
+      expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.placeholder).toBeUndefined()
+      await click(renderer, '运行任务')
+      const second = (await host.remote.getProjection({ workspaceId: root.workspaceId, workId: root.workId }, signal)).tasks.filter(task => task.branch_id === created.branch_id).at(-1)!
+      expect(second.task_id).not.toBe(first.task_id)
+      expect(second.input.generation_input).toEqual({ ...raw, parameters: { ...raw.parameters, positive: '明确填写的正向', negative: '' } })
+      expect((await host.remote.getProjection(root, signal)).runs.find(run => run.run_id === runId)!.generation_input).toEqual(raw)
+    } finally { await host.dispose() }
+  })
+
+  it('retries the failed Run from its visible action and derives a grandchild without changing the parent draft', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture({
+      inspectRuntimeParameters: async () => inputDescription, validateInput: async () => {},
+      prepare: async () => ({ instanceId: '8', instanceTitle: '保存的实例', templateTitle: '保存的模板', inputDescription,
+        sourceSnapshot: {}, actualWorkflow: {}, apiWorkflow: {}, expectedOutputNodeIds: [],
+        connection: { origin: 'http://comfy.fixture.test', url: 'http://comfy.fixture.test', authorization: null } }),
+    })
+    try {
+      const root = await host.remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: '来源运行', goal: '保留失败来源' } }, signal)
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'run', value: 'preset-a' }, signal)
+      for (const [field, value] of [['instance_id', '8'], ['positive_prompt', '来源 Run 的固定提示词']] as const)
+        await host.remote.mutate({ ...root, type: 'update-draft', field, value }, signal)
+      for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }])
+        await host.remote.mutate({ ...root, type: 'resource-select', value }, signal)
+      const child = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '来源子分支', original_request: '子分支要求' } }, signal)
+      const receipt = await host.remote.mutate({ ...child, type: 'run' }, signal)
+      const task = (await host.remote.getProjection(child, signal)).tasks.find(task => task.task_id === receipt.taskId)!
+      const runId = await acceptTask(host, child.workspaceId, task)
+      await host.runtime.advance()
+      await host.runtime.advance()
+      await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '父分支后来的手工修改' }, signal)
+      const options = await liveOptions(host, child.workspaceId)
+      const { renderer } = await mount(await host.remote.getProjection(child, signal), options)
+      await click(renderer, '切换分支 来源子分支')
+      await click(renderer, '查看运行 ' + runId)
+      const failure = (await host.remote.getProjection(child, signal)).runs.find(run => run.run_id === runId)!.error!.message
+      expect(nodeText(renderer.root.findByProps({ className: 'error-stage' }))).toContain(failure)
+      await click(renderer, '重试任务')
+      await act(async () => { await options.onAction.mock.results.at(-1)!.value })
+      const retry = (await host.remote.getProjection(child, signal)).tasks.find(task => task.retry_of_run_id === runId)!
+      expect(retry, renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' / ')).toBeDefined()
+      expect(retry.input.generation_input).toEqual(task.input.generation_input)
+      const retryId = await acceptTask(host, child.workspaceId, retry)
+      await host.runtime.advance()
+      await host.runtime.advance()
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 800)) })
+      expect(nodeText(renderer.root.findByProps({ 'aria-label': '查看运行 ' + retryId }))).toContain('重试来源 ' + runId)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '从此运行创建分支')
+      await act(async () => renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({
+        preventDefault() {}, currentTarget: { name: '运行孙分支', goal: '独立探索要求' },
+      }))
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('运行孙分支')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('来源 Run 的固定提示词')
+      expect(nodeText(renderer.root.findByProps({ className: 'canvas' }))).toContain('当前分支暂无运行记录')
+      const after = await host.remote.getProjection(child, signal), created = after.branches.find(branch => branch.name === '运行孙分支')!
+      expect(created).toMatchObject({ parent_branch_id: child.branchId, source_run_id: runId, original_request: '独立探索要求', draft: { generation_input: task.input.generation_input } })
+      expect(after.branches.find(branch => branch.branch_id === child.branchId)!.draft.prompt_input.positive_prompt).toBe('父分支后来的手工修改')
+      expect(after.runs.find(run => run.run_id === runId)!.status).toBe('failed')
+      await click(renderer, '查看分支图')
+      const graph = renderer.root.findByProps({ className: 'branch-graph' })
+      expect(nodeText(graph)).toContain('来源：来源子分支 · ')
+      expect(graph.findAllByProps({ title: runId })).not.toHaveLength(0)
+      await act(async () => { graph.findAllByProps({ className: 'branch-graph-node' }).find(node => nodeText(node).includes('运行孙分支'))!.findAllByType('button').find(node => nodeText(node) === '进入分支')!.props.onClick() })
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('运行孙分支')
+    } finally { await host.dispose() }
+  })
+})
+
+describe('experiment workbench mixed Run browsing', () => {
+  it('keeps all eight cards and their own media, state, task, initiator and retry provenance while scrolling', async () => {
+    const data = fullProjection()
+    data.tasks = Array.from({ length: 8 }, (_, index) => ({ ...makeTask('mixed-task-' + index, 'root'), binding_snapshot: { ...makeTask('source').binding_snapshot, preset_id: index % 2 ? 'preset-other' : 'preset' } }))
+    data.runs = data.tasks.map((task, index) => ({ ...makeRun('mixed-run-' + index, task.task_id, index === 2 ? 'failed' : index === 5 ? 'remote_running' : 'succeeded'),
+      initiator: index % 2 ? 'agent' as const : 'human' as const, retry_of_run_id: index === 7 ? 'mixed-run-2' : null,
+      error: index === 2 ? { code: 'MEDIA_DOWNLOAD_FAILED', message: '第三次运行媒体下载失败' } : null }))
+    const { renderer, onAction } = await mount(data, { presets: functionEnvironment.presets })
+    const strip = renderer.root.findByProps({ className: 'run-cards' })
+    expect(strip.findAllByType('button').map(node => node.props['aria-label'])).toEqual(data.runs.map(run => '查看运行 ' + run.run_id))
+    await act(() => strip.props.onScroll({ currentTarget: { scrollTop: 0, scrollLeft: 900 } }))
+    for (let index = 0; index < data.runs.length; index++) {
+      const run = data.runs[index]!
+      await click(renderer, '查看运行 ' + run.run_id)
+      const card = renderer.root.findByProps({ 'aria-label': '查看运行 ' + run.run_id })
+      expect(card.props['aria-pressed']).toBe(true)
+      expect(nodeText(card)).toContain(run.workbench_task_id)
+      expect(nodeText(card)).toContain(index % 2 ? 'Agent' : '人工')
+      expect(nodeText(card)).toContain(index % 2 ? '绘图预设' : '工作台预设')
+      const canvas = renderer.root.findByProps({ className: 'canvas' })
+      if (run.status === 'succeeded') expect(canvas.findAllByType('img')[0]!.props.src).toBe(run.media[0]!.url)
+      else expect(nodeText(canvas)).toContain(run.error?.message ?? '生成中')
+    }
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '查看运行 mixed-run-7' }))).toContain('重试来源 mixed-run-2')
+    await act(() => strip.props.onScroll({ currentTarget: { scrollTop: 0, scrollLeft: 0 } }))
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
+describe('experiment workbench Run history time', () => {
+  it('shows each work-wide Run time and locates the exact record across branches', async () => {
+    const data = treeProjection()
+    data.runs.forEach((run, index) => { run.created_at = new Date(2026, 10, 9, 14, index).getTime() })
+    const { renderer } = await mount(data)
+    await click(renderer, '查看运行记录')
+    const rows = renderer.root.findByProps({ className: 'sheet-body' }).findAllByProps({ className: 'run-row' })
+    expect(rows.map(row => nodeText(row.findAllByType('h3')[0]!))).toEqual(data.runs.slice().reverse().map(run => run.run_id + ' · ' + data.branches.find(branch => branch.branch_id === data.tasks.find(task => task.task_id === run.workbench_task_id)!.branch_id)!.name))
+    expect(rows.map(row => nodeText(row.findByProps({ className: 'detail-line' })))).toEqual(data.runs.slice().reverse().map(run => new Date(run.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })))
+    await act(async () => { rows[0]!.findAllByType('button').find(node => nodeText(node) === '查看运行')!.props.onClick() })
+    expect(renderer.root.findByProps({ 'aria-label': '查看运行 ' + data.runs.at(-1)!.run_id }).props['aria-pressed']).toBe(true)
+    expect(renderer.root.findAllByProps({ className: 'sheet' })).toHaveLength(0)
+  })
+})
+
+describe('experiment workbench comparison details', () => {
+  it('defaults to the last alternative and shows each saved prompt, guidance and non-success state', async () => {
+    const data = treeProjection(), last = data.runs.at(-1)!
+    last.status = 'failed'
+    last.error = { code: 'MEDIA_DOWNLOAD_FAILED', message: '此 Run 的媒体下载失败' }
+    const { renderer } = await mount(data)
+    await click(renderer, '比较运行')
+    const cells = renderer.root.findByProps({ className: 'compare-grid' }).findAllByProps({ className: 'compare-cell' })
+    expect(nodeText(cells[0]!.findAllByType('h3')[0]!)).toContain(last.run_id)
+    expect(nodeText(cells[0]!)).toContain('此 Run 的媒体下载失败')
+    expect(nodeText(cells[0]!.findByProps({ className: 'compare-run-state failed' }))).toContain('运行失败')
+    expect(nodeText(cells[1]!)).toContain('引导强度 5')
+    expect(nodeText(cells[1]!.findAllByType('p').at(-1)!)).toBe('glass house')
+  })
+})
+
+describe('experiment workbench execution availability', () => {
+  it('uses the actual provider route for builtin and custom execution without losing the Branch draft', async () => {
+    const data = fullProjection()
+    data.functions.push({ ...data.functions.find(item => item.kind === 'run')!, function_id: 'custom-run', builtin: false, name: '自定义运行' })
+    data.branches[0]!.draft.prompt_input.positive_prompt = '保持已填内容'
+    const { renderer, onAction } = await mount(data, { routableProviders: [] })
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '运行任务')!.props.disabled).toBe(true)
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '自定义运行')!.props.disabled).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ className: 'preset-unavailable' }))).toContain('提供商当前无法执行任务')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('保持已填内容')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
+describe('experiment workbench detailed Run phases', () => {
+  it('shows each persisted phase and treats unknown submission as awaiting verification without retrying', async () => {
+    vi.useFakeTimers()
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [makeTask('phase-task', 'root')], runs: [makeRun('phase-run', 'phase-task', 'created')], refreshAfterMs: 100 }
+    const { renderer, onAction } = await mount(data, { remote: { getProjection: async () => structuredClone(data) } })
+    for (const [status, label] of [
+      ['created', '准备中'], ['prepared', '准备完成'], ['submitting', '提交中'], ['remote_pending', '排队中'],
+      ['remote_running', '生成中'], ['downloading', '下载中'], ['cancelling', '取消中'], ['submission_unknown', '提交状态待核对'],
+    ] as const) {
+      data = { ...data, runs: [{ ...data.runs[0]!, status: status!, error: status === 'submission_unknown' ? { code: 'UNKNOWN', message: '提交结果尚未确认，请核对实例。' } : null }] }
+      await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(label)
+      expect(nodeText(renderer.root.findByProps({ className: 'canvas' }))).toContain(label)
+    }
+    expect(nodeText(renderer.root.findByProps({ className: 'canvas' }))).toContain('提交结果尚未确认，请核对实例。')
+    expect(renderer.root.findAllByType('button').map(nodeText)).not.toContain('重试任务')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '查看运行记录' }))).toBe('运行记录')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('experiment workbench fixed historical Run input', () => {
+  it('reads the saved Run description and context without merging the current Branch or initial Task', async () => {
+    const data = fullProjection(), catalog = makeCatalog(), run = data.runs[0]!
+    data.branches[0]!.draft.base_model_id = '2'
+    data.tasks[0]!.input.base_model_id = '2'
+    data.branches[0]!.draft.context_refs = [{ kind: 'character', id: '15' }]
+    data.branches[0]!.draft.prompt_input.positive_prompt = '当前草稿'
+    const fixed = { run_id: run.run_id, branch_id: 'root', generation_input: { ...run.generation_input, model: { id: '11', file_name: 'saved.safetensors' } },
+      context_refs: [{ kind: 'work' as const, id: '14' }], input_description: inputDescription, prompt_input: { positive_prompt: '保存的历史提示词', negative_prompt: '保存的历史负向词' } }
+    const getRunInput = vi.fn(async () => structuredClone(fixed))
+    const { renderer, remote } = await mount(data, { catalog, baseModels: [{ id: '1', label: 'SDXL' }, { id: '2', label: 'ANIMA3' }], remote: { getRunInput } })
+    expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain('SDXL')
+    await change(renderer, '查看运行输入', '', true)
+    expect(getRunInput).toHaveBeenCalledWith({ workspaceId: 'workspace-a', workId: 'work-a', runId: 'r1' })
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('保存的历史提示词')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '已选资源' }))).toContain('生成模型 · SDXL')
+    const contexts = renderer.root.findByProps({ 'aria-label': '参考上下文' })
+    expect(nodeText(contexts)).toContain('花房作品')
+    expect(nodeText(contexts)).not.toContain('少女角色')
+    expect(renderer.root.findByProps({ className: 'configuration', disabled: true })).toBeDefined()
+    expect(remote.getInputDescription.mock.calls.every(([request]) => !('runId' in request))).toBe(true)
+    await click(renderer, '编辑任务输入')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('当前草稿')
+  })
+})
+
+
+describe('experiment workbench compiled historical parameter values', () => {
+  it('uses saved compiled values in the caption, comparison and inspector while preserving the original request', async () => {
+    const data = fullProjection(), target = data.runs[0]!, request = structuredClone(target.generation_input)
+    target.generation_input.parameters.seed_1 = -1
+    request.parameters.seed_1 = -1
+    target.generation_input.parameters.steps_1 = 15
+    request.parameters.steps_1 = 15
+    const saved = { ...inputDescription, parameters: inputDescription.parameters.map(parameter => ({
+      ...parameter, current_value: parameter.kind === 'seed' ? 38521047 : parameter.kind === 'steps' ? 34 : parameter.current_value,
+    })) }
+    const getRunInput = vi.fn(async (scope: { runId: string }) => ({ run_id: scope.runId, branch_id: 'root',
+      generation_input: data.runs.find(run => run.run_id === scope.runId)!.generation_input, context_refs: [],
+      input_description: scope.runId === target.run_id ? saved : inputDescription,
+      prompt_input: { positive_prompt: '固定正向词', negative_prompt: '' } }))
+    const { renderer, onAction } = await mount(data, { remote: { getRunInput } })
+    expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain('Seed 38521047 · 34 步')
+    await change(renderer, '查看运行输入', '', true)
+    expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('38521047')
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('34')
+    await click(renderer, '比较运行')
+    const primary = renderer.root.findByProps({ className: 'compare-grid' }).findAllByProps({ className: 'compare-cell' }).find(cell => nodeText(cell.findAllByType('h3')[0]!).startsWith(target.run_id))!
+    expect(nodeText(primary)).toContain('Seed 38521047')
+    expect(target.generation_input).toEqual(request)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
+describe('experiment workbench independently unresolved prompts', () => {
+  it('keeps unknown slots distinct from a known empty string and saves only an explicitly edited slot', async () => {
+    let data = fullProjection()
+    data.branches[0]!.draft.prompt_input = { positive_prompt: null, negative_prompt: null }
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === 'update-draft') data = { ...data, branches: data.branches.map(branch => branch.branch_id === request.branchId
+        ? { ...branch, draft: { ...branch.draft, prompt_input: { ...branch.draft.prompt_input, [request.field!]: request.value } } } as Branch : branch) }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getProjection: async () => data } })
+    const positive = () => renderer.root.findByProps({ 'aria-label': '正向提示词' })
+    const negative = () => renderer.root.findByProps({ 'aria-label': '负向提示词' })
+    expect(positive().props.value).toBe('')
+    expect(positive().props.placeholder).toBe('未解析')
+    expect(negative().props.placeholder).toBe('未解析')
+    await act(async () => positive().props.onBlur({ target: { value: '' } }))
+    expect(onAction).not.toHaveBeenCalled()
+    await change(renderer, '正向提示词', '')
+    expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'update-draft', field: 'positive_prompt', value: '' }))
+    expect(data.branches[0]!.draft.prompt_input).toEqual({ positive_prompt: '', negative_prompt: null })
+    expect(positive().props.placeholder).toBeUndefined()
+    expect(negative().props.placeholder).toBe('未解析')
+    await change(renderer, '负向提示词', '明确填写的负向词')
+    expect(data.branches[0]!.draft.prompt_input).toEqual({ positive_prompt: '', negative_prompt: '明确填写的负向词' })
+  })
+})
+
+describe('experiment workbench restored historical input', () => {
+  it('opens a saved historical view without requesting the current Branch template description', async () => {
+    const data = fullProjection(), getInputDescription = vi.fn(async () => { throw Error('当前模板已经删除') })
+    const storage = { getItem: (key: string) => key.endsWith(':workspace-a') ? JSON.stringify({ workId: 'work-a', branchId: 'root', selectedRunId: 'r1', inspectRun: true }) : null, setItem: vi.fn() }
+    const { renderer } = await mount(data, { storage, remote: { getInputDescription } })
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('glass house')
+    expect(getInputDescription).not.toHaveBeenCalled()
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await click(renderer, '编辑任务输入')
+    expect(getInputDescription).toHaveBeenCalledTimes(1)
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('当前模板已经删除')
+  })
+})
+
+describe('experiment workbench historical read errors', () => {
+  it.each([new Error('历史输入读取失败，请稍后重试。'), '历史输入读取失败，请稍后重试。'])('keeps the draft readable and retries a failed historical read after selecting another Run: %s', async failure => {
+    const data = fullProjection(), run = data.runs[0]!
+    const fixed = { run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
+      context_refs: [], input_description: inputDescription, prompt_input: { positive_prompt: '恢复后的固定提示词', negative_prompt: '' } }
+    const getRunInput = vi.fn(async (request: { runId: string }) => ({ ...fixed, run_id: request.runId })).mockRejectedValueOnce(failure)
+    const { renderer } = await mount(data, { remote: { getRunInput } })
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('历史输入读取失败')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('glass house')
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '查看运行 r2')
+    await click(renderer, '切换分支 主分支')
+    await click(renderer, '查看运行 r1')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('恢复后的固定提示词')
+    expect(getRunInput.mock.calls.filter(([request]) => request.runId === 'r1')).toHaveLength(2)
+  })
+
+  it('ignores a late historical response while inspecting another Run and reuses it only for its own ID', async () => {
+    const data = fullProjection()
+    let resolve!: (value: import('../../src/workbench/contract.ts').WorkbenchRunInput) => void
+    const first = new Promise<import('../../src/workbench/contract.ts').WorkbenchRunInput>(finish => { resolve = finish })
+    const fixed = (runId: string) => ({ run_id: runId, branch_id: runId === 'r1' ? 'root' : 'child',
+      generation_input: data.runs.find(run => run.run_id === runId)!.generation_input, context_refs: [], input_description: inputDescription,
+      prompt_input: { positive_prompt: runId + ' 固定提示词', negative_prompt: '' } })
+    const getRunInput = vi.fn(async (request: { runId: string }) => request.runId === 'r1' ? first : fixed(request.runId))
+    const { renderer } = await mount(data, { remote: { getRunInput } })
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '查看运行 r2')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('r2 固定提示词')
+    await act(async () => { resolve(fixed('r1')) })
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('r2 固定提示词')
+    await click(renderer, '切换分支 主分支')
+    await click(renderer, '查看运行 r1')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('r1 固定提示词')
+    expect(getRunInput.mock.calls.filter(([request]) => request.runId === 'r1')).toHaveLength(1)
+  })
+})
+
+describe('experiment workbench preparing historical Run input', () => {
+  it('shows raw saved parameters when description is absent and reloads after preparation updates the Run', async () => {
+    vi.useFakeTimers()
+    let data: WorkbenchProjection = { ...fullProjection(), runs: [makeRun('preparing-history', 't1', 'created')], refreshAfterMs: 100 }
+    data.runs[0]!.generation_input.parameters = { raw_parameter_77: '保存的参数', positive_1: '固定正向' }
+    let prepared = false
+    const getRunInput = vi.fn(async () => ({ run_id: 'preparing-history', branch_id: 'root', generation_input: data.runs[0]!.generation_input,
+      context_refs: [], input_description: prepared ? inputDescription : null,
+      prompt_input: prepared ? { positive_prompt: '固定正向', negative_prompt: '' } : { positive_prompt: null, negative_prompt: null } }))
+    const { renderer } = await mount(data, { remote: { getRunInput, getProjection: async () => structuredClone(data) } })
+    await change(renderer, '查看运行输入', '', true)
+    expect(renderer.root.findByProps({ 'aria-label': 'raw_parameter_77' }).props.value).toBe('保存的参数')
+    const picked = renderer.root.findByProps({ 'aria-label': '已选资源' })
+    expect(nodeText(picked)).toContain('生成模型 · 11')
+    expect(picked.findAllByType('b').map(nodeText)).toContain('12')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.placeholder).toBe('未解析')
+    expect(getRunInput).toHaveBeenCalledTimes(1)
+    expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain('Seed 未记录 · 未记录 步')
+    await click(renderer, '查看运行记录')
+    expect(nodeText(renderer.root.findByProps({ className: 'sheet-body' }))).toContain('Seed 未记录')
+    await click(renderer, '关闭面板')
+    prepared = true
+    data = { ...data, runs: [{ ...data.runs[0]!, status: 'prepared', updated_at: 2000 }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(getRunInput).toHaveBeenCalledTimes(2)
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('固定正向')
   })
 })

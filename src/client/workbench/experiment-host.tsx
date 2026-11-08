@@ -9,7 +9,7 @@ import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, Wor
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
-import type { WorkbenchProjection, TaskRequestDraft } from '../../workbench/contract.ts'
+import type { WorkbenchProjection, TaskRequestDraft, WorkbenchRunInput } from '../../workbench/contract.ts'
 import type { CatalogApi } from './catalog-browser.tsx'
 import type {
   ExperimentScope,
@@ -24,6 +24,7 @@ export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment'
 type RemoteReply<T> = RemoteResult<T>
 export type ExperimentEnvironment = WorkbenchEnvironment
 export interface ExperimentHostRemote {
+  readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<RemoteReply<WorkbenchRunInput>>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft | null>>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft>>
   readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<RemoteReply<WorkbenchModelChangePreview>>
@@ -114,6 +115,7 @@ export function ExperimentWorkbenchHost({
   const environmentLoaded = useRef(false)
   const api = useMemo(
     () => ({
+      getRunInput: async (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => unwrap(await remote.getRunInput(request)),
       getTaskDraft: async (request: WorkbenchTaskDraftRequest) =>
         unwrap(await remote.getTaskDraft(request)),
       saveTaskDraft: async (request: WorkbenchSaveTaskDraftRequest) =>
@@ -188,6 +190,7 @@ export function ExperimentWorkbenchHost({
       instances={environment.instances}
       baseModels={baseModels}
       agentModelGroups={environment.models.groups}
+      routableProviders={environment.models.routableProviders}
       onWorkspaceChange={selectWorkspace}
       onAction={mutate}
     />
