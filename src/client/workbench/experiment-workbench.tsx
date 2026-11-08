@@ -101,6 +101,7 @@ function PanelHead({
 
 interface FieldOptions {
   multiline?: boolean
+  saveOnChange?: boolean
   short?: boolean
   type?: string
   min?: number
@@ -147,7 +148,7 @@ function createFieldEditor(isCurrent = () => true) {
     },
     change: (value: string, original: string) =>
       update({ value, expected: edit?.expected ?? original }),
-    blur: (value: string, original: string, save: SaveField) => {
+    commit: (value: string, original: string, save: SaveField) => {
       queued = { value, original, save }
       void flush()
     },
@@ -155,10 +156,17 @@ function createFieldEditor(isCurrent = () => true) {
 }
 
 function useBranchFieldEdits(workspaceId: string | null, workId: string | null, branchId: string | null, inputScope?: string) {
-  const fields = useMemo(
-    () => new Map<string, ReturnType<typeof createFieldEditor>>(),
-    [workspaceId, workId, branchId, inputScope],
-  )
+  const branchFields = useRef(new Map<string, Map<string, ReturnType<typeof createFieldEditor>>>())
+  const fields = useMemo(() => {
+    if (inputScope !== undefined) return new Map<string, ReturnType<typeof createFieldEditor>>()
+    const scope = JSON.stringify([workspaceId, workId, branchId])
+    let current = branchFields.current.get(scope)
+    if (!current) {
+      current = new Map()
+      branchFields.current.set(scope, current)
+    }
+    return current
+  }, [workspaceId, workId, branchId, inputScope])
   const activeFields = useRef<typeof fields | null>(fields)
   useLayoutEffect(() => {
     activeFields.current = fields
@@ -192,10 +200,12 @@ function AutosaveField({ label, inputLabel = label, className, id, value, option
     value: (!locked ? edited : undefined) ?? value,
     disabled: options.disabled,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      if (!options.disabled) editor.change(event.target.value, value)
+      if (options.disabled) return
+      editor.change(event.target.value, value)
+      if (options.saveOnChange) editor.commit(event.target.value, value, save)
     },
     onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      if (!options.disabled) editor.blur(event.target.value, value, save)
+      if (!options.disabled) editor.commit(event.target.value, value, save)
     },
   }
   return <label className={className}>
@@ -1431,11 +1441,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const locked = view.inspectRun || !!experiment
   const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
   const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string, resourceId?: string) => {
-    const currentBranch = () => {
+    const currentWork = () => {
       const current = store.getSnapshot()
-      return current.workspaceId === state.workspaceId &&
-        current.view.workId === view.workId && current.view.branchId === view.branchId
+      return current.workspaceId === state.workspaceId && current.view.workId === view.workId
     }
+    const currentBranch = () => currentWork() && store.getSnapshot().view.branchId === view.branchId
     try {
       await props.onAction({
         type: options.branch ? 'update-branch' : 'update-draft',
@@ -1451,7 +1461,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       if (currentBranch()) setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
       return false
     }
-    if (currentBranch()) await store.refresh()
+    if (currentWork()) await store.refresh()
     return true
   }
   const field = (
@@ -1698,13 +1708,13 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               '正向提示词',
               'positive_prompt',
               inputs.prompt_input.positive_prompt,
-              { multiline: true },
+              { multiline: true, saveOnChange: true },
             )}
             {field(
               '负向提示词',
               'negative_prompt',
               inputs.prompt_input.negative_prompt,
-              { multiline: true, short: true },
+              { multiline: true, short: true, saveOnChange: true },
             )}
             {parameterField('参考图路径', 'references', 'reference_image')}
           </details>

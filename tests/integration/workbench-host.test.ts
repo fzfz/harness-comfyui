@@ -580,6 +580,30 @@ it('reads official presets, models and invocable Skills and always releases the 
   expect((await remote.getEnvironment({ workspaceId: 'missing', presetId: 'preset-a' }, signal())).skills).toEqual([])
 })
 
+it('saves multiline prompts and concurrent field edits independently for each branch without a template', async () => {
+  const { remote } = await fixture()
+  const parent = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '温室', goal: '雨后的玻璃温室' } }, signal())
+  await Promise.all([
+    remote.mutate({ ...parent, type: 'update-draft', field: 'positive_prompt', value: '雨后温室\n玻璃反光\r\n  暖色灯光  ' }, signal()),
+    remote.mutate({ ...parent, type: 'update-draft', field: 'negative_prompt', value: '模糊\n过曝，结构扭曲\n' }, signal()),
+  ])
+  const saved = await remote.getProjection(parent, signal())
+  expect(saved.branches.find(branch => branch.branch_id === parent.branchId)!.draft).toMatchObject({
+    prompt_input: { positive_prompt: '雨后温室\n玻璃反光\r\n  暖色灯光  ', negative_prompt: '模糊\n过曝，结构扭曲\n' },
+    generation_input: { instance_id: null, template_id: null, parameters: {} },
+  })
+  const child = await remote.mutate({ ...parent, type: 'create-branch', value: { name: '夜间温室', original_request: '比较夜间灯光' } }, signal())
+  await Promise.all([
+    remote.mutate({ ...parent, type: 'update-draft', field: 'positive_prompt', value: '' }, signal()),
+    remote.mutate({ ...parent, type: 'update-draft', field: 'negative_prompt', value: '' }, signal()),
+    remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '夜间温室\n窗内暖光' }, signal()),
+    remote.mutate({ ...child, type: 'update-draft', field: 'negative_prompt', value: '强烈眩光\n玻璃变形' }, signal()),
+  ])
+  const reloaded = await remote.getProjection(parent, signal())
+  expect(reloaded.branches.find(branch => branch.branch_id === parent.branchId)!.draft.prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
+  expect(reloaded.branches.find(branch => branch.branch_id === child.branchId)!.draft.prompt_input).toEqual({ positive_prompt: '夜间温室\n窗内暖光', negative_prompt: '强烈眩光\n玻璃变形' })
+})
+
 it('edits branch input through real actions, resolves catalog resources and dispatches the selected official Session', async () => {
   const { remote, official, catalog, store, createWorkspace } = await fixture()
   const createdWorkspace = await remote.mutate({ type: 'new-workspace', workspaceId: '', value: { name: 'Third project', path: '/workspace/third' } }, signal())

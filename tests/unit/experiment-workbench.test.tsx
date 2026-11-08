@@ -145,6 +145,129 @@ const mount = async (
   return { renderer, onAction, remote }
 }
 
+describe('experiment workbench prompt editing', () => {
+  it('finishes the latest prompt input on its original branch while another branch is edited', async () => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) await response
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId
+        ? { ...branch, draft: { ...branch.draft, prompt_input: { ...branch.draft.prompt_input, positive_prompt: String(request.value) } } }
+        : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available) }, onAction,
+    })
+    await change(renderer, '正向提示词', '第一次输入')
+    await change(renderer, '正向提示词', '继续输入')
+    await change(renderer, '正向提示词', '完整文本\n第二行')
+    expect(onAction).toHaveBeenCalledTimes(1)
+    await click(renderer, '切换分支 暖光探索')
+    await change(renderer, '正向提示词', '另一分支的文本')
+    await act(async () => { finish(); await response })
+    expect(available.branches[0]!.draft.prompt_input.positive_prompt).toBe('完整文本\n第二行')
+    expect(available.branches[1]!.draft.prompt_input.positive_prompt).toBe('另一分支的文本')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('另一分支的文本')
+    await click(renderer, '切换分支 主分支')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('完整文本\n第二行')
+  })
+
+  it('keeps one prompt save queue when returning to a branch before its earlier input is saved', async () => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) await response
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId
+        ? { ...branch, draft: { ...branch.draft, prompt_input: { ...branch.draft.prompt_input, positive_prompt: String(request.value) } } }
+        : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available) }, onAction,
+    })
+    await change(renderer, '正向提示词', '第一次输入')
+    await change(renderer, '正向提示词', '切换前的文本')
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '切换分支 主分支')
+    await change(renderer, '正向提示词', '返回后继续输入的文本')
+    await act(async () => { finish(); await response })
+    expect(available.branches[0]!.draft.prompt_input.positive_prompt).toBe('返回后继续输入的文本')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('返回后继续输入的文本')
+  })
+
+  it('retains the latest prompt after a failed input save and saves the next edit', async () => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) { await response; throw new Error('连接中断，请重试。') }
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId
+        ? { ...branch, draft: { ...branch.draft, prompt_input: { ...branch.draft.prompt_input, negative_prompt: String(request.value) } } }
+        : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available) }, onAction,
+    })
+    await change(renderer, '负向提示词', '第一次输入')
+    await change(renderer, '负向提示词', '后来输入')
+    await act(async () => { finish(); await response })
+    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe('后来输入')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('连接中断')
+    await change(renderer, '负向提示词', '重试后的文本')
+    expect(available.branches[0]!.draft.prompt_input.negative_prompt).toBe('重试后的文本')
+    expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe('重试后的文本')
+  })
+
+  it('persists both multiline prompts before blur and retains exact text across branch changes and remounts', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '提示词编辑', goal: '保留完整文本' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      const child = await host.remote.mutate({ ...scope, type: 'create-branch', value: { name: '另一分支', original_request: '独立文本' } }, signal)
+      const readDraft = async (branchId = scope.branchId) => (await host.remote.getProjection(scope, signal)).branches.find(branch => branch.branch_id === branchId)!.draft
+      const environment = await host.remote.getEnvironment({}, signal)
+      const memory = new Map<string, string>()
+      const options: NonNullable<Parameters<typeof mount>[1]> = {
+        workspaceId: scope.workspaceId, workspaces: environment.workspaces,
+        storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
+        remote: {
+          previewModelChange: request => host.remote.previewModelChange(request, signal),
+          getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getProjection: request => host.remote.getProjection(request, signal),
+        },
+        onAction: request => host.remote.mutate(request, signal),
+      }
+      const positive = '  雨后的玻璃花房\n  暖光照在窗框上\n\n'
+      const negative = '\n模糊\n 多余的窗框  \n'
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
+      await change(renderer, '正向提示词', positive)
+      expect((await readDraft()).prompt_input.positive_prompt).toBe(positive)
+      await change(renderer, '负向提示词', negative)
+      expect((await readDraft()).prompt_input).toEqual({ positive_prompt: positive, negative_prompt: negative })
+      expect((await readDraft()).generation_input.template_id).toBeNull()
+      await click(renderer, '切换分支 另一分支')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('')
+      expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe('')
+      await click(renderer, '切换分支 主分支')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(positive)
+      expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe(negative)
+      await act(() => renderer.unmount())
+      const reopened = await mount(await host.remote.getProjection(scope, signal), options)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(positive)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe(negative)
+      await change(reopened.renderer, '正向提示词', '')
+      await change(reopened.renderer, '负向提示词', '')
+      expect((await readDraft()).prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
+      expect((await readDraft(child.branchId!)).prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
+      await act(() => reopened.renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
 describe('experiment workbench instance selection', () => {
   it('renders registered names and persists two instance IDs through refresh and branch reopening without changing other inputs', async () => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')

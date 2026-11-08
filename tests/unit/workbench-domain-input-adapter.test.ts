@@ -260,11 +260,34 @@ describe('workbench generation input adapter', () => {
     await expect(adapter.prepareGenerationInput({ ...draft, generation_input: { ...draft.generation_input, instance_id: null } })).rejects.toMatchObject({ code: 'WORKBENCH_TEMPLATE_REQUIRED' })
   })
 
+  it('replaces cached template prompts with edited or cleared text at the actual parameter ids', async () => {
+    const adapter = createWorkbenchInputAdapter({
+      runtime: {
+        inspectTemplateRuntimeParameters: async () => ({ parameters: [
+          { parameter_id: 'positive_prompt_9', kind: 'positive_prompt', value_type: 'string', current_value: 'template positive' },
+          { parameter_id: 'negative_prompt_10', kind: 'negative_prompt', value_type: 'string', current_value: 'template negative' },
+          { parameter_id: 'steps_8', kind: 'steps', value_type: 'integer', current_value: 20 },
+        ], size_candidates: [] }),
+        validateGenerationRequest: async () => {},
+      },
+      catalog: { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() },
+    })
+    const selected: TaskDraft = {
+      ...structuredClone(draft),
+      prompt_input: { positive_prompt: '手工正向\n玻璃温室', negative_prompt: '手工负向\n模糊' },
+      generation_input: { ...draft.generation_input, parameters: { positive_prompt_9: 'cached positive', negative_prompt_10: 'cached negative', steps_8: 24 } },
+    }
+    expect((await adapter.prepareGenerationInput(selected)).parameters).toEqual({ positive_prompt_9: '手工正向\n玻璃温室', negative_prompt_10: '手工负向\n模糊', steps_8: 24 })
+    const cleared = { ...selected, prompt_input: { positive_prompt: '', negative_prompt: '' } }
+    expect((await adapter.prepareGenerationInput(cleared)).parameters).toEqual({ positive_prompt_9: '', negative_prompt_10: '', steps_8: 24 })
+  })
+
   it('maps prompts to inspected parameter ids and delegates proposed parameter values to runtime validation', async () => {
     const validate = vi.fn(async (_request: GenerationRequest) => {})
     const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt', value_type: 'string', current_value: '' }, { parameter_id: 'width_1', kind: 'width', value_type: 'integer', current_value: 512, minimum: 64, maximum: 2048 }], size_candidates: [] }), validateGenerationRequest: validate }, catalog: { details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() } })
     const prepared = await adapter.prepareGenerationInput(draft)
     expect(prepared.parameters).toEqual({ positive_prompt_9: 'rain on glass' })
+    await expect(adapter.prepareGenerationInput({ ...draft, prompt_input: { positive_prompt: 'rain on glass', negative_prompt: 'blur' } })).rejects.toMatchObject({ code: 'WORKBENCH_PROMPT_PARAMETER_REQUIRED', issues: [{ path: 'prompt_input.negative_prompt' }] })
     await adapter.validateParameters(prepared, { width_1: 1024 }, 'artifact.parameters')
     expect(validate.mock.calls[0]![0]).toMatchObject({ parameters: { positive_prompt_9: 'rain on glass', width_1: 1024 } })
     await expect(adapter.validateParameters(prepared, { width_404: 512 }, 'artifact.parameters')).rejects.toMatchObject({ issues: [{ path: 'artifact.parameters.width_404' }] })
