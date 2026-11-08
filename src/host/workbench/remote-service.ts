@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchModelChangeRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope } from '../../workbench-remote.ts'
+import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchModelChangeRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope, type WorkbenchTaskDraftRequest, type WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
 import type { ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import { generationMediaContentUrl, generationMediaDownloadUrl } from '../../generation/contract.ts'
@@ -33,6 +33,23 @@ export class WorkbenchRemoteService extends TypertRemoteService {
       return { ...projection, runs: projection.runs.map(run => ({ ...run, media: run.media.map(media => ({ ...media, url: generationMediaContentUrl(media.media_id, run.session_id), download_url: generationMediaDownloadUrl(media.media_id, run.session_id) })) })) }
     })
   }
+  async getTaskDraft(request: WorkbenchTaskDraftRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => {
+      await this.host.harnessComfyuiWorkbench.initializeWorkspace(request.workspaceId)
+      signal.throwIfAborted()
+      return this.host.harnessComfyuiWorkbench.service.getTaskDraft(request)
+    })
+  }
+  async saveTaskDraft(request: WorkbenchSaveTaskDraftRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => {
+      await this.host.harnessComfyuiWorkbench.initializeWorkspace(request.workspaceId)
+      signal.throwIfAborted()
+      return this.host.harnessComfyuiWorkbench.service.saveTaskDraft(request)
+    })
+  }
+
   async getInputDescription(request: WorkbenchInputDescriptionRequest, signal: AbortSignal) {
     signal.throwIfAborted()
     return report(async () => {
@@ -60,7 +77,7 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []
-for (const name of ['getEnvironment', 'getProjection', 'getInputDescription', 'previewModelChange', 'mutate'] as const) {
+for (const name of ['getEnvironment', 'getProjection', 'getInputDescription', 'previewModelChange', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
   Remote(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
     addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
   } as never)

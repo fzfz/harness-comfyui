@@ -1,11 +1,11 @@
-import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview, WorkbenchTaskDraftRequest, WorkbenchSaveTaskDraftRequest, WorkbenchActionReceipt } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
 import type { CatalogApi } from './catalog-browser.tsx'
 import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 
-import type { WorkbenchProjection } from '../../workbench/contract.ts'
+import type { WorkbenchProjection, TaskRequestDraft } from '../../workbench/contract.ts'
 
 export const EXPERIMENT_CATALOG_SCROLL_PREFIX = 'catalog:'
 
@@ -28,6 +28,8 @@ export interface ExperimentScope {
   readonly branchId?: string
 }
 export interface ExperimentRemote {
+  readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<TaskRequestDraft | null>
+  readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<TaskRequestDraft>
   readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<WorkbenchModelChangePreview>
   readonly getEnvironment: (request: WorkbenchEnvironmentRequest) => Promise<WorkbenchEnvironment>
   readonly getInputDescription: (
@@ -42,11 +44,7 @@ export type {
   ExperimentWorkbenchAction,
 } from '../../workbench-remote.ts'
 import type { ExperimentWorkbenchAction } from '../../workbench-remote.ts'
-export interface ExperimentSelection {
-  readonly workspaceId: string
-  readonly workId?: string
-  readonly branchId?: string
-}
+export type ExperimentSelection = WorkbenchActionReceipt
 export interface ExperimentWorkbenchProps {
   readonly remote: ExperimentRemote
   readonly workspaces: readonly ExperimentWorkspace[]

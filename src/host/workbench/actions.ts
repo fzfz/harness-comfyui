@@ -1,9 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { WORKBENCH_BRANCH_EDIT_FIELDS, type ExperimentWorkbenchAction } from '../../workbench-remote.ts'
-import type { WorkbenchScope } from '../../workbench-remote.ts'
+import type { WorkbenchActionReceipt } from '../../workbench-remote.ts'
 import type { FunctionBinding, JsonValue, ReviewDraft, ResourceRef } from '../../workbench/contract.ts'
 import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
-import { equalValue, WorkbenchError } from '../../workbench/validation.ts'
+import { equalValue, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
@@ -16,7 +16,7 @@ function text(value: unknown, path: string): string {
   return value
 }
 
-export async function executeWorkbenchAction(ctx: Context, request: ExperimentWorkbenchAction, requestSignal = new AbortController().signal): Promise<WorkbenchScope> {
+export async function executeWorkbenchAction(ctx: Context, request: ExperimentWorkbenchAction, requestSignal = new AbortController().signal): Promise<WorkbenchActionReceipt> {
   const { service, signal: lifecycleSignal } = ctx.harnessComfyuiWorkbench
   const signal = AbortSignal.any([requestSignal, lifecycleSignal])
   signal.throwIfAborted()
@@ -188,8 +188,8 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
         const runId = text(request.runId, 'run_id'), draft = store.getRunReviewDraft(runId)
         evaluationInput = { run_id: runId, verdict: draft.verdict, observation: draft.observation, conclusion: draft.conclusion, experience: { title: draft.title, conditions: draft.conditions, note: draft.note } }
       }
-      await service.createTask({ ...selection, functionId: selectedFunctionId, ...(evaluationInput ? { evaluationInput } : {}), ...(typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(typeof value.preset_override === 'string' && value.preset_override ? { presetOverride: value.preset_override } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
-      break
+      const task = await service.createTask({ ...selection, functionId: selectedFunctionId, ...(evaluationInput ? { evaluationInput } : {}), ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(typeof value.preset_override === 'string' && value.preset_override ? { presetOverride: value.preset_override } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
+      return request.type === 'agent-action' ? { ...selection, taskId: task.task_id } : selection
     }
     case 'task-interrupt': case 'task-resume': case 'pause-experiment': case 'resume-experiment': {
       await service.controlTask({ taskId: text(request.taskId, 'task_id'), action: request.type === 'task-interrupt' ? 'interrupt' : request.type === 'pause-experiment' ? 'pause' : 'continue' }); break

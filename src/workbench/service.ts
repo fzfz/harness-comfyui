@@ -1,7 +1,7 @@
-import type { AgentModel, ArtifactPayload, ContextRef, EvaluationInput, ExecutionState, FunctionDescriptor, GenerationInput, JsonValue, SkillReadRef, Task, TaskDraft, TaskGetResult, WorkbenchIdentity } from './contract.ts'
+import type { AgentModel, ArtifactPayload, ContextRef, EvaluationInput, ExecutionState, FunctionDescriptor, GenerationInput, JsonValue, SkillReadRef, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity } from './contract.ts'
 import type { WorkbenchStore } from '../host/storage/workbench-store.ts'
 import { shouldTrackExecution } from './state.ts'
-import { equalValue, jsonValue, validateArtifact, WorkbenchError } from './validation.ts'
+import { equalValue, jsonValue, validateArtifact, validateTaskRequestDraft, WorkbenchError } from './validation.ts'
 
 export interface WorkbenchSessionBoundary {
   authorize(input: { task: Task; identity: WorkbenchIdentity }): Promise<boolean>
@@ -23,10 +23,11 @@ export interface WorkbenchServiceOptions {
   prepareGenerationInput?: (draft: TaskDraft) => Promise<GenerationInput>
   resolveGenerationDraft?: (input: GenerationInput, contextRefs: ContextRef[]) => Promise<TaskDraft>
   resolveResourceRefs?: (refs: import('./contract.ts').ResourceRef[], draft: TaskDraft) => Promise<TaskDraft>
+  resolveResourceSelection?: (ref: import('./contract.ts').ResourceRef, draft: TaskDraft) => Promise<TaskDraft>
   refreshAfterMs?: number
 }
 export interface CreateTaskRequest {
-  workspaceId: string; workId: string; branchId: string; functionId: string; instructions?: string; referenceRunIds?: string[]
+  workspaceId: string; workId: string; branchId: string; functionId: string; taskDraft?: TaskRequestDraft; instructions?: string; referenceRunIds?: string[]
   evaluationInput?: EvaluationInput; presetOverride?: string; maxRuns?: number; title?: string; initiator?: 'human' | 'agent'; retryOfRunId?: string
 }
 
@@ -41,13 +42,34 @@ export class WorkbenchService {
     return task
   }
   async authorizeGeneration(taskId: string | null, identity: WorkbenchIdentity): Promise<void> { if (taskId) await this.authorize(taskId, identity) }
+  getTaskDraft(request: { workspaceId: string; workId: string; branchId: string; functionId: string }): TaskRequestDraft | null {
+    this.store.assertScope(request.workspaceId, request.workId, request.branchId)
+    this.store.getFunctionBinding(request.workspaceId, request.functionId)
+    return this.store.getTaskDraft(request.branchId, request.functionId)
+  }
+  saveTaskDraft(request: { workspaceId: string; workId: string; branchId: string; functionId: string; draft: TaskRequestDraft }): TaskRequestDraft {
+    this.store.assertScope(request.workspaceId, request.workId, request.branchId)
+    return this.store.saveTaskDraft(request.branchId, request.functionId, request.draft)
+  }
+
   async createTask(request: CreateTaskRequest): Promise<Task> {
     this.store.assertScope(request.workspaceId, request.workId, request.branchId)
     const branch = this.store.getBranch(request.branchId)
     const binding = this.store.getFunctionBinding(request.workspaceId, request.functionId)
+    const submittedDraft = request.taskDraft === undefined ? undefined : validateTaskRequestDraft(request.taskDraft)
+    const taskDraft = submittedDraft ?? this.store.getTaskDraft(branch.branch_id, binding.function_id)
     const descriptor = this.options.descriptors.find(item => item.kind === binding.kind)
     if (!descriptor) throw new WorkbenchError('WORKBENCH_FUNCTION_NOT_FOUND', '功能类型不可用，请在配置中心重新选择。', 'function_id')
     let draft = branch.draft
+    if (binding.kind === 'parameters' && taskDraft) {
+      draft = structuredClone(branch.draft)
+      Object.assign(draft.generation_input, taskDraft.resources)
+      if (!draft.generation_input.instance_id || !draft.generation_input.template_id) throw new WorkbenchError('WORKBENCH_TEMPLATE_REQUIRED', '请先选择实例和 Workflow 模板。', 'input.generation_input')
+      if (draft.generation_input.instance_id !== branch.draft.generation_input.instance_id || draft.generation_input.template_id !== branch.draft.generation_input.template_id) {
+        if (!this.options.resolveResourceSelection) throw new WorkbenchError('WORKBENCH_RESOURCE_UNAVAILABLE', 'Workflow 模板当前无法读取，请重新打开工作台后提交。', 'input.generation_input.template_id')
+        draft = await this.options.resolveResourceSelection({ kind: 'comfyui-template', id: draft.generation_input.template_id }, draft)
+      }
+    }
     if (request.retryOfRunId) {
       if (binding.kind !== 'run') throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '重试请选择运行任务。', 'function_id')
       const source = this.store.assertRunInWork(request.retryOfRunId, request.workId)
@@ -59,7 +81,7 @@ export class WorkbenchService {
       const target = this.store.assertRunInWork(request.evaluationInput.run_id, request.workId)
       if (target.status !== 'failed' && target.status !== 'cancelled') throw new WorkbenchError('WORKBENCH_FAILED_RUN_REQUIRED', '请选择失败或已取消的运行后诊断。', 'input.evaluation_input.run_id')
     }
-    const input = { ...draft, requirements: { original_request: branch.original_request, instructions: request.instructions ?? this.store.getTaskInstructions(branch.branch_id, binding.function_id) }, reference_run_ids: request.referenceRunIds ?? [], requested_skill: binding.requested_skill, max_runs: binding.kind === 'run' ? 1 : binding.kind === 'experiment' ? request.maxRuns ?? branch.execution.max_runs : 0, ...(request.evaluationInput ? { evaluation_input: request.evaluationInput } : {}) }
+    const input = { ...draft, requirements: { original_request: branch.original_request, instructions: submittedDraft ? submittedDraft.instructions.trim() : request.instructions ?? taskDraft?.instructions ?? '' }, reference_run_ids: request.referenceRunIds ?? [], requested_skill: binding.requested_skill, max_runs: binding.kind === 'run' ? 1 : binding.kind === 'experiment' ? request.maxRuns ?? branch.execution.max_runs : 0, ...(request.evaluationInput ? { evaluation_input: request.evaluationInput } : {}) }
     if (binding.kind === 'run' || binding.kind === 'experiment') {
       if (this.options.prepareGenerationInput && !request.retryOfRunId) input.generation_input = await this.options.prepareGenerationInput(draft)
       await this.options.validateGenerationInput?.(input.generation_input, input.context_refs, 'input.generation_input')
@@ -79,13 +101,14 @@ export class WorkbenchService {
     } else if (binding.kind === 'prompt' || binding.kind === 'rewrite') {
       target.expected = { 'prompt_input.positive_prompt': branch.draft.prompt_input.positive_prompt, 'prompt_input.negative_prompt': branch.draft.prompt_input.negative_prompt }
     } else if (binding.kind === 'parameters') {
-      target.expected['generation_input.parameters'] = jsonValue(branch.draft.generation_input.parameters)
+      target.expected['generation_input.parameters'] = jsonValue(draft.generation_input.parameters)
     }
     const task = this.store.createTask({ branchId: branch.branch_id, functionId: binding.function_id, title: request.title ?? `${binding.name} · ${branch.name}`, kind: binding.kind, input, outputContract: output, applyTarget: target, bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: request.presetOverride ?? binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template }, initiator: request.initiator, retryOfRunId: request.retryOfRunId })
     try {
       const session = await this.options.sessions.create({ task, presetId: task.binding_snapshot.preset_id, agentModel: task.binding_snapshot.agentModel, requestedSkill: task.binding_snapshot.requested_skill })
       this.store.bindSession(task.task_id, session.sessionId, session.selectedModel)
       await this.options.sessions.dispatch({ sessionId: session.sessionId, text: task.request_text, taskId: task.task_id })
+      this.store.completeTaskSubmission(task.task_id, taskDraft, binding.kind === 'parameters' ? { expected: branch.draft, draft } : undefined)
       return this.store.markExecution(task.task_id, 'running')
     } catch (error) {
       this.store.markExecution(task.task_id, 'failed', { code: error instanceof WorkbenchError ? error.code : 'WORKBENCH_DISPATCH_FAILED', message: error instanceof Error ? error.message : String(error) })

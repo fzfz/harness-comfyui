@@ -532,6 +532,8 @@ it('mounts Workbench Remotes, creates one main branch and isolates Workspace pro
     { method: 'getProjection', invocation: { kind: 'direct' } },
     { method: 'getInputDescription', invocation: { kind: 'direct' } },
     { method: 'previewModelChange', invocation: { kind: 'direct' } },
+    { method: 'getTaskDraft', invocation: { kind: 'direct' } },
+    { method: 'saveTaskDraft', invocation: { kind: 'direct' } },
     { method: 'mutate', invocation: { kind: 'direct' } },
   ])
   const empty = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())

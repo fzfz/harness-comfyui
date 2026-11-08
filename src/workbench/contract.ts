@@ -21,6 +21,11 @@ export interface GenerationInput {
   loras: { id: string; file_name: string; weight: number; trigger_words: string[] }[]
 }
 export interface TaskDraft { prompt_input: PromptInput; generation_input: GenerationInput; context_refs: ContextRef[]; base_model_id: string | null }
+
+export interface TaskRequestDraft {
+  instructions: string
+  resources: { instance_id?: string | null; template_id?: string | null }
+}
 export interface ExecutionDraft { mode: 'once' | 'continuous'; max_runs: number }
 export interface AgentModel { provider: string; model: string; reasoningEffort?: string }
 export interface ReviewDraft {

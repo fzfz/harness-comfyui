@@ -53,6 +53,8 @@ const environment = {
   instances: [{ id: '2', name: 'win3080' }],
 }
 const remote = (): ExperimentHostRemote => ({
+  getTaskDraft: vi.fn(async () => ({ ok: true as const, value: null })),
+  saveTaskDraft: vi.fn(async request => ({ ok: true as const, value: request.draft })),
   previewModelChange: vi.fn(async request => ({ ok: true as const, value: { model: { id: request.modelId, label: 'ANIMA3' }, removed: [] } })),
   getInputDescription: vi.fn(async () => ({
     ok: true as const,
@@ -95,6 +97,25 @@ const mount = async (api: ExperimentHostRemote) => {
   return renderer
 }
 describe('official experiment workbench adapter', () => {
+  it('forwards task draft scope and payload and preserves Remote failures and accepted task identity', async () => {
+    const api = remote(), renderer = await mount(api)
+    const shell: ExperimentWorkbenchProps = renderer.root.findByType(ExperimentWorkbench).props
+    const scope = { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', functionId: 'parameters' }
+    const draft = { instructions: '保留构图', resources: { instance_id: '2', template_id: null } }
+    vi.mocked(api.getTaskDraft).mockResolvedValueOnce({ ok: true, value: draft })
+    await expect(shell.remote.getTaskDraft(scope)).resolves.toEqual(draft)
+    expect(api.getTaskDraft).toHaveBeenCalledExactlyOnceWith(scope)
+    await expect(shell.remote.saveTaskDraft({ ...scope, draft })).resolves.toEqual(draft)
+    expect(api.saveTaskDraft).toHaveBeenCalledExactlyOnceWith({ ...scope, draft })
+    const failure = new RemoteError('workbench/operation-failed', '草稿保存失败，请重试。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] })
+    vi.mocked(api.saveTaskDraft).mockResolvedValueOnce({ ok: false, error: failure })
+    await expect(shell.remote.saveTaskDraft({ ...scope, draft })).rejects.toBe(failure)
+    vi.mocked(api.getTaskDraft).mockResolvedValueOnce({ ok: false, error: failure })
+    await expect(shell.remote.getTaskDraft(scope)).rejects.toBe(failure)
+    vi.mocked(api.mutate).mockResolvedValueOnce({ ok: true, value: { workspaceId: 'workspace-a', taskId: 'accepted-task' } })
+    await expect(shell.onAction({ type: 'agent-action', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', id: 'parameters', value: { draft } })).resolves.toEqual({ workspaceId: 'workspace-a', taskId: 'accepted-task' })
+  })
+
   it('preserves the official parameter failure and its complete field path', async () => {
     const api = remote(), renderer = await mount(api)
     const shell: ExperimentWorkbenchProps = renderer.root.findByType(ExperimentWorkbench).props

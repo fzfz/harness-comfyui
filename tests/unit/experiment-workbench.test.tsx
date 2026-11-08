@@ -17,6 +17,7 @@ import {
 import type {
   Branch,
   TaskDraft,
+  TaskRequestDraft,
   WorkbenchProjection,
 } from '../../src/workbench/contract.ts'
 
@@ -100,12 +101,18 @@ const mount = async (
       }
     },
   )
+  const taskDrafts = new Map<string, TaskRequestDraft>()
   const onAction = vi.fn(),
     remote = {
       getProjection: vi.fn(async (scope: { workId?: string }) => ({
         ...data,
         work_id: scope.workId ?? data.work_id,
       })),
+      getTaskDraft: vi.fn(async (request: { branchId: string; functionId: string }) => taskDrafts.get(`${request.branchId}:${request.functionId}`) ?? null),
+      saveTaskDraft: vi.fn(async (request: { branchId: string; functionId: string; draft: TaskRequestDraft }) => {
+        taskDrafts.set(`${request.branchId}:${request.functionId}`, structuredClone(request.draft))
+        return request.draft
+      }),
       getEnvironment: async () => functionEnvironment,
       getInputDescription: vi.fn(async () => inputDescription),
       previewModelChange: vi.fn(async (request: { modelId: string }) => ({ model: { id: request.modelId, label: 'ANIMA3' }, removed: [] })),
@@ -267,6 +274,211 @@ describe('experiment workbench prompt editing', () => {
       expect((await readDraft(child.branchId!)).prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
       await act(() => reopened.renderer.unmount())
     } finally { await host.dispose() }
+  })
+})
+
+describe('experiment workbench task request drafts', () => {
+  it('submits the clicked request while a pending save completes and preserves subsequent edits', async () => {
+    let finishSave!: () => void
+    let saved: TaskRequestDraft | null = null
+    const remote = {
+      getTaskDraft: vi.fn(async () => saved),
+      saveTaskDraft: vi.fn().mockImplementationOnce((request: { draft: TaskRequestDraft }) => new Promise(resolve => {
+        finishSave = () => { saved = structuredClone(request.draft); resolve(request.draft) }
+      })).mockImplementation(async (request: { draft: TaskRequestDraft }) => { saved = structuredClone(request.draft); return request.draft }),
+    }
+    const { renderer, onAction } = await mount(fullProjection(), { remote })
+    await click(renderer, '生成提示词')
+    await change(renderer, '任务要求', '点击时的要求')
+    let pending: Promise<void> | undefined
+    await act(async () => { pending = renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
+    await change(renderer, '任务要求', '下一份要求')
+    await act(async () => { finishSave(); await pending })
+    expect(onAction).toHaveBeenCalledExactlyOnceWith({ type: 'agent-action', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '点击时的要求', resources: {} } } })
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('下一份要求')
+  })
+
+  it('uses the current branch request when reopening without a saved draft', async () => {
+    const data = fullProjection()
+    const { renderer } = await mount(data)
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('玻璃花房')
+    await click(renderer, '取消')
+    data.branches[0]!.original_request = '调整后的原始需求'
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '切换分支 主分支')
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('调整后的原始需求')
+  })
+
+  it('keeps parameter instructions when template loading fails and loads choices after reopening', async () => {
+    const catalog = makeCatalog()
+    vi.mocked(catalog.search).mockRejectedValueOnce(new Error('模板目录读取失败，请重试。'))
+    const { renderer, onAction } = await mount(fullProjection(), { catalog })
+    await click(renderer, '建议参数')
+    expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('模板目录读取失败，请重试。')
+    await change(renderer, '任务要求', '目录恢复后继续填写')
+    await click(renderer, '取消')
+    await click(renderer, '建议参数')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('目录恢复后继续填写')
+    expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '任务 Workflow 模板' }))).toContain('文生图')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('retries saving the unchanged request before submitting after a failed save', async () => {
+    const remote = {
+      getTaskDraft: vi.fn(async () => null),
+      saveTaskDraft: vi.fn().mockRejectedValueOnce(new Error('草稿保存失败，请重试。')).mockImplementation(async request => request.draft),
+    }
+    const { renderer, onAction } = await mount(fullProjection(), { remote })
+    await click(renderer, '生成提示词')
+    await change(renderer, '任务要求', '重试时保留原文')
+    expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('草稿保存失败，请重试。')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(remote.saveTaskDraft).toHaveBeenCalledTimes(2)
+    expect(remote.saveTaskDraft.mock.calls[1]![0]).toEqual(remote.saveTaskDraft.mock.calls[0]![0])
+    expect(onAction).toHaveBeenCalledExactlyOnceWith({ type: 'agent-action', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '重试时保留原文', resources: {} } } })
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+  })
+
+  it('closes the task request with Escape and keeps its edited text when reopened', async () => {
+    const { renderer, onAction } = await mount(fullProjection())
+    await click(renderer, '生成提示词')
+    await change(renderer, '任务要求', '键盘关闭后保留')
+    await act(async () => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('键盘关闭后保留')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('preserves an explicitly empty request and recovers from load and save failures without dispatching stale text', async () => {
+    const remote = {
+      getTaskDraft: vi.fn().mockRejectedValueOnce(new Error('草稿读取失败，请重新打开弹窗。')).mockResolvedValue({ instructions: '', resources: {} }),
+      saveTaskDraft: vi.fn().mockRejectedValueOnce(new Error('草稿保存失败，请重试。')).mockRejectedValueOnce(new Error('草稿保存失败，请重试。')).mockImplementation(async request => request.draft),
+    }
+    const { renderer, onAction } = await mount(fullProjection(), { remote })
+    await click(renderer, '生成提示词')
+    expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('草稿读取失败，请重新打开弹窗。')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.disabled).toBe(true)
+    await click(renderer, '取消')
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('')
+    await change(renderer, '任务要求', '第一次输入')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('草稿保存失败，请重试。')
+    expect(onAction).not.toHaveBeenCalled()
+    await click(renderer, '取消')
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('第一次输入')
+    await change(renderer, '任务要求', '  修正后的要求  ')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenCalledExactlyOnceWith({ type: 'agent-action', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '  修正后的要求  ', resources: {} } } })
+  })
+
+  it('keeps pending edits scoped to their branch and preserves a reopened dialog when the prior request finishes', async () => {
+    let finishSave!: (value: TaskRequestDraft) => void
+    let finishTask!: (value: { workspaceId: string; taskId: string }) => void
+    const remote = {
+      getTaskDraft: vi.fn(async () => null),
+      saveTaskDraft: vi.fn().mockImplementationOnce(() => new Promise(resolve => { finishSave = resolve })).mockImplementation(async request => request.draft),
+    }
+    const onAction = vi.fn(() => new Promise<{ workspaceId: string; taskId: string }>(resolve => { finishTask = resolve }))
+    const { renderer } = await mount(fullProjection(), { remote, onAction })
+    await click(renderer, '生成提示词')
+    await change(renderer, '任务要求', '保存中的要求')
+    await click(renderer, '取消')
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('保存中的要求')
+    await change(renderer, '任务要求', '最后的要求')
+    let pending: Promise<void> | undefined
+    await act(async () => { pending = renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
+    expect(onAction).not.toHaveBeenCalled()
+    await act(async () => { finishSave({ instructions: '保存中的要求', resources: {} }) })
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ branchId: 'root', value: { draft: { instructions: '最后的要求', resources: {} } } }))
+    await click(renderer, '取消')
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '生成提示词')
+    await change(renderer, '任务要求', '另一分支的要求')
+    await act(async () => { finishTask({ workspaceId: 'workspace-a', taskId: 'pending-task' }); await pending })
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('另一分支的要求')
+    expect(remote.saveTaskDraft).toHaveBeenLastCalledWith(expect.objectContaining({ branchId: 'child', draft: { instructions: '另一分支的要求', resources: {} } }))
+    expect(nodeText(renderer.root)).not.toContain('pending-task')
+  })
+
+  it('keeps each function request after cancel, branch changes and a new page mount without starting a task', async () => {
+    const data = fullProjection()
+    const drafts = new Map<string, TaskRequestDraft>()
+    const key = (request: { branchId?: string; functionId: string }) => `${request.branchId}:${request.functionId}`
+    const remote = {
+      getTaskDraft: vi.fn(async (request: { branchId?: string; functionId: string }) => structuredClone(drafts.get(key(request)) ?? null)),
+      saveTaskDraft: vi.fn(async (request: { branchId?: string; functionId: string; draft: TaskRequestDraft }) => {
+        drafts.set(key(request), structuredClone(request.draft))
+        return request.draft
+      }),
+    }
+    const { renderer, onAction } = await mount(data, { remote, catalog: makeCatalog() })
+    for (const [label, functionId] of [['生成提示词', 'prompt'], ['改写提示词', 'rewrite'], ['建议参数', 'parameters'], ['推荐资源', 'resources']]) {
+      await click(renderer, label!)
+      expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('玻璃花房')
+      await change(renderer, '任务要求', `  ${label}\n保留原文  `)
+      await click(renderer, '取消')
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      expect(drafts.get(`root:${functionId}`)?.instructions).toBe(`  ${label}\n保留原文  `)
+      expect(onAction).not.toHaveBeenCalled()
+    }
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '生成提示词')
+    await change(renderer, '任务要求', '另一分支的要求')
+    await click(renderer, '关闭对话框')
+    await click(renderer, '切换分支 主分支')
+    await click(renderer, '生成提示词')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('  生成提示词\n保留原文  ')
+    await act(async () => renderer.unmount())
+    const next = await mount(data, { remote, catalog: makeCatalog() })
+    for (const label of ['生成提示词', '改写提示词', '建议参数', '推荐资源']) {
+      await click(next.renderer, label)
+      expect(next.renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe(`  ${label}\n保留原文  `)
+      await click(next.renderer, '取消')
+    }
+    expect(next.onAction).not.toHaveBeenCalled()
+    expect(drafts.get('child:prompt')?.instructions).toBe('另一分支的要求')
+  })
+  it('keeps a parameter request inside its modal while correcting resources and retrying a failed submission', async () => {
+    const data = fullProjection()
+    data.branches[0]!.draft.generation_input.template_id = null
+    let saved: TaskRequestDraft | null = null
+    const remote = {
+      getTaskDraft: vi.fn(async () => saved),
+      saveTaskDraft: vi.fn(async (request: { draft: TaskRequestDraft }) => { saved = structuredClone(request.draft); return request.draft }),
+    }
+    const onAction = vi.fn().mockRejectedValueOnce(new Error('Agent 暂时不可用')).mockResolvedValue({ workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', taskId: 'request-32' })
+    const { renderer } = await mount(data, { remote, catalog: makeCatalog(), onAction })
+    await click(renderer, '资源')
+    await click(renderer, '建议参数')
+    expect(renderer.root.findByProps({ 'aria-label': '任务 Workflow 模板' }).props.value).toBe('')
+    await change(renderer, '任务要求', '保留我的参数要求')
+    const submit = () => act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    await submit()
+    expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('请在此处选择 ComfyUI 实例与 Workflow 模板。')
+    expect(onAction).not.toHaveBeenCalled()
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('保留我的参数要求')
+    await change(renderer, '任务 ComfyUI 实例', '2')
+    await change(renderer, '任务 Workflow 模板', '12')
+    await click(renderer, '取消')
+    expect(data.branches[0]!.draft.generation_input.template_id).toBeNull()
+    await click(renderer, '建议参数')
+    expect(renderer.root.findByProps({ 'aria-label': '任务 Workflow 模板' }).props.value).toBe('12')
+    await submit()
+    expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('Agent 暂时不可用')
+    expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.value).toBe('保留我的参数要求')
+    await submit()
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(onAction).toHaveBeenLastCalledWith({ type: 'agent-action', id: 'parameters', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '保留我的参数要求', resources: { instance_id: '2', template_id: '12' } } } })
+    expect(nodeText(renderer.root)).toContain('request-32')
+    expect(renderer.root.findAllByType('button').find(button => nodeText(button) === '资源')?.props.className).toContain('active')
   })
 })
 
@@ -940,6 +1152,9 @@ describe('experiment workbench public interactions', () => {
       '自定义run',
     ]) {
       await click(renderer, label)
+      if (label !== '自定义run') {
+        await act(async () => { await renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
+      }
       expect(onAction).toHaveBeenLastCalledWith(
         expect.objectContaining({ type: 'agent-action' }),
       )

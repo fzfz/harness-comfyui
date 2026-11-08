@@ -472,3 +472,90 @@ it('saves one inspected parameter by its complete node-suffixed ID and reads it 
   expect(officialExport).not.toHaveBeenCalled()
   expect(randomSeed).not.toHaveBeenCalled()
 })
+
+it('keeps task resource overrides outside the branch until acceptance and freezes the selected template defaults', async () => {
+  const { remote, scope, read, source, official, ctx } = await fixture()
+  const before = await read()
+  source.readTemplate.mockImplementation(async id => ({ id, title: 'Selected task template', workflow: {
+    version: 0.4,
+    nodes: [
+      { id: 71, type: 'ParameterGenerator', mode: 0, inputs: [['width', 'INT'], ['height', 'INT'], ['steps', 'INT'], ['cfg', 'FLOAT'], ['sampler_name', 'COMBO'], ['scheduler', 'BOOLEAN'], ['denoise', 'STRING']].map(([name, type]) => ({ name, type, link: null, widget: { name } })), outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [71] }], widgets_values: [1024, 576, 30, 6, 'ddim', false, 'selected defaults'] },
+      { id: 72, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 71 }], outputs: [], widgets_values: [] },
+    ], links: [[71, 71, 0, 72, 0, 'IMAGE']],
+  } }))
+  const draft = { instructions: 'Configure the wide template', resources: { instance_id: '9', template_id: '7' } }
+  await remote.saveTaskDraft({ ...scope, functionId: 'parameters', draft }, signal())
+  expect((await read()).draft).toEqual(before.draft)
+  const accepted = await remote.mutate({ ...scope, type: 'agent-action', id: 'parameters' }, signal())
+  const after = await read()
+  const task = after.projection.tasks.find(task => task.task_id === accepted.taskId)!
+  const expectedParameters = { width: 1024, height: 576, steps: 30, cfg: 6, sampler_name: 'ddim', scheduler: false, denoise: 'selected defaults' }
+  expect(task.input.generation_input).toMatchObject({ instance_id: '9', template_id: '7', parameters: expectedParameters })
+  expect(task.input.prompt_input).toEqual(before.draft.prompt_input)
+  expect(task.input.requirements.instructions).toBe(draft.instructions)
+  expect(task.output_contract.parameter_ids).toEqual(expect.arrayContaining(['width', 'height', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise']))
+  expect(after.draft.generation_input).toEqual(task.input.generation_input)
+  const published = await ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'parameters', parameters: { steps: 35 } } }, { workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'selected-template-parameters' })
+  expect(published.disposition).toBe('applied')
+  expect((await read()).draft.generation_input.parameters).toEqual({ ...expectedParameters, steps: 35 })
+  expect((await read()).projection.tasks.find(saved => saved.task_id === task.task_id)!.input.generation_input.parameters).toEqual(expectedParameters)
+  expect(await remote.getTaskDraft({ ...scope, functionId: 'parameters' }, signal())).toBeNull()
+  expect(official.controller.prompt).toHaveBeenCalledTimes(1)
+})
+
+it.each(['cleared-instance', 'cleared-template', 'template-unavailable'])('retains the parameter task draft and branch after %s prevents submission', async failure => {
+  const { remote, scope, read, source, official } = await fixture()
+  const before = await read()
+  const resources = failure === 'cleared-instance' ? { instance_id: null } : failure === 'cleared-template' ? { template_id: null } : { instance_id: '9', template_id: '7' }
+  const draft = { instructions: 'Keep this request for correction', resources }
+  await remote.saveTaskDraft({ ...scope, functionId: 'parameters', draft }, signal())
+  if (failure === 'template-unavailable') source.readTemplate.mockRejectedValueOnce(new Error('Selected template unavailable'))
+  await expect(remote.mutate({ ...scope, type: 'agent-action', id: 'parameters' }, signal())).rejects.toThrow()
+  expect(await remote.getTaskDraft({ ...scope, functionId: 'parameters' }, signal())).toEqual(draft)
+  expect((await read()).draft).toEqual(before.draft)
+  expect((await read()).projection.tasks).toEqual([])
+  expect(official.controller.prompt).not.toHaveBeenCalled()
+})
+
+it.each(['prompt', 'resources'])('accepts the submitted parameter task while preserving a later %s edit and task draft', async changed => {
+  const { remote, scope, read, official } = await fixture()
+  const before = await read()
+  const first = { instructions: 'Submit these parameters', resources: { instance_id: '9', template_id: '7' } }
+  const next = { instructions: 'The next parameter request', resources: { instance_id: '10', template_id: '8' } }
+  await remote.saveTaskDraft({ ...scope, functionId: 'parameters', draft: first }, signal())
+  let enter!: () => void, release!: () => void
+  const entered = new Promise<void>(resolve => { enter = resolve })
+  const waiting = new Promise<void>(resolve => { release = resolve })
+  official.controller.prompt.mockImplementationOnce(async () => { enter(); await waiting; return { accepted: true } })
+  const submitting = remote.mutate({ ...scope, type: 'agent-action', id: 'parameters' }, signal())
+  try {
+    await entered
+    await remote.saveTaskDraft({ ...scope, functionId: 'parameters', draft: next }, signal())
+    if (changed === 'prompt') await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Manual prompt during submission' }, signal())
+    else await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '11' }, signal())
+  } finally { release() }
+  const accepted = await submitting
+  const after = await read()
+  const task = after.projection.tasks.find(task => task.task_id === accepted.taskId)!
+  expect(task.execution_state).toBe('running')
+  expect(task.input.requirements.instructions).toBe('Submit these parameters')
+  expect(task.input.generation_input).toMatchObject({ instance_id: '9', template_id: '7' })
+  expect(task.input.prompt_input).toEqual(before.draft.prompt_input)
+  expect(after.draft.prompt_input.positive_prompt).toBe(changed === 'prompt' ? 'Manual prompt during submission' : before.draft.prompt_input.positive_prompt)
+  expect(after.draft.generation_input).toMatchObject(changed === 'prompt' ? { instance_id: '9', template_id: '7' } : { instance_id: '11', template_id: '6' })
+  expect(await remote.getTaskDraft({ ...scope, functionId: 'parameters' }, signal())).toEqual(next)
+})
+
+it('keeps parameter resource overrides and branch input when official dispatch rejects the fixed task', async () => {
+  const { remote, scope, read, official } = await fixture()
+  const before = await read()
+  const draft = { instructions: 'Retry the selected template', resources: { instance_id: '9', template_id: '7' } }
+  await remote.saveTaskDraft({ ...scope, functionId: 'parameters', draft }, signal())
+  official.controller.prompt.mockRejectedValueOnce(new Error('Official dispatch unavailable'))
+  await expect(remote.mutate({ ...scope, type: 'agent-action', id: 'parameters' }, signal())).rejects.toThrow('Official dispatch unavailable')
+  expect(await remote.getTaskDraft({ ...scope, functionId: 'parameters' }, signal())).toEqual(draft)
+  const after = await read()
+  expect(after.draft).toEqual(before.draft)
+  expect(after.projection.tasks[0]!.execution_state).toBe('failed')
+  expect(after.projection.tasks[0]!.input.generation_input).toMatchObject({ instance_id: '9', template_id: '7' })
+})

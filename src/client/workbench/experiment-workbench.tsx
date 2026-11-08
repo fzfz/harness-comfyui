@@ -48,6 +48,8 @@ import { ExperimentFunctionSettings, formatExperimentAgentModel } from './experi
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
 import { AutosaveField, useBranchFieldEdits, type FieldOptions, type SaveField } from './experiment-fields.tsx'
 import { RuntimeParameterField, RuntimeSizeField } from './experiment-parameter-fields.tsx'
+import { TaskRequestEditor } from './experiment-task-request.ts'
+import { ExperimentTaskRequestDialog } from './experiment-task-request-dialog.tsx'
 import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogApi, type CatalogReference } from './catalog-browser.tsx'
 import { workbenchContextKey } from './contract.ts'
 import inputOptions from './experiment-input-options.json' with { type: 'json' }
@@ -194,6 +196,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const formSubmissionPending = useRef<number | null>(null)
   const modalInstance = useRef(0)
   const [sheet, setSheet] = useState(false)
+  const taskRequestEditors = useMemo(() => new Map<string, TaskRequestEditor>(), [props.remote])
+  const [taskRequest, setTaskRequest] = useState<{ editor: TaskRequestEditor; binding: FunctionBinding; navigation: number } | null>(null)
   const [modelChange, setModelChange] = useState<{
     readonly request: WorkbenchModelChangeRequest
     readonly preview: WorkbenchModelChangePreview
@@ -240,6 +244,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        setTaskRequest(null)
         setModal(null)
         setSheet(false)
       }
@@ -439,16 +444,24 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   }
   const referenceRunIds =
     run && view.compareRunId ? [run.run_id, view.compareRunId] : []
+  const invokeAgentFunction = (selected: FunctionBinding | undefined) => {
+    if (!selected) return
+    if (inputOptions.taskRequest.kinds.includes(selected.kind) && state.workspaceId && view.workId && view.branchId && branch) {
+      const scope = { workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId, functionId: selected.function_id }
+      const key = JSON.stringify(Object.values(scope))
+      let editor = taskRequestEditors.get(key)
+      if (!editor) {
+        editor = new TaskRequestEditor(scope, props.remote, branch.original_request)
+        taskRequestEditors.set(key, editor)
+      }
+      setTaskRequest({ editor, binding: selected, navigation: store.getNavigationSequence() })
+    } else void action('agent-action', { id: selected.function_id, ...(selected.kind === 'compare' ? { referenceRunIds } : {}) })
+  }
   const agentButton = (label: string, kind: string, disabled = false) => (
     <Button
       kind="small agent-action"
       disabled={disabled || !binding(kind)}
-      onClick={() =>
-        void action('agent-action', {
-          id: binding(kind)?.function_id,
-          ...(kind === 'compare' ? { referenceRunIds } : {}),
-        })
-      }
+      onClick={() => invokeAgentFunction(binding(kind))}
     >
       {label}
     </Button>
@@ -461,12 +474,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           key={item.function_id}
           kind="small agent-action"
           disabled={disabled}
-          onClick={() =>
-            void action('agent-action', {
-              id: item.function_id,
-              ...(item.kind === 'compare' ? { referenceRunIds } : {}),
-            })
-          }
+          onClick={() => invokeAgentFunction(item)}
         >
           {item.name}
         </Button>
@@ -2133,6 +2141,21 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             </section>
           </div>
         )}
+        {taskRequest && branch && taskRequest.navigation === store.getNavigationSequence() && <ExperimentTaskRequestDialog
+          editor={taskRequest.editor} binding={taskRequest.binding} branch={branch}
+          catalog={props.catalog} instances={props.instances ?? []}
+          presetName={presetName(taskRequest.binding.preset_id)} modelName={agentModel(taskRequest.binding)}
+          onClose={() => setTaskRequest(null)} onSubmit={async draft => {
+            const { functionId, ...scope } = taskRequest.editor.scope
+            const receipt = await props.onAction({ ...scope, type: 'agent-action', id: functionId, value: { draft: { ...draft } } })
+            const key = JSON.stringify(Object.values(taskRequest.editor.scope))
+            if (taskRequest.editor.getSnapshot().draft === draft) taskRequestEditors.delete(key)
+            setTaskRequest(current => current === taskRequest ? null : current)
+            if (taskRequest.navigation === store.getNavigationSequence()) {
+              setMessage(`${taskRequest.binding.name}${inputOptions.taskRequest.submitted}${receipt?.taskId ? ` · ${receipt.taskId}` : ''}`)
+              await store.refresh()
+            }
+          }} />}
         {modal && (
           <div
             className="modal-backdrop"

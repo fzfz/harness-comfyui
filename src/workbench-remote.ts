@@ -1,14 +1,19 @@
 import Schema from '@deepseek-ai/schemastery'
 import { CATALOG_KIND_DEFINITIONS, type CatalogKind } from './catalog/contract.ts'
 import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
-import type { WorkbenchProjection, AgentModel } from './workbench/contract.ts'
+import type { WorkbenchProjection, AgentModel, TaskRequestDraft } from './workbench/contract.ts'
 import { jsonValueSchema } from './shared/json-contract.ts'
 import { workflowRuntimeParameterInspectionSchema, type WorkflowRuntimeParameterInspection } from './generation/inspection-contract.ts'
 import { contractObject, requiredNullable } from './shared/field-contract.ts'
+import { taskRequestDraftSchema } from './workbench/schema.ts'
 
 export const WORKBENCH_REMOTE_NAMESPACE = 'harnessComfyuiWorkbenchRemote'
 export const WORKBENCH_REMOTE_SERVICE = `remote.${WORKBENCH_REMOTE_NAMESPACE}`
 export interface WorkbenchScope { workspaceId: string; workId?: string; branchId?: string }
+
+export interface WorkbenchActionReceipt extends WorkbenchScope { taskId?: string }
+export interface WorkbenchTaskDraftRequest extends WorkbenchScope { workId: string; branchId: string; functionId: string }
+export interface WorkbenchSaveTaskDraftRequest extends WorkbenchTaskDraftRequest { draft: TaskRequestDraft }
 export const WORKBENCH_ACTION_TYPES = ["new-workspace", "new-work", "create-branch", "update-branch", "update-draft", "update-execution", "run", "experiment", "pause-experiment", "resume-experiment", "stop-experiment", "retry", "favorite", "evaluate", "reuse", "agent-action", "function-add", "function-edit", "function-remove", "function-preset", "resource-select", "resource-remove", "task-interrupt", "task-resume", "task-answer", "task-apply", "task-branch"] as const
 export type ExperimentActionType = typeof WORKBENCH_ACTION_TYPES[number]
 export const WORKBENCH_BRANCH_EDIT_FIELDS = ['name', 'original_request'] as const
@@ -43,16 +48,20 @@ export interface WorkbenchModelChangePreview {
   readonly removed: readonly (WorkbenchModelChangeRef & { readonly label: string })[]
 }
 export interface WorkbenchRemoteMethods {
+  getTaskDraft(request: WorkbenchTaskDraftRequest): Promise<RemoteResult<TaskRequestDraft | null>>
+  saveTaskDraft(request: WorkbenchSaveTaskDraftRequest): Promise<RemoteResult<TaskRequestDraft>>
   previewModelChange(request: WorkbenchModelChangeRequest): Promise<RemoteResult<WorkbenchModelChangePreview>>
   getInputDescription(request: WorkbenchInputDescriptionRequest): Promise<RemoteResult<WorkflowRuntimeParameterInspection | null>>
   getProjection(request: WorkbenchScope): Promise<RemoteResult<WorkbenchProjection>>
   getEnvironment(request: WorkbenchEnvironmentRequest): Promise<RemoteResult<WorkbenchEnvironment>>
-  mutate(request: ExperimentWorkbenchAction): Promise<RemoteResult<WorkbenchScope>>
+  mutate(request: ExperimentWorkbenchAction): Promise<RemoteResult<WorkbenchActionReceipt>>
 }
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap { 'workbench/operation-failed': { code: string; issues: { path: string; message: string }[] } }
   interface TypertRemoteNamespaceMap { harnessComfyuiWorkbenchRemote: WorkbenchRemoteMethods }
   interface TypertRemoteMap {
+    'harnessComfyuiWorkbenchRemote/getTaskDraft': WorkbenchRemoteMethods['getTaskDraft']
+    'harnessComfyuiWorkbenchRemote/saveTaskDraft': WorkbenchRemoteMethods['saveTaskDraft']
     'harnessComfyuiWorkbenchRemote/previewModelChange': WorkbenchRemoteMethods['previewModelChange']
     'harnessComfyuiWorkbenchRemote/getInputDescription': WorkbenchRemoteMethods['getInputDescription']
     'harnessComfyuiWorkbenchRemote/getProjection': WorkbenchRemoteMethods['getProjection']
@@ -81,7 +90,11 @@ const modelChangeResultSchema = contractObject({
   model: contractObject({ id: identifier().required(), label: Schema.string().min(1).required() }, { exact: true }).required(),
   removed: Schema.array(contractObject({ kind: Schema.union(CATALOG_KIND_DEFINITIONS.filter(definition => definition.kind !== 'model').map(definition => definition.kind)).required(), id: identifier().required(), label: Schema.string().min(1).required() }, { exact: true })).required(),
 }, { exact: true })
-const requestSchemas = { previewModelChange: modelChangeSchema, getInputDescription: inputDescriptionSchema, getProjection: scopeSchema, getEnvironment: environmentSchema, mutate: actionSchema }
+const taskDraftFields = { workspaceId: identifier().required(), workId: identifier().required(), branchId: identifier().required(), functionId: identifier().required() }
+const taskDraftRequestSchema = contractObject(taskDraftFields, { exact: true })
+const taskDraftSaveSchema = contractObject({ ...taskDraftFields, draft: taskRequestDraftSchema.required() }, { exact: true })
+const taskDraftResultSchema = contractObject({ value: requiredNullable(taskRequestDraftSchema) }, { exact: true })
+const requestSchemas = { getTaskDraft: taskDraftRequestSchema, saveTaskDraft: taskDraftSaveSchema, previewModelChange: modelChangeSchema, getInputDescription: inputDescriptionSchema, getProjection: scopeSchema, getEnvironment: environmentSchema, mutate: actionSchema }
 function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
   const parsed = Schema.resolve(value, requestSchemas[method], {})[0]
   if (method === 'mutate') {
@@ -96,7 +109,7 @@ function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
 }
 export const WORKBENCH_REMOTE = {
   package: 'harness-comfyui',
-  descriptors: (['getProjection', 'getEnvironment', 'getInputDescription', 'previewModelChange', 'mutate'] as const).map(method => ({
+  descriptors: (['getProjection', 'getEnvironment', 'getInputDescription', 'previewModelChange', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const).map(method => ({
     id: `harness-comfyui#${WORKBENCH_REMOTE_NAMESPACE}/${method}`,
     service: WORKBENCH_REMOTE_NAMESPACE, namespace: WORKBENCH_REMOTE_NAMESPACE, method,
     invocation: { kind: 'direct' as const },
@@ -105,6 +118,6 @@ export const WORKBENCH_REMOTE = {
       create: () => ({ parse: value => parseRequest(method, value) }),
     } }],
     cancellation: { parameter: 'signal' as const },
-    result: { mode: 'strict' as const, typeSymbol: `harness-comfyui/workbench#${method}Result`, create: () => ({ parse: method === 'getInputDescription' ? value => Schema.resolve({ value }, inputDescriptionResultSchema, {})[0].value : method === 'previewModelChange' ? value => Schema.resolve(value, modelChangeResultSchema, {})[0] : object }) },
+    result: { mode: 'strict' as const, typeSymbol: `harness-comfyui/workbench#${method}Result`, create: () => ({ parse: method === 'getTaskDraft' ? value => Schema.resolve({ value }, taskDraftResultSchema, {})[0].value : method === 'saveTaskDraft' ? value => Schema.resolve(value, taskRequestDraftSchema, {})[0] : method === 'getInputDescription' ? value => Schema.resolve({ value }, inputDescriptionResultSchema, {})[0].value : method === 'previewModelChange' ? value => Schema.resolve(value, modelChangeResultSchema, {})[0] : object }) },
   })),
 } satisfies TypertRemoteContribution

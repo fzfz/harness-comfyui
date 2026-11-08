@@ -5,11 +5,11 @@ import {
   Button,
   IconSparkleRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview, WorkbenchTaskDraftRequest, WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
-import type { WorkbenchProjection } from '../../workbench/contract.ts'
+import type { WorkbenchProjection, TaskRequestDraft } from '../../workbench/contract.ts'
 import type { CatalogApi } from './catalog-browser.tsx'
 import type {
   ExperimentScope,
@@ -24,6 +24,8 @@ export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment'
 type RemoteReply<T> = RemoteResult<T>
 export type ExperimentEnvironment = WorkbenchEnvironment
 export interface ExperimentHostRemote {
+  readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft | null>>
+  readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft>>
   readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<RemoteReply<WorkbenchModelChangePreview>>
   readonly getInputDescription: (
     scope: WorkbenchInputDescriptionRequest,
@@ -112,6 +114,10 @@ export function ExperimentWorkbenchHost({
   const environmentLoaded = useRef(false)
   const api = useMemo(
     () => ({
+      getTaskDraft: async (request: WorkbenchTaskDraftRequest) =>
+        unwrap(await remote.getTaskDraft(request)),
+      saveTaskDraft: async (request: WorkbenchSaveTaskDraftRequest) =>
+        unwrap(await remote.saveTaskDraft(request)),
       previewModelChange: async (request: WorkbenchModelChangeRequest) =>
         unwrap(await remote.previewModelChange(request)),
       getEnvironment: async (request: WorkbenchEnvironmentRequest) =>

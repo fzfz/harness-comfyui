@@ -18,6 +18,8 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiWorkbenchRemote/getEnvironment',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/getInputDescription',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/previewModelChange',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/getTaskDraft',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/saveTaskDraft',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/mutate',
       'harness-comfyui#harnessComfyuiGeneration/list',
       'harness-comfyui#harnessComfyuiImageReader/models',

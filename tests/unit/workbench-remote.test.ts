@@ -446,6 +446,14 @@ it('validates each RPC request from JSON with exact field names and identifier c
 it('round trips a complete projection through the declared result codec and rejects non-object results', () => {
   for (const descriptor of WORKBENCH_REMOTE.descriptors) {
     const codec = descriptor.result.create()
+    if (descriptor.method === 'getTaskDraft' || descriptor.method === 'saveTaskDraft') {
+      const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
+      expect(codec.parse(draft)).toEqual(draft)
+      if (descriptor.method === 'getTaskDraft') expect(codec.parse(null)).toBeNull()
+      else expect(() => codec.parse(null)).toThrow()
+      for (const invalid of [undefined, [], {}, { instructions: 'Request' }, { instructions: '', resources: { template_id: 7 } }, { instructions: '', resources: { unknown: true } }]) expect(() => codec.parse(invalid)).toThrow()
+      continue
+    }
     if (descriptor.method === 'getInputDescription') {
       expect(codec.parse(null)).toBeNull()
       const description = { parameters: [], size_candidates: [] }
@@ -457,4 +465,14 @@ it('round trips a complete projection through the declared result codec and reje
     expect(codec.parse(JSON.parse(JSON.stringify(value)))).toEqual(value)
     for (const invalid of [null, [], 'result', 1, { value: Number.NaN }, { '': 'empty key' }]) expect(() => codec.parse(invalid)).toThrow()
   }
+})
+
+it('validates task-draft scope and resource overrides through the public request codecs', () => {
+  const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, descriptor.parameters[0].codec.create()]))
+  const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1', functionId: 'parameters' }
+  const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
+  expect(codecs.getTaskDraft!.parse(scope)).toEqual(scope)
+  expect(codecs.saveTaskDraft!.parse({ ...scope, draft })).toEqual({ ...scope, draft })
+  for (const invalid of [{ ...scope, functionId: '' }, { ...scope, branchId: undefined }, { ...scope, workId: undefined }, { ...scope, extra: true }]) expect(() => codecs.getTaskDraft!.parse(invalid)).toThrow()
+  for (const invalid of [null, {}, { instructions: '', resources: [] }, { instructions: '', resources: { template_id: '0' } }, { instructions: '', resources: { template_id: 7 } }, { instructions: '', resources: { instance_id: false } }, { instructions: '', resources: { parameters: {} } }]) expect(() => codecs.saveTaskDraft!.parse({ ...scope, draft: invalid })).toThrow()
 })

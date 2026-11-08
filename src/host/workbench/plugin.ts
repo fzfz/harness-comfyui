@@ -73,7 +73,7 @@ export function apply(ctx: Context): void {
   const service = new WorkbenchService({
     store, sessions, descriptors: defaults,
     refreshAfterMs: profile.client.runRefreshIntervalMs,
-    prepareGenerationInput: input.prepareGenerationInput, resolveResourceRefs: input.resolveResourceRefs,
+    prepareGenerationInput: input.prepareGenerationInput, resolveResourceRefs: input.resolveResourceRefs, resolveResourceSelection: input.resolveResourceSelection,
     validateContextRefs: input.validateReferences, validateResourceRefs: input.validateReferences,
     parameterIds: input.parameterIds, validateGenerationInput: input.validateGenerationInput,
     validateParameters: input.validateParameters, resolveGenerationDraft: input.resolveGenerationDraft,

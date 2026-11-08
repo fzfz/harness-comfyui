@@ -11,6 +11,11 @@ const strings = () => Schema.array(text()).required()
 const object = (fields: Record<string, Schema>) => contractObject(fields, { exact: true })
 const json = () => jsonValueSchema({ keySchema: text(), maxDepth: 100 }).required()
 const jsonObject = () => Schema.dict(json()).required()
+export const taskRequestResourcesSchema = object({
+  instance_id: Schema.union([id(), Schema.const(null)]).required(false).default(undefined as never),
+  template_id: Schema.union([id(), Schema.const(null)]).required(false).default(undefined as never),
+})
+export const taskRequestDraftSchema = object({ instructions: text(), resources: taskRequestResourcesSchema.required() })
 export const contextRefSchema = object({ kind: Schema.union(['work', 'character', 'style', 'prompt-term', 'artist-string']).required(), id: id() })
 export const resourceRefSchema = object({ kind: Schema.union(CATALOG_KIND_DEFINITIONS.map(definition => definition.kind)).required(), id: id() })
 export const generationInputSchema = object({

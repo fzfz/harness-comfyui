@@ -1,9 +1,10 @@
 import { contractFields } from '../shared/field-contract.ts'
-import { artifactSchemas } from './schema.ts'
+import Schema from '@deepseek-ai/schemastery'
+import { artifactSchemas, taskRequestDraftSchema } from './schema.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { TASK_KINDS } from './functions.ts'
 import { requestTemplateProblem } from './request-template.ts'
-import type { ArtifactPayload, ContextRef, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, TaskDraft, TaskInput, TaskKind } from './contract.ts'
+import type { ArtifactPayload, ContextRef, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
 
 export interface FieldIssue { path: string; message: string }
 export class WorkbenchError extends Error {
@@ -88,6 +89,11 @@ export function validateGenerationInput(value: unknown, path = 'generation_input
 export function validateContextRefs(value: unknown, path = 'context_refs'): ContextRef[] {
   const v = new Validator(); v.refs(value, path); return v.finish(value)
 }
+export function validateTaskRequestDraft(value: unknown): TaskRequestDraft {
+  try { return Schema.resolve(value, taskRequestDraftSchema, {})[0] as TaskRequestDraft }
+  catch (error) { throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), 'draft') }
+}
+
 export function validateTaskDraft(value: unknown, path = 'draft'): TaskDraft {
   const v = new Validator()
   if (v.object(value, path, ['prompt_input', 'generation_input', 'context_refs', 'base_model_id'])) v.draft(value, path)

@@ -146,11 +146,11 @@ describe('workbench storage public boundary', () => {
     f.store.ensureFunctionBindings('workspace', WORKBENCH_FUNCTIONS, { presetId: 'other', agentModel: { provider: 'provider', model: 'other' } })
     expect(f.store.getFunctionBinding('workspace', 'prompt').preset_id).toBe('preset')
     const branch = f.store.createBranch({ workId: f.work.work_id, parentBranchId: f.branch.branch_id, name: 'reflection', originalRequest: 'blue glass', draft: f.branch.draft })
-    f.store.saveTaskInstructions(branch.branch_id, custom.function_id, 'strong reflection')
+    f.store.saveTaskDraft(branch.branch_id, custom.function_id, { instructions: 'strong reflection', resources: {} })
     const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: branch.branch_id, functionId: custom.function_id })
     expect(task.kind).toBe('rewrite')
     expect(task.input.requirements.instructions).toBe('strong reflection')
-    expect(f.store.getTaskInstructions(branch.branch_id, custom.function_id)).toBe('')
+    expect(f.store.getTaskDraft(branch.branch_id, custom.function_id)).toBeNull()
     f.store.removeFunctionBinding('workspace', custom.function_id)
     expect(f.store.getTask(task.task_id).binding_snapshot.name).toBe('Glass')
     const identity = { workspaceId: 'workspace', sessionId: task.session_id!, turn: 1, callId: 'lineage' }

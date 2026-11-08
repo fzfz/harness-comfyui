@@ -3,8 +3,8 @@ import { basename, join } from 'node:path'
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import type { GenerationRequest } from '../../generation/submission-contract.ts'
-import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PublishReceipt, ReviewDraft, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
-import { equalValue, jsonValue, validateArtifact, validateFunctionBinding, validateTaskDraft, validateTaskInput, validateReviewDraft, WorkbenchError } from '../../workbench/validation.ts'
+import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PublishReceipt, ReviewDraft, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
+import { equalValue, jsonValue, validateArtifact, validateFunctionBinding, validateTaskDraft, validateTaskRequestDraft, validateTaskInput, validateReviewDraft, WorkbenchError } from '../../workbench/validation.ts'
 import { deriveTaskStatus, isFinishedRun } from '../../workbench/state.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
 import { renderRequestTemplate } from '../../workbench/request-template.ts'
@@ -31,6 +31,7 @@ export class WorkbenchStore {
     this.database = options.database
     this.artifactDirectory = options.artifactDirectory
     this.database.exec('PRAGMA foreign_keys = ON')
+    const taskDraftResourcesColumn = "resources_json TEXT NOT NULL DEFAULT '{}'"
     this.database.exec(`
       CREATE TABLE IF NOT EXISTS workbench_works (work_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, name TEXT NOT NULL, goal TEXT NOT NULL);
       CREATE INDEX IF NOT EXISTS workbench_works_workspace ON workbench_works(workspace_id);
@@ -44,7 +45,7 @@ export class WorkbenchStore {
       CREATE TABLE IF NOT EXISTS workbench_function_bindings (
         workspace_id TEXT NOT NULL, function_id TEXT NOT NULL, name TEXT NOT NULL, kind TEXT NOT NULL, builtin INTEGER NOT NULL,
         preset_id TEXT NOT NULL, agent_model_json TEXT NOT NULL, requested_skill TEXT, request_template TEXT NOT NULL, PRIMARY KEY(workspace_id,function_id));
-      CREATE TABLE IF NOT EXISTS workbench_task_drafts (branch_id TEXT NOT NULL REFERENCES workbench_branches(branch_id), function_id TEXT NOT NULL, instructions TEXT NOT NULL, PRIMARY KEY(branch_id,function_id));
+      CREATE TABLE IF NOT EXISTS workbench_task_drafts (branch_id TEXT NOT NULL REFERENCES workbench_branches(branch_id), function_id TEXT NOT NULL, instructions TEXT NOT NULL, ${taskDraftResourcesColumn}, PRIMARY KEY(branch_id,function_id));
       CREATE TABLE IF NOT EXISTS workbench_tasks (
         task_id TEXT PRIMARY KEY, branch_id TEXT NOT NULL REFERENCES workbench_branches(branch_id), function_id TEXT NOT NULL, title TEXT NOT NULL,
         kind TEXT NOT NULL, status TEXT NOT NULL, input_json TEXT NOT NULL, output_contract_json TEXT NOT NULL, apply_target_json TEXT NOT NULL,
@@ -65,6 +66,9 @@ export class WorkbenchStore {
       CREATE INDEX IF NOT EXISTS workbench_experiences_work ON workbench_experiences(work_id);
       CREATE TABLE IF NOT EXISTS workbench_favorites (target_type TEXT NOT NULL, target_id TEXT NOT NULL, PRIMARY KEY(target_type,target_id));
     `)
+    if (!this.rows('PRAGMA table_info(workbench_task_drafts)').some(column => column.name === 'resources_json')) {
+      this.database.exec(`ALTER TABLE workbench_task_drafts ADD COLUMN ${taskDraftResourcesColumn}`)
+    }
   }
 
   private rows(sql: string, ...args: (string | number | null)[]): Row[] { return this.database.prepare(sql).all(...args) as Row[] }
@@ -143,11 +147,31 @@ export class WorkbenchStore {
     if (this.getFunctionBinding(workspaceId, functionId).builtin) fail('WORKBENCH_INVALID_INPUT', '内置功能请在配置中心编辑。')
     this.run('DELETE FROM workbench_function_bindings WHERE workspace_id=? AND function_id=?', workspaceId, functionId)
   }
-  saveTaskInstructions(branchId: string, functionId: string, instructions: string): void {
-    const branch = this.getBranch(branchId); this.getFunctionBinding(this.getWork(branch.work_id).workspace_id, functionId)
-    this.run('INSERT INTO workbench_task_drafts VALUES(?,?,?) ON CONFLICT(branch_id,function_id) DO UPDATE SET instructions=excluded.instructions', branchId, functionId, instructions)
+  saveTaskDraft(branchId: string, functionId: string, value: TaskRequestDraft): TaskRequestDraft {
+    const branch = this.getBranch(branchId)
+    this.getFunctionBinding(this.getWork(branch.work_id).workspace_id, functionId)
+    const draft = validateTaskRequestDraft(value)
+    this.run('INSERT INTO workbench_task_drafts(branch_id,function_id,instructions,resources_json) VALUES(?,?,?,?) ON CONFLICT(branch_id,function_id) DO UPDATE SET instructions=excluded.instructions,resources_json=excluded.resources_json', branchId, functionId, draft.instructions, JSON.stringify(draft.resources))
+    return draft
   }
-  getTaskInstructions(branchId: string, functionId: string): string { return String(this.row('SELECT instructions FROM workbench_task_drafts WHERE branch_id=? AND function_id=?', branchId, functionId)?.instructions ?? '') }
+  getTaskDraft(branchId: string, functionId: string): TaskRequestDraft | null {
+    const row = this.row('SELECT instructions,resources_json FROM workbench_task_drafts WHERE branch_id=? AND function_id=?', branchId, functionId)
+    return row ? { instructions: String(row.instructions), resources: parse(row.resources_json) } : null
+  }
+  completeTaskSubmission(taskId: string, expected: TaskRequestDraft | null, resources?: { expected: TaskDraft; draft: TaskDraft }): void {
+    transaction(this.database, () => {
+      const task = this.getTask(taskId)
+      const branch = this.getBranch(task.branch_id)
+      if (resources && equalValue(branch.draft.generation_input, resources.expected.generation_input) && branch.draft.base_model_id === resources.expected.base_model_id) {
+        const draft = { ...branch.draft, generation_input: resources.draft.generation_input, base_model_id: resources.draft.base_model_id }
+        this.run('UPDATE workbench_branches SET draft_json=? WHERE branch_id=?', JSON.stringify(draft), branch.branch_id)
+      }
+      if (expected && equalValue(this.getTaskDraft(branch.branch_id, task.function_id), expected)) {
+        this.run('DELETE FROM workbench_task_drafts WHERE branch_id=? AND function_id=?', branch.branch_id, task.function_id)
+      }
+    })
+  }
+
   createTask(input: NewTask): Task {
     return transaction(this.database, () => {
       const branch = this.getBranch(input.branchId)
@@ -159,7 +183,6 @@ export class WorkbenchStore {
       const requestText = renderRequestTemplate(input.bindingSnapshot.request_template, id)
       this.run('INSERT INTO workbench_tasks VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', id, input.branchId, input.functionId, input.title, input.kind, 'pending', JSON.stringify(fixed), JSON.stringify(input.outputContract), JSON.stringify(input.applyTarget), JSON.stringify(input.bindingSnapshot), null, requestText, null, '[]', null, now, now, 'pending', input.initiator ?? 'human', input.retryOfRunId ?? null)
       if (input.kind === 'experiment') this.run('INSERT INTO workbench_experiments VALUES(?,?,?)', id, 'running', null)
-      this.run('DELETE FROM workbench_task_drafts WHERE branch_id=? AND function_id=?', branch.branch_id, input.functionId)
       return this.getTask(id)
     })
   }
