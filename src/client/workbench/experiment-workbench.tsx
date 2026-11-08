@@ -53,6 +53,7 @@ import { ExperimentTaskRequestDialog } from './experiment-task-request-dialog.ts
 import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogApi, type CatalogReference } from './catalog-browser.tsx'
 import { workbenchContextKey } from './contract.ts'
 import inputOptions from './experiment-input-options.json' with { type: 'json' }
+import taskPresentation from './experiment-task-presentation.json' with { type: 'json' }
 
 export type {
   ExperimentWorkbenchAction,
@@ -1062,17 +1063,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       </div>
     </main>
   )
-  const taskStatus: Record<Task['status'], string> = {
-    pending: '等待执行',
-    running: 'Agent 执行中',
-    waiting_input: '等待输入',
-    waiting_generation: '等待生成',
-    needs_attention: '需要处理',
-    paused: '已暂停',
-    succeeded: '已完成',
-    failed: '失败',
-    interrupted: '已中断',
-  }
+  const taskStatus: Record<Task['status'], string> = taskPresentation.statusLabels
   const tasks = (
     <main className="center">
       <PanelHead title="任务">{back}</PanelHead>
@@ -1146,7 +1137,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 {item.status === 'running' && (
                   <div className="task-progress">
                     <span className="loading-ring" />
-                    Agent 执行中
+                    {taskStatus.running}
                   </div>
                 )}
                 {item.error && (

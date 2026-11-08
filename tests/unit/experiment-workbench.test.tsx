@@ -1326,6 +1326,101 @@ describe('experiment workbench public interactions', () => {
   })
 })
 
+describe('experiment workbench task list states', () => {
+  it('refreshes an idle Agent task from waiting generation to completion on the task page', async () => {
+    vi.useFakeTimers()
+    const data = fullProjection()
+    data.tasks = [{ ...makeTask('render'), status: 'waiting_generation', execution_state: 'idle' }]
+    data.runs = [makeRun('render-run', 'render', 'running')]
+    data.refreshAfterMs = 100
+    let current = data
+    const { renderer } = await mount(data, {
+      remote: { getProjection: async () => structuredClone(current) },
+    })
+    await click(renderer, '任务')
+    const card = () => renderer.root.findAllByProps({ className: 'agent-task-card' })[0]!
+    expect(nodeText(card().findByProps({ className: 'pill amber' }))).toBe('等待生成')
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(nodeText(card().findByProps({ className: 'pill amber' }))).toBe('等待生成')
+    current = { ...data, tasks: [{ ...data.tasks[0]!, status: 'succeeded' }], runs: [{ ...data.runs[0]!, status: 'succeeded' }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(nodeText(card().findByProps({ className: 'pill ' }))).toBe('已完成')
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '任务' }))).toBe('任务1')
+    expect(card().props['data-task']).toBe('render')
+  })
+
+  it('shows an empty task page for another work and restores the first work list', async () => {
+    const first = fullProjection()
+    const second = {
+      ...first, work_id: 'work-b',
+      branches: [{ ...first.branches[0]!, branch_id: 'second-root', work_id: 'work-b' }],
+      tasks: [], runs: [], artifacts: [], experiences: [], favorites: [],
+    }
+    const { renderer } = await mount(first, {
+      remote: { getProjection: async ({ workId }) => workId === 'work-b' ? second : first },
+    })
+    await click(renderer, '任务')
+    expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(3)
+    await change(renderer, '切换工作', 'work-b')
+    await click(renderer, '任务')
+    expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(0)
+    expect(nodeText(renderer.root.findByProps({ className: 'empty' }))).toBe('暂无任务生成提示词')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '任务' }))).toBe('任务0')
+    await click(renderer, '返回结果')
+    expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+    await change(renderer, '切换工作', 'work-a')
+    await click(renderer, '任务')
+    expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(3)
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '任务' }))).toBe('任务3')
+  })
+
+  it('shows every task status, title and branch with a matching task count', async () => {
+    const data = fullProjection()
+    const states = [
+      ['pending', '待执行'],
+      ['running', 'Agent 执行中'],
+      ['waiting_input', '等待输入'],
+      ['waiting_generation', '等待生成'],
+      ['needs_attention', '待处理'],
+      ['paused', '已暂停'],
+      ['succeeded', '已完成'],
+      ['failed', '失败'],
+      ['interrupted', '已中断'],
+    ] as const
+    data.tasks = states.map(([status], index) => ({
+      ...makeTask(status, index % 2 ? 'child' : 'root', 'prompt'),
+      status,
+    }))
+    data.runs = []
+    const { renderer, remote } = await mount(data)
+    await click(renderer, '任务')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '任务' }))).toBe('任务9')
+    const cards = renderer.root.findAllByProps({ className: 'agent-task-card' })
+    expect(cards.map(card => card.props['data-task'])).toEqual([
+      'interrupted', 'failed', 'succeeded', 'paused', 'needs_attention',
+      'waiting_generation', 'waiting_input', 'running', 'pending',
+    ])
+    for (const [index, [status, label]] of states.entries()) {
+      const card = cards.find(card => card.props['data-task'] === status)!
+      expect(nodeText(card.findAllByType('h2')[0]!)).toBe('任务 ' + status)
+      expect(nodeText(card.findByProps({
+        className: status === 'succeeded' ? 'pill ' : status === 'failed' ? 'pill red' : 'pill amber',
+      }))).toBe(label)
+      const branchButton = card.findByProps({ className: 'task-meta' }).findAllByType('button')[0]!
+      expect(nodeText(branchButton)).toBe(index % 2 ? '暖光探索' : '主分支')
+    }
+    const childButton = cards.find(card => card.props['data-task'] === 'running')!
+      .findByProps({ className: 'task-meta' }).findAllByType('button')[0]!
+    await act(async () => { childButton.props.onClick() })
+    expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光探索')
+    await click(renderer, '任务')
+    expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(9)
+    expect(remote.getProjection.mock.calls.every(([scope]) => !('branchId' in scope))).toBe(true)
+  })
+})
+
 describe('experiment workbench forms and task results', () => {
   it.each([
     ['name', '分支名称'],

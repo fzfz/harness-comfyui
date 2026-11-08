@@ -1,0 +1,13 @@
+{
+  "statusLabels": {
+    "pending": "待执行",
+    "running": "Agent 执行中",
+    "waiting_input": "等待输入",
+    "waiting_generation": "等待生成",
+    "needs_attention": "待处理",
+    "paused": "已暂停",
+    "succeeded": "已完成",
+    "failed": "失败",
+    "interrupted": "已中断"
+  }
+}
