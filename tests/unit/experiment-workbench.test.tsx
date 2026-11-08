@@ -1777,9 +1777,11 @@ describe('experiment workbench Catalog search transitions', () => {
     expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('  page draft  ')
     expect(catalog.search).toHaveBeenCalledWith(expect.objectContaining({ kind: 'model', query: '  page draft  ' }), expect.any(AbortSignal))
     await change(renderer, '搜索资源', '  direct entry draft  ')
+    vi.mocked(catalog.search).mockClear()
     await click(renderer, '添加 LoRA')
     expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('')
-    expect(catalog.search).toHaveBeenLastCalledWith(expect.objectContaining({ kind: 'lora', query: '', page: 1 }), expect.any(AbortSignal))
+    expect(catalog.search).toHaveBeenCalledWith({ kind: 'lora', query: '', page: 1, baseModelId: '1', modelId: null }, expect.any(AbortSignal))
+    expect(nodeText(renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('LoRA')
   })
 })
 
@@ -2336,6 +2338,103 @@ describe('experiment workbench Catalog removal persistence', () => {
       expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
       await act(() => renderer.unmount())
     } finally { await host.dispose() }
+  })
+})
+
+describe('experiment workbench generation model selection', () => {
+  it('persists a compatible model and its summary while preserving sibling inputs and the run Agent model', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture()
+    const signal = new AbortController().signal
+    const records = [
+      { id: '9', file_name: 'anima-preview3-base.safetensors', base_model_id: '1' },
+      { id: '16', file_name: 'miaomiaoHarem_anima16.safetensors', base_model_id: '1' },
+    ]
+    const items: CatalogItem[] = records.map(record => ({
+      context: { kind: 'model', id: record.id, file_name: record.file_name }, baseModelId: record.base_model_id,
+      label: record.file_name, subtitle: '', coverUrl: null, sampleImageUrls: [],
+    }))
+    const catalog: CatalogApi = {
+      baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'anima' }] })),
+      search: vi.fn(async request => {
+        const matches = request.kind === 'model' ? items.filter(item => (!request.baseModelId || item.baseModelId === request.baseModelId) && (!request.modelId || item.context.id === request.modelId)) : []
+        return { ...request, items: matches, totalCount: matches.length }
+      }),
+      details: vi.fn(),
+    }
+    try {
+      host.catalog.resolveGenerationModel.mockImplementation(async id => {
+        const record = records.find(record => record.id === id)
+        if (!record) throw new Error('Model record is unavailable.')
+        return record
+      })
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模型选择', goal: '保留其他输入' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      const branch = host.store.getBranch(scope.branchId)
+      const seeded = {
+        ...branch.draft, base_model_id: '1', prompt_input: { positive_prompt: 'rain on glass', negative_prompt: 'blur' },
+        generation_input: { ...branch.draft.generation_input, title: '原输入', instance_id: '8', template_id: '5', model: { id: '9', file_name: records[0]!.file_name },
+          parameters: { width: 768, height: 1024, seed: 42, steps: 30, cfg: 3, reference: '/reference.png' },
+          loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.35, trigger_words: ['rain'] }] },
+        context_refs: [{ kind: 'character' as const, id: '4' }],
+      }
+      host.store.saveBranchDraft({ ...scope, expected: branch.draft, draft: seeded })
+      const before = host.store.getBranch(scope.branchId)
+      const bindingsBefore = structuredClone(host.store.listFunctionBindings(scope.workspaceId))
+      const run = bindingsBefore.find(binding => binding.kind === 'run')!
+      const environment = await host.remote.getEnvironment({}, signal)
+      const memory = new Map<string, string>()
+      const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+      const options: Partial<ExperimentWorkbenchProps> = {
+        catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, presets: environment.presets,
+        baseModels: [{ id: '1', label: 'anima' }],
+        agentModelGroups: [{ id: run.agent_model.provider, name: '提供商 A', models: [{ id: run.agent_model.model, name: 'Agent 模型 A' }] }],
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        onAction: request => host.remote.mutate(request, signal),
+      }
+      const data = await host.remote.getProjection(scope, signal)
+      const { renderer } = await mount(data, options)
+      await click(renderer, '更换生成模型')
+      await click(renderer, '选择 miaomiaoHarem_anima16.safetensors')
+      expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+      const picked = renderer.root.findByProps({ className: 'selected-resources' }).findAllByProps({ className: 'picked-item' })[0]!
+      expect(picked.findAllByType('b').map(nodeText)).toEqual([records[1]!.file_name])
+      expect(picked.findAllByType('span').map(nodeText)).toEqual(['生成模型 · anima'])
+      const expected = { ...before, draft: { ...seeded, generation_input: { ...seeded.generation_input, model: { id: '16', file_name: records[1]!.file_name } } } }
+      expect(host.store.getBranch(scope.branchId)).toEqual(expected)
+      expect(host.store.listFunctionBindings(scope.workspaceId)).toEqual(bindingsBefore)
+      await click(renderer, '返回结果')
+      expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+      await act(() => renderer.unmount())
+      const reopened = await mount(data, options)
+      const restored = reopened.renderer.root.findByProps({ className: 'selected-resources' }).findAllByProps({ className: 'picked-item' })[0]!
+      expect(restored.findAllByType('b').map(nodeText)).toEqual([records[1]!.file_name])
+      expect(restored.findAllByType('span').map(nodeText)).toEqual(['生成模型 · anima'])
+      await click(reopened.renderer, '配置中心')
+      await click(reopened.renderer, `编辑${run.name}`)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': 'Agent 提供商' }).props.value).toBe(run.agent_model.provider)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': 'Agent 模型' }).props.value).toBe(run.agent_model.model)
+      expect(host.store.listFunctionBindings(scope.workspaceId)).toEqual(bindingsBefore)
+      expect(host.store.getBranch(scope.branchId)).toEqual(expected)
+      const projection = await host.remote.getProjection(scope, signal)
+      expect(projection.tasks).toEqual([])
+      expect(projection.runs).toEqual([])
+      await act(() => reopened.renderer.unmount())
+    } finally { await host.dispose() }
+  })
+
+  it('opens model replacement with the current branch base and clears the previous model filter', async () => {
+    const { catalog } = modelFilterCatalog(), data = fullProjection()
+    data.branches[0]!.draft.base_model_id = '1'
+    const { renderer } = await mount(data, { catalog })
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '2')
+    await change(renderer, '筛选生成模型', '201')
+    await click(renderer, '更换生成模型')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('1')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('')
+    expect(catalog.search).toHaveBeenCalledWith({ kind: 'model', query: '', page: 1, baseModelId: '1', modelId: null }, expect.any(AbortSignal))
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 2')
   })
 })
 

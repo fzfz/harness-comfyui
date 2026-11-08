@@ -1368,7 +1368,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
     store.updateView({
       page: 'resources',
-      catalogFilters: { ...view.catalogFilters, kind, query: '', page: 1 },
+      catalogFilters: { ...view.catalogFilters, kind, baseModelId: branch?.draft.base_model_id ?? '', modelId: '', query: '', page: 1 },
       catalogDetail: null,
       catalogGallery: null,
     })
