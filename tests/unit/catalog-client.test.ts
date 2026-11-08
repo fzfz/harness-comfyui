@@ -88,7 +88,7 @@ describe('Catalog client', () => {
     const controller = new AbortController()
 
     await expect(catalog(execute).search({
-      kind: 'comfyui-template', query: 'wai', page: 2, baseModelId: '2',
+      kind: 'comfyui-template', query: 'wai', page: 2, baseModelId: '2', modelId: null,
     }, controller.signal))
       .resolves.toEqual({
         kind: 'comfyui-template',
@@ -111,7 +111,7 @@ describe('Catalog client', () => {
       })
     expect(execute).toHaveBeenCalledWith({ address: { url: "https://catalog.example.com", port: 18093 }, timeoutMs: 15000, path: "/internal/semantic/comfyui-templates", input: {"mode":"search","query":"wai","page":2,"page_size":8,"base_model_id":"2"}, signal: controller.signal })
     expect(JSON.stringify((await catalog(execute).search(
-      { kind: 'comfyui-template', query: 'wai', page: 2, baseModelId: '2' },
+      { kind: 'comfyui-template', query: 'wai', page: 2, baseModelId: '2', modelId: null },
       controller.signal,
     )))).not.toContain('workflow_json')
   })
@@ -230,7 +230,7 @@ describe('Catalog client', () => {
   ] as const)('projects the %s source record into exact Agent context data', async (kind, source, context) => {
     const execute: CatalogQuery = async () => (response([source]))
     const result = await catalog(execute).search(
-      { kind, query: '', page: 1, baseModelId: null },
+      { kind, query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )
 
@@ -252,7 +252,7 @@ describe('Catalog client', () => {
       id: 1, cover_url: null, sample_image_urls: [], ...source,
     }])
     const result = await catalog(execute).search(
-      { kind, query: '', page: 1, baseModelId: null },
+      { kind, query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )
 
@@ -267,7 +267,7 @@ describe('Catalog client', () => {
     }])
 
     await expect(catalog(execute).search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).rejects.toMatchObject({ code: 'CATALOG_PROTOCOL_ERROR', message: expect.stringContaining('id') })
   })
@@ -281,7 +281,7 @@ describe('Catalog client', () => {
   ])('rejects invalid sample image projection %#', async (source, message) => {
     const execute: CatalogQuery = async () => (response([source]))
     await expect(catalog(execute).search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).rejects.toMatchObject({
       code: 'CATALOG_PROTOCOL_ERROR',
@@ -292,7 +292,7 @@ describe('Catalog client', () => {
   it('returns an empty real page without inserting fixtures', async () => {
     const execute: CatalogQuery = async () => (response([]))
     await expect(catalog(execute).search(
-      { kind: 'artist-string', query: '', page: 1, baseModelId: null },
+      { kind: 'artist-string', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).resolves.toEqual({ kind: 'artist-string', query: '', page: 1, items: [], totalCount: 0 })
   })
@@ -314,9 +314,9 @@ describe('Catalog client', () => {
       query: execute,
     })
 
-    await client.search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)
+    await client.search({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)
     address = { url: 'https://catalog.example.com', port: 443 }
-    await client.search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)
+    await client.search({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)
 
     expect(execute.mock.calls[0]?.[0].address).toEqual({ url: 'http://127.0.0.1', port: 18093 })
     expect(execute.mock.calls[1]?.[0].address).toEqual({ url: 'https://catalog.example.com', port: 443 })
@@ -327,7 +327,7 @@ describe('Catalog client', () => {
       throw new CatalogError('CATALOG_RESPONSE_TOO_LARGE', 'too large')
     }
     await expect(catalog(execute).search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).rejects.toMatchObject({ code: 'CATALOG_RESPONSE_TOO_LARGE' })
   })
@@ -335,10 +335,10 @@ describe('Catalog client', () => {
 
 it('omits repeated titles and empty metadata from card summaries', async () => {
   const execute: CatalogQuery = async () => (response([{ id: 1, base_model_id: 2, file_name: 'name', author: 'name', file_format: '', cover_url: null, sample_image_urls: [] }]))
-  expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('')
+  expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('')
 })
 it('shows distinct model metadata once and keeps a zero LoRA weight', async () => {
   const execute: CatalogQuery = async () => (response([{ id: 1, base_model_id: 2, file_name: 'name', author: 'A', file_format: 'A', version: 'v1', weight: 0, cover_url: null, sample_image_urls: [] }]))
-  expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('作者：A')
-  expect((await catalog(execute).search({ kind: 'lora', query: '', page: 1, baseModelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('版本：v1 · 建议权重：0')
+  expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('作者：A')
+  expect((await catalog(execute).search({ kind: 'lora', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('版本：v1 · 建议权重：0')
 })

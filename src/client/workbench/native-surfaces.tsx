@@ -125,7 +125,7 @@ function WorkbenchDockSession({
   const { baseModels, baseModelStatus, baseModelError, page, status, error: catalogError, retry } = useCatalogBrowser({
     catalog,
     enabled: dialogOpen,
-    query: { kind: selectedKind, query: submittedQuery, page: currentPage, baseModelId: selectedBaseModelId },
+    query: { kind: selectedKind, query: submittedQuery, page: currentPage, baseModelId: selectedBaseModelId, modelId: null },
     onInvalidBaseModel: resetInvalidBaseModel,
   })
   const [detailsItem, setDetailsItem] = useState<CatalogItem | null>(null)

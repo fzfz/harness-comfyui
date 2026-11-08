@@ -175,8 +175,8 @@ describe('Catalog Remote contribution', () => {
     const descriptor = CATALOG_REMOTE.descriptors[0]!
     const request = descriptor.parameters[0]!.codec
     if (request.mode !== 'strict' || descriptor.result.mode !== 'strict') throw new Error('strict codecs required')
-    expect(request.create().parse({ kind: 'model', query: '', page: 1, baseModelId: null }))
-      .toEqual({ kind: 'model', query: '', page: 1, baseModelId: null })
+    expect(request.create().parse({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }))
+      .toEqual({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null })
     expect(descriptor.result.create().parse({
       ok: true,
       value: {

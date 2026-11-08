@@ -25,6 +25,16 @@ const COVER = 'https://catalog.example.com/media/images/model.webp'
 const SAMPLE = 'http://192.168.1.20:18092/media/images/model-sample.webp'
 
 describe('catalog Remote contract', () => {
+  it('requires an explicit nullable generation-model filter in scoped query requests', () => {
+    const request = { kind: 'lora', query: '', page: 1, baseModelId: '2', modelId: '15' } as const
+    expect(parseCatalogQueryRequest(request)).toEqual(request)
+    expect(parseCatalogQueryRequest({ ...request, modelId: null })).toEqual({ ...request, modelId: null })
+    const { modelId: omitted, ...withoutModel } = request
+    expect(() => parseCatalogQueryRequest(withoutModel)).toThrow('properties')
+    expect(() => parseCatalogQueryRequest({ ...request, modelId: '0' })).toThrow('id')
+    expect(() => parseCatalogQueryRequest({ ...request, kind: 'work', baseModelId: null })).toThrow(TypeError)
+  })
+
   it('defines the eight insertable CLI catalog kinds in product order', () => {
     expect(CATALOG_KIND_DEFINITIONS.map(definition => [definition.kind, definition.label])).toEqual([
       ['model', '生成模型'],
@@ -39,7 +49,7 @@ describe('catalog Remote contract', () => {
   })
 
   it('detaches valid filtered query, card page, and base-model values', () => {
-    const request = { kind: 'model', query: 'soft', page: 2, baseModelId: '2' } as const
+    const request = { kind: 'model', query: 'soft', page: 2, baseModelId: '2', modelId: null } as const
     const page = {
       kind: 'model',
       query: 'soft',
@@ -271,12 +281,12 @@ describe('catalog Remote contract', () => {
   })
 
   it.each([
-    [{ kind: 'base-model', query: '', page: 1, baseModelId: null }, 'kind'],
-    [{ kind: 'model', query: 'x'.repeat(201), page: 1, baseModelId: null }, 'query'],
-    [{ kind: 'model', query: '', page: 0, baseModelId: null }, 'page'],
-    [{ kind: 'model', query: '', page: 1, baseModelId: '0' }, 'id'],
-    [{ kind: 'work', query: '', page: 1, baseModelId: '1' }, 'filter'],
-    [{ kind: 'model', query: '', page: 1, baseModelId: null, extra: true }, 'properties'],
+    [{ kind: 'base-model', query: '', page: 1, baseModelId: null, modelId: null }, 'kind'],
+    [{ kind: 'model', query: 'x'.repeat(201), page: 1, baseModelId: null, modelId: null }, 'query'],
+    [{ kind: 'model', query: '', page: 0, baseModelId: null, modelId: null }, 'page'],
+    [{ kind: 'model', query: '', page: 1, baseModelId: '0', modelId: null }, 'id'],
+    [{ kind: 'work', query: '', page: 1, baseModelId: '1', modelId: null }, TypeError],
+    [{ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null, extra: true }, 'properties'],
   ])('rejects invalid query request %j', (value, message) => {
     expect(() => parseCatalogQueryRequest(value)).toThrow(message)
   })

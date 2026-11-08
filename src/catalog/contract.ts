@@ -102,6 +102,7 @@ export interface CatalogQueryRequest {
   readonly query: string
   readonly page: number
   readonly baseModelId: string | null
+  readonly modelId: string | null
 }
 
 export type CatalogComfyuiInstanceQueryRequest = typeof CATALOG_COMFYUI_INSTANCE_QUERY
@@ -296,17 +297,19 @@ export function catalogDefinition(kind: CatalogKind): (typeof CATALOG_KIND_DEFIN
 
 export function parseCatalogQueryRequest(value: unknown): CatalogQueryRequest {
   const input = record(value, 'catalog query')
-  exactKeys(input, ['kind', 'query', 'page', 'baseModelId'], 'catalog query')
+  exactKeys(input, ['kind', 'query', 'page', 'baseModelId', 'modelId'], 'catalog query')
   const kind = catalogKind(input.kind)
   const baseModelId = input.baseModelId === null ? null : parseCatalogStableId(input.baseModelId)
-  if (baseModelId !== null && !catalogDefinition(kind).baseModelScoped) {
-    throw new TypeError('catalog base model filter is invalid')
+  const modelId = input.modelId === null ? null : parseCatalogStableId(input.modelId)
+  if (!catalogDefinition(kind).baseModelScoped && (baseModelId !== null || modelId !== null)) {
+    throw new TypeError(`Set catalog baseModelId and modelId to null when kind is "${kind}".`)
   }
   return Object.freeze({
     kind,
     query: parseCatalogQueryText(input.query),
     page: parseCatalogPageNumber(input.page),
     baseModelId,
+    modelId,
   })
 }
 

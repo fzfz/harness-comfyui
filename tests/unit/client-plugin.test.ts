@@ -519,7 +519,7 @@ describe('Harness Client plugin registration', () => {
     expect(sessionTwoDock.dialogNavigation.getSnapshot().state.currentPage).toBe(1)
     const catalog = (dockFace as { catalog: { search: Function; baseModels: Function; details: Function } }).catalog
     await expect(catalog.search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).resolves.toEqual({ kind: 'model', query: '', page: 1, items: [], totalCount: 0 })
     await expect(catalog.baseModels(new AbortController().signal))
@@ -659,7 +659,7 @@ describe('Harness Client plugin registration', () => {
       catalog: { search: Function; baseModels: Function; details: Function }
     }
     await expect(dock.catalog.search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     ))
       .rejects.toThrow('remote-failed')
@@ -669,7 +669,7 @@ describe('Harness Client plugin registration', () => {
     const controller = new AbortController()
     controller.abort()
     await expect(dock.catalog.search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       controller.signal,
     ))
       .rejects.toMatchObject({ name: 'AbortError' })
@@ -709,7 +709,7 @@ describe('Harness Client plugin registration', () => {
     }
 
     await expect(dock.catalog.search(
-      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null },
+      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).rejects.toMatchObject({
       code: 'CATALOG_PROTOCOL_ERROR',

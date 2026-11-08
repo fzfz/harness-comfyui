@@ -2325,16 +2325,16 @@ function ExperimentCatalog({
   onRemove,
   scroll,
 }: ExperimentCatalogProps) {
-  const { definition: kind, page: result, baseModels, status, error: listError, baseModelError, retry } = useCatalogBrowser({
+  const { definition: kind, page: result, baseModels, models, modelError, status, error: listError, baseModelError, retry } = useCatalogBrowser({
     catalog,
-    query: { kind: filters.kind, query: filters.query, page: filters.page, baseModelId: filters.baseModelId || null },
+    query: { kind: filters.kind, query: filters.query, page: filters.page, baseModelId: filters.baseModelId || null, modelId: filters.modelId || null },
+    modelOptions: true,
   })
-  const [models, setModels] = useState<readonly CatalogItem[]>([])
   const [query, setQuery] = useState(filters.query)
   const [detail, setDetail] = useState<CatalogItem | null>(null)
   const [gallery, setGallery] = useState<{ item: CatalogItem; index: number } | null>(null)
   const { details, error: detailError, retry: retryDetails } = useCatalogDetails(detail === null ? null : detail.context, catalog?.details)
-  const error = detail === null ? listError ?? baseModelError : detailError
+  const error = detail === null ? listError ?? baseModelError ?? (kind.baseModelScoped ? modelError : null) : detailError
   const loading = status === 'loading'
   const bases = baseModels?.items ?? []
   useEffect(() => {
@@ -2342,9 +2342,6 @@ function ExperimentCatalog({
     setDetail(null)
     setGallery(null)
   }, [filters.kind, filters.query, filters.baseModelId, filters.modelId, filters.page])
-  useEffect(() => {
-    if (kind.kind === 'model' && result !== null) setModels(result.items)
-  }, [kind.kind, result])
   const selection: CatalogReference[] = [
     ...(selected?.generation_input.model ? [{ kind: 'model' as const, id: selected.generation_input.model.id }] : []),
     ...(selected?.generation_input.template_id ? [{ kind: 'comfyui-template' as const, id: selected.generation_input.template_id }] : []),
@@ -2547,7 +2544,7 @@ function ExperimentCatalog({
                 </div>
               ) : (
                 <div className="catalog-grid">
-                  <CatalogItems items={(result?.items ?? []).filter(item => !filters.modelId || kind.kind !== 'model' || item.context.id === filters.modelId)} selection={selection}>{(item, selected, key) => {
+                  <CatalogItems items={result?.items ?? []} selection={selection}>{(item, selected, key) => {
                     const previewUrl = catalogImageUrls(item)[0]
                     return (
                     <article key={key} className={`catalog-card ${selected ? 'chosen' : ''}`}>
@@ -2586,9 +2583,7 @@ function ExperimentCatalog({
                 >
                   上一页
                 </Button>
-                <span>
-                  {filters.page} / {pages}
-                </span>
+                <span>{`${filters.page} / ${pages}`}</span>
                 <Button
                   kind="small"
                   disabled={filters.page >= pages || loading}

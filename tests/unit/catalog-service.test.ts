@@ -23,7 +23,7 @@ describe('Catalog Remote service', () => {
       { method: 'sourceAddress', invocation: { kind: 'direct' } },
       { method: 'details', invocation: { kind: 'direct' } },
     ])
-    const request = { kind: 'model', query: '', page: 1, baseModelId: null } as const
+    const request = { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null } as const
     await expect(service.search(request, controller.signal)).resolves.toEqual({ ok: true, value: page })
     expect(search).toHaveBeenCalledWith(request, controller.signal)
     await expect(service.baseModels(controller.signal)).resolves.toEqual({ ok: true, value: baseModelList })
@@ -49,7 +49,7 @@ describe('Catalog Remote service', () => {
     } as never, () => ({ url: 'http://127.0.0.1', port: 8188 }))
 
     await expect(service.search(
-      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null },
+      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).resolves.toEqual({
       ok: false,
@@ -73,7 +73,7 @@ describe('Catalog Remote service', () => {
     } as never, () => ({ url: 'http://127.0.0.1', port: 8188 }))
 
     await expect(service.search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).rejects.toBe(abort)
     await expect(service.details({ kind: 'work', id: '1' }, new AbortController().signal)).rejects.toBe(abort)

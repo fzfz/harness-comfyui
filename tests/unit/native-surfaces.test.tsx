@@ -365,7 +365,7 @@ describe('native Harness workbench surfaces', () => {
     await openDialog(renderer!)
     expect(api.baseModels).toHaveBeenCalledOnce()
     expect(api.search).toHaveBeenCalledWith({
-      kind: 'comfyui-template', query: '', page: 1, baseModelId: null,
+      kind: 'comfyui-template', query: '', page: 1, baseModelId: null, modelId: null,
     }, expect.any(AbortSignal))
     expect(renderer!.root.findAllByType('img')).toHaveLength(1)
     expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.noCover)
@@ -604,13 +604,13 @@ describe('native Harness workbench surfaces', () => {
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
     expect(buttonByText(renderer!, CATALOG_KIND_DEFINITIONS[1].label).props.variant).toBe('primary')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => { (buttonByText(renderer!, WORKBENCH_COPY.cancel).props.onClick as () => void)() })
     api.search.mockClear()
     await openDialog(renderer!)
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => renderer!.unmount())
   })
@@ -655,7 +655,7 @@ describe('native Harness workbench surfaces', () => {
     expect(dialogNavigation.getSnapshot().state).toEqual(persistedNavigation)
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => renderer!.unmount())
   })
@@ -688,7 +688,7 @@ describe('native Harness workbench surfaces', () => {
 
     expect(api.search).not.toHaveBeenCalledWith(expect.objectContaining({ baseModelId: '9' }), expect.anything())
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 1, baseModelId: null,
+      kind: 'lora', query: 'Age', page: 1, baseModelId: null, modelId: null,
     }, expect.any(AbortSignal))
     expect(dialogNavigation.getSnapshot().state).toMatchObject({
       selectedBaseModelId: null,
@@ -767,7 +767,7 @@ describe('native Harness workbench surfaces', () => {
     expect(buttonByText(renderer!, CATALOG_KIND_DEFINITIONS[1].label).props.variant).toBe('primary')
     expect(buttonByText(renderer!, CATALOG_KIND_DEFINITIONS[7].label).props.variant).toBe('toolbar')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: '', page: 1, baseModelId: '2',
+      kind: 'lora', query: '', page: 1, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
 
     const searchInput = renderer!.root.findAllByType('input')[0]!
@@ -780,7 +780,7 @@ describe('native Harness workbench surfaces', () => {
       await Promise.resolve()
     })
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 1, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 1, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
 
     const next = buttonByText(renderer!, WORKBENCH_COPY.nextPage)
@@ -789,7 +789,7 @@ describe('native Harness workbench surfaces', () => {
       await Promise.resolve()
     })
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     const previous = buttonByText(renderer!, WORKBENCH_COPY.previousPage)
     await act(async () => {
@@ -797,7 +797,7 @@ describe('native Harness workbench surfaces', () => {
       await Promise.resolve()
     })
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 1, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 1, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => renderer!.unmount())
 
@@ -854,7 +854,7 @@ describe('native Harness workbench surfaces', () => {
     await openDialog(renderer!)
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('city refined')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'work', query: 'city', page: 3, baseModelId: null,
+      kind: 'work', query: 'city', page: 3, baseModelId: null, modelId: null,
     }, expect.any(AbortSignal))
 
     act(() => { renderer!.update(renderDock('session-a', sessionA, draftA)) })
@@ -928,7 +928,7 @@ describe('native Harness workbench surfaces', () => {
     expect(sessionA.getSnapshot().state).toEqual(sessionANavigation)
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     expect(renderer!.root.findByProps({
       'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}`,

@@ -1316,7 +1316,7 @@ const makeCatalog = (): CatalogApi => ({
       request.query === 'none'
         ? []
         : catalogItems.filter((item) => item.context.kind === request.kind),
-    totalCount: request.query === 'none' ? 0 : 50,
+    totalCount: request.query === 'none' ? 0 : request.kind === 'model' && request.query === '' && request.modelId === null ? 1 : 50,
   })),
   details: vi.fn(async (request) => ({
     ...request,
@@ -1327,6 +1327,171 @@ const makeCatalog = (): CatalogApi => ({
   })),
 })
 
+
+function modelFilterCatalog() {
+  const modelsA: CatalogItem[] = Array.from({ length: 10 }, (_, index) => ({
+    ...catalogItems[0]!, baseModelId: '1', context: { kind: 'model', id: String(101 + index), file_name: `a-${101 + index}.safetensors` }, label: `A 模型 ${101 + index}`,
+  }))
+  const modelsB: CatalogItem[] = [{ ...catalogItems[0]!, baseModelId: '2', context: { kind: 'model', id: '201', file_name: 'b-201.safetensors' }, label: 'B 模型 201' }]
+  const catalog = makeCatalog()
+  vi.mocked(catalog.baseModels).mockResolvedValue({ items: [{ id: '1', label: '底模 A' }, { id: '2', label: '底模 B' }] })
+  vi.mocked(catalog.search).mockImplementation(async request => {
+    const models = request.baseModelId === '1' ? modelsA : request.baseModelId === '2' ? modelsB : [...modelsA, ...modelsB]
+    if (request.kind === 'model') {
+      const matches = request.modelId ? models.filter(item => item.context.id === request.modelId) : models
+      const items = request.query === 'none' ? [] : matches
+      return { ...request, items: items.slice((request.page - 1) * 8, request.page * 8), totalCount: items.length }
+    }
+    const source = catalogItems.find(item => item.context.kind === request.kind)!
+    const items = request.query === 'none' ? [] : [{ ...source, baseModelId: request.baseModelId, label: `${request.modelId || '全部'} ${source.label}` }]
+    return { ...request, items, totalCount: items.length }
+  })
+  return { catalog, modelsA, modelsB }
+}
+
+describe('experiment workbench generation-model filtering', () => {
+  it('keeps independent work results visible when model options fail and retries scoped options', async () => {
+    const { catalog } = modelFilterCatalog()
+    const search = vi.mocked(catalog.search).getMockImplementation()!
+    let failModels = true
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (failModels && request.kind === 'model' && request.modelId === null && request.query === '') return Promise.reject(new Error('模型名册不可用'))
+      return search(request, signal)
+    })
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '作品')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['全部 花房作品'])
+    expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(0)
+    await click(renderer, 'LoRA')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('模型名册不可用')
+    failModels = false
+    await click(renderer, '重试')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['全部 玻璃 LoRA'])
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).findAllByType('option')).toHaveLength(12)
+  })
+
+  it('filters every scoped category through Catalog and preserves Branch inputs across reopening and clearing', async () => {
+    const { catalog } = modelFilterCatalog()
+    const data = fullProjection()
+    const originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const mounted = await mount(data, { catalog, storage })
+    const { renderer, onAction } = mounted
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await click(renderer, '下一页')
+    await change(renderer, '筛选生成模型', '110')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 1')
+    for (const [label, kind, name] of [
+      ['生成模型', 'model', 'A 模型 110'], ['LoRA', 'lora', '110 玻璃 LoRA'],
+      ['画师或画风', 'style', '110 柔光'], ['画师串', 'artist-string', '110 画师串'],
+      ['Workflow 模板', 'comfyui-template', '110 文生图'],
+    ] as const) {
+      await click(renderer, label)
+      expect(catalog.search).toHaveBeenCalledWith({ kind, query: '', page: 1, baseModelId: '1', modelId: '110' }, expect.any(AbortSignal))
+      expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([name])
+      expect(nodeText(renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('1 项')
+      expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('110')
+    }
+    expect(onAction).not.toHaveBeenCalled()
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    await act(() => renderer.unmount())
+    const reopened = await mount(data, { catalog, storage })
+    const current = reopened.renderer
+    expect(current.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('1')
+    expect(current.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('110')
+    expect(current.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['110 文生图'])
+    await change(current, '筛选底模', '2')
+    expect(current.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('')
+    expect(current.root.findByProps({ 'aria-label': '筛选生成模型' }).findAllByType('option').map(option => option.props.value)).toEqual(['', '201'])
+    await change(current, '筛选生成模型', '201')
+    await change(current, '搜索资源', 'none')
+    await act(async () => current.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    expect(current.root.findAllByType('h3').map(nodeText)).toContain('没有匹配的资源')
+    expect(current.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('2')
+    expect(current.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('201')
+    expect(current.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('none')
+    await click(current, '清除筛选')
+    expect(current.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('')
+    expect(current.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('')
+    expect(current.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('')
+    expect(catalog.search).toHaveBeenCalledWith({ kind: 'comfyui-template', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(reopened.onAction).not.toHaveBeenCalled()
+    await click(current, '作品')
+    expect(catalog.search).toHaveBeenLastCalledWith({ kind: 'work', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
+  })
+
+  it('ignores cancelled model-option and selected-model responses after newer filters', async () => {
+    const { catalog } = modelFilterCatalog()
+    const search = vi.mocked(catalog.search).getMockImplementation()!
+    let delayOptions = true
+    const pending: { signal: AbortSignal; finish: () => Promise<void> }[] = []
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (delayOptions && request.baseModelId === '1' && request.kind === 'model' && request.modelId === null || request.modelId === '110') {
+        return new Promise(resolve => pending.push({ signal, finish: async () => resolve(await search(request, signal)) }))
+      }
+      return search(request, signal)
+    })
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '筛选底模', '2')
+    expect(pending.every(request => request.signal.aborted)).toBe(true)
+    await act(async () => { for (const request of pending.splice(0)) await request.finish() })
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).findAllByType('option').map(option => option.props.value)).toEqual(['', '201'])
+    delayOptions = false
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '筛选生成模型', '110')
+    await change(renderer, '筛选生成模型', '101')
+    expect(pending.every(request => request.signal.aborted)).toBe(true)
+    await act(async () => { for (const request of pending.splice(0)) await request.finish() })
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('101')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['A 模型 101'])
+  })
+
+  it('retries a failed model-directory page and exposes the complete options', async () => {
+    const { catalog } = modelFilterCatalog()
+    const search = vi.mocked(catalog.search).getMockImplementation()!
+    let fail = true
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (fail && request.kind === 'model' && request.baseModelId === '1' && request.modelId === null && request.page === 2) {
+        fail = false
+        return Promise.reject(new Error('模型名册不可用'))
+      }
+      return search(request, signal)
+    })
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, 'LoRA')
+    await change(renderer, '筛选底模', '1')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('模型名册不可用')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).findAllByType('option').map(option => option.props.value)).toEqual([''])
+    await click(renderer, '重试')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).findAllByType('option').map(option => option.props.value)).toEqual(['', '101', '102', '103', '104', '105', '106', '107', '108', '109', '110'])
+  })
+
+  it('loads the complete model options independently of resource category, search and page', async () => {
+    const { catalog } = modelFilterCatalog()
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, 'LoRA')
+    await change(renderer, '筛选底模', '1')
+    const optionIds = () => renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).findAllByType('option').map(option => option.props.value)
+    expect(optionIds()).toEqual(['', '101', '102', '103', '104', '105', '106', '107', '108', '109', '110'])
+    await change(renderer, '搜索资源', 'none')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    expect(optionIds()).toEqual(['', '101', '102', '103', '104', '105', '106', '107', '108', '109', '110'])
+    await click(renderer, 'Workflow 模板')
+    expect(optionIds()).toEqual(['', '101', '102', '103', '104', '105', '106', '107', '108', '109', '110'])
+    await click(renderer, '生成模型')
+    await click(renderer, '下一页')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['A 模型 109', 'A 模型 110'])
+    expect(optionIds()).toEqual(['', '101', '102', '103', '104', '105', '106', '107', '108', '109', '110'])
+  })
+})
 
 describe.each([
   { kind: 'model', label: '生成模型', nameA: 'A 模型', nameB: 'B 模型' },
@@ -1368,7 +1533,7 @@ describe.each([
     await click(renderer, label)
     for (const [baseModelId, name] of [['1', nameA], ['2', nameB]] as const) {
       await change(renderer, '筛选底模', baseModelId)
-      expect(catalog.search).toHaveBeenLastCalledWith({ kind, query: '', page: 1, baseModelId }, expect.any(AbortSignal))
+      expect(catalog.search).toHaveBeenLastCalledWith({ kind, query: '', page: 1, baseModelId, modelId: null }, expect.any(AbortSignal))
       expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe(baseModelId)
       expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([name])
       expect(inspectorState()).toEqual(originalInspector)
@@ -1380,7 +1545,7 @@ describe.each([
     expect(reopened.renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
     expect(reopened.renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('2')
     expect(reopened.renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([nameB])
-    expect(catalog.search).toHaveBeenLastCalledWith({ kind, query: '', page: 1, baseModelId: '2' }, expect.any(AbortSignal))
+    expect(catalog.search).toHaveBeenLastCalledWith({ kind, query: '', page: 1, baseModelId: '2', modelId: null }, expect.any(AbortSignal))
     expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
     expect(reopened.onAction).not.toHaveBeenCalled()
   })
@@ -1566,7 +1731,7 @@ describe('experiment workbench shared catalog', () => {
     const { renderer, onAction } = await mount(fullProjection(), { catalog })
     await click(renderer, '资源')
     expect(catalog.search).toHaveBeenLastCalledWith(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       expect.any(AbortSignal),
     )
     await change(renderer, '筛选底模', '1')
