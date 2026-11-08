@@ -72,6 +72,7 @@ export interface ExperimentViewState {
   readonly compareRunId: string | null
   readonly collapsedBranches: readonly string[]
   readonly catalogDetail: CatalogDetailsRequest | null
+  readonly catalogGallery: (CatalogDetailsRequest & { readonly index: number }) | null
   readonly catalogFilters: {
     readonly kind: string
     readonly baseModelId: string

@@ -1370,6 +1370,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       page: 'resources',
       catalogFilters: { ...view.catalogFilters, kind, query: '', page: 1 },
       catalogDetail: null,
+      catalogGallery: null,
     })
   }
   const inspector = branch && inputs && (
@@ -2060,12 +2061,14 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 catalog={props.catalog}
                 filters={view.catalogFilters}
                 detailRequest={view.catalogDetail}
-                onDetail={catalogDetail => navigate(() => store.updateView({ catalogDetail }))}
+                gallery={view.catalogGallery}
+                onGallery={catalogGallery => navigate(() => store.updateView({ catalogGallery }))}
+                onDetail={catalogDetail => navigate(() => store.updateView({ catalogDetail, catalogGallery: null }))}
                 queryText={catalogQueryText}
                 onQueryChange={value => setCatalogQueryDraft({ workspaceId: state.workspaceId, value })}
                 onFilters={(patch) => {
                   if (patch.query !== undefined) setCatalogQueryDraft({ workspaceId: state.workspaceId, value: patch.query })
-                  store.updateView({ catalogFilters: { ...store.getSnapshot().view.catalogFilters, ...patch }, ...(patch.query !== undefined ? { catalogDetail: null } : {}) })
+                  store.updateView({ catalogFilters: { ...store.getSnapshot().view.catalogFilters, ...patch }, ...(patch.query !== undefined ? { catalogDetail: null, catalogGallery: null } : {}) })
                 }}
                 back={back}
                 selected={inputs}
@@ -2319,6 +2322,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
 interface ExperimentCatalogProps {
   readonly catalog: ExperimentWorkbenchProps['catalog']
   readonly detailRequest: CatalogDetailsRequest | null
+  readonly gallery: import('./experiment-contract.ts').ExperimentViewState['catalogGallery']
+  readonly onGallery: (gallery: import('./experiment-contract.ts').ExperimentViewState['catalogGallery']) => void
   readonly onDetail: (request: CatalogDetailsRequest | null) => void
   readonly filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters']
   readonly onFilters: (
@@ -2339,6 +2344,8 @@ interface ExperimentCatalogProps {
 function ExperimentCatalog({
   catalog,
   detailRequest,
+  gallery,
+  onGallery,
   onDetail,
   filters,
   onFilters,
@@ -2356,17 +2363,17 @@ function ExperimentCatalog({
     query: { kind: filters.kind, query: filters.query, page: filters.page, baseModelId: filters.baseModelId || null, modelId: filters.modelId || null },
     modelOptions: true,
   })
-  const [gallery, setGallery] = useState<{ item: CatalogItem; index: number } | null>(null)
-  const { details, error: detailError, retry: retryDetails } = useCatalogDetails(detailRequest, catalog?.details)
-  const detail = details?.item ?? (detailRequest && result?.items.find(item => item.context.kind === detailRequest.kind && item.context.id === detailRequest.id)) ?? null
+  const resourceRequest = gallery ?? detailRequest
+  const { details: loadedDetails, error: detailError, retry: retryDetails } = useCatalogDetails(resourceRequest, catalog?.details)
+  const details = loadedDetails?.kind === resourceRequest?.kind && loadedDetails?.id === resourceRequest?.id ? loadedDetails : null
+  const resourceItem = details?.item ?? (resourceRequest && result?.items.find(item => item.context.kind === resourceRequest.kind && item.context.id === resourceRequest.id)) ?? null
+  const detail = gallery === null ? resourceItem : null
+  const galleryItem = gallery ? resourceItem : null
   const needsBaseModels = detailRequest ? !!detail?.baseModelId : (result?.items.some(item => item.baseModelId !== null) ?? false)
   const error = detailRequest === null ? listError ?? baseModelError ?? (kind.baseModelScoped ? modelError : null) : detailError ?? (needsBaseModels ? baseModelError : null)
   const retryError = detailRequest && detailError ? retryDetails : retry
   const loading = status === 'loading'
   const bases = baseModels?.items ?? []
-  useEffect(() => {
-    setGallery(null)
-  }, [filters.kind, filters.query, filters.baseModelId, filters.modelId, filters.page, detailRequest?.kind, detailRequest?.id])
   const selection: CatalogReference[] = [
     ...(selected?.generation_input.model ? [{ kind: 'model' as const, id: selected.generation_input.model.id }] : []),
     ...(selected?.generation_input.template_id ? [{ kind: 'comfyui-template' as const, id: selected.generation_input.template_id }] : []),
@@ -2380,11 +2387,18 @@ function ExperimentCatalog({
     return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || selected && !multiple}
       label={`${label} ${item.label}`} pressed={selected} onClick={() => selected && multiple ? onRemove(item) : onSelect(item)}>{label}</Button>
   }
-  const galleryImages = catalogImageUrls(gallery?.item ?? null)
+  const openGallery = (item: CatalogItem) => onGallery({ kind: item.context.kind, id: item.context.id, index: 0 })
+  const galleryImages = catalogImageUrls(galleryItem)
+  const galleryIndex = Math.min(gallery?.index ?? 0, Math.max(0, galleryImages.length - 1))
+  useEffect(() => {
+    if (!gallery || !details) return
+    if (galleryImages.length === 0) onGallery(null)
+    else if (gallery.index !== galleryIndex) onGallery({ ...gallery, index: galleryIndex })
+  }, [gallery, details, galleryImages.length, galleryIndex, onGallery])
   const detailPreviewUrl = catalogImageUrls(detail)[0]
-  const panel = gallery ? `gallery:${workbenchContextKey(gallery.item.context)}` : detailRequest ? `detail:${workbenchContextKey(detailRequest)}` : 'list'
+  const panel = gallery ? `gallery:${workbenchContextKey(gallery)}:${detailRequest ? workbenchContextKey(detailRequest) : 'list'}` : detailRequest ? `detail:${workbenchContextKey(detailRequest)}` : 'list'
   const baseModelsPending = needsBaseModels && (baseModelStatus === 'idle' || baseModelStatus === 'loading')
-  const contentReady = gallery !== null || (error === null && !baseModelsPending && (detailRequest ? details !== null : status === 'ready'))
+  const contentReady = gallery ? galleryItem !== null && detailError === null : error === null && !baseModelsPending && (detailRequest ? details !== null : status === 'ready')
   const pages = catalogPageCount(result?.totalCount ?? 0)
   useEffect(() => {
     if (result && result.kind === filters.kind && result.query === filters.query
@@ -2416,44 +2430,47 @@ function ExperimentCatalog({
           {gallery ? (
             <div className="catalog-gallery">
               <div className="row between">
-                <Button kind="small quiet" onClick={() => setGallery(null)}>
-                  {detail ? '返回详情' : '返回资源列表'}
+                <Button kind="small quiet" onClick={() => onGallery(null)}>
+                  {detailRequest ? '返回详情' : '返回资源列表'}
                 </Button>
-                <h3>{gallery.item.label}</h3>
+                {galleryItem && <><h3>{galleryItem.label}</h3>
                 <span className="mono">
-                  {gallery.index + 1} / {galleryImages.length}
-                </span>
+                  {`${galleryIndex + 1} / ${galleryImages.length}`}
+                </span></>}
               </div>
-              <div className="gallery-stage">
+              {detailError ? <div className="empty">
+                <p role="alert">{detailError}</p>
+                <Button kind="small" onClick={retryDetails}>重试</Button>
+              </div> : galleryItem ? <div className="gallery-stage">
                 <Button
                   kind="quiet"
                   label="上一张图片"
-                  disabled={gallery.index === 0}
+                  disabled={galleryIndex === 0}
                   onClick={() =>
-                    setGallery({ ...gallery, index: gallery.index - 1 })
+                    onGallery({ ...gallery, index: galleryIndex - 1 })
                   }
                 >
                   ‹
                 </Button>
                 <div className="artwork">
                   <img
-                    src={galleryImages[gallery.index]}
-                    alt={gallery.item.label}
+                    src={galleryImages[galleryIndex]}
+                    alt={galleryItem.label}
                   />
                 </div>
                 <Button
                   kind="quiet"
                   label="下一张图片"
                   disabled={
-                    gallery.index >= galleryImages.length - 1
+                    galleryIndex >= galleryImages.length - 1
                   }
                   onClick={() =>
-                    setGallery({ ...gallery, index: gallery.index + 1 })
+                    onGallery({ ...gallery, index: galleryIndex + 1 })
                   }
                 >
                   ›
                 </Button>
-              </div>
+              </div> : <div className="empty"><span className="loading-ring" /></div>}
             </div>
           ) : detailRequest ? (
             <div className="catalog-detail">
@@ -2469,7 +2486,7 @@ function ExperimentCatalog({
                   className="detail-cover"
                   type="button"
                   aria-label={`预览图片 ${detail.label}`}
-                  onClick={() => setGallery({ item: detail, index: 0 })}
+                  onClick={() => openGallery(detail)}
                 >
                   <img src={detailPreviewUrl} alt={detail.label} />
                 </button>
@@ -2585,7 +2602,7 @@ function ExperimentCatalog({
                     return (
                     <article key={key} className={`catalog-card ${selected ? 'chosen' : ''}`}>
                       {previewUrl !== undefined ? <button type="button" className="catalog-cover"
-                        aria-label={`预览图片 ${item.label}`} onClick={() => setGallery({ item, index: 0 })}>
+                        aria-label={`预览图片 ${item.label}`} onClick={() => openGallery(item)}>
                         <img src={previewUrl} alt={item.label} />
                       </button> : <div className="catalog-cover no-cover"><span><Icon name={item.context.kind === 'comfyui-template' ? 'grid' : 'book'} /></span></div>}
                       <div className="catalog-card-body">

@@ -2001,6 +2001,236 @@ describe('experiment workbench Catalog image availability', () => {
 })
 
 
+describe('experiment workbench Catalog gallery restoration', () => {
+  it('restores each workspace gallery and image through the workspace control', async () => {
+    const first = fullProjection()
+    const second: WorkbenchProjection = {
+      ...first, workspace_id: 'workspace-b', work_id: 'work-b', total_branch_count: 1,
+      works: [{ ...first.works[0]!, workspace_id: 'workspace-b', work_id: 'work-b' }],
+      branches: [{ ...first.branches[0]!, branch_id: 'root-b', work_id: 'work-b' }],
+      tasks: [], runs: [], artifacts: [], experiments: [], experiences: [], favorites: [], functions: [],
+    }
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer } = await mount(first, {
+      catalog: makeCatalog(), storage,
+      workspaces: [{ id: 'workspace-a', name: '工作区 A', path: '/projects/a' }, { id: 'workspace-b', name: '工作区 B', path: '/projects/b' }],
+      remote: { getProjection: async request => request.workspaceId === 'workspace-b' ? second : first, getEnvironment: async () => functionEnvironment, getInputDescription: async () => inputDescription },
+    })
+    await click(renderer, '资源')
+    await click(renderer, '预览图片 模型')
+    await click(renderer, '下一张图片')
+    await change(renderer, '切换工作区', 'workspace-b')
+    await click(renderer, '资源')
+    await click(renderer, '作品')
+    await click(renderer, '预览图片 花房作品')
+    await click(renderer, '下一张图片')
+    await change(renderer, '切换工作区', 'workspace-a')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-gallery' }))).toContain('2 / 3')
+    expect(renderer.root.findByProps({ className: 'catalog-gallery' }).findAllByType('h3').map(nodeText)).toEqual(['模型'])
+    await change(renderer, '切换工作区', 'workspace-b')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-gallery' }))).toContain('2 / 2')
+    expect(renderer.root.findByProps({ className: 'catalog-gallery' }).findAllByType('h3').map(nodeText)).toEqual(['花房作品'])
+  })
+
+  it('retries a restored gallery source and cancels it when the category changes', async () => {
+    const catalog = makeCatalog(), load = vi.mocked(catalog.details).getMockImplementation()!
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '预览图片 模型')
+    await click(renderer, '下一张图片')
+    await click(renderer, '任务')
+    vi.mocked(catalog.details).mockRejectedValueOnce(new Error('详情不可用'))
+    await click(renderer, '资源')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('详情不可用')
+    const baseCalls = vi.mocked(catalog.baseModels).mock.calls.length
+    const searchCalls = vi.mocked(catalog.search).mock.calls.length
+    await click(renderer, '重试')
+    expect(catalog.baseModels).toHaveBeenCalledTimes(baseCalls)
+    expect(catalog.search).toHaveBeenCalledTimes(searchCalls)
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-gallery' }))).toContain('2 / 3')
+    await click(renderer, '任务')
+    let finish!: () => Promise<void>, signal!: AbortSignal
+    vi.mocked(catalog.details).mockImplementationOnce((request, currentSignal) => {
+      signal = currentSignal
+      return new Promise(resolve => { finish = async () => resolve(await load(request, currentSignal)) })
+    })
+    await click(renderer, '资源')
+    await click(renderer, 'LoRA')
+    expect(signal.aborted).toBe(true)
+    await act(async () => finish())
+    expect(renderer.root.findAllByProps({ className: 'catalog-gallery' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['玻璃 LoRA'])
+  })
+
+  it.each([0, 1])('reconciles a restored gallery after its source changes to %s images', async (count) => {
+    const catalog = makeCatalog(), load = vi.mocked(catalog.details).getMockImplementation()!
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer } = await mount(fullProjection(), { catalog, storage })
+    await click(renderer, '资源')
+    await click(renderer, '预览图片 模型')
+    await click(renderer, '下一张图片')
+    await click(renderer, '下一张图片')
+    await act(() => renderer.unmount())
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => {
+      const details = await load(request, signal)
+      return { ...details, item: { ...details.item, coverUrl: count ? '/single.png' : null, sampleImageUrls: [] } }
+    })
+    const reopened = await mount(fullProjection(), { catalog, storage })
+    const saved = JSON.parse(memory.get('harness-comfyui:experiment-workbench:workspace-a')!)
+    expect(saved.catalogGallery).toEqual(count ? { kind: 'model', id: '11', index: 0 } : null)
+    if (count) {
+      expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-gallery' }))).toContain('1 / 1')
+      expect(reopened.renderer.root.findByProps({ 'aria-label': '上一张图片' }).props.disabled).toBe(true)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': '下一张图片' }).props.disabled).toBe(true)
+    } else {
+      expect(reopened.renderer.root.findAllByProps({ className: 'catalog-gallery' })).toHaveLength(0)
+      expect(reopened.renderer.root.findAllByProps({ className: 'catalog-list-panel' })).toHaveLength(1)
+    }
+  })
+
+  it.each([
+    { coverUrl: '/single.png', sampleImageUrls: [] },
+    { coverUrl: null, sampleImageUrls: ['/single.png'] },
+  ])('shows one image and disables both arrows with cover $coverUrl', async ({ coverUrl, sampleImageUrls }) => {
+    const catalog = makeCatalog()
+    const item = { ...catalogItems[0]!, coverUrl, sampleImageUrls }
+    const search = vi.mocked(catalog.search).getMockImplementation()!, details = vi.mocked(catalog.details).getMockImplementation()!
+    vi.mocked(catalog.search).mockImplementation(async (request, signal) => ({ ...await search(request, signal), items: [item], totalCount: 1 }))
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => ({ ...await details(request, signal), item }))
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    for (const entry of ['card', 'details']) {
+      if (entry === 'details') await click(renderer, '查看详情 模型')
+      await click(renderer, '预览图片 模型')
+      const gallery = renderer.root.findByProps({ className: 'catalog-gallery' })
+      expect(gallery.findAllByType('h3').map(nodeText)).toEqual(['模型'])
+      expect(nodeText(gallery)).toContain('1 / 1')
+      expect(gallery.findAllByType('img')[0]!.props.src).toBe('/single.png')
+      expect(renderer.root.findByProps({ 'aria-label': '上一张图片' }).props.disabled).toBe(true)
+      expect(renderer.root.findByProps({ 'aria-label': '下一张图片' }).props.disabled).toBe(true)
+      await click(renderer, entry === 'details' ? '返回详情' : '返回资源列表')
+    }
+  })
+
+  it.each(['card', 'details'] as const)('returns from the %s gallery with the saved filters, page and source scroll, then resets scroll on refresh', async (entry) => {
+    const catalog = makeCatalog(), data = fullProjection()
+    const originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const scrollElement = (height: number) => {
+      let top = 0
+      return {
+        clientHeight: 400, scrollHeight: height, scrollLeft: 0, dataset: {},
+        get scrollTop() { return top },
+        set scrollTop(value: number) { top = Math.max(0, Math.min(value, height - 400)) },
+      }
+    }
+    let element = scrollElement(897)
+    const nodeMock = { createNodeMock: (node: { props: Record<string, unknown> }) => node.props.className === 'catalog-content' ? element : null }
+    const { renderer, onAction } = await mount(data, { catalog, storage }, nodeMock)
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '筛选生成模型', '11')
+    await change(renderer, '搜索资源', 'glass')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    await click(renderer, '下一页')
+    element.scrollTop = 410
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    if (entry === 'details') {
+      element = scrollElement(542)
+      await click(renderer, '查看详情 模型')
+      element.scrollTop = 71
+      await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    }
+    element = scrollElement(400)
+    await click(renderer, '预览图片 模型')
+    await click(renderer, '下一张图片')
+    expect(element.scrollTop).toBe(0)
+    expect(element.scrollHeight - element.clientHeight).toBe(0)
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    const saved = JSON.parse(memory.get('harness-comfyui:experiment-workbench:workspace-a')!)
+    const galleryKey = Object.keys(saved.scrollPositions).find(key => key.includes(':gallery:'))!
+    expect(galleryKey.endsWith(entry === 'details' ? 'gallery:model:11:model:11' : 'gallery:model:11:list')).toBe(true)
+    element = scrollElement(entry === 'details' ? 542 : 897)
+    await click(renderer, entry === 'details' ? '返回详情' : '返回资源列表')
+    expect(element.scrollTop).toBe(entry === 'details' ? 71 : 410)
+    if (entry === 'details') {
+      element = scrollElement(897)
+      await click(renderer, '返回资源列表')
+      expect(element.scrollTop).toBe(410)
+    }
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('glass')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('1')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('11')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('2 / 7')
+    if (entry === 'details') await click(renderer, '查看详情 模型')
+    await click(renderer, '预览图片 模型')
+    await click(renderer, '下一张图片')
+    await act(() => renderer.unmount())
+    element = scrollElement(400)
+    const reopened = await mount(data, { catalog, storage }, nodeMock)
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-gallery' }))).toContain('2 / 3')
+    element = scrollElement(entry === 'details' ? 542 : 897)
+    await click(reopened.renderer, entry === 'details' ? '返回详情' : '返回资源列表')
+    expect(element.scrollTop).toBe(0)
+    if (entry === 'details') {
+      element = scrollElement(897)
+      await click(reopened.renderer, '返回资源列表')
+      expect(element.scrollTop).toBe(0)
+    }
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+
+  it.each(['card', 'details'] as const)('keeps the %s gallery image across pages and refresh while retaining its return source', async (entry) => {
+    const catalog = makeCatalog()
+    const data = fullProjection(), originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer, onAction } = await mount(data, { catalog, storage })
+    await click(renderer, '资源')
+    await change(renderer, '搜索资源', 'glass')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    if (entry === 'details') await click(renderer, '查看详情 模型')
+    await click(renderer, '预览图片 模型')
+    await click(renderer, '下一张图片')
+    const gallery = renderer.root.findByProps({ className: 'catalog-gallery' })
+    const image = gallery.findAllByType('img')[0]!.props.src
+    expect(nodeText(gallery)).toContain('2 / 3')
+    await act(() => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
+    expect(renderer.root.findAllByProps({ className: 'catalog-gallery' })).toHaveLength(1)
+    await click(renderer, '任务')
+    await click(renderer, '资源')
+    expect(renderer.root.findByProps({ className: 'catalog-gallery' }).findAllByType('img')[0]!.props.src).toBe(image)
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-gallery' }))).toContain('2 / 3')
+    await act(() => renderer.unmount())
+    const reopened = await mount(data, { catalog, storage })
+    const restored = reopened.renderer.root.findByProps({ className: 'catalog-gallery' })
+    expect(restored.findAllByType('img')[0]!.props.src).toBe(image)
+    expect(nodeText(restored)).toContain('2 / 3')
+    const saved = JSON.parse(memory.get('harness-comfyui:experiment-workbench:workspace-a')!)
+    expect(saved.catalogGallery).toEqual({ kind: 'model', id: '11', index: 1 })
+    expect(saved.catalogDetail).toEqual(entry === 'details' ? { kind: 'model', id: '11' } : null)
+    await click(reopened.renderer, entry === 'details' ? '返回详情' : '返回资源列表')
+    await click(reopened.renderer, '预览图片 模型')
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-gallery' }))).toContain('1 / 3')
+    expect(reopened.renderer.root.findByProps({ className: 'catalog-gallery' }).findAllByType('img')[0]!.props.src).toBe('/cover.png')
+    await click(reopened.renderer, entry === 'details' ? '返回详情' : '返回资源列表')
+    if (entry === 'details') {
+      expect(reopened.renderer.root.findAllByProps({ className: 'catalog-detail' })).toHaveLength(1)
+      await click(reopened.renderer, '返回资源列表')
+    }
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('glass')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '已选择 模型' }).props.disabled).toBe(true)
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+})
+
 describe('experiment workbench Catalog removal persistence', () => {
   it.each(['card', 'details'] as const)('toggles LoRA and context from the %s while preserving another LoRA weight', async entry => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')

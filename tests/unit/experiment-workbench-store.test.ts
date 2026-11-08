@@ -30,6 +30,50 @@ const flush = async () => {
 }
 
 describe('experiment workbench browsing', () => {
+  it('restores gallery state per workspace and resets resource scroll only on a fresh Store', async () => {
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const remote = { getProjection: async ({ workspaceId }: { workspaceId: string }) => projection(workspaceId, `work-${workspaceId}`) }
+    const store = new ExperimentWorkbenchStore(remote, storage)
+    store.setWorkspace('a')
+    await flush()
+    const gallery = { kind: 'lora' as const, id: '99', index: 1 }
+    store.updateView({
+      page: 'resources', catalogGallery: gallery,
+      scrollPositions: { 'catalog:work-a:list': { top: 407, left: 0 }, 'tasks:work-a': { top: 120, left: 0 } },
+    })
+    expect(JSON.parse(memory.get('harness-comfyui:experiment-workbench:a')!).catalogGallery).toEqual(gallery)
+    store.setWorkspace('b')
+    await flush()
+    store.setWorkspace('a')
+    await flush()
+    expect(store.getSnapshot().view.catalogGallery).toEqual(gallery)
+    expect(store.getSnapshot().view.scrollPositions['catalog:work-a:list']).toEqual({ top: 407, left: 0 })
+    store.dispose()
+    const reopened = new ExperimentWorkbenchStore(remote, storage)
+    reopened.setWorkspace('a')
+    await flush()
+    expect(reopened.getSnapshot().view.catalogGallery).toEqual(gallery)
+    expect(reopened.getSnapshot().view.catalogDetail).toBeNull()
+    expect(reopened.getSnapshot().view.scrollPositions).toEqual({ 'tasks:work-a': { top: 120, left: 0 } })
+    reopened.dispose()
+  })
+
+  it.each([
+    { kind: 'lora', id: '99', index: -1 },
+    { kind: 'lora', id: '99', index: 0.5 },
+    { kind: 'unknown', id: '99', index: 0 },
+  ])('ignores invalid saved gallery state $kind / $index', async (catalogGallery) => {
+    const store = new ExperimentWorkbenchStore(
+      { getProjection: async () => projection('a', 'work-a') },
+      { getItem: () => JSON.stringify({ catalogGallery }), setItem() {} },
+    )
+    store.setWorkspace('a')
+    await flush()
+    expect(store.getSnapshot().view.catalogGallery).toBeNull()
+    store.dispose()
+  })
+
   it('preserves a list scroll position on reopening when no detail is selected', async () => {
     const memory = new Map<string, string>()
     const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }

@@ -11,6 +11,15 @@ function restoreCatalogDetail(value: unknown): CatalogDetailsRequest | null {
   try { return parseCatalogDetailsRequest(value) } catch { return null }
 }
 
+function restoreCatalogGallery(value: unknown): ExperimentViewState['catalogGallery'] {
+  if (!value || typeof value !== 'object') return null
+  const { kind, id, index } = value as Record<string, unknown>
+  const resource = restoreCatalogDetail({ kind, id })
+  return resource && typeof index === 'number' && Number.isSafeInteger(index) && index >= 0
+    ? { ...resource, index }
+    : null
+}
+
 const pages: readonly ExperimentPage[] = [
   'workbench',
   'resources',
@@ -29,6 +38,7 @@ const initialView = (): ExperimentViewState => ({
   compareRunId: null,
   collapsedBranches: [],
   catalogDetail: null,
+  catalogGallery: null,
   catalogFilters: {
     kind: 'model',
     baseModelId: '',
@@ -100,7 +110,8 @@ export class ExperimentWorkbenchStore {
       if (!value || typeof value !== 'object') return initialView()
       const raw = value as Partial<ExperimentViewState>,
         base = initialView(),
-        catalogDetail = restoreCatalogDetail(raw.catalogDetail)
+        catalogDetail = restoreCatalogDetail(raw.catalogDetail),
+        catalogGallery = restoreCatalogGallery(raw.catalogGallery)
       return {
         ...base,
         workId: typeof raw.workId === 'string' ? raw.workId : null,
@@ -115,13 +126,14 @@ export class ExperimentWorkbenchStore {
             )
           : [],
         catalogDetail,
+        catalogGallery,
         catalogFilters:
           raw.catalogFilters && typeof raw.catalogFilters.kind === 'string'
             ? { ...base.catalogFilters, ...raw.catalogFilters }
             : base.catalogFilters,
         scrollPositions:
           raw.scrollPositions && typeof raw.scrollPositions === 'object'
-            ? Object.fromEntries(Object.entries(raw.scrollPositions).filter(([key]) => !firstRestore || catalogDetail === null || !key.startsWith(EXPERIMENT_CATALOG_SCROLL_PREFIX)))
+            ? Object.fromEntries(Object.entries(raw.scrollPositions).filter(([key]) => !firstRestore || (catalogDetail === null && catalogGallery === null) || !key.startsWith(EXPERIMENT_CATALOG_SCROLL_PREFIX)))
             : {},
         presetOverride:
           typeof raw.presetOverride === 'string' ? raw.presetOverride : null,
@@ -156,7 +168,10 @@ export class ExperimentWorkbenchStore {
       next.inspectRun !== previous.inspectRun ||
       next.compareRunId !== previous.compareRunId ||
       next.catalogDetail?.kind !== previous.catalogDetail?.kind ||
-      next.catalogDetail?.id !== previous.catalogDetail?.id
+      next.catalogDetail?.id !== previous.catalogDetail?.id ||
+      next.catalogGallery?.kind !== previous.catalogGallery?.kind ||
+      next.catalogGallery?.id !== previous.catalogGallery?.id ||
+      next.catalogGallery?.index !== previous.catalogGallery?.index
     ) this.navigationSequence++
     this.emit({ view: next })
     this.save()
