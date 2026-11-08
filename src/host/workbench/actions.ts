@@ -1,10 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { WORKBENCH_BRANCH_EDIT_FIELDS, type ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import type { WorkbenchScope } from '../../workbench-remote.ts'
-import type { FunctionBinding, ReviewDraft, ResourceRef } from '../../workbench/contract.ts'
+import type { FunctionBinding, JsonValue, ReviewDraft, ResourceRef } from '../../workbench/contract.ts'
 import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
-import { parseCliGenerationRequest, toGenerationRequest } from '../../cli/contract.ts'
-import { WorkbenchError } from '../../workbench/validation.ts'
+import { equalValue, WorkbenchError } from '../../workbench/validation.ts'
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
@@ -17,8 +16,10 @@ function text(value: unknown, path: string): string {
   return value
 }
 
-export async function executeWorkbenchAction(ctx: Context, request: ExperimentWorkbenchAction): Promise<WorkbenchScope> {
-  const { service } = ctx.harnessComfyuiWorkbench
+export async function executeWorkbenchAction(ctx: Context, request: ExperimentWorkbenchAction, requestSignal = new AbortController().signal): Promise<WorkbenchScope> {
+  const { service, signal: lifecycleSignal } = ctx.harnessComfyuiWorkbench
+  const signal = AbortSignal.any([requestSignal, lifecycleSignal])
+  signal.throwIfAborted()
   const { store } = service
   const { runtime } = ctx.harnessComfyuiCore.services
   if (request.type === 'new-workspace') {
@@ -101,12 +102,8 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       } else {
         const input = draft.generation_input
         if (!input.template_id || !input.instance_id) throw new WorkbenchError('WORKBENCH_TEMPLATE_REQUIRED', '请先选择实例和 Workflow 模板，再填写生成参数。', 'generation_input')
-        const description = await runtime.inspectTemplateRuntimeParameters({ templateId: input.template_id, instanceId: input.instance_id })
-        const set = (kind: string, value: unknown) => {
-          const parameters = description.parameters.filter(parameter => parameter.kind === kind)
-          if (parameters.length !== 1) throw new WorkbenchError('WORKBENCH_PARAMETER_UNAVAILABLE', `模板没有唯一的 ${kind} 参数，请重新选择模板。`, 'field')
-          input.parameters[parameters[0]!.parameter_id] = typeof value === 'string' ? value : Number(value)
-        }
+        const description = await runtime.inspectTemplateRuntimeParameters({ templateId: input.template_id, instanceId: input.instance_id }, signal)
+        let parameters: Record<string, JsonValue>
         if (field === 'size') {
           const selection = fields(request.value), values = fields(selection.parameters)
           const candidate = description.size_candidates.find(item => item.candidate_id === selection.candidate_id)
@@ -114,9 +111,35 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
           const allowed = flattenWorkflowRuntimeParameters({ parameters: [], size_candidates: [candidate] })
           const ids = allowed.map(parameter => parameter.parameter_id)
           if (Object.keys(values).length !== ids.length || Object.keys(values).some(id => !ids.includes(id))) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '画面尺寸参数与所选尺寸选项不匹配。请重新选择画面尺寸。', 'value.parameters')
-          for (const id of ids) input.parameters[id] = values[id] as import('../../workbench/contract.ts').JsonValue
-          await runtime.validateGenerationRequest(toGenerationRequest(parseCliGenerationRequest(input)))
-        } else set(field === 'references' ? 'reference_image' : field, field === 'references' ? String(request.value) : Number(request.value))
+          parameters = values as Record<string, JsonValue>
+        } else if (field === 'parameter') {
+          const id = text(request.id, 'id')
+          const parameter = description.parameters.find(item => item.parameter_id === id)
+          if (parameter?.kind === 'positive_prompt' || parameter?.kind === 'negative_prompt') throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请在提示词区域编辑此参数。', `generation_input.parameters.${id}`)
+          parameters = { [id]: request.value as JsonValue }
+        } else throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择生成参数或画面尺寸后保存。', 'field')
+        const { parameters: originalParameters, ...originalContext } = input
+        const ids = Object.keys(parameters)
+        const assertCurrent = (current: typeof input) => {
+          const { parameters: currentParameters, ...currentContext } = current
+          if (!equalValue(originalContext, currentContext) || ids.some(id => !equalValue(originalParameters[id], currentParameters[id]))) {
+            throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '生成参数或资源已改变，请核对当前值后重新保存。', 'expected')
+          }
+        }
+        for (;;) {
+          signal.throwIfAborted()
+          const current = store.getBranch(branchId).draft.generation_input
+          assertCurrent(current)
+          await ctx.harnessComfyuiWorkbench.validateParameters(current, parameters, 'generation_input.parameters', signal)
+          signal.throwIfAborted()
+          const latest = store.getBranch(branchId).draft
+          assertCurrent(latest.generation_input)
+          if (!equalValue(current.parameters, latest.generation_input.parameters)) continue
+          const updated = structuredClone(latest)
+          Object.assign(updated.generation_input.parameters, parameters)
+          store.saveBranchDraft({ ...selection, expected: latest, draft: updated })
+          return selection
+        }
       }
       store.saveBranchDraft({ ...selection, expected: branch.draft, draft })
       break

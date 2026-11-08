@@ -28,6 +28,8 @@ interface ModelCatalog {
 }
 interface WorkbenchHost {
   readonly service: WorkbenchService
+  readonly signal: AbortSignal
+  readonly validateParameters: ReturnType<typeof createWorkbenchInputAdapter>['validateParameters']
   readonly resolveGenerationDraft: (input: GenerationInput, refs: ContextRef[]) => Promise<TaskDraft>
   readonly previewModelChange: (modelId: string, draft: TaskDraft, signal?: AbortSignal) => Promise<WorkbenchModelChangePreview>
   readonly resolveResourceSelection: (ref: ResourceRef, draft: TaskDraft) => Promise<TaskDraft>
@@ -44,7 +46,9 @@ export const inject = ['harnessComfyuiCore', 'sessionController', 'agents', 'age
 export function apply(ctx: Context): void {
   const { runtime, catalog, workbenchStore: store, profile } = ctx.harnessComfyuiCore.services
   const controller = ctx.get('sessionController') as unknown as OfficialSessionController & { modelCatalog(): Promise<ModelCatalog> }
-  const signal = new AbortController().signal
+  const lifecycle = new AbortController()
+  const { signal } = lifecycle
+  ctx.effect(() => () => lifecycle.abort(), 'Workbench requests')
   const sessions = new HarnessWorkbenchSessions({
     controller,
     events: sessionId => ctx.agents.get(SessionId(sessionId))?.session.snapshotEvents() ?? [],
@@ -76,7 +80,7 @@ export function apply(ctx: Context): void {
   })
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
   ctx.provide('harnessComfyuiWorkbench', {
-    service, previewModelChange: input.previewModelChange, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
+    service, signal, validateParameters: input.validateParameters, previewModelChange: input.previewModelChange, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
     async validateFunctionPreset(presetId) {
       const preset = (await ctx.agentPresets.list()).find(candidate => candidate.id === presetId)
       if (!preset || preset.broken) throw new WorkbenchError('WORKBENCH_PRESET_UNAVAILABLE', '所选 Agent 预设当前不可用，请重新选择预设。', 'preset_id')

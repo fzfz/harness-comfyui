@@ -56,7 +56,7 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   }
   async mutate(request: ExperimentWorkbenchAction, signal: AbortSignal) {
     signal.throwIfAborted()
-    return report(() => executeWorkbenchAction(this.host, request))
+    return report(() => executeWorkbenchAction(this.host, request, signal))
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []

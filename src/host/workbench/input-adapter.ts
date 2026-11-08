@@ -22,40 +22,44 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
       throw new WorkbenchError('WORKBENCH_RESOURCE_UNAVAILABLE', error instanceof Error ? error.message : String(error), path)
     }
   }
-  const generationAt = async <T>(read: () => Promise<T>, path: string): Promise<T> => {
+  const generationAt = async <T>(read: () => Promise<T>, path: string, operationSignal = signal): Promise<T> => {
     try { return await read() }
     catch (error) {
-      if (signal.aborted || error instanceof Error && error.name === 'AbortError') throw error
+      if (operationSignal.aborted || error instanceof Error && error.name === 'AbortError') throw error
       const message = error instanceof Error ? error.message : String(error)
       const inputPath = error instanceof GenerationInputValidationError ? error.inputPath : null
       const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : 'WORKBENCH_GENERATION_INVALID'
       throw new WorkbenchError(code, message, inputPath ? `${path}.${inputPath}` : path)
     }
   }
-  const inspect = async (input: GenerationInput) => {
+  const inspect = async (input: GenerationInput, operationSignal = signal) => {
+    operationSignal.throwIfAborted()
     const instanceId = input.instance_id, templateId = input.template_id
     if (!instanceId || !templateId) throw new WorkbenchError('WORKBENCH_TEMPLATE_REQUIRED', '请选择 ComfyUI 实例和 Workflow 模板。', 'generation_input')
-    return generationAt(() => runtime.inspectTemplateRuntimeParameters({ instanceId, templateId }, signal), 'generation_input')
+    return generationAt(() => runtime.inspectTemplateRuntimeParameters({ instanceId, templateId }, operationSignal), 'generation_input', operationSignal)
   }
-  const validateReferences = async (refs: readonly ResourceRef[], path = 'context_refs'): Promise<void> => {
+  const validateReferences = async (refs: readonly ResourceRef[], path = 'context_refs', operationSignal = signal): Promise<void> => {
+    operationSignal.throwIfAborted()
     await Promise.all(refs.map(async (ref, index) => {
-      try { await catalog.details(ref, signal) }
+      try { await catalog.details(ref, operationSignal) }
       catch (error) { throw new WorkbenchError('WORKBENCH_RESOURCE_UNAVAILABLE', error instanceof Error ? error.message : String(error), `${path}.${index}.id`) }
     }))
   }
-  const validateGenerationInput = async (raw: GenerationInput, refs: ContextRef[] = [], path = 'generation_input'): Promise<void> => {
+  const validateGenerationInput = async (raw: GenerationInput, refs: ContextRef[] = [], path = 'generation_input', requestSignal?: AbortSignal): Promise<void> => {
+    const operationSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal
+    operationSignal.throwIfAborted()
     const input = validateStructure(raw, path, true)
-    await validateReferences(refs, path === 'generation_input' ? 'context_refs' : path.replace(/generation_input$/u, 'context_refs'))
-    await resourceAt(catalog.resolveTemplate(input.template_id!, signal), `${path}.template_id`)
+    await validateReferences(refs, path === 'generation_input' ? 'context_refs' : path.replace(/generation_input$/u, 'context_refs'), operationSignal)
+    await resourceAt(catalog.resolveTemplate(input.template_id!, operationSignal), `${path}.template_id`)
     if (input.model) {
-      const model = await resourceAt(catalog.resolveGenerationModel(input.model.id, signal), `${path}.model.id`)
+      const model = await resourceAt(catalog.resolveGenerationModel(input.model.id, operationSignal), `${path}.model.id`)
       if (model.file_name !== input.model.file_name) throw new WorkbenchError('WORKBENCH_RESOURCE_MISMATCH', '模型文件名与目录记录不一致，请重新选择模型。', `${path}.model.file_name`)
     }
     for (const [index, selection] of input.loras.entries()) {
-      const lora = await resourceAt(catalog.resolveLora(selection.id, signal), `${path}.loras.${index}.id`)
+      const lora = await resourceAt(catalog.resolveLora(selection.id, operationSignal), `${path}.loras.${index}.id`)
       if (lora.file_name !== selection.file_name) throw new WorkbenchError('WORKBENCH_RESOURCE_MISMATCH', 'LoRA 文件名与目录记录不一致，请重新选择 LoRA。', `${path}.loras.${index}.file_name`)
     }
-    await generationAt(() => runtime.validateGenerationRequest(toGenerationRequest(parseCliGenerationRequest(input)), signal), path)
+    await generationAt(() => runtime.validateGenerationRequest(toGenerationRequest(parseCliGenerationRequest(input)), operationSignal), path, operationSignal)
   }
   const promptParameter = (parameters: readonly WorkflowRuntimeParameterInspectionParameter[], kind: 'positive_prompt' | 'negative_prompt', allowMissing: boolean) => {
     const matching = parameters.filter(parameter => parameter.kind === kind)
@@ -91,15 +95,17 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
     }
     return { prompt_input: promptInput, generation_input: input, context_refs: validateContextRefs(contextRefs), base_model_id: baseModelId }
   }
-  const validateParameters = async (input: GenerationInput, parameters: Record<string, JsonValue>, path = 'artifact.parameters'): Promise<void> => {
-    const description = await inspect(input)
+  const validateParameters = async (input: GenerationInput, parameters: Record<string, JsonValue>, path = 'artifact.parameters', requestSignal?: AbortSignal): Promise<void> => {
+    const operationSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal
+    const description = await inspect(input, operationSignal)
     const allowed = new Set(flattenWorkflowRuntimeParameters(description).map(parameter => parameter.parameter_id))
     for (const id of Object.keys(parameters)) if (!allowed.has(id)) throw new WorkbenchError('WORKBENCH_PARAMETER_NOT_ALLOWED', '请使用当前模板参数描述中的 parameter_id。', `${path}.${id}`)
-    try { await validateGenerationInput({ ...input, parameters: { ...input.parameters, ...parameters } }, [], 'generation_input') }
+    try { await validateGenerationInput({ ...input, parameters: { ...input.parameters, ...parameters } }, [], 'generation_input', operationSignal) }
     catch (error) {
       if (error instanceof WorkbenchError) throw new WorkbenchError(error.code, error.issues.map(issue => ({ ...issue, path: issue.path.startsWith('generation_input.parameters.') ? `${path}.${issue.path.slice('generation_input.parameters.'.length)}` : issue.path })))
       throw error
     }
+    operationSignal.throwIfAborted()
   }
   const resolveResources = async (refs: ResourceRef[], current: TaskDraft, requireCompatible: boolean): Promise<TaskDraft> => {
     const draft = structuredClone(current)

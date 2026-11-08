@@ -1,5 +1,6 @@
 import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import {
   Button,
   IconSparkleRegular,
@@ -20,12 +21,7 @@ import { ExperimentWorkbench } from './experiment-workbench.tsx'
 import { experimentWorkbenchStyles } from './experiment-style.ts'
 
 export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment'
-type RemoteReply<T> =
-  | { readonly ok: true; readonly value: T }
-  | {
-      readonly ok: false
-      readonly error: { readonly code: string; readonly message?: string }
-    }
+type RemoteReply<T> = RemoteResult<T>
 export type ExperimentEnvironment = WorkbenchEnvironment
 export interface ExperimentHostRemote {
   readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<RemoteReply<WorkbenchModelChangePreview>>
@@ -44,7 +40,7 @@ export interface ExperimentHostRemote {
   ) => Promise<RemoteReply<ExperimentSelection>>
 }
 function unwrap<T>(reply: RemoteReply<T>): T {
-  if (!reply.ok) throw new Error(reply.error.message || reply.error.code)
+  if (!reply.ok) throw reply.error
   return reply.value
 }
 export function ExperimentWorkbenchEntry({

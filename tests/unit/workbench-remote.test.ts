@@ -195,7 +195,7 @@ it('confirms exactly the model removals and preserves the latest unrelated draft
     for (const ref of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }, { kind: 'style', id: '7' }, { kind: 'character', id: '8' }]) {
       await remote.mutate({ ...scope, type: 'resource-select', value: ref }, signal)
     }
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'references', value: '/reference.png' }, signal)
+    await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference', value: '/reference.png' }, signal)
     await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Before preview' }, signal)
     restrictSelectedResources(catalog, '4')
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
@@ -235,8 +235,8 @@ it('retains compatible template parameters and LoRAs without scanning Catalog pa
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
     await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
     for (const ref of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }]) await remote.mutate({ ...scope, type: 'resource-select', value: ref }, signal)
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'seed', value: 77 }, signal)
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'references', value: '/reference.png' }, signal)
+    await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'seed', value: 77 }, signal)
+    await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference', value: '/reference.png' }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
 
     expect(await remote.previewModelChange({ ...scope, modelId: '9' }, signal)).toEqual({ model: { id: '9', label: 'paint.safetensors' }, removed: [] })

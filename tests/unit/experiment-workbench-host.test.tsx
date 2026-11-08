@@ -1,4 +1,5 @@
 import React from 'react'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { createPortal } from 'react-dom'
 vi.mock('react-dom', () => ({
   createPortal: vi.fn((children: React.ReactNode, _container: ShadowRoot) => children),
@@ -94,13 +95,25 @@ const mount = async (api: ExperimentHostRemote) => {
   return renderer
 }
 describe('official experiment workbench adapter', () => {
+  it('preserves the official parameter failure and its complete field path', async () => {
+    const api = remote(), renderer = await mount(api)
+    const shell: ExperimentWorkbenchProps = renderer.root.findByType(ExperimentWorkbench).props
+    const failure = new RemoteError('workbench/operation-failed', '采样步数超过模板允许的范围。', {
+      code: 'WORKBENCH_INVALID_INPUT',
+      issues: [{ path: 'generation_input.parameters.steps_42', message: '最大值为 100。' }],
+    })
+    vi.mocked(api.mutate).mockResolvedValueOnce({ ok: false, error: failure })
+    await expect(shell.onAction({ type: 'update-draft', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root',
+      field: 'parameter', id: 'steps_42', value: 101 })).rejects.toBe(failure)
+  })
+
   it('forwards model previews and unwraps actionable Remote errors', async () => {
     const api = remote(), renderer = await mount(api)
     const request = { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', modelId: '21' }
     const client = renderer.root.findByType(ExperimentWorkbench).props.remote
     await expect(client.previewModelChange(request)).resolves.toEqual({ model: { id: '21', label: 'ANIMA3' }, removed: [] })
     expect(api.previewModelChange).toHaveBeenCalledExactlyOnceWith(request)
-    vi.mocked(api.previewModelChange).mockResolvedValueOnce({ ok: false, error: { code: 'UNAVAILABLE', message: '模型读取失败，请重新选择生成模型。' } })
+    vi.mocked(api.previewModelChange).mockResolvedValueOnce({ ok: false, error: new RemoteError('workbench/operation-failed', '模型读取失败，请重新选择生成模型。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] }) })
     await expect(client.previewModelChange(request)).rejects.toThrow('模型读取失败，请重新选择生成模型。')
   })
 
@@ -225,7 +238,7 @@ describe('official experiment workbench adapter', () => {
     const api = remote()
     vi.mocked(api.getEnvironment).mockResolvedValueOnce({
       ok: false,
-      error: { code: 'OFFLINE', message: '工作区不可用' },
+      error: new RemoteError('workbench/operation-failed', '工作区不可用', { code: 'WORKBENCH_SCOPE_MISMATCH', issues: [] }),
     })
     const renderer = await mount(api)
     expect(
@@ -236,11 +249,11 @@ describe('official experiment workbench adapter', () => {
       renderer.root.findByType(ExperimentWorkbench).props
     vi.mocked(api.mutate).mockResolvedValueOnce({
       ok: false,
-      error: { code: 'SAVE_FAILED' },
+      error: new RemoteError('workbench/operation-failed', '保存失败，请重试。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] }),
     })
     await expect(
       shell.onAction({ type: 'run', workspaceId: 'workspace-a' }),
-    ).rejects.toThrow('SAVE_FAILED')
+    ).rejects.toThrow('保存失败，请重试。')
   })
   it('keeps an empty official environment usable when catalog metadata fails', async () => {
     const api = remote()
@@ -285,7 +298,7 @@ describe('official function environment adapter', () => {
     const shell = renderer.root.findByType(ExperimentWorkbench).props as ExperimentWorkbenchProps
     await expect(shell.remote.getEnvironment({ workspaceId: 'workspace-a', presetId: 'preset' })).resolves.toEqual(environment)
     expect(api.getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset' })
-    vi.mocked(api.getEnvironment).mockResolvedValueOnce({ ok: false, error: { code: 'SKILL_UNAVAILABLE', message: 'Skill 目录读取失败，请重试。' } })
+    vi.mocked(api.getEnvironment).mockResolvedValueOnce({ ok: false, error: new RemoteError('workbench/operation-failed', 'Skill 目录读取失败，请重试。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] }) })
     await expect(shell.remote.getEnvironment({ workspaceId: 'workspace-a', presetId: 'preset' })).rejects.toThrow('Skill 目录读取失败，请重试。')
   })
 })

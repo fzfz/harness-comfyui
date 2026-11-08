@@ -13,6 +13,25 @@ async function fixture() {
   return result
 }
 
+it('keeps both prompt fields in prompt_input and rejects retired parameter kind aliases', async () => {
+  const { remote } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Parameters', goal: 'Edit parameters' } }, signal())
+  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  const before = (await remote.getProjection(selected, signal())).branches[0]!.draft
+  for (const id of ['positive', 'negative']) {
+    await expect(remote.mutate({ ...selected, type: 'update-draft', field: 'parameter', id, value: 'Other prompt' }, signal())).rejects.toMatchObject({
+      code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: `generation_input.parameters.${id}` }] },
+    })
+  }
+  for (const field of ['steps', 'cfg', 'seed', 'references']) {
+    await expect(remote.mutate({ ...selected, type: 'update-draft', field, value: 2 }, signal())).rejects.toMatchObject({
+      code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'field' }] },
+    })
+  }
+  expect((await remote.getProjection(selected, signal())).branches[0]!.draft).toEqual(before)
+})
+
 it('reads registered instance titles through the public Catalog and exposes only their IDs and names', async () => {
   const { remote, catalog } = await fixture()
   const query = vi.fn(async () => ({
@@ -622,8 +641,8 @@ it('edits branch input through real actions, resolves catalog resources and disp
   await action('resource-select', { kind: 'character', id: '4' })
   await action('resource-select', { kind: 'comfyui-template', id: '5' })
   await action('update-draft', { candidate_id: 'width_height:width:height', parameters: { width: 768, height: 1024 } }, 'size')
-  await action('update-draft', 42, 'seed')
-  await action('update-draft', '/reference.png', 'references')
+  await action('update-draft', 42, 'parameter', 'seed')
+  await action('update-draft', '/reference.png', 'parameter', 'reference')
   await action('update-draft', 0.8, 'lora-weight', '3')
   const edited = await remote.getProjection(selected, signal())
   expect(edited.branches[0]).toMatchObject({ name: 'Wet glass', original_request: 'Paint rain at night', draft: {
@@ -666,7 +685,7 @@ it('copies a Run-free branch input through child and grandchild branches with in
     await remote.mutate({ ...parent, type: 'update-draft', field, value }, signal())
   for (const [kind, id] of [['model', '2'], ['lora', '3'], ['character', '4'], ['comfyui-template', '5']] as const)
     await remote.mutate({ ...parent, type: 'resource-select', value: { kind, id } }, signal())
-  await remote.mutate({ ...parent, type: 'update-draft', field: 'seed', value: 42 }, signal())
+  await remote.mutate({ ...parent, type: 'update-draft', field: 'parameter', id: 'seed', value: 42 }, signal())
   const before = (await remote.getProjection(parent, signal())).branches[0]!
   const child = await remote.mutate({ ...parent, type: 'create-branch', value: { name: 'Warm light', original_request: before.original_request } }, signal())
   expect((await remote.getProjection(child, signal())).branches.find(item => item.branch_id === child.branchId)!.draft).toEqual(before.draft)
@@ -676,7 +695,7 @@ it('copies a Run-free branch input through child and grandchild branches with in
   const inherited = (await remote.getProjection(grandchild, signal())).branches.find(item => item.branch_id === grandchild.branchId)!
   expect(inherited.draft).toEqual(childDraft)
   await remote.mutate({ ...grandchild, type: 'update-branch', field: 'original_request', value: 'Keep the warm reflections', expectedValue: before.original_request }, signal())
-  await remote.mutate({ ...grandchild, type: 'update-draft', field: 'seed', value: 99 }, signal())
+  await remote.mutate({ ...grandchild, type: 'update-draft', field: 'parameter', id: 'seed', value: 99 }, signal())
   await remote.mutate({ ...grandchild, type: 'resource-remove', value: 'lora', id: '3' }, signal())
   const result = await remote.getProjection(grandchild, signal())
   expect(result.branches).toHaveLength(3)
@@ -784,7 +803,7 @@ it('rejects invalid action input and cross-workspace targets before changing a b
   const invalid: ExperimentWorkbenchAction[] = [
     { ...selected, type: 'new-work', value: [] },
     { ...selected, type: 'update-branch', field: 'name', value: '', expectedValue: original.name },
-    { ...selected, type: 'update-draft', field: 'seed', value: 10 },
+    { ...selected, type: 'update-draft', field: 'parameter', id: 'seed', value: 10 },
     { ...selected, type: 'update-draft', field: 'lora-weight', id: 'missing', value: 1 },
     { ...selected, workspaceId: 'workspace_2', type: 'update-draft', field: 'positive_prompt', value: 'Wrong project' },
   ]

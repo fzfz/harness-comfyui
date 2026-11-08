@@ -9,7 +9,7 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { vi } from 'vitest'
 import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { CATALOG_KIND_DEFINITIONS, type CatalogItem } from '../../src/catalog/contract.ts'
-import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
+import { GenerationRuntime, type GenerationPreparationAdapter } from '../../src/host/generation/generation-runtime.ts'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import * as workbench from '../../src/host/workbench/plugin.ts'
 import { WorkbenchRemoteService } from '../../src/host/workbench/remote-service.ts'
@@ -58,7 +58,7 @@ export function provideWorkbenchOfficialServices(ctx: Context, workspaces = [
   return { sessions, events, agents, controller, acquireScope, disposeScope, listSkills, listPresets }
 }
 
-export async function createWorkbenchHostFixture() {
+export async function createWorkbenchHostFixture(preparer?: GenerationPreparationAdapter) {
   const directory = mkdtempSync(join(tmpdir(), 'workbench-host-'))
   const database = new DatabaseSync(':memory:')
   let store: WorkbenchStore
@@ -79,7 +79,7 @@ export async function createWorkbenchHostFixture() {
   const inspect = vi.fn(async () => structuredClone(description))
   const runtime = new GenerationRuntime({
     database, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media'),
-    preparer: { inspectRuntimeParameters: inspect, validateInput: vi.fn(async () => {}), prepare: async () => { throw new Error('Generation must be advanced explicitly') } },
+    preparer: preparer ?? { inspectRuntimeParameters: inspect, validateInput: vi.fn(async () => {}), prepare: async () => { throw new Error('Generation must be advanced explicitly') } },
     workbench: {
       assertGenerationAcceptance: input => store.assertGenerationAcceptance(input),
       registerGenerationRun: input => store.registerGenerationRun(input),

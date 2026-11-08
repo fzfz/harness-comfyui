@@ -1,4 +1,5 @@
 import React from 'react'
+import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CatalogItem, CatalogKind } from '../../src/catalog/contract.ts'
 import type { CatalogApi } from '../../src/client/workbench/catalog-browser.tsx'
@@ -196,7 +197,7 @@ describe('experiment workbench prompt editing', () => {
     expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('返回后继续输入的文本')
   })
 
-  it('retains the latest prompt after a failed input save and saves the next edit', async () => {
+  it('saves the queued newer prompt after an earlier save fails and accepts the next edit', async () => {
     let available = fullProjection()
     let finish!: () => void
     const response = new Promise<void>(resolve => { finish = resolve })
@@ -212,7 +213,8 @@ describe('experiment workbench prompt editing', () => {
     await change(renderer, '负向提示词', '第一次输入')
     await change(renderer, '负向提示词', '后来输入')
     await act(async () => { finish(); await response })
-    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(onAction).toHaveBeenCalledTimes(2)
+    expect(available.branches[0]!.draft.prompt_input.negative_prompt).toBe('后来输入')
     expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe('后来输入')
     expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('连接中断')
     await change(renderer, '负向提示词', '重试后的文本')
@@ -265,6 +267,185 @@ describe('experiment workbench prompt editing', () => {
       expect((await readDraft(child.branchId!)).prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
       await act(() => reopened.renderer.unmount())
     } finally { await host.dispose() }
+  })
+})
+
+describe('experiment workbench described parameters', () => {
+  it('does not repeat the same rejected value queued by blur', async () => {
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async () => { await response; throw new Error('请填写采样步数。') })
+    const { renderer } = await mount(fullProjection(), { onAction })
+    await change(renderer, '采样步数', '')
+    await blur(renderer, '采样步数', '')
+    await act(async () => { finish(); await response })
+    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('')
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props['aria-invalid']).toBe(true)
+  })
+
+  it.each([32, 28])('saves newer valid typing %s when an earlier intermediate parameter value is rejected', async next => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (onAction.mock.calls.length === 1) { await response; throw new Error('请填写采样步数。') }
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId
+        ? { ...branch, draft: { ...branch.draft, generation_input: { ...branch.draft.generation_input,
+          parameters: { ...branch.draft.generation_input.parameters, [request.id!]: request.value as number } } } }
+        : branch) }
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available) }, onAction,
+    })
+    await change(renderer, '采样步数', '')
+    await change(renderer, '采样步数', String(next))
+    await act(async () => { finish(); await response })
+    expect(available.branches[0]!.draft.generation_input.parameters.steps_1).toBe(next)
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe(String(next))
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props['aria-invalid']).toBeUndefined()
+  })
+
+  it.each([
+    { kind: 'denoise', type: 'boolean', initial: false, next: 'true', expected: true, label: '降噪强度', options: ['是', '否'] },
+    { kind: 'cfg', type: 'choice', initial: 1, allowed: [1, 2], next: '2', expected: 2, label: '引导强度', options: ['1', '2'] },
+    { kind: 'sampler_name', type: 'string', initial: 'euler', next: 'dpm++ 2m', expected: 'dpm++ 2m', label: '采样器' },
+  ] as const)('saves the descriptor $type value without converting its JSON type', async item => {
+    const description: typeof inputDescription = { parameters: [{
+      parameter_id: 'custom.value_42', kind: item.kind, value_type: item.type, current_value: item.initial,
+      ...('allowed' in item ? { allowed_values: item.allowed } : {}),
+    }], size_candidates: [] }
+    const data = fullProjection()
+    data.branches[0]!.draft.generation_input.parameters = {}
+    const { renderer, onAction } = await mount(data, { remote: { getInputDescription: async () => description } })
+    const input = renderer.root.findByProps({ 'aria-label': item.label })
+    if ('options' in item) expect(input.findAllByType('option').map(nodeText)).toEqual(item.options)
+    expect(input.props.value).toBe(String(item.initial))
+    await change(renderer, item.label, item.next)
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ field: 'parameter', id: 'custom.value_42', value: item.expected }))
+  })
+
+  it('finishes queued parameter input after leaving and returning to its branch', async () => {
+    let available = fullProjection()
+    let finish!: () => void
+    const response = new Promise<void>(resolve => { finish = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId
+        ? { ...branch, draft: { ...branch.draft, generation_input: { ...branch.draft.generation_input,
+          parameters: { ...branch.draft.generation_input.parameters, [request.id!]: request.value as number } } } }
+        : branch) }
+      if (onAction.mock.calls.length === 1) await response
+    })
+    const { renderer } = await mount(available, {
+      remote: { getProjection: async () => structuredClone(available) }, onAction,
+    })
+    await change(renderer, '采样步数', '24')
+    await change(renderer, '采样步数', '32')
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '切换分支 主分支')
+    const shownWhileSaving = renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value
+    await act(async () => { finish(); await response })
+    expect(shownWhileSaving).toBe('32')
+    expect(available.branches[0]!.draft.generation_input.parameters.steps_1).toBe(32)
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('32')
+  })
+
+  it('shows a failed size selection beside the size field and accepts the next selection', async () => {
+    const onAction = vi.fn<ExperimentWorkbenchProps['onAction']>()
+      .mockRejectedValueOnce(new Error('画面尺寸不在模板允许的范围内。'))
+      .mockResolvedValue(undefined)
+    const { renderer } = await mount(fullProjection(), { onAction })
+    const choices = renderer.root.findByProps({ 'aria-label': '画面尺寸' }).findAllByType('option')
+    const selected = choices.find(choice => nodeText(choice) === '1024 × 1024')!.props.value
+    await change(renderer, '画面尺寸', selected)
+    const rejected = renderer.root.findByProps({ 'aria-label': '画面尺寸' })
+    expect(rejected.props['aria-invalid']).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ id: rejected.props['aria-describedby'] }))).toBe('画面尺寸不在模板允许的范围内。')
+    await change(renderer, '画面尺寸', selected)
+    expect(renderer.root.findByProps({ 'aria-label': '画面尺寸' }).props['aria-invalid']).toBeUndefined()
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      field: 'size', value: { candidate_id: 'size_1', parameters: { width_1: 1024, height_1: 1024 } },
+    }))
+  })
+
+  it('keeps a rejected value beside its field and persists a correction without changing other inputs', async () => {
+    let available = fullProjection()
+    const original = structuredClone(available.branches[0]!.draft)
+    const onAction = vi.fn<ExperimentWorkbenchProps['onAction']>()
+      .mockRejectedValueOnce(new RemoteError('workbench/operation-failed', '参数校验失败。', { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'generation_input.parameters.steps_1', message: '采样步数超过模板允许的范围。' }] }))
+      .mockImplementation(async request => {
+        available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId
+          ? { ...branch, draft: { ...branch.draft, generation_input: { ...branch.draft.generation_input,
+            parameters: { ...branch.draft.generation_input.parameters, [request.id!]: request.value as number } } } }
+          : branch) }
+      })
+    const options = { onAction, remote: { getProjection: async () => structuredClone(available) } }
+    const { renderer } = await mount(available, options)
+    await change(renderer, '采样步数', '101')
+    const rejected = renderer.root.findByProps({ 'aria-label': '采样步数' })
+    expect(rejected.props.value).toBe('101')
+    expect(rejected.props['aria-invalid']).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ id: rejected.props['aria-describedby'] }))).toBe('采样步数超过模板允许的范围。')
+    expect(available.branches[0]!.draft).toEqual(original)
+    await click(renderer, '切换分支 暖光探索')
+    await click(renderer, '切换分支 主分支')
+    const returned = renderer.root.findByProps({ 'aria-label': '采样步数' })
+    expect(returned.props.value).toBe('101')
+    expect(returned.props['aria-invalid']).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ id: returned.props['aria-describedby'] }))).toBe('采样步数超过模板允许的范围。')
+    await change(renderer, '采样步数', '40')
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props['aria-invalid']).toBeUndefined()
+    expect(available.branches[0]!.draft).toEqual({ ...original, generation_input: {
+      ...original.generation_input, parameters: { ...original.generation_input.parameters, steps_1: 40 },
+    } })
+    await act(() => renderer.unmount())
+    const reopened = await mount(available, options)
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('40')
+  })
+
+  it('edits repeated parameter kinds and custom size values by their distinct full ids', async () => {
+    const description: typeof inputDescription = {
+      parameters: [
+        { parameter_id: 'steps_9', kind: 'steps', value_type: 'integer', current_value: 24 },
+        { parameter_id: 'steps_42', kind: 'steps', value_type: 'integer', current_value: 16 },
+      ],
+      size_candidates: [{
+        candidate_id: 'custom-size', representation: 'width_height',
+        width: { parameter_id: 'width_7', kind: 'width', value_type: 'integer', current_value: 640, minimum: 64, maximum: 4096 },
+        height: { parameter_id: 'height_7', kind: 'height', value_type: 'integer', current_value: 960, minimum: 64, maximum: 4096 },
+      }],
+    }
+    const data = fullProjection()
+    data.branches[0]!.draft.generation_input.parameters = {}
+    const { renderer, onAction } = await mount(data, { remote: { getInputDescription: async () => description } })
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数（steps_9）' }).props.value).toBe('24')
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数（steps_42）' }).props.value).toBe('16')
+    await change(renderer, '采样步数（steps_42）', '32')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ field: 'parameter', id: 'steps_42', value: 32 }))
+    await change(renderer, '宽度', '832')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ field: 'parameter', id: 'width_7', value: 832 }))
+    expect(renderer.root.findByProps({ 'aria-label': '高度' }).props.value).toBe('960')
+  })
+
+  it('renders descriptor ranges and additional choices and submits the complete parameter id', async () => {
+    const description: typeof inputDescription = {
+      parameters: [
+        { parameter_id: 'steps_9', kind: 'steps', value_type: 'integer', current_value: 24, minimum: 3, maximum: 10000 },
+        { parameter_id: 'cfg_9', kind: 'cfg', value_type: 'number', current_value: 6.25, minimum: 0, maximum: 100 },
+        { parameter_id: 'seed_9', kind: 'seed', value_type: 'integer', current_value: 17, minimum: 0 },
+        { parameter_id: 'sampler_name_9', kind: 'sampler_name', value_type: 'choice', current_value: 'euler', allowed_values: ['euler', 'heun'] },
+      ],
+      size_candidates: inputDescription.size_candidates,
+    }
+    const data = fullProjection()
+    data.branches[0]!.draft.generation_input.parameters = {}
+    const { renderer, onAction } = await mount(data, { remote: { getInputDescription: async () => description } })
+    expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props).toMatchObject({ min: 3, max: 10000, step: 1, value: '24' })
+    expect(renderer.root.findByProps({ 'aria-label': '引导强度' }).props).toMatchObject({ min: 0, max: 100, step: 'any', value: '6.25' })
+    const sampler = renderer.root.findByProps({ 'aria-label': '采样器' })
+    expect(sampler.findAllByType('option').map(option => nodeText(option))).toEqual(['euler', 'heun'])
+    await change(renderer, '采样器', JSON.stringify('heun'))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'update-draft', field: 'parameter', id: 'sampler_name_9', value: 'heun' }))
   })
 })
 
@@ -611,23 +792,22 @@ describe('experiment workbench public interactions', () => {
         value: '暖光复验',
       }),
     )
-    for (const [label, value, field] of [
+    for (const [label, value, field, id] of [
       ['原始需求', '保留窗框', 'original_request'],
       ['正向提示词', 'warm glass', 'positive_prompt'],
       ['负向提示词', 'noise', 'negative_prompt'],
-      ['参考图路径', '/image.png', 'references'],
-      ['采样步数', '30', 'steps'],
-      ['引导强度', '4.5', 'cfg'],
-      ['Seed', '123', 'seed'],
+      ['参考图路径', '/image.png', 'parameter', 'reference_1'],
+      ['采样步数', '30', 'parameter', 'steps_1'],
+      ['引导强度', '4.5', 'parameter', 'cfg_1'],
+      ['Seed', '123', 'parameter', 'seed_1'],
     ]) {
       await change(renderer, label!, value!)
       await blur(renderer, label!, value!)
       expect(onAction).toHaveBeenLastCalledWith(
         expect.objectContaining({
           field,
-          value: ['steps', 'cfg', 'seed'].includes(field!)
-            ? Number(value)
-            : value,
+          ...(id ? { id } : {}),
+          value: id && ['steps_1', 'cfg_1', 'seed_1'].includes(id) ? Number(value) : value,
         }),
       )
     }
@@ -965,7 +1145,7 @@ describe('experiment workbench forms and task results', () => {
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ branchId: available.branches[1]!.branch_id, value: nextValue, expectedValue: originalChildName }))
   })
 
-  it('keeps the latest input and stops queued saves when the active save fails', async () => {
+  it('attempts the queued newer input once and retains it when both saves fail', async () => {
     const available = fullProjection()
     let finish!: () => void
     const response = new Promise<void>(resolve => { finish = resolve })
@@ -976,7 +1156,7 @@ describe('experiment workbench forms and task results', () => {
     await change(renderer, '分支名称', '后来输入')
     await blur(renderer, '分支名称', '后来输入')
     await act(async () => { finish(); await response })
-    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(onAction).toHaveBeenCalledTimes(2)
     expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('后来输入')
     expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('连接中断')
     await blur(renderer, '分支名称', '后来输入')
@@ -2811,7 +2991,7 @@ describe('experiment workbench selected template names', () => {
       const environment = await host.remote.getEnvironment({}, signal)
       const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
         const result = await host.remote.mutate(request, signal)
-        if (request.type === 'update-draft' && request.field === 'steps' && request.value === 31) { wroteA(); await delayedResponse }
+        if (request.type === 'update-draft' && request.field === 'parameter' && request.id === 'steps_a' && request.value === 31) { wroteA(); await delayedResponse }
         return result
       })
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
@@ -2832,7 +3012,7 @@ describe('experiment workbench selected template names', () => {
       const expected = target === 'A' ? a : b
       expect(host.store.getBranch(scope.branchId).draft.generation_input.parameters).toEqual(Object.fromEntries(expected.parameters.map(parameter => [parameter.parameter_id, parameter.current_value])))
       expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe(target === 'A' ? '24' : '48')
-      expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'update-draft', field: 'steps', value: 32 }))
+      expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'update-draft', field: 'parameter', id: 'steps_a', value: 32 }))
       await act(() => renderer.unmount())
     } finally { releaseWrite(); await host.dispose() }
   })

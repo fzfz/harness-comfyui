@@ -34,7 +34,7 @@ export interface ExperimentSizeOption {
   readonly parameters: Record<string, JsonValue>
   readonly current: boolean
 }
-function parameterValue(
+export function readExperimentParameterValue(
   parameter: WorkflowRuntimeParameterInspectionParameter,
   parameters: Readonly<Record<string, JsonValue>>,
 ): JsonValue {
@@ -71,8 +71,8 @@ export function experimentSizeOptions(
   }
   for (const candidate of description?.size_candidates ?? []) {
     if (candidate.representation === 'width_height') {
-      const width = parameterValue(candidate.width, parameters),
-        height = parameterValue(candidate.height, parameters)
+      const width = readExperimentParameterValue(candidate.width, parameters),
+        height = readExperimentParameterValue(candidate.height, parameters)
       if (typeof width === 'number' && typeof height === 'number')
         add(
           candidate.candidate_id,
@@ -98,7 +98,7 @@ export function experimentSizeOptions(
             false,
           )
     } else if (candidate.representation === 'resolution_preset') {
-      const current = parameterValue(candidate.parameter, parameters)
+      const current = readExperimentParameterValue(candidate.parameter, parameters)
       const mappings = [...candidate.mapped_options].sort(
         (left, right) =>
           Number(JSON.stringify(right.value) === JSON.stringify(current)) -
@@ -124,8 +124,8 @@ export function experimentSizeOptions(
           true,
         )
     } else {
-      const ratio = parameterValue(candidate.aspect_ratio, parameters),
-        megapixels = parameterValue(candidate.megapixels, parameters)
+      const ratio = readExperimentParameterValue(candidate.aspect_ratio, parameters),
+        megapixels = readExperimentParameterValue(candidate.megapixels, parameters)
       add(
         candidate.candidate_id,
         {

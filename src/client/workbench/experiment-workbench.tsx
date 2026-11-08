@@ -1,7 +1,6 @@
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -34,19 +33,24 @@ import { EXPERIMENT_CATALOG_SCROLL_PREFIX } from './experiment-contract.ts'
 import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 import {
   ExperimentInputDescriptionCache,
-  findExperimentParameter,
+  readExperimentParameterValue,
   readExperimentParameter,
   experimentSizeOptions,
 } from './experiment-input.ts'
+import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
 import type {
   WorkflowRuntimeParameterInspection,
+  WorkflowRuntimeParameterInspectionParameter,
   StandardRuntimeParameterKind,
 } from '../../generation/inspection-contract.ts'
 import { Button, Icon, trapDialogFocus, useToastMessage } from './experiment-controls.tsx'
 import { ExperimentFunctionSettings, formatExperimentAgentModel } from './experiment-function-settings.tsx'
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
+import { AutosaveField, useBranchFieldEdits, type FieldOptions, type SaveField } from './experiment-fields.tsx'
+import { RuntimeParameterField, RuntimeSizeField } from './experiment-parameter-fields.tsx'
 import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogApi, type CatalogReference } from './catalog-browser.tsx'
 import { workbenchContextKey } from './contract.ts'
+import inputOptions from './experiment-input-options.json' with { type: 'json' }
 
 export type {
   ExperimentWorkbenchAction,
@@ -97,125 +101,6 @@ function PanelHead({
       {description && <p>{description}</p>}
     </div>
   )
-}
-
-interface FieldOptions {
-  multiline?: boolean
-  saveOnChange?: boolean
-  short?: boolean
-  type?: string
-  min?: number
-  max?: number
-  step?: number
-  maxLength?: number
-  branch?: boolean
-  disabled?: boolean
-}
-
-type SaveField = (value: string, expectedValue: string) => Promise<boolean>
-
-function createFieldEditor(isCurrent = () => true) {
-  let edit: { value: string; expected: string } | undefined
-  let queued: { value: string; original: string; save: SaveField } | undefined
-  let saving = false
-  const listeners = new Set<() => void>()
-  const update = (next: typeof edit) => {
-    edit = next
-    for (const listener of listeners) listener()
-  }
-  const flush = async () => {
-    if (saving) return
-    saving = true
-    while (queued) {
-      const submission = queued
-      queued = undefined
-      if (!isCurrent()) break
-      const expected = edit?.expected ?? submission.original
-      if (submission.value !== expected) {
-        const saved = await submission.save(submission.value, expected)
-        if (!saved || !isCurrent()) { queued = undefined; break }
-        if (edit) update({ ...edit, expected: submission.value })
-      }
-      if (edit?.value === submission.value && !queued) update(undefined)
-    }
-    saving = false
-  }
-  return {
-    getSnapshot: () => edit?.value,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener)
-      return () => { listeners.delete(listener) }
-    },
-    change: (value: string, original: string) =>
-      update({ value, expected: edit?.expected ?? original }),
-    commit: (value: string, original: string, save: SaveField) => {
-      queued = { value, original, save }
-      void flush()
-    },
-  }
-}
-
-function useBranchFieldEdits(workspaceId: string | null, workId: string | null, branchId: string | null, inputScope?: string) {
-  const branchFields = useRef(new Map<string, Map<string, ReturnType<typeof createFieldEditor>>>())
-  const fields = useMemo(() => {
-    if (inputScope !== undefined) return new Map<string, ReturnType<typeof createFieldEditor>>()
-    const scope = JSON.stringify([workspaceId, workId, branchId])
-    let current = branchFields.current.get(scope)
-    if (!current) {
-      current = new Map()
-      branchFields.current.set(scope, current)
-    }
-    return current
-  }, [workspaceId, workId, branchId, inputScope])
-  const activeFields = useRef<typeof fields | null>(fields)
-  useLayoutEffect(() => {
-    activeFields.current = fields
-    return () => { activeFields.current = null }
-  }, [fields])
-  return (id: string) => {
-    let editor = fields.get(id)
-    if (!editor) {
-      editor = createFieldEditor(inputScope === undefined ? undefined : () => activeFields.current === fields)
-      fields.set(id, editor)
-    }
-    return editor
-  }
-}
-
-function AutosaveField({ label, inputLabel = label, className, id, value, options, save, editor, locked }: {
-  readonly label: string
-  readonly inputLabel?: string
-  readonly className?: string
-  readonly id?: string
-  readonly value: string
-  readonly options: FieldOptions
-  readonly save: SaveField
-  readonly editor: ReturnType<typeof createFieldEditor>
-  readonly locked: boolean
-}) {
-  const edited = useSyncExternalStore(editor.subscribe, editor.getSnapshot, editor.getSnapshot)
-  const common = {
-    id,
-    'aria-label': inputLabel,
-    value: (!locked ? edited : undefined) ?? value,
-    disabled: options.disabled,
-    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      if (options.disabled) return
-      editor.change(event.target.value, value)
-      if (options.saveOnChange) editor.commit(event.target.value, value, save)
-    },
-    onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      if (!options.disabled) editor.commit(event.target.value, value, save)
-    },
-  }
-  return <label className={className}>
-    <span>{label}</span>
-    {options.multiline ? (
-      <textarea {...common} className={options.short ? id === 'original_request' ? 'short branch-goal' : 'short' : ''} />
-    ) : (
-      <input {...common} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} maxLength={options.maxLength} />
-    )}
-  </label>
 }
 
 function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
@@ -1418,14 +1303,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const inputDescription = inputs
     ? descriptionFor(inputs.generation_input)
     : null
-  const inputParameter = (kind: StandardRuntimeParameterKind) =>
-    inputs
-      ? readExperimentParameter(
-          inputDescription,
-          inputs.generation_input.parameters,
-          kind,
-        )
-      : undefined
   const sizes = inputs
     ? experimentSizeOptions(
         inputDescription,
@@ -1469,25 +1346,44 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     id: string,
     value: JsonValue | undefined,
     options: FieldOptions = {},
-    identity = id,
-    editor = fieldEditor(identity),
   ) => <AutosaveField
-    key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, locked, identity])}
+    key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, locked, id])}
     label={label}
     className="field"
     id={id}
     value={value === null || value === undefined ? '' : String(value)}
     options={options}
-    editor={editor}
+    editor={fieldEditor(id)}
     locked={locked}
     save={(nextValue, expectedValue) => saveField(id, options, nextValue, expectedValue)}
   />
-  const parameterField = (label: string, id: string, kind: StandardRuntimeParameterKind, options: FieldOptions = {}) => {
-    const parameter = findExperimentParameter(inputDescription, kind)
-    return field(label, id, inputParameter(kind), { ...options, disabled: !parameter }, JSON.stringify([
-      inputs?.generation_input.instance_id, inputs?.generation_input.template_id, kind, parameter?.parameter_id,
-    ]), parameterFieldEditor(parameter?.parameter_id ?? kind))
+  const saveGenerationInput = async (change: Pick<ExperimentWorkbenchAction, 'field' | 'id' | 'value'>) => {
+    await props.onAction({ type: 'update-draft', workspaceId: state.workspaceId ?? '',
+      workId: view.workId ?? undefined, branchId: view.branchId ?? undefined, ...change })
+    const current = store.getSnapshot()
+    if (current.workspaceId === state.workspaceId && current.view.workId === view.workId) await store.refresh()
   }
+  const renderParameter = (label: string, id: string, parameter: WorkflowRuntimeParameterInspectionParameter | undefined) =>
+    <RuntimeParameterField key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, parameterScope, locked, id])}
+      label={label} id={id} parameter={parameter} locked={locked}
+      value={parameter && inputs ? readExperimentParameterValue(parameter, inputs.generation_input.parameters) : undefined}
+      editor={parameterFieldEditor(JSON.stringify(['parameter', parameter?.parameter_id ?? id]))}
+      save={async value => {
+        if (parameter) await saveGenerationInput({ field: 'parameter', id: parameter.parameter_id, value })
+      }} />
+  const describedParameters = inputDescription ? flattenWorkflowRuntimeParameters(inputDescription) : []
+  const parameterLabel = (parameter: WorkflowRuntimeParameterInspectionParameter) =>
+    describedParameters.filter(item => item.kind === parameter.kind).length > 1
+      ? `${inputOptions.parameterLabels[parameter.kind]}（${parameter.parameter_id}）`
+      : inputOptions.parameterLabels[parameter.kind]
+  const primaryParameters = ['steps', 'cfg', 'seed', 'reference_image'].map(kind => describedParameters.find(parameter => parameter.kind === kind))
+  const parameterField = (kind: StandardRuntimeParameterKind) => {
+    const parameter = describedParameters.find(item => item.kind === kind)
+    return renderParameter(parameter ? parameterLabel(parameter) : inputOptions.parameterLabels[kind],
+      kind === 'reference_image' ? 'references' : kind, parameter)
+  }
+  const additionalParameters = describedParameters.filter(parameter =>
+    !['positive_prompt', 'negative_prompt'].includes(parameter.kind) && !primaryParameters.includes(parameter))
   const openCatalog = (kind: CatalogKind) => {
     setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
     store.updateView({
@@ -1705,18 +1601,18 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {customActions(['rewrite'], locked)}
             </div>
             {field(
-              '正向提示词',
+              inputOptions.parameterLabels.positive_prompt,
               'positive_prompt',
               inputs.prompt_input.positive_prompt,
               { multiline: true, saveOnChange: true },
             )}
             {field(
-              '负向提示词',
+              inputOptions.parameterLabels.negative_prompt,
               'negative_prompt',
               inputs.prompt_input.negative_prompt,
               { multiline: true, short: true, saveOnChange: true },
             )}
-            {parameterField('参考图路径', 'references', 'reference_image')}
+            {parameterField('reference_image')}
           </details>
           <details className="config-section" open>
             <summary>生成参数</summary>
@@ -1725,52 +1621,20 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {customActions(['parameters'], locked)}
             </div>
             <div className="fields2">
-              {parameterField('采样步数', 'steps', 'steps', {
-                type: 'number',
-                min: 1,
-                max: 100,
-              })}
-              {parameterField('引导强度', 'cfg', 'cfg', {
-                type: 'number',
-                min: 0,
-                max: 30,
-                step: 0.5,
-              })}
+              {parameterField('steps')}
+              {parameterField('cfg')}
             </div>
             <div className="fields2">
-              {parameterField('Seed', 'seed', 'seed', {
-                type: 'number',
-                min: 0,
-              })}
-              <label className="field">
-                <span>画面尺寸</span>
-                <select
-                  aria-label="画面尺寸"
-                  disabled={!sizes.length}
-                  value={currentSize}
-                  onChange={(event) => {
-                    const size = sizes.find(
-                      (size) => size.value === event.target.value,
-                    )
-                    if (size)
-                      void action('update-draft', {
-                        field: 'size',
-                        value: {
-                          candidate_id: size.candidate_id,
-                          parameters: size.parameters,
-                        },
-                      })
-                  }}
-                >
-                  {!currentSize && <option value="">请选择</option>}
-                  {sizes.map((size) => (
-                    <option key={size.value} value={size.value}>
-                      {size.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {parameterField('seed')}
+              <RuntimeSizeField key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, parameterScope, locked])}
+                sizes={sizes} value={currentSize} editor={parameterFieldEditor(JSON.stringify(['size']))} locked={locked}
+                save={size => saveGenerationInput({ field: 'size', value: { candidate_id: size.candidate_id, parameters: size.parameters } })} />
             </div>
+            {additionalParameters.length > 0 && <div className="fields2">
+              {additionalParameters.map(parameter => renderParameter(
+                parameterLabel(parameter),
+                parameter.parameter_id, parameter))}
+            </div>}
           </details>
         </fieldset>
         {branch.source_experience_id && (
