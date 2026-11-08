@@ -143,7 +143,26 @@ export class WorkbenchService {
     if (artifact.type === 'resources' && this.options.resolveResourceRefs) resolvedDraft = await this.options.resolveResourceRefs(artifact.refs, this.store.getBranch(task.branch_id).draft)
     const generation = artifact.type === 'generation_input' ? artifact : artifact.type === 'review' && request.candidate ? artifact.candidate : undefined
     if (generation && this.options.resolveGenerationDraft) resolvedDraft = await this.options.resolveGenerationDraft(generation.generation_input, generation.context_refs)
+    if (artifact.type === 'parameters') await this.options.validateParameters?.(task.input.generation_input, artifact.parameters, 'artifact.parameters')
     return this.store.adoptArtifact({ ...request, resolvedDraft })
+  }
+
+  async createBranchFromArtifact(request: { workspaceId: string; workId: string; artifactId: string; name: string }) {
+    const stored = this.store.getArtifact(request.artifactId)
+    const task = this.store.getTask(stored.task_id)
+    this.store.assertScope(request.workspaceId, request.workId, task.branch_id)
+    const { prompt_input, generation_input, context_refs, base_model_id } = task.input
+    let draft = structuredClone({ prompt_input, generation_input, context_refs, base_model_id })
+    if (stored.artifact.type === 'prompt') {
+      draft.prompt_input = { positive_prompt: stored.artifact.positive_prompt, negative_prompt: stored.artifact.negative_prompt }
+    } else if (stored.artifact.type === 'parameters') {
+      Object.assign(draft.generation_input.parameters, stored.artifact.parameters)
+    } else if (stored.artifact.type === 'generation_input' || stored.artifact.type === 'review' && stored.artifact.candidate) {
+      const generation = stored.artifact.type === 'generation_input' ? stored.artifact : stored.artifact.candidate!
+      if (!this.options.resolveGenerationDraft) throw new WorkbenchError('WORKBENCH_INPUT_RESOLUTION_REQUIRED', '当前无法解析生成输入。请重新打开工作台后，再点击“从产物创建分支”。', 'artifact_id')
+      draft = await this.options.resolveGenerationDraft(generation.generation_input, generation.context_refs)
+    } else throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择提示词、参数、生成输入或包含建议输入的评价产物创建分支。', 'artifact_id')
+    return this.store.createBranch({ workId: request.workId, parentBranchId: task.branch_id, name: request.name, originalRequest: task.input.requirements.original_request, draft, sourceArtifactId: stored.artifact_id })
   }
   async getProjection(request: { workspaceId: string; workId?: string; branchId?: string }) {
     const tasks = this.store.listTasks(request.workspaceId, request.workId, request.branchId).map(task => this.store.refreshTask(task.task_id))

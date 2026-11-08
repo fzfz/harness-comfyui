@@ -1,5 +1,11 @@
 {
   "unrecorded": "未记录",
+  "inputs": "查看任务输入",
+  "branch": "从产物创建分支",
+  "branchName": "{parent} · {task}",
+  "parameters": "参数建议",
+  "resourceDetails": "查看详情",
+  "candidate": "查看建议输入",
   "details": {
     "model": "Agent 调用配置",
     "artifacts": "任务产物",

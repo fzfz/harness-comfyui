@@ -1,0 +1,12 @@
+{
+  "modelMismatch": {
+    "code": "WORKBENCH_RESOURCE_MISMATCH",
+    "message": "当前生成模型与任务输入不一致，请从产物创建分支。",
+    "path": "generation_input.model"
+  },
+  "templateMismatch": {
+    "code": "WORKBENCH_RESOURCE_MISMATCH",
+    "message": "当前实例或 Workflow 模板与任务输入不一致，请从产物创建分支。",
+    "path": "generation_input"
+  }
+}

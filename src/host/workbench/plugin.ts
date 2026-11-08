@@ -32,7 +32,7 @@ interface WorkbenchHost {
   readonly validateParameters: ReturnType<typeof createWorkbenchInputAdapter>['validateParameters']
   readonly resolveGenerationDraft: (input: GenerationInput, refs: ContextRef[]) => Promise<TaskDraft>
   readonly previewModelChange: (modelId: string, draft: TaskDraft, signal?: AbortSignal) => Promise<WorkbenchModelChangePreview>
-  readonly resolveResourceSelection: (ref: ResourceRef, draft: TaskDraft) => Promise<TaskDraft>
+  readonly resolveResourceSelection: ReturnType<typeof createWorkbenchInputAdapter>['resolveResourceSelection']
   readonly environment: (workspaceId?: string, presetId?: string) => Promise<WorkbenchEnvironment>
   readonly initializeWorkspace: (workspaceId: string) => Promise<void>
   readonly presetSkills: (workspaceId: string, presetId: string) => Promise<WorkbenchEnvironment['skills']>

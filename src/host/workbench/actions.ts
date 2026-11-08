@@ -7,6 +7,8 @@ import { equalValue, validateTaskRequestDraft, WorkbenchError } from '../../work
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
+import resourceSelectionErrors from '../../workbench/resource-selection-errors.json' with { type: 'json' }
+
 function fields(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '操作输入 value 必须是对象。请按操作要求填写字段。', 'value')
   return value as Record<string, unknown>
@@ -155,18 +157,11 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
           throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '模型切换确认清单无效，请重新选择模型。', 'value.confirmedRemovals')
         }
         if (confirmed.length !== preview.removed.length || preview.removed.some(item => !confirmed.some(ref => ref.kind === item.kind && ref.id === item.id))) {
-          throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '当前需要移除的资源与确认清单不一致，请重新选择模型。', 'value.confirmedRemovals')
+          const error = resourceSelectionErrors.modelChangeMismatch
+          throw new WorkbenchError(error.code, error.message, error.path)
         }
       }
-      const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.draft)
-      if (preview) {
-        if (preview.removed.some(ref => ref.kind === 'comfyui-template')) {
-          draft.generation_input.template_id = null
-          draft.generation_input.parameters = {}
-        }
-        draft.generation_input.loras = draft.generation_input.loras.filter(lora => !preview.removed.some(ref => ref.kind === 'lora' && ref.id === lora.id))
-        draft.context_refs = draft.context_refs.filter(context => !preview.removed.some(ref => ref.kind === context.kind && ref.id === context.id))
-      }
+      const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.draft, preview ?? undefined)
       store.saveBranchDraft({ ...selection, expected: branch.draft, draft }); break
     }
     case 'resource-remove': {
@@ -228,13 +223,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       return { ...selection, branchId: created.branch_id }
     }
     case 'task-branch': {
-      const artifact = store.getArtifact(text(request.id, 'artifact_id'))
-      if (store.getBranch(store.getTask(artifact.task_id).branch_id).work_id !== workId) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的产物。', 'artifact_id')
-      let draft = structuredClone(branch.draft)
-      if (artifact.artifact.type === 'generation_input') draft = await ctx.harnessComfyuiWorkbench.resolveGenerationDraft(artifact.artifact.generation_input, artifact.artifact.context_refs)
-      else if (artifact.artifact.type === 'prompt') draft.prompt_input = { positive_prompt: artifact.artifact.positive_prompt, negative_prompt: artifact.artifact.negative_prompt }
-      else throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择提示词或生成输入产物创建分支。', 'artifact_id')
-      const created = store.createBranch({ workId, parentBranchId: branchId, name: text(fields(request.value).name, 'name'), originalRequest: branch.original_request, draft, sourceArtifactId: artifact.artifact_id })
+      const created = await service.createBranchFromArtifact({ workspaceId: request.workspaceId, workId, artifactId: text(request.id, 'artifact_id'), name: text(fields(request.value).name, 'name') })
       return { ...selection, branchId: created.branch_id }
     }
     default: throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择工作台中的操作。', 'type')

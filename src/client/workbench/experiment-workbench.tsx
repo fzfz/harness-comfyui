@@ -151,9 +151,27 @@ interface TaskNotificationTarget {
   readonly taskId: string
 }
 
+function TaskResourceCandidate({ resource, load, onError, onDetail }: {
+  readonly resource: CatalogReference
+  readonly load: CatalogApi['details'] | undefined
+  readonly onError: (message: string) => void
+  readonly onDetail: () => void
+}) {
+  const { details, error } = useCatalogDetails(resource, load)
+  useEffect(() => { if (error) onError(error) }, [error, onError])
+  return <div className="row between">
+    <b>{details?.item.label ?? resource.id}</b>
+    <Button kind="small quiet" onClick={onDetail}>{taskPresentation.resourceDetails}</Button>
+  </div>
+}
+
+function latestTaskArtifact(artifacts: readonly StoredArtifact[]) {
+  return artifacts.slice().reverse().find(artifact => artifact.type !== 'question')
+}
+
 function taskConflicts(task: Task, artifacts: readonly StoredArtifact[]) {
-  return task.output_contract.apply_mode === 'automatic'
-    ? artifacts.filter(artifact => artifact.disposition === 'candidate') : []
+  const artifact = latestTaskArtifact(artifacts)
+  return task.output_contract.apply_mode === 'automatic' && artifact?.disposition === 'candidate' ? [artifact] : []
 }
 
 export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
@@ -452,7 +470,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...extra,
       })
       if (!stillCurrent()) return false
-      const keepsTaskNavigation = !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume'
+      const keepsTaskNavigation = !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'task-apply'
       const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
         && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
       if (selection?.taskId && view.workId) {
@@ -1146,9 +1164,19 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 .slice()
                 .reverse()
                 .find((artifact) => artifact.type === 'question'),
+              artifact = latestTaskArtifact(artifacts),
+              sourceBranch = p.branches.find(branch => branch.branch_id === item.branch_id),
+              canCreateBranch = artifact && item.kind !== 'experiment' && (
+                artifact.type === 'prompt' || artifact.type === 'parameters' || artifact.type === 'generation_input'
+                || (artifact.artifact.type === 'review' && !!artifact.artifact.candidate)
+              ),
               taskRuns = p.runs.filter(
                 (run) => run.workbench_task_id === item.task_id,
-              )
+              ),
+              targetDraft = item.apply_target.kind === 'branch'
+                ? p.branches.find(branch => branch.branch_id === item.apply_target.id)?.draft
+                : p.runs.find(run => run.run_id === item.apply_target.id)?.review_draft,
+              expected = targetDraft ? structuredClone(targetDraft) : undefined
             return (
               <article
                 className="agent-task-card"
@@ -1245,9 +1273,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       </button>
                     </form>
                   )}
-                {artifacts
-                  .filter((artifact) => artifact.type !== 'question')
-                  .map((artifact) => (
+                {artifact && artifact.type !== 'generation_input' && (
                     <div className="task-output" key={artifact.artifact_id}>
                       {artifact.artifact.type === 'prompt' ? (
                         <>
@@ -1256,13 +1282,26 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                           <h3>负向提示词</h3>
                           <p>{artifact.artifact.negative_prompt || '—'}</p>
                         </>
+                      ) : artifact.artifact.type === 'parameters' ? (
+                        <><h3>{taskPresentation.parameters}</h3><dl>
+                          {Object.entries(artifact.artifact.parameters).map(([id, value]) => <React.Fragment key={id}>
+                            <dt>{id}</dt><dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd>
+                          </React.Fragment>)}
+                        </dl></>
                       ) : artifact.artifact.type === 'review' ? (
                         <>
                           <h3>观察</h3>
                           <p>{artifact.artifact.observation}</p>
                           <h3>评价结论</h3>
                           <p>{artifact.artifact.conclusion}</p>
+                          {artifact.artifact.candidate && <details>
+                            <summary>{taskPresentation.candidate}</summary>
+                            <pre>{JSON.stringify(artifact.artifact.candidate, null, 2)}</pre>
+                          </details>}
                         </>
+                      ) : artifact.artifact.type === 'resources' ? (
+                        artifact.artifact.refs.map(resource => <TaskResourceCandidate key={`${resource.kind}:${resource.id}`}
+                          resource={resource} load={props.catalog?.details} onError={setMessage} onDetail={() => openContextDetails(resource)} />)
                       ) : artifact.artifact.type === 'experience' ? (
                         <>
                           <h3>{artifact.artifact.title}</h3>
@@ -1272,31 +1311,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       ) : (
                         <pre>{JSON.stringify(artifact.artifact, null, 2)}</pre>
                       )}
-                      {artifact.disposition === 'candidate' && (
-                        <Button
-                          kind="small primary"
-                          onClick={() =>
-                            void action('task-apply', {
-                              taskId: item.task_id,
-                              id: artifact.artifact_id,
-                            })
-                          }
-                        >
-                          {artifact.type === 'prompt'
-                            ? '采用提示词'
-                            : artifact.type === 'parameters'
-                              ? '采用参数'
-                              : artifact.type === 'resources'
-                                ? '采用资源'
-                                : artifact.type === 'review'
-                                  ? '填入评价'
-                                  : artifact.type === 'experience'
-                                    ? '填入经验'
-                                    : '采用建议输入'}
-                        </Button>
-                      )}
                     </div>
-                  ))}
+                )}
                 {taskRuns.map((run) => (
                   <div className="task-output" key={run.run_id}>
                     <Button
@@ -1352,6 +1368,27 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     >
                       继续任务
                     </Button>
+                  )}
+                  {artifact?.disposition === 'candidate' && artifact.type !== 'generation_input' && item.kind !== 'experiment' && (
+                    <Button kind="small primary" onClick={() => void action('task-apply', {
+                      taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id, value: expected,
+                    })}>
+                      {artifact.type === 'prompt' ? '采用提示词' : artifact.type === 'parameters' ? '采用参数'
+                        : artifact.type === 'resources' ? '采用资源' : artifact.type === 'review' ? '填入评价'
+                          : artifact.type === 'experience' ? '填入经验' : '采用建议输入'}
+                    </Button>
+                  )}
+                  {sourceBranch && artifact && canCreateBranch && (
+                    <Button kind="small" onClick={() => void action('task-branch', {
+                      taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id,
+                      value: { name: taskPresentation.branchName.replace(/\{parent\}|\{task\}/g, token => token === '{parent}' ? sourceBranch.name : item.title) },
+                    })}>{taskPresentation.branch}</Button>
+                  )}
+                  {artifact?.disposition === 'applied' && item.apply_target.kind === 'branch' && (
+                    <Button kind="small" onClick={() => {
+                      selectBranch(item.branch_id)
+                      store.updateView({ page: 'workbench', selectedRunId: null, inspectRun: false, compareRunId: null })
+                    }}>{taskPresentation.inputs}</Button>
                   )}
                 </div>
               </article>

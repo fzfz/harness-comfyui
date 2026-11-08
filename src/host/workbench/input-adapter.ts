@@ -1,12 +1,14 @@
 import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeParameterInspectionParameter } from '../../generation/inspection-contract.ts'
 import type { WorkbenchModelChangePreview, WorkbenchModelChangeRef } from '../../workbench-remote.ts'
-import { catalogDefinition, catalogResourceCompatible } from '../../catalog/contract.ts'
+import { catalogDefinition, catalogResourceCompatible, catalogResourceConflicts } from '../../catalog/contract.ts'
 import type { CatalogClient } from '../catalog/catalog-client.ts'
 import type { GenerationRuntime } from '../generation/generation-runtime.ts'
 import { GenerationInputValidationError } from '../generation/workflow-compiler.ts'
 import { parseCliGenerationRequest, toGenerationRequest } from '../../cli/contract.ts'
 import type { ContextRef, GenerationInput, JsonValue, ResourceRef, TaskDraft } from '../../workbench/contract.ts'
 import { validateGenerationInput as validateStructure, validateContextRefs, WorkbenchError } from '../../workbench/validation.ts'
+
+import resourceSelectionErrors from '../../workbench/resource-selection-errors.json' with { type: 'json' }
 
 export interface WorkbenchInputAdapterOptions {
   runtime: Pick<GenerationRuntime, 'inspectTemplateRuntimeParameters' | 'validateGenerationRequest'>
@@ -107,36 +109,64 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
     }
     operationSignal.throwIfAborted()
   }
-  const resolveResources = async (refs: ResourceRef[], current: TaskDraft, requireCompatible: boolean): Promise<TaskDraft> => {
+  const resolveResources = async (refs: ResourceRef[], current: TaskDraft, templateParameters: 'initialize' | 'preserve-selected', confirmedModelChange?: WorkbenchModelChangePreview): Promise<TaskDraft> => {
     const draft = structuredClone(current)
     for (const ref of refs) {
-      const details = requireCompatible && ref.kind !== 'model'
+      const preview = ref.kind === 'model' ? confirmedModelChange ?? await previewModelChange(ref.id, draft) : null
+      const details = ref.kind !== 'model'
         ? await resourceAt(catalog.details(ref, signal), 'value.id') : null
-      if (details && !catalogResourceCompatible(details.item, { baseModelId: draft.base_model_id, modelId: draft.generation_input.model?.id ?? null })) {
-        throw new WorkbenchError('WORKBENCH_RESOURCE_INCOMPATIBLE', '请更换生成模型后选择此资源。', 'value.id')
+      if (details) {
+        const error = resourceSelectionErrors.incompatible
+        const target = { baseModelId: draft.base_model_id, modelId: draft.generation_input.model?.id ?? null }
+        const conflicts = catalogResourceConflicts(details.item, target).map(({ field, required, actual }) => {
+          const message = error.constraints[field][actual === null ? 'unselected' : 'selected']
+          return message.replaceAll('{required}', required).replaceAll('{actual}', actual ?? '')
+        })
+        if (conflicts.length) {
+          const message = error.message.replaceAll('{conflicts}', conflicts.join(error.separator)).replaceAll('{id}', ref.id).replaceAll('{name}', details.item.label)
+          throw new WorkbenchError(error.code, message, error.path)
+        }
       }
       if (ref.kind === 'model') {
         const model = await catalog.resolveGenerationModel(ref.id, signal)
         draft.generation_input.model = { id: model.id, file_name: model.file_name }; draft.base_model_id = model.base_model_id
+        if (preview) {
+          if (preview.removed.some(ref => ref.kind === 'comfyui-template')) {
+            draft.generation_input.template_id = null
+            draft.generation_input.parameters = {}
+          }
+          draft.generation_input.loras = draft.generation_input.loras.filter(lora => !preview.removed.some(ref => ref.kind === 'lora' && ref.id === lora.id))
+          draft.context_refs = draft.context_refs.filter(context => !preview.removed.some(ref => ref.kind === context.kind && ref.id === context.id))
+        }
       } else if (ref.kind === 'lora') {
         const lora = await catalog.resolveLora(ref.id, signal)
-        draft.generation_input.loras = [...draft.generation_input.loras.filter(item => item.id !== ref.id), { id: lora.id, file_name: lora.file_name, weight: lora.weight, trigger_words: [...lora.trigger_words] }]
+        const selected = draft.generation_input.loras.find(item => item.id === ref.id)
+        if (selected) {
+          selected.file_name = lora.file_name
+          selected.trigger_words = [...lora.trigger_words]
+        } else draft.generation_input.loras.push({ id: lora.id, file_name: lora.file_name, weight: lora.weight, trigger_words: [...lora.trigger_words] })
       } else if (ref.kind === 'comfyui-template') {
         const template = await catalog.resolveTemplate(ref.id, signal)
+        if (templateParameters === 'preserve-selected' && draft.generation_input.template_id === template.id) continue
         draft.generation_input.template_id = template.id
         if (draft.base_model_id === null) draft.base_model_id = template.base_model_id
         draft.generation_input.parameters = draft.generation_input.instance_id
           ? Object.fromEntries(flattenWorkflowRuntimeParameters(await inspect(draft.generation_input)).map(parameter => [parameter.parameter_id, parameter.current_value]))
           : {}
       } else {
-        if (!details) await validateReferences([ref])
         draft.context_refs = [...draft.context_refs.filter(item => item.kind !== ref.kind || item.id !== ref.id), { kind: ref.kind, id: ref.id }]
       }
     }
     return draft
   }
-  const resolveResourceRefs = (refs: ResourceRef[], current: TaskDraft) => resolveResources(refs, current, false)
-  const resolveResourceSelection = (ref: ResourceRef, current: TaskDraft) => resolveResources([ref], current, true)
+  const resolveResourceRefs = (refs: ResourceRef[], current: TaskDraft) => resolveResources([...refs].sort((left, right) => Number(right.kind === 'model') - Number(left.kind === 'model')), current, 'preserve-selected')
+  const resolveResourceSelection = (ref: ResourceRef, current: TaskDraft, confirmedModelChange?: WorkbenchModelChangePreview) => {
+    if (confirmedModelChange && (ref.kind !== 'model' || confirmedModelChange.model.id !== ref.id)) {
+      const error = resourceSelectionErrors.modelChangeMismatch
+      throw new WorkbenchError(error.code, error.message, error.path)
+    }
+    return resolveResources([ref], current, 'initialize', confirmedModelChange)
+  }
   const previewModelChange = async (modelId: string, current: TaskDraft, requestSignal = signal): Promise<WorkbenchModelChangePreview> => {
     requestSignal.throwIfAborted()
     const model = await resourceAt(catalog.details({ kind: 'model', id: modelId }, requestSignal), 'generation_input.model.id')

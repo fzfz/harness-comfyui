@@ -177,12 +177,29 @@ export interface CatalogItem {
   readonly sampleImageUrls: readonly string[]
 }
 
+export interface CatalogResourceConflict {
+  readonly field: 'baseModelId' | 'modelId'
+  readonly required: string
+  readonly actual: string | null
+}
+
+export function catalogResourceConflicts(
+  resource: Pick<CatalogItem, CatalogResourceConflict['field']>,
+  target: Pick<CatalogItem, CatalogResourceConflict['field']>,
+): CatalogResourceConflict[] {
+  const conflicts: CatalogResourceConflict[] = []
+  for (const field of ['baseModelId', 'modelId'] as const) {
+    const required = resource[field], actual = target[field]
+    if (required !== null && required !== actual) conflicts.push({ field, required, actual })
+  }
+  return conflicts
+}
+
 export function catalogResourceCompatible(
-  resource: Pick<CatalogItem, 'baseModelId' | 'modelId'>,
-  target: { readonly baseModelId: string | null; readonly modelId: string | null },
+  resource: Pick<CatalogItem, CatalogResourceConflict['field']>,
+  target: Pick<CatalogItem, CatalogResourceConflict['field']>,
 ): boolean {
-  return (resource.baseModelId === null || resource.baseModelId === target.baseModelId)
-    && (resource.modelId === null || resource.modelId === target.modelId)
+  return catalogResourceConflicts(resource, target).length === 0
 }
 
 export interface CatalogPage {

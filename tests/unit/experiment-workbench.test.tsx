@@ -1919,9 +1919,11 @@ describe('experiment workbench forms and task results', () => {
         context_refs: [],
       },
     ]
+    data.tasks.push(...artifacts.slice(1).map((artifact, index) => makeTask('artifact-' + (index + 1), 'child',
+      artifact.type === 'generation_input' || artifact.type === 'question' ? 'run' : artifact.type)))
     data.artifacts = artifacts.map((artifact, i) => ({
       artifact_id: 'a' + i,
-      task_id: 'question',
+      task_id: i === 0 ? 'question' : 'artifact-' + i,
       type: artifact.type,
       artifact,
       source_files: [],
@@ -1949,17 +1951,10 @@ describe('experiment workbench forms and task results', () => {
         value: '自然光',
       }),
     )
-    for (const label of [
-      '采用提示词',
-      '采用参数',
-      '采用资源',
-      '填入评价',
-      '填入经验',
-      '采用建议输入',
-    ]) {
+    for (const [index, label] of ['采用提示词', '采用参数', '采用资源', '填入评价', '填入经验'].entries()) {
       await click(renderer, label)
       expect(onAction).toHaveBeenLastCalledWith(
-        expect.objectContaining({ type: 'task-apply', taskId: 'question' }),
+        expect.objectContaining({ type: 'task-apply', taskId: 'artifact-' + (index + 1) }),
       )
     }
     await click(renderer, '中断任务')
@@ -6384,5 +6379,445 @@ describe('experiment workbench follow-up question notification', () => {
     }))
     expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
     expect(nodeText(renderer.root.findByProps({ className: 'agent-task-card' }))).toContain('Agent 执行中')
+  })
+})
+
+
+describe('experiment workbench displayed artifact adoption', () => {
+  it('adopts the original Task target snapshot and opens that branch input after preserving the task page', async () => {
+    let data = fullProjection()
+    const task = makeTask('adoption-task', 'child', 'prompt')
+    data.tasks = [task]
+    data.branches[0]!.draft.prompt_input.positive_prompt = '当前分支手工文本'
+    data.branches[1]!.draft.prompt_input.positive_prompt = '目标分支手工文本'
+    const expected = structuredClone(data.branches[1]!.draft)
+    task.apply_target.expected = { 'prompt_input.positive_prompt': '任务创建时文本' }
+    data.artifacts = [{
+      artifact_id: 'adoption-prompt', task_id: task.task_id, type: 'prompt',
+      artifact: { type: 'prompt', positive_prompt: 'Agent 候选文本', negative_prompt: '候选负向文本' },
+      source_files: [], session_id: task.session_id!, turn: 1, call_id: 'publish', skill_refs: [],
+      disposition: 'candidate', applied_target: null, created_at: 2000,
+    }]
+    const onAction = vi.fn(async () => {
+      data = { ...data, branches: data.branches.map(branch => branch.branch_id === 'child'
+        ? { ...branch, draft: { ...branch.draft, prompt_input: { positive_prompt: 'Agent 候选文本', negative_prompt: '候选负向文本' } } } : branch),
+        artifacts: data.artifacts.map(artifact => ({ ...artifact, disposition: 'applied' as const })) }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child' }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getProjection: async () => structuredClone(data) } })
+    await click(renderer, '任务')
+    await click(renderer, '采用提示词')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: 'task-apply', taskId: 'adoption-task', branchId: 'child', id: 'adoption-prompt', value: expected,
+    }))
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    await click(renderer, '查看任务输入')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光探索')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('Agent 候选文本')
+    expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe('候选负向文本')
+  })
+})
+
+
+describe('experiment workbench current task artifact', () => {
+  it('renders only the latest non-question result with parameter IDs and one shared action row', async () => {
+    const data = fullProjection(), task = makeTask('latest-artifact', 'root', 'parameters')
+    data.tasks = [task]
+    const base = { task_id: task.task_id, source_files: [], session_id: task.session_id!, turn: 1, skill_refs: [], applied_target: null }
+    data.artifacts = [
+      { ...base, artifact_id: 'earlier-prompt', type: 'prompt', artifact: { type: 'prompt', positive_prompt: '先前结果', negative_prompt: '' }, call_id: 'old', disposition: 'applied', created_at: 1000 },
+      { ...base, artifact_id: 'latest-parameters', type: 'parameters', artifact: { type: 'parameters', parameters: { steps_71: 35, denoise_82: 0.6, enabled_91: false } }, call_id: 'new', disposition: 'candidate', created_at: 2000 },
+      { ...base, artifact_id: 'latest-question', type: 'question', artifact: { type: 'question', question: '还需要补充吗？', options: [] }, call_id: 'question', disposition: 'waiting_input', created_at: 3000 },
+    ]
+    const { renderer, onAction } = await mount(data)
+    await click(renderer, '任务')
+    const card = renderer.root.findByProps({ className: 'agent-task-card' })
+    const outputs = card.findAllByProps({ className: 'task-output' })
+    expect(outputs).toHaveLength(1)
+    expect(outputs[0]!.findAllByType('h3').map(nodeText)).toEqual(['参数建议'])
+    expect(outputs[0]!.findAllByType('dt').map(nodeText)).toEqual(['steps_71', 'denoise_82', 'enabled_91'])
+    expect(outputs[0]!.findAllByType('dd').map(nodeText)).toEqual(['35', '0.6', 'false'])
+    const actions = card.findByProps({ className: 'row task-actions' })
+    expect(actions.findAllByType('button').map(nodeText)).toEqual(['采用参数', '从产物创建分支'])
+    expect(JSON.parse(nodeText(card.findByProps({ 'aria-label': '产物 JSON' })))).toHaveLength(3)
+    await click(renderer, '采用参数')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'latest-parameters', value: data.branches[0]!.draft }))
+  })
+})
+
+
+describe('experiment workbench artifact adoption through Remote', () => {
+  it.each(['current', 'stale'] as const)('applies a %s displayed snapshot through the actual Remote and shows the target input', async version => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const root = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '候选采用', goal: '保留玻璃花房' } }, signal)
+      const otherWork = await host.remote.mutate({ type: 'new-work', workspaceId: root.workspaceId, value: { name: '其他工作', goal: '验证工作隔离' } }, signal)
+      const child = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '来源分支', original_request: '保留玻璃花房' } }, signal)
+      await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '任务创建时文本' }, signal)
+      const accepted = await host.remote.mutate({ ...child, type: 'agent-action', id: 'prompt' }, signal)
+      const workScope = { workspaceId: root.workspaceId, workId: root.workId }
+      const before = await host.remote.getProjection(workScope, signal), task = before.tasks.find(task => task.task_id === accepted.taskId)!
+      await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '第一次手工文本' }, signal)
+      const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'prompt', positive_prompt: 'Agent 候选文本', negative_prompt: '候选负向文本' } },
+        { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'candidate-prompt' })
+      expect(published.disposition).toBe('candidate')
+      const shown = await host.remote.getProjection(workScope, signal)
+      let frozen = true
+      const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+        frozen = false
+        return host.remote.mutate(request, signal)
+      })
+      const { renderer } = await mount(shown, {
+        workspaceId: root.workspaceId, workspaces: [{ id: root.workspaceId, name: '测试工作区', path: '/workspace/project' }],
+        onAction,
+        remote: { getProjection: async scope => frozen ? structuredClone(shown) : host.remote.getProjection(scope, signal),
+          getInputDescription: scope => host.remote.getInputDescription(scope, signal) },
+      })
+      await click(renderer, '任务')
+      if (version === 'stale') await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '第二窗口手工文本' }, signal)
+      await click(renderer, '采用提示词')
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+        type: 'task-apply', branchId: child.branchId, id: published.artifact_id,
+        value: expect.objectContaining({ prompt_input: { positive_prompt: '第一次手工文本', negative_prompt: '' } }),
+      }))
+      expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+      if (version === 'current') await click(renderer, '查看任务输入')
+      else {
+        expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('目标内容已改变')
+        await change(renderer, '切换工作', otherWork.workId!)
+        await change(renderer, '切换工作', root.workId!)
+        await click(renderer, '切换分支 来源分支')
+      }
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('来源分支')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(version === 'current' ? 'Agent 候选文本' : '第二窗口手工文本')
+      expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe(version === 'current' ? '候选负向文本' : '')
+      await act(() => renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
+
+describe('experiment workbench recommended resource details', () => {
+  it('shows actual candidate names and opens the matching Catalog detail without changing current resources', async () => {
+    const data = fullProjection(), task = makeTask('resource-candidate', 'child', 'resources'), catalog = makeCatalog()
+    data.tasks = [task]
+    data.artifacts = [{ artifact_id: 'resource-proposal', task_id: task.task_id, type: 'resources',
+      artifact: { type: 'resources', refs: [{ kind: 'lora', id: '13' }, { kind: 'work', id: '14' }], reason: '用于玻璃细节' },
+      source_files: [], session_id: task.session_id!, turn: 1, call_id: 'resources', skill_refs: [], disposition: 'candidate', applied_target: null, created_at: 1000 }]
+    const original = structuredClone(data.branches[0]!.draft)
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '任务')
+    const output = renderer.root.findByProps({ className: 'agent-task-card' }).findByProps({ className: 'task-output' })
+    expect(output.findAllByType('b').map(nodeText)).toEqual(['玻璃 LoRA', '花房作品'])
+    expect(output.findAllByType('button').map(nodeText)).toEqual(['查看详情', '查看详情'])
+    await act(async () => output.findAllByType('button')[0]!.props.onClick())
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['玻璃 LoRA'])
+    expect(catalog.details).toHaveBeenCalledWith({ kind: 'lora', id: '13' }, expect.any(AbortSignal))
+    expect(onAction).not.toHaveBeenCalled()
+    expect(data.branches[0]!.draft).toEqual(original)
+    await click(renderer, '任务')
+    expect(renderer.root.findByProps({ className: 'agent-task-card' }).props['data-task']).toBe('resource-candidate')
+  })
+})
+
+
+describe('experiment workbench generation artifact presentation', () => {
+  it('retains generation input in task detail JSON without adding a result preview or adoption control', async () => {
+    const data = fullProjection(), task = makeTask('generation-artifact', 'root')
+    data.tasks = [task]
+    data.runs = []
+    data.artifacts = [{ artifact_id: 'generation-proposal', task_id: task.task_id, type: 'generation_input',
+      artifact: { type: 'generation_input', generation_input: data.branches[0]!.draft.generation_input, context_refs: [] },
+      source_files: [], session_id: task.session_id!, turn: 1, call_id: 'generation', skill_refs: [], disposition: 'candidate', applied_target: null, created_at: 1000 }]
+    const { renderer } = await mount(data)
+    await click(renderer, '任务')
+    const card = renderer.root.findByProps({ className: 'agent-task-card' })
+    expect(card.findAllByProps({ className: 'task-output' })).toHaveLength(0)
+    expect(card.findByProps({ className: 'row task-actions' }).findAllByType('button').map(nodeText)).toEqual(['从产物创建分支'])
+    expect(JSON.parse(nodeText(card.findByProps({ 'aria-label': '产物 JSON' })))).toEqual([data.artifacts[0]!.artifact])
+  })
+})
+
+
+describe('experiment workbench Agent result delivery through Remote', () => {
+  it.each(['prompt', 'rewrite', 'parameters'] as const)('submits %s from its visible dialog and displays the actual published result', async kind => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const root = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Agent 结果', goal: '玻璃花房' } }, signal)
+      const workScope = { workspaceId: root.workspaceId, workId: root.workId! }
+      const other = await host.remote.mutate({ type: 'new-work', workspaceId: root.workspaceId, value: { name: '刷新来源', goal: '验证结果刷新' } }, signal)
+      await host.remote.mutate({ ...root, type: 'resource-select', id: '2', value: { kind: 'model', id: '2' } }, signal)
+      if (kind === 'rewrite') {
+        await host.remote.mutate({ ...root, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+        await host.remote.mutate({ ...root, type: 'resource-select', id: '5', value: { kind: 'comfyui-template', id: '5' } }, signal)
+        await host.remote.mutate({ ...root, type: 'resource-select', id: '3', value: { kind: 'lora', id: '3' } }, signal)
+      }
+      await host.remote.mutate({ ...root, type: 'update-draft', field: 'positive_prompt', value: '保留的正向词' }, signal)
+      const child = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '另一分支', original_request: '独立场景' } }, signal)
+      await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '另一分支原文' }, signal)
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
+      const { renderer } = await mount(await host.remote.getProjection(workScope, signal), {
+        workspaceId: root.workspaceId, workspaces: environment.workspaces, presets: environment.presets, instances: environment.instances,
+        baseModels: [{ id: '1', label: 'SDXL' }], catalog: { ...makeCatalog(), search: host.catalog.search, details: host.catalog.details }, onAction,
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) },
+      })
+      await click(renderer, { prompt: '生成提示词', rewrite: '改写提示词', parameters: '建议参数' }[kind])
+      const instructions = '  保留窗框\n调整自然光  '
+      await change(renderer, '任务要求', instructions)
+      if (kind === 'parameters') {
+        await change(renderer, '任务 ComfyUI 实例', '8')
+        await change(renderer, '任务 Workflow 模板', '5')
+      }
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'agent-action', id: kind, branchId: root.branchId }))
+      const accepted = await host.remote.getProjection(workScope, signal), task = accepted.tasks[0]!
+      expect(task.input.requirements.instructions).toBe('保留窗框\n调整自然光')
+      if (kind === 'prompt') expect(task.input.generation_input).toMatchObject({ instance_id: null, template_id: null })
+      const acceptedDraft = accepted.branches.find(branch => branch.branch_id === root.branchId)!.draft
+      if (kind === 'rewrite') await click(renderer, '切换分支 另一分支')
+      const artifact: ArtifactPayload = kind === 'parameters'
+        ? { type: 'parameters', parameters: { steps: 35 } }
+        : { type: 'prompt', positive_prompt: '  Agent 正向词\n保留换行  ', negative_prompt: 'Agent 负向词' }
+      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
+        { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'result-' + kind })
+      await change(renderer, '切换工作', other.workId!)
+      await change(renderer, '切换工作', root.workId!)
+      if (kind === 'rewrite') {
+        await click(renderer, '切换分支 另一分支')
+        expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('另一分支原文')
+        await click(renderer, '切换分支 主分支')
+      }
+      if (kind === 'parameters') {
+        expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('35')
+        expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('保留的正向词')
+      } else {
+        expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('  Agent 正向词\n保留换行  ')
+        expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe('Agent 负向词')
+      }
+      const after = await host.remote.getProjection(workScope, signal), resultDraft = after.branches.find(branch => branch.branch_id === root.branchId)!.draft
+      expect(after.runs).toHaveLength(0)
+      expect(resultDraft.generation_input).toEqual(kind === 'parameters'
+        ? { ...acceptedDraft.generation_input, parameters: { ...acceptedDraft.generation_input.parameters, steps: 35 } } : acceptedDraft.generation_input)
+      await act(() => renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
+
+describe('experiment workbench current artifact conflict state', () => {
+  it('shows the latest applied result without carrying an earlier candidate conflict into the card', async () => {
+    const data = fullProjection(), task = makeTask('updated-result', 'root', 'prompt')
+    task.output_contract.apply_mode = 'automatic'
+    data.tasks = [task]
+    const base = { task_id: task.task_id, type: 'prompt' as const, source_files: [], session_id: task.session_id!, turn: 1, skill_refs: [], applied_target: null }
+    data.artifacts = [
+      { ...base, artifact_id: 'old-candidate', artifact: { type: 'prompt', positive_prompt: '先前候选', negative_prompt: '' }, call_id: 'old', disposition: 'candidate', created_at: 1000 },
+      { ...base, artifact_id: 'current-applied', artifact: { type: 'prompt', positive_prompt: '当前结果', negative_prompt: '' }, call_id: 'current', disposition: 'applied', created_at: 2000 },
+    ]
+    const { renderer } = await mount(data)
+    await click(renderer, '任务')
+    const card = renderer.root.findByProps({ className: 'agent-task-card' })
+    expect(card.findAllByProps({ className: 'task-conflict' })).toHaveLength(0)
+    expect(nodeText(card.findByProps({ className: 'task-output' }))).toContain('当前结果')
+    expect(card.findByProps({ className: 'row task-actions' }).findAllByType('button').map(nodeText)).toEqual(['从产物创建分支', '查看任务输入'])
+  })
+})
+
+
+describe('experiment workbench resource adoption through Remote', () => {
+  it.each([true, false])('adopts a compatible=%s resource through its task and preserves selection after rejection', async compatible => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const root = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '资源候选', goal: '玻璃细节' } }, signal)
+      const scope = { workspaceId: root.workspaceId, workId: root.workId! }
+      await host.remote.mutate({ ...root, type: 'resource-select', id: '2', value: { kind: 'model', id: '2' } }, signal)
+      await host.remote.mutate({ ...root, type: 'resource-select', id: '3', value: { kind: 'lora', id: '3' } }, signal)
+      const accepted = await host.remote.mutate({ ...root, type: 'agent-action', id: 'resources' }, signal)
+      const task = (await host.remote.getProjection(scope, signal)).tasks.find(task => task.task_id === accepted.taskId)!
+      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'lora', id: '4' }], reason: '保留玻璃细节' } },
+        { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'resource-candidate' })
+      const details = host.catalog.details.getMockImplementation()!
+      host.catalog.details.mockImplementation(async (request, requestSignal) => {
+        const result = await details(request, requestSignal)
+        return request.kind === 'lora' && request.id === '4'
+          ? { ...result, item: { ...result.item, label: '候选 LoRA', baseModelId: compatible ? '1' : '2' } } : result
+      })
+      const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
+        workspaceId: root.workspaceId, workspaces: [{ id: root.workspaceId, name: '测试工作区', path: '/workspace/project' }],
+        catalog: { ...makeCatalog(), details: host.catalog.details }, onAction,
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal) },
+      })
+      const picked = () => renderer.root.findAllByProps({ className: 'picked-lora' })
+      expect(picked()).toHaveLength(1)
+      await click(renderer, '任务')
+      expect(renderer.root.findByProps({ className: 'task-output' }).findAllByType('b').map(nodeText)).toEqual(['候选 LoRA'])
+      expect(picked()).toHaveLength(1)
+      const beforeAdoption = await host.remote.getProjection(scope, signal)
+      await click(renderer, '采用资源')
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-apply', taskId: task.task_id }))
+      expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+      if (compatible) {
+        await click(renderer, '查看任务输入')
+        expect(picked()).toHaveLength(2)
+        expect(picked().map(nodeText).join('')).toContain('候选 LoRA')
+      } else {
+        const message = nodeText(renderer.root.findByProps({ className: 'toast' }))
+        expect(message).toContain('候选 LoRA')
+        expect(message).toContain('ID：4')
+        expect(message).toContain('底模 ID 要求为 2')
+        expect(message).toContain('当前为 1')
+        expect(picked()).toHaveLength(1)
+        expect(picked().map(nodeText).join('')).toContain('rain.safetensors')
+        const rejected = await host.remote.getProjection(scope, signal)
+        expect(rejected.branches).toEqual(beforeAdoption.branches)
+        expect(rejected.artifacts).toEqual(beforeAdoption.artifacts)
+      }
+      await act(() => renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
+
+describe('experiment workbench artifact branch through Remote', () => {
+  it.each(['prompt', 'parameters'] as const)('creates a %s candidate branch from its original Task while another branch is selected', async kind => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const source = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '候选分支', goal: '接纳时需求' } }, signal)
+      const scope = { workspaceId: source.workspaceId, workId: source.workId! }
+      await host.remote.mutate({ ...source, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
+      if (kind === 'parameters') {
+        await host.remote.mutate({ ...source, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+        await host.remote.mutate({ ...source, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
+      }
+      await host.remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: '接纳时提示词' }, signal)
+      const accepted = await host.remote.mutate({ ...source, type: 'agent-action', id: kind }, signal)
+      const task = (await host.remote.getProjection(scope, signal)).tasks.find(task => task.task_id === accepted.taskId)!
+      await host.remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: '父分支手工文本' }, signal)
+      if (kind === 'parameters') {
+        await host.remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'steps', value: 35 }, signal)
+        await host.remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'seed', value: 99 }, signal)
+      } else await host.remote.mutate({ ...source, type: 'update-draft', field: 'instance_id', value: '9' }, signal)
+      const selected = await host.remote.mutate({ ...source, type: 'create-branch', value: { name: '其他分支', original_request: '其他需求' } }, signal)
+      await host.remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: '另一分支手工文本' }, signal)
+      const artifact: ArtifactPayload = kind === 'prompt'
+        ? { type: 'prompt', positive_prompt: '候选分支提示词', negative_prompt: '候选负向词' }
+        : { type: 'parameters', parameters: { steps: 28 } }
+      const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
+        { workspaceId: source.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'branch-candidate' })
+      const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
+        workspaceId: source.workspaceId, workspaces: [{ id: source.workspaceId, name: '测试工作区', path: '/workspace/project' }], onAction,
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal) },
+      })
+      await click(renderer, '切换分支 其他分支')
+      await click(renderer, '任务')
+      await click(renderer, '从产物创建分支')
+      const name = '主分支 · ' + task.title
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-branch', taskId: task.task_id, branchId: source.branchId, id: published.artifact_id, value: { name } }))
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(name)
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(kind === 'prompt' ? '候选分支提示词' : '接纳时提示词')
+      if (kind === 'parameters') {
+        expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('28')
+        expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('17')
+      } else expect(renderer.root.findByProps({ 'aria-label': 'ComfyUI 实例' }).props.value).toBe('')
+      const projection = await host.remote.getProjection(scope, signal), created = projection.branches.find(branch => branch.name === name)!
+      expect(created).toMatchObject({ parent_branch_id: source.branchId, source_artifact_id: published.artifact_id, original_request: '接纳时需求' })
+      expect(renderer.root.findAllByProps({ title: published.artifact_id }).length).toBeGreaterThan(0)
+      expect(renderer.root.findAllByProps({ className: 'run-card' })).toHaveLength(0)
+      await click(renderer, '切换分支 主分支')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('父分支手工文本')
+      await click(renderer, '切换分支 其他分支')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('另一分支手工文本')
+      await click(renderer, '任务')
+      expect(JSON.parse(nodeText(renderer.root.findByProps({ 'aria-label': '产物 JSON' })))).toEqual([artifact])
+      await act(() => renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
+
+describe('experiment workbench artifact branch eligibility', () => {
+  it.each(['generation', 'review-candidate', 'review-only', 'resources', 'experiment'] as const)('matches the prototype branch eligibility for %s', async variant => {
+    const data = fullProjection(), task = makeTask('eligible-artifact', 'root', variant === 'experiment' ? 'experiment' : variant.startsWith('review') ? 'review' : 'run')
+    data.tasks = [task]
+    const candidate = { generation_input: data.branches[0]!.draft.generation_input, context_refs: [] }
+    const artifact: ArtifactPayload = variant === 'generation' ? { type: 'generation_input', ...candidate }
+      : variant === 'resources' ? { type: 'resources', refs: [{ kind: 'lora', id: '13' }], reason: '保留依据' }
+        : variant === 'experiment' ? { type: 'prompt', positive_prompt: '实验结果', negative_prompt: '' }
+          : { type: 'review', observation: '光线清晰', conclusion: '保留构图', run_ids: [], ...(variant === 'review-candidate' ? { candidate } : {}) }
+    const base = { task_id: task.task_id, source_files: [], session_id: task.session_id!, turn: 1, skill_refs: [], applied_target: null }
+    data.artifacts = [
+      { ...base, artifact_id: 'earlier-eligible', type: 'prompt', artifact: { type: 'prompt', positive_prompt: '先前产物', negative_prompt: '' }, call_id: 'earlier', disposition: 'candidate', created_at: 1000 },
+      { ...base, artifact_id: 'latest-eligible', type: artifact.type, artifact, call_id: 'latest', disposition: 'candidate', created_at: 2000 },
+    ]
+    const { renderer, onAction } = await mount(data)
+    await click(renderer, '任务')
+    const card = renderer.root.findByProps({ className: 'agent-task-card' }), controls = card.findByProps({ className: 'row task-actions' }).findAllByType('button').map(nodeText)
+    const allowed = variant === 'generation' || variant === 'review-candidate'
+    expect(controls.includes('从产物创建分支')).toBe(allowed)
+    if (variant === 'review-candidate') {
+      const details = card.findByProps({ className: 'task-output' }).findAllByType('details')[0]!
+      expect(details.findAllByType('summary').map(nodeText)).toEqual(['查看建议输入'])
+      expect(JSON.parse(nodeText(details.findAllByType('pre')[0]!))).toEqual(candidate)
+    }
+    expect(JSON.parse(nodeText(card.findByProps({ 'aria-label': '产物 JSON' })))).toHaveLength(2)
+    if (allowed) {
+      await click(renderer, '从产物创建分支')
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+        type: 'task-branch', taskId: task.task_id, branchId: 'root', id: 'latest-eligible', value: { name: '主分支 · 任务 eligible-artifact' },
+      }))
+    }
+  })
+})
+
+
+describe('experiment workbench long artifact branch name', () => {
+  it('preserves the complete prototype automatic name when a forty-character parent creates an artifact branch', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const source = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '长名称来源', goal: '保留完整自动名称' } }, signal)
+      const scope = { workspaceId: source.workspaceId, workId: source.workId! }, parentName = '长父分支'.repeat(10)
+      await host.remote.mutate({ ...source, type: 'update-branch', field: 'name', value: parentName, expectedValue: '主分支' }, signal)
+      await host.remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: '固定输入' }, signal)
+      const accepted = await host.remote.mutate({ ...source, type: 'agent-action', id: 'prompt' }, signal)
+      const task = (await host.remote.getProjection(scope, signal)).tasks.find(task => task.task_id === accepted.taskId)!
+      await host.remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: '父分支手工输入' }, signal)
+      const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
+        artifact: { type: 'prompt', positive_prompt: '长名称候选输入', negative_prompt: '候选负向词' } },
+        { workspaceId: source.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'long-name-candidate' })
+      const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
+        workspaceId: source.workspaceId, workspaces: [{ id: source.workspaceId, name: '测试工作区', path: '/workspace/project' }], onAction,
+        remote: { getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal) },
+      })
+      await click(renderer, '任务')
+      await click(renderer, '从产物创建分支')
+      const expectedName = parentName + ' · ' + task.title
+      expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-branch', branchId: source.branchId, id: published.artifact_id, value: { name: expectedName } }))
+      expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)).toEqual([])
+      expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(expectedName)
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('长名称候选输入')
+      expect(renderer.root.findByProps({ 'aria-label': '负向提示词' }).props.value).toBe('候选负向词')
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      await change(renderer, '正向提示词', '长名分支后续编辑')
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(expectedName)
+      const projection = await host.remote.getProjection(scope, signal), created = projection.branches.find(branch => branch.name === expectedName)!
+      expect(created).toMatchObject({ parent_branch_id: source.branchId, source_artifact_id: published.artifact_id,
+        draft: { prompt_input: { positive_prompt: '长名分支后续编辑', negative_prompt: '候选负向词' } } })
+      expect(projection.branches.find(branch => branch.branch_id === source.branchId)!.draft.prompt_input.positive_prompt).toBe('父分支手工输入')
+      await act(() => renderer.unmount())
+    } finally { await host.dispose() }
   })
 })

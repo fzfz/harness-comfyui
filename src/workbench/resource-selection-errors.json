@@ -1,0 +1,23 @@
+{
+  "modelChangeMismatch": {
+    "code": "WORKBENCH_EDIT_CONFLICT",
+    "message": "当前需要移除的资源与确认清单不一致，请重新选择模型。",
+    "path": "value.confirmedRemovals"
+  },
+  "incompatible": {
+    "code": "WORKBENCH_RESOURCE_INCOMPATIBLE",
+    "message": "资源“{name}”（ID：{id}）无法采用。{conflicts}。请更换生成模型或选择其他资源。",
+    "path": "value.id",
+    "constraints": {
+      "baseModelId": {
+        "selected": "底模 ID 要求为 {required}，当前为 {actual}",
+        "unselected": "底模 ID 要求为 {required}，当前尚未选择底模"
+      },
+      "modelId": {
+        "selected": "模型 ID 要求为 {required}，当前为 {actual}",
+        "unselected": "模型 ID 要求为 {required}，当前尚未选择模型"
+      }
+    },
+    "separator": "；"
+  }
+}

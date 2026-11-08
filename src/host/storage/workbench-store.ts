@@ -8,6 +8,7 @@ import { equalValue, jsonValue, validateArtifact, validateFunctionBinding, valid
 import { deriveTaskStatus, isFinishedRun } from '../../workbench/state.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
 import { renderRequestTemplate } from '../../workbench/request-template.ts'
+import artifactAdoptionErrors from '../../workbench/artifact-adoption-errors.json' with { type: 'json' }
 import { transaction } from './transaction.ts'
 
 type Row = Record<string, unknown>
@@ -94,7 +95,7 @@ export class WorkbenchStore {
   }
   private insertBranch(input: { workId: string; name: string; originalRequest: string; draft: TaskDraft; parentBranchId?: string; sourceRunId?: string; sourceArtifactId?: string; sourceExperienceId?: string; execution?: ExecutionDraft }): Branch {
     this.getWork(input.workId)
-    if (!input.name.trim() || input.name.length > 40 || !input.originalRequest.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写分支名称和原始需求；名称最多 40 字。')
+    if (!input.name.trim() || !input.originalRequest.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写分支名称和原始需求。')
     if (input.parentBranchId && this.getBranch(input.parentBranchId).work_id !== input.workId) fail('WORKBENCH_SCOPE_MISMATCH', '父分支必须属于当前工作。')
     if (input.sourceRunId && input.sourceArtifactId) fail('WORKBENCH_INVALID_INPUT', '请选择一种分支输入来源。')
     if (input.sourceRunId) this.assertRunInWork(input.sourceRunId, input.workId)
@@ -259,6 +260,17 @@ export class WorkbenchStore {
     else this.run('UPDATE generation_runs SET review_draft_json=? WHERE run_id=?', JSON.stringify(current), target.id)
     return true
   }
+  private artifactResourceError(task: Task, artifact: ArtifactPayload): WorkbenchError | null {
+    if (artifact.type !== 'prompt' && artifact.type !== 'parameters') return null
+    const current = this.getBranch(task.branch_id).draft.generation_input
+    const original = task.input.generation_input
+    const problem = artifact.type === 'prompt' && current.model?.id !== original.model?.id
+      ? artifactAdoptionErrors.modelMismatch
+      : artifact.type === 'parameters' && (current.template_id !== original.template_id || current.instance_id !== original.instance_id)
+        ? artifactAdoptionErrors.templateMismatch
+        : null
+    return problem ? new WorkbenchError(problem.code, problem.message, problem.path) : null
+  }
   publish(taskId: string, raw: unknown, identity: WorkbenchIdentity, skillRefs: SkillReadRef[] = []): PublishReceipt {
     const artifact = validateArtifact(raw); const task = this.getTask(taskId)
     this.validateArtifactForTask(task, artifact)
@@ -274,7 +286,7 @@ export class WorkbenchStore {
         const patch = this.artifactPatch(task, artifact)
         if (artifact.type === 'review') patch.review_artifact_id = artifactId
         if (artifact.type === 'experience') patch.experience_artifact_id = artifactId
-        if (task.output_contract.apply_mode === 'automatic' && artifact.type !== 'question') disposition = this.applyPatch(task, patch, task.apply_target.expected) ? 'applied' : 'candidate'
+        if (task.output_contract.apply_mode === 'automatic' && artifact.type !== 'question') disposition = !this.artifactResourceError(task, artifact) && this.applyPatch(task, patch, task.apply_target.expected) ? 'applied' : 'candidate'
         const applied = disposition === 'applied' ? { kind: task.apply_target.kind, id: task.apply_target.id, fields: Object.keys(patch) } : null
         this.run('INSERT INTO workbench_task_artifacts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)', artifactId, taskId, artifact.type, JSON.stringify(artifact), JSON.stringify(sourceFiles), identity.sessionId, identity.turn, identity.callId, JSON.stringify(skillRefs), disposition, applied ? JSON.stringify(applied) : null, Date.now(), JSON.stringify({ task_id: taskId, artifact_id: artifactId, disposition }))
         if (artifact.type === 'review') for (const runId of artifact.run_ids) this.run('UPDATE generation_runs SET review_artifact_id=? WHERE run_id=? AND workbench_task_id=?', artifactId, runId, taskId)
@@ -296,6 +308,8 @@ export class WorkbenchStore {
     return transaction(this.database, () => {
       const stored = this.getArtifact(input.artifactId); const task = this.getTask(stored.task_id)
       if (stored.artifact.type === 'question') fail('WORKBENCH_INVALID_INPUT', '请通过回答入口回答此问题。')
+      const resourceError = this.artifactResourceError(task, stored.artifact)
+      if (resourceError) throw resourceError
       let patch = this.artifactPatch(task, stored.artifact, input.candidate)
       if (stored.artifact.type === 'resources') {
         if (input.resolvedDraft) {
@@ -464,7 +478,9 @@ export class WorkbenchStore {
     const totalBranchCount = this.row('SELECT COUNT(*) AS count FROM workbench_branches')!.count as number
     const tasks = this.listTasks(input.workspaceId, input.workId, input.branchId).map(task => this.refreshTask(task.task_id))
     const workIds = input.workId ? [input.workId] : this.listWorks(input.workspaceId).map(work => work.work_id)
-    const branches = workIds.flatMap(id => this.listBranches(id)); const runs = tasks.flatMap(task => this.listRuns(task.task_id)); const experiences = workIds.flatMap(id => this.listExperiences(id))
+    const branches = workIds.flatMap(id => this.listBranches(id))
+    const runs = tasks.flatMap(task => this.listRuns(task.task_id)).map(run => ({ ...run, review_draft: this.getRunReviewDraft(run.run_id) }))
+    const experiences = workIds.flatMap(id => this.listExperiences(id))
     const favorites = this.rows('SELECT * FROM workbench_favorites').filter(row => row.target_type === 'run' ? runs.some(run => run.run_id === row.target_id) : experiences.some(experience => experience.experience_id === row.target_id)) as unknown as Favorite[]
     return { workspace_id: input.workspaceId, total_branch_count: totalBranchCount, work_id: input.workId ?? null, works: this.listWorks(input.workspaceId), branches, tasks, artifacts: tasks.flatMap(task => this.listArtifacts(task.task_id)), runs, experiments: tasks.flatMap(task => { const experiment = this.getExperiment(task.task_id); return experiment ? [experiment] : [] }), experiences, favorites, functions: this.listFunctionBindings(input.workspaceId), refreshAfterMs: input.refreshAfterMs ?? 1000 }
   }

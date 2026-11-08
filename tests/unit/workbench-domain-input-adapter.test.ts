@@ -13,6 +13,23 @@ import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeSizeCandidate } f
 import type { GenerationRequest } from '../../src/generation/submission-contract.js'
 import type { JsonValue, TaskDraft } from '../../src/workbench/contract.js'
 
+import { CATALOG_PRESENTATION, parseCatalogDetails, type CatalogDetailsRequest } from '../../src/catalog/details-schema.ts'
+
+function catalogDetails({ kind, id }: CatalogDetailsRequest) {
+  const context = {
+    model: { kind: 'model', id, file_name: 'model.safetensors' },
+    lora: { kind: 'lora', id, file_name: 'glass.safetensors' },
+    work: { kind: 'work', id, name: 'Work' },
+    character: { kind: 'character', id, work_name: 'Work', character_name: 'Character', prompt_text: 'character' },
+    style: { kind: 'style', id, name: 'Style', prompt_text: 'style' },
+    'prompt-term': { kind: 'prompt-term', id, tag: 'rain' },
+    'artist-string': { kind: 'artist-string', id, title: 'Artists', prompt_text: '@artist' },
+    'comfyui-template': { kind: 'comfyui-template', id, title: 'Template' },
+  }[kind]
+  return parseCatalogDetails({ kind, id, item: {
+    context, baseModelId: kind === 'model' ? '5' : null, modelId: null, label: 'Catalog item', subtitle: '', coverUrl: null, sampleImageUrls: [],
+  }, fields: CATALOG_PRESENTATION.kinds[kind].details.map(key => ({ key, value: key === 'id' ? id : null })) })
+}
 const draft: TaskDraft = { prompt_input: { positive_prompt: 'rain on glass', negative_prompt: '' }, generation_input: { title: 'rain', instance_id: '1', template_id: '2', model: null, parameters: {}, loras: [] }, context_refs: [], base_model_id: null }
 const workflow: UiWorkflow = { version: 0.4, nodes: [
   { id: 1, type: 'Generator', mode: 0, inputs: [{ name: 'width', type: 'INT', link: null, widget: { name: 'width' } }, { name: 'steps', type: 'INT', link: null, widget: { name: 'steps' } }, { name: 'sampler_name', type: 'COMBO', link: null, widget: { name: 'sampler_name' } }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }], widgets_values: [512, 5, 'euler'] },
@@ -37,7 +54,7 @@ describe('workbench generation input adapter', () => {
     expect(await adapter.parameterIds(draft.generation_input)).toEqual(['positive_prompt_9', ...Object.keys(defaults)])
     await adapter.validateParameters(draft.generation_input, defaults)
     expect(validate.mock.calls[0]![0].parameters).toEqual(defaults)
-    const selected = await adapter.resolveResourceRefs([{ kind: 'comfyui-template', id: '2' }], draft)
+    const selected = await adapter.resolveResourceSelection({ kind: 'comfyui-template', id: '2' }, draft)
     expect(selected.generation_input.parameters).toEqual({ positive_prompt_9: 'template prompt', ...defaults })
     expect(flattenWorkflowRuntimeParameters({ parameters: description.parameters, size_candidates: [candidate, candidate] }).map(parameter => parameter.parameter_id)).toEqual(['positive_prompt_9', ...Object.keys(defaults)])
   })
@@ -193,12 +210,12 @@ describe('workbench generation input adapter', () => {
   })
 
   it('resolves all resource classes using catalog files and template defaults while preserving existing selections', async () => {
-    const catalog = { details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(async (id: string) => ({ id, file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async (id: string) => ({ id, file_name: 'glass.safetensors', weight: 0.7, trigger_words: ['glass'], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'template', base_model_id: '5', model_id: '3' })) }
+    const catalog = { details: vi.fn(async (request: CatalogDetailsRequest) => catalogDetails(request)), resolveGenerationModel: vi.fn(async (id: string) => ({ id, file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async (id: string) => ({ id, file_name: 'glass.safetensors', weight: 0.7, trigger_words: ['glass'], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'template', base_model_id: '5', model_id: '3' })) }
     const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'width_1', kind: 'width', value_type: 'integer', current_value: 512 }], size_candidates: [] }), validateGenerationRequest: async () => {} }, catalog })
-    const current = structuredClone(draft); current.generation_input.loras = [{ id: '4', file_name: 'old.safetensors', weight: 1, trigger_words: [] }]; current.context_refs = [{ kind: 'character', id: '7' }, { kind: 'style', id: '8' }]
+    const current = structuredClone(draft); current.generation_input.template_id = null; current.generation_input.loras = [{ id: '4', file_name: 'old.safetensors', weight: 1, trigger_words: [] }]; current.context_refs = [{ kind: 'character', id: '7' }, { kind: 'style', id: '8' }]
     const resolved = await adapter.resolveResourceRefs([{ kind: 'model', id: '3' }, { kind: 'lora', id: '4' }, { kind: 'comfyui-template', id: '2' }, { kind: 'character', id: '7' }], current)
-    expect(resolved).toMatchObject({ base_model_id: '5', context_refs: [{ kind: 'style', id: '8' }, { kind: 'character', id: '7' }], generation_input: { model: { id: '3', file_name: 'model.safetensors' }, parameters: { width_1: 512 }, loras: [{ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: ['glass'] }] } })
-    const unselected = await adapter.resolveResourceRefs([{ kind: 'comfyui-template', id: '2' }], { ...draft, generation_input: { ...draft.generation_input, instance_id: null } })
+    expect(resolved).toMatchObject({ base_model_id: '5', context_refs: [{ kind: 'style', id: '8' }, { kind: 'character', id: '7' }], generation_input: { model: { id: '3', file_name: 'model.safetensors' }, parameters: { width_1: 512 }, loras: [{ id: '4', file_name: 'glass.safetensors', weight: 1, trigger_words: ['glass'] }] } })
+    const unselected = await adapter.resolveResourceSelection({ kind: 'comfyui-template', id: '2' }, { ...draft, generation_input: { ...draft.generation_input, instance_id: null } })
     expect(unselected.base_model_id).toBe('5')
     expect(await adapter.parameterIds(draft.generation_input)).toEqual(['width_1'])
     await adapter.validateReferences([{ kind: 'work', id: '6' }])
@@ -233,7 +250,7 @@ describe('workbench generation input adapter', () => {
   it('reports catalog failures, filename mismatches and runtime field errors at the published artifact path', async () => {
     let failure: unknown
     const runtime = { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'width_1', kind: 'width' as const, value_type: 'integer' as const, current_value: 512 }], size_candidates: [] }), validateGenerationRequest: async () => { if (failure) throw failure } }
-    const catalog = { details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(async () => ({ id: '3', file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async () => ({ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: [], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: '3' })) }
+    const catalog = { details: vi.fn(async (request: CatalogDetailsRequest) => catalogDetails(request)), resolveGenerationModel: vi.fn(async () => ({ id: '3', file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async () => ({ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: [], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: '3' })) }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog })
     const input = { ...draft.generation_input, model: { id: '3', file_name: 'model.safetensors' }, loras: [{ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: [] }] }
     await adapter.validateGenerationInput(input)
@@ -284,7 +301,7 @@ describe('workbench generation input adapter', () => {
 
   it('maps prompts to inspected parameter ids and delegates proposed parameter values to runtime validation', async () => {
     const validate = vi.fn(async (_request: GenerationRequest) => {})
-    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt', value_type: 'string', current_value: '' }, { parameter_id: 'width_1', kind: 'width', value_type: 'integer', current_value: 512, minimum: 64, maximum: 2048 }], size_candidates: [] }), validateGenerationRequest: validate }, catalog: { details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() } })
+    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt', value_type: 'string', current_value: '' }, { parameter_id: 'width_1', kind: 'width', value_type: 'integer', current_value: 512, minimum: 64, maximum: 2048 }], size_candidates: [] }), validateGenerationRequest: validate }, catalog: { details: vi.fn(async (request: CatalogDetailsRequest) => catalogDetails(request)), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() } })
     const prepared = await adapter.prepareGenerationInput(draft)
     expect(prepared.parameters).toEqual({ positive_prompt_9: 'rain on glass' })
     await expect(adapter.prepareGenerationInput({ ...draft, prompt_input: { positive_prompt: 'rain on glass', negative_prompt: 'blur' } })).rejects.toMatchObject({ code: 'WORKBENCH_PROMPT_PARAMETER_REQUIRED', issues: [{ path: 'prompt_input.negative_prompt' }] })
