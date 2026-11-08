@@ -1,4 +1,6 @@
 import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeParameterInspectionParameter } from '../../generation/inspection-contract.ts'
+import type { WorkbenchModelChangePreview, WorkbenchModelChangeRef } from '../../workbench-remote.ts'
+import { catalogDefinition } from '../../catalog/contract.ts'
 import type { CatalogClient } from '../catalog/catalog-client.ts'
 import type { GenerationRuntime } from '../generation/generation-runtime.ts'
 import { GenerationInputValidationError } from '../generation/workflow-compiler.ts'
@@ -8,14 +10,17 @@ import { validateGenerationInput as validateStructure, validateContextRefs, Work
 
 export interface WorkbenchInputAdapterOptions {
   runtime: Pick<GenerationRuntime, 'inspectTemplateRuntimeParameters' | 'validateGenerationRequest'>
-  catalog: Pick<CatalogClient, 'details' | 'resolveGenerationModel' | 'resolveLora' | 'resolveTemplate'>
+  catalog: Pick<CatalogClient, 'details' | 'resolveGenerationModel' | 'resolveLora' | 'resolveTemplate' | 'compatibleResourceIds'>
   signal?: AbortSignal
 }
 
 export function createWorkbenchInputAdapter({ runtime, catalog, signal = new AbortController().signal }: WorkbenchInputAdapterOptions) {
   const resourceAt = async <T>(read: Promise<T>, path: string): Promise<T> => {
     try { return await read }
-    catch (error) { throw new WorkbenchError('WORKBENCH_RESOURCE_UNAVAILABLE', error instanceof Error ? error.message : String(error), path) }
+    catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') throw error
+      throw new WorkbenchError('WORKBENCH_RESOURCE_UNAVAILABLE', error instanceof Error ? error.message : String(error), path)
+    }
   }
   const generationAt = async <T>(read: () => Promise<T>, path: string): Promise<T> => {
     try { return await read() }
@@ -119,5 +124,27 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
     }
     return draft
   }
-  return { prepareGenerationInput, resolveGenerationDraft, resolveResourceRefs, validateGenerationInput, validateParameters, validateReferences, parameterIds: async (input: GenerationInput) => flattenWorkflowRuntimeParameters(await inspect(input)).map(parameter => parameter.parameter_id) }
+  const previewModelChange = async (modelId: string, current: TaskDraft, requestSignal = signal): Promise<WorkbenchModelChangePreview> => {
+    requestSignal.throwIfAborted()
+    const model = await resourceAt(catalog.details({ kind: 'model', id: modelId }, requestSignal), 'generation_input.model.id')
+    const removed: (WorkbenchModelChangePreview['removed'][number])[] = []
+    const resources: WorkbenchModelChangeRef[] = [
+      ...(current.generation_input.template_id ? [{ kind: 'comfyui-template' as const, id: current.generation_input.template_id }] : []),
+      ...current.generation_input.loras.map(lora => ({ kind: 'lora' as const, id: lora.id })),
+      ...current.context_refs.filter(ref => catalogDefinition(ref.kind).baseModelScoped),
+    ]
+    const matchingByKind = new Map<WorkbenchModelChangeRef['kind'], Set<string>>()
+    for (const kind of new Set(resources.map(ref => ref.kind))) {
+      const matching = await resourceAt(catalog.compatibleResourceIds({ kind, modelId }, requestSignal), 'generation_input')
+      matchingByKind.set(kind, new Set(matching))
+    }
+    for (const { kind, id } of resources) {
+      if (matchingByKind.get(kind)!.has(id)) continue
+      const label = (await resourceAt(catalog.details({ kind, id }, requestSignal), kind === 'comfyui-template' ? 'generation_input.template_id' : kind === 'lora' ? 'generation_input.loras' : 'context_refs')).item.label
+      removed.push({ kind, id, label })
+    }
+    requestSignal.throwIfAborted()
+    return { model: { id: modelId, label: model.item.label }, removed }
+  }
+  return { previewModelChange, prepareGenerationInput, resolveGenerationDraft, resolveResourceRefs, validateGenerationInput, validateParameters, validateReferences, parameterIds: async (input: GenerationInput) => flattenWorkflowRuntimeParameters(await inspect(input)).map(parameter => parameter.parameter_id) }
 }

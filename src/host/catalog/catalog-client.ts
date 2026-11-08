@@ -256,6 +256,11 @@ function sourcePage(request: CatalogQueryRequest, value: unknown): { readonly re
   return { records: envelope.results.map(sourceRecord), totalCount: envelope.total_count as number }
 }
 
+
+function usesModelAssociation(kind: CatalogKind): boolean {
+  return kind === 'model' || kind === 'lora' || kind === 'comfyui-template'
+}
+
 function normalizeItem(kind: CatalogKind, result: Record<string, unknown>): CatalogItem {
   const definition = catalogDefinition(kind)
   const id = sourceId(result.id)
@@ -378,40 +383,57 @@ export class CatalogClient {
     }
   }
 
-  async search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage> {
-    const request = parseCatalogQueryRequest(input)
+
+  private async searchInput(request: CatalogQueryRequest, signal: AbortSignal): Promise<Record<string, unknown> | null> {
     let baseModelId = request.baseModelId
     if (request.modelId !== null) {
       const model = resolvedRecord(await this.run(catalogDefinition('model').path, { mode: 'resolve', id: request.modelId }, signal), 'generation model')
       const resolvedModelId = sourceId(model.id)
       if (resolvedModelId !== request.modelId) throw new CatalogError('CATALOG_PROTOCOL_ERROR', `Catalog returned generation model ID ${resolvedModelId}; the requested ID was ${request.modelId}. Check the Catalog response for the requested model.`)
       const modelBaseId = sourceId(model.base_model_id)
-      if (baseModelId !== null && baseModelId !== modelBaseId) {
-        return parseCatalogPage({ kind: request.kind, query: request.query, page: request.page, items: [], totalCount: 0 })
-      }
+      if (baseModelId !== null && baseModelId !== modelBaseId) return null
       baseModelId = modelBaseId
     }
-    const path = catalogDefinition(request.kind).path
-    const searchInput = {
+    return {
       mode: 'search', query: request.query, page: request.page, page_size: CATALOG_PAGE_SIZE,
       ...(baseModelId === null ? {} : { base_model_id: baseModelId }),
     }
-    if (request.modelId !== null && (request.kind === 'model' || request.kind === 'lora' || request.kind === 'comfyui-template')) {
-      const matches: Record<string, unknown>[] = []
-      let pageCount = 1
-      for (let page = 1; page <= pageCount; page++) {
-        signal.throwIfAborted()
-        const source = sourcePage({ ...request, page }, await this.run(path, { ...searchInput, page }, signal))
-        pageCount = Math.ceil(source.totalCount / CATALOG_PAGE_SIZE)
-        for (const record of source.records) {
-          const modelId = request.kind === 'model' ? sourceId(record.id) : sourceNullableId(record.model_id)
-          if (modelId === null || modelId === request.modelId) matches.push(record)
-        }
+  }
+
+  private async collectMatchingRecords(request: CatalogQueryRequest, input: Record<string, unknown>, signal: AbortSignal): Promise<Record<string, unknown>[]> {
+    const matches: Record<string, unknown>[] = []
+    const modelScoped = request.modelId !== null && usesModelAssociation(request.kind)
+    let pageCount = 1
+    for (let page = 1; page <= pageCount; page++) {
+      signal.throwIfAborted()
+      const source = sourcePage({ ...request, page }, await this.run(catalogDefinition(request.kind).path, { ...input, page }, signal))
+      pageCount = Math.ceil(source.totalCount / CATALOG_PAGE_SIZE)
+      for (const record of source.records) {
+        if (!modelScoped) { matches.push(record); continue }
+        const modelId = request.kind === 'model' ? sourceId(record.id) : sourceNullableId(record.model_id)
+        if (modelId === null || modelId === request.modelId) matches.push(record)
       }
+    }
+    return matches
+  }
+
+  async compatibleResourceIds(input: { kind: CatalogKind; modelId: string }, signal: AbortSignal): Promise<readonly string[]> {
+    const request = parseCatalogQueryRequest({ ...input, query: '', page: 1, baseModelId: null })
+    const sourceInput = await this.searchInput(request, signal)
+    if (sourceInput === null) return []
+    return (await this.collectMatchingRecords(request, sourceInput, signal)).map(record => sourceId(record.id))
+  }
+
+  async search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage> {
+    const request = parseCatalogQueryRequest(input)
+    const sourceInput = await this.searchInput(request, signal)
+    if (sourceInput === null) return parseCatalogPage({ kind: request.kind, query: request.query, page: request.page, items: [], totalCount: 0 })
+    if (request.modelId !== null && usesModelAssociation(request.kind)) {
+      const matches = await this.collectMatchingRecords(request, sourceInput, signal)
       const start = (request.page - 1) * CATALOG_PAGE_SIZE
       return normalizePage(request, matches.slice(start, start + CATALOG_PAGE_SIZE), matches.length)
     }
-    return normalizeEnvelope(request, await this.run(path, searchInput, signal))
+    return normalizeEnvelope(request, await this.run(catalogDefinition(request.kind).path, sourceInput, signal))
   }
 
   async details(input: CatalogDetailsRequest, signal: AbortSignal): Promise<CatalogDetails> {

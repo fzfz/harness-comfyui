@@ -4,7 +4,7 @@ import {
   Button,
   IconSparkleRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
@@ -28,6 +28,7 @@ type RemoteReply<T> =
     }
 export type ExperimentEnvironment = WorkbenchEnvironment
 export interface ExperimentHostRemote {
+  readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<RemoteReply<WorkbenchModelChangePreview>>
   readonly getInputDescription: (
     scope: WorkbenchInputDescriptionRequest,
   ) => Promise<RemoteReply<WorkflowRuntimeParameterInspection | null>>
@@ -115,6 +116,8 @@ export function ExperimentWorkbenchHost({
   const environmentLoaded = useRef(false)
   const api = useMemo(
     () => ({
+      previewModelChange: async (request: WorkbenchModelChangeRequest) =>
+        unwrap(await remote.previewModelChange(request)),
       getEnvironment: async (request: WorkbenchEnvironmentRequest) =>
         unwrap(await remote.getEnvironment(request)),
       getInputDescription: async (scope: WorkbenchInputDescriptionRequest) =>

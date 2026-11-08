@@ -52,6 +52,7 @@ const environment = {
   instances: [{ id: '2', name: 'win3080' }],
 }
 const remote = (): ExperimentHostRemote => ({
+  previewModelChange: vi.fn(async request => ({ ok: true as const, value: { model: { id: request.modelId, label: 'ANIMA3' }, removed: [] } })),
   getInputDescription: vi.fn(async () => ({
     ok: true as const,
     value: inputDescription,
@@ -93,6 +94,16 @@ const mount = async (api: ExperimentHostRemote) => {
   return renderer
 }
 describe('official experiment workbench adapter', () => {
+  it('forwards model previews and unwraps actionable Remote errors', async () => {
+    const api = remote(), renderer = await mount(api)
+    const request = { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', modelId: '21' }
+    const client = renderer.root.findByType(ExperimentWorkbench).props.remote
+    await expect(client.previewModelChange(request)).resolves.toEqual({ model: { id: '21', label: 'ANIMA3' }, removed: [] })
+    expect(api.previewModelChange).toHaveBeenCalledExactlyOnceWith(request)
+    vi.mocked(api.previewModelChange).mockResolvedValueOnce({ ok: false, error: { code: 'UNAVAILABLE', message: '模型读取失败，请重新选择生成模型。' } })
+    await expect(client.previewModelChange(request)).rejects.toThrow('模型读取失败，请重新选择生成模型。')
+  })
+
   it('keeps one open style boundary and portal target across updates, then unmounts its content', async () => {
     const api = remote(), renderer = await mount(api)
     expect(boundaries).toHaveLength(1)

@@ -123,7 +123,27 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     }
     case 'resource-select': {
       const ref = fields(request.value)
-      const draft = await ctx.harnessComfyuiWorkbench.resolveResources([{ kind: text(ref.kind, 'kind'), id: text(ref.id, 'id') } as ResourceRef], branch.draft)
+      const resource = { kind: text(ref.kind, 'kind'), id: text(ref.id, 'id') } as ResourceRef
+      const preview = resource.kind === 'model'
+        ? await ctx.harnessComfyuiWorkbench.previewModelChange(resource.id, branch.draft) : null
+      if (preview) {
+        const confirmed = ref.confirmedRemovals === undefined ? [] : ref.confirmedRemovals
+        if (!Array.isArray(confirmed) || confirmed.some(item => !item || typeof item !== 'object' || Array.isArray(item) || Object.keys(item).length !== 2 || typeof item.kind !== 'string' || typeof item.id !== 'string')) {
+          throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '模型切换确认清单无效，请重新选择模型。', 'value.confirmedRemovals')
+        }
+        if (confirmed.length !== preview.removed.length || preview.removed.some(item => !confirmed.some(ref => ref.kind === item.kind && ref.id === item.id))) {
+          throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '当前需要移除的资源与确认清单不一致，请重新选择模型。', 'value.confirmedRemovals')
+        }
+      }
+      const draft = await ctx.harnessComfyuiWorkbench.resolveResources([resource], branch.draft)
+      if (preview) {
+        if (preview.removed.some(ref => ref.kind === 'comfyui-template')) {
+          draft.generation_input.template_id = null
+          draft.generation_input.parameters = {}
+        }
+        draft.generation_input.loras = draft.generation_input.loras.filter(lora => !preview.removed.some(ref => ref.kind === 'lora' && ref.id === lora.id))
+        draft.context_refs = draft.context_refs.filter(context => !preview.removed.some(ref => ref.kind === context.kind && ref.id === context.id))
+      }
       store.saveBranchDraft({ ...selection, expected: branch.draft, draft }); break
     }
     case 'resource-remove': {

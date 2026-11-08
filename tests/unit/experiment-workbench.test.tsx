@@ -19,7 +19,7 @@ import type {
   WorkbenchProjection,
 } from '../../src/workbench/contract.ts'
 
-import type { WorkbenchEnvironment } from '../../src/workbench-remote.ts'
+import type { WorkbenchEnvironment, WorkbenchModelChangePreview } from '../../src/workbench-remote.ts'
 
 interface RenderNode {
   readonly props: Record<string, any>
@@ -86,7 +86,7 @@ afterEach(async () => {
 })
 const mount = async (
   data: WorkbenchProjection,
-  options: Partial<ExperimentWorkbenchProps> = {},
+  options: Partial<Omit<ExperimentWorkbenchProps, 'remote'>> & { remote?: Partial<ExperimentWorkbenchProps['remote']> } = {},
   renderOptions?: Parameters<typeof create>[1],
 ) => {
   vi.stubGlobal('document', Object.assign(new EventTarget(), { hidden: false }))
@@ -107,12 +107,12 @@ const mount = async (
       })),
       getEnvironment: async () => functionEnvironment,
       getInputDescription: vi.fn(async () => inputDescription),
+      previewModelChange: vi.fn(async (request: { modelId: string }) => ({ model: { id: request.modelId, label: 'ANIMA3' }, removed: [] })),
     }
   let renderer!: ReturnType<typeof create>
   await act(async () => {
     renderer = create(
       <ExperimentWorkbench
-        remote={remote}
         workspaces={[
           { id: 'workspace-a', name: '画面实验', path: '/projects/art' },
         ]}
@@ -136,6 +136,7 @@ const mount = async (
           },
         ]}
         {...options}
+        remote={{ ...remote, ...options.remote }}
       />,
       renderOptions,
     )
@@ -163,10 +164,10 @@ describe('experiment workbench instance selection', () => {
       const environment = await host.remote.getEnvironment({}, signal)
       const memory = new Map<string, string>()
       const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
-      const options: Partial<ExperimentWorkbenchProps> = {
+      const options: NonNullable<Parameters<typeof mount>[1]> = {
         workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, storage,
         remote: {
-          getEnvironment: request => host.remote.getEnvironment(request, signal),
+          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
           getInputDescription: request => host.remote.getInputDescription(request, signal),
           getProjection: request => host.remote.getProjection(request, signal),
         },
@@ -1575,7 +1576,7 @@ describe('experiment workbench Catalog search transitions', () => {
     const memory = new Map<string, string>()
     const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
     const onAction = vi.fn(async () => ({ workspaceId: 'workspace-a', workId: 'work-b', branchId: 'returned-root' }))
-    const options: Partial<ExperimentWorkbenchProps> = {
+    const options: NonNullable<Parameters<typeof mount>[1]> = {
       catalog: makeCatalog(), storage, onAction,
       remote: {
         getProjection: async request => request.workId === 'work-b' ? second : first,
@@ -1613,7 +1614,7 @@ describe('experiment workbench Catalog search transitions', () => {
     const { catalog } = modelFilterCatalog()
     const memory = new Map<string, string>()
     const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
-    const options: Partial<ExperimentWorkbenchProps> = {
+    const options: NonNullable<Parameters<typeof mount>[1]> = {
       catalog, storage,
       remote: {
         getProjection: async request => request.workId === 'work-b' ? second : first,
@@ -1656,7 +1657,7 @@ describe('experiment workbench Catalog search transitions', () => {
     const catalog = makeCatalog()
     const memory = new Map<string, string>()
     const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
-    const options: Partial<ExperimentWorkbenchProps> = {
+    const options: NonNullable<Parameters<typeof mount>[1]> = {
       catalog, storage,
       workspaces: [{ id: 'workspace-a', name: '工作区 A', path: '/projects/a' }, { id: 'workspace-b', name: '工作区 B', path: '/projects/b' }],
       remote: {
@@ -2300,7 +2301,7 @@ describe('experiment workbench Catalog removal persistence', () => {
         remote: {
           getProjection: request => host.remote.getProjection(request, signal),
           getInputDescription: request => host.remote.getInputDescription(request, signal),
-          getEnvironment: request => host.remote.getEnvironment(request, signal),
+          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
         },
         catalog: makeCatalog(), onAction,
       })
@@ -2531,10 +2532,10 @@ describe('experiment workbench LoRA draft persistence', () => {
         ...await details(request, readSignal), fields: [{ key: 'file_name', value: 'rain.safetensors' }, { key: 'trigger_words_json', value: ['rain'] }, { key: 'weight', value: 0.65 }],
       } : details(request, readSignal))
       const memory = new Map<string, string>()
-      const options: Partial<ExperimentWorkbenchProps> = {
+      const options: NonNullable<Parameters<typeof mount>[1]> = {
         workspaceId: scope.workspaceId, workspaces: environment.workspaces, catalog,
         storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
-        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
@@ -2624,7 +2625,7 @@ describe('experiment workbench selected template names', () => {
       const environment = await host.remote.getEnvironment({}, signal)
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces,
-        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       })
       await click(renderer, '选择 Workflow 模板')
@@ -2680,7 +2681,7 @@ describe('experiment workbench selected template names', () => {
       })
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces, onAction,
-        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
       })
       await click(renderer, '选择 Workflow 模板')
       await click(renderer, '选择 模板 A')
@@ -2715,10 +2716,10 @@ describe('experiment workbench selected template names', () => {
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'shared prompt' }, signal)
       const environment = await host.remote.getEnvironment({}, signal)
       const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
-      const options: Partial<ExperimentWorkbenchProps> = {
+      const options: NonNullable<Parameters<typeof mount>[1]> = {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces, onAction,
         remote: {
-          getEnvironment: request => host.remote.getEnvironment(request, signal), getProjection: request => host.remote.getProjection(request, signal),
+          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getProjection: request => host.remote.getProjection(request, signal),
           getInputDescription: async request => {
             const description = await host.remote.getInputDescription(request, signal)
             if (waitForB && host.store.getBranch(request.branchId).draft.generation_input.template_id === '41')
@@ -2765,9 +2766,9 @@ describe('experiment workbench selected template names', () => {
       const environment = await host.remote.getEnvironment({}, signal)
       const catalog = templateCatalog(), memory = new Map<string, string>()
       const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
-      const options: Partial<ExperimentWorkbenchProps> = {
+      const options: NonNullable<Parameters<typeof mount>[1]> = {
         catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces,
-        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const data = await host.remote.getProjection(scope, signal)
@@ -2840,6 +2841,227 @@ describe('experiment workbench selected template names', () => {
   })
 })
 
+describe('experiment workbench generation model change confirmation', () => {
+  const preview = {
+    model: { id: '21', label: 'ANIMA3' },
+    removed: [
+      { kind: 'comfyui-template' as const, id: '12', label: 'SDXL 文生图' },
+      { kind: 'lora' as const, id: '13', label: '柔光 LoRA' },
+      { kind: 'lora' as const, id: '19', label: '线条 LoRA' },
+      { kind: 'style' as const, id: '27', label: '透明水彩' },
+      { kind: 'artist-string' as const, id: '28', label: '花园插画组合' },
+    ],
+  }
+  const modelCatalog = (): CatalogApi => ({
+    baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'SDXL' }] })),
+    search: vi.fn(async request => ({
+      ...request, totalCount: 1,
+      items: [{ context: { kind: 'model' as const, id: '21', file_name: 'anima.safetensors' }, baseModelId: '1', label: 'ANIMA3', subtitle: '', coverUrl: null, sampleImageUrls: [] }],
+    })),
+    details: makeCatalog().details,
+  })
+  const openChoice = async (renderer: Awaited<ReturnType<typeof mount>>['renderer']) => {
+    await click(renderer, '更换生成模型')
+    await click(renderer, '选择 ANIMA3')
+  }
+
+  it('confirms only the previewed resource IDs once and stays on Catalog after saving', async () => {
+    let finish!: () => void
+    const onAction = vi.fn(() => new Promise<void>(resolve => { finish = resolve }))
+    const { renderer } = await mount(fullProjection(), { catalog: modelCatalog(), onAction, remote: { previewModelChange: async () => preview } })
+    await openChoice(renderer)
+    const submit = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit
+    await act(async () => { void submit({ preventDefault() {} }) })
+    await act(async () => { void submit({ preventDefault() {} }) })
+    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(onAction).toHaveBeenCalledWith({
+      type: 'resource-select', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', runId: 'r1', id: '21',
+      value: { kind: 'model', id: '21', confirmedRemovals: [{ kind: 'comfyui-template', id: '12' }, { kind: 'lora', id: '13' }, { kind: 'lora', id: '19' }, { kind: 'style', id: '27' }, { kind: 'artist-string', id: '28' }] },
+    })
+    expect(renderer.root.findByProps({ role: 'dialog' }).findByProps({ type: 'submit' }).props.disabled).toBe(true)
+    await act(async () => { finish() })
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+  })
+
+  it('persists confirmed incompatible resources through the actual Host and retains latest unrelated input', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模型确认', goal: '保留兼容资源' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }, { kind: 'style', id: '7' }, { kind: 'artist-string', id: '8' }, { kind: 'character', id: '9' }, { kind: 'prompt-term', id: '10' }]) {
+        await host.remote.mutate({ ...scope, type: 'resource-select', value }, signal)
+      }
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'before preview' }, signal)
+      const data = await host.remote.getProjection(scope, signal), before = structuredClone(data.branches[0]!.draft)
+      host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: 'ANIMA3', base_model_id: '1' }))
+      host.catalog.search.mockImplementation(async input => ({ kind: input.kind, query: input.query, page: input.page, totalCount: input.kind === 'lora' ? 1 : 0, items: input.kind === 'lora' ? [{ context: { kind: 'lora', id: '4', file_name: 'rain.safetensors' }, baseModelId: '1', label: 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }] : [] }))
+      const details = host.catalog.details.getMockImplementation()!
+      host.catalog.details.mockImplementation(async ref => {
+        const kind = (ref as { kind: string }).kind
+        return kind === 'style' || kind === 'artist-string'
+          ? { item: { label: kind === 'style' ? '透明水彩' : '花园插画组合' } }
+          : details(ref)
+      })
+      const onAction = vi.fn(request => host.remote.mutate(request, signal))
+      const { renderer } = await mount(data, {
+        catalog: modelCatalog(), workspaceId: scope.workspaceId, workspaces: [{ id: scope.workspaceId, name: '画面实验', path: '/workspace/project' }],
+        remote: {
+          previewModelChange: request => host.remote.previewModelChange(request, signal),
+          getProjection: request => host.remote.getProjection(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal),
+        },
+        onAction,
+      })
+      await openChoice(renderer)
+      expect(renderer.root.findByProps({ className: 'incompatible-resources' }).findAllByType('li').map(nodeText)).toEqual(['Rain templateWorkflow 模板', 'rain.safetensorsLoRA', '透明水彩画师或画风', '花园插画组合画师串'])
+      await click(renderer, '取消')
+      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft).toEqual(before)
+      expect(onAction).not.toHaveBeenCalled()
+      await openChoice(renderer)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'latest prompt' }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'lora-weight', id: '4', value: 1.2 }, signal)
+      await act(() => renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({ preventDefault() {} }))
+      const after = await host.remote.getProjection(scope, signal)
+      expect(after.branches[0]!.draft).toEqual({
+        ...before,
+        prompt_input: { ...before.prompt_input, positive_prompt: 'latest prompt' },
+        generation_input: { ...before.generation_input, model: { id: '21', file_name: 'ANIMA3' }, template_id: null, parameters: {}, loras: [{ id: '4', file_name: 'rain.safetensors', weight: 1.2, trigger_words: ['rain'] }] },
+        context_refs: [{ kind: 'character', id: '9' }, { kind: 'prompt-term', id: '10' }],
+      })
+      expect(after.functions).toEqual(data.functions)
+      expect(after.tasks).toEqual(data.tasks)
+      expect(after.runs).toEqual(data.runs)
+      expect(onAction).toHaveBeenCalledTimes(1)
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+      expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+    } finally { await host.dispose() }
+  })
+
+  it('keeps the confirmation open after a save failure and retries the same removal list', async () => {
+    const onAction = vi.fn().mockRejectedValueOnce(new Error('草稿已更新，请重新选择生成模型。')).mockResolvedValueOnce(undefined)
+    const { renderer } = await mount(fullProjection(), { catalog: modelCatalog(), onAction, remote: { previewModelChange: async () => preview } })
+    await openChoice(renderer)
+    const submit = () => renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({ preventDefault() {} })
+    await act(submit)
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe('草稿已更新，请重新选择生成模型。')
+    expect(renderer.root.findByProps({ role: 'dialog' }).findByProps({ type: 'submit' }).props.disabled).toBe(false)
+    expect(renderer.root.findByProps({ className: 'incompatible-resources' }).findAllByType('li').map(nodeText)).toEqual(['SDXL 文生图Workflow 模板', '柔光 LoRALoRA', '线条 LoRALoRA', '透明水彩画师或画风', '花园插画组合画师串'])
+    await act(submit)
+    expect(onAction).toHaveBeenCalledTimes(2)
+    expect(onAction.mock.calls[1]).toEqual(onAction.mock.calls[0])
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+  })
+
+  it('shows actionable preview errors without saving or opening a confirmation', async () => {
+    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: {
+      previewModelChange: async () => { throw new Error('模型读取失败，请重新选择生成模型。') },
+    } })
+    await openChoice(renderer)
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe('模型读取失败，请重新选择生成模型。')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it.each(['branch', 'work', 'workspace', 'page', 'detail', 'Escape', 'new-modal', 'unmount'] as const)('ignores a late preview after %s changes the selection', async destination => {
+    const data = fullProjection()
+    data.works.push({ ...data.works[0]!, work_id: 'work-b', name: '另一工作' })
+    let finish!: (value: typeof preview) => void
+    const { renderer, onAction } = await mount(data, { catalog: modelCatalog(), remote: {
+      previewModelChange: () => new Promise(resolve => { finish = resolve }),
+    } })
+    await openChoice(renderer)
+    if (destination === 'branch') await click(renderer, '切换分支 暖光探索')
+    else if (destination === 'work') await change(renderer, '切换工作', 'work-b')
+    else if (destination === 'workspace') await change(renderer, '切换工作区', 'workspace-b')
+    else if (destination === 'page') await click(renderer, '任务')
+    else if (destination === 'detail') await click(renderer, '查看详情 ANIMA3')
+    else if (destination === 'Escape') await act(() => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
+    else if (destination === 'new-modal') await click(renderer, '新建工作')
+    else await act(() => renderer.unmount())
+    await act(async () => { finish(preview) })
+    if (destination !== 'unmount') expect(renderer.root.findAllByProps({ role: 'dialog', 'aria-labelledby': 'modal-title' })).toEqual([])
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('ignores a superseded no-removal preview while the current confirmation is open', async () => {
+    let finish!: (value: WorkbenchModelChangePreview) => void
+    const previewModelChange = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finish = resolve })).mockResolvedValueOnce(preview)
+    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: { previewModelChange } })
+    await openChoice(renderer)
+    await openChoice(renderer)
+    expect(renderer.root.findByProps({ id: 'modal-title' }).children).toEqual(['更换生成模型'])
+    await act(async () => { finish({ model: preview.model, removed: [] }) })
+    expect(renderer.root.findByProps({ id: 'modal-title' }).children).toEqual(['更换生成模型'])
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('ignores a late no-removal preview after leaving the Catalog page', async () => {
+    let finish!: (value: WorkbenchModelChangePreview) => void
+    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: { previewModelChange: () => new Promise(resolve => { finish = resolve }) } })
+    await openChoice(renderer)
+    await click(renderer, '任务')
+    await act(async () => { finish({ model: preview.model, removed: [] }) })
+    expect(onAction).not.toHaveBeenCalled()
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+  })
+
+  it('keeps a reopened confirmation when an earlier cancelled submission completes', async () => {
+    let finish!: () => void
+    const onAction = vi.fn().mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve })).mockResolvedValueOnce(undefined)
+    const { renderer } = await mount(fullProjection(), { catalog: modelCatalog(), onAction, remote: { previewModelChange: async () => preview } })
+    await openChoice(renderer)
+    await act(async () => { void renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
+    await click(renderer, '取消')
+    await openChoice(renderer)
+    const reopened = renderer.root.findByProps({ id: 'modal-form' })
+    await act(async () => { finish() })
+    expect(renderer.root.findByProps({ id: 'modal-form' })).toBe(reopened)
+    expect(reopened.findByProps({ type: 'submit' }).props.disabled).toBe(false)
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+    await act(() => reopened.props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenCalledTimes(2)
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+  })
+
+  it('applies the model immediately when the preview has no removals', async () => {
+    const previewModelChange = vi.fn(async () => ({ model: preview.model, removed: [] }))
+    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: { previewModelChange } })
+    await openChoice(renderer)
+    expect(previewModelChange).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+    expect(onAction).toHaveBeenCalledWith({
+      type: 'resource-select', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', runId: 'r1', id: '21',
+      value: { kind: 'model', id: '21' },
+    })
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+  })
+
+  it('previews the exact ordered removal list and keeps the draft unchanged on cancel, close and Escape', async () => {
+    const data = fullProjection(), before = structuredClone(data)
+    const previewModelChange = vi.fn(async () => preview)
+    const { renderer, onAction } = await mount(data, { catalog: modelCatalog(), remote: { previewModelChange } })
+    for (const dismissal of ['取消', '关闭对话框', 'Escape']) {
+      await openChoice(renderer)
+      expect(previewModelChange).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', modelId: '21' })
+      const modal = renderer.root.findByProps({ role: 'dialog', 'aria-labelledby': 'modal-title' })
+      expect(modal.findAllByType('p').map(nodeText)).toEqual(['更换为 ANIMA3 后，将移除以下不兼容的资源：'])
+      expect(modal.findByProps({ className: 'incompatible-resources' }).findAllByType('li').map(nodeText)).toEqual(['SDXL 文生图Workflow 模板', '柔光 LoRALoRA', '线条 LoRALoRA', '透明水彩画师或画风', '花园插画组合画师串'])
+      expect(modal.findAllByType('input')).toEqual([])
+      expect(onAction).not.toHaveBeenCalled()
+      if (dismissal === 'Escape') await act(() => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
+      else await click(renderer, dismissal)
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
+      expect(data).toEqual(before)
+      expect(onAction).not.toHaveBeenCalled()
+    }
+  })
+})
+
 describe('experiment workbench generation model selection', () => {
   it('persists a compatible model and its summary while preserving sibling inputs and the run Agent model', async () => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
@@ -2884,11 +3106,11 @@ describe('experiment workbench generation model selection', () => {
       const environment = await host.remote.getEnvironment({}, signal)
       const memory = new Map<string, string>()
       const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
-      const options: Partial<ExperimentWorkbenchProps> = {
+      const options: NonNullable<Parameters<typeof mount>[1]> = {
         catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, presets: environment.presets,
         baseModels: [{ id: '1', label: 'anima' }],
         agentModelGroups: [{ id: run.agent_model.provider, name: '提供商 A', models: [{ id: run.agent_model.model, name: 'Agent 模型 A' }] }],
-        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const data = await host.remote.getProjection(scope, signal)

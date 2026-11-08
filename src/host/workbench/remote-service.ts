@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope } from '../../workbench-remote.ts'
+import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchModelChangeRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope } from '../../workbench-remote.ts'
 import type { ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import { generationMediaContentUrl, generationMediaDownloadUrl } from '../../generation/contract.ts'
@@ -45,13 +45,22 @@ export class WorkbenchRemoteService extends TypertRemoteService {
       return this.host.harnessComfyuiCore.services.runtime.inspectTemplateRuntimeParameters({ templateId: input.template_id, instanceId: input.instance_id }, signal)
     })
   }
+  async previewModelChange(request: WorkbenchModelChangeRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => {
+      const workbench = this.host.harnessComfyuiWorkbench
+      const { store } = workbench.service
+      store.assertScope(request.workspaceId, request.workId, request.branchId)
+      return workbench.previewModelChange(request.modelId, store.getBranch(request.branchId).draft, signal)
+    })
+  }
   async mutate(request: ExperimentWorkbenchAction, signal: AbortSignal) {
     signal.throwIfAborted()
     return report(() => executeWorkbenchAction(this.host, request))
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []
-for (const name of ['getEnvironment', 'getProjection', 'getInputDescription', 'mutate'] as const) {
+for (const name of ['getEnvironment', 'getProjection', 'getInputDescription', 'previewModelChange', 'mutate'] as const) {
   Remote(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
     addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
   } as never)

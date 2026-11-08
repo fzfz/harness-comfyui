@@ -11,6 +11,7 @@ import React, {
 import {
   CATALOG_KIND_DEFINITIONS,
   catalogPageCount,
+  catalogDefinition,
   type CatalogItem,
   type CatalogKind,
 } from '../../catalog/contract.ts'
@@ -22,6 +23,7 @@ import type {
   TaskDraft,
   WorkbenchRun,
 } from '../../workbench/contract.ts'
+import type { WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import type {
   ExperimentActionType,
   ExperimentPage,
@@ -280,12 +282,18 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const formSubmissionPending = useRef<number | null>(null)
   const modalInstance = useRef(0)
   const [sheet, setSheet] = useState(false)
+  const [modelChange, setModelChange] = useState<{
+    readonly request: WorkbenchModelChangeRequest
+    readonly preview: WorkbenchModelChangePreview
+    readonly navigation: number
+  } | null>(null)
   const [modal, setModalState] = useState<
-    'new-work' | 'new-workspace' | 'branch' | 'image' | null
+    'new-work' | 'new-workspace' | 'branch' | 'image' | 'model-change' | null
   >(null)
   const setModal = useCallback((value: typeof modal) => {
     modalInstance.current++
     setFormSubmitting(false)
+    if (value !== 'model-change') setModelChange(null)
     setModalState(value)
   }, [])
   const [search, setSearch] = useState('')
@@ -304,12 +312,19 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     document.addEventListener('visibilitychange', sync)
     return () => document.removeEventListener('visibilitychange', sync)
   }, [store, props.visible])
-  useEffect(() => () => store.dispose(), [store])
+  useEffect(() => () => {
+    modalInstance.current++
+    store.dispose()
+  }, [store])
+  const navigationSequence = store.getNavigationSequence()
+  useEffect(() => {
+    if (modelChange && (modelChange.navigation !== navigationSequence || props.visible === false)) setModal(null)
+  }, [navigationSequence, props.visible, modelChange, setModal])
   useEffect(() => {
     setModal(null)
     setSheet(false)
     setMessage(null)
-  }, [state.workspaceId, state.view.workId, state.view.branchId])
+  }, [state.workspaceId, state.view.workId, state.view.branchId, props.visible])
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -484,6 +499,30 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       if (stillCurrent())
         setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
       return false
+    }
+  }
+  const selectResource = async (item: CatalogItem) => {
+    if (locked) return
+    if (item.context.kind !== 'model') {
+      void action('resource-select', { id: item.context.id, value: item.context })
+      return
+    }
+    if (!state.workspaceId || !view.workId || !view.branchId) return
+    const request = { workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId, modelId: item.context.id }
+    setModal(null)
+    const instance = modalInstance.current, navigation = store.getNavigationSequence()
+    const isCurrent = () => modalInstance.current === instance && store.getNavigationSequence() === navigation
+    try {
+      const preview = await props.remote.previewModelChange(request)
+      if (!isCurrent()) return
+      if (preview.removed.length) {
+        setModelChange({ request, preview, navigation })
+        setModal('model-change')
+      } else {
+        await action('resource-select', { id: request.modelId, value: { kind: 'model', id: request.modelId } }, isCurrent)
+      }
+    } catch (error) {
+      if (isCurrent()) setMessage(error instanceof Error ? error.message : '模型兼容性读取失败，请重新选择生成模型。')
     }
   }
   const referenceRunIds =
@@ -1937,7 +1976,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ? '添加工作区'
         : modal === 'branch'
           ? '创建子分支'
-          : `${run?.run_id} · 图片 1`
+          : modal === 'model-change'
+            ? '更换生成模型'
+            : `${run?.run_id} · 图片 1`
   return (
     <div className="experiment-workbench" ref={host}>
       <div className="experiment-workbench-content">
@@ -2107,10 +2148,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 back={back}
                 selected={inputs}
                 onSelect={(item) =>
-                  void action('resource-select', {
-                    id: item.context.id,
-                    value: item.context,
-                  })
+                  void selectResource(item)
                 }
                 onRemove={(item) =>
                   void action('resource-remove', {
@@ -2219,11 +2257,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               className={`modal ${modal === 'image' ? 'image-modal' : ''}`}
               role="dialog"
               aria-modal="true"
-              aria-label={modalTitle}
+              aria-label={modal === 'model-change' ? undefined : modalTitle}
+              aria-labelledby={modal === 'model-change' ? 'modal-title' : undefined}
               onKeyDown={trapDialogFocus}
             >
               <div className="modal-head">
-                <h2>{modalTitle}</h2>
+                <h2 id={modal === 'model-change' ? 'modal-title' : undefined}>{modalTitle}</h2>
                 <Button
                   kind="small quiet"
                   label={modal === 'image' ? '关闭原图' : '关闭对话框'}
@@ -2237,6 +2276,43 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 <div className="original-image">
                   {run && media(run) && <img src={media(run)} alt={run.title} />}
                 </div>
+              ) : modal === 'model-change' ? (
+                <form id="modal-form" onSubmit={async event => {
+                  event.preventDefault()
+                  if (!modelChange || modelChange.navigation !== store.getNavigationSequence()) return
+                  const instance = modalInstance.current
+                  if (formSubmissionPending.current === instance) return
+                  const isCurrent = () => modalInstance.current === instance && modelChange.navigation === store.getNavigationSequence()
+                  formSubmissionPending.current = instance
+                  setFormSubmitting(true)
+                  setMessage(null)
+                  const saved = await action('resource-select', {
+                    workspaceId: modelChange.request.workspaceId,
+                    workId: modelChange.request.workId,
+                    branchId: modelChange.request.branchId,
+                    id: modelChange.request.modelId,
+                    value: {
+                      kind: 'model', id: modelChange.request.modelId,
+                      confirmedRemovals: modelChange.preview.removed.map(({ kind, id }) => ({ kind, id })),
+                    },
+                  }, isCurrent)
+                  if (formSubmissionPending.current === instance) formSubmissionPending.current = null
+                  if (isCurrent()) {
+                    setFormSubmitting(false)
+                    if (saved) setModal(null)
+                  }
+                }}>
+                  <p>更换为 {modelChange?.preview.model.label} 后，将移除以下不兼容的资源：</p>
+                  <ul className="incompatible-resources">
+                    {modelChange?.preview.removed.map(item => (
+                      <li key={`${item.kind}:${item.id}`}><b>{item.label}</b><small>{catalogDefinition(item.kind).label}</small></li>
+                    ))}
+                  </ul>
+                  <div className="modal-actions">
+                    <Button kind="quiet" onClick={() => setModal(null)}>取消</Button>
+                    <button className="btn primary" type="submit" disabled={formSubmitting}>更换模型</button>
+                  </div>
+                </form>
               ) : (
                 <form
                   onSubmit={async (event) => {

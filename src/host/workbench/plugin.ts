@@ -6,7 +6,7 @@ import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-workspace'
 import productAgent from '../../../config/product-agent.json' with { type: 'json' }
 import { WORKBENCH_FUNCTIONS as defaults } from '../../workbench/functions.ts'
-import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironment, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../catalog/contract.ts'
 import { WorkbenchService } from '../../workbench/service.ts'
 import type { AgentModel, GenerationInput, ContextRef, TaskDraft, ResourceRef } from '../../workbench/contract.ts'
@@ -29,6 +29,7 @@ interface ModelCatalog {
 interface WorkbenchHost {
   readonly service: WorkbenchService
   readonly resolveGenerationDraft: (input: GenerationInput, refs: ContextRef[]) => Promise<TaskDraft>
+  readonly previewModelChange: (modelId: string, draft: TaskDraft, signal?: AbortSignal) => Promise<WorkbenchModelChangePreview>
   readonly resolveResources: (refs: ResourceRef[], draft: TaskDraft) => Promise<TaskDraft>
   readonly environment: (workspaceId?: string, presetId?: string) => Promise<WorkbenchEnvironment>
   readonly initializeWorkspace: (workspaceId: string) => Promise<void>
@@ -75,7 +76,7 @@ export function apply(ctx: Context): void {
   })
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
   ctx.provide('harnessComfyuiWorkbench', {
-    service, resolveResources: input.resolveResourceRefs, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
+    service, previewModelChange: input.previewModelChange, resolveResources: input.resolveResourceRefs, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
     async validateFunctionPreset(presetId) {
       const preset = (await ctx.agentPresets.list()).find(candidate => candidate.id === presetId)
       if (!preset || preset.broken) throw new WorkbenchError('WORKBENCH_PRESET_UNAVAILABLE', '所选 Agent 预设当前不可用，请重新选择预设。', 'preset_id')

@@ -1,4 +1,4 @@
-import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
@@ -28,6 +28,7 @@ export interface ExperimentScope {
   readonly branchId?: string
 }
 export interface ExperimentRemote {
+  readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<WorkbenchModelChangePreview>
   readonly getEnvironment: (request: WorkbenchEnvironmentRequest) => Promise<WorkbenchEnvironment>
   readonly getInputDescription: (
     scope: WorkbenchInputDescriptionRequest,
