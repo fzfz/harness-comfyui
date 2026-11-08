@@ -56,11 +56,28 @@ it('requires explicit favorite states and complete experience reuse choices thro
   expect(() => codec.parse({ ...scope, type: 'reuse', value: { name: 'Snow test', baseModelId: null } })).toThrow()
 })
 
+it('validates editable function inputs and explicit editing identities through the Remote codec', () => {
+  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
+  const value = { name: 'Glass rewrite', kind: 'rewrite', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  expect(codec.parse({ workspaceId: 'workspace_1', type: 'function-add', value })).toMatchObject({ value })
+  expect(codec.parse({ workspaceId: 'workspace_1', type: 'function-edit', id: 'custom-a', value })).toMatchObject({ id: 'custom-a', value })
+  for (const extra of [{ function_id: 'custom-a' }, { workspace_id: 'other' }, { builtin: true }]) {
+    for (const type of ['function-add', 'function-edit']) expect(() => codec.parse({ workspaceId: 'workspace_1', type, id: 'custom-a', value: { ...value, ...extra } })).toThrow()
+  }
+  expect(() => codec.parse({ workspaceId: 'workspace_1', type: 'function-edit', value })).toThrow()
+  for (const field of Object.keys(value)) {
+    const missing = { ...value } as Record<string, unknown>
+    delete missing[field]
+    expect(() => codec.parse({ workspaceId: 'workspace_1', type: 'function-add', value: missing })).toThrow()
+  }
+  expect(() => codec.parse({ workspaceId: 'workspace_1', type: 'function-add', value: { ...value, kind: 'other' } })).toThrow()
+})
+
 function fixture() {
   const context = new Context()
   const initializeWorkspace = vi.fn(async () => {})
   const getProjection = vi.fn(async () => projection())
-  const environment = vi.fn(async () => ({ workspaces: [], presets: [], models: { default: { provider: 'p', model: 'm' }, groups: [], failures: [], routableProviders: [] }, skills: [], instances: [] }))
+  const environment = vi.fn(async () => ({ workspaces: [], presets: [], defaultPresetId: 'preset-default', models: { default: { provider: 'p', model: 'm' }, groups: [], failures: [], routableProviders: [] }, skills: [], instances: [] }))
   context.provide('harnessComfyuiWorkbench' as never, { initializeWorkspace, service: { getProjection }, environment } as never)
   return { remote: new WorkbenchRemoteService(context), initializeWorkspace, getProjection, environment }
 }

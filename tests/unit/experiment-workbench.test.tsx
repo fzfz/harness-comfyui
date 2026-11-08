@@ -1284,6 +1284,7 @@ describe('experiment workbench public interactions', () => {
     const { renderer, onAction } = await mount(fullProjection())
     await click(renderer, '配置中心')
     await click(renderer, '添加功能')
+    await click(renderer, '取消')
     await change(renderer, 'prompt的默认预设', 'preset')
     expect(onAction).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -1296,6 +1297,7 @@ describe('experiment workbench public interactions', () => {
     expect(renderer.root.findByProps({ role: 'dialog' })).toBeTruthy()
     await click(renderer, '取消')
     await click(renderer, '移除自定义prompt')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
     expect(onAction).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: 'function-remove', id: 'custom-prompt' }),
     )
@@ -5411,8 +5413,8 @@ describe('experiment workbench current function directory', () => {
     await click(renderer, '配置中心')
     const prompt = renderer.root.findByProps({ 'data-function': 'prompt' })
     const run = renderer.root.findByProps({ 'data-function': 'run' })
-    expect(nodeText(prompt.findByProps({ className: 'binding-problem' }))).toBe('该功能的 Agent 预设已不可用，请到配置中心重新选择。')
-    expect(nodeText(run.findByProps({ className: 'binding-problem' }))).toBe('该功能的 Agent 预设已不可用，请到配置中心重新选择。')
+    expect(nodeText(prompt.findByProps({ className: 'binding-problem' }))).toBe('该功能的 Agent 预设已不可用，请编辑功能并重新选择预设。')
+    expect(nodeText(run.findByProps({ className: 'binding-problem' }))).toBe('该功能的 Agent 预设已不可用，请编辑功能并重新选择预设。')
     expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toBe('预设不可用新增预设')
     expect(nodeText(renderer.root.findByProps({ 'aria-label': 'run的默认预设' }))).toBe('预设不可用新增预设')
   })
@@ -5829,7 +5831,7 @@ describe('experiment workbench delayed function save errors', () => {
 })
 
 describe('experiment workbench unavailable preset editor', () => {
-  it.each(['missing', 'broken'])('matches the prototype when the stored preset is %s and only changes storage on save', async state => {
+  it.each(['missing', 'broken'])('retains the stored %s preset until an explicit available selection is saved', async state => {
     const data = fullProjection()
     const storedId = state === 'missing' ? 'removed-preset' : 'broken-preset'
     const binding = data.functions.find(item => item.function_id === 'prompt')!
@@ -5847,16 +5849,16 @@ describe('experiment workbench unavailable preset editor', () => {
     await click(renderer, '配置中心')
     expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe(storedId)
     await click(renderer, '编辑prompt')
-    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset')
-    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).findAllByType('option').map(option => option.props.value)).toEqual(['preset', 'preset-other'])
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe(storedId)
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).findAllByType('option').map(option => option.props.value)).toEqual([storedId, 'preset', 'preset-other'])
     expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选')
     expect(renderer.root.findByProps({ 'aria-label': '指定 Skill' }).props.value).toBe('')
     expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe(original.request_template)
     expect(renderer.root.findByProps({ 'aria-label': 'Agent 提供商' }).props.value).toBe(original.agent_model.provider)
     expect(renderer.root.findByProps({ 'aria-label': 'Agent 模型' }).props.value).toBe(original.agent_model.model)
     expect(renderer.root.findByProps({ 'aria-label': '推理等级' }).props.value).toBe(original.agent_model.reasoningEffort)
-    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
-    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toContain('预设已不可用')
+    expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
     expect(getEnvironment.mock.calls.filter(([request]) => request.presetId === 'preset')).toHaveLength(0)
     await click(renderer, '取消')
     expect(onAction).not.toHaveBeenCalled()
@@ -5864,6 +5866,9 @@ describe('experiment workbench unavailable preset editor', () => {
     expect(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }).props.value).toBe(storedId)
     await click(renderer, '编辑prompt')
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
+    expect(binding).toEqual(original)
+    await change(renderer, 'Agent 预设', 'preset')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
     expect(binding).toEqual({ ...original, preset_id: 'preset', requested_skill: null })
     await click(renderer, '编辑prompt')
     expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset' })
@@ -5873,7 +5878,7 @@ describe('experiment workbench unavailable preset editor', () => {
 })
 
 describe('experiment workbench unavailable preset choices', () => {
-  it.each(['empty', 'all-broken'])('keeps an empty preset select and blocks saving when the available roster is %s', async state => {
+  it.each(['empty', 'all-broken'])('retains the unavailable preset and blocks saving when the available roster is %s', async state => {
     const data = fullProjection()
     const binding = data.functions.find(item => item.function_id === 'prompt')!
     binding.preset_id = 'removed-preset'
@@ -5884,10 +5889,10 @@ describe('experiment workbench unavailable preset choices', () => {
     const { renderer, onAction } = await mount(data, { remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
-    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('')
-    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).findAllByType('option')).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('removed-preset')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).findAllByType('option')).toHaveLength(1)
     expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选')
-    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('')
+    expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toContain('预设已不可用')
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
     expect(onAction).not.toHaveBeenCalled()
@@ -5907,7 +5912,7 @@ describe('experiment workbench unavailable preset choices', () => {
     const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
-    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('preset')
+    expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe('removed-preset')
     expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选')
     expect(getEnvironment.mock.calls.filter(([request]) => request.presetId === 'preset')).toHaveLength(0)
     await change(renderer, 'Agent 预设', 'preset-other')
@@ -7310,7 +7315,7 @@ describe('experiment workbench Run review through Remote', () => {
     const host = await createWorkbenchHostFixture(successful ? {
       inspectRuntimeParameters: async () => inputDescription,
       validateInput: async () => {},
-      prepare: async () => ({ instanceId: '8', instanceTitle: 'Node', templateTitle: 'Template', sourceSnapshot: {}, inputDescription,
+      prepare: async request => ({ instanceId: '8', instanceTitle: 'Node', templateTitle: 'Template', sourceSnapshot: {}, inputDescription: runInputDescription(request.parameters),
         actualWorkflow: {}, apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } }, expectedOutputNodeIds: ['3'],
         connection: { origin: 'http://comfy.test', url: 'http://comfy.test', authorization: null } }),
     } : undefined, successful ? {
@@ -7349,6 +7354,428 @@ describe('experiment workbench Run review through Remote', () => {
     } satisfies NonNullable<Parameters<typeof mount>[1]>
     return { host, root, runId, createRun, options }
   }
+
+  it.each(['missing', 'broken'] as const)('keeps the unavailable %s default preset until the user selects an available one', async state => {
+    const { host, root, options } = await setup(true)
+    try {
+      const defaults = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      host.official.listPresets.mockResolvedValue([{ id: 'preset-a', name: 'Available first preset' },
+        ...(state === 'broken' ? [{ id: defaults.defaultPresetId, name: 'Broken default', broken: 'Missing component' }] : [])])
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, presets: environment.presets,
+        remote: { ...options.remote, getEnvironment: request => host.remote.getEnvironment(request, signal) } })
+      await click(renderer, '配置中心')
+      await click(renderer, '添加功能')
+      await change(renderer, '功能名称', '等待选择预设')
+      const preset = renderer.root.findByProps({ 'aria-label': 'Agent 预设' })
+      expect(preset.props.value).toBe(defaults.defaultPresetId)
+      expect(nodeText(preset)).toContain('预设不可用')
+      expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toContain('预设')
+      expect(renderer.root.findAllByType('button').find(button => nodeText(button) === '保存功能')!.props.disabled).toBe(true)
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      expect(options.onAction.mock.calls.filter(([request]) => request.type === 'function-add')).toEqual([])
+      await change(renderer, 'Agent 预设', 'preset-a')
+      await vi.waitFor(() => expect(renderer.root.findAllByType('button').find(button => nodeText(button) === '保存功能')!.props.disabled).toBe(false))
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      expect((await host.remote.getProjection(root, signal)).functions.find(item => item.name === '等待选择预设')!.preset_id).toBe('preset-a')
+    } finally { await host.dispose() }
+  })
+
+  it('keeps add and remove failures editable and leaves a reopened dialog intact after late receipts', async () => {
+    const { host, root, options } = await setup(true)
+    let releaseAdd!: () => void, releaseRemove!: () => void
+    const addGate = new Promise<void>(resolve => { releaseAdd = resolve })
+    const removeGate = new Promise<void>(resolve => { releaseRemove = resolve })
+    let addMode: 'fail' | 'delay' = 'fail', removeMode: 'fail' | 'delay' = 'fail'
+    const pending: Promise<unknown>[] = []
+    try {
+      const defaults = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      host.official.listPresets.mockResolvedValue([{ id: defaults.defaultPresetId, name: '默认工作台预设' }, { id: 'preset-a', name: 'Preset A' }])
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, presets: environment.presets,
+        onAction: async request => {
+          if (request.type === 'function-add') {
+            if (addMode === 'fail') throw new Error('功能保存失败：连接已中断，请重试。')
+            await addGate
+          }
+          if (request.type === 'function-remove') {
+            if (removeMode === 'fail') throw new Error('功能移除失败：连接已中断，请重试。')
+            await removeGate
+          }
+          return options.onAction(request)
+        },
+        remote: { ...options.remote, getEnvironment: request => host.remote.getEnvironment(request, signal) } })
+      await click(renderer, '配置中心')
+      await click(renderer, '添加功能')
+      await change(renderer, '功能名称', '延迟创建的功能')
+      await change(renderer, '执行要求', '保留要求 {{task_id}}')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.value).toBe('延迟创建的功能')
+      expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('保留要求 {{task_id}}')
+      expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toContain('功能保存失败：连接已中断，请重试。')
+      addMode = 'delay'
+      await act(() => {
+        const submit = renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit
+        pending.push(submit({ preventDefault() {} }), submit({ preventDefault() {} }))
+      })
+      await click(renderer, '取消')
+      await click(renderer, '添加功能')
+      await change(renderer, '功能名称', '后开的新增窗口')
+      await act(async () => { releaseAdd(); await Promise.all(pending) })
+      expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.value).toBe('后开的新增窗口')
+      expect((await host.remote.getProjection(root, signal)).functions.filter(item => item.name === '延迟创建的功能')).toHaveLength(1)
+      await click(renderer, '取消')
+      await click(renderer, '移除延迟创建的功能')
+      const escape = new Event('keydown')
+      Object.defineProperty(escape, 'key', { value: 'Escape' })
+      await act(() => { document.dispatchEvent(escape) })
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      await click(renderer, '移除延迟创建的功能')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain('功能移除失败：连接已中断，请重试。')
+      removeMode = 'delay'
+      await act(() => {
+        const submit = renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit
+        pending.push(submit({ preventDefault() {} }), submit({ preventDefault() {} }))
+      })
+      await click(renderer, '取消')
+      await click(renderer, '添加功能')
+      await change(renderer, '功能名称', '移除回执后的新窗口')
+      await act(async () => { releaseRemove(); await Promise.all(pending) })
+      expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.value).toBe('移除回执后的新窗口')
+      expect((await host.remote.getProjection(root, signal)).functions.some(item => item.name === '延迟创建的功能')).toBe(false)
+      await click(renderer, '取消')
+    } finally {
+      await act(async () => { releaseAdd(); releaseRemove(); await Promise.allSettled(pending) })
+      await host.dispose()
+    }
+  })
+
+  it.each(['run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment'] as const)(
+    'creates %s through the shared editor and invokes the configured kind at its real UI entry', async kind => {
+      const { host, root, runId, createRun, options } = await setup(kind !== 'diagnose')
+      try {
+        const defaults = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+        host.official.listPresets.mockResolvedValue([{ id: 'preset-a', name: 'First preset' }, { id: defaults.defaultPresetId, name: '默认工作台预设' }])
+        const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+        const otherRunId = kind === 'compare' ? await createRun() : null
+        const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, presets: environment.presets,
+          remote: { ...options.remote, getEnvironment: request => host.remote.getEnvironment(request, signal),
+            getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
+        const name = '独立功能 ' + kind
+        await click(renderer, '配置中心')
+        await click(renderer, '添加功能')
+        await change(renderer, '功能名称', name)
+        await change(renderer, '任务类型', kind)
+        await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+        await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+        const added = (await host.remote.getProjection(root, signal)).functions.find(item => item.name === name)!
+        await click(renderer, '返回工作台')
+        if (kind === 'review' || kind === 'experience') {
+          await click(renderer, '记录评价与经验')
+          const sections = renderer.root.findAllByProps({ className: 'evaluation-section' })
+          expect(nodeText(sections[kind === 'review' ? 0 : 1]!)).toContain(name)
+        } else if (kind === 'compare') {
+          await click(renderer, '查看运行 ' + runId)
+          await click(renderer, '比较运行')
+          await click(renderer, '比较运行 ' + otherRunId)
+        } else if (kind === 'experiment') {
+          await change(renderer, '持续实验', 'continuous')
+          await vi.waitFor(() => expect(renderer.root.findAllByType('button').some(button => nodeText(button) === name)).toBe(true))
+          await change(renderer, '最多运行次数', '2')
+        }
+        if (kind === 'run' || kind === 'experiment') await change(renderer, '本次执行预设', 'preset-a')
+        await click(renderer, name)
+        if (['prompt', 'rewrite', 'parameters', 'resources'].includes(kind)) {
+          expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain(name)
+          await change(renderer, '任务要求', '按独立配置执行')
+          await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+        }
+        await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).tasks.some(item => item.function_id === added.function_id)).toBe(true))
+        const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id)!
+        expect(task).toMatchObject({ kind, binding_snapshot: { name, kind, preset_id: environment.defaultPresetId } })
+        if (kind === 'compare') expect(task.input.reference_run_ids).toEqual([runId, otherRunId])
+        if (kind === 'run') expect(renderer.root.findByProps({ 'aria-label': '本次执行预设' }).props.value).toBe('preset-a')
+        if (kind === 'experiment') {
+          await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('执行预设：默认工作台预设'))
+          await click(renderer, '结束实验')
+          await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '本次执行预设' }).props.value).toBe('preset-a'))
+        }
+      } finally { await host.dispose() }
+    })
+
+  it('shows the accepted experiment snapshot and its first Run without reading later Branch edits', async () => {
+    const { host, root, options } = await setup(true)
+    try {
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'experiment', value: 'preset-a' }, signal)
+      await host.remote.mutate({ ...root, type: 'update-draft', field: 'positive_prompt', value: '启动时的玻璃花房' }, signal)
+      await host.remote.mutate({ ...root, type: 'update-draft', field: 'parameter', id: 'seed_1', value: 123 }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await change(renderer, '持续实验', 'continuous')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '最多运行次数' })).toBeDefined())
+      await change(renderer, '最多运行次数', '3')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '最多运行次数' }).props.value).toBe(3))
+      await click(renderer, '开始实验')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ className: 'taskbox' })).toBeDefined())
+      const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.kind === 'experiment')!
+      const box = () => renderer.root.findByProps({ className: 'taskbox' })
+      expect(nodeText(box().findAllByType('h3')[0]!)).toBe(task.title)
+      expect(nodeText(box())).toContain('保留窗框')
+      expect(nodeText(box())).toContain('执行预设：Preset A')
+      expect(nodeText(box())).toContain('Agent 模型：Provider A · Model A')
+      expect(nodeText(box())).toContain('已提交 0 次 · 还可提交 3 次')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('启动时的玻璃花房')
+      expect(renderer.root.findAllByType('button').map(nodeText)).toContain('暂停实验')
+      expect(renderer.root.findAllByType('button').map(nodeText)).toContain('结束实验')
+      await host.remote.mutate({ ...root, type: 'update-branch', field: 'original_request', value: '启动后的需求修改', expectedValue: '保留窗框' }, signal)
+      await host.remote.mutate({ ...root, type: 'update-draft', field: 'positive_prompt', value: '启动后的分支修改' }, signal)
+      await host.remote.mutate({ ...root, type: 'update-draft', field: 'parameter', id: 'seed_1', value: 999 }, signal)
+      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+      const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'experiment-first' },
+        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+      const runId = accepted.items[0]!.runId
+      await vi.waitFor(() => expect(nodeText(box())).toContain(runId + ' 正在运行'), { timeout: 3000 })
+      expect(renderer.root.findByProps({ 'aria-label': 'seed_1' }).props.value).toBe('123')
+      expect(renderer.root.findByProps({ 'aria-label': '原始需求' }).props.value).toBe('保留窗框')
+      for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
+      await vi.waitFor(() => expect(nodeText(box())).toContain('已提交 1 次 · 还可提交 2 次'), { timeout: 3000 })
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('启动时的玻璃花房')
+      await click(renderer, '查看本轮结果')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true))
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('123'), { timeout: 3000 })
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect((await host.remote.getProjection(root, signal)).experiments).toHaveLength(1)
+      expect((await host.remote.getProjection(root, signal)).tasks.filter(item => item.kind === 'experiment')).toHaveLength(1)
+    } finally { await host.dispose() }
+  })
+
+  it('moves an edited custom entry and confirms removal while keeping its real Task, Run and artifact snapshots', async () => {
+    const { host, root, options } = await setup(true)
+    try {
+      const initial = await host.remote.getProjection(root, signal)
+      const source = initial.functions.find(item => item.function_id === 'run')!
+      const { kind, preset_id, agent_model, requested_skill, request_template } = source
+      await host.remote.mutate({ ...root, type: 'function-add', value: { name: '独立运行', kind, preset_id, agent_model, requested_skill, request_template } }, signal)
+      const added = (await host.remote.getProjection(root, signal)).functions.find(item => item.name === '独立运行')!
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options,
+        remote: { ...options.remote, getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
+      await click(renderer, '独立运行')
+      await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).tasks.some(item => item.function_id === added.function_id)).toBe(true))
+      const originalTask = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id)!
+      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+      const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: originalTask.session_id!, turn: 1, callId: 'custom-run' },
+        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(originalTask.input.generation_input)) }], signal, originalTask.task_id)
+      for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
+      host.official.agents.get(originalTask.session_id!)!.status = 'idle'
+      await click(renderer, '配置中心')
+      await click(renderer, '编辑独立运行')
+      await change(renderer, '功能名称', '独立改写')
+      await change(renderer, '任务类型', 'rewrite')
+      expect(nodeText(renderer.root.findByProps({ id: 'function-location' }))).toBe('提示词')
+      const defaultRewrite = renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value
+      expect(defaultRewrite).toContain('type 为 prompt')
+      await change(renderer, '执行要求', '自定义执行要求 {{task_id}}')
+      await change(renderer, '任务类型', 'parameters')
+      expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('自定义执行要求 {{task_id}}')
+      await change(renderer, '任务类型', 'rewrite')
+      await click(renderer, '恢复默认要求')
+      expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe(defaultRewrite)
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await click(renderer, '返回工作台')
+      expect(renderer.root.findAllByType('button').filter(button => nodeText(button) === '独立运行')).toHaveLength(0)
+      await click(renderer, '独立改写')
+      await change(renderer, '任务要求', '历史产物要求')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      const changedTask = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id && item.kind === 'rewrite')!
+      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: changedTask.task_id, artifact: { type: 'prompt', positive_prompt: '保留的历史产物', negative_prompt: '' } },
+        { workspaceId: root.workspaceId, sessionId: changedTask.session_id!, turn: 1, callId: 'custom-artifact' })
+      host.official.agents.get(changedTask.session_id!)!.status = 'idle'
+      await click(renderer, '配置中心')
+      await click(renderer, '移除独立改写')
+      expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain('已创建的任务和运行记录继续保留')
+      expect((await host.remote.getProjection(root, signal)).functions.some(item => item.function_id === added.function_id)).toBe(true)
+      await click(renderer, '取消')
+      expect(renderer.root.findByProps({ 'data-function': added.function_id })).toBeDefined()
+      await click(renderer, '移除独立改写')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      expect((await host.remote.getProjection(root, signal)).functions.some(item => item.function_id === added.function_id)).toBe(false)
+      await click(renderer, '返回工作台')
+      expect(renderer.root.findAllByType('button').filter(button => nodeText(button) === '独立改写')).toHaveLength(0)
+      await click(renderer, '任务')
+      const cards = renderer.root.findAllByProps({ className: 'agent-task-card' })
+      expect(nodeText(cards.find(card => card.props['data-task'] === originalTask.task_id)!)).toContain('独立运行')
+      expect(nodeText(cards.find(card => card.props['data-task'] === changedTask.task_id)!)).toContain('保留的历史产物')
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.tasks.find(item => item.task_id === originalTask.task_id)!.binding_snapshot).toEqual(originalTask.binding_snapshot)
+      expect(after.tasks.find(item => item.task_id === changedTask.task_id)!.binding_snapshot).toEqual(changedTask.binding_snapshot)
+      expect(after.runs.find(item => item.run_id === accepted.items[0]!.runId)!.media).toHaveLength(1)
+    } finally { await host.dispose() }
+  })
+
+  it('creates a configured custom function only after saving the shared editor and invokes its actual entry', async () => {
+    const { host, root, options } = await setup(true)
+    try {
+      const initialEnvironment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      host.official.listPresets.mockResolvedValue([{ id: 'preset-a', name: 'First preset' }, { id: initialEnvironment.defaultPresetId, name: '默认工作台预设' }])
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const before = await host.remote.getProjection(root, signal)
+      const { renderer } = await mount(before, { ...options, presets: environment.presets,
+        remote: { ...options.remote, getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
+      await click(renderer, '配置中心')
+      await click(renderer, '添加功能')
+      expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain('添加功能')
+      expect(renderer.root.findByProps({ 'aria-label': '功能名称' }).props.value).toBe('')
+      expect(renderer.root.findByProps({ 'aria-label': '任务类型' }).props.value).toBe('rewrite')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }).props.value).toBe(environment.defaultPresetId))
+      expect(renderer.root.findByProps({ 'aria-label': 'Agent 提供商' }).props.value).toBe(environment.models.default.provider)
+      expect(renderer.root.findByProps({ 'aria-label': 'Agent 模型' }).props.value).toBe(environment.models.default.model)
+      expect(options.onAction.mock.calls.filter(([request]) => request.type === 'function-add')).toEqual([])
+      await click(renderer, '取消')
+      expect((await host.remote.getProjection(root, signal)).functions).toHaveLength(before.functions.length)
+      await click(renderer, '添加功能')
+      const escape = new Event('keydown')
+      Object.defineProperty(escape, 'key', { value: 'Escape' })
+      await act(() => { document.dispatchEvent(escape) })
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      await click(renderer, '添加功能')
+      await change(renderer, '功能名称', '额外改写')
+      await change(renderer, '指定 Skill', 'prompt-builder')
+      await change(renderer, '执行要求', '执行独立改写 {{task_id}}')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      const added = (await host.remote.getProjection(root, signal)).functions.find(item => item.name === '额外改写')!
+      expect(added).toMatchObject({ builtin: false, kind: 'rewrite', preset_id: environment.defaultPresetId,
+        agent_model: environment.models.default, requested_skill: 'prompt-builder', request_template: '执行独立改写 {{task_id}}' })
+      expect(options.onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'function-add', value: {
+        name: '额外改写', kind: 'rewrite', preset_id: environment.defaultPresetId, agent_model: environment.models.default,
+        requested_skill: 'prompt-builder', request_template: '执行独立改写 {{task_id}}',
+      } }))
+      await click(renderer, '返回工作台')
+      await click(renderer, '额外改写')
+      await change(renderer, '任务要求', '保留窗框')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id)!
+      expect(task).toMatchObject({ kind: 'rewrite', binding_snapshot: { name: '额外改写', preset_id: environment.defaultPresetId, requested_skill: 'prompt-builder' } })
+    } finally { await host.dispose() }
+  })
+
+  it.each(['run', 'retry'] as const)('preserves a newly selected preset when the earlier %s acceptance arrives', async type => {
+    const { host, root, runId, options } = await setup()
+    let release!: () => void
+    const gate = new Promise<void>(resolve => { release = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === type) await gate
+      return host.remote.mutate(request, signal)
+    })
+    try {
+      host.official.listPresets.mockResolvedValue([{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-override', name: '本次预设' }, { id: 'preset-next', name: '随后预设' }])
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, presets: environment.presets, onAction })
+      await change(renderer, '本次执行预设', 'preset-override')
+      await click(renderer, type === 'retry' ? '重试任务' : '运行任务')
+      await change(renderer, '本次执行预设', 'preset-next')
+      await change(renderer, '本次执行预设', 'preset-override')
+      await act(async () => { release(); await onAction.mock.results.at(-1)!.value })
+      expect(renderer.root.findByProps({ 'aria-label': '本次执行预设' }).props.value).toBe('preset-override')
+      const accepted = (await host.remote.getProjection(root, signal)).tasks.at(-1)!
+      expect(accepted.binding_snapshot.preset_id).toBe('preset-override')
+      if (type === 'retry') expect(accepted.retry_of_run_id).toBe(runId)
+    } finally {
+      await act(async () => { release(); await onAction.mock.results.at(-1)?.value.catch(() => {}) })
+      await host.dispose()
+    }
+  })
+
+  it('preserves the submitted preset and business input when its required Skill is unavailable', async () => {
+    const { host, root, options } = await setup(true)
+    try {
+      const source = (await host.remote.getProjection(root, signal)).functions.find(item => item.function_id === 'run')!
+      const { name, kind, preset_id, agent_model, request_template } = source
+      await host.remote.mutate({ ...root, type: 'function-edit', id: source.function_id, value: {
+        name, kind, preset_id, agent_model, requested_skill: 'prompt-builder', request_template,
+      } }, signal)
+      host.official.listPresets.mockResolvedValue([{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-no-skill', name: '缺少 Skill 的预设' }])
+      const createSession = host.official.controller.create.getMockImplementation()!
+      host.official.controller.create.mockImplementation(async input => {
+        const created = await createSession(input)
+        if (input.agentPreset === 'preset-no-skill')
+          host.official.agents.get(created.sessionId)!.ctx.skills.list.mockResolvedValue([])
+        return created
+      })
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const before = (await host.remote.getProjection(root, signal)).branches[0]!.draft
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, presets: environment.presets })
+      await change(renderer, '本次执行预设', 'preset-no-skill')
+      await click(renderer, '运行任务')
+      await vi.waitFor(() => expect(nodeText(renderer.root)).toContain('prompt-builder'))
+      expect(renderer.root.findByProps({ 'aria-label': '本次执行预设' }).props.value).toBe('preset-no-skill')
+      expect((await host.remote.getProjection(root, signal)).branches[0]!.draft).toEqual(before)
+      expect((await host.remote.getProjection(root, signal)).functions.find(item => item.function_id === 'run')!.preset_id).toBe('preset-a')
+    } finally { await host.dispose() }
+  })
+
+  it('retains the one-time preset until a real Task is accepted and keeps it after submission failure', async () => {
+    const { host, root, options } = await setup(true)
+    let release!: () => void
+    const gate = new Promise<void>(resolve => { release = resolve })
+    let fail = false
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === 'run') {
+        if (fail) throw new Error('任务提交失败：连接已中断，请重试。')
+        await gate
+      }
+      return host.remote.mutate(request, signal)
+    })
+    try {
+      host.official.listPresets.mockResolvedValue([{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-override', name: '本次预设' }])
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, presets: environment.presets, onAction })
+      await change(renderer, '本次执行预设', 'preset-override')
+      await click(renderer, '运行任务')
+      expect(renderer.root.findByProps({ 'aria-label': '本次执行预设' }).props.value).toBe('preset-override')
+      await act(async () => { release(); await onAction.mock.results.at(-1)!.value })
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '本次执行预设' }).props.value).toBe(''))
+      const accepted = (await host.remote.getProjection(root, signal)).tasks.at(-1)!
+      expect(accepted.binding_snapshot.preset_id).toBe('preset-override')
+      expect((await host.remote.getProjection(root, signal)).functions.find(item => item.function_id === 'run')!.preset_id).toBe('preset-a')
+      const accept = async (task: import('../../src/workbench/contract.ts').Task) => {
+        const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+        const result = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() },
+          [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+        for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
+        host.official.agents.get(task.session_id!)!.status = 'idle'
+        return result.items[0]!.runId
+      }
+      const firstRunId = await accept(accepted)
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行 ' + firstRunId })).toBeDefined(), { timeout: 3000 })
+      await click(renderer, '查看运行 ' + firstRunId)
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain('执行预设：本次预设')
+      await vi.waitFor(() => expect(renderer.root.findAllByType('button').some(button => nodeText(button) === '编辑任务输入')).toBe(true))
+      await click(renderer, '编辑任务输入')
+      await click(renderer, '运行任务')
+      await act(async () => { await onAction.mock.results.at(-1)!.value })
+      const next = (await host.remote.getProjection(root, signal)).tasks.at(-1)!
+      expect(next.binding_snapshot.preset_id).toBe('preset-a')
+      const nextRunId = await accept(next)
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行 ' + nextRunId })).toBeDefined(), { timeout: 3000 })
+      await click(renderer, '查看运行 ' + nextRunId)
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain('执行预设：Preset A')
+      await vi.waitFor(() => expect(renderer.root.findAllByType('button').some(button => nodeText(button) === '编辑任务输入')).toBe(true))
+      await click(renderer, '编辑任务输入')
+      fail = true
+      await change(renderer, '本次执行预设', 'preset-override')
+      await click(renderer, '运行任务')
+      await vi.waitFor(() => expect(nodeText(renderer.root)).toContain('任务提交失败：连接已中断，请重试。'))
+      expect(renderer.root.findByProps({ 'aria-label': '本次执行预设' }).props.value).toBe('preset-override')
+    } finally {
+      await act(async () => { release(); await onAction.mock.results.at(-1)?.value.catch(() => {}) })
+      await host.dispose()
+    }
+  })
 
   it('focuses the source experience ahead of other saved entries and clears the previous library query through Remote', async () => {
     const { host, root, runId, createRun, options } = await setup(true)

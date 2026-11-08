@@ -1,11 +1,11 @@
 import Schema from '@deepseek-ai/schemastery'
 import { CATALOG_KIND_DEFINITIONS, type CatalogKind } from './catalog/contract.ts'
 import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
-import type { WorkbenchProjection, AgentModel, TaskRequestDraft, WorkbenchRunInput } from './workbench/contract.ts'
+import type { WorkbenchProjection, WorkbenchModelCatalog, TaskRequestDraft, WorkbenchRunInput } from './workbench/contract.ts'
 import { jsonValueSchema } from './shared/json-contract.ts'
 import { workflowRuntimeParameterInspectionSchema, type WorkflowRuntimeParameterInspection } from './generation/inspection-contract.ts'
 import { contractObject, requiredNullable } from './shared/field-contract.ts'
-import { favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftUpdateSchema, taskDraftSchema, taskRequestDraftSchema, workbenchRunInputSchema } from './workbench/schema.ts'
+import { functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftUpdateSchema, taskDraftSchema, taskRequestDraftSchema, workbenchRunInputSchema } from './workbench/schema.ts'
 
 export const WORKBENCH_REMOTE_NAMESPACE = 'harnessComfyuiWorkbenchRemote'
 export const WORKBENCH_REMOTE_SERVICE = `remote.${WORKBENCH_REMOTE_NAMESPACE}`
@@ -30,12 +30,8 @@ export interface ExperimentWorkbenchAction extends WorkbenchScope {
 export interface WorkbenchEnvironment {
   workspaces: { id: string; name: string; path: string }[]
   presets: { id: string; name: string; broken?: string }[]
-  models: {
-    default: AgentModel
-    groups: { id: string; name: string; models: { id: string; name: string; reasoning?: { efforts: { id: string; name: string }[]; defaultEffort?: string } }[] }[]
-    routableProviders: string[]
-    failures: { id: string; name: string; message: string }[]
-  }
+  defaultPresetId: string
+  models: WorkbenchModelCatalog
   skills: { name: string; description: string }[]
   instances: { id: string; name: string }[]
 }
@@ -105,6 +101,10 @@ function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
   if (method === 'mutate') {
     const action = parsed as ExperimentWorkbenchAction
     if (action.type !== 'new-workspace') Schema.resolve(action.workspaceId, identifier().required(), {})
+    if (action.type === 'function-add' || action.type === 'function-edit') {
+      if (action.type === 'function-edit') Schema.resolve(action.id, identifier().required(), {})
+      Schema.resolve(action.value, functionBindingEditableSchema, {})
+    }
     if (action.type === 'favorite' || action.type === 'reuse') {
       Schema.resolve(action.id, identifier().required(), {})
       Schema.resolve(action.value, action.type === 'favorite' ? favoriteUpdateSchema : experienceReuseInputSchema, {})

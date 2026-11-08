@@ -41,6 +41,14 @@ export interface TaskRequestDraft {
 }
 export interface ExecutionDraft { mode: 'once' | 'continuous'; max_runs: number }
 export interface AgentModel { provider: string; model: string; reasoningEffort?: string }
+
+export interface WorkbenchModelCatalog {
+  default: AgentModel
+  groups: { id: string; name: string; models: { id: string; name: string; reasoning?: { efforts: { id: string; name: string }[]; defaultEffort?: string } }[] }[]
+  routableProviders: string[]
+  failures: { id: string; name: string; message: string }[]
+}
+export type WorkbenchModelGroup = WorkbenchModelCatalog['groups'][number]
 export interface ReviewDraft {
   verdict: 'unrated' | 'met' | 'needs-work'
   observation: string
@@ -72,16 +80,18 @@ export interface OutputContract {
   requires_finished_runs: boolean
 }
 export interface FunctionDescriptor { kind: TaskKind; name: string; default_request_template: string; output_contract: OutputContract; ui_location: string; ui_result: string }
-export interface FunctionBinding {
-  workspace_id: string
-  function_id: string
+export interface FunctionBindingEditable {
   name: string
   kind: TaskKind
-  builtin: boolean
   preset_id: string
   agent_model: AgentModel
   requested_skill: string | null
   request_template: string
+}
+export interface FunctionBinding extends FunctionBindingEditable {
+  workspace_id: string
+  function_id: string
+  builtin: boolean
 }
 export interface BindingSnapshot { function_id: string; name: string; kind: TaskKind; preset_id: string; agentModel: AgentModel; requested_skill: string | null; request_template: string }
 export interface ApplyTarget { kind: 'branch' | 'run_review'; id: string; expected: Record<string, JsonValue> }

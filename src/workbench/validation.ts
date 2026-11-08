@@ -1,12 +1,12 @@
 import { contractFields } from '../shared/field-contract.ts'
 import Schema from '@deepseek-ai/schemastery'
-import { artifactSchemas, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema } from './schema.ts'
+import { artifactSchemas, functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema } from './schema.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { TASK_KINDS } from './functions.ts'
 import libraryConfig from './library-config.json' with { type: 'json' }
 import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, isRunReviewFunctionKind } from './contract.ts'
 import { requestTemplateProblem } from './request-template.ts'
-import type { ArtifactPayload, ContextRef, FavoriteUpdate, ExperienceReuseInput, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, ReviewDraftUpdate, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
+import type { ArtifactPayload, ContextRef, FavoriteUpdate, ExperienceReuseInput, FunctionBinding, FunctionBindingEditable, GenerationInput, JsonValue, ReviewDraft, ReviewDraftUpdate, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
 
 export interface FieldIssue { path: string; message: string }
 export class WorkbenchError extends Error {
@@ -179,6 +179,11 @@ export function validateExperienceReuseInput(value: unknown): ExperienceReuseInp
     const error = libraryConfig.errors.reuseInvalid
     throw new WorkbenchError(error.code, error.message.replaceAll('{maxLength}', String(WORKBENCH_BRANCH_NAME_MAX_LENGTH)), error.path)
   }
+}
+
+export function validateFunctionBindingEditable(value: unknown): FunctionBindingEditable {
+  try { return structuredClone(Schema.resolve(value, functionBindingEditableSchema, {})[0]) as FunctionBindingEditable }
+  catch (error) { throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), 'binding') }
 }
 
 export function validateFunctionBinding(value: FunctionBinding): FunctionBinding {

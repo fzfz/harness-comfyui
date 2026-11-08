@@ -1,0 +1,15 @@
+{
+  "path": "binding.agent_model",
+  "invalidSelectionCode": "WORKBENCH_INVALID_INPUT",
+  "catalogUnavailable": {
+    "code": "WORKBENCH_MODEL_CATALOG_UNAVAILABLE",
+    "message": "无法读取 Agent 模型目录，请稍后重新保存功能。"
+  },
+  "messages": {
+    "providerMissing": "请选择可用的 Agent 提供商。",
+    "providerUnroutable": "该 Agent 提供商当前无法执行任务，请选择可用的提供商。",
+    "modelMissing": "请选择该提供商下的 Agent 模型。",
+    "effortUnsupported": "请选择该模型支持的推理等级。",
+    "effortUnavailable": "该模型未提供推理等级，请重新选择模型。"
+  }
+}

@@ -65,6 +65,7 @@ import { ExperimentReviewDialog } from './experiment-review-dialog.tsx'
 import reviewPresentation from './experiment-review-presentation.json' with { type: 'json' }
 import libraryPresentation from './experiment-library-presentation.json' with { type: 'json' }
 import { ExperimentReuseDialog } from './experiment-reuse-dialog.tsx'
+import { ExperimentStatus } from './experiment-status.tsx'
 
 export type {
   ExperimentWorkbenchAction,
@@ -299,6 +300,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     setModalState(value)
   }, [])
   const [search, setSearch] = useState('')
+  const presetOverrideRevision = useRef(0)
   const fieldEditor = useBranchFieldEdits(state.workspaceId, state.view.workId, state.view.branchId)
   const host = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -354,8 +356,15 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     p?.tasks.find((task) => task.task_id === item.workbench_task_id)
   const branchFor = (item: WorkbenchRun) =>
     p?.branches.find((branch) => branch.branch_id === taskFor(item)?.branch_id)
+  const experiment = p?.experiments.find(
+    item => p.tasks.find(task => task.task_id === item.task_id)?.branch_id === branch?.branch_id &&
+      ['running', 'paused'].includes(item.control_state),
+  )
+  const experimentTask = p?.tasks.find(task => task.task_id === experiment?.task_id)
+  const experimentRuns = p?.runs.filter(item => item.workbench_task_id === experiment?.task_id) ?? []
+  const firstExperimentRun = experimentRuns.find(item => item.iteration_index === 1)
   const runInputs = useRunInputs(props.remote.getRunInput, state.workspaceId, view.workId,
-    p?.runs.filter(item => sheet || item.run_id === view.selectedRunId || item.run_id === view.compareRunId) ?? [], setMessage)
+    p?.runs.filter(item => sheet || item.run_id === view.selectedRunId || item.run_id === view.compareRunId || item.run_id === firstExperimentRun?.run_id) ?? [], setMessage)
   const branchRuns = (id: string) =>
     p?.runs.filter((item) => taskFor(item)?.branch_id === id) ?? []
   useEffect(() => {
@@ -364,6 +373,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       !view.workId ||
       !branch ||
       view.inspectRun ||
+      !!experiment ||
       props.visible === false
     )
       return
@@ -394,6 +404,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     branch?.branch_id,
     branch?.draft.generation_input.instance_id,
     branch?.draft.generation_input.template_id,
+    experiment?.task_id,
     view.inspectRun,
     props.visible,
   ])
@@ -493,6 +504,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   ) => {
     if (!state.workspaceId && type !== 'new-workspace') return false
     const navigation = store.getNavigationSequence()
+    const submittedPresetRevision = presetOverrideRevision.current
     const stillCurrent = () => store.getNavigationSequence() === navigation &&
       (!isCurrent || isCurrent())
     try {
@@ -504,6 +516,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...(run ? { runId: run.run_id } : {}),
         ...extra,
       })
+      const current = store.getSnapshot()
+      if (selection?.taskId && ['run', 'experiment', 'retry'].includes(type) &&
+        current.workspaceId === state.workspaceId && current.view.presetOverride === view.presetOverride &&
+        presetOverrideRevision.current === submittedPresetRevision)
+        store.updateView({ presetOverride: null })
       if (!stillCurrent()) return false
       const keepsCurrentNavigation = type === 'favorite' || !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'task-apply' || type === 'task-generation-apply'
       const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
@@ -928,7 +945,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {run.status === 'failed' && <><Button
                 kind="primary"
                 icon="run"
-                onClick={() => void action('retry')}
+                onClick={() => void action('retry', { value: { preset_override: view.presetOverride } })}
               >
                 重试任务
               </Button>
@@ -1460,7 +1477,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const inputs = view.inspectRun && run
     ? historical ? { generation_input: historical.generation_input, prompt_input: historical.prompt_input,
       context_refs: historical.context_refs, base_model_id: historicalModel?.id === historical.generation_input.model?.id ? historicalModel?.item.baseModelId ?? null : null } : undefined
-    : branch?.draft
+    : experimentTask?.input ?? branch?.draft
   const selectedTemplateId = inputs?.generation_input.template_id ?? null
   const { details: selectedTemplate, error: selectedTemplateError } = useCatalogDetails(
     selectedTemplateId ? { kind: 'comfyui-template', id: selectedTemplateId } : null,
@@ -1474,7 +1491,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const parameterScope = branch && state.workspaceId
     ? inputDescriptionCache.key(state.workspaceId, branch.draft.generation_input) : ''
   const parameterFieldEditor = useBranchFieldEdits(state.workspaceId, view.workId, view.branchId, parameterScope)
-  const inputDescription = view.inspectRun ? historical?.input_description : inputs ? descriptionFor(inputs.generation_input) : null
+  const inputDescription = view.inspectRun ? historical?.input_description : experiment ? firstExperimentRun ? runInputs.get(firstExperimentRun.run_id)?.input_description : null : inputs ? descriptionFor(inputs.generation_input) : null
   const displayedParameters = inputs ? view.inspectRun && run ? runParameterValues(run) : inputs.generation_input.parameters : {}
   const sizes = inputs
     ? experimentSizeOptions(
@@ -1483,11 +1500,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       )
     : []
   const currentSize = sizes.find((size) => size.current)?.value ?? ''
-  const experiment = p?.experiments.find(
-    (item) =>
-      p.tasks.find((task) => task.task_id === item.task_id)?.branch_id ===
-        branch?.branch_id && ['running', 'paused'].includes(item.control_state),
-  )
   const locked = view.inspectRun || !!experiment
   const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
   const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string | null, resourceId?: string) => {
@@ -1615,22 +1627,15 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 : '任务输入'}
           </span>
         </div>
-        {experiment && (
-          <div className="taskbox">
-            <span className="pill amber">
-              {experiment.control_state === 'paused' ? '已暂停' : '实验运行中'}
-            </span>
-            <p>
-              已完成 {experiment.submitted_count} / {experiment.max_runs} 次
-            </p>
-          </div>
-        )}
+        {experiment && experimentTask && <ExperimentStatus experiment={experiment} task={experimentTask}
+          runs={experimentRuns} presetName={presetName(experimentTask.binding_snapshot.preset_id)}
+          modelName={formatAgentModel(experimentTask.binding_snapshot.agentModel)} onRun={selectRun} />}
         <fieldset className="configuration" disabled={locked}>
           {field('分支名称', 'name', branch.name, {
             maxLength: WORKBENCH_BRANCH_NAME_MAX_LENGTH,
             branch: true,
           })}
-          {field('原始需求', 'original_request', branch.original_request, {
+          {field('原始需求', 'original_request', experimentTask?.input.requirements.original_request ?? branch.original_request, {
             multiline: true,
             short: true,
             branch: true,
@@ -1793,7 +1798,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {agentButton('建议参数', 'parameters', locked)}
               {customActions(['parameters'], locked)}
             </div>
-            {view.inspectRun && !inputDescription ? <div className="fields2">
+            {(view.inspectRun || !!experiment) && !inputDescription ? <div className="fields2">
               {Object.entries(inputs.generation_input.parameters).map(([id, value]) => field(id, id, typeof value === 'string' ? value : JSON.stringify(value)))}
             </div> : <><div className="fields2">
               {parameterField('steps')}
@@ -1836,11 +1841,10 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               <select
                 aria-label="本次执行预设"
                 value={view.presetOverride ?? ''}
-                onChange={(event) =>
-                  store.updateView({
-                    presetOverride: event.target.value || null,
-                  })
-                }
+                onChange={(event) => {
+                  presetOverrideRevision.current++
+                  store.updateView({ presetOverride: event.target.value || null })
+                }}
               >
                 <option value="">
                   默认 ·{' '}
@@ -1965,7 +1969,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   branch.execution.mode === 'continuous' ? 'experiment' : 'run',
                   { value: { preset_override: view.presetOverride } },
                 )
-                store.updateView({ presetOverride: null })
               }}
             >
               {pending
@@ -2009,7 +2012,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         if (!('id' in change)) return save()
         const key = JSON.stringify([request.workspaceId, change.id])
         const currentBinding = functionBindings.get(key) ?? p?.functions.find(item => item.function_id === change.id)
-        const submittedBinding = change.type === 'function-edit' ? change.value : change.type === 'function-preset' && currentBinding ? { ...currentBinding, preset_id: change.value } : null
+        const submittedBinding = change.type === 'function-edit' && currentBinding ? { ...currentBinding, ...change.value } : change.type === 'function-preset' && currentBinding ? { ...currentBinding, preset_id: change.value } : null
         if (submittedBinding) setFunctionBindings(current => new Map(current).set(key, submittedBinding))
         const pending = (functionWrites.current.get(key) ?? Promise.resolve()).then(save, save)
         functionWrites.current.set(key, pending)

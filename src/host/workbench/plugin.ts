@@ -4,13 +4,15 @@ import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-workspace'
+import agentModelSelection from '../../workbench/agent-model-selection.json' with { type: 'json' }
+import { agentModelProblem } from '../../workbench/agent-model.ts'
 import libraryConfig from '../../workbench/library-config.json' with { type: 'json' }
 import productAgent from '../../../config/product-agent.json' with { type: 'json' }
 import { WORKBENCH_FUNCTIONS as defaults } from '../../workbench/functions.ts'
 import type { WorkbenchEnvironment, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../catalog/contract.ts'
 import { WorkbenchService } from '../../workbench/service.ts'
-import type { AgentModel, GenerationInput, ContextRef, TaskDraft, ResourceRef } from '../../workbench/contract.ts'
+import type { AgentModel, WorkbenchModelCatalog, GenerationInput, ContextRef, TaskDraft, ResourceRef } from '../../workbench/contract.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import { createWorkbenchInputAdapter } from './input-adapter.ts'
 import { workspaceSessionScopeForSession } from '../generation/workspace-access.ts'
@@ -23,12 +25,6 @@ interface SkillCatalog {
   list(options: { cwd?: string; scope?: unknown }): Promise<readonly { name: string; description: string; invocation: { modelInvocable: boolean } }[]>
 }
 function skillsFor(ctx: Context): SkillCatalog { return ctx.get('skills') as SkillCatalog }
-interface ModelCatalog {
-  default: AgentModel
-  groups: { id: string; name: string; models: { id: string; name: string; reasoning?: { efforts: { id: string; name: string }[]; defaultEffort?: string } }[] }[]
-  routableProviders: string[]
-  failures: { id: string; name: string; message: string }[]
-}
 interface WorkbenchHost {
   readonly service: WorkbenchService
   readonly signal: AbortSignal
@@ -39,6 +35,7 @@ interface WorkbenchHost {
   readonly environment: (workspaceId?: string, presetId?: string) => Promise<WorkbenchEnvironment>
   readonly initializeWorkspace: (workspaceId: string) => Promise<void>
   readonly presetSkills: (workspaceId: string, presetId: string) => Promise<WorkbenchEnvironment['skills']>
+  readonly validateFunctionAgentModel: (selection: AgentModel) => Promise<void>
   readonly validateFunctionPreset: (presetId: string) => Promise<void>
 }
 declare module '@deepseek-ai/cordis' { interface Context { harnessComfyuiWorkbench: WorkbenchHost } }
@@ -48,7 +45,7 @@ export const inject = ['harnessComfyuiCore', 'sessionController', 'agents', 'age
 
 export function apply(ctx: Context): void {
   const { runtime, catalog, workbenchStore: store, profile } = ctx.harnessComfyuiCore.services
-  const controller = ctx.get('sessionController') as unknown as OfficialSessionController & { modelCatalog(): Promise<ModelCatalog> }
+  const controller = ctx.get('sessionController') as unknown as OfficialSessionController & { modelCatalog(): Promise<WorkbenchModelCatalog> }
   const lifecycle = new AbortController()
   const { signal } = lifecycle
   ctx.effect(() => () => lifecycle.abort(), 'Workbench requests')
@@ -113,6 +110,16 @@ export function apply(ctx: Context): void {
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
   ctx.provide('harnessComfyuiWorkbench', {
     service, signal, validateParameters: input.validateParameters, previewModelChange: input.previewModelChange, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
+    async validateFunctionAgentModel(selection) {
+      const models = await controller.modelCatalog().catch(cause => {
+        const failure = agentModelSelection.catalogUnavailable
+        const error = new WorkbenchError(failure.code, failure.message, agentModelSelection.path)
+        error.cause = cause
+        throw error
+      })
+      const problem = agentModelProblem(selection, models.groups, models.routableProviders)
+      if (problem) throw new WorkbenchError(agentModelSelection.invalidSelectionCode, problem, agentModelSelection.path)
+    },
     async validateFunctionPreset(presetId) {
       const preset = (await ctx.agentPresets.list()).find(candidate => candidate.id === presetId)
       if (!preset || preset.broken) throw new WorkbenchError('WORKBENCH_PRESET_UNAVAILABLE', '所选 Agent 预设当前不可用，请重新选择预设。', 'preset_id')
@@ -132,7 +139,7 @@ export function apply(ctx: Context): void {
       const instances = await catalog.queryComfyuiInstances(CATALOG_COMFYUI_INSTANCE_QUERY, signal)
         .then(page => page.results.map(item => ({ id: item.id, name: item.title })))
         .catch(error => { ctx.logger('harness-comfyui').warn('Workbench instance catalog unavailable: %s', error instanceof Error ? error.message : String(error)); return [] })
-      return { instances, workspaces, presets: presets.map(preset => ({ id: preset.id, name: preset.name ?? preset.id, ...(preset.broken ? { broken: preset.broken } : {}) })), models, skills }
+      return { instances, workspaces, defaultPresetId: productAgent.preset.id, presets: presets.map(preset => ({ id: preset.id, name: preset.name ?? preset.id, ...(preset.broken ? { broken: preset.broken } : {}) })), models, skills }
     },
   })
 }

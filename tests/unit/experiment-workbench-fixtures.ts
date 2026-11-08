@@ -11,6 +11,7 @@ import type {
 } from '../../src/workbench/contract.ts'
 
 export const functionEnvironment = {
+  defaultPresetId: 'preset',
   workspaces: [{ id: 'workspace-a', name: '画面实验', path: '/projects/art' }],
   presets: [
     { id: 'preset', name: '工作台预设' },

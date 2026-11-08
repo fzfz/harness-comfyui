@@ -42,6 +42,7 @@ afterEach(async () => {
   vi.mocked(createPortal).mockClear()
 })
 const environment = {
+  defaultPresetId: 'preset',
   workspaces: [{ id: 'workspace-a', name: '画面项目', path: '/art' }],
   presets: [{ id: 'preset', name: '工作台预设' }],
   models: {

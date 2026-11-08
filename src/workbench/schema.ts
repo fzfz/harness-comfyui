@@ -1,4 +1,5 @@
 import Schema from '@deepseek-ai/schemastery'
+import { TASK_KINDS } from './functions.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import { jsonValueSchema } from '../shared/json-contract.ts'
@@ -12,6 +13,11 @@ const strings = () => Schema.array(text()).required()
 const object = (fields: Record<string, Schema>) => contractObject(fields, { exact: true })
 const json = () => jsonValueSchema({ keySchema: text(), maxDepth: 100 }).required()
 const jsonObject = () => Schema.dict(json()).required()
+export const functionBindingEditableSchema = object({
+  name: text(), kind: Schema.union([...TASK_KINDS]).required(), preset_id: text(),
+  agent_model: object({ provider: text(), model: text(), reasoningEffort: Schema.string().default(undefined as never) }),
+  requested_skill: requiredNullable(text()), request_template: text(),
+})
 export const taskRequestResourcesSchema = object({
   instance_id: Schema.union([id(), Schema.const(null)]).required(false).default(undefined as never),
   template_id: Schema.union([id(), Schema.const(null)]).required(false).default(undefined as never),

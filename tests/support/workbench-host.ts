@@ -10,6 +10,7 @@ import { vi } from 'vitest'
 import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { CATALOG_KIND_DEFINITIONS, type CatalogItem } from '../../src/catalog/contract.ts'
 import { GenerationRuntime, type GenerationPreparationAdapter, type GenerationTransport } from '../../src/host/generation/generation-runtime.ts'
+import type { WorkbenchModelCatalog } from '../../src/workbench/contract.ts'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import * as workbench from '../../src/host/workbench/plugin.ts'
 import { WorkbenchRemoteService } from '../../src/host/workbench/remote-service.ts'
@@ -26,7 +27,7 @@ export function provideWorkbenchOfficialServices(ctx: Context, workspaces = [
   ]
   const agents = new Map<string, { status: 'idle' | 'running'; session: { header: { cwd: string }; snapshotEvents(): readonly SessionEvent[] }; ctx: { skills: { list: ReturnType<typeof vi.fn> }; get(name: string): unknown } }>()
   const controller = {
-    modelCatalog: vi.fn(async () => ({
+    modelCatalog: vi.fn<() => Promise<WorkbenchModelCatalog>>(async () => ({
       default: { provider: 'provider-a', model: 'model-a' },
       groups: [{ id: 'provider-a', name: 'Provider A', models: [{ id: 'model-a', name: 'Model A' }] }],
       routableProviders: ['provider-a'], failures: [],

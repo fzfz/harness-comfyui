@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
+import { toGenerationRequest } from '../../src/cli/contract.ts'
 import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../src/catalog/contract.ts'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
@@ -7,6 +8,204 @@ import type { ExperimentWorkbenchAction, WorkbenchScope } from '../../src/workbe
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup() })
+it('creates a custom function from editable fields with a stable Host identity', async () => {
+  const { remote } = await fixture()
+  const value = { name: 'Glass rewrite', kind: 'rewrite', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}} and rewrite the prompt.' }
+  await remote.mutate({ workspaceId: 'workspace_1', type: 'function-add', value }, signal())
+  const created = (await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions.find(item => item.name === value.name)!
+  expect(created).toMatchObject({ ...value, workspace_id: 'workspace_1', builtin: false })
+  expect(created.function_id).toEqual(expect.any(String))
+  expect(created.function_id.length).toBeGreaterThan(0)
+  await remote.mutate({ workspaceId: 'workspace_1', type: 'function-edit', id: created.function_id, value: { ...value, name: 'Glass recheck' } }, signal())
+  const after = (await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions.filter(item => !item.builtin)
+  expect(after).toEqual([{ ...created, name: 'Glass recheck' }])
+  for (const extra of [{ function_id: 'replacement' }, { workspace_id: 'workspace_2' }, { builtin: true }]) {
+    await expect(remote.mutate({ workspaceId: 'workspace_1', type: 'function-add', value: { ...value, ...extra } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT' } })
+  }
+  await expect(remote.mutate({ workspaceId: 'workspace_2', type: 'function-edit', id: created.function_id, value }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_FUNCTION_NOT_FOUND' } })
+  expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions.filter(item => !item.builtin)).toEqual(after)
+})
+
+it('returns the configured default preset independently of official roster order', async () => {
+  const { remote, official } = await fixture()
+  const configured = (await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions.find(item => item.function_id === 'run')!.preset_id
+  official.listPresets.mockResolvedValue([{ id: 'other-preset', name: 'First roster item' }, { id: configured, name: 'Configured default' }])
+  const environment = await remote.getEnvironment({}, signal())
+  expect(environment).toMatchObject({ defaultPresetId: configured, models: { default: { provider: 'provider-a', model: 'model-a' } } })
+  expect(environment.presets[0]!.id).toBe('other-preset')
+})
+
+function editableBinding(binding: import('../../src/workbench/contract.ts').FunctionBinding): import('../../src/workbench/contract.ts').FunctionBindingEditable {
+  const { name, kind, preset_id, agent_model, requested_skill, request_template } = binding
+  return { name, kind, preset_id, agent_model, requested_skill, request_template }
+}
+
+it('runs a custom function with its own binding when a one-time preset is present', async () => {
+  const { remote } = await fixture()
+  const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Custom prompt', goal: 'Paint glass' } }, signal())
+  const value = { name: 'Glass rewrite', kind: 'rewrite', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  await remote.mutate({ ...selected, type: 'function-add', value }, signal())
+  const binding = (await remote.getProjection(selected, signal())).functions.find(item => item.name === value.name)!
+  const receipt = await remote.mutate({ ...selected, type: 'agent-action', id: binding.function_id, value: { preset_override: 'preset-b' } }, signal())
+  expect((await remote.getProjection(selected, signal())).tasks.find(task => task.task_id === receipt.taskId)).toMatchObject({ binding_snapshot: { function_id: binding.function_id, preset_id: 'preset-a' } })
+})
+
+it('fixes one-time presets in Run Task snapshots and retains input when the selected Skill is unavailable', async () => {
+  const { remote, official, runtime } = await fixture()
+  const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Preset runs', goal: 'Paint glass' } }, signal())
+  for (const request of [{ type: 'update-draft', field: 'instance_id', value: '8' }, { type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }] as const) await remote.mutate({ ...selected, ...request }, signal())
+  const original = (await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'run')!
+  const value = { ...editableBinding(original), preset_id: 'preset-a', requested_skill: 'prompt-builder' }
+  await remote.mutate({ ...selected, type: 'function-edit', id: original.function_id, value }, signal())
+  const fixedDraft = (await remote.getProjection(selected, signal())).branches[0]!.draft
+  for (const preset_override of ['preset-b', undefined]) {
+    const accepted = await remote.mutate({ ...selected, type: 'run', value: { ...(preset_override ? { preset_override } : {}) } }, signal())
+    const task = (await remote.getProjection(selected, signal())).tasks.find(task => task.task_id === accepted.taskId)!
+    expect(task.binding_snapshot.preset_id).toBe(preset_override ?? 'preset-a')
+    const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'preset-run' }
+    const run = await runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: { title: task.input.generation_input.title, instanceId: '8', templateId: '5', model: { id: '2', fileName: 'paint.safetensors' }, parameters: task.input.generation_input.parameters, loras: [] } }], undefined, task.task_id)
+    expect((await remote.getProjection(selected, signal())).runs.find(item => item.run_id === run.items[0]!.runId)!.workbench_task_id).toBe(task.task_id)
+  }
+  const createSession = official.controller.create.getMockImplementation()!
+  official.controller.create.mockImplementation(async input => {
+    const created = await createSession(input)
+    official.agents.get(created.sessionId)!.ctx.skills.list.mockResolvedValue([])
+    return created
+  })
+  await expect(remote.mutate({ ...selected, type: 'run', value: { preset_override: 'preset-b' } }, signal())).rejects.toThrow('prompt-builder')
+  const projection = await remote.getProjection(selected, signal())
+  expect(projection.branches[0]!.draft).toEqual(fixedDraft)
+  expect(projection.functions.find(binding => binding.function_id === 'run')).toMatchObject({ preset_id: 'preset-a', requested_skill: 'prompt-builder' })
+  expect(projection.tasks.find(task => task.status === 'failed')).toMatchObject({ binding_snapshot: { preset_id: 'preset-b' }, input: { generation_input: fixedDraft.generation_input } })
+})
+
+it('starts one experiment with fixed Task, Session, budget and first Run input', async () => {
+  const { remote, runtime, official } = await fixture()
+  const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Fixed experiment', goal: 'Compare glass light' } }, signal())
+  for (const request of [{ type: 'update-draft', field: 'instance_id', value: '8' }, { type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, { type: 'update-draft', field: 'positive_prompt', value: 'Initial glass' }, { type: 'update-execution', field: 'mode', value: 'continuous' }, { type: 'update-execution', field: 'max_runs', value: 3 }] as const) await remote.mutate({ ...selected, ...request }, signal())
+  const receipt = await remote.mutate({ ...selected, type: 'experiment', value: { preset_override: 'preset-a' } }, signal())
+  const initial = await remote.getProjection(selected, signal()), task = initial.tasks[0]!
+  expect(initial.tasks).toHaveLength(1)
+  expect(initial.experiments).toEqual([{ task_id: task.task_id, control_state: 'running', end_reason: null, submitted_count: 0, max_runs: 3 }])
+  expect(receipt.taskId).toBe(task.task_id)
+  expect(official.controller.create).toHaveBeenCalledExactlyOnceWith({ workspaceId: selected.workspaceId, agentPreset: 'preset-a' })
+  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Later glass' }, signal())
+  await remote.mutate({ ...selected, type: 'update-execution', field: 'max_runs', value: 5 }, signal())
+  const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'experiment-first' }
+  const fixed = { ...task.input.generation_input, instance_id: '8', template_id: '5' }
+  await expect(runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: toGenerationRequest({ ...fixed, parameters: { ...fixed.parameters, positive: 'Later glass' } }) }], undefined, task.task_id)).rejects.toMatchObject({ code: 'WORKBENCH_INPUT_MISMATCH' })
+  const accepted = await runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(fixed) }], undefined, task.task_id)
+  const after = await remote.getProjection(selected, signal()), run = after.runs[0]!
+  expect(after.tasks[0]!.input).toEqual(task.input)
+  expect(after.tasks[0]!.binding_snapshot).toEqual(task.binding_snapshot)
+  expect(after.experiments).toEqual([{ task_id: task.task_id, control_state: 'running', end_reason: null, submitted_count: 1, max_runs: 3 }])
+  expect(run).toMatchObject({ run_id: accepted.items[0]!.runId, workbench_task_id: task.task_id, iteration_index: 1, generation_input: task.input.generation_input })
+  expect((await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId: run.run_id }, signal())).generation_input).toEqual(task.input.generation_input)
+  expect(official.controller.create).toHaveBeenCalledOnce()
+})
+
+it('changes a custom kind and removes its bindings while retaining Task, Run and artifact history', async () => {
+  const { remote, runtime, ctx } = await fixture()
+  const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Function history', goal: 'Paint glass' } }, signal())
+  for (const request of [{ type: 'update-draft', field: 'instance_id', value: '8' }, { type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }] as const) await remote.mutate({ ...selected, ...request }, signal())
+  const base = { preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  await remote.mutate({ ...selected, type: 'function-add', value: { ...base, name: 'Custom run', kind: 'run' } }, signal())
+  await remote.mutate({ ...selected, type: 'function-add', value: { ...base, name: 'Custom rewrite', kind: 'rewrite' } }, signal())
+  const configured = await remote.getProjection(selected, signal()), runBinding = configured.functions.find(item => item.name === 'Custom run')!, binding = configured.functions.find(item => item.name === 'Custom rewrite')!
+  const runReceipt = await remote.mutate({ ...selected, type: 'agent-action', id: runBinding.function_id }, signal())
+  const rewriteReceipt = await remote.mutate({ ...selected, type: 'agent-action', id: binding.function_id }, signal())
+  const before = await remote.getProjection(selected, signal()), runTask = before.tasks.find(task => task.task_id === runReceipt.taskId)!, rewrite = before.tasks.find(task => task.task_id === rewriteReceipt.taskId)!
+  const runIdentity = { workspaceId: selected.workspaceId, sessionId: runTask.session_id!, turn: 1, callId: 'custom-run' }
+  const accepted = await runtime.acceptGenerations(runIdentity, [{ requestId: crypto.randomUUID(), request: toGenerationRequest({ ...runTask.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, runTask.task_id)
+  await runtime.advance()
+  const runId = accepted.items[0]!.runId
+  await remote.mutate({ ...selected, type: 'function-edit', id: binding.function_id, value: { ...base, name: 'Custom review', kind: 'review', request_template: 'Review {{task_id}}.' } }, signal())
+  const reviewDraft = (await remote.getProjection(selected, signal())).runs.find(run => run.run_id === runId)!.review_draft!
+  const reviewed = await remote.mutate({ ...selected, type: 'agent-action', id: binding.function_id, runId, referenceRunIds: [runId], value: { evaluationDraft: { expected: reviewDraft, draft: reviewDraft } } }, signal())
+  const current = await remote.getProjection(selected, signal()), review = current.tasks.find(task => task.task_id === reviewed.taskId)!
+  expect(current.tasks.find(task => task.task_id === rewrite.task_id)).toMatchObject({ kind: 'rewrite', binding_snapshot: rewrite.binding_snapshot, output_contract: { artifact_types: ['prompt'] }, request_text: rewrite.request_text })
+  expect(review).toMatchObject({ kind: 'review', binding_snapshot: { function_id: binding.function_id, name: 'Custom review' }, output_contract: { artifact_types: ['review'] } })
+  const rewriteIdentity = { workspaceId: selected.workspaceId, sessionId: rewrite.session_id!, turn: 1, callId: 'old-prompt' }
+  const artifact = await ctx.harnessComfyuiWorkbench.service.publish({ taskId: rewrite.task_id, artifact: { type: 'prompt', positive_prompt: 'Historical glass', negative_prompt: null } }, rewriteIdentity)
+  const reviewIdentity = { workspaceId: selected.workspaceId, sessionId: review.session_id!, turn: 1, callId: 'wrong-kind' }
+  await expect(ctx.harnessComfyuiWorkbench.service.publish({ taskId: review.task_id, artifact: { type: 'prompt', positive_prompt: 'Wrong contract', negative_prompt: null } }, reviewIdentity)).rejects.toMatchObject({ code: 'WORKBENCH_ARTIFACT_NOT_ALLOWED' })
+  for (const id of [binding.function_id, runBinding.function_id]) await remote.mutate({ ...selected, type: 'function-remove', id }, signal())
+  const after = await remote.getProjection(selected, signal())
+  expect(after.functions.every(item => item.builtin)).toBe(true)
+  expect(after.tasks.find(task => task.task_id === rewrite.task_id)!.binding_snapshot).toEqual(rewrite.binding_snapshot)
+  expect(after.artifacts.find(item => item.artifact_id === artifact.artifact_id)).toMatchObject({ task_id: rewrite.task_id, artifact: { type: 'prompt', positive_prompt: 'Historical glass' } })
+  expect(after.runs.find(run => run.run_id === runId)).toMatchObject({ workbench_task_id: runTask.task_id, status: 'failed' })
+  expect((await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())).generation_input).toEqual(runTask.input.generation_input)
+  expect(await ctx.harnessComfyuiWorkbench.service.getTask({ taskId: rewrite.task_id }, rewriteIdentity)).toMatchObject({ task_id: rewrite.task_id, kind: 'rewrite', output_contract: { artifact_types: ['prompt'] } })
+  expect(await ctx.harnessComfyuiWorkbench.service.getTask({ taskId: review.task_id }, reviewIdentity)).toMatchObject({ task_id: review.task_id, kind: 'review', output_contract: { artifact_types: ['review'] } })
+})
+
+it.each([
+  { model: { provider: 'missing', model: 'model-a' }, message: '请选择可用的 Agent 提供商。' },
+  { model: { provider: 'offline', model: 'model-a' }, message: '该 Agent 提供商当前无法执行任务，请选择可用的提供商。' },
+  { model: { provider: 'provider-a', model: 'missing' }, message: '请选择该提供商下的 Agent 模型。' },
+  { model: { provider: 'provider-a', model: 'reasoning', reasoningEffort: 'invalid' }, message: '请选择该模型支持的推理等级。' },
+  { model: { provider: 'provider-a', model: 'reasoning' }, message: '请选择该模型支持的推理等级。' },
+  { model: { provider: 'provider-a', model: 'model-a', reasoningEffort: 'high' }, message: '该模型未提供推理等级，请重新选择模型。' },
+])('rejects invalid official Agent model selection on custom function add and edit: $model', async ({ model, message }) => {
+  const { remote, official } = await fixture()
+  official.controller.modelCatalog.mockResolvedValue({
+    default: { provider: 'provider-a', model: 'model-a' },
+    groups: [
+      { id: 'provider-a', name: 'Provider A', models: [{ id: 'model-a', name: 'Model A' }, { id: 'reasoning', name: 'Reasoning model', reasoning: { efforts: [{ id: 'high', name: 'High' }] } }] },
+      { id: 'offline', name: 'Offline', models: [{ id: 'model-a', name: 'Model A' }] },
+    ],
+    routableProviders: ['provider-a'], failures: [],
+  })
+  const scope = { workspaceId: 'workspace_1' }
+  const value = { name: 'Valid custom function', kind: 'rewrite', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  await remote.mutate({ ...scope, type: 'function-add', value }, signal())
+  const before = await remote.getProjection(scope, signal()), binding = before.functions.find(item => item.name === value.name)!
+  for (const type of ['function-add', 'function-edit'] as const) {
+    await expect(remote.mutate({ ...scope, type, ...(type === 'function-edit' ? { id: binding.function_id } : {}), value: { ...value, name: 'Rejected function', agent_model: model } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'binding.agent_model', message }] } })
+    expect((await remote.getProjection(scope, signal())).functions).toEqual(before.functions)
+  }
+  expect(official.controller.selectModel).not.toHaveBeenCalled()
+})
+
+it('retains saved functions when the official Agent model catalog cannot be read', async () => {
+  const { remote, official } = await fixture(), scope = { workspaceId: 'workspace_1' }
+  const value = { name: 'Valid custom function', kind: 'rewrite', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  await remote.mutate({ ...scope, type: 'function-add', value }, signal())
+  const before = await remote.getProjection(scope, signal()), binding = before.functions.find(item => item.name === value.name)!
+  official.controller.modelCatalog.mockRejectedValue(new Error('Official model catalog unavailable'))
+  for (const type of ['function-add', 'function-edit'] as const) {
+    await expect(remote.mutate({ ...scope, type, ...(type === 'function-edit' ? { id: binding.function_id } : {}), value: { ...value, name: 'Unaccepted function' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_MODEL_CATALOG_UNAVAILABLE' } })
+    expect((await remote.getProjection(scope, signal())).functions).toEqual(before.functions)
+  }
+  expect(official.controller.selectModel).not.toHaveBeenCalled()
+})
+
+it('accepts supported official Agent models and rechecks the current catalog before later saves', async () => {
+  const { remote, official } = await fixture(), scope = { workspaceId: 'workspace_1' }
+  const catalog = {
+    default: { provider: 'provider-a', model: 'shared', reasoningEffort: 'high' },
+    groups: [
+      { id: 'provider-a', name: 'Provider A', models: [{ id: 'shared', name: 'Reasoning model', reasoning: { efforts: [{ id: 'high', name: 'High' }, { id: 'medium', name: 'Medium' }] } }] },
+      { id: 'provider-b', name: 'Provider B', models: [{ id: 'shared', name: 'Plain model' }] },
+    ],
+    routableProviders: ['provider-a', 'provider-b'], failures: [],
+  }
+  official.controller.modelCatalog.mockResolvedValue(catalog)
+  const value = { name: 'Current model choice', kind: 'rewrite', preset_id: 'preset-a', agent_model: catalog.default, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  await remote.mutate({ ...scope, type: 'function-add', value }, signal())
+  const id = (await remote.getProjection(scope, signal())).functions.find(item => item.name === value.name)!.function_id
+  for (const agent_model of [{ provider: 'provider-b', model: 'shared' }, { provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' }]) {
+    await remote.mutate({ ...scope, type: 'function-edit', id, value: { ...value, agent_model } }, signal())
+    expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === id)!.agent_model).toEqual(agent_model)
+  }
+  const before = await remote.getProjection(scope, signal())
+  official.controller.modelCatalog.mockResolvedValue({ ...catalog, routableProviders: ['provider-b'] })
+  await expect(remote.mutate({ ...scope, type: 'function-edit', id, value }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT' } })
+  expect((await remote.getProjection(scope, signal())).functions).toEqual(before.functions)
+  expect(official.controller.selectModel).not.toHaveBeenCalled()
+})
+
 async function fixture() {
   const result = await createWorkbenchHostFixture()
   cleanups.push(result.dispose)
@@ -54,9 +253,10 @@ it.each(['', '   ', ' 生成提示词 '])('rejects a blank or duplicate function
   const { remote, store } = await fixture()
   const scope = { workspaceId: 'workspace_1' }
   await remote.getProjection(scope, signal())
-  const binding = { ...store.getFunctionBinding(scope.workspaceId, 'prompt'), function_id: 'named-prompt', builtin: false, name: '自定义功能', preset_id: 'preset-a' }
-  await remote.mutate({ ...scope, type: 'function-add', value: binding }, signal())
-  await expect(remote.mutate({ ...scope, type: 'function-edit', value: { ...binding, name, request_template: 'Rejected edit {{task_id}}' } }, signal())).rejects.toMatchObject({
+  const value = editableBinding({ ...store.getFunctionBinding(scope.workspaceId, 'prompt'), name: '自定义功能', preset_id: 'preset-a' })
+  await remote.mutate({ ...scope, type: 'function-add', value }, signal())
+  const binding = (await remote.getProjection(scope, signal())).functions.find(item => item.name === value.name)!
+  await expect(remote.mutate({ ...scope, type: 'function-edit', id: binding.function_id, value: editableBinding({ ...binding, name, request_template: 'Rejected edit {{task_id}}' }) }, signal())).rejects.toMatchObject({
     details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'binding.name', message: '请填写与已有功能不同的名称。' }] },
   })
   expect(store.getFunctionBinding(scope.workspaceId, binding.function_id)).toEqual(binding)
@@ -66,14 +266,15 @@ it('trims saved function names, permits the original name and permits matching n
   const { remote, store } = await fixture()
   for (const workspaceId of ['workspace_1', 'workspace_2']) {
     await remote.getProjection({ workspaceId }, signal())
-    const binding = { ...store.getFunctionBinding(workspaceId, 'prompt'), function_id: 'shared-name', builtin: false, name: '  共享名称  ', preset_id: 'preset-a' }
-    await remote.mutate({ workspaceId, type: 'function-add', value: binding }, signal())
+    const value = editableBinding({ ...store.getFunctionBinding(workspaceId, 'prompt'), name: '  共享名称  ', preset_id: 'preset-a' })
+    await remote.mutate({ workspaceId, type: 'function-add', value }, signal())
+    const binding = (await remote.getProjection({ workspaceId }, signal())).functions.find(item => item.name === '共享名称')!
     const saved = store.getFunctionBinding(workspaceId, binding.function_id)
     expect(saved.name).toBe('共享名称')
-    await remote.mutate({ workspaceId, type: 'function-edit', value: { ...saved, name: ' 共享名称 ', request_template: 'Edited task {{task_id}}' } }, signal())
+    await remote.mutate({ workspaceId, type: 'function-edit', id: saved.function_id, value: editableBinding({ ...saved, name: ' 共享名称 ', request_template: 'Edited task {{task_id}}' }) }, signal())
     expect(store.getFunctionBinding(workspaceId, binding.function_id)).toEqual({ ...saved, request_template: 'Edited task {{task_id}}' })
   }
-  expect(store.getFunctionBinding('workspace_1', 'shared-name').name).toBe(store.getFunctionBinding('workspace_2', 'shared-name').name)
+  expect(store.listFunctionBindings('workspace_1').find(item => !item.builtin)!.name).toBe(store.listFunctionBindings('workspace_2').find(item => !item.builtin)!.name)
 })
 
 it('uses the registered directory before checking workspace names and reports creation failures', async () => {
@@ -134,7 +335,7 @@ it.each([
   official.listPresets.mockResolvedValue(broken ? [{ id: 'preset-a', broken: 'Missing component' }] : [])
   await expect(remote.mutate({
     ...scope, type, id: 'prompt',
-    value: type === 'function-preset' ? 'preset-a' : { ...binding, request_template: 'Read task {{task_id}} and paint stars.' },
+    value: type === 'function-preset' ? 'preset-a' : editableBinding({ ...binding, request_template: 'Read task {{task_id}} and paint stars.' }),
   }, signal())).rejects.toMatchObject({
     details: { code: 'WORKBENCH_PRESET_UNAVAILABLE', issues: [{ path: 'preset_id', message: '所选 Agent 预设当前不可用，请重新选择预设。' }] },
   })
@@ -155,7 +356,9 @@ it.each([
     request_template: 'Read task {{task_id}} and compose rain.',
     agent_model: { provider: 'saved-provider', model: 'saved-model', reasoningEffort: 'high' },
   }
-  await remote.mutate({ ...scope, type: 'function-edit', value: binding }, signal())
+  const catalog = await official.controller.modelCatalog()
+  official.controller.modelCatalog.mockResolvedValue({ ...catalog, groups: [...catalog.groups, { id: 'saved-provider', name: 'Saved provider', models: [{ id: 'saved-model', name: 'Saved model', reasoning: { efforts: [{ id: 'high', name: 'High' }] } }] }], routableProviders: [...catalog.routableProviders, 'saved-provider'] })
+  await remote.mutate({ ...scope, type: 'function-edit', id: binding.function_id, value: editableBinding(binding) }, signal())
   official.listSkills.mockResolvedValue([{ name, description: 'Preset skill', invocation: { modelInvocable } }])
   await remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-b' }, signal())
   expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual({
@@ -190,8 +393,8 @@ it('preserves each saved function model in Task snapshots, sends its exact selec
     ...initial.functions.find(item => item.function_id === 'rewrite')!, preset_id: 'preset-a',
     agent_model: { provider: 'provider-b', model: 'shared' },
   }
-  await remote.mutate({ ...selected, type: 'function-edit', value: promptBinding }, signal())
-  await remote.mutate({ ...selected, type: 'function-edit', value: rewriteBinding }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: promptBinding.function_id, value: editableBinding(promptBinding) }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: rewriteBinding.function_id, value: editableBinding(rewriteBinding) }, signal())
   const saved = await remote.getProjection(selected, signal())
   expect(saved.functions.find(item => item.function_id === 'prompt')).toEqual(promptBinding)
   expect(saved.functions.find(item => item.function_id === 'rewrite')).toEqual(rewriteBinding)
@@ -212,8 +415,8 @@ it('preserves each saved function model in Task snapshots, sends its exact selec
   expect(rewriteTask.selected_model).toStrictEqual({ provider: 'provider-b', model: 'shared' })
   expect(official.controller.selectModel.mock.calls[1]).toStrictEqual([{ sessionId: rewriteTask.session_id, provider: 'provider-b', model: 'shared' }])
 
-  await remote.mutate({ ...selected, type: 'function-edit', value: { ...promptBinding, agent_model: { provider: 'provider-b', model: 'shared' } } }, signal())
-  await remote.mutate({ ...selected, type: 'function-edit', value: { ...rewriteBinding, agent_model: { provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' } } }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: promptBinding.function_id, value: editableBinding({ ...promptBinding, agent_model: { provider: 'provider-b', model: 'shared' } }) }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: rewriteBinding.function_id, value: editableBinding({ ...rewriteBinding, agent_model: { provider: 'provider-a', model: 'shared', reasoningEffort: 'medium' } }) }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const updated = await remote.getProjection(selected, signal())
   expect(updated.tasks.find(item => item.task_id === promptTask.task_id)).toMatchObject({
@@ -262,11 +465,13 @@ it.each([
   const scope = { workspaceId: 'workspace_1' }
   const presets = [{ id: 'preset-a' }, { id: 'preset-b' }]
   const skills = [{ name: 'changed-skill', description: 'Replacement preset skill', invocation: { modelInvocable: supported } }]
+  const catalog = await official.controller.modelCatalog()
+  official.controller.modelCatalog.mockResolvedValue({ ...catalog, groups: [...catalog.groups, { id: 'changed-provider', name: 'Changed provider', models: [{ id: 'changed-model', name: 'Changed model', reasoning: { efforts: [{ id: 'high', name: 'High' }] } }] }], routableProviders: [...catalog.routableProviders, 'changed-provider'] })
   official.listPresets.mockResolvedValue(presets)
   official.listSkills.mockResolvedValue(skills)
   const original = (await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')!
   const binding = { ...original, preset_id: 'preset-a', requested_skill: initialSkill }
-  await remote.mutate({ ...scope, type: 'function-edit', value: binding }, signal())
+  await remote.mutate({ ...scope, type: 'function-edit', id: binding.function_id, value: editableBinding(binding) }, signal())
   let entered!: () => void, release!: () => void
   const started = new Promise<void>(resolve => { entered = resolve })
   const blocked = new Promise<void>(resolve => { release = resolve })
@@ -280,9 +485,11 @@ it.each([
   }
   try {
     expect(await Promise.race([started.then(() => 'waiting'), pending.then(() => 'completed')])).toBe('waiting')
-    await remote.mutate({ ...scope, type: 'function-edit', value: edited }, signal())
+    await remote.mutate({ ...scope, type: 'function-edit', id: edited.function_id, value: editableBinding(edited) }, signal())
     expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual(edited)
+    official.controller.modelCatalog.mockClear()
   } finally { release(); await pending }
+  expect(official.controller.modelCatalog).not.toHaveBeenCalled()
   expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual({
     ...edited, preset_id: 'preset-b', requested_skill: supported ? 'changed-skill' : null,
   })
@@ -293,7 +500,7 @@ it('keeps the saved binding when replacement preset Skills cannot be read', asyn
   const scope = { workspaceId: 'workspace_1' }
   const before = await remote.getProjection(scope, signal())
   const binding = { ...before.functions.find(item => item.function_id === 'prompt')!, preset_id: 'preset-a', requested_skill: 'prompt-builder' }
-  await remote.mutate({ ...scope, type: 'function-edit', value: binding }, signal())
+  await remote.mutate({ ...scope, type: 'function-edit', id: binding.function_id, value: editableBinding(binding) }, signal())
   official.listSkills.mockRejectedValueOnce(new Error('Skill provider unavailable'))
   await expect(remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal())).rejects.toThrow('Skill provider unavailable')
   expect((await remote.getProjection(scope, signal())).functions.find(item => item.function_id === 'prompt')).toEqual(binding)
@@ -305,7 +512,7 @@ it('renders every whitespace and repeated task token in the actual dispatched re
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const original = (await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'prompt')!
   const template = 'Read {{ task_id }}, compare {{task_id}}, publish {{\ttask_id\n}}.'
-  await remote.mutate({ ...selected, type: 'function-edit', value: { ...original, preset_id: 'preset-a', request_template: template } }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: original.function_id, value: editableBinding({ ...original, preset_id: 'preset-a', request_template: template }) }, signal())
   expect((await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'prompt')?.request_template).toBe(template)
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
@@ -323,7 +530,7 @@ it('keeps each dispatched template snapshot when requirements are edited for the
   const original = (await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'prompt')!
   const firstTemplate = '  Read {{task_id}}.\nKeep {branch_id}, ${session_id}, $& and "quoted".  \n'
   const firstBinding = { ...original, preset_id: 'preset-a', request_template: firstTemplate }
-  await remote.mutate({ ...selected, type: 'function-edit', value: firstBinding }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: firstBinding.function_id, value: editableBinding(firstBinding) }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const firstTask = (await remote.getProjection(selected, signal())).tasks[0]!
   const firstRequest = '  Read ' + firstTask.task_id + '.\nKeep {branch_id}, ${session_id}, $& and "quoted".  \n'
@@ -331,7 +538,7 @@ it('keeps each dispatched template snapshot when requirements are edited for the
   expect(firstTask.binding_snapshot.request_template).toBe(firstTemplate)
 
   const nextTemplate = 'Next {{task_id}}:\n\tretain {branch_id} and ${session_id}.\n'
-  await remote.mutate({ ...selected, type: 'function-edit', value: { ...firstBinding, request_template: nextTemplate } }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: firstBinding.function_id, value: editableBinding({ ...firstBinding, request_template: nextTemplate }) }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const updated = await remote.getProjection(selected, signal())
   expect(updated.functions.find(binding => binding.function_id === 'prompt')!.request_template).toBe(nextTemplate)
@@ -361,10 +568,10 @@ it.each([
   const { remote } = await fixture()
   const scope = { workspaceId: 'workspace_1' }
   const original = (await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')!
-  await remote.mutate({ ...scope, type: 'function-edit', value: { ...original, preset_id: 'preset-a', request_template: 'Read {{task_id}}.' } }, signal())
+  await remote.mutate({ ...scope, type: 'function-edit', id: original.function_id, value: editableBinding({ ...original, preset_id: 'preset-a', request_template: 'Read {{task_id}}.' }) }, signal())
   const before = await remote.getProjection(scope, signal())
   const binding = before.functions.find(item => item.function_id === 'prompt')!
-  await expect(remote.mutate({ ...scope, type: 'function-edit', value: { ...binding, request_template: template } }, signal()))
+  await expect(remote.mutate({ ...scope, type: 'function-edit', id: binding.function_id, value: editableBinding({ ...binding, request_template: template }) }, signal()))
     .rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'binding.request_template', message }] } })
   expect((await remote.getProjection(scope, signal())).functions).toEqual(before.functions)
 })
@@ -374,7 +581,7 @@ it('saves edited and inline function presets with sibling official service provi
   const scope = { workspaceId: 'workspace_1' }
   const original = (await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')!
   const edited = { ...original, preset_id: 'preset-a', requested_skill: 'prompt-builder', request_template: 'Read task {{task_id}} and compose stars.' }
-  await remote.mutate({ ...scope, type: 'function-edit', value: edited }, signal())
+  await remote.mutate({ ...scope, type: 'function-edit', id: edited.function_id, value: editableBinding(edited) }, signal())
   expect((await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')).toEqual(edited)
   await remote.mutate({ ...scope, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal())
   expect((await remote.getProjection(scope, signal())).functions.find(binding => binding.function_id === 'prompt')).toEqual(edited)
@@ -387,7 +594,7 @@ it.each(['missing', 'not-model-invocable'] as const)('rejects a specified Skill 
   expect(environment.skills).toEqual([{ name: 'prompt-builder', description: 'Compose prompts' }])
   const original = (await remote.getProjection(selected, signal())).functions.find(item => item.function_id === 'prompt')!
   const binding = { ...original, preset_id: 'preset-a', requested_skill: 'prompt-builder' }
-  await remote.mutate({ ...selected, type: 'function-edit', value: binding }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: binding.function_id, value: editableBinding(binding) }, signal())
   const createSession = official.controller.create.getMockImplementation()!
   official.controller.create.mockImplementation(async input => {
     const session = await createSession(input)
@@ -408,7 +615,7 @@ it.each(['missing', 'not-model-invocable'] as const)('rejects a specified Skill 
   expect(official.controller.create).toHaveBeenCalledWith({ workspaceId: 'workspace_1', agentPreset: 'preset-a' })
   expect(official.controller.prompt).not.toHaveBeenCalled()
 
-  await remote.mutate({ ...selected, type: 'function-edit', value: { ...binding, requested_skill: null } }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: binding.function_id, value: editableBinding({ ...binding, requested_skill: null }) }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const repaired = await remote.getProjection(selected, signal())
   expect(repaired.functions.find(item => item.function_id === 'prompt')!.requested_skill).toBeNull()
@@ -430,16 +637,17 @@ it.each(['missing', 'not-model-invocable'] as const)('rejects a specified Skill 
 it('saves Workspace function bindings and verifies the requested Skill in the actual execution Session', async () => {
   const { ctx, remote, official, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Portrait', goal: 'Paint a portrait' } }, signal())
-  const binding = { ...store.getFunctionBinding('workspace_1', 'prompt'), function_id: 'custom-prompt', builtin: false, name: 'Portrait prompt', preset_id: 'preset-a', requested_skill: 'prompt-builder' }
-  await remote.mutate({ ...selected, type: 'function-add', value: binding }, signal())
+  const value = editableBinding({ ...store.getFunctionBinding('workspace_1', 'prompt'), name: 'Portrait prompt', preset_id: 'preset-a', requested_skill: 'prompt-builder' })
+  await remote.mutate({ ...selected, type: 'function-add', value }, signal())
+  const binding = (await remote.getProjection(selected, signal())).functions.find(item => item.name === value.name)!
   await remote.mutate({ ...selected, type: 'function-preset', id: binding.function_id, value: 'preset-a' }, signal())
-  await remote.mutate({ ...selected, type: 'function-edit', value: { ...store.getFunctionBinding('workspace_1', binding.function_id), request_template: 'Read task {{task_id}} and draw rain.' } }, signal())
+  await remote.mutate({ ...selected, type: 'function-edit', id: binding.function_id, value: editableBinding({ ...store.getFunctionBinding('workspace_1', binding.function_id), request_template: 'Read task {{task_id}} and draw rain.' }) }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: binding.function_id }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
   expect(task).toMatchObject({
     execution_state: 'running',
     input: { requested_skill: 'prompt-builder' },
-    binding_snapshot: { function_id: 'custom-prompt', preset_id: 'preset-a', requested_skill: 'prompt-builder' },
+    binding_snapshot: { function_id: binding.function_id, preset_id: 'preset-a', requested_skill: 'prompt-builder' },
   })
   expect(official.agents.get(task.session_id!)!.ctx.skills.list).toHaveBeenCalledWith({ cwd: '/workspace/project' })
   expect(official.controller.prompt).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ sessionId: task.session_id, content: [{ type: 'text', text: task.request_text }] }), expect.any(AbortSignal))

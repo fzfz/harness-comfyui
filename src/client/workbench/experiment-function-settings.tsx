@@ -1,17 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
-import type { AgentModel, FunctionBinding, TaskKind } from '../../workbench/contract.ts'
+import type { AgentModel, FunctionBinding, FunctionBindingEditable, TaskKind } from '../../workbench/contract.ts'
 import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
+import { agentModelProblem } from '../../workbench/agent-model.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
 import { requestTemplateProblem } from '../../workbench/request-template.ts'
 import type { ExperimentRemote } from './experiment-contract.ts'
 import { Button, Modal } from './experiment-controls.tsx'
+import presentation from './experiment-function-presentation.json' with { type: 'json' }
 
 type FunctionChange =
-  | { readonly type: 'function-edit'; readonly id: string; readonly value: FunctionBinding }
+  | { readonly type: 'function-edit'; readonly id: string; readonly value: FunctionBindingEditable }
   | { readonly type: 'function-preset'; readonly id: string; readonly value: string }
   | { readonly type: 'function-remove'; readonly id: string }
-  | { readonly type: 'function-add' }
+  | { readonly type: 'function-add'; readonly value: FunctionBindingEditable }
 type ModelGroups = WorkbenchEnvironment['models']['groups']
 
 export function formatExperimentAgentModel(selection: AgentModel | undefined, groups: ModelGroups) {
@@ -22,20 +24,48 @@ export function formatExperimentAgentModel(selection: AgentModel | undefined, gr
   return [provider?.name ?? selection.provider, model?.name ?? selection.model, effort?.name ?? selection.reasoningEffort].filter(Boolean).join(' · ')
 }
 
-export function agentModelProblem(selection: AgentModel, groups: ModelGroups, routableProviders: readonly string[]) {
-  const provider = groups.find(item => item.id === selection.provider)
-  if (!provider) return '请选择可用的 Agent 提供商。'
-  if (!routableProviders.includes(provider.id)) return '该 Agent 提供商当前无法执行任务，请选择可用的提供商。'
-  const model = provider.models.find(item => item.id === selection.model)
-  if (!model) return '请选择该提供商下的 Agent 模型。'
-  const efforts = model.reasoning?.efforts ?? []
-  if (efforts.length && !efforts.some(item => item.id === selection.reasoningEffort)) return '请选择该模型支持的推理等级。'
-  if (!efforts.length && selection.reasoningEffort !== undefined) return '该模型未提供推理等级，请重新选择模型。'
-  return ''
+export { agentModelProblem } from '../../workbench/agent-model.ts'
+
+function FunctionRemoval({ binding, onRemove, onClose }: {
+  readonly binding: FunctionBinding
+  readonly onRemove: () => Promise<void>
+  readonly onClose: () => void
+}) {
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const pending = useRef(false)
+  const active = useRef(true)
+  useEffect(() => { active.current = true; return () => { active.current = false } }, [])
+  return <Modal title={presentation.remove} onClose={onClose}>
+    <form id="modal-form" onSubmit={async event => {
+      event.preventDefault()
+      if (pending.current) return
+      pending.current = true
+      setSaving(true)
+      setError('')
+      try {
+        await onRemove()
+        if (active.current) onClose()
+      } catch (failure) {
+        if (active.current) setError(failure instanceof Error ? failure.message : presentation.removeError)
+      } finally {
+        pending.current = false
+        if (active.current) setSaving(false)
+      }
+    }}>
+      <p>{presentation.removeDescription.replace('{name}', binding.name)}</p>
+      {error && <p className="binding-problem" role="alert">{error}</p>}
+      <div className="modal-actions">
+        <Button kind="quiet" onClick={onClose}>{presentation.cancel}</Button>
+        <button className="btn primary" type="submit" disabled={saving}>{presentation.remove}</button>
+      </div>
+    </form>
+  </Modal>
 }
 
-function FunctionEditor({ binding, functions, loadEnvironment, onSave, onClose, onToast }: {
+function FunctionEditor({ binding, create = false, functions, loadEnvironment, onSave, onClose, onToast }: {
   readonly binding: FunctionBinding
+  readonly create?: boolean
   readonly functions: readonly FunctionBinding[]
   readonly onToast: (message: string) => void
   readonly loadEnvironment: (presetId?: string) => Promise<WorkbenchEnvironment>
@@ -67,7 +97,7 @@ function FunctionEditor({ binding, functions, loadEnvironment, onSave, onClose, 
       })
       .catch(failure => {
         if (!current) return
-        setEnvironmentError(failure instanceof Error ? failure.message : '功能配置加载失败，请重新打开“编辑功能”窗口。')
+        setEnvironmentError(failure instanceof Error ? failure.message : presentation.loadError)
         setLoading(false)
       })
     return () => { current = false }
@@ -78,8 +108,9 @@ function FunctionEditor({ binding, functions, loadEnvironment, onSave, onClose, 
   const model = provider?.models.find(item => item.id === draft.agent_model.model)
   const efforts = model?.reasoning?.efforts ?? []
   const presets = environment?.presets.filter(item => !item.broken) ?? []
-  const preset = presets.find(item => item.id === draft.preset_id) ?? presets[0]
-  const problem = requestTemplateProblem(draft.request_template) || (environment ? agentModelProblem(draft.agent_model, groups, environment.models.routableProviders) : '')
+  const preset = presets.find(item => item.id === draft.preset_id)
+  const problem = requestTemplateProblem(draft.request_template) || (environment
+    ? !preset ? presentation.selectAvailablePreset : agentModelProblem(draft.agent_model, groups, environment.models.routableProviders) : '')
   const update = (value: Partial<FunctionBinding>) => { setDraft(before => ({ ...before, ...value })); setError('') }
   const selectModel = (providerId: string, modelId?: string) => {
     const selectedProvider = groups.find(item => item.id === providerId)
@@ -89,7 +120,7 @@ function FunctionEditor({ binding, functions, loadEnvironment, onSave, onClose, 
     update({ agent_model: { provider: providerId, model: selected?.id ?? '', ...(effort ? { reasoningEffort: effort } : {}) } })
   }
   return (
-    <Modal title="编辑功能" kind="function-modal" onClose={onClose}>
+    <Modal title={create ? presentation.add : presentation.edit} kind="function-modal" onClose={onClose}>
       <form id="modal-form" onSubmit={async event => {
         event.preventDefault()
         if (pending.current || loading || environmentError || problem || !preset) return
@@ -99,7 +130,10 @@ function FunctionEditor({ binding, functions, loadEnvironment, onSave, onClose, 
         setSaving(true)
         setError('')
         try {
-          await onSave({ type: 'function-edit', id: binding.function_id, value: { ...draft, name: draft.name.trim(), preset_id: preset.id } })
+          const { kind, agent_model, requested_skill, request_template } = draft
+          const value: FunctionBindingEditable = { name: draft.name.trim(), kind, preset_id: preset.id,
+            agent_model, requested_skill, request_template }
+          await onSave(create ? { type: 'function-add', value } : { type: 'function-edit', id: binding.function_id, value })
           if (active.current) onClose()
         } catch (failure) {
           const message = failure instanceof Error ? failure.message : '功能保存失败，请重试。'
@@ -117,7 +151,8 @@ function FunctionEditor({ binding, functions, loadEnvironment, onSave, onClose, 
             const next = WORKBENCH_FUNCTIONS.find(item => item.kind === kind)!
             update({ kind, request_template: draft.request_template === descriptor.default_request_template ? next.default_request_template : draft.request_template })
           }}>{WORKBENCH_FUNCTIONS.map(item => <option key={item.kind} value={item.kind}>{item.name}</option>)}</select></label>
-          <label className="field"><span>Agent 预设</span><select id="function-preset" aria-label="Agent 预设" required value={preset?.id ?? ''} disabled={saving} onChange={event => update({ preset_id: event.target.value })}>
+          <label className="field"><span>Agent 预设</span><select id="function-preset" aria-label="Agent 预设" required value={draft.preset_id} disabled={saving} onChange={event => update({ preset_id: event.target.value })}>
+            {!preset && <option value={draft.preset_id}>{presentation.unavailablePreset}</option>}
             {presets.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select></label>
           <label className="field"><span>指定 Skill</span><select id="function-skill" aria-label="指定 Skill" value={draft.requested_skill ?? ''} disabled={loading || saving} onChange={event => update({ requested_skill: event.target.value || null })}>
@@ -159,7 +194,9 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
   readonly onBack: () => void
   readonly onToast: (message: string) => void
 }) {
-  const [editor, setEditor] = useState<FunctionBinding | null>(null)
+  const [editor, setEditor] = useState<{ binding: FunctionBinding; create: boolean } | null>(null)
+  const editorSequence = useRef(0)
+  const [removal, setRemoval] = useState<FunctionBinding | null>(null)
   const [environment, setEnvironment] = useState<WorkbenchEnvironment | null>(null)
   const active = useRef(true)
   const environmentRequest = useRef(0)
@@ -182,7 +219,21 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
     refreshEnvironment()
     return () => { active.current = false; environmentRequest.current++ }
   }, [refreshEnvironment])
-  const close = useCallback(() => { setEditor(null); refreshEnvironment() }, [refreshEnvironment])
+  const close = useCallback(() => { editorSequence.current++; setEditor(null); refreshEnvironment() }, [refreshEnvironment])
+  const add = async () => {
+    const sequence = ++editorSequence.current
+    try {
+      const defaults = await loadEnvironment()
+      if (!active.current || sequence !== editorSequence.current) return
+      const descriptor = WORKBENCH_FUNCTIONS.find(item => item.kind === presentation.defaultKind)!
+      setEditor({ create: true, binding: { workspace_id: workspaceId, function_id: '', builtin: false,
+        name: '', kind: descriptor.kind, preset_id: defaults.defaultPresetId, agent_model: defaults.models.default,
+        requested_skill: null, request_template: descriptor.default_request_template } })
+    } catch (failure) {
+      if (active.current && sequence === editorSequence.current)
+        onToast(failure instanceof Error ? failure.message : presentation.loadError)
+    }
+  }
   const presets = environment?.presets ?? initialPresets
   const models = environment?.models.groups ?? initialModels
   const change = async (value: FunctionChange) => {
@@ -192,7 +243,7 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
   return (
     <>
       <main className="settings-page">
-        <div className="settings-head"><div><h1>配置中心</h1><p>{workspaceName} · 功能默认配置</p></div><div className="row"><Button kind="primary" icon="plus" onClick={() => void change({ type: 'function-add' })}>添加功能</Button><Button onClick={onBack}>返回工作台</Button></div></div>
+        <div className="settings-head"><div><h1>配置中心</h1><p>{workspaceName} · 功能默认配置</p></div><div className="row"><Button kind="primary" icon="plus" onClick={() => { void add() }}>{presentation.add}</Button><Button onClick={onBack}>返回工作台</Button></div></div>
         <div className="settings-table-wrap"><table className="settings-table">
           <thead><tr>{['功能', '功能位置', '默认 Agent 预设', 'Agent 模型', '指定 Skill', '配置'].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
           <tbody>{functions.map(item => {
@@ -201,15 +252,17 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
             <td><strong>{item.name}</strong><small>{item.builtin ? '内置功能' : '自定义功能'}</small></td>
             <td>{WORKBENCH_FUNCTIONS.find(descriptor => descriptor.kind === item.kind)?.ui_location}</td>
             <td><select aria-label={`${item.name}的默认预设`} data-function-preset={item.function_id} value={item.preset_id} onChange={event => void change({ type: 'function-preset', id: item.function_id, value: event.target.value })}>
-              {unavailable && <option value={item.preset_id}>预设不可用</option>}
+              {unavailable && <option value={item.preset_id}>{presentation.unavailablePreset}</option>}
               {presets.filter(preset => !preset.broken).map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
-            </select>{unavailable && <p className="binding-problem">该功能的 Agent 预设已不可用，请到配置中心重新选择。</p>}</td>
+            </select>{unavailable && <p className="binding-problem">{presentation.rowPresetUnavailable}</p>}</td>
             <td className="agent-model-summary">{formatExperimentAgentModel(item.agent_model, models)}</td><td>{item.requested_skill || 'Agent 自选'}</td>
-            <td><Button kind="small" label={`编辑${item.name}`} onClick={() => setEditor(item)}>编辑</Button>{!item.builtin && <Button kind="small quiet" label={`移除${item.name}`} onClick={() => void change({ type: 'function-remove', id: item.function_id })}>移除</Button>}</td>
+            <td><Button kind="small" label={`编辑${item.name}`} onClick={() => { editorSequence.current++; setEditor({ binding: item, create: false }) }}>编辑</Button>{!item.builtin && <Button kind="small quiet" label={`移除${item.name}`} onClick={() => { editorSequence.current++; setRemoval(item) }}>移除</Button>}</td>
           </tr>})}</tbody>
         </table></div>
       </main>
-      {editor && <FunctionEditor key={`${workspaceId}:${editor.function_id}`} binding={editor} functions={functions} loadEnvironment={loadEnvironment} onSave={onChange} onClose={close} onToast={onToast} />}
+      {removal && <FunctionRemoval key={`${workspaceId}:${removal.function_id}`} binding={removal}
+        onClose={() => setRemoval(null)} onRemove={() => onChange({ type: 'function-remove', id: removal.function_id })} />}
+      {editor && <FunctionEditor key={`${workspaceId}:${editor.binding.function_id}`} binding={editor.binding} create={editor.create} functions={functions} loadEnvironment={loadEnvironment} onSave={onChange} onClose={close} onToast={onToast} />}
     </>
   )
 }
