@@ -23,6 +23,7 @@ import type {
   TaskDraft,
   WorkbenchRun,
 } from '../../workbench/contract.ts'
+import { isRunReviewFunctionKind } from '../../workbench/contract.ts'
 import type { WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import type {
   ExperimentActionType,
@@ -58,6 +59,9 @@ import taskPresentation from './experiment-task-presentation.json' with { type: 
 import { isGenerationRunTerminal } from '../../generation/run-status.ts'
 import runPresentation from './experiment-run-presentation.json' with { type: 'json' }
 import { useRunInputs } from './experiment-run-input.ts'
+import { RunReviewEditor } from './experiment-review-editor.ts'
+import { ExperimentReviewDialog } from './experiment-review-dialog.tsx'
+import reviewPresentation from './experiment-review-presentation.json' with { type: 'json' }
 
 export type {
   ExperimentWorkbenchAction,
@@ -239,6 +243,10 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const modalInstance = useRef(0)
   const [sheet, setSheet] = useState(false)
   const taskRequestEditors = useMemo(() => new Map<string, TaskRequestEditor>(), [props.remote])
+  const reviewEditors = useMemo(() => new Map<string, RunReviewEditor>(), [props.remote])
+  const reviewAction = useRef(props.onAction)
+  reviewAction.current = props.onAction
+  const [reviewEditor, setReviewEditor] = useState<RunReviewEditor | null>(null)
   const [taskRequest, setTaskRequest] = useState<{ editor: TaskRequestEditor; binding: FunctionBinding; navigation: number } | null>(null)
   const [modelChange, setModelChange] = useState<{
     readonly request: WorkbenchModelChangeRequest
@@ -247,7 +255,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   } | null>(null)
   const [imageRunId, setImageRunId] = useState<string | null>(null)
   const [modal, setModalState] = useState<
-    'new-work' | 'new-workspace' | 'branch' | 'image' | 'model-change' | null
+    'new-work' | 'new-workspace' | 'branch' | 'image' | 'model-change' | 'evaluate' | null
   >(null)
   const setModal = useCallback((value: typeof modal) => {
     modalInstance.current++
@@ -462,7 +470,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...extra,
       })
       if (!stillCurrent()) return false
-      const keepsTaskNavigation = !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'task-apply'
+      const keepsTaskNavigation = !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'task-apply' || type === 'task-generation-apply'
       const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
         && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
       if (selection?.taskId && view.workId) {
@@ -520,12 +528,57 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       if (isCurrent()) setMessage(error instanceof Error ? error.message : '模型兼容性读取失败，请重新选择生成模型。')
     }
   }
+  const editorForReview = (runId: string) => {
+    const target = p?.runs.find(item => item.run_id === runId)
+    if (!target?.review_draft || !p?.work_id || !state.workspaceId) return null
+    const targetBranch = p.tasks.find(item => item.task_id === target.workbench_task_id)?.branch_id
+    if (!targetBranch) return null
+    const scope = { workspaceId: state.workspaceId, workId: p.work_id, branchId: targetBranch, runId }
+    const key = JSON.stringify([scope.workspaceId, scope.workId, runId])
+    let editor = reviewEditors.get(key)
+    if (!editor) {
+      editor = new RunReviewEditor(scope, target.review_draft, async value => {
+        await reviewAction.current({ ...scope, type: 'update-review-draft', value })
+        if (store.getSnapshot().workspaceId === scope.workspaceId) await store.refresh()
+      })
+      reviewEditors.set(key, editor)
+    }
+    return editor
+  }
+  const openReview = (runId: string) => {
+    const editor = editorForReview(runId)
+    if (editor) { setReviewEditor(editor); setModal('evaluate') }
+  }
+  useEffect(() => {
+    if (!p) return
+    for (const editor of reviewEditors.values()) {
+      if (editor.scope.workspaceId !== state.workspaceId || editor.scope.workId !== p.work_id) continue
+      const target = p.runs.find(item => item.run_id === editor.scope.runId)
+      if (target?.review_draft) editor.sync(target.review_draft)
+    }
+  }, [p, state.workspaceId, reviewEditors])
   const referenceRunIds =
     run && view.compareRunId ? [run.run_id, view.compareRunId] : []
-  const invokeAgentFunction = (selected: FunctionBinding | undefined) => {
+  const invokeAgentFunction = (selected: FunctionBinding | undefined, evaluationEditor?: RunReviewEditor) => {
     if (!selected) return
     const problem = functionProblem(selected)
     if (problem) { setMessage(problem); return }
+    if (isRunReviewFunctionKind(selected.kind)) {
+      const editor = evaluationEditor ?? (run ? editorForReview(run.run_id) : null)
+      if (!editor) return
+      const references = selected.kind === 'compare' ? [...referenceRunIds] : [editor.scope.runId]
+      void editor.submit(async evaluationDraft => {
+        const receipt = await props.onAction({ ...editor.scope, type: 'agent-action', id: selected.function_id,
+          referenceRunIds: references, value: { evaluationDraft } })
+        if (store.getSnapshot().workspaceId === editor.scope.workspaceId && store.getSnapshot().view.workId === editor.scope.workId && receipt?.taskId)
+          notifyTask(selected.name, receipt.taskId, editor.scope.workId, 'submitted')
+      }).then(async () => {
+        if (store.getSnapshot().workspaceId === editor.scope.workspaceId) await store.refresh()
+      }).catch(error => {
+        if (store.getSnapshot().workspaceId === editor.scope.workspaceId) setMessage(error instanceof Error ? error.message : String(error))
+      })
+      return
+    }
     if (inputOptions.taskRequest.kinds.includes(selected.kind) && state.workspaceId && view.workId && view.branchId && branch) {
       const scope = { workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId, functionId: selected.function_id }
       const key = JSON.stringify(Object.values(scope))
@@ -535,7 +588,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         taskRequestEditors.set(key, editor)
       }
       setTaskRequest({ editor, binding: selected, navigation: store.getNavigationSequence() })
-    } else void action('agent-action', { id: selected.function_id, ...(selected.kind === 'compare' ? { referenceRunIds } : {}) })
+    } else void action('agent-action', { id: selected.function_id })
   }
   const agentButton = (label: string, kind: string, disabled = false) => (
     <Button
@@ -900,9 +953,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             <Button
               kind="small"
               disabled={pendingRun(run)}
-              onClick={() => void action('evaluate')}
+              onClick={() => openReview(run.run_id)}
             >
-              记录评价与经验
+              {reviewPresentation.title}
             </Button>
           </div>
         </div>
@@ -1285,9 +1338,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                         </dl></>
                       ) : artifact.artifact.type === 'review' ? (
                         <>
-                          <h3>观察</h3>
+                          <h3>{item.kind === 'diagnose' ? reviewPresentation.errorTitle : reviewPresentation.fields[1]!.label}</h3>
                           <p>{artifact.artifact.observation}</p>
-                          <h3>评价结论</h3>
+                          <h3>{reviewPresentation.fields[2]!.label}</h3>
                           <p>{artifact.artifact.conclusion}</p>
                           {artifact.artifact.candidate && <details>
                             <summary>{taskPresentation.candidate}</summary>
@@ -1385,6 +1438,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       store.updateView({ page: 'workbench', selectedRunId: null, inspectRun: false, compareRunId: null })
                     }}>{taskPresentation.inputs}</Button>
                   )}
+                  {artifact?.disposition === 'applied' && item.input.evaluation_input && <Button kind="small"
+                    onClick={() => openReview(item.input.evaluation_input!.run_id)}>{reviewPresentation.open}</Button>}
+                  {sourceBranch && artifact?.artifact.type === 'review' && artifact.artifact.candidate && <Button kind="small" onClick={() => void action('task-generation-apply', {
+                    taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id, value: structuredClone(sourceBranch.draft),
+                  })}>{reviewPresentation.candidate}</Button>}
                 </div>
               </article>
             )
@@ -2233,7 +2291,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                           {item.error.message}
                         </p>
                       )}
-                      {item.review && <p>评价：{item.review.conclusion}</p>}
+                      {item.review?.conclusion && <p>评价：{item.review.conclusion}</p>}
                       {item.retry_of_run_id && (
                         <p>重试来源：{item.retry_of_run_id}</p>
                       )}
@@ -2269,7 +2327,27 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               await store.refresh()
             }
           }} />}
-        {modal && (
+        {modal === 'evaluate' && reviewEditor && <ExperimentReviewDialog key={`${reviewEditor.scope.runId}:${modalInstance.current}`}
+          editor={reviewEditor} branchName={p?.branches.find(item => item.branch_id === reviewEditor.scope.branchId)?.name ?? ''}
+          actions={kind => <>
+            {[binding(kind), ...p?.functions.filter(item => !item.builtin && item.kind === kind) ?? []].filter((item): item is FunctionBinding => !!item).map(item =>
+              <Button key={item.function_id} kind="small agent-action" disabled={!!functionProblem(item) || !!p?.tasks.some(task => task.branch_id === reviewEditor.scope.branchId && busyTask(task))}
+                onClick={() => invokeAgentFunction(item, reviewEditor)}>
+                {item.builtin ? kind === 'review' ? reviewPresentation.analyze : reviewPresentation.organize : item.name}
+              </Button>)}
+          </>} onClose={() => setModal(null)} onSave={async saveExperience => {
+            const instance = modalInstance.current
+            await reviewEditor.submit(async value => {
+              await props.onAction({ ...reviewEditor.scope, type: 'evaluate', value: { ...value, saveExperience } })
+            })
+            if (store.getSnapshot().workspaceId === reviewEditor.scope.workspaceId) await store.refresh()
+            if (modalInstance.current === instance) {
+              setModal(null)
+              setMessage(saveExperience ? reviewPresentation.experienceSaved : reviewPresentation.saved)
+            }
+          }}
+        />}
+        {modal && modal !== 'evaluate' && (
           <div
             className="modal-backdrop"
           >

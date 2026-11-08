@@ -154,7 +154,10 @@ export const makeRun = (
     conclusion: '符合预期',
     source_artifact_id: null,
   },
-  review_draft: null,
+  review_draft: {
+    verdict: 'met', observation: '光线自然', conclusion: '符合预期', title: '', conditions: 'SDXL', note: '',
+    evidence_run_ids: [id], review_artifact_id: null, experience_artifact_id: null, experience_id: null,
+  },
   error:
     status === 'failed' ? { code: 'FAILED', message: '实例连接中断' } : null,
   session_id: 'session-' + taskId,

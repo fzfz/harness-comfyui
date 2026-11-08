@@ -430,6 +430,23 @@ it('requires the edited branch field and its original string in update requests'
   expect(codec.parse({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Rain' })).toMatchObject({ type: 'update-draft' })
 })
 
+it('requires complete review updates and generation adoption snapshots through the Remote codec', () => {
+  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
+  const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
+  const draft = { verdict: 'unrated', observation: '', conclusion: '', title: '', conditions: '', note: '', evidence_run_ids: ['run_1'], review_artifact_id: null, experience_artifact_id: null, experience_id: null }
+  const update = { expected: draft, draft }
+  expect(codec.parse({ ...scope, type: 'update-review-draft', runId: 'run_1', value: update })).toMatchObject({ value: update })
+  expect(() => codec.parse({ ...scope, type: 'update-review-draft', value: update })).toThrow()
+  for (const value of [{ draft }, { expected: draft }, { ...update, patch: {} }, { ...update, draft: { ...draft, observation: undefined } }]) {
+    expect(() => codec.parse({ ...scope, type: 'update-review-draft', runId: 'run_1', value })).toThrow()
+    expect(() => codec.parse({ ...scope, type: 'agent-action', id: 'review', runId: 'run_1', value: { evaluationDraft: value } })).toThrow()
+  }
+  const expected = { generation_input: { title: 'Rain', instance_id: '8', template_id: '5', model: null, parameters: {}, loras: [] }, prompt_input: { positive_prompt: null, negative_prompt: null }, context_refs: [], base_model_id: null }
+  expect(codec.parse({ ...scope, type: 'task-generation-apply', id: 'artifact_1', value: expected })).toMatchObject({ value: expected })
+  expect(() => codec.parse({ ...scope, type: 'task-generation-apply', value: expected })).toThrow()
+  expect(() => codec.parse({ ...scope, type: 'task-generation-apply', id: 'artifact_1', value: { generation_input: expected.generation_input } })).toThrow()
+})
+
 it('validates each RPC request from JSON with exact field names and identifier constraints', () => {
   const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, descriptor.parameters[0]!.codec.create()]))
   expect(codecs.getProjection!.parse({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })).toEqual({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })

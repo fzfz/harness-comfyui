@@ -1,9 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { WORKBENCH_BRANCH_EDIT_FIELDS, type ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import type { WorkbenchActionReceipt } from '../../workbench-remote.ts'
-import type { FunctionBinding, JsonValue, ReviewDraft, ResourceRef } from '../../workbench/contract.ts'
+import { isRunReviewFunctionKind, type FunctionBinding, type JsonValue, type ResourceRef } from '../../workbench/contract.ts'
 import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
-import { equalValue, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
+import { equalValue, jsonValue, validateReviewDraftUpdate, validateTaskDraft, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
@@ -175,12 +175,9 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       const value = request.value && typeof request.value === 'object' ? fields(request.value) : {}
       const selectedFunctionId = text(functionId, 'function_id')
       const selectedKind = store.getFunctionBinding(request.workspaceId, selectedFunctionId).kind
-      let evaluationInput
-      if (['review', 'compare', 'diagnose', 'experience'].includes(selectedKind)) {
-        const runId = text(request.runId, 'run_id'), draft = store.getRunReviewDraft(runId)
-        evaluationInput = { run_id: runId, verdict: draft.verdict, observation: draft.observation, conclusion: draft.conclusion, experience: { title: draft.title, conditions: draft.conditions, note: draft.note } }
-      }
-      const task = await service.createTask({ ...selection, functionId: selectedFunctionId, ...(evaluationInput ? { evaluationInput } : {}), ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(typeof value.preset_override === 'string' && value.preset_override ? { presetOverride: value.preset_override } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
+      const evaluation = isRunReviewFunctionKind(selectedKind)
+        ? { runId: text(request.runId, 'run_id'), evaluationDraft: validateReviewDraftUpdate(value.evaluationDraft) } : {}
+      const task = await service.createTask({ ...selection, functionId: selectedFunctionId, ...evaluation, ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(typeof value.preset_override === 'string' && value.preset_override ? { presetOverride: value.preset_override } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
       return { ...selection, taskId: task.task_id }
     }
     case 'task-interrupt': case 'task-resume': case 'pause-experiment': case 'resume-experiment': {
@@ -199,15 +196,21 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       const saved = store.getProjection(selection).favorites.some(item => item.target_type === targetType && item.target_id === targetId)
       store.setFavorite({ workspaceId: request.workspaceId, workId, targetType, targetId, favorite: !saved }); break
     }
+    case 'update-review-draft': {
+      const runId = text(request.runId, 'run_id'), update = validateReviewDraftUpdate(request.value)
+      store.saveRunReviewDraft({ workspaceId: request.workspaceId, workId, runId, ...update }); break
+    }
     case 'evaluate': {
       const runId = text(request.runId, 'run_id'), value = fields(request.value)
-      store.saveRunReview({ workspaceId: request.workspaceId, workId, runId, expected: value.expected as ReviewDraft, draft: value.draft as ReviewDraft, saveExperience: value.saveExperience === true }); break
+      store.saveRunReview({ workspaceId: request.workspaceId, workId, runId, ...validateReviewDraftUpdate({ expected: value.expected, draft: value.draft }), saveExperience: value.saveExperience === true }); break
     }
-    case 'task-apply': {
+    case 'task-apply': case 'task-generation-apply': {
       const artifactId = text(request.id, 'artifact_id')
       const artifact = store.getArtifact(artifactId), task = store.getTask(artifact.task_id)
       if (store.getBranch(task.branch_id).work_id !== workId) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的产物。', 'artifact_id')
-      await service.adoptArtifact({ artifactId, expected: fields(request.value) as Record<string, import('../../workbench/contract.ts').JsonValue> }); break
+      const candidate = request.type === 'task-generation-apply'
+      const expected = candidate ? jsonValue(validateTaskDraft(request.value)) as Record<string, JsonValue> : fields(request.value) as Record<string, JsonValue>
+      await service.adoptArtifact({ artifactId, expected, candidate }); break
     }
     case 'reuse': {
       const experience = store.getExperience(text(request.id, 'experience_id'))

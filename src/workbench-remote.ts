@@ -5,7 +5,7 @@ import type { WorkbenchProjection, AgentModel, TaskRequestDraft, WorkbenchRunInp
 import { jsonValueSchema } from './shared/json-contract.ts'
 import { workflowRuntimeParameterInspectionSchema, type WorkflowRuntimeParameterInspection } from './generation/inspection-contract.ts'
 import { contractObject, requiredNullable } from './shared/field-contract.ts'
-import { taskRequestDraftSchema, workbenchRunInputSchema } from './workbench/schema.ts'
+import { reviewDraftUpdateSchema, taskDraftSchema, taskRequestDraftSchema, workbenchRunInputSchema } from './workbench/schema.ts'
 
 export const WORKBENCH_REMOTE_NAMESPACE = 'harnessComfyuiWorkbenchRemote'
 export const WORKBENCH_REMOTE_SERVICE = `remote.${WORKBENCH_REMOTE_NAMESPACE}`
@@ -14,7 +14,7 @@ export interface WorkbenchScope { workspaceId: string; workId?: string; branchId
 export interface WorkbenchActionReceipt extends WorkbenchScope { taskId?: string }
 export interface WorkbenchTaskDraftRequest extends WorkbenchScope { workId: string; branchId: string; functionId: string }
 export interface WorkbenchSaveTaskDraftRequest extends WorkbenchTaskDraftRequest { draft: TaskRequestDraft }
-export const WORKBENCH_ACTION_TYPES = ["new-workspace", "new-work", "create-branch", "update-branch", "update-draft", "update-execution", "run", "experiment", "pause-experiment", "resume-experiment", "stop-experiment", "retry", "favorite", "evaluate", "reuse", "agent-action", "function-add", "function-edit", "function-remove", "function-preset", "resource-select", "resource-remove", "task-interrupt", "task-resume", "task-answer", "task-apply", "task-branch"] as const
+export const WORKBENCH_ACTION_TYPES = ["new-workspace", "new-work", "create-branch", "update-branch", "update-draft", "update-execution", "run", "experiment", "pause-experiment", "resume-experiment", "stop-experiment", "retry", "favorite", "update-review-draft", "evaluate", "reuse", "agent-action", "function-add", "function-edit", "function-remove", "function-preset", "resource-select", "resource-remove", "task-interrupt", "task-resume", "task-answer", "task-apply", "task-generation-apply", "task-branch"] as const
 export type ExperimentActionType = typeof WORKBENCH_ACTION_TYPES[number]
 export const WORKBENCH_BRANCH_EDIT_FIELDS = ['name', 'original_request'] as const
 export interface ExperimentWorkbenchAction extends WorkbenchScope {
@@ -105,6 +105,15 @@ function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
   if (method === 'mutate') {
     const action = parsed as ExperimentWorkbenchAction
     if (action.type !== 'new-workspace') Schema.resolve(action.workspaceId, identifier().required(), {})
+    if (action.type === 'task-generation-apply') {
+      Schema.resolve(action.id, identifier().required(), {})
+      Schema.resolve(action.value, taskDraftSchema, {})
+    }
+    if (action.type === 'update-review-draft') {
+      Schema.resolve(action.runId, identifier().required(), {})
+      Schema.resolve(action.value, reviewDraftUpdateSchema, {})
+    }
+    if (action.type === 'agent-action' && action.value && typeof action.value === 'object' && 'evaluationDraft' in action.value) Schema.resolve(action.value.evaluationDraft, reviewDraftUpdateSchema, {})
     if (action.type === 'update-branch') {
       Schema.resolve(action.field, Schema.union([...WORKBENCH_BRANCH_EDIT_FIELDS]).required(), {})
       Schema.resolve(action.expectedValue, Schema.string().required(), {})

@@ -1,0 +1,30 @@
+{
+  "title": "记录评价与经验",
+  "run": "运行 {runId} · {branchName}",
+  "review": "运行评价",
+  "experience": "经验（可选）",
+  "analyze": "分析结果",
+  "organize": "整理经验",
+  "cancel": "取消",
+  "save": "保存",
+  "saved": "评价已保存",
+  "experienceSaved": "评价与经验已保存",
+  "open": "查看评价与经验",
+  "candidate": "采用建议输入",
+  "errorTitle": "运行错误",
+  "emptyReview": "请填写观察或评价结论。",
+  "incompleteExperience": "请填写经验标题、适用条件和经验结论。",
+  "fields": [
+    { "field": "verdict", "id": "evaluation-verdict", "label": "目标达成情况", "control": "select" },
+    { "field": "observation", "id": "evaluation-observation", "label": "观察", "control": "textarea" },
+    { "field": "conclusion", "id": "evaluation-conclusion", "label": "评价结论", "control": "textarea" },
+    { "field": "title", "id": "experience-title", "label": "经验标题", "control": "input" },
+    { "field": "conditions", "id": "evaluation-conditions", "label": "适用条件", "control": "input" },
+    { "field": "note", "id": "experience-note", "label": "经验结论", "control": "textarea" }
+  ],
+  "verdicts": [
+    { "value": "unrated", "label": "未评价" },
+    { "value": "met", "label": "符合目标" },
+    { "value": "needs-work", "label": "需要改进" }
+  ]
+}

@@ -3,7 +3,7 @@ import { basename, join } from 'node:path'
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import type { GenerationRequest } from '../../generation/submission-contract.ts'
-import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PublishReceipt, ReviewDraft, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
+import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PublishReceipt, ReviewDraft, ReviewDraftUpdate, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
 import { equalValue, jsonValue, validateArtifact, validateFunctionBinding, validateTaskDraft, validateTaskRequestDraft, validateTaskInput, validateReviewDraft, WorkbenchError } from '../../workbench/validation.ts'
 import { deriveTaskStatus, isFinishedRun } from '../../workbench/state.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
@@ -247,6 +247,7 @@ export class WorkbenchStore {
   }
   private applyPatch(task: Task, patch: Record<string, JsonValue>, expected: Record<string, JsonValue>, target = task.apply_target): boolean {
     const current = this.targetValues(target)
+    const reviewExpected = target.kind === 'run_review' ? validateReviewDraft(current) : undefined
     for (const key of Object.keys(patch)) {
       let expectedKey: string | undefined
       for (const field of Object.keys(expected)) if ((key === field || key.startsWith(`${field}.`)) && (!expectedKey || field.length > expectedKey.length)) expectedKey = field
@@ -257,7 +258,7 @@ export class WorkbenchStore {
     }
     for (const [key, value] of Object.entries(patch)) this.put(current, key, value)
     if (target.kind === 'branch') this.run('UPDATE workbench_branches SET draft_json=? WHERE branch_id=?', JSON.stringify(current), target.id)
-    else this.run('UPDATE generation_runs SET review_draft_json=? WHERE run_id=?', JSON.stringify(current), target.id)
+    else this.saveRunReviewDraft({ workspaceId: this.taskWorkspace(task.task_id), workId: this.getBranch(task.branch_id).work_id, runId: target.id, expected: reviewExpected!, draft: validateReviewDraft(current) })
     return true
   }
   private artifactResourceError(task: Task, artifact: ArtifactPayload): WorkbenchError | null {
@@ -286,9 +287,10 @@ export class WorkbenchStore {
         const patch = this.artifactPatch(task, artifact)
         if (artifact.type === 'review') patch.review_artifact_id = artifactId
         if (artifact.type === 'experience') patch.experience_artifact_id = artifactId
+        this.run('INSERT INTO workbench_task_artifacts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)', artifactId, taskId, artifact.type, JSON.stringify(artifact), JSON.stringify(sourceFiles), identity.sessionId, identity.turn, identity.callId, JSON.stringify(skillRefs), disposition, null, Date.now(), JSON.stringify({ task_id: taskId, artifact_id: artifactId, disposition }))
         if (task.output_contract.apply_mode === 'automatic' && artifact.type !== 'question') disposition = !this.artifactResourceError(task, artifact) && this.applyPatch(task, patch, task.apply_target.expected) ? 'applied' : 'candidate'
         const applied = disposition === 'applied' ? { kind: task.apply_target.kind, id: task.apply_target.id, fields: Object.keys(patch) } : null
-        this.run('INSERT INTO workbench_task_artifacts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)', artifactId, taskId, artifact.type, JSON.stringify(artifact), JSON.stringify(sourceFiles), identity.sessionId, identity.turn, identity.callId, JSON.stringify(skillRefs), disposition, applied ? JSON.stringify(applied) : null, Date.now(), JSON.stringify({ task_id: taskId, artifact_id: artifactId, disposition }))
+        this.run('UPDATE workbench_task_artifacts SET disposition=?,applied_target_json=?,publish_receipt_json=? WHERE artifact_id=?', disposition, applied ? JSON.stringify(applied) : null, JSON.stringify({ task_id: taskId, artifact_id: artifactId, disposition }), artifactId)
         if (artifact.type === 'review') for (const runId of artifact.run_ids) this.run('UPDATE generation_runs SET review_artifact_id=? WHERE run_id=? AND workbench_task_id=?', artifactId, runId, taskId)
         this.refreshTask(taskId)
         return { task_id: taskId, artifact_id: artifactId, disposition }
@@ -300,8 +302,12 @@ export class WorkbenchStore {
     if (artifact.type === 'parameters') for (const id of Object.keys(artifact.parameters)) if (!task.output_contract.parameter_ids.includes(id)) fail('WORKBENCH_PARAMETER_NOT_ALLOWED', '请使用 output_contract.parameter_ids 中的参数。', `artifact.parameters.${id}`)
     if (artifact.type === 'review' || artifact.type === 'experience') {
       if (task.apply_target.kind === 'run_review' && !artifact.run_ids.includes(task.apply_target.id)) fail('WORKBENCH_EVIDENCE_REQUIRED', '请在运行依据中包含任务绑定的运行 ID。', 'artifact.run_ids')
+      if (task.kind === 'compare' && artifact.type === 'review' && (new Set(artifact.run_ids).size !== artifact.run_ids.length || task.input.reference_run_ids.some(id => !artifact.run_ids.includes(id)))) fail('WORKBENCH_EVIDENCE_REQUIRED', '请完整填写本次比较的运行 ID，每个 ID 仅填写一次。', 'artifact.run_ids')
       const allowed = new Set([...task.input.reference_run_ids, ...this.listRuns(task.task_id).map(run => run.run_id)])
-      for (const [index, id] of artifact.run_ids.entries()) if (!allowed.has(id)) fail('WORKBENCH_RUN_NOT_ALLOWED', '请引用本任务的参考运行或已接纳运行。', `artifact.run_ids.${index}`)
+      for (const [index, id] of artifact.run_ids.entries()) {
+        if (!allowed.has(id)) fail('WORKBENCH_RUN_NOT_ALLOWED', '请引用本任务的参考运行或已接纳运行。', `artifact.run_ids.${index}`)
+        this.assertReviewRun(this.taskWorkspace(task.task_id), this.getBranch(task.branch_id).work_id, id)
+      }
     }
   }
   adoptArtifact(input: { artifactId: string; expected: Record<string, JsonValue>; candidate?: boolean; resolvedDraft?: TaskDraft }): PublishReceipt {
@@ -328,8 +334,8 @@ export class WorkbenchStore {
       if (stored.artifact.type === 'review' && !input.candidate) patch.review_artifact_id = stored.artifact_id
       if (stored.artifact.type === 'experience') patch.experience_artifact_id = stored.artifact_id
       if (!this.applyPatch(task, patch, input.expected, target)) fail('WORKBENCH_EDIT_CONFLICT', '目标内容已改变，请刷新差异后重新采用。', 'expected')
-      this.run('UPDATE workbench_task_artifacts SET disposition=?,applied_target_json=? WHERE artifact_id=?', 'applied', JSON.stringify({ kind: target.kind, id: target.id, fields: Object.keys(patch) }), stored.artifact_id)
-      return { task_id: task.task_id, artifact_id: stored.artifact_id, disposition: 'applied' }
+      if (!input.candidate) this.run('UPDATE workbench_task_artifacts SET disposition=?,applied_target_json=? WHERE artifact_id=?', 'applied', JSON.stringify({ kind: target.kind, id: target.id, fields: Object.keys(patch) }), stored.artifact_id)
+      return { task_id: task.task_id, artifact_id: stored.artifact_id, disposition: input.candidate ? stored.disposition : 'applied' }
     })
   }
   replyTask(taskId: string, questionArtifactId: string, answer: string): Task {
@@ -385,6 +391,13 @@ export class WorkbenchStore {
     if (!run.workbench_task_id || this.getBranch(this.getTask(run.workbench_task_id).branch_id).work_id !== workId) fail('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的运行。', 'run_id')
     return run
   }
+
+  assertReviewRun(workspaceId: string, workId: string, runId: string): WorkbenchRun {
+    this.assertScope(workspaceId, workId)
+    const run = this.assertRunInWork(runId, workId)
+    if (!isFinishedRun(run.status)) fail('WORKBENCH_RUN_NOT_FINISHED', '请等待运行结束后编辑评价。', 'run_id')
+    return run
+  }
   assertGenerationAcceptance(input: GenerationAcceptance): GenerationAssociation {
     const existing = input.runId ? this.row('SELECT workbench_task_id FROM generation_runs WHERE run_id=?', input.runId) : undefined
     if (input.reused && (!existing || (existing.workbench_task_id ?? null) !== input.taskId)) fail('WORKBENCH_GENERATION_CONFLICT', 'request_id 已归属另一任务，请使用原任务或新的 request_id。', 'workbench_task_id')
@@ -427,9 +440,9 @@ export class WorkbenchStore {
     const run = this.getRun(runId)
     return run.review_draft ?? { verdict: 'unrated', observation: '', conclusion: '', title: '', conditions: '', note: '', evidence_run_ids: [runId], review_artifact_id: null, experience_artifact_id: null, experience_id: null }
   }
-  saveRunReviewDraft(input: { workspaceId: string; workId: string; runId: string; expected: ReviewDraft; draft: ReviewDraft }): ReviewDraft {
+  saveRunReviewDraft(input: ReviewDraftUpdate & { workspaceId: string; workId: string; runId: string }): ReviewDraft {
     return transaction(this.database, () => {
-      this.assertScope(input.workspaceId, input.workId); this.assertRunInWork(input.runId, input.workId)
+      this.assertReviewRun(input.workspaceId, input.workId, input.runId)
       if (!equalValue(this.getRunReviewDraft(input.runId), input.expected)) fail('WORKBENCH_EDIT_CONFLICT', '评价草稿已改变，请刷新后重新保存。', 'expected')
       const draft = validateReviewDraft(input.draft)
       for (const id of draft.evidence_run_ids) this.assertRunInWork(id, input.workId)
@@ -444,21 +457,23 @@ export class WorkbenchStore {
       return draft
     })
   }
-  saveRunReview(input: { workspaceId: string; workId: string; runId: string; expected: ReviewDraft; draft: ReviewDraft; saveExperience?: boolean }): { review: SavedReview; experience_id: string | null } {
+  saveRunReview(input: ReviewDraftUpdate & { workspaceId: string; workId: string; runId: string; saveExperience?: boolean }): { review: SavedReview; experience_id: string | null } {
     return transaction(this.database, () => {
-      this.saveRunReviewDraft(input)
-      const run = this.getRun(input.runId); const task = this.getTask(run.workbench_task_id); const branch = this.getBranch(task.branch_id)
-      const review: SavedReview = { verdict: input.draft.verdict, observation: input.draft.observation, conclusion: input.draft.conclusion, source_artifact_id: input.draft.review_artifact_id }
-      let experienceId = input.draft.experience_id
+      const run = this.assertReviewRun(input.workspaceId, input.workId, input.runId)
+      const draft = validateReviewDraft(input.draft)
+      if (!input.saveExperience && !draft.observation.trim() && !draft.conclusion.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写观察或评价结论后保存。', 'draft')
+      const task = this.getTask(run.workbench_task_id); const branch = this.getBranch(task.branch_id)
+      const review: SavedReview = { verdict: draft.verdict, observation: draft.observation, conclusion: draft.conclusion, source_artifact_id: draft.review_artifact_id }
+      let experienceId = draft.experience_id
       if (input.saveExperience) {
-        for (const key of ['title', 'conditions', 'note'] as const) if (!input.draft[key].trim()) fail('WORKBENCH_INVALID_INPUT', '请填写经验标题、适用条件和经验结论。', `draft.${key}`)
-        if (!input.draft.evidence_run_ids.includes(input.runId)) fail('WORKBENCH_INVALID_INPUT', '经验证据必须包含当前运行。', 'draft.evidence_run_ids')
-        for (const id of input.draft.evidence_run_ids) this.assertRunInWork(id, input.workId)
+        for (const key of ['title', 'conditions', 'note'] as const) if (!draft[key].trim()) fail('WORKBENCH_INVALID_INPUT', '请填写经验标题、适用条件和经验结论。', `draft.${key}`)
+        if (!draft.evidence_run_ids.includes(input.runId)) fail('WORKBENCH_INVALID_INPUT', '经验证据必须包含当前运行。', 'draft.evidence_run_ids')
         if (experienceId && this.getExperience(experienceId).source_run_id !== input.runId) fail('WORKBENCH_SCOPE_MISMATCH', '请更新当前运行对应的经验。', 'draft.experience_id')
         experienceId ??= randomUUID()
-        this.run('INSERT INTO workbench_experiences VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(experience_id) DO UPDATE SET title=excluded.title,conditions=excluded.conditions,note=excluded.note,evidence_run_ids_json=excluded.evidence_run_ids_json,source_artifact_id=excluded.source_artifact_id', experienceId, branch.work_id, branch.branch_id, input.draft.experience_artifact_id ? this.getArtifact(input.draft.experience_artifact_id).task_id : null, input.draft.title, input.draft.conditions, input.draft.note, task.input.base_model_id, run.generation_input.model?.id ?? null, JSON.stringify(input.draft.evidence_run_ids), input.runId, branch.source_experience_id, input.draft.experience_artifact_id)
+        this.run('INSERT INTO workbench_experiences VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(experience_id) DO UPDATE SET title=excluded.title,conditions=excluded.conditions,note=excluded.note,evidence_run_ids_json=excluded.evidence_run_ids_json,source_artifact_id=excluded.source_artifact_id', experienceId, branch.work_id, branch.branch_id, draft.experience_artifact_id ? this.getArtifact(draft.experience_artifact_id).task_id : null, draft.title, draft.conditions, draft.note, task.input.base_model_id, run.generation_input.model?.id ?? null, JSON.stringify(draft.evidence_run_ids), input.runId, branch.source_experience_id, draft.experience_artifact_id)
       }
-      this.run('UPDATE generation_runs SET review_json=?,review_draft_json=? WHERE run_id=?', JSON.stringify(review), JSON.stringify({ ...input.draft, experience_id: experienceId }), input.runId)
+      this.saveRunReviewDraft({ ...input, draft: { ...draft, experience_id: experienceId } })
+      this.run('UPDATE generation_runs SET review_json=? WHERE run_id=?', JSON.stringify(review), input.runId)
       return { review, experience_id: experienceId }
     })
   }

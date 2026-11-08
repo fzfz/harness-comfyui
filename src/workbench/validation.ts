@@ -1,10 +1,11 @@
 import { contractFields } from '../shared/field-contract.ts'
 import Schema from '@deepseek-ai/schemastery'
-import { artifactSchemas, taskRequestDraftSchema } from './schema.ts'
+import { artifactSchemas, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema } from './schema.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { TASK_KINDS } from './functions.ts'
+import { isRunReviewFunctionKind } from './contract.ts'
 import { requestTemplateProblem } from './request-template.ts'
-import type { ArtifactPayload, ContextRef, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
+import type { ArtifactPayload, ContextRef, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, ReviewDraftUpdate, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
 
 export interface FieldIssue { path: string; message: string }
 export class WorkbenchError extends Error {
@@ -107,9 +108,9 @@ export function validateTaskInput(kind: TaskKind, value: unknown): TaskInput {
   v.strings(value.reference_run_ids, 'input.reference_run_ids')
   if (value.requested_skill !== null) v.text(value.requested_skill, 'input.requested_skill', true)
   if (!Number.isSafeInteger(value.max_runs) || (kind === 'run' ? value.max_runs !== 1 : kind === 'experiment' ? Number(value.max_runs) < 1 : value.max_runs !== 0)) v.issue('input.max_runs', '运行任务填写 1，持续实验填写正整数，其他任务填写 0。')
-  const evaluationKinds = ['review', 'compare', 'diagnose', 'experience']
-  if (evaluationKinds.includes(kind)) {
+  if (isRunReviewFunctionKind(kind)) {
     if (!Array.isArray(value.reference_run_ids) || value.reference_run_ids.length < (kind === 'compare' ? 2 : 1)) v.issue('input.reference_run_ids', kind === 'compare' ? '请选择至少 2 个参考运行。' : '请选择参考运行。')
+    if (kind === 'compare' && Array.isArray(value.reference_run_ids) && new Set(value.reference_run_ids).size !== value.reference_run_ids.length) v.issue('input.reference_run_ids', '请选择不同的运行作为比较对象。')
     const evaluation = value.evaluation_input
     if (v.object(evaluation, 'input.evaluation_input', ['run_id', 'verdict', 'observation', 'conclusion', 'experience'])) {
       v.text(evaluation.run_id, 'input.evaluation_input.run_id', true)
@@ -154,15 +155,13 @@ export function validateArtifact(value: unknown): ArtifactPayload {
 }
 
 export function validateReviewDraft(value: unknown): ReviewDraft {
-  const v = new Validator()
-  if (v.object(value, 'draft', ['verdict', 'observation', 'conclusion', 'title', 'conditions', 'note', 'evidence_run_ids', 'review_artifact_id', 'experience_artifact_id', 'experience_id'])) {
-    if (!['unrated', 'met', 'needs-work'].includes(String(value.verdict))) v.issue('draft.verdict', '请选择 unrated、met 或 needs-work。')
-    for (const key of ['observation', 'conclusion', 'title', 'conditions', 'note']) v.text(value[key], `draft.${key}`)
-    v.strings(value.evidence_run_ids, 'draft.evidence_run_ids')
-    if (Array.isArray(value.evidence_run_ids) && value.evidence_run_ids.length === 0) v.issue('draft.evidence_run_ids', '请选择作为经验证据的运行。')
-    for (const key of ['review_artifact_id', 'experience_artifact_id', 'experience_id']) if (value[key] !== null) v.text(value[key], `draft.${key}`, true)
-  }
-  return v.finish(value)
+  try { return structuredClone(Schema.resolve(value, reviewDraftSchema, {})[0]) as ReviewDraft }
+  catch (error) { throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), 'draft') }
+}
+
+export function validateReviewDraftUpdate(value: unknown): ReviewDraftUpdate {
+  try { return structuredClone(Schema.resolve(value, reviewDraftUpdateSchema, {})[0]) as ReviewDraftUpdate }
+  catch (error) { throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), 'evaluationDraft') }
 }
 
 export function validateFunctionBinding(value: FunctionBinding): FunctionBinding {

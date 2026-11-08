@@ -20,7 +20,8 @@ async function branchAt(remote: Fixture['remote'], scope: WorkbenchScope) {
 }
 async function startTask(host: Fixture, scope: WorkbenchScope, functionId: string, runId?: string) {
   await host.remote.mutate({ ...scope, type: 'function-preset', id: functionId, value: 'preset-a' }, signal())
-  const receipt = await host.remote.mutate({ ...scope, type: 'agent-action', id: functionId, ...(runId ? { runId } : {}) }, signal())
+  const draft = runId ? (await host.remote.getProjection(scope, signal())).runs.find(run => run.run_id === runId)!.review_draft! : undefined
+  const receipt = await host.remote.mutate({ ...scope, type: 'agent-action', id: functionId, ...(runId ? { runId, value: { evaluationDraft: { expected: draft, draft } } } : {}) }, signal())
   const task = (await host.remote.getProjection(scope, signal())).tasks.find(task => task.task_id === receipt.taskId)!
   const identity = { workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'publish' }
   return { task, identity }
@@ -40,6 +41,7 @@ async function acceptRun(host: Fixture, scope: WorkbenchScope) {
     title: input.title, instanceId: input.instance_id, templateId: input.template_id!, model: input.model ? { id: input.model.id, fileName: input.model.file_name } : null,
     parameters: input.parameters, loras: input.loras.map(lora => ({ id: lora.id, fileName: lora.file_name, weight: lora.weight, triggerWords: lora.trigger_words })),
   } }], undefined, task.task_id)
+  await host.runtime.advance()
   return accepted.items[0]!.runId
 }
 

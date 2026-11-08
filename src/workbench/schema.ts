@@ -17,6 +17,13 @@ export const taskRequestResourcesSchema = object({
   template_id: Schema.union([id(), Schema.const(null)]).required(false).default(undefined as never),
 })
 export const taskRequestDraftSchema = object({ instructions: text(), resources: taskRequestResourcesSchema.required() })
+export const reviewDraftSchema = object({
+  verdict: Schema.union(['unrated', 'met', 'needs-work']).required(),
+  observation: text(), conclusion: text(), title: text(), conditions: text(), note: text(),
+  evidence_run_ids: strings().min(1),
+  review_artifact_id: requiredNullable(nonempty()), experience_artifact_id: requiredNullable(nonempty()), experience_id: requiredNullable(nonempty()),
+})
+export const reviewDraftUpdateSchema = object({ expected: reviewDraftSchema.required(), draft: reviewDraftSchema.required() })
 export const contextRefSchema = object({ kind: Schema.union(['work', 'character', 'style', 'prompt-term', 'artist-string']).required(), id: id() })
 export const resourceRefSchema = object({ kind: Schema.union(CATALOG_KIND_DEFINITIONS.map(definition => definition.kind)).required(), id: id() })
 export const generationInputSchema = object({
@@ -27,6 +34,8 @@ export const generationInputSchema = object({
 const candidateSchema = object({ generation_input: generationInputSchema, context_refs: Schema.array(contextRefSchema).required() })
 const promptInputFields = { positive_prompt: requiredNullable(text()), negative_prompt: requiredNullable(text()) }
 export const promptInputSchema = object(promptInputFields)
+const taskDraftFields = { prompt_input: promptInputSchema, generation_input: generationInputSchema, context_refs: Schema.array(contextRefSchema).required(), base_model_id: requiredNullable(id()) }
+export const taskDraftSchema = object(taskDraftFields)
 export const artifactSchemas = {
   prompt: object({ type: Schema.const('prompt').required(), ...promptInputFields, source_files: Schema.array(text()).default(undefined as never) }),
   parameters: object({ type: Schema.const('parameters').required(), parameters: jsonObject(), source_files: Schema.array(text()).default(undefined as never) }),
@@ -48,8 +57,7 @@ export const workbenchRunInputSchema = object({
 })
 export const taskGetResultSchema = object({
   task_id: nonempty(), kind: text(), status: text(),
-  prompt_input: promptInputSchema, generation_input: generationInputSchema,
-  context_refs: Schema.array(contextRefSchema).required(), base_model_id: requiredNullable(id()),
+  ...taskDraftFields,
   requirements: object({ original_request: text(), instructions: text() }), reference_run_ids: strings(),
   evaluation_input: object({ run_id: nonempty(), verdict: text(), observation: text(), conclusion: text(), experience: object({ title: text(), conditions: text(), note: text() }) }).required(false).default(undefined as never),
   requested_skill: requiredNullable(text()), max_runs: Schema.natural().required(),

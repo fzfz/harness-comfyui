@@ -135,9 +135,11 @@ it('accepts a comparison with two Run references and rejects a single reference 
     runIds.push(submitted.data.items[0].run_id)
     await runtime.advance()
   }
-  await expect(remote.mutate({ ...selected, type: 'agent-action', id: 'compare', runId: runIds[0], referenceRunIds: [runIds[0]!] }, signal())).rejects.toMatchObject({ code: 'workbench/operation-failed' })
+  const draft = (await remote.getProjection(selected, signal())).runs.find(run => run.run_id === runIds[0])!.review_draft!
+  const evaluationDraft = { expected: draft, draft }
+  await expect(remote.mutate({ ...selected, type: 'agent-action', id: 'compare', runId: runIds[0], referenceRunIds: [runIds[0]!], value: { evaluationDraft } }, signal())).rejects.toMatchObject({ code: 'workbench/operation-failed' })
   expect((await remote.getProjection(selected, signal())).tasks.filter(task => task.kind === 'compare')).toEqual([])
-  await remote.mutate({ ...selected, type: 'agent-action', id: 'compare', runId: runIds[0], referenceRunIds: runIds }, signal())
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'compare', runId: runIds[0], referenceRunIds: runIds, value: { evaluationDraft } }, signal())
   const comparison = (await remote.getProjection(selected, signal())).tasks.find(task => task.kind === 'compare')!
   const result = await run(['workbench', 'task', 'get', '--stdin'], { task_id: comparison.task_id }, variables(workbenchShellExecution(comparison.session_id!)))
   expect(result.code, result.stderr).toBe(0)
@@ -158,7 +160,8 @@ it('publishes a terminal Run review without an optional generation candidate thr
   const runId = submitted.data.items[0].run_id as string
   await runtime.advance()
   expect(store.getRun(runId).status).toBe('failed')
-  await remote.mutate({ ...selected, type: 'agent-action', id: 'review', runId }, signal())
+  const initialDraft = (await remote.getProjection(selected, signal())).runs.find(run => run.run_id === runId)!.review_draft!
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'review', runId, value: { evaluationDraft: { expected: initialDraft, draft: initialDraft } } }, signal())
   const reviewTask = (await remote.getProjection(selected, signal())).tasks.find(item => item.kind === 'review')!
   const environment = variables(workbenchShellExecution(reviewTask.session_id!))
   const fetched = await run(['workbench', 'task', 'get', '--stdin'], { task_id: reviewTask.task_id }, environment)

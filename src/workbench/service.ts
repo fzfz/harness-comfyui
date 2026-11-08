@@ -1,7 +1,8 @@
-import type { AgentModel, ArtifactPayload, ContextRef, EvaluationInput, ExecutionState, FunctionDescriptor, GenerationInput, JsonValue, SkillReadRef, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRun, WorkbenchRunInput } from './contract.ts'
+import type { AgentModel, ArtifactPayload, ContextRef, EvaluationInput, ExecutionState, FunctionDescriptor, GenerationInput, JsonValue, ReviewDraft, ReviewDraftUpdate, SkillReadRef, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRun, WorkbenchRunInput } from './contract.ts'
+import { isRunReviewFunctionKind } from './contract.ts'
 import type { WorkbenchStore } from '../host/storage/workbench-store.ts'
 import { shouldTrackExecution } from './state.ts'
-import { equalValue, jsonValue, validateArtifact, validateTaskRequestDraft, WorkbenchError } from './validation.ts'
+import { equalValue, jsonValue, validateArtifact, validateReviewDraftUpdate, validateTaskInput, validateTaskRequestDraft, WorkbenchError } from './validation.ts'
 
 import { readSavedPromptInput } from './prompt-input.ts'
 import type { WorkflowRuntimeParameterInspection } from '../generation/inspection-contract.ts'
@@ -33,7 +34,7 @@ export interface WorkbenchServiceOptions {
 }
 export interface CreateTaskRequest {
   workspaceId: string; workId: string; branchId: string; functionId: string; taskDraft?: TaskRequestDraft; instructions?: string; referenceRunIds?: string[]
-  evaluationInput?: EvaluationInput; presetOverride?: string; maxRuns?: number; title?: string; initiator?: 'human' | 'agent'; retryOfRunId?: string
+  runId?: string; evaluationDraft?: ReviewDraftUpdate; presetOverride?: string; maxRuns?: number; title?: string; initiator?: 'human' | 'agent'; retryOfRunId?: string
 }
 
 export class WorkbenchService {
@@ -65,7 +66,25 @@ export class WorkbenchService {
     const taskDraft = submittedDraft ?? this.store.getTaskDraft(branch.branch_id, binding.function_id)
     const descriptor = this.options.descriptors.find(item => item.kind === binding.kind)
     if (!descriptor) throw new WorkbenchError('WORKBENCH_FUNCTION_NOT_FOUND', '功能类型不可用，请在配置中心重新选择。', 'function_id')
+    const reviewTarget = isRunReviewFunctionKind(binding.kind)
+    const referenceRunIds = [...request.referenceRunIds ?? []]
+    let acceptedReview: ReviewDraft | undefined
+    let evaluationInput: EvaluationInput | undefined
+    if (reviewTarget) {
+      const update = validateReviewDraftUpdate(request.evaluationDraft)
+      const runId = request.runId ?? ''
+      const run = this.store.assertReviewRun(request.workspaceId, request.workId, runId)
+      if (binding.kind === 'diagnose' && run.status !== 'failed' && run.status !== 'cancelled') throw new WorkbenchError('WORKBENCH_FAILED_RUN_REQUIRED', '请选择失败或已取消的运行后诊断。', 'input.evaluation_input.run_id')
+      evaluationInput = { run_id: runId, verdict: update.draft.verdict, observation: update.draft.observation, conclusion: update.draft.conclusion, experience: { title: update.draft.title, conditions: update.draft.conditions, note: update.draft.note } }
+      validateTaskInput(binding.kind, { ...branch.draft, requirements: { original_request: branch.original_request, instructions: '' }, reference_run_ids: referenceRunIds, requested_skill: binding.requested_skill, max_runs: 0, evaluation_input: evaluationInput })
+      for (const id of referenceRunIds) this.store.assertReviewRun(request.workspaceId, request.workId, id)
+      acceptedReview = this.store.saveRunReviewDraft({ workspaceId: request.workspaceId, workId: request.workId, runId, ...update })
+    }
     let draft = branch.draft
+    if (evaluationInput) {
+      const historical = await this.getRunInput({ workspaceId: request.workspaceId, workId: request.workId, runId: evaluationInput.run_id })
+      draft = { generation_input: historical.generation_input, prompt_input: historical.prompt_input, context_refs: historical.context_refs, base_model_id: null }
+    }
     if (binding.kind === 'parameters' && taskDraft) {
       draft = structuredClone(branch.draft)
       Object.assign(draft.generation_input, taskDraft.resources)
@@ -81,25 +100,20 @@ export class WorkbenchService {
       const input = await this.getRunInput({ workspaceId: request.workspaceId, workId: request.workId, runId: source.run_id })
       draft = await this.mappedRunDraft(input)
     }
-    if (binding.kind === 'diagnose' && request.evaluationInput) {
-      const target = this.store.assertRunInWork(request.evaluationInput.run_id, request.workId)
-      if (target.status !== 'failed' && target.status !== 'cancelled') throw new WorkbenchError('WORKBENCH_FAILED_RUN_REQUIRED', '请选择失败或已取消的运行后诊断。', 'input.evaluation_input.run_id')
-    }
-    const input = { ...draft, requirements: { original_request: branch.original_request, instructions: submittedDraft ? submittedDraft.instructions.trim() : request.instructions ?? taskDraft?.instructions ?? '' }, reference_run_ids: request.referenceRunIds ?? [], requested_skill: binding.requested_skill, max_runs: binding.kind === 'run' ? 1 : binding.kind === 'experiment' ? request.maxRuns ?? branch.execution.max_runs : 0, ...(request.evaluationInput ? { evaluation_input: request.evaluationInput } : {}) }
+    const input = { ...draft, requirements: { original_request: branch.original_request, instructions: submittedDraft ? submittedDraft.instructions.trim() : request.instructions ?? taskDraft?.instructions ?? '' }, reference_run_ids: referenceRunIds, requested_skill: binding.requested_skill, max_runs: binding.kind === 'run' ? 1 : binding.kind === 'experiment' ? request.maxRuns ?? branch.execution.max_runs : 0, ...(evaluationInput ? { evaluation_input: evaluationInput } : {}) }
     if (binding.kind === 'run' || binding.kind === 'experiment') {
       if (this.options.prepareGenerationInput && !request.retryOfRunId) input.generation_input = await this.options.prepareGenerationInput(draft)
       await this.options.validateGenerationInput?.(input.generation_input, input.context_refs, 'input.generation_input')
     }
-    await this.options.validateContextRefs?.(input.context_refs, 'input.context_refs')
+    if (!reviewTarget) await this.options.validateContextRefs?.(input.context_refs, 'input.context_refs')
     const output = structuredClone(descriptor.output_contract)
     if (binding.kind === 'parameters') {
       if (!input.generation_input.instance_id || !input.generation_input.template_id) throw new WorkbenchError('WORKBENCH_TEMPLATE_REQUIRED', '请先选择实例和 Workflow 模板。', 'input.generation_input')
       output.parameter_ids = await this.options.parameterIds?.(input.generation_input) ?? []
     }
-    const reviewTarget = ['review', 'compare', 'diagnose', 'experience'].includes(binding.kind)
-    const target = reviewTarget ? { kind: 'run_review' as const, id: request.evaluationInput?.run_id ?? '', expected: {} as Record<string, JsonValue> } : { kind: 'branch' as const, id: branch.branch_id, expected: {} as Record<string, JsonValue> }
+    const target = reviewTarget ? { kind: 'run_review' as const, id: evaluationInput!.run_id, expected: {} as Record<string, JsonValue> } : { kind: 'branch' as const, id: branch.branch_id, expected: {} as Record<string, JsonValue> }
     if (reviewTarget) {
-      const draft = this.store.getRunReviewDraft(target.id)
+      const draft = acceptedReview!
       const fields = binding.kind === 'experience' ? ['title', 'conditions', 'note', 'evidence_run_ids', 'experience_artifact_id'] : ['observation', 'conclusion', 'evidence_run_ids', 'review_artifact_id']
       for (const field of fields) target.expected[field] = jsonValue(draft[field as keyof typeof draft])
     } else if (binding.kind === 'prompt' || binding.kind === 'rewrite') {

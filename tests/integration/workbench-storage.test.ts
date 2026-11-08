@@ -110,7 +110,8 @@ describe('workbench storage public boundary', () => {
     expect(next.input.generation_input.parameters).toEqual(candidate.parameters)
     acceptRun(f, next.task_id, 'candidate-source', next.input.generation_input)
     f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('candidate-source')
-    const review = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'review', referenceRunIds: ['candidate-source'], evaluationInput: { run_id: 'candidate-source', verdict: 'unrated', observation: '', conclusion: '', experience: { title: '', conditions: '', note: '' } } })
+    const reviewDraft = f.store.getRunReviewDraft('candidate-source')
+    const review = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'review', referenceRunIds: ['candidate-source'], runId: 'candidate-source', evaluationDraft: { expected: reviewDraft, draft: reviewDraft } })
     const improved = { ...candidate, parameters: { positive_prompt_9: 'review cool glass', negative_prompt_10: 'review contrast' } }
     const improvedReceipt = await f.service.publish({ taskId: review.task_id, artifact: { type: 'review', observation: 'warm', conclusion: 'cooler', run_ids: ['candidate-source'], candidate: { generation_input: improved, context_refs: [] } } }, { workspaceId: 'workspace', sessionId: review.session_id!, turn: 1, callId: 'review-candidate' })
     const reviewBaseline = f.store.getBranch(f.branch.branch_id).draft
@@ -371,13 +372,13 @@ describe('workbench storage public boundary', () => {
     const source = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
     acceptRun(f, source.task_id, 'source-run', draft.generation_input)
     f.database.exec("UPDATE generation_runs SET status='succeeded'")
-    const evaluationInput = { run_id: 'source-run', verdict: 'unrated' as const, observation: '', conclusion: '', experience: { title: '', conditions: '', note: '' } }
-    const review = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'review', referenceRunIds: ['source-run'], evaluationInput })
+    const evaluation = () => { const draft = f.store.getRunReviewDraft('source-run'); return { runId: 'source-run', evaluationDraft: { expected: draft, draft } } }
+    const review = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'review', referenceRunIds: ['source-run'], ...evaluation() })
     await f.service.publish({ taskId: review.task_id, artifact: { type: 'review', observation: 'rain visible', conclusion: 'goal met', run_ids: ['source-run'] } }, { workspaceId: 'workspace', sessionId: review.session_id!, turn: 1, callId: 'review' })
     expect(f.store.getRunReviewDraft('source-run')).toMatchObject({ observation: 'rain visible', conclusion: 'goal met' })
     expect(f.store.getRun('source-run').review).toBeNull()
     expect(f.store.getRun('source-run').generation_input.model).toEqual({ id: '3', file_name: 'model.safetensors' })
-    const experience = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'experience', referenceRunIds: ['source-run'], evaluationInput })
+    const experience = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'experience', referenceRunIds: ['source-run'], ...evaluation() })
     const receipt = await f.service.publish({ taskId: experience.task_id, artifact: { type: 'experience', title: 'rain', conditions: 'glass', note: 'backlight', base_model_id: '5', model_id: '3', run_ids: ['source-run'] } }, { workspaceId: 'workspace', sessionId: experience.session_id!, turn: 1, callId: 'experience' })
     expect(receipt.disposition).toBe('applied')
     const before = f.store.getRunReviewDraft('source-run')
@@ -404,15 +405,14 @@ describe('workbench storage public boundary', () => {
       acceptRun(f, source.task_id, id, draft.generation_input)
     }
     f.database.exec("UPDATE generation_runs SET status='succeeded'")
-    const evaluationInput = { run_id: 'run-a', verdict: 'unrated' as const, observation: '', conclusion: '', experience: { title: '', conditions: '', note: '' } }
-    const request = { workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, referenceRunIds: ['run-a', 'run-b'], evaluationInput }
-    const comparison = await f.service.createTask({ ...request, functionId: 'compare' })
+    const request = () => { const draft = f.store.getRunReviewDraft('run-a'); return { workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, referenceRunIds: ['run-a', 'run-b'], runId: 'run-a', evaluationDraft: { expected: draft, draft } } }
+    const comparison = await f.service.createTask({ ...request(), functionId: 'compare' })
     const identity = { workspaceId: 'workspace', sessionId: comparison.session_id!, turn: 1, callId: 'compare' }
     await expect(f.service.publish({ taskId: comparison.task_id, artifact: { type: 'review', observation: 'b', conclusion: 'only b', run_ids: ['run-b'] } }, identity)).rejects.toMatchObject({ issues: [{ path: 'artifact.run_ids' }] })
     expect((await f.service.publish({ taskId: comparison.task_id, artifact: { type: 'review', observation: 'a and b', conclusion: 'a clearer', run_ids: ['run-a', 'run-b'] } }, identity)).disposition).toBe('applied')
-    await expect(f.service.createTask({ ...request, functionId: 'diagnose' })).rejects.toMatchObject({ code: 'WORKBENCH_FAILED_RUN_REQUIRED' })
+    await expect(f.service.createTask({ ...request(), functionId: 'diagnose' })).rejects.toMatchObject({ code: 'WORKBENCH_FAILED_RUN_REQUIRED' })
     f.database.prepare("UPDATE generation_runs SET status='failed' WHERE run_id=?").run('run-a')
-    const diagnosis = await f.service.createTask({ ...request, functionId: 'diagnose' })
+    const diagnosis = await f.service.createTask({ ...request(), functionId: 'diagnose' })
     expect((await f.service.publish({ taskId: diagnosis.task_id, artifact: { type: 'review', observation: 'node error', conclusion: 'fix input', run_ids: ['run-a'] } }, { ...identity, sessionId: diagnosis.session_id!, callId: 'diagnose' })).disposition).toBe('applied')
   })
 

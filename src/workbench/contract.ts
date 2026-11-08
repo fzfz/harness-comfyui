@@ -2,7 +2,10 @@ import type { CatalogKind as CatalogResourceKind } from '../catalog/contract.ts'
 import type { JsonValue } from '../shared/json-contract.ts'
 
 export type { JsonValue }
-export type TaskKind = 'prompt' | 'rewrite' | 'parameters' | 'resources' | 'review' | 'compare' | 'diagnose' | 'experience' | 'run' | 'experiment'
+const RUN_REVIEW_FUNCTION_KINDS = ['review', 'compare', 'diagnose', 'experience'] as const
+export type RunReviewFunctionKind = typeof RUN_REVIEW_FUNCTION_KINDS[number]
+export type TaskKind = 'prompt' | 'rewrite' | 'parameters' | 'resources' | RunReviewFunctionKind | 'run' | 'experiment'
+export function isRunReviewFunctionKind(kind: TaskKind): kind is RunReviewFunctionKind { return RUN_REVIEW_FUNCTION_KINDS.some(reviewKind => reviewKind === kind) }
 export type TaskStatus = 'pending' | 'running' | 'waiting_input' | 'waiting_generation' | 'needs_attention' | 'paused' | 'interrupted' | 'succeeded' | 'failed'
 export type ArtifactType = ArtifactPayload['type']
 export type ArtifactDisposition = 'applied' | 'candidate' | 'recorded' | 'waiting_input'
@@ -49,6 +52,8 @@ export interface ReviewDraft {
   experience_artifact_id: string | null
   experience_id: string | null
 }
+
+export interface ReviewDraftUpdate { expected: ReviewDraft; draft: ReviewDraft }
 export interface SavedReview { verdict: ReviewDraft['verdict']; observation: string; conclusion: string; source_artifact_id: string | null }
 export interface EvaluationInput { run_id: string; verdict: ReviewDraft['verdict']; observation: string; conclusion: string; experience: { title: string; conditions: string; note: string } }
 export interface TaskInput extends TaskDraft {

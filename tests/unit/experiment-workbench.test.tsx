@@ -36,6 +36,7 @@ const { act, create } = (await vi.importActual('react-test-renderer')) as {
   create: (node: React.ReactElement, options?: { createNodeMock: (element: { props: Record<string, unknown> }) => unknown }) => {
     readonly root: RenderNode
     unmount(): void
+    update(node: React.ReactElement): void
     toJSON(): unknown
   }
 }
@@ -1209,7 +1210,7 @@ describe('experiment workbench public interactions', () => {
     expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(0)
   })
 
-  it('shows real failures and running records and forwards retry, review and favorites', async () => {
+  it('shows real failures and running records, opens review and forwards retry and favorites', async () => {
     const data = fullProjection()
     data.tasks.push(makeTask('t4'))
     data.runs.push(makeRun('r4', 't4', 'remote_running'))
@@ -1226,9 +1227,8 @@ describe('experiment workbench public interactions', () => {
     await click(renderer, '诊断失败')
     await click(renderer, '自定义diagnose')
     await click(renderer, '记录评价与经验')
-    expect(onAction).toHaveBeenLastCalledWith(
-      expect.objectContaining({ type: 'evaluate' }),
-    )
+    expect(renderer.root.findByProps({ role: 'dialog' }).props.className).toContain('evaluation-modal')
+    await click(renderer, '取消')
     await click(renderer, '查看运行 r2')
     await click(renderer, '移除收藏')
     await click(renderer, '查看运行记录')
@@ -7283,5 +7283,448 @@ describe('experiment workbench preparing historical Run input', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(100) })
     expect(getRunInput).toHaveBeenCalledTimes(2)
     expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('固定正向')
+  })
+})
+
+
+describe('experiment workbench Run review through Remote', () => {
+  const signal = new AbortController().signal
+  type Host = Awaited<ReturnType<typeof import('../support/workbench-host.ts').createWorkbenchHostFixture>>
+  const setup = async (successful = false) => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(successful ? {
+      inspectRuntimeParameters: async () => inputDescription,
+      validateInput: async () => {},
+      prepare: async () => ({ instanceId: '8', instanceTitle: 'Node', templateTitle: 'Template', sourceSnapshot: {}, inputDescription,
+        actualWorkflow: {}, apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } }, expectedOutputNodeIds: ['3'],
+        connection: { origin: 'http://comfy.test', url: 'http://comfy.test', authorization: null } }),
+    } : undefined, successful ? {
+      submit: async input => { input.onRequestStart(); return { promptId: input.promptId } },
+      observe: async () => ({ status: 'success', outputs: [{ nodeId: '3', outputIndex: 0, mediaKind: 'image', filename: 'frame.png', subfolder: '', type: 'output' }] }),
+      download: async () => ({ bytes: Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1]), mediaType: 'image/png' }),
+    } : undefined)
+    const root = await host.remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: '运行评价', goal: '保留窗框' } }, signal)
+    for (const id of ['run', 'review', 'diagnose', 'compare', 'experience'])
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id, value: 'preset-a' }, signal)
+    await host.remote.mutate({ ...root, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+    for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }])
+      await host.remote.mutate({ ...root, type: 'resource-select', value }, signal)
+    const createRun = async (finish = true) => {
+      const receipt = await host.remote.mutate({ ...root, type: 'run' }, signal)
+      const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.task_id === receipt.taskId)!
+      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+      const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() },
+        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+      if (finish) {
+        for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
+        host.official.agents.get(task.session_id!)!.status = 'idle'
+      }
+      return accepted.items[0]!.runId
+    }
+    const runId = await createRun()
+    const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+    const options = {
+      workspaceId: root.workspaceId, workspaces: environment.workspaces, presets: environment.presets,
+      instances: environment.instances, agentModelGroups: environment.models.groups,
+      routableProviders: environment.models.routableProviders,
+      onAction: vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal)),
+      remote: { getProjection: request => host.remote.getProjection(request, signal),
+        getRunInput: request => host.remote.getRunInput(request, signal),
+        getInputDescription: request => host.remote.getInputDescription(request, signal) },
+    } satisfies NonNullable<Parameters<typeof mount>[1]>
+    return { host, root, runId, createRun, options }
+  }
+
+  it('keeps diagnosis and comparison on the result page and opens the fixed review from the completed Task', async () => {
+    for (const kind of ['diagnose', 'compare'] as const) {
+      const { host, root, runId, createRun, options } = await setup(kind === 'compare')
+      try {
+        const otherRun = await createRun()
+        const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+        await click(renderer, '查看运行 ' + runId)
+        if (kind === 'compare') {
+          await click(renderer, '比较运行')
+          await click(renderer, '比较运行 ' + otherRun)
+        }
+        await click(renderer, kind === 'compare' ? '比较结果' : '诊断失败')
+        await act(async () => { await options.onAction.mock.results.at(-1)!.value })
+        expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+        expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(0)
+        const accepted = await host.remote.getProjection(root, signal), task = accepted.tasks.find(item => item.kind === kind)!
+        expect(task, kind + ': ' + renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' / ')).toBeDefined()
+        expect(task.input.evaluation_input!.run_id).toBe(runId)
+        expect(task.input.reference_run_ids).toEqual(kind === 'compare' ? [runId, otherRun] : [runId])
+        await click(renderer, '记录评价与经验')
+        const count = accepted.runs.length
+        await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
+          artifact: { type: 'review', observation: kind === 'compare' ? '两次窗框差异' : '实例连接失败', conclusion: '固定运行的处理结论', run_ids: task.input.reference_run_ids } },
+          { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: kind })
+        await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '评价结论' }).props.value).toBe('固定运行的处理结论'), { timeout: 3000 })
+        await click(renderer, '取消')
+        if (kind === 'compare') await click(renderer, '结束比较')
+        await click(renderer, '查看运行 ' + otherRun)
+        await click(renderer, '任务')
+        const card = renderer.root.findAllByProps({ className: 'agent-task-card' }).find(item => item.props['data-task'] === task.task_id)!
+        if (kind === 'diagnose') expect(card.findByProps({ className: 'task-output' }).findAllByType('h3').map(nodeText)).toContain('运行错误')
+        expect(JSON.parse(nodeText(card.findByProps({ 'aria-label': '任务输入 JSON' }))).reference_run_ids).toEqual(task.input.reference_run_ids)
+        await click(renderer, '查看评价与经验')
+        expect(nodeText(renderer.root.findByProps({ className: 'evaluation-form-body' }))).toContain(runId)
+        expect(renderer.root.findByProps({ 'aria-label': '评价结论' }).props.value).toBe('固定运行的处理结论')
+        expect((await host.remote.getProjection(root, signal)).runs).toHaveLength(count)
+      } finally { await host.dispose() }
+    }
+  })
+
+  it.each([new Error('Review request failed'), 'Review request failed'])('keeps the result visible when a diagnosis request fails: %s', async failure => {
+    const { host, root, runId, options } = await setup()
+    try {
+      const before = await host.remote.getProjection(root, signal)
+      const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+        if (request.type === 'agent-action') throw failure
+        return options.onAction(request)
+      })
+      const { renderer } = await mount(before, { ...options, onAction })
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '诊断失败')
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('Review request failed'))
+      expect(renderer.root.findByProps({ className: 'stage-caption' }).findByProps({ title: runId })).toBeDefined()
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(0)
+      expect((await host.remote.getProjection(root, signal)).tasks).toHaveLength(before.tasks.length)
+    } finally { await host.dispose() }
+  })
+
+  it('keeps the review entry disabled for an unfinished Run', async () => {
+    const { host, root, createRun, options } = await setup()
+    try {
+      const unfinished = await createRun(false)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + unfinished)
+      const button = renderer.root.findAllByType('button').find(item => nodeText(item) === '记录评价与经验')!
+      expect(button.props.disabled).toBe(true)
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    } finally { await host.dispose() }
+  })
+
+  it('isolates delayed draft writes and a delayed save receipt between two Run dialogs', async () => {
+    const { host, root, runId, createRun, options } = await setup()
+    try {
+      const otherRun = await createRun()
+      let releaseDraft!: () => void
+      const draftGate = new Promise<void>(resolve => { releaseDraft = resolve })
+      let releaseSave!: () => void
+      const saveGate = new Promise<void>(resolve => { releaseSave = resolve })
+      const mutate = options.onAction
+      const delayed = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+        if (request.runId === runId && request.type === 'update-review-draft') await draftGate
+        if (request.runId === runId && request.type === 'evaluate') await saveGate
+        return mutate(request)
+      })
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, onAction: delayed })
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await change(renderer, '观察', 'A 的迟到草稿')
+      await change(renderer, '评价结论', 'A 的第二字段')
+      await click(renderer, '取消')
+      await click(renderer, '查看运行 ' + otherRun)
+      await click(renderer, '记录评价与经验')
+      await change(renderer, '观察', 'B 的独立草稿')
+      await act(async () => { releaseDraft() })
+      await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review_draft)
+        .toMatchObject({ observation: 'A 的迟到草稿', conclusion: 'A 的第二字段' }))
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('B 的独立草稿')
+      await click(renderer, '取消')
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await act(async () => { renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
+      await click(renderer, '取消')
+      await click(renderer, '查看运行 ' + otherRun)
+      await click(renderer, '记录评价与经验')
+      await act(async () => { releaseSave() })
+      await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review?.observation).toBe('A 的迟到草稿'))
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('B 的独立草稿')
+    } finally { await host.dispose() }
+  })
+
+  it('keeps manual edits and fills the original Run after separately adopting the review generation candidate', async () => {
+    const { host, root, runId, options } = await setup()
+    try {
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await click(renderer, '分析结果')
+      const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.kind === 'review')!
+      await change(renderer, '观察', '分析期间的手工观察')
+      const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
+        artifact: { type: 'review', observation: '候选观察', conclusion: '候选结论', run_ids: [runId],
+          candidate: { generation_input: { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, positive: '独立采用的窗框输入' } }, context_refs: task.input.context_refs } } },
+        { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'manual-conflict' })
+      expect(published.disposition).toBe('candidate')
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 850)) })
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('分析期间的手工观察')
+      await click(renderer, '取消')
+      await click(renderer, '任务')
+      await click(renderer, '采用建议输入')
+      const generationApplied = await host.remote.getProjection(root, signal)
+      expect(generationApplied.branches.find(item => item.branch_id === root.branchId)!.draft.prompt_input.positive_prompt).toBe('独立采用的窗框输入')
+      expect(generationApplied.runs.find(item => item.run_id === runId)!.review_draft!.observation).toBe('分析期间的手工观察')
+      expect(renderer.root.findAllByType('button').map(nodeText)).toContain('填入评价')
+      await click(renderer, '填入评价')
+      await click(renderer, '查看评价与经验')
+      expect((await host.remote.getProjection(root, signal)).branches.find(item => item.branch_id === root.branchId)!.draft.prompt_input.positive_prompt).toBe('独立采用的窗框输入')
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('候选观察')
+      expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review).toBeNull()
+    } finally { await host.dispose() }
+  })
+
+  it('preserves all queued fields after a draft write fails and saves the complete edit on retry', async () => {
+    const { host, root, runId, options } = await setup()
+    try {
+      let rejectWrite!: () => void
+      const gate = new Promise<void>((_resolve, reject) => { rejectWrite = () => reject(new Error('草稿保存失败：连接已中断，请重试。')) })
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options,
+        onAction: async request => {
+          if (request.type === 'update-review-draft') await gate
+          return options.onAction(request)
+        } })
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await change(renderer, '观察', '连接失败前的观察')
+      await change(renderer, '评价结论', '连接失败期间排队的结论')
+      await act(async () => { rejectWrite() })
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ id: 'evaluation-error' }))).toContain('草稿保存失败'))
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 850)) })
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('连接失败前的观察')
+      expect(renderer.root.findByProps({ 'aria-label': '评价结论' }).props.value).toBe('连接失败期间排队的结论')
+      expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review_draft!.observation).toBe('')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review).toMatchObject({
+        observation: '连接失败前的观察', conclusion: '连接失败期间排队的结论',
+      })
+    } finally { await host.dispose() }
+  })
+
+  it('merges an observed server draft after conflict while preserving local text and an explicitly cleared field', async () => {
+    const { host, root, runId, options } = await setup()
+    try {
+      const initial = await host.remote.getProjection(root, signal)
+      let deliverLatest = false
+      const { renderer } = await mount(initial, { ...options, remote: { ...options.remote,
+        getProjection: request => deliverLatest ? host.remote.getProjection(request, signal) : Promise.resolve(structuredClone(initial)),
+      } })
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      const baseline = initial.runs.find(item => item.run_id === runId)!.review_draft!
+      await host.remote.mutate({ ...root, runId, type: 'update-review-draft',
+        value: { expected: baseline, draft: { ...baseline, observation: '服务器最新观察', verdict: 'needs-work', conditions: '服务器补充的适用条件' } } }, signal)
+      await change(renderer, '观察', '随后主动清空的临时输入')
+      await change(renderer, '观察', '')
+      await change(renderer, '评价结论', '冲突后需要保留的人工结论')
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ id: 'evaluation-error' }))).toContain('评价草稿已改变'))
+      const writesBeforeRefresh = options.onAction.mock.calls.length
+      deliverLatest = true
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '适用条件' }).props.value).toBe('服务器补充的适用条件'), { timeout: 3000 })
+      expect(renderer.root.findByProps({ 'aria-label': '目标达成情况' }).props.value).toBe('needs-work')
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('')
+      expect(renderer.root.findByProps({ 'aria-label': '评价结论' }).props.value).toBe('冲突后需要保留的人工结论')
+      expect(options.onAction.mock.calls).toHaveLength(writesBeforeRefresh)
+      expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review_draft!.observation).toBe('服务器最新观察')
+      await click(renderer, '取消')
+      await click(renderer, '记录评价与经验')
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('')
+      expect(renderer.root.findByProps({ 'aria-label': '评价结论' }).props.value).toBe('冲突后需要保留的人工结论')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      const saved = (await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!
+      expect(saved.review).toMatchObject({ observation: '', conclusion: '冲突后需要保留的人工结论', verdict: 'needs-work' })
+      expect(saved.review_draft!.conditions).toBe('服务器补充的适用条件')
+    } finally { await host.dispose() }
+  })
+
+  it('validates the visible review and optional experience fields and preserves a failed save', async () => {
+    const { host, root, runId, options } = await setup()
+    try {
+      let fail = false
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options,
+        onAction: async request => {
+          if (fail && request.type === 'evaluate') throw new Error('评价保存失败：连接已中断，请重试。')
+          return options.onAction(request)
+        } })
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      const submit = async () => act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await submit()
+      expect(nodeText(renderer.root.findByProps({ id: 'evaluation-error' }))).toBe('请填写观察或评价结论。')
+      await change(renderer, '经验标题', '只有标题')
+      await submit()
+      expect(nodeText(renderer.root.findByProps({ id: 'evaluation-error' }))).toBe('请填写经验标题、适用条件和经验结论。')
+      await change(renderer, '经验标题', '')
+      await change(renderer, '观察', '失败后保留的文本')
+      fail = true
+      await submit()
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ id: 'evaluation-error' }))).toContain('连接已中断'))
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('失败后保留的文本')
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
+      fail = false
+      await submit()
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      await click(renderer, '记录评价与经验')
+      expect(nodeText(renderer.root.findByProps({ id: 'evaluation-error' }))).toBe('')
+    } finally { await host.dispose() }
+  })
+
+  it('adopts the displayed review generation candidate into its original Branch independently of review filling', async () => {
+    const { host, root, runId, options } = await setup()
+    try {
+      const other = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '其他分支', original_request: '独立画面' } }, signal)
+      await host.remote.mutate({ ...other, type: 'update-draft', field: 'positive_prompt', value: '其他分支的输入' }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await click(renderer, '分析结果')
+      const before = await host.remote.getProjection(root, signal), task = before.tasks.find(item => item.kind === 'review')!
+      const fixedInput = structuredClone(before.runs.find(item => item.run_id === runId)!.generation_input)
+      const candidate = { generation_input: { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, positive: '候选窗框输入' } }, context_refs: task.input.context_refs }
+      const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
+        artifact: { type: 'review', observation: '候选观察', conclusion: '候选结论', run_ids: [runId], candidate } },
+        { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'review-candidate' })
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('候选观察'), { timeout: 3000 })
+      expect((await host.remote.getProjection(root, signal)).branches[0]!.draft.prompt_input.positive_prompt).toBe('')
+      await click(renderer, '取消')
+      await click(renderer, '切换分支 其他分支')
+      await click(renderer, '任务')
+      expect(renderer.root.findAllByType('summary').map(nodeText)).toContain('查看建议输入')
+      const stale = renderer.root.findAllByType('button').find(item => nodeText(item) === '采用建议输入')!
+      await host.remote.mutate({ ...root, type: 'update-draft', field: 'positive_prompt', value: '其他窗口修改了来源分支' }, signal)
+      await act(async () => { stale.props.onClick(); await options.onAction.mock.results.at(-1)!.value.catch(() => {}) })
+      expect((await host.remote.getProjection(root, signal)).branches.find(item => item.branch_id === root.branchId)!.draft.prompt_input.positive_prompt).toBe('其他窗口修改了来源分支')
+      expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' ')).toContain('目标内容已改变')
+      await click(renderer, '运行结果')
+      await click(renderer, '任务')
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 850)) })
+      const refreshed = (await host.remote.getProjection(root, signal)).branches.find(item => item.branch_id === root.branchId)!.draft
+      await click(renderer, '采用建议输入')
+      expect(options.onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-generation-apply', id: published.artifact_id,
+        branchId: root.branchId, value: refreshed }))
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.branches.find(item => item.branch_id === root.branchId)!.draft.prompt_input.positive_prompt).toBe('候选窗框输入')
+      expect(after.branches.find(item => item.branch_id === other.branchId)!.draft.prompt_input.positive_prompt).toBe('其他分支的输入')
+      expect(after.runs.find(item => item.run_id === runId)!.generation_input).toEqual(fixedInput)
+      expect(renderer.root.findAllByProps({ className: 'agent-task-card' }).length).toBeGreaterThan(0)
+      await click(renderer, '查看评价与经验')
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('候选观察')
+      expect(nodeText(renderer.root.findByProps({ className: 'evaluation-form-body' }))).toContain(runId)
+    } finally { await host.dispose() }
+  })
+
+  it.each(['review', 'experience'] as const)('captures current editing in %s and fills only the Run draft', async kind => {
+    const { host, root, runId, options } = await setup()
+    try {
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await change(renderer, '观察', '点击时的人工观察')
+      await change(renderer, '评价结论', '点击时的人工结论')
+      await click(renderer, kind === 'review' ? '分析结果' : '整理经验')
+      const projection = await host.remote.getProjection(root, signal), task = projection.tasks.find(item => item.kind === kind)!
+      expect(task.input.evaluation_input).toMatchObject({ run_id: runId, observation: '点击时的人工观察', conclusion: '点击时的人工结论' })
+      expect(task.input.reference_run_ids).toEqual([runId])
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
+      expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' ')).toContain('任务已提交')
+      const remoteApi = renderer.root.props.remote
+      await act(() => renderer.update(<ExperimentWorkbench {...options} remote={remoteApi}
+        onWorkspaceChange={vi.fn()} onAction={request => options.onAction(request)} />))
+      const artifact: ArtifactPayload = kind === 'review'
+        ? { type: 'review', observation: 'Agent 观察', conclusion: 'Agent 结论', run_ids: [runId] }
+        : { type: 'experience', title: '窗框经验', conditions: '玻璃建筑', note: '保留窗框连续性', run_ids: [runId], base_model_id: '1', model_id: '2' }
+      const delivered = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
+        { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'review-' + kind })
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': kind === 'review' ? '观察' : '经验标题' }).props.value)
+        .toBe(kind === 'review' ? 'Agent 观察' : '窗框经验'), { timeout: 3000 })
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.runs.find(item => item.run_id === runId)!.review).toBeNull()
+      expect(after.experiences).toHaveLength(0)
+      if (kind === 'experience') {
+        expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('点击时的人工观察')
+        await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+        await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+        const saved = await host.remote.getProjection(root, signal)
+        expect(saved.experiences).toHaveLength(1)
+        expect(saved.experiences[0]).toMatchObject({ title: '窗框经验', source_run_id: runId,
+          source_artifact_id: delivered.artifact_id, evidence_run_ids: [runId] })
+        await click(renderer, '记录评价与经验')
+        await change(renderer, '经验结论', '人工确认的经验结论')
+        await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+        await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+        const updated = await host.remote.getProjection(root, signal)
+        expect(updated.experiences).toHaveLength(1)
+        expect(updated.experiences[0]!.note).toBe('人工确认的经验结论')
+      }
+    } finally { await host.dispose() }
+  })
+
+  it.each(['观察', '评价结论'])('saves only %s through the visible form and keeps the selected Run', async label => {
+    const { host, root, runId, options } = await setup()
+    try {
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await change(renderer, label, '人工确认的内容')
+      await act(async () => { renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
+      await vi.waitFor(async () => {
+        expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review).toMatchObject({
+          [label === '观察' ? 'observation' : 'conclusion']: '人工确认的内容',
+        })
+      })
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect(nodeText(renderer.root.findByProps({ className: 'saved-review' }))).toContain('人工确认的内容')
+      await click(renderer, '查看运行记录')
+      const historyRow = renderer.root.findByProps({ 'aria-label': '运行记录' }).findAllByType('article')
+        .find(item => item.findAllByProps({ title: runId }).length > 0)!
+      const reviewParagraphs = historyRow.findAllByType('p').map(nodeText).filter(text => text.startsWith('评价：'))
+      expect(reviewParagraphs).toEqual(label === '观察' ? [] : ['评价：人工确认的内容'])
+      expect(historyRow.findAllByType('p').map(nodeText).filter(text => text.startsWith('观察：'))).toEqual([])
+      await click(renderer, '查看运行')
+      expect(nodeText(renderer.root.findByProps({ className: 'saved-review' }))).toContain('人工确认的内容')
+      await click(renderer, '记录评价与经验')
+      expect(renderer.root.findByProps({ 'aria-label': label }).props.value).toBe('人工确认的内容')
+      expect((await host.remote.getProjection(root, signal)).experiences).toHaveLength(0)
+      expect(options.onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'evaluate', runId,
+        value: expect.objectContaining({ saveExperience: false }) }))
+    } finally { await host.dispose() }
+  })
+
+  it('retains the complete editable Run draft after close and remount without saving a review', async () => {
+    const { host, root, runId, options } = await setup()
+    try {
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      expect(renderer.root.findByProps({ role: 'dialog' }).props.className).toContain('evaluation-modal')
+      for (const [label, value] of [['目标达成情况', 'needs-work'], ['观察', '窗框局部断开'], ['评价结论', '保留构图并修改窗框'], ['经验标题', '玻璃窗框'], ['适用条件', '玻璃建筑'], ['经验结论', '单独描述窗框连续性']])
+        await change(renderer, label, value)
+      await click(renderer, '取消')
+      await click(renderer, '记录评价与经验')
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('窗框局部断开')
+      await click(renderer, '关闭对话框')
+      await click(renderer, '记录评价与经验')
+      const escape = new Event('keydown')
+      Object.defineProperty(escape, 'key', { value: 'Escape' })
+      await act(() => { document.dispatchEvent(escape) })
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      await act(() => renderer.unmount())
+      const projection = await host.remote.getProjection(root, signal)
+      expect(projection.runs.find(item => item.run_id === runId)).toMatchObject({
+        review: null, review_draft: { verdict: 'needs-work', observation: '窗框局部断开', conclusion: '保留构图并修改窗框',
+          title: '玻璃窗框', conditions: '玻璃建筑', note: '单独描述窗框连续性' },
+      })
+      const remounted = await mount(projection, options)
+      await click(remounted.renderer, '查看运行 ' + runId)
+      await click(remounted.renderer, '记录评价与经验')
+      expect(remounted.renderer.root.findByProps({ 'aria-label': '经验结论' }).props.value).toBe('单独描述窗框连续性')
+    } finally { await host.dispose() }
   })
 })
