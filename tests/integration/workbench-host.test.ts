@@ -652,9 +652,10 @@ it('edits branch input through real actions, resolves catalog resources and disp
     generation_input: { model: { id: '2', file_name: 'paint.safetensors' }, template_id: '5', parameters: { width: 768, height: 1024, seed: 42, reference: '/reference.png' }, loras: [{ id: '3', weight: 0.8, trigger_words: ['rain'] }] },
   } })
   expect(catalog.details).toHaveBeenCalledWith({ kind: 'character', id: '4' }, expect.any(AbortSignal))
-  await action('run', { instructions: 'Keep the reflections', preset_override: 'preset-a' })
+  const accepted = await action('run', { instructions: 'Keep the reflections', preset_override: 'preset-a' })
   const running = await remote.getProjection(selected, signal())
   const task = running.tasks[0]!
+  expect(accepted).toEqual({ ...selected, taskId: task.task_id })
   expect(task).toMatchObject({ kind: 'run', execution_state: 'running', input: { requirements: { original_request: 'Paint rain at night', instructions: 'Keep the reflections' }, generation_input: { parameters: { positive: 'rain at night', negative: 'blur', seed: 42 } }, max_runs: 1 } })
   expect(official.controller.create).toHaveBeenCalledWith({ workspaceId: 'workspace_1', agentPreset: 'preset-a' })
   expect(official.controller.selectModel).toHaveBeenCalledWith({ sessionId: task.session_id, provider: 'provider-a', model: 'model-a' })

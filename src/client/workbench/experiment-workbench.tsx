@@ -19,6 +19,7 @@ import type {
   FunctionBinding,
   JsonValue,
   Task,
+  StoredArtifact,
   TaskDraft,
   WorkbenchRun,
 } from '../../workbench/contract.ts'
@@ -144,6 +145,17 @@ function ContextSummary({ item, load, onError, onDetail, onRemove }: {
   </div>
 }
 
+interface TaskNotificationTarget {
+  readonly workspaceId: string
+  readonly workId: string
+  readonly taskId: string
+}
+
+function taskConflicts(task: Task, artifacts: readonly StoredArtifact[]) {
+  return task.output_contract.apply_mode === 'automatic'
+    ? artifacts.filter(artifact => artifact.disposition === 'candidate') : []
+}
+
 export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const storage = useMemo(() => {
     if (props.storage) return props.storage
@@ -187,7 +199,10 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const selectWork = (workId: string) => navigate(() => store.selectWork(workId))
   const selectBranch = (branchId: string) => navigate(() => store.selectBranch(branchId))
   const selectRun = (runId: string, inspectRun = true) => navigate(() => store.selectRun(runId, inspectRun))
-  const [message, setMessage] = useToastMessage()
+  const [message, setMessage, messageTask, clearTransientMessage] = useToastMessage<TaskNotificationTarget>()
+  const taskCards = useRef(new Map<string, HTMLElement>())
+  const [taskToReveal, setTaskToReveal] = useState<string | null>(null)
+  const taskNotifications = useRef<{ readonly workspaceId: string; readonly workId: string; readonly states: Map<string, string> } | null>(null)
   const functionWrites = useRef(new Map<string, Promise<void>>())
   const [functionBindings, setFunctionBindings] = useState<ReadonlyMap<string, FunctionBinding>>(() => new Map())
   useEffect(() => {
@@ -240,8 +255,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   useEffect(() => {
     setModal(null)
     setSheet(false)
-    setMessage(null)
+    clearTransientMessage()
   }, [state.workspaceId, state.view.workId, state.view.branchId, props.visible])
+  useEffect(() => {
+    setMessage(null)
+  }, [state.workspaceId, state.view.workId, props.visible])
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -368,6 +386,49 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       ? modelLabel(draft)
       : item.generation_input.model?.file_name || '未选择底模'
   }
+  const notifyTask = (title: string, taskId: string, workId: string, kind: Exclude<keyof typeof taskPresentation.notifications, 'open'>) => {
+    if (!state.workspaceId) return
+    setMessage(taskPresentation.notifications[kind].replace('{title}', title).replace('{taskId}', taskId), { workspaceId: state.workspaceId, taskId, workId })
+  }
+  useEffect(() => {
+    if (!p || !state.workspaceId || !view.workId || p.workspace_id !== state.workspaceId || p.work_id !== view.workId) return
+    const previous = taskNotifications.current
+    const sameWork = previous?.workspaceId === state.workspaceId && previous.workId === view.workId
+    const states = new Map<string, string>()
+    for (const task of p.tasks) {
+      const artifacts = p.artifacts.filter(artifact => artifact.task_id === task.task_id)
+      const conflicts = taskConflicts(task, artifacts)
+      const kind = task.status === 'waiting_input' ? 'waiting_input'
+        : conflicts.length ? 'conflict' : task.status === 'succeeded' ? 'completed' : null
+      const signature = JSON.stringify([kind, kind === 'conflict' ? conflicts.map(artifact => artifact.artifact_id)
+        : kind === 'waiting_input' ? artifacts.filter(artifact => artifact.type === 'question' && !task.answers.some(answer => answer.question_artifact_id === artifact.artifact_id)).map(artifact => artifact.artifact_id) : []])
+      states.set(task.task_id, signature)
+      if (kind && sameWork && previous.states.get(task.task_id) !== signature)
+        notifyTask(task.title, task.task_id, view.workId, kind)
+    }
+    taskNotifications.current = { workspaceId: state.workspaceId, workId: view.workId, states }
+  }, [p, state.workspaceId, view.workId])
+  useEffect(() => {
+    if (view.page !== 'tasks' || !taskToReveal) return
+    const card = taskCards.current.get(taskToReveal)
+    if (!card) return
+    card.focus({ preventScroll: true })
+    card.scrollIntoView({ block: 'start' })
+    setTaskToReveal(null)
+  }, [view.page, p?.tasks, taskToReveal])
+  const openTask = (target: TaskNotificationTarget) => {
+    if (target.workspaceId !== store.getSnapshot().workspaceId) return
+    setTaskRequest(null)
+    setModal(null)
+    setSheet(false)
+    navigate(() => {
+      if (view.workId !== target.workId) store.selectWork(target.workId)
+      const task = p?.tasks.find(item => item.task_id === target.taskId)
+      if (task) store.selectBranch(task.branch_id)
+      store.updateView({ page: 'tasks', compareRunId: null })
+    })
+    setTaskToReveal(target.taskId)
+  }
   const changePage = (page: ExperimentPage) => {
     navigate(() => store.updateView({ page, compareRunId: null }))
     setSearch('')
@@ -391,9 +452,15 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...extra,
       })
       if (!stillCurrent()) return false
+      const keepsTaskNavigation = !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume'
       const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
         && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
-      if (selection && !keepsCatalogNavigation) navigate(() => {
+      if (selection?.taskId && view.workId) {
+        const functionId = type === 'agent-action' ? extra.id : type === 'retry' ? 'run' : type
+        const functionName = p?.functions.find(item => item.function_id === functionId)?.name ?? selection.taskId
+        notifyTask(functionName, selection.taskId, view.workId, 'submitted')
+      }
+      if (selection && !keepsCatalogNavigation && !keepsTaskNavigation) navigate(() => {
         selectWorkspace(selection.workspaceId)
         props.onWorkspaceChange(selection.workspaceId)
         if (type === 'new-workspace') changePage('workbench')
@@ -410,7 +477,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       const refreshNavigation = store.getNavigationSequence()
       await store.refresh()
       if (store.getNavigationSequence() !== refreshNavigation) return false
-      if (selection?.branchId && selection.branchId !== view.branchId)
+      if (!keepsTaskNavigation && selection?.branchId && selection.branchId !== view.branchId)
         selectBranch(selection.branchId)
       return !isCurrent || isCurrent()
     } catch (error) {
@@ -1088,6 +1155,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 data-task={item.task_id}
                 data-session={item.session_id ?? undefined}
                 key={item.task_id}
+                tabIndex={-1}
+                ref={element => {
+                  if (element) taskCards.current.set(item.task_id, element)
+                  else taskCards.current.delete(item.task_id)
+                }}
               >
                 <div className="row between">
                   <h2>{item.title}</h2>
@@ -1142,6 +1214,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 )}
                 {item.error && (
                   <p className="task-conflict">{item.error.message}</p>
+                )}
+                {taskConflicts(item, artifacts).length > 0 && (
+                  <p className="task-conflict">{taskPresentation.conflict[item.apply_target.kind]}</p>
                 )}
                 {item.status === 'waiting_input' &&
                   question?.artifact.type === 'question' && (
@@ -1235,14 +1310,30 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 <details className="task-input">
                   <summary>查看任务详情</summary>
                   <p>执行要求</p>
-                  <pre className="request-snapshot">{item.request_text}</pre>
+                  <pre className="request-snapshot">{item.request_text || taskPresentation.unrecorded}</pre>
+                  <p>{taskPresentation.details.model}</p>
+                  <pre className="request-snapshot" aria-label="Agent 调用配置 JSON">
+                    {JSON.stringify({
+                      create: item.session_id ? { workspaceId: p.workspace_id, sessionId: item.session_id, agentPreset: item.binding_snapshot.preset_id } : taskPresentation.unrecorded,
+                      selectModel: item.session_id ? { sessionId: item.session_id, ...item.binding_snapshot.agentModel } : taskPresentation.unrecorded,
+                      selectModelResult: item.selected_model ? { selected: item.selected_model } : taskPresentation.unrecorded,
+                    }, null, 2)}
+                  </pre>
                   <p>任务输入</p>
                   <pre className="request-snapshot" aria-label="任务输入 JSON">
                     {JSON.stringify(item.input, null, 2)}
                   </pre>
+                  <p>{taskPresentation.details.artifacts}</p>
+                  <pre className="request-snapshot" aria-label="产物 JSON">
+                    {artifacts.length ? JSON.stringify(artifacts.map(artifact => artifact.artifact), null, 2) : taskPresentation.unrecorded}
+                  </pre>
+                  {item.input.reference_run_ids.length > 0 && <div className="row">
+                    <span>{taskPresentation.details.runs}</span>
+                    {item.input.reference_run_ids.map(runId => <Button key={runId} kind="small quiet" onClick={() => selectRun(runId)}>{runId}</Button>)}
+                  </div>}
                 </details>
                 <div className="row task-actions">
-                  {item.status === 'running' && (
+                  {item.kind !== 'experiment' && (item.status === 'running' || (item.status === 'waiting_generation' && item.execution_state === 'running')) && (
                     <Button
                       kind="small"
                       onClick={() =>
@@ -1252,7 +1343,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       中断任务
                     </Button>
                   )}
-                  {item.status === 'interrupted' && (
+                  {item.kind !== 'experiment' && item.status === 'interrupted' && (
                     <Button
                       kind="small primary"
                       onClick={() =>
@@ -2143,7 +2234,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             if (taskRequest.editor.getSnapshot().draft === draft) taskRequestEditors.delete(key)
             setTaskRequest(current => current === taskRequest ? null : current)
             if (taskRequest.navigation === store.getNavigationSequence()) {
-              setMessage(`${taskRequest.binding.name}${inputOptions.taskRequest.submitted}${receipt?.taskId ? ` · ${receipt.taskId}` : ''}`)
+              if (receipt?.taskId) notifyTask(taskRequest.binding.name, receipt.taskId, scope.workId, 'submitted')
               await store.refresh()
             }
           }} />}
@@ -2183,7 +2274,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   const isCurrent = () => modalInstance.current === instance && modelChange.navigation === store.getNavigationSequence()
                   formSubmissionPending.current = instance
                   setFormSubmitting(true)
-                  setMessage(null)
+                  clearTransientMessage()
                   const saved = await action('resource-select', {
                     workspaceId: modelChange.request.workspaceId,
                     workId: modelChange.request.workId,
@@ -2218,7 +2309,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     const instance = modalInstance.current
                     if (formSubmissionPending.current === instance) return
                     const isCurrent = () => modalInstance.current === instance
-                    setMessage(null)
+                    clearTransientMessage()
                     const data = new FormData(event.currentTarget),
                       type = modal === 'branch' ? 'create-branch' : modal
                     if (!type) return
@@ -2320,6 +2411,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         {message && (
           <div className="toast" role="alert">
             <span>{message}</span>
+            {messageTask && <Button kind="small quiet" onClick={() => openTask(messageTask)}>{taskPresentation.notifications.open}</Button>}
           </div>
         )}
       </div>

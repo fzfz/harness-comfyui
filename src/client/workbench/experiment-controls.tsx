@@ -13,15 +13,22 @@ const icons = {
   book: 'M4 4h7l1 2 1-2h7v15h-7l-1 2-1-2H4Z',
 }
 
-export function useToastMessage() {
-  const [message, setMessage] = useState<{ readonly text: string } | null>(null)
-  const showMessage = useCallback((text: string | null) => setMessage(text ? { text } : null), [])
+export function useToastMessage<T = never>() {
+  const [messages, setMessages] = useState<ReadonlyArray<{ readonly text: string; readonly target?: T }>>([])
+  const message = messages[0]
+  const showMessage = useCallback((text: string | null, target?: T) => setMessages(current => {
+    if (!text) return []
+    const next = { text, target }
+    return target !== undefined ? [...current, next] : [next, ...current.filter(item => item.target !== undefined)]
+  }), [])
+  const clearTransientMessage = useCallback(() => setMessages(current =>
+    current[0]?.target === undefined ? current.slice(1) : current), [])
   useEffect(() => {
     if (!message) return
-    const timer = setTimeout(() => setMessage(null), 6000)
+    const timer = setTimeout(() => setMessages(current => current[0] === message ? current.slice(1) : current), 6000)
     return () => clearTimeout(timer)
   }, [message])
-  return [message?.text ?? null, showMessage] as const
+  return [message?.text ?? null, showMessage, message?.target, clearTransientMessage] as const
 }
 
 export function Icon({ name }: { readonly name: keyof typeof icons }) {

@@ -5914,3 +5914,475 @@ describe('experiment workbench unavailable preset choices', () => {
     expect(renderer.root.findByProps({ 'aria-label': '执行要求' }).props.value).toBe('手工切换后保留 {{task_id}}')
   })
 })
+
+
+describe('experiment workbench task notifications', () => {
+  it('keeps the submitted request on its page and opens its exact task card only from the toast', async () => {
+    let data = fullProjection()
+    data.functions.find(binding => binding.function_id === 'prompt')!.name = '生成提示词'
+    const accepted = { ...makeTask('accepted-task', 'child', 'prompt'), title: '生成提示词', status: 'running' as const }
+    const onAction = vi.fn(async () => {
+      data = { ...data, tasks: [...data.tasks, accepted] }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child', taskId: accepted.task_id }
+    })
+    const target = { scrollIntoView: vi.fn(), focus: vi.fn() }
+    const { renderer } = await mount(data, {
+      onAction,
+      remote: { getProjection: async () => structuredClone(data) },
+    }, { createNodeMock: element => element.props['data-task'] === accepted.task_id ? target : null })
+    await click(renderer, '资源')
+    await click(renderer, '生成提示词')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('主分支')
+    const toast = renderer.root.findByProps({ className: 'toast' })
+    expect(nodeText(toast)).toContain('生成提示词任务已提交 · accepted-task')
+    expect(target.scrollIntoView).not.toHaveBeenCalled()
+    await click(renderer, '查看任务')
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光探索')
+    expect(target.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'start' })
+    expect(target.focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true })
+  })
+})
+
+
+describe('experiment workbench task status notifications', () => {
+  it.each([
+    ['succeeded', '已完成'],
+    ['waiting_input', '需要补充输入'],
+    ['conflict', '的结果待采用'],
+  ] as const)('announces %s on the current page with the Task ID and preserves scrolling', async (outcome, label) => {
+    vi.useFakeTimers()
+    const task = { ...makeTask('observed-task', 'child', 'prompt'), title: '光线生成', status: 'running' as const }
+    task.output_contract.apply_mode = 'automatic'
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [task], refreshAfterMs: 100 }
+    const inspector = { scrollTop: 172, scrollLeft: 0, dataset: {} }
+    const target = { scrollIntoView: vi.fn(), focus: vi.fn() }
+    const { renderer } = await mount(data, { remote: { getProjection: async () => structuredClone(data) } }, {
+      createNodeMock: element => element.props.className === 'inspector-body' ? inspector : element.props['data-task'] === task.task_id ? target : null,
+    })
+    await click(renderer, '资源')
+    await act(() => renderer.root.findByProps({ className: 'inspector-body' }).props.onScroll({ currentTarget: inspector }))
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    data = { ...data, tasks: [{ ...task, status: outcome === 'conflict' ? 'succeeded' : outcome }] }
+    if (outcome === 'conflict') data.artifacts = [{
+      artifact_id: 'conflicting-prompt', task_id: task.task_id, type: 'prompt',
+      artifact: { type: 'prompt', positive_prompt: '候选光线', negative_prompt: '' },
+      source_files: [], session_id: task.session_id!, turn: 1, call_id: 'publish', skill_refs: [],
+      disposition: 'candidate', applied_target: null, created_at: 2000,
+    }]
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain(`光线生成${label} · observed-task`)
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('主分支')
+    expect(inspector.scrollTop).toBe(172)
+    expect(target.scrollIntoView).not.toHaveBeenCalled()
+    await click(renderer, '查看任务')
+    expect(target.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'start' })
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    if (outcome === 'conflict') {
+      const card = renderer.root.findByProps({ className: 'agent-task-card' })
+      expect(nodeText(card.findByProps({ className: 'task-conflict' }))).toBe('任务输入已改变，请核对产物后采用。')
+    }
+  })
+})
+
+
+describe('experiment workbench task controls preserve navigation', () => {
+  it('interrupts an Agent with an in-flight Run and retains its original task card and results', async () => {
+    const task = { ...makeTask('in-flight-task', 'child'), status: 'waiting_generation' as const, execution_state: 'running' as const }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [task], runs: [makeRun('in-flight-run', task.task_id, 'running')] }
+    const onAction = vi.fn(async () => {
+      data = { ...data, tasks: [{ ...task, status: 'interrupted', execution_state: 'interrupted' }] }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child' }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getProjection: async () => structuredClone(data) } })
+    await click(renderer, '任务')
+    await click(renderer, '中断任务')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-interrupt', taskId: task.task_id }))
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    const card = renderer.root.findByProps({ className: 'agent-task-card' })
+    expect(nodeText(card)).toContain('已中断')
+    expect(nodeText(card)).toContain('继续任务')
+    expect(nodeText(card)).toContain('查看运行 in-flight-run')
+    expect(data.runs[0]!.status).toBe('running')
+  })
+
+  it('continues the original interrupted task without leaving the task page', async () => {
+    const task = { ...makeTask('resume-task', 'child', 'prompt'), status: 'interrupted' as const }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [task] }
+    const onAction = vi.fn(async () => {
+      data = { ...data, tasks: [{ ...task, status: 'running' }] }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child' }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getProjection: async () => structuredClone(data) } })
+    await click(renderer, '任务')
+    await click(renderer, '继续任务')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-resume', taskId: task.task_id }))
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ className: 'agent-task-card' }).props['data-task']).toBe(task.task_id)
+    expect(nodeText(renderer.root.findByProps({ className: 'agent-task-card' }))).toContain('Agent 执行中')
+  })
+})
+
+
+describe('experiment workbench all task submission receipts', () => {
+  it.each(['run', 'experiment', 'retry', 'diagnose'] as const)('links the %s receipt to its accepted Task without changing the current page', async kind => {
+    let data = fullProjection()
+    const functionKind = kind === 'retry' ? 'run' : kind
+    data.functions.find(binding => binding.function_id === functionKind)!.name = '当前功能'
+    if (kind === 'experiment') data.branches[0]!.execution.mode = 'continuous'
+    if (kind === 'retry' || kind === 'diagnose') data.runs[0]!.status = 'failed'
+    const accepted = { ...makeTask('accepted-' + kind, 'root', functionKind), status: 'running' as const }
+    const onAction = vi.fn(async () => {
+      data = { ...data, tasks: [...data.tasks, accepted] }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', taskId: accepted.task_id }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getProjection: async () => structuredClone(data) } })
+    if (kind === 'run' || kind === 'experiment') await click(renderer, '资源')
+    await click(renderer, { run: '运行任务', experiment: '开始实验', retry: '重试任务', diagnose: '诊断失败' }[kind])
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain(`当前功能任务已提交 · ${accepted.task_id}`)
+    expect(renderer.root.findByProps({ 'aria-label': kind === 'run' || kind === 'experiment' ? '资源' : '运行结果' }).props.className).toBe('active')
+    expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(0)
+    await click(renderer, '查看任务')
+    expect(renderer.root.findAllByProps({ className: 'agent-task-card' }).map(card => card.props['data-task'])).toContain(accepted.task_id)
+  })
+})
+
+
+describe('experiment workbench task notification lifecycle', () => {
+  it('ignores historical completions and lets an unchanged task notification expire during polling', async () => {
+    vi.useFakeTimers()
+    const task = { ...makeTask('lifecycle-task', 'root', 'prompt'), title: '光线生成', status: 'running' as const }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [makeTask('historical-task'), task], refreshAfterMs: 100 }
+    const { renderer } = await mount(data, { remote: { getProjection: async () => structuredClone(data) } })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    data = { ...data, tasks: [data.tasks[0]!, { ...task, status: 'succeeded' }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('光线生成已完成 · lifecycle-task')
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+  })
+})
+
+
+describe('experiment workbench recorded task details', () => {
+  it('shows the fixed task input, delivered request, actual model and accepted artifact independently from the current draft', async () => {
+    const data = fullProjection()
+    const task = makeTask('recorded-task', 'root', 'prompt')
+    task.input.prompt_input.positive_prompt = '任务接纳时的提示词'
+    task.request_text = '实际投递文本 recorded-task'
+    task.selected_model = { provider: 'actual-provider', model: 'actual-model', reasoningEffort: 'high' }
+    task.binding_snapshot = { ...task.binding_snapshot, preset_id: 'recorded-preset', agentModel: { provider: 'requested-provider', model: 'requested-model', reasoningEffort: 'medium' } }
+    data.functions = data.functions.map(binding => binding.function_id === 'prompt'
+      ? { ...binding, preset_id: 'later-preset', agent_model: { provider: 'later-provider', model: 'later-model', reasoningEffort: 'low' } } : binding)
+    task.input.reference_run_ids = ['recorded-evidence']
+    data.runs = [makeRun('recorded-evidence', task.task_id)]
+    data.tasks = [task]
+    data.branches[0]!.draft.prompt_input.positive_prompt = '用户后来修改的提示词'
+    data.artifacts = [{
+      artifact_id: 'recorded-prompt', task_id: task.task_id, type: 'prompt',
+      artifact: { type: 'prompt', positive_prompt: '产物提示词', negative_prompt: '产物负向词' },
+      source_files: [], session_id: task.session_id!, turn: 2, call_id: 'publish-call', skill_refs: [],
+      disposition: 'applied', applied_target: null, created_at: 2000,
+    }]
+    const { renderer } = await mount(data)
+    await click(renderer, '任务')
+    const details = renderer.root.findByProps({ className: 'task-input' })
+    expect(nodeText(details)).toContain('实际投递文本 recorded-task')
+    expect(JSON.parse(nodeText(details.findByProps({ 'aria-label': '任务输入 JSON' }))).prompt_input.positive_prompt).toBe('任务接纳时的提示词')
+    expect(JSON.parse(nodeText(details.findByProps({ 'aria-label': 'Agent 调用配置 JSON' })))).toEqual({
+      create: { workspaceId: 'workspace-a', sessionId: 'session-recorded-task', agentPreset: 'recorded-preset' },
+      selectModel: { sessionId: 'session-recorded-task', provider: 'requested-provider', model: 'requested-model', reasoningEffort: 'medium' },
+      selectModelResult: { selected: { provider: 'actual-provider', model: 'actual-model', reasoningEffort: 'high' } },
+    })
+    expect(JSON.parse(nodeText(details.findByProps({ 'aria-label': '产物 JSON' })))).toEqual([data.artifacts[0]!.artifact])
+    expect(nodeText(details)).not.toContain('用户后来修改的提示词')
+    expect(nodeText(details)).toContain('参考运行recorded-evidence')
+    await click(renderer, 'recorded-evidence')
+    expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
+    expect(renderer.root.findByProps({ 'aria-label': '查看运行 recorded-evidence' }).props['aria-pressed']).toBe(true)
+  })
+})
+
+
+describe('experiment workbench continuous task control ownership', () => {
+  it('keeps experiment controls in the inspector instead of duplicating task card controls', async () => {
+    const data = fullProjection()
+    data.tasks = [
+      { ...makeTask('running-experiment', 'root', 'experiment'), status: 'running', execution_state: 'running' },
+      { ...makeTask('interrupted-experiment', 'root', 'experiment'), status: 'interrupted', execution_state: 'interrupted' },
+    ]
+    const { renderer } = await mount(data)
+    await click(renderer, '任务')
+    for (const card of renderer.root.findAllByProps({ className: 'agent-task-card' })) {
+      expect(card.findAllByType('button').map(nodeText)).not.toContain('中断任务')
+      expect(card.findAllByType('button').map(nodeText)).not.toContain('继续任务')
+    }
+  })
+})
+
+
+describe('experiment workbench task reply isolation', () => {
+  it('replies to the displayed question on its original task while preserving the other question and task page', async () => {
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [
+      { ...makeTask('first-question', 'root', 'prompt'), status: 'waiting_input' },
+      { ...makeTask('second-question', 'child', 'prompt'), status: 'waiting_input' },
+    ] }
+    data.artifacts = data.tasks.map((task, index) => ({
+      artifact_id: 'question-' + index, task_id: task.task_id, type: 'question',
+      artifact: { type: 'question', question: index ? '保留哪个场景？' : '希望使用哪种光线？', options: [] },
+      source_files: [], session_id: task.session_id!, turn: 1, call_id: 'ask', skill_refs: [],
+      disposition: 'waiting_input', applied_target: null, created_at: 2000,
+    }))
+    const onAction = vi.fn(async () => {
+      data = { ...data, tasks: data.tasks.map(task => task.task_id === 'first-question'
+        ? { ...task, status: 'running', answers: [{ question_artifact_id: 'question-0', answer: '自然光' }] } : task) }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getProjection: async () => structuredClone(data) } })
+    await click(renderer, '任务')
+    const original = renderer.root.findAllByProps({ className: 'agent-task-card' }).find(card => card.props['data-task'] === 'first-question')!
+    await act(async () => original.findByProps({ className: 'task-answer' }).props.onSubmit({ preventDefault() {}, currentTarget: { answer: '自然光' } }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-answer', taskId: 'first-question', id: 'question-0', value: '自然光' }))
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    const cards = renderer.root.findAllByProps({ className: 'agent-task-card' })
+    expect(nodeText(cards.find(card => card.props['data-task'] === 'first-question')!)).toContain('Agent 执行中')
+    expect(nodeText(cards.find(card => card.props['data-task'] === 'second-question')!.findByProps({ className: 'task-answer' }))).toContain('保留哪个场景？')
+  })
+})
+
+describe('experiment workbench task notification workspace scope', () => {
+  it('clears the task toast on a workspace switch and preserves the target workspace work selection', async () => {
+    let data = fullProjection()
+    const onAction = vi.fn(async () => ({ workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', taskId: 'workspace-a-task' }))
+    const second = { ...empty, workspace_id: 'workspace-b', work_id: 'only-work',
+      works: [{ work_id: 'only-work', workspace_id: 'workspace-b', name: '第二工作区工作', goal: '' }],
+      branches: [{ ...data.branches[0]!, branch_id: 'second-root', work_id: 'only-work' }],
+    }
+    const { renderer } = await mount(data, {
+      onAction,
+      workspaces: [{ id: 'workspace-a', name: '工作区 A', path: '/projects/a' }, { id: 'workspace-b', name: '工作区 B', path: '/projects/b' }],
+      remote: { getProjection: async scope => structuredClone(scope.workspaceId === 'workspace-b' ? second : data) },
+    })
+    await click(renderer, '生成提示词')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('workspace-a-task')
+    await change(renderer, '切换工作区', 'workspace-b')
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '切换工作' }).props.value).toBe('only-work')
+    await click(renderer, '任务')
+    expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '切换工作' }).props.value).toBe('only-work')
+  })
+})
+
+
+describe('experiment workbench task review conflict', () => {
+  it('shows the prototype evaluation draft guidance for a candidate review artifact', async () => {
+    const data = fullProjection()
+    const task = makeTask('review-conflict', 'root', 'review')
+    task.output_contract.apply_mode = 'automatic'
+    task.apply_target = { kind: 'run_review', id: 'r1', expected: {} }
+    data.tasks = [task]
+    data.artifacts = [{
+      artifact_id: 'candidate-review', task_id: task.task_id, type: 'review',
+      artifact: { type: 'review', observation: '花房有自然光', conclusion: '保留当前光线', run_ids: ['r1'] },
+      source_files: [], session_id: task.session_id!, turn: 1, call_id: 'review', skill_refs: [],
+      disposition: 'candidate', applied_target: null, created_at: 2000,
+    }]
+    const { renderer } = await mount(data)
+    await click(renderer, '任务')
+    expect(nodeText(renderer.root.findByProps({ className: 'agent-task-card' }).findByProps({ className: 'task-conflict' })))
+      .toBe('评价与经验草稿已修改，请核对产物后填入。')
+  })
+})
+
+
+describe('experiment workbench parallel task notification delivery', () => {
+  it('shows same-poll completion and question notices for six seconds each and opens each exact task', async () => {
+    vi.useFakeTimers()
+    const first = { ...makeTask('parallel-complete', 'child', 'prompt'), title: '光线生成', status: 'running' as const }
+    const second = { ...makeTask('parallel-question', 'root', 'prompt'), title: '场景改写', status: 'running' as const }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [first, second], refreshAfterMs: 100 }
+    const targets = new Map([first, second].map(task => [task.task_id, { focus: vi.fn(), scrollIntoView: vi.fn() }]))
+    const { renderer } = await mount(data, { remote: { getProjection: async () => structuredClone(data) } }, {
+      createNodeMock: element => targets.get(String(element.props['data-task'])) ?? null,
+    })
+    await click(renderer, '资源')
+    data = { ...data, tasks: [{ ...first, status: 'succeeded' }, { ...second, status: 'waiting_input' }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    const toast = () => nodeText(renderer.root.findByProps({ className: 'toast' }))
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(1)
+    expect(toast()).toContain('光线生成已完成 · parallel-complete')
+    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
+    await act(async () => { await vi.advanceTimersByTimeAsync(5999) })
+    expect(toast()).toContain('parallel-complete')
+    await click(renderer, '查看任务')
+    expect(targets.get(first.task_id)!.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'start' })
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('暖光探索')
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(1)
+    expect(toast()).toContain('场景改写需要补充输入 · parallel-question')
+    expect(targets.get(second.task_id)!.scrollIntoView).not.toHaveBeenCalled()
+    await click(renderer, '查看任务')
+    expect(targets.get(second.task_id)!.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'start' })
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('主分支')
+    await act(async () => { await vi.advanceTimersByTimeAsync(5999) })
+    expect(toast()).toContain('parallel-question')
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+  })
+})
+
+
+describe('experiment workbench task notifications with action errors', () => {
+  it('shows an action error immediately and then delivers both pending task notices', async () => {
+    vi.useFakeTimers()
+    const first = { ...makeTask('error-queue-first', 'child', 'prompt'), title: '光线生成', status: 'running' as const }
+    const second = { ...makeTask('error-queue-second', 'root', 'prompt'), title: '场景改写', status: 'running' as const }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [first, second], refreshAfterMs: 100 }
+    const { renderer } = await mount(data, {
+      remote: { getProjection: async () => structuredClone(data) },
+      onAction: vi.fn().mockRejectedValue(new Error('当前实例暂不可用，请重试。')),
+    })
+    data = { ...data, tasks: [{ ...first, status: 'succeeded' }, { ...second, status: 'waiting_input' }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    const toast = () => nodeText(renderer.root.findByProps({ className: 'toast' }))
+    expect(toast()).toContain('error-queue-first')
+    await click(renderer, '运行任务')
+    expect(toast()).toBe('当前实例暂不可用，请重试。')
+    await act(async () => { await vi.advanceTimersByTimeAsync(5999) })
+    expect(toast()).toBe('当前实例暂不可用，请重试。')
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(toast()).toContain('光线生成已完成 · error-queue-first')
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(toast()).toContain('场景改写需要补充输入 · error-queue-second')
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+  })
+})
+
+
+describe('experiment workbench task notification retention during forms', () => {
+  it.each(['branch', 'model'] as const)('preserves both queued Task notices after the %s form is submitted', async operation => {
+    vi.useFakeTimers()
+    const first = { ...makeTask('form-queue-first', 'child', 'prompt'), title: '光线生成', status: 'running' as const }
+    const second = { ...makeTask('form-queue-second', 'root', 'prompt'), title: '场景改写', status: 'running' as const }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [first, second], refreshAfterMs: 100 }
+    const catalog = makeCatalog()
+    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, totalCount: 1, items: [
+      { ...catalogItems[0]!, context: { kind: 'model', id: '21', file_name: 'anima.safetensors' }, label: 'ANIMA3' },
+    ] }))
+    const targets = new Map([first, second].map(task => [task.task_id, { focus: vi.fn(), scrollIntoView: vi.fn() }]))
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === 'create-branch') {
+        data = { ...data, branches: [...data.branches, { ...data.branches[0]!, branch_id: 'created-branch', parent_branch_id: 'root', name: '追加分支' }] }
+        return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'created-branch' }
+      }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' }
+    })
+    const { renderer } = await mount(data, {
+      catalog, onAction,
+      remote: {
+        getProjection: async () => structuredClone(data),
+        previewModelChange: async () => ({ model: { id: '21', label: 'ANIMA3' }, removed: [{ kind: 'comfyui-template', id: '12', label: 'SDXL 文生图' }] }),
+      },
+    }, { createNodeMock: element => targets.get(String(element.props['data-task'])) ?? null })
+    data = { ...data, tasks: [{ ...first, status: 'succeeded' }, { ...second, status: 'waiting_input' }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    const toast = () => nodeText(renderer.root.findByProps({ className: 'toast' }))
+    expect(toast()).toContain('光线生成已完成 · form-queue-first')
+    if (operation === 'model') {
+      await click(renderer, '更换生成模型')
+      await click(renderer, '选择 ANIMA3')
+    } else await click(renderer, '创建子分支')
+    const form = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!
+    await act(async () => form.props.onSubmit({ preventDefault() {}, currentTarget: { name: '追加分支', goal: '保留窗框' } }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: operation === 'model' ? 'resource-select' : 'create-branch' }))
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+    expect(toast()).toContain('光线生成已完成 · form-queue-first')
+    await click(renderer, '查看任务')
+    expect(targets.get(first.task_id)!.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'start' })
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(toast()).toContain('场景改写需要补充输入 · form-queue-second')
+    await click(renderer, '查看任务')
+    expect(targets.get(second.task_id)!.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'start' })
+  })
+})
+
+
+describe('experiment workbench missing recorded session setup', () => {
+  it.each([null, 'recorded-session'])('marks missing session setup or actual model selection as unrecorded for session %s', async sessionId => {
+    const data = fullProjection()
+    const task = { ...makeTask('incomplete-session-setup', 'root', 'prompt'), session_id: sessionId, selected_model: null }
+    data.tasks = [task]
+    const { renderer } = await mount(data)
+    await click(renderer, '任务')
+    const setup = JSON.parse(nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 调用配置 JSON' })))
+    expect(setup.selectModelResult).toBe('未记录')
+    if (sessionId === null) {
+      expect(setup.create).toBe('未记录')
+      expect(setup.selectModel).toBe('未记录')
+    } else {
+      expect(setup.create).toEqual({ workspaceId: 'workspace-a', sessionId: 'recorded-session', agentPreset: 'preset' })
+      expect(setup.selectModel).toEqual({ sessionId: 'recorded-session', provider: 'provider', model: 'model', reasoningEffort: 'high' })
+    }
+  })
+})
+
+
+describe('experiment workbench completed task controls', () => {
+  it('keeps a succeeded task complete while its Agent session still reports running', async () => {
+    const data = fullProjection()
+    data.tasks = [{ ...makeTask('published-task', 'root', 'prompt'), status: 'succeeded', execution_state: 'running' }]
+    const { renderer, onAction } = await mount(data)
+    await click(renderer, '任务')
+    const card = renderer.root.findByProps({ className: 'agent-task-card' })
+    expect(nodeText(card.findByProps({ className: 'pill ' }))).toBe('已完成')
+    expect(card.findAllByType('button').map(nodeText)).not.toContain('中断任务')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('experiment workbench follow-up question notification', () => {
+  it('notifies a new question on a previously answered task and replies to the new question', async () => {
+    vi.useFakeTimers()
+    const task = { ...makeTask('follow-up-task', 'root', 'prompt'), title: '光线生成', status: 'running' as const,
+      answers: [{ question_artifact_id: 'answered-question', answer: '自然光' }] }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [task], refreshAfterMs: 100, artifacts: [{
+      artifact_id: 'answered-question', task_id: task.task_id, type: 'question',
+      artifact: { type: 'question', question: '希望使用哪种光线？', options: [] },
+      source_files: [], session_id: task.session_id!, turn: 1, call_id: 'first-question', skill_refs: [],
+      disposition: 'waiting_input', applied_target: null, created_at: 2000,
+    }] }
+    const target = { focus: vi.fn(), scrollIntoView: vi.fn() }
+    const onAction = vi.fn(async () => {
+      data = { ...data, tasks: [{ ...task, answers: [...task.answers, { question_artifact_id: 'new-question', answer: '保留玻璃花房' }] }] }
+      return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' }
+    })
+    const { renderer } = await mount(data, { onAction, remote: { getProjection: async () => structuredClone(data) } }, {
+      createNodeMock: element => element.props['data-task'] === task.task_id ? target : null,
+    })
+    data = { ...data, tasks: [{ ...task, status: 'waiting_input' }], artifacts: [...data.artifacts, {
+      ...data.artifacts[0]!, artifact_id: 'new-question',
+      artifact: { type: 'question', question: '保留哪个场景？', options: [] }, call_id: 'follow-up-question', created_at: 3000,
+    }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('光线生成需要补充输入 · follow-up-task')
+    await click(renderer, '查看任务')
+    expect(target.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'start' })
+    const form = renderer.root.findByProps({ className: 'task-answer' })
+    expect(nodeText(form.findAllByType('span')[0]!)).toBe('保留哪个场景？')
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await act(async () => form.props.onSubmit({ preventDefault() {}, currentTarget: { answer: '保留玻璃花房' } }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: 'task-answer', taskId: 'follow-up-task', id: 'new-question', value: '保留玻璃花房',
+    }))
+    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+    expect(nodeText(renderer.root.findByProps({ className: 'agent-task-card' }))).toContain('Agent 执行中')
+  })
+})

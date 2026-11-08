@@ -13,8 +13,7 @@
     "templateInput": "任务 Workflow 模板",
     "select": "请选择",
     "missingResources": "请在此处选择 ComfyUI 实例与 Workflow 模板。",
-    "unavailableCatalog": "模板目录暂时不可用，请关闭弹窗后重试。",
-    "submitted": "任务已提交"
+    "unavailableCatalog": "模板目录暂时不可用，请关闭弹窗后重试。"
 
   },
   "fieldPlaceholders": { "references": "图片文件路径" },

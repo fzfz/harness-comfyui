@@ -189,7 +189,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
         evaluationInput = { run_id: runId, verdict: draft.verdict, observation: draft.observation, conclusion: draft.conclusion, experience: { title: draft.title, conditions: draft.conditions, note: draft.note } }
       }
       const task = await service.createTask({ ...selection, functionId: selectedFunctionId, ...(evaluationInput ? { evaluationInput } : {}), ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(typeof value.preset_override === 'string' && value.preset_override ? { presetOverride: value.preset_override } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
-      return request.type === 'agent-action' ? { ...selection, taskId: task.task_id } : selection
+      return { ...selection, taskId: task.task_id }
     }
     case 'task-interrupt': case 'task-resume': case 'pause-experiment': case 'resume-experiment': {
       await service.controlTask({ taskId: text(request.taskId, 'task_id'), action: request.type === 'task-interrupt' ? 'interrupt' : request.type === 'pause-experiment' ? 'pause' : 'continue' }); break

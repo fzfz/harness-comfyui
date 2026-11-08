@@ -1,4 +1,21 @@
 {
+  "unrecorded": "未记录",
+  "details": {
+    "model": "Agent 调用配置",
+    "artifacts": "任务产物",
+    "runs": "参考运行"
+  },
+  "conflict": {
+    "branch": "任务输入已改变，请核对产物后采用。",
+    "run_review": "评价与经验草稿已修改，请核对产物后填入。"
+  },
+  "notifications": {
+    "submitted": "{title}任务已提交 · {taskId}",
+    "completed": "{title}已完成 · {taskId}",
+    "waiting_input": "{title}需要补充输入 · {taskId}",
+    "conflict": "{title}的结果待采用 · {taskId}",
+    "open": "查看任务"
+  },
   "statusLabels": {
     "pending": "待执行",
     "running": "Agent 执行中",
