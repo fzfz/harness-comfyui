@@ -205,6 +205,21 @@ describe('workbench generation input adapter', () => {
     expect(current.generation_input.loras[0]!.file_name).toBe('old.safetensors')
   })
 
+  it('discards previous template parameters when the replacement has no selected instance', async () => {
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'replacement', base_model_id: '5', model_id: null })) }
+    const runtime = { inspectTemplateRuntimeParameters: vi.fn(), validateGenerationRequest: vi.fn() }
+    const current: TaskDraft = { ...structuredClone(draft), generation_input: { ...draft.generation_input, instance_id: null, parameters: { steps_1: 18, positive_prompt_9: 'previous template prompt' } } }
+    const adapter = createWorkbenchInputAdapter({ runtime, catalog })
+
+    const selected = await adapter.resolveResourceRefs([{ kind: 'comfyui-template', id: '8' }], current)
+
+    expect(selected.generation_input.template_id).toBe('8')
+    expect(selected.generation_input.parameters).toEqual({})
+    expect(selected.prompt_input).toEqual(current.prompt_input)
+    expect(current.generation_input.parameters).toEqual({ steps_1: 18, positive_prompt_9: 'previous template prompt' })
+    expect(runtime.inspectTemplateRuntimeParameters).not.toHaveBeenCalled()
+  })
+
   it('maps a synchronous CLI request validation failure at the published generation input path', async () => {
     const runtime = { inspectTemplateRuntimeParameters: vi.fn(), validateGenerationRequest: vi.fn() }
     const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }

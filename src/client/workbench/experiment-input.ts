@@ -7,14 +7,20 @@ import type {
 } from '../../generation/inspection-contract.ts'
 import options from './experiment-input-options.json' with { type: 'json' }
 
+export function findExperimentParameter(
+  description: WorkflowRuntimeParameterInspection | null | undefined,
+  kind: StandardRuntimeParameterKind,
+) {
+  const parameters = description?.parameters.filter(parameter => parameter.kind === kind)
+  return parameters?.length === 1 ? parameters[0] : undefined
+}
+
 export function readExperimentParameter(
   description: WorkflowRuntimeParameterInspection | null | undefined,
   parameters: Readonly<Record<string, JsonValue>>,
   kind: StandardRuntimeParameterKind,
 ): JsonValue | undefined {
-  const parameter = description?.parameters.find(
-    (parameter) => parameter.kind === kind,
-  )
+  const parameter = findExperimentParameter(description, kind)
   return parameter
     ? Object.hasOwn(parameters, parameter.parameter_id)
       ? parameters[parameter.parameter_id]

@@ -109,7 +109,9 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
         const template = await catalog.resolveTemplate(ref.id, signal)
         draft.generation_input.template_id = template.id
         if (draft.base_model_id === null) draft.base_model_id = template.base_model_id
-        if (draft.generation_input.instance_id) draft.generation_input.parameters = Object.fromEntries(flattenWorkflowRuntimeParameters(await inspect(draft.generation_input)).map(parameter => [parameter.parameter_id, parameter.current_value]))
+        draft.generation_input.parameters = draft.generation_input.instance_id
+          ? Object.fromEntries(flattenWorkflowRuntimeParameters(await inspect(draft.generation_input)).map(parameter => [parameter.parameter_id, parameter.current_value]))
+          : {}
       } else {
         await validateReferences([ref])
         draft.context_refs = [...draft.context_refs.filter(item => item.kind !== ref.kind || item.id !== ref.id), { kind: ref.kind, id: ref.id }]

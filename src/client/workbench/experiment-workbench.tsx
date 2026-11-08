@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -31,6 +32,7 @@ import { EXPERIMENT_CATALOG_SCROLL_PREFIX } from './experiment-contract.ts'
 import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 import {
   ExperimentInputDescriptionCache,
+  findExperimentParameter,
   readExperimentParameter,
   experimentSizeOptions,
 } from './experiment-input.ts'
@@ -104,11 +106,12 @@ interface FieldOptions {
   step?: number
   maxLength?: number
   branch?: boolean
+  disabled?: boolean
 }
 
 type SaveField = (value: string, expectedValue: string) => Promise<boolean>
 
-function createFieldEditor() {
+function createFieldEditor(isCurrent = () => true) {
   let edit: { value: string; expected: string } | undefined
   let queued: { value: string; original: string; save: SaveField } | undefined
   let saving = false
@@ -123,10 +126,11 @@ function createFieldEditor() {
     while (queued) {
       const submission = queued
       queued = undefined
+      if (!isCurrent()) break
       const expected = edit?.expected ?? submission.original
       if (submission.value !== expected) {
         const saved = await submission.save(submission.value, expected)
-        if (!saved) { queued = undefined; break }
+        if (!saved || !isCurrent()) { queued = undefined; break }
         if (edit) update({ ...edit, expected: submission.value })
       }
       if (edit?.value === submission.value && !queued) update(undefined)
@@ -148,15 +152,20 @@ function createFieldEditor() {
   }
 }
 
-function useBranchFieldEdits(workspaceId: string | null, workId: string | null, branchId: string | null) {
+function useBranchFieldEdits(workspaceId: string | null, workId: string | null, branchId: string | null, inputScope?: string) {
   const fields = useMemo(
     () => new Map<string, ReturnType<typeof createFieldEditor>>(),
-    [workspaceId, workId, branchId],
+    [workspaceId, workId, branchId, inputScope],
   )
+  const activeFields = useRef<typeof fields | null>(fields)
+  useLayoutEffect(() => {
+    activeFields.current = fields
+    return () => { activeFields.current = null }
+  }, [fields])
   return (id: string) => {
     let editor = fields.get(id)
     if (!editor) {
-      editor = createFieldEditor()
+      editor = createFieldEditor(inputScope === undefined ? undefined : () => activeFields.current === fields)
       fields.set(id, editor)
     }
     return editor
@@ -177,10 +186,13 @@ function AutosaveField({ label, id, value, options, save, editor, locked }: {
     id,
     'aria-label': label,
     value: (!locked ? edited : undefined) ?? value,
-    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      editor.change(event.target.value, value),
-    onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      editor.blur(event.target.value, value, save),
+    disabled: options.disabled,
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (!options.disabled) editor.change(event.target.value, value)
+    },
+    onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (!options.disabled) editor.blur(event.target.value, value, save)
+    },
   }
   return <label className="field">
     <span>{label}</span>
@@ -1301,6 +1313,19 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           },
         }
       : branch?.draft
+  const selectedTemplateId = inputs?.generation_input.template_id ?? null
+  const { details: selectedTemplate, error: selectedTemplateError } = useCatalogDetails(
+    selectedTemplateId ? { kind: 'comfyui-template', id: selectedTemplateId } : null,
+    props.catalog?.details,
+  )
+  const selectedTemplateName = selectedTemplate?.kind === 'comfyui-template' && selectedTemplate.id === selectedTemplateId
+    ? selectedTemplate.item.label : ''
+  useEffect(() => {
+    if (selectedTemplateError) setMessage(selectedTemplateError)
+  }, [selectedTemplateError, setMessage])
+  const parameterScope = branch && state.workspaceId
+    ? inputDescriptionCache.key(state.workspaceId, branch.draft.generation_input) : ''
+  const parameterFieldEditor = useBranchFieldEdits(state.workspaceId, view.workId, view.branchId, parameterScope)
   const inputDescription = inputs
     ? descriptionFor(inputs.generation_input)
     : null
@@ -1354,16 +1379,24 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     id: string,
     value: JsonValue | undefined,
     options: FieldOptions = {},
+    identity = id,
+    editor = fieldEditor(identity),
   ) => <AutosaveField
-    key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, locked, id])}
+    key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, locked, identity])}
     label={label}
     id={id}
     value={value === null || value === undefined ? '' : String(value)}
     options={options}
-    editor={fieldEditor(id)}
+    editor={editor}
     locked={locked}
     save={(nextValue, expectedValue) => saveField(id, options, nextValue, expectedValue)}
   />
+  const parameterField = (label: string, id: string, kind: StandardRuntimeParameterKind, options: FieldOptions = {}) => {
+    const parameter = findExperimentParameter(inputDescription, kind)
+    return field(label, id, inputParameter(kind), { ...options, disabled: !parameter }, JSON.stringify([
+      inputs?.generation_input.instance_id, inputs?.generation_input.template_id, kind, parameter?.parameter_id,
+    ]), parameterFieldEditor(parameter?.parameter_id ?? kind))
+  }
   const openCatalog = (kind: CatalogKind) => {
     setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
     store.updateView({
@@ -1497,7 +1530,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             </div>
             <div className="picked-item">
               <span>Workflow 模板</span>
-              <b>{inputs.generation_input.template_id ?? '未选择'}</b>
+              <b>{selectedTemplateId ? selectedTemplateName : '未选择'}</b>
               <Button
                 kind="small quiet"
                 label="选择 Workflow 模板"
@@ -1620,11 +1653,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               inputs.prompt_input.negative_prompt,
               { multiline: true, short: true },
             )}
-            {field(
-              '参考图路径',
-              'references',
-              inputParameter('reference_image'),
-            )}
+            {parameterField('参考图路径', 'references', 'reference_image')}
           </details>
           <details className="config-section" open>
             <summary>生成参数</summary>
@@ -1633,12 +1662,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {customActions(['parameters'], locked)}
             </div>
             <div className="fields2">
-              {field('采样步数', 'steps', inputParameter('steps'), {
+              {parameterField('采样步数', 'steps', 'steps', {
                 type: 'number',
                 min: 1,
                 max: 100,
               })}
-              {field('引导强度', 'cfg', inputParameter('cfg'), {
+              {parameterField('引导强度', 'cfg', 'cfg', {
                 type: 'number',
                 min: 0,
                 max: 30,
@@ -1646,7 +1675,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               })}
             </div>
             <div className="fields2">
-              {field('Seed', 'seed', inputParameter('seed'), {
+              {parameterField('Seed', 'seed', 'seed', {
                 type: 'number',
                 min: 0,
               })}
@@ -1654,6 +1683,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 <span>画面尺寸</span>
                 <select
                   aria-label="画面尺寸"
+                  disabled={!sizes.length}
                   value={currentSize}
                   onChange={(event) => {
                     const size = sizes.find(

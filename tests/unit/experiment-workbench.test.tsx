@@ -2341,6 +2341,271 @@ describe('experiment workbench Catalog removal persistence', () => {
   })
 })
 
+describe('experiment workbench selected template names', () => {
+  const items: CatalogItem[] = [
+    { baseModelId: '1', context: { kind: 'comfyui-template', id: '43', title: '模板 A' }, label: '模板 A', subtitle: '', coverUrl: null, sampleImageUrls: [] },
+    { baseModelId: '1', context: { kind: 'comfyui-template', id: '41', title: '模板 B' }, label: '模板 B', subtitle: '', coverUrl: null, sampleImageUrls: [] },
+  ]
+  const templateCatalog = () => {
+    const catalog = makeCatalog(), search = vi.mocked(catalog.search).getMockImplementation()!, details = vi.mocked(catalog.details).getMockImplementation()!
+    vi.mocked(catalog.search).mockImplementation(async (request, signal) => request.kind === 'comfyui-template' ? { ...request, items, totalCount: items.length } : search(request, signal))
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => ({
+      ...await details(request, signal), item: items.find(item => item.context.id === request.id) ?? catalogItems.find(item => item.context.kind === request.kind)!,
+    }))
+    return catalog
+  }
+  const templateSummary = (renderer: { root: RenderNode }) =>
+    renderer.root.findByProps({ className: 'selected-resources' }).findAllByProps({ className: 'picked-item' })[1]!.findAllByType('b').map(nodeText)
+
+  const templateDescription = (id: string, steps: number): typeof inputDescription => ({
+    parameters: inputDescription.parameters.map(parameter => ({
+      ...parameter, parameter_id: `${parameter.kind}_${id}`,
+      current_value: parameter.kind === 'steps' ? steps : parameter.current_value,
+    })),
+    size_candidates: [{
+      candidate_id: `size_${id}`, representation: 'width_height',
+      width: { parameter_id: `width_${id}`, kind: 'width', value_type: 'integer', current_value: 1024, minimum: 256, maximum: 2048 },
+      height: { parameter_id: `height_${id}`, kind: 'height', value_type: 'integer', current_value: 768, minimum: 256, maximum: 2048 },
+    }],
+  })
+
+  it('loads B defaults and actual parameter IDs while an A field save is still pending through the public Host', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    const descriptions = { '43': templateDescription('a', 24), '41': templateDescription('b', 48) }
+    let holdA = false, releaseA!: (value: typeof inputDescription) => void, savingA!: () => void
+    const pendingA = new Promise<typeof inputDescription>(resolve => { releaseA = resolve })
+    const startedA = new Promise<void>(resolve => { savingA = resolve })
+    host.inspect.mockImplementation(async (...args: unknown[]) => {
+      const request = args[0] as { templateId: '43' | '41' }
+      if (holdA && request.templateId === '43') { savingA(); return pendingA }
+      return structuredClone(descriptions[request.templateId])
+    })
+    try {
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模板参数', goal: '切换模板输入' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'glass house' }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'negative_prompt', value: 'blur' }, signal)
+      const environment = await host.remote.getEnvironment({}, signal)
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
+        catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces,
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        onAction: request => host.remote.mutate(request, signal),
+      })
+      await click(renderer, '选择 Workflow 模板')
+      await click(renderer, '选择 模板 A')
+      expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('24')
+      await change(renderer, '引导强度', '7.5')
+      await act(async () => renderer.root.findByProps({ 'aria-label': '引导强度' }).props.onBlur({ target: { value: '7.5' } }))
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.parameters.cfg_a).toBe(7.5)
+      holdA = true
+      await change(renderer, '采样步数', '37')
+      await act(async () => renderer.root.findByProps({ 'aria-label': '采样步数' }).props.onBlur({ target: { value: '37' } }))
+      await startedA
+      await click(renderer, '选择 模板 B')
+      const displayedB = renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value
+      await act(async () => releaseA(descriptions['43']))
+      const saved = host.store.getBranch(scope.branchId).draft
+      expect(saved.generation_input.template_id).toBe('41')
+      expect(saved.generation_input.parameters).toEqual(Object.fromEntries(descriptions['41'].parameters.map(parameter => [parameter.parameter_id, parameter.current_value])))
+      expect(saved.prompt_input).toEqual({ positive_prompt: 'glass house', negative_prompt: 'blur' })
+      expect(templateSummary(renderer)).toEqual(['模板 B'])
+      expect(displayedB).toBe('48')
+      expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('48')
+      await change(renderer, '采样步数', '53')
+      await act(async () => renderer.root.findByProps({ 'aria-label': '采样步数' }).props.onBlur({ target: { value: '53' } }))
+      const editedB = host.store.getBranch(scope.branchId).draft
+      expect(editedB.generation_input.parameters).toEqual({ ...saved.generation_input.parameters, steps_b: 53 })
+      expect(editedB.prompt_input).toEqual(saved.prompt_input)
+      holdA = false
+      await click(renderer, '选择 模板 A')
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.parameters.steps_a).toBe(24)
+      expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('24')
+      await act(() => renderer.unmount())
+    } finally { releaseA(descriptions['43']); await host.dispose() }
+  })
+
+  it.each(['B', 'A'] as const)('does not send an A autosave queued behind a completed write after switching to %s', async target => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    const a = templateDescription('a', 24), b = templateDescription('b', 48)
+    host.inspect.mockImplementation(async (...args: unknown[]) => structuredClone((args[0] as { templateId: string }).templateId === '43' ? a : b))
+    let releaseWrite!: () => void, wroteA!: () => void
+    const delayedResponse = new Promise<void>(resolve => { releaseWrite = resolve })
+    const savedA = new Promise<void>(resolve => { wroteA = resolve })
+    try {
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '参数队列', goal: '切换模板后结束原参数保存' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+      const environment = await host.remote.getEnvironment({}, signal)
+      const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+        const result = await host.remote.mutate(request, signal)
+        if (request.type === 'update-draft' && request.field === 'steps' && request.value === 31) { wroteA(); await delayedResponse }
+        return result
+      })
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
+        catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces, onAction,
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+      })
+      await click(renderer, '选择 Workflow 模板')
+      await click(renderer, '选择 模板 A')
+      await change(renderer, '采样步数', '31')
+      await act(async () => renderer.root.findByProps({ 'aria-label': '采样步数' }).props.onBlur({ target: { value: '31' } }))
+      await savedA
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.parameters.steps_a).toBe(31)
+      await change(renderer, '采样步数', '32')
+      await act(async () => renderer.root.findByProps({ 'aria-label': '采样步数' }).props.onBlur({ target: { value: '32' } }))
+      await click(renderer, '选择 模板 B')
+      if (target === 'A') await click(renderer, '选择 模板 A')
+      await act(async () => releaseWrite())
+      const expected = target === 'A' ? a : b
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.parameters).toEqual(Object.fromEntries(expected.parameters.map(parameter => [parameter.parameter_id, parameter.current_value])))
+      expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe(target === 'A' ? '24' : '48')
+      expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'update-draft', field: 'steps', value: 32 }))
+      await act(() => renderer.unmount())
+    } finally { releaseWrite(); await host.dispose() }
+  })
+
+  it('disables pending and undeclared B controls without retaining A parameters through the public Host', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    const a = templateDescription('a', 24), baseB = templateDescription('b', 48)
+    const b = { ...baseB, parameters: baseB.parameters.filter(parameter => ['positive_prompt', 'negative_prompt', 'seed'].includes(parameter.kind)), size_candidates: [] }
+    host.inspect.mockImplementation(async (...args: unknown[]) => structuredClone((args[0] as { templateId: string }).templateId === '43' ? a : b))
+    let releaseB = () => {}, waitForB = true
+    try {
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模板字段', goal: '切换可用参数' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'shared prompt' }, signal)
+      const environment = await host.remote.getEnvironment({}, signal)
+      const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
+      const options: Partial<ExperimentWorkbenchProps> = {
+        catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces, onAction,
+        remote: {
+          getEnvironment: request => host.remote.getEnvironment(request, signal), getProjection: request => host.remote.getProjection(request, signal),
+          getInputDescription: async request => {
+            const description = await host.remote.getInputDescription(request, signal)
+            if (waitForB && host.store.getBranch(request.branchId).draft.generation_input.template_id === '41')
+              return new Promise<typeof description>(resolve => { releaseB = () => resolve(description) })
+            return description
+          },
+        },
+      }
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
+      await click(renderer, '选择 Workflow 模板')
+      await click(renderer, '选择 模板 A')
+      await click(renderer, '选择 模板 B')
+      const labels = ['参考图路径', '采样步数', '引导强度', 'Seed', '画面尺寸']
+      const disabledWhileLoading = labels.map(label => renderer.root.findByProps({ 'aria-label': label }).props.disabled)
+      waitForB = false
+      await act(async () => releaseB())
+      const expectedParameters = Object.fromEntries(b.parameters.map(parameter => [parameter.parameter_id, parameter.current_value]))
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.parameters).toEqual(expectedParameters)
+      expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('0')
+      expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.disabled).not.toBe(true)
+      for (const label of ['参考图路径', '采样步数', '引导强度', '画面尺寸']) {
+        const input = renderer.root.findByProps({ 'aria-label': label })
+        expect(input.props.value).toBe('')
+        expect(input.props.disabled).toBe(true)
+      }
+      expect(disabledWhileLoading).toEqual(labels.map(() => true))
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('shared prompt')
+      expect(onAction).toHaveBeenCalledTimes(2)
+      await act(() => renderer.unmount())
+      const reopened = await mount(await host.remote.getProjection(scope, signal), options)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': '采样步数' }).props.disabled).toBe(true)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('0')
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.parameters).toEqual(expectedParameters)
+      await act(() => reopened.renderer.unmount())
+    } finally { releaseB(); await host.dispose() }
+  })
+
+  it('shows selected A and B Catalog names and restores B after refresh through the public Host', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模板名称', goal: '读取目录名称' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      const environment = await host.remote.getEnvironment({}, signal)
+      const catalog = templateCatalog(), memory = new Map<string, string>()
+      const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+      const options: Partial<ExperimentWorkbenchProps> = {
+        catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces,
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        onAction: request => host.remote.mutate(request, signal),
+      }
+      const data = await host.remote.getProjection(scope, signal)
+      const { renderer } = await mount(data, options)
+      expect(templateSummary(renderer)).toEqual(['未选择'])
+      await click(renderer, '选择 Workflow 模板')
+      await click(renderer, '选择 模板 A')
+      expect(templateSummary(renderer)).toEqual(['模板 A'])
+      await click(renderer, '选择 模板 B')
+      expect(templateSummary(renderer)).toEqual(['模板 B'])
+      expect(renderer.root.findAllByProps({ className: 'catalog-detail' })).toHaveLength(0)
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.template_id).toBe('41')
+      await act(() => renderer.unmount())
+      const reopened = await mount(data, options)
+      expect(templateSummary(reopened.renderer)).toEqual(['模板 B'])
+      expect(catalog.details).toHaveBeenCalledWith({ kind: 'comfyui-template', id: '41' }, expect.any(AbortSignal))
+      await act(() => reopened.renderer.unmount())
+    } finally { await host.dispose() }
+  })
+
+  it('shows a Catalog failure toast while preserving the selected template and draft after an old label returns late', async () => {
+    const catalog = templateCatalog(), details = vi.mocked(catalog.details).getMockImplementation()!
+    let finishA!: () => Promise<void>, failB!: (reason: Error) => void
+    vi.mocked(catalog.details).mockImplementation((request, signal) => request.id === '43'
+      ? new Promise(resolve => { finishA = async () => resolve(await details(request, signal)) })
+      : request.id === '41' ? new Promise((_resolve, reject) => { failB = reject }) : details(request, signal))
+    const data = fullProjection()
+    data.runs = []
+    data.branches[0]!.draft.generation_input.template_id = '43'
+    const expectedDraft = structuredClone(data.branches[0]!.draft)
+    expectedDraft.generation_input.template_id = '41'
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === 'resource-select') data.branches[0]!.draft.generation_input.template_id = (request.value as { id: string }).id
+    })
+    const { renderer } = await mount(data, { catalog, onAction })
+    await click(renderer, '选择 Workflow 模板')
+    await click(renderer, '选择 模板 B')
+    await act(async () => failB(new Error('Catalog template metadata returned HTTP 503.')))
+    const toast = nodeText(renderer.root.findByProps({ className: 'toast' }))
+    expect(toast).toContain('Catalog template metadata returned HTTP 503.')
+    expect(templateSummary(renderer)).toEqual([''])
+    expect(data.branches[0]!.draft).toEqual(expectedDraft)
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(expectedDraft.prompt_input.positive_prompt)
+    await act(async () => finishA())
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe(toast)
+    expect(templateSummary(renderer)).toEqual([''])
+    expect(data.branches[0]!.draft).toEqual(expectedDraft)
+    expect(onAction).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels an old selected-template label request and keeps B after A returns late', async () => {
+    const catalog = templateCatalog(), details = vi.mocked(catalog.details).getMockImplementation()!
+    let finishA!: () => Promise<void>, signalA!: AbortSignal
+    vi.mocked(catalog.details).mockImplementation((request, signal) => request.id === '43'
+      ? new Promise(resolve => { signalA = signal; finishA = async () => resolve(await details(request, signal)) })
+      : details(request, signal))
+    const data = fullProjection()
+    data.runs = []
+    data.branches[0]!.draft.generation_input.template_id = '43'
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === 'resource-select') data.branches[0]!.draft.generation_input.template_id = (request.value as { id: string }).id
+    })
+    const { renderer } = await mount(data, { catalog, onAction })
+    await click(renderer, '选择 Workflow 模板')
+    await click(renderer, '选择 模板 B')
+    expect(templateSummary(renderer)).toEqual(['模板 B'])
+    expect(signalA.aborted).toBe(true)
+    await act(async () => finishA())
+    expect(templateSummary(renderer)).toEqual(['模板 B'])
+  })
+})
+
 describe('experiment workbench generation model selection', () => {
   it('persists a compatible model and its summary while preserving sibling inputs and the run Agent model', async () => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
@@ -2360,7 +2625,7 @@ describe('experiment workbench generation model selection', () => {
         const matches = request.kind === 'model' ? items.filter(item => (!request.baseModelId || item.baseModelId === request.baseModelId) && (!request.modelId || item.context.id === request.modelId)) : []
         return { ...request, items: matches, totalCount: matches.length }
       }),
-      details: vi.fn(),
+      details: makeCatalog().details,
     }
     try {
       host.catalog.resolveGenerationModel.mockImplementation(async id => {

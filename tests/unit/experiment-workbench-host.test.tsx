@@ -19,6 +19,7 @@ import {
   fullProjection,
   inputDescription,
 } from './experiment-workbench-fixtures.ts'
+import type { CatalogApi } from '../../src/client/workbench/catalog-browser.tsx'
 import type { ExperimentWorkbenchProps } from '../../src/client/workbench/experiment-contract.ts'
 const { act, create } = (await vi.importActual('react-test-renderer')) as any
 const mounts: any[] = []
@@ -71,7 +72,9 @@ const remote = (): ExperimentHostRemote => ({
 const catalog = () => ({
   baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'SDXL' }] })),
   search: vi.fn(),
-  details: vi.fn(),
+  details: vi.fn<CatalogApi['details']>(async request => ({
+    ...request, item: { context: { kind: 'comfyui-template', id: request.id, title: '文生图' }, baseModelId: '1', label: '文生图', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [],
+  })),
 })
 const mount = async (api: ExperimentHostRemote) => {
   vi.stubGlobal('document', new EventTarget())
