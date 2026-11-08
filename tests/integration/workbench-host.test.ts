@@ -82,6 +82,7 @@ it('applies native aspect-ratio and preset size values and rejects an unrelated 
     aspect_ratio: { parameter_id: 'ratio', kind: 'aspect_ratio', value_type: 'choice', current_value: '1:1', allowed_values: ['1:1', '3:4'] },
     megapixels: { parameter_id: 'pixels', kind: 'megapixels', value_type: 'number', current_value: 1, minimum: 0.5, maximum: 2 },
   }] })
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'size', value: { candidate_id: 'ratio-size', parameters: { ratio: '3:4', pixels: 1.2 } } }, signal())
   expect(store.getBranch(selected.branchId!).draft.generation_input.parameters).toEqual({ ratio: '3:4', pixels: 1.2 })
@@ -445,6 +446,7 @@ it('asks and answers a task question and pauses, continues and ends the same exp
   await remote.mutate({ ...selected, type: 'task-answer', taskId: prompt.task_id, id: question.artifact_id, value: 'Moon' }, signal())
   expect((await remote.getProjection(selected, signal())).tasks[0]!.answers).toEqual([expect.objectContaining({ question_artifact_id: question.artifact_id, answer: 'Moon' })])
   await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
   await remote.mutate({ ...selected, type: 'update-execution', field: 'mode', value: 'continuous' }, signal())
   await remote.mutate({ ...selected, type: 'update-execution', field: 'max_runs', value: 3 }, signal())
@@ -769,4 +771,71 @@ it('rejects invalid action input and cross-workspace targets before changing a b
   const foreignTask = (await remote.getProjection(other, signal())).tasks[0]!
   await expect(remote.mutate({ ...selected, type: 'task-interrupt', taskId: foreignTask.task_id }, signal())).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH', issues: [{ path: 'task_id', message: expect.any(String) }] } })
   expect(store.getTask(foreignTask.task_id).execution_state).toBe('running')
+})
+
+it('rejects an incompatible resource through the public action before changing any draft field', async () => {
+  const { remote, store, catalog } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Context', goal: 'Read references' } }, signal())
+  const before = store.getBranch(selected.branchId!).draft
+  const readDetails = catalog.details.getMockImplementation()!
+  catalog.details.mockImplementation(async (request, requestSignal) => {
+    const details = await readDetails(request, requestSignal)
+    return { ...details, item: { ...details.item, label: 'Other model style', baseModelId: '9', modelId: null } }
+  })
+  await expect(remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'style', id: '7' } }, signal()))
+    .rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_INCOMPATIBLE', issues: [{ path: 'value.id' }] } })
+  expect(store.getBranch(selected.branchId!).draft).toEqual(before)
+})
+
+it('persists all five context kinds with shared IDs and freezes the Task references before single-item removal', async () => {
+  const { remote, store, catalog } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'References', goal: 'Read references' } }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  const refs = (['work', 'character', 'style', 'prompt-term', 'artist-string'] as const).map(kind => ({ kind, id: '90071992547409931234' }))
+  for (const ref of refs) {
+    catalog.details.mockClear()
+    await remote.mutate({ ...selected, type: 'resource-select', value: ref }, signal())
+    expect(catalog.details).toHaveBeenCalledExactlyOnceWith(ref, expect.any(AbortSignal))
+  }
+  await remote.mutate({ ...selected, type: 'resource-select', value: refs[4] }, signal())
+  const before = store.getBranch(selected.branchId!).draft
+  expect(before.context_refs).toEqual(refs)
+  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  const task = (await remote.getProjection(selected, signal())).tasks[0]!
+  expect(store.getTask(task.task_id).input.context_refs).toEqual(refs)
+
+  await remote.mutate({ ...selected, type: 'resource-remove', value: 'style', id: refs[2]!.id }, signal())
+  expect(store.getBranch(selected.branchId!).draft).toEqual({ ...before, context_refs: [refs[0], refs[1], refs[3], refs[4]] })
+  expect(store.getTask(task.task_id).input.context_refs).toEqual(refs)
+  await remote.mutate({ ...selected, type: 'resource-select', value: refs[2] }, signal())
+  expect((await remote.getProjection(selected, signal())).branches[0]!.draft.context_refs).toEqual([refs[0], refs[1], refs[3], refs[4], refs[2]])
+})
+
+it.each([
+  { baseModelId: '9', modelId: null },
+  { baseModelId: '1', modelId: '3' },
+])('rejects the current Catalog constraints %j while preserving a complete selected draft', async constraints => {
+  const { remote, store, catalog } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Constraints', goal: 'Keep input' } }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '4' } }, signal())
+  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Keep this prompt' }, signal())
+  const before = store.getBranch(selected.branchId!).draft
+  const read = catalog.details.getMockImplementation()!
+  catalog.details.mockImplementation(async (request, requestSignal) => {
+    const details = await read(request, requestSignal)
+    return { ...details, item: { ...details.item, ...constraints } }
+  })
+  await expect(remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'lora', id: '7' } }, signal()))
+    .rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_INCOMPATIBLE', issues: [{ path: 'value.id' }] } })
+  expect(store.getBranch(selected.branchId!).draft).toEqual(before)
+})
+
+it('accepts unconstrained contexts before a generation model is selected', async () => {
+  const { remote, store } = await fixture()
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Global references', goal: 'Read references' } }, signal())
+  const before = store.getBranch(selected.branchId!).draft
+  const refs = [{ kind: 'work', id: '7' }, { kind: 'character', id: '7' }, { kind: 'prompt-term', id: '7' }] as const
+  for (const ref of refs) await remote.mutate({ ...selected, type: 'resource-select', value: ref }, signal())
+  expect(store.getBranch(selected.branchId!).draft).toEqual({ ...before, context_refs: refs })
 })

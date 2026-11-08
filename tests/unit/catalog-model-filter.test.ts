@@ -66,7 +66,7 @@ async function withSource(
 }
 
 
-it('reads each source page once for a Workbench model preview and its confirmed change', async () => {
+it('reads only the selected resources for a Workbench model preview and its confirmed change', async () => {
   const records = Array.from({ length: 19 }, (_, index) => ({
     id: index + 1, base_model_id: 4, model_id: index >= 8 && index < 18 ? 25 : 24,
     file_name: `lora-${index + 1}.safetensors`, file_format: 'safetensors', precision_or_quantization: 'fp16',
@@ -85,21 +85,23 @@ it('reads each source page once for a Workbench model preview and its confirmed 
       const signal = new AbortController().signal
       const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
       const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       for (const id of ['9', '17', '19']) await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id } }, signal)
       Object.assign(host.catalog, {
         search: source.search.bind(source), details: source.details.bind(source), resolveGenerationModel: source.resolveGenerationModel.bind(source),
-        compatibleResourceIds: (input: { kind: 'lora'; modelId: string }, requestSignal: AbortSignal) => source.compatibleResourceIds(input, requestSignal),
       })
       const before = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
       expect(await host.remote.previewModelChange({ ...scope, modelId: '25' }, signal)).toEqual({
         model: { id: '25', label: 'selected.safetensors' }, removed: [{ kind: 'lora', id: '19', label: 'lora-19.safetensors' }],
       })
-      expect(requests.filter(entry => entry.path === '/internal/semantic/loras' && entry.input.mode === 'search').map(entry => entry.input.page)).toEqual([1, 2, 3])
+      expect(requests.filter(entry => entry.path === '/internal/semantic/loras').map(entry => entry.input)).toEqual(['9', '17', '19'].map(id => ({ mode: 'resolve', id })))
+      expect(requests.some(entry => entry.input.mode === 'search')).toBe(false)
       expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft).toEqual(before)
       requests.splice(0)
 
       await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '25', confirmedRemovals: [{ kind: 'lora', id: '19' }] } }, signal)
-      expect(requests.filter(entry => entry.path === '/internal/semantic/loras' && entry.input.mode === 'search').map(entry => entry.input.page)).toEqual([1, 2, 3])
+      expect(requests.filter(entry => entry.path === '/internal/semantic/loras').map(entry => entry.input)).toEqual(['9', '17', '19'].map(id => ({ mode: 'resolve', id })))
+      expect(requests.some(entry => entry.input.mode === 'search')).toBe(false)
       const after = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
       expect(after.generation_input.model).toEqual({ id: '25', file_name: 'selected.safetensors' })
       expect(after.generation_input.loras.map(lora => lora.id)).toEqual(['9', '17'])
@@ -111,10 +113,15 @@ it('reads each source page once for a Workbench model preview and its confirmed 
 it.each([
   ['lora', ['2', '3']], ['comfyui-template', ['2', '3']],
   ['style', ['1', '2', '3']], ['artist-string', ['1', '2', '3']],
-] as const)('keeps the Catalog %s association rules when returning compatible IDs', async (kind, expected) => {
-  const records = [24, null, 25].map((modelId, index) => ({ id: index + 1, base_model_id: 4, model_id: modelId }))
-  await withSource(({ input }, response) => sendPage(response, input, input.mode === 'resolve' ? [MODEL] : records), async (_service, requests, source) => {
-    expect(await source.compatibleResourceIds({ kind, modelId: '25' }, new AbortController().signal)).toEqual(expected)
+] as const)('keeps the Catalog %s association rules in the public search', async (kind, expected) => {
+  const records = [24, null, 25].map((modelId, index) => ({
+    id: index + 1, base_model_id: 4, model_id: modelId,
+    file_name: 'resource.safetensors', title: 'Resource', name: 'Style', prompt_text: 'style', artist_string: '@artist',
+    cover_url: null, sample_image_urls: [],
+  }))
+  await withSource(({ input }, response) => sendPage(response, input, input.mode === 'resolve' ? [MODEL] : records), async (service, requests) => {
+    await expect(service.search({ kind, modelId: '25', baseModelId: null, query: '', page: 1 }, new AbortController().signal))
+      .resolves.toMatchObject({ ok: true, value: { items: expected.map(id => ({ context: { id } })), totalCount: expected.length } })
     expect(requests.filter(entry => entry.input.mode === 'search').map(entry => entry.input)).toEqual([
       { mode: 'search', query: '', page: 1, page_size: 8, base_model_id: '4' },
     ])

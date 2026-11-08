@@ -170,10 +170,19 @@ export type CatalogContext =
 export interface CatalogItem {
   readonly context: CatalogContext
   readonly baseModelId: string | null
+  readonly modelId: string | null
   readonly label: string
   readonly subtitle: string
   readonly coverUrl: string | null
   readonly sampleImageUrls: readonly string[]
+}
+
+export function catalogResourceCompatible(
+  resource: Pick<CatalogItem, 'baseModelId' | 'modelId'>,
+  target: { readonly baseModelId: string | null; readonly modelId: string | null },
+): boolean {
+  return (resource.baseModelId === null || resource.baseModelId === target.baseModelId)
+    && (resource.modelId === null || resource.modelId === target.modelId)
 }
 
 export interface CatalogPage {
@@ -477,11 +486,12 @@ export function parseCatalogResolvedGenerationModel(value: unknown): CatalogReso
 
 export function parseCatalogItem(value: unknown): CatalogItem {
   const input = record(value, 'catalog item')
-  exactKeys(input, ['context', 'baseModelId', 'label', 'subtitle', 'coverUrl', 'sampleImageUrls'], 'catalog item')
+  exactKeys(input, ['context', 'baseModelId', 'modelId', 'label', 'subtitle', 'coverUrl', 'sampleImageUrls'], 'catalog item')
   const parsedCoverUrl = coverUrl(input.coverUrl)
   return Object.freeze({
     context: parseCatalogContext(input.context),
     baseModelId: nullableStableId(input.baseModelId),
+    modelId: nullableStableId(input.modelId),
     label: itemText(input.label, 'catalog item label', 500),
     subtitle: input.subtitle === '' ? '' : itemText(input.subtitle, 'catalog item subtitle', 500),
     coverUrl: parsedCoverUrl,

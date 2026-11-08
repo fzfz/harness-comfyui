@@ -102,7 +102,7 @@ describe('Catalog client', () => {
         kind: 'comfyui-template',
         query: 'wai',
         page: 2,
-        items: [{
+        items: [{ modelId: '1',
           context: {
             kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
           },
@@ -218,7 +218,7 @@ describe('Catalog client', () => {
 
   it.each([
     ['model', { id: 15, base_model_id: 2, file_name: 'model.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'model', id: '15', file_name: 'model.safetensors' }],
-    ['lora', { id: 91, base_model_id: '2', file_name: 'lora.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'lora', id: '91', file_name: 'lora.safetensors' }],
+    ['lora', { id: 91, base_model_id: '2', model_id: null, file_name: 'lora.safetensors', author: 'author', cover_url: null, sample_image_urls: [] }, { kind: 'lora', id: '91', file_name: 'lora.safetensors' }],
     ['work', { id: 3761, name: '.flow', category_name: '.flow', cover_url: null, sample_image_urls: [] }, { kind: 'work', id: '3761', name: '.flow' }],
     ['character', { id: 39933, name: '2b', 'works.name': '尼尔机械纪元', prompt_text: '2b, yorha no. 2 type b', cover_url: null, sample_image_urls: [] }, {
       kind: 'character', id: '39933', work_name: '尼尔机械纪元', character_name: '2b', prompt_text: '2b, yorha no. 2 type b',
@@ -232,7 +232,7 @@ describe('Catalog client', () => {
     ['artist-string', { id: 7, base_model_id: '1', title: 'watercolor', description: 'watercolor artists', artist_string: '@artist_a, @artist_b', cover_url: null, sample_image_urls: [] }, {
       kind: 'artist-string', id: '7', title: 'watercolor', prompt_text: '@artist_a, @artist_b',
     }],
-    ['comfyui-template', { id: 37, base_model_id: 2, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, sample_image_urls: [], parameters_json: [] }, {
+    ['comfyui-template', { id: 37, base_model_id: 2, model_id: null, title: 'wai_txt2img_lora', template_type: 'text_to_image', cover_url: null, sample_image_urls: [], parameters_json: [] }, {
       kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora',
     }],
   ] as const)('projects the %s source record into exact Agent context data', async (kind, source, context) => {
@@ -248,10 +248,10 @@ describe('Catalog client', () => {
 
   it.each([
     ['model', { file_name: 'model.safetensors', base_model_id: 2 }, '2'],
-    ['lora', { file_name: 'lora.safetensors', base_model_id: '12345678901234567890' }, '12345678901234567890'],
+    ['lora', { file_name: 'lora.safetensors', base_model_id: '12345678901234567890', model_id: null }, '12345678901234567890'],
     ['style', { name: 'style', prompt_text: 'style', base_model_id: null }, null],
     ['artist-string', { title: 'artists', artist_string: '@artist', base_model_id: '1' }, '1'],
-    ['comfyui-template', { title: 'template', base_model_id: 4 }, '4'],
+    ['comfyui-template', { title: 'template', base_model_id: 4, model_id: null }, '4'],
     ['work', { name: 'work' }, null],
     ['character', { name: 'character', 'works.name': 'work', prompt_text: 'character' }, null],
     ['prompt-term', { canonical_tag: 'tag' }, null],
@@ -346,7 +346,28 @@ it('omits repeated titles and empty metadata from card summaries', async () => {
   expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('')
 })
 it('shows distinct model metadata once and keeps a zero LoRA weight', async () => {
-  const execute: CatalogQuery = async () => (response([{ id: 1, base_model_id: 2, file_name: 'name', author: 'A', file_format: 'A', version: 'v1', weight: 0, cover_url: null, sample_image_urls: [] }]))
+  const execute: CatalogQuery = async () => (response([{ id: 1, base_model_id: 2, model_id: null, file_name: 'name', author: 'A', file_format: 'A', version: 'v1', weight: 0, cover_url: null, sample_image_urls: [] }]))
   expect((await catalog(execute).search({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('作者：A')
   expect((await catalog(execute).search({ kind: 'lora', query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)).items[0]?.subtitle).toBe('版本：v1 · 建议权重：0')
+})
+
+it.each([
+  ['lora', { file_name: 'linked.safetensors', model_id: 25 }, '25'],
+  ['comfyui-template', { title: 'linked template', model_id: null }, null],
+  ['style', { name: 'shared style', prompt_text: 'style' }, null],
+] as const)('projects the model association of %s in public cards', async (kind, fields, modelId) => {
+  const client = catalog(async () => response([{ id: 1, base_model_id: 2, cover_url: null, sample_image_urls: [], ...fields }]))
+  const page = await client.search({ kind, query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal)
+  expect(page.items[0]).toMatchObject({ baseModelId: '2', modelId })
+})
+
+it.each(['lora', 'comfyui-template'] as const)('requires explicit valid model associations for unfiltered %s cards', async kind => {
+  for (const modelId of [undefined, '0', 'invalid', 0]) {
+    const client = catalog(async () => response([{
+      id: 1, base_model_id: 2, model_id: modelId, file_name: 'resource.safetensors', title: 'Resource',
+      cover_url: null, sample_image_urls: [],
+    }]))
+    await expect(client.search({ kind, query: '', page: 1, baseModelId: null, modelId: null }, new AbortController().signal))
+      .rejects.toMatchObject({ code: 'CATALOG_PROTOCOL_ERROR' })
+  }
 })

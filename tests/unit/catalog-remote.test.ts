@@ -184,7 +184,7 @@ describe('Catalog Remote contribution', () => {
         kind: 'model',
         query: '',
         page: 1,
-        items: [{
+        items: [{ modelId: null,
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
           baseModelId: '2',
           label: 'model.safetensors',
@@ -200,7 +200,7 @@ describe('Catalog Remote contribution', () => {
         kind: 'model',
         query: '',
         page: 1,
-        items: [{
+        items: [{ modelId: null,
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
           baseModelId: '2',
           label: 'model.safetensors',

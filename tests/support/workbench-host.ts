@@ -7,8 +7,8 @@ import { Context } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { vi } from 'vitest'
-import type { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
-import { catalogPageCount, type CatalogItem } from '../../src/catalog/contract.ts'
+import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
+import { CATALOG_KIND_DEFINITIONS, type CatalogItem } from '../../src/catalog/contract.ts'
 import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import * as workbench from '../../src/host/workbench/plugin.ts'
@@ -114,8 +114,25 @@ export async function createWorkbenchHostFixture() {
   const search = vi.fn<CatalogClient['search']>(async input => {
     const context = input.kind === 'comfyui-template' ? { kind: 'comfyui-template' as const, id: '5', title: 'Rain template' }
       : input.kind === 'lora' ? { kind: 'lora' as const, id: '3', file_name: 'rain.safetensors' } : null
-    const items: CatalogItem[] = context ? [{ context, baseModelId: '1', label: input.kind === 'comfyui-template' ? 'Rain template' : 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }] : []
+    const items: CatalogItem[] = context ? [{ context, baseModelId: '1', modelId: null, label: input.kind === 'comfyui-template' ? 'Rain template' : 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }] : []
     return { kind: input.kind, query: input.query, page: input.page, totalCount: items.length, items: input.page === 1 ? items : [] }
+  })
+  const detailSource = new CatalogClient({
+    settings: { get: () => ({ url: 'https://catalog.fixture.test', port: 18093 }) },
+    query: async ({ path, input }) => {
+      const definition = CATALOG_KIND_DEFINITIONS.find(item => item.path === path)!
+      const labels = { model: 'paint.safetensors', lora: 'rain.safetensors', 'comfyui-template': 'Rain template', style: 'Watercolor', 'artist-string': 'Garden artists', character: 'Character', work: 'Work', 'prompt-term': 'Prompt term' }
+      const label = labels[definition.kind]
+      return { status: 'ok', message: null, page: 1, page_size: 1, total_count: 1, results: [{
+        id: input.id, base_model_id: definition.baseModelScoped ? '1' : null, model_id: null,
+        file_name: label, title: label, name: label, 'works.name': 'Work', prompt_text: 'prompt',
+        canonical_tag: label, artist_string: '@artist', aliases_json: [], category_name: null, character_names: [],
+        work_id: '1', style_description: null, category: null, post_count: null, description: null,
+        style_ids: [], lora_id: null, template_type: null, file_format: 'safetensors', precision_or_quantization: 'fp16',
+        author: null, version: null, usage: null, trigger_words_json: ['rain'], weight: 0.65, skill_name: null,
+        cover_url: null, sample_image_urls: [],
+      }] }
+    },
   })
   const catalog = {
     queryComfyuiInstances: vi.fn<CatalogClient['queryComfyuiInstances']>(async () => ({ status: 'ok', message: null, results: [{ id: '8', title: 'win3080' }], page: 1, page_size: 100, total_count: 1 })),
@@ -123,21 +140,7 @@ export async function createWorkbenchHostFixture() {
     resolveLora: vi.fn(async (id: string) => ({ id, file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] })),
     resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'Rain template', base_model_id: '1', model_id: null })),
     search,
-    compatibleResourceIds: vi.fn<CatalogClient['compatibleResourceIds']>(async (input, signal) => {
-      const ids: string[] = []
-      let pages = 1
-      for (let page = 1; page <= pages; page++) {
-        const result = await search({ ...input, query: '', page, baseModelId: null }, signal)
-        pages = catalogPageCount(result.totalCount)
-        ids.push(...result.items.map(item => item.context.id))
-      }
-      return ids
-    }),
-    details: vi.fn(async (raw: unknown) => {
-      const ref = raw as { kind: CatalogItem['context']['kind']; id: string }
-      const labels: Record<CatalogItem['context']['kind'], string> = { model: 'paint.safetensors', lora: 'rain.safetensors', 'comfyui-template': 'Rain template', style: 'Watercolor', 'artist-string': 'Garden artists', character: 'Character', work: 'Work', 'prompt-term': 'Prompt term' }
-      return { item: { label: labels[ref.kind] } }
-    }),
+    details: vi.fn<CatalogClient['details']>((request, signal) => detailSource.details(request, signal)),
   }
   ctx.provide('harnessComfyuiCore' as never, { services: {
     runtime, catalog, workbenchStore: store,

@@ -13,7 +13,7 @@ describe('Catalog details', () => {
     const { api, process } = cli({ ...work, workflow_json: { private: true } })
     const signal = new AbortController().signal
     const details = await api.details({ kind: 'work', id: '1' }, signal)
-    expect(details.item).toEqual({ context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '作品类别：游戏', coverUrl: null, sampleImageUrls: [] })
+    expect(details.item).toEqual({ modelId: null, context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '作品类别：游戏', coverUrl: null, sampleImageUrls: [] })
     expect(details).toMatchObject({ kind: 'work', id: '1', fields: [
       { key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: ['别名'] },
       { key: 'category_name', value: '游戏' }, { key: 'character_names', value: ['角色'] },

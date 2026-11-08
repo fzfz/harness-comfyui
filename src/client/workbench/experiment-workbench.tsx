@@ -9,9 +9,9 @@ import React, {
   type ReactNode,
 } from 'react'
 import {
-  CATALOG_KIND_DEFINITIONS,
   catalogPageCount,
   catalogDefinition,
+  catalogResourceCompatible,
   type CatalogItem,
   type CatalogKind,
 } from '../../catalog/contract.ts'
@@ -225,6 +225,23 @@ function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
     <b>{name}</b>
     <AutosaveField label="权重" inputLabel={`${name} 权重`} value={String(item.weight)}
       options={{ type: 'number', step: 0.05 }} editor={editor} save={save} locked={locked} />
+    <Button kind="quiet small" label={`移除 ${name}`} onClick={onRemove}>×</Button>
+  </div>
+}
+
+function ContextSummary({ item, load, onError, onDetail, onRemove }: {
+  readonly item: TaskDraft['context_refs'][number]
+  readonly load?: CatalogApi['details']
+  readonly onError: (message: string) => void
+  readonly onDetail: () => void
+  readonly onRemove: () => void
+}) {
+  const { details, error } = useCatalogDetails(item, load)
+  const name = details?.kind === item.kind && details.id === item.id ? details.item.label : item.id
+  useEffect(() => { if (error) onError(error) }, [error, onError])
+  return <div className="context-item">
+    <Button kind="quiet small" onClick={onDetail}>{name}</Button>
+    <small>{catalogDefinition(item.kind).label}</small>
     <Button kind="quiet small" label={`移除 ${name}`} onClick={onRemove}>×</Button>
   </div>
 }
@@ -1470,6 +1487,16 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       catalogGallery: null,
     })
   }
+  const openContextDetails = (item: CatalogReference) => {
+    const changedKind = view.catalogFilters.kind !== item.kind
+    if (changedKind) setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
+    navigate(() => store.updateView({
+      page: 'resources',
+      ...(changedKind ? { catalogFilters: { ...store.getSnapshot().view.catalogFilters, kind: item.kind, query: '', page: 1 } } : {}),
+      catalogDetail: item,
+      catalogGallery: null,
+    }))
+  }
   const inspector = branch && inputs && (
     <aside className="inspector">
       <header className="config-head">
@@ -1645,33 +1672,16 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               </Button>
             </div>
             {inputs.context_refs.map((item) => (
-              <div className="context-item" key={`${item.kind}:${item.id}`}>
-                <Button
-                  kind="quiet small"
-                  onClick={() => openCatalog(item.kind)}
-                >
-                  {item.id}
-                </Button>
-                <small>
-                  {
-                    CATALOG_KIND_DEFINITIONS.find(
-                      (kind) => kind.kind === item.kind,
-                    )?.label
-                  }
-                </small>
-                <Button
-                  kind="quiet small"
-                  label={`移除 ${item.id}`}
-                  onClick={() =>
-                    void action('resource-remove', {
-                      id: item.id,
-                      value: item.kind,
-                    })
-                  }
-                >
-                  ×
-                </Button>
-              </div>
+              <ContextSummary
+                key={workbenchContextKey(item)}
+                item={item}
+                load={props.catalog?.details}
+                onError={setMessage}
+                onDetail={() => openContextDetails(item)}
+                onRemove={() => {
+                  if (!locked) void action('resource-remove', { id: item.id, value: item.kind })
+                }}
+              />
             ))}
             {!inputs.context_refs.length && (
               <p className="muted">未添加参考上下文</p>
@@ -2491,10 +2501,12 @@ function ExperimentCatalog({
     ...(selected?.context_refs ?? []),
   ]
   const chosen = (item: CatalogItem) => selection.some(ref => workbenchContextKey(ref) === workbenchContextKey(item.context))
+  const compatibilityTarget = { baseModelId: selected?.base_model_id ?? null, modelId: selected?.generation_input.model?.id ?? null }
   const selectButton = (item: CatalogItem, selected = chosen(item)) => {
     const multiple = item.context.kind !== 'model' && item.context.kind !== 'comfyui-template'
-    const label = selected ? multiple ? '移除' : '已选择' : '选择'
-    return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || selected && !multiple}
+    const compatible = item.context.kind === 'model' || catalogResourceCompatible(item, compatibilityTarget)
+    const label = !compatible ? '需更换生成模型' : selected ? multiple ? '移除' : '已选择' : '选择'
+    return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || !compatible || selected && !multiple}
       label={`${label} ${item.label}`} pressed={selected} onClick={() => selected && multiple ? onRemove(item) : onSelect(item)}>{label}</Button>
   }
   const openGallery = (item: CatalogItem) => onGallery({ kind: item.context.kind, id: item.context.id, index: 0 })

@@ -5,6 +5,7 @@ import { parseCatalogDetails, type CatalogDetailsRequest } from '../../src/catal
 import { WorkbenchRemoteService } from '../../src/host/workbench/remote-service.ts'
 import { WORKBENCH_REMOTE } from '../../src/workbench-remote.ts'
 import { WorkbenchError } from '../../src/workbench/validation.ts'
+import { parseCliGenerationRequest, toGenerationRequest } from '../../src/cli/contract.ts'
 import type { WorkbenchProjection } from '../../src/workbench/contract.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 
@@ -19,6 +20,21 @@ function projection(): WorkbenchProjection {
     }],
   }
 }
+function restrictSelectedResources(catalog: Awaited<ReturnType<typeof createWorkbenchHostFixture>>['catalog'], retainedLoraId?: string) {
+  const read = catalog.details.getMockImplementation()!
+  catalog.details.mockImplementation(async (request, signal) => {
+    const details = await read(request, signal)
+    let item = details.item
+    if (request.kind === 'lora' || request.kind === 'comfyui-template') {
+      item = { ...item, modelId: request.kind === 'lora' && request.id === retainedLoraId ? null : '2' }
+    }
+    if (request.kind === 'style' || request.kind === 'artist-string') item = { ...item, baseModelId: '2' }
+    return parseCatalogDetails({ ...details, item, fields: details.fields.map(field => ({
+      ...field, value: field.key === 'model_id' ? item.modelId : field.key === 'base_model_id' ? item.baseModelId : field.value,
+    })) })
+  })
+}
+
 function fixture() {
   const context = new Context()
   const initializeWorkspace = vi.fn(async () => {})
@@ -38,12 +54,13 @@ it('describes the current branch or a fixed Run input and rejects another Worksp
     expect(await remote.getInputDescription(scope, signal)).toBeNull()
     expect(inspect).not.toHaveBeenCalled()
     await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
     expect(await remote.getInputDescription(scope, signal)).toEqual(description)
     expect(inspect).toHaveBeenLastCalledWith({ templateId: '5', instanceId: '8' }, signal)
     await remote.mutate({ ...scope, type: 'run' }, signal)
     const task = (await remote.getProjection(scope, signal)).tasks[0]!
-    const accepted = await runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'accepted' }, [{ requestId: crypto.randomUUID(), request: { title: task.input.generation_input.title, instanceId: '8', templateId: '5', model: null, parameters: task.input.generation_input.parameters, loras: [] } }], signal, task.task_id)
+    const accepted = await runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'accepted' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
     const runId = accepted.items[0]!.runId
     await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '9' }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal)
@@ -71,10 +88,12 @@ it('previews incompatible model resources without changing the saved draft', asy
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
+    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
-    catalog.search.mockResolvedValue({ kind: 'lora', query: '', page: 1, items: [], totalCount: 0 })
+    restrictSelectedResources(catalog)
 
     await expect(remote.previewModelChange({ ...scope, modelId: '9' }, signal)).resolves.toEqual({
       model: { id: '9', label: 'paint.safetensors' },
@@ -119,7 +138,7 @@ it('uses the current public Catalog labels instead of saved model and LoRA filen
       const label = ref.kind === 'model' ? 'ANIMA display name' : ref.kind === 'lora' ? 'Rain LoRA name' : 'Template display name'
       return parseCatalogDetails({ ...details, item: { ...details.item, label } })
     })
-    catalog.search.mockResolvedValue({ kind: 'lora', query: '', page: 1, items: [], totalCount: 0 })
+    restrictSelectedResources(catalog)
 
     await expect(remote.previewModelChange({ ...scope, modelId: '9' }, signal)).resolves.toEqual({
       model: { id: '9', label: 'ANIMA display name' },
@@ -140,11 +159,16 @@ it('previews interleaved incompatible contexts in selection order while retainin
     const signal = new AbortController().signal
     const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     for (const ref of [{ kind: 'style', id: '7' }, { kind: 'artist-string', id: '8' }, { kind: 'style', id: '11' }, { kind: 'character', id: '9' }, { kind: 'prompt-term', id: '10' }]) {
       await remote.mutate({ ...scope, type: 'resource-select', value: ref }, signal)
     }
-    catalog.search.mockResolvedValue({ kind: 'style', query: '', page: 1, items: [], totalCount: 0 })
-    catalog.details.mockImplementation(async ref => ({ ...(ref as object), item: { label: (ref as { kind: string }).kind === 'model' ? 'paint.safetensors' : (ref as { id: string }).id === '7' ? 'Watercolor' : (ref as { id: string }).id === '11' ? 'Oil painting' : 'Garden artists' } }))
+    restrictSelectedResources(catalog)
+    const read = catalog.details.getMockImplementation()!
+    catalog.details.mockImplementation(async (request, requestSignal) => {
+      const details = await read(request, requestSignal)
+      return { ...details, item: { ...details.item, label: request.kind === 'model' ? 'paint.safetensors' : request.id === '7' ? 'Watercolor' : request.id === '11' ? 'Oil painting' : 'Garden artists' } }
+    })
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
 
     await expect(remote.previewModelChange({ ...scope, modelId: '9' }, signal)).resolves.toEqual({
@@ -173,9 +197,7 @@ it('confirms exactly the model removals and preserves the latest unrelated draft
     }
     await remote.mutate({ ...scope, type: 'update-draft', field: 'references', value: '/reference.png' }, signal)
     await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Before preview' }, signal)
-    const details = catalog.details.getMockImplementation()!
-    catalog.details.mockImplementation(async ref => (ref as { kind: string }).kind === 'style' ? { ...(ref as object), item: { label: 'Watercolor' } } : details(ref))
-    catalog.search.mockImplementation(async input => ({ kind: input.kind, query: input.query, page: input.page, totalCount: input.kind === 'lora' ? 1 : 0, items: input.kind === 'lora' ? [{ context: { kind: 'lora', id: '4', file_name: 'rain.safetensors' }, baseModelId: '1', label: 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }] : [] }))
+    restrictSelectedResources(catalog, '4')
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
     const preview = await remote.previewModelChange({ ...scope, modelId: '9' }, signal)
     expect(preview.removed).toEqual([
@@ -204,7 +226,7 @@ it('confirms exactly the model removals and preserves the latest unrelated draft
 })
 
 
-it('retains compatible template parameters and LoRAs found on later Catalog pages', async () => {
+it('retains compatible template parameters and LoRAs without scanning Catalog pages', async () => {
   const host = await createWorkbenchHostFixture()
   try {
     const { remote, catalog } = host
@@ -216,18 +238,14 @@ it('retains compatible template parameters and LoRAs found on later Catalog page
     await remote.mutate({ ...scope, type: 'update-draft', field: 'seed', value: 77 }, signal)
     await remote.mutate({ ...scope, type: 'update-draft', field: 'references', value: '/reference.png' }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
-    catalog.search.mockImplementation(async input => ({
-      kind: input.kind, query: input.query, page: input.page, totalCount: input.kind === 'lora' ? 9 : 1,
-      items: input.kind === 'comfyui-template' ? [{ context: { kind: 'comfyui-template', id: '5', title: 'Rain template' }, baseModelId: '1', label: 'Rain template', subtitle: '', coverUrl: null, sampleImageUrls: [] }]
-        : (input.page === 1 ? ['3', '11', '12', '13', '14', '15', '16', '17'] : ['4']).map(id => ({ context: { kind: 'lora', id, file_name: 'rain.safetensors' }, baseModelId: '1', label: 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] })),
-    }))
 
     expect(await remote.previewModelChange({ ...scope, modelId: '9' }, signal)).toEqual({ model: { id: '9', label: 'paint.safetensors' }, removed: [] })
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '9' } }, signal)
     const after = (await remote.getProjection(scope, signal)).branches[0]!.draft
     expect(after).toEqual({ ...before, generation_input: { ...before.generation_input, model: { id: '9', file_name: 'paint.safetensors' } } })
     expect((await remote.getInputDescription(scope, signal))?.parameters.some(parameter => parameter.kind === 'seed')).toBe(true)
-    expect(catalog.search).toHaveBeenCalledWith({ kind: 'lora', query: '', page: 2, baseModelId: null, modelId: '9' }, expect.any(AbortSignal))
+    expect(catalog.search).not.toHaveBeenCalled()
+    expect(catalog.details).toHaveBeenCalledWith({ kind: 'lora', id: '4' }, expect.any(AbortSignal))
   } finally { await host.dispose() }
 })
 
@@ -240,7 +258,7 @@ it('rejects a stale model removal acknowledgement after another resource is sele
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal)
-    catalog.search.mockResolvedValue({ kind: 'lora', query: '', page: 1, items: [], totalCount: 0 })
+    restrictSelectedResources(catalog)
     const preview = await remote.previewModelChange({ ...scope, modelId: '9' }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '4' } }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
@@ -262,7 +280,9 @@ it('keeps a draft edit made while confirmed model compatibility is being read', 
     let started!: () => void, release!: () => void
     const reading = new Promise<void>(resolve => { started = resolve })
     const resume = new Promise<void>(resolve => { release = resolve })
-    catalog.search.mockImplementationOnce(async input => { started(); await resume; return { kind: input.kind, query: input.query, page: input.page, items: [], totalCount: 0 } })
+    restrictSelectedResources(catalog)
+    const read = catalog.details.getMockImplementation()!
+    catalog.details.mockImplementationOnce(async (request, requestSignal) => { started(); await resume; return read(request, requestSignal) })
     const pending = remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '9', confirmedRemovals: [{ kind: 'comfyui-template', id: '5' }] } }, signal)
     await reading
     await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Concurrent prompt' }, signal)
@@ -275,7 +295,7 @@ it('keeps a draft edit made while confirmed model compatibility is being read', 
 })
 
 
-it('returns a later Catalog failure without partially previewing or saving a model change', async () => {
+it('returns a selected resource failure without partially previewing or saving a model change', async () => {
   const host = await createWorkbenchHostFixture()
   try {
     const { remote, catalog } = host
@@ -285,9 +305,11 @@ it('returns a later Catalog failure without partially previewing or saving a mod
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
-    catalog.search.mockImplementation(async input => {
-      if (input.page === 2) throw new Error('Source unavailable')
-      return { kind: input.kind, query: input.query, page: input.page, items: [], totalCount: 9 }
+    restrictSelectedResources(catalog)
+    const read = catalog.details.getMockImplementation()!
+    catalog.details.mockImplementation(async (request, requestSignal) => {
+      if (request.kind === 'lora') throw new Error('Source unavailable')
+      return read(request, requestSignal)
     })
 
     await expect(remote.previewModelChange({ ...scope, modelId: '9' }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
@@ -303,11 +325,12 @@ it('cancels an in-flight model preview without changing its branch', async () =>
     const signal = new AbortController().signal
     const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
     let started!: () => void
     const reading = new Promise<void>(resolve => { started = resolve })
-    catalog.search.mockImplementationOnce(async (_input, requestSignal) => new Promise((_resolve, reject) => {
+    catalog.details.mockImplementationOnce(async (_input, requestSignal) => new Promise((_resolve, reject) => {
       requestSignal.addEventListener('abort', () => reject(requestSignal.reason), { once: true })
       started()
     }))
@@ -328,9 +351,10 @@ it.each([null, {}, [null], [{ kind: 'lora', id: '3', label: 'Rain' }]])('rejects
     const signal = new AbortController().signal
     const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
     await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
-    catalog.search.mockResolvedValue({ kind: 'lora', query: '', page: 1, items: [], totalCount: 0 })
+    restrictSelectedResources(catalog)
 
     await expect(remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '9', confirmedRemovals } }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'value.confirmedRemovals' }] } })
     expect((await remote.getProjection(scope, signal)).branches[0]!.draft).toEqual(before)

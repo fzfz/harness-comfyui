@@ -33,7 +33,7 @@ describe('workbench generation input adapter', () => {
   it.each(sizes)('includes $candidate.representation fields in parameter admission and template defaults', async ({ candidate, defaults }) => {
     const description = { parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt' as const, value_type: 'string' as const, current_value: 'template prompt' }], size_candidates: [candidate] }
     const validate = vi.fn(async (_request: GenerationRequest) => {})
-    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => description, validateGenerationRequest: validate }, catalog: { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null }) } })
+    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => description, validateGenerationRequest: validate }, catalog: { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null }) } })
     expect(await adapter.parameterIds(draft.generation_input)).toEqual(['positive_prompt_9', ...Object.keys(defaults)])
     await adapter.validateParameters(draft.generation_input, defaults)
     expect(validate.mock.calls[0]![0].parameters).toEqual(defaults)
@@ -56,7 +56,7 @@ describe('workbench generation input adapter', () => {
   it('restores actual prompt fields and model classification before preparing reused generation input', async () => {
     const description = { parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt' as const, value_type: 'string' as const, current_value: 'template positive' }, { parameter_id: 'negative_prompt_10', kind: 'negative_prompt' as const, value_type: 'string' as const, current_value: 'template negative' }], size_candidates: [sizes[0]!.candidate] }
     let templateModel: string | null = '7'
-    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => description, validateGenerationRequest: async () => {} }, catalog: { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveLora: vi.fn(), resolveGenerationModel: async id => ({ id, file_name: 'model.safetensors', base_model_id: id === '3' ? '5' : '6', description: '', usage: '', skill_name: null }), resolveTemplate: async () => ({ id: '2', title: 'template', base_model_id: '9', model_id: templateModel }) } })
+    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => description, validateGenerationRequest: async () => {} }, catalog: { details: vi.fn(), resolveLora: vi.fn(), resolveGenerationModel: async id => ({ id, file_name: 'model.safetensors', base_model_id: id === '3' ? '5' : '6', description: '', usage: '', skill_name: null }), resolveTemplate: async () => ({ id: '2', title: 'template', base_model_id: '9', model_id: templateModel }) } })
     const input = { ...draft.generation_input, model: { id: '3', file_name: 'model.safetensors' }, parameters: { positive_prompt_9: 'candidate warm glass', width_66: 1024 }, title: 'candidate' }
     const restored = await adapter.resolveGenerationDraft(input, [{ kind: 'character', id: '90071992547409931234' }])
     expect(restored).toEqual({ generation_input: input, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'template negative' }, base_model_id: '5', context_refs: [{ kind: 'character', id: '90071992547409931234' }] })
@@ -96,7 +96,7 @@ describe('workbench generation input adapter', () => {
       expect(source.readTemplate).toHaveBeenCalledWith('2', undefined)
       expect(source.readInstance).toHaveBeenCalledWith('1', undefined)
       await expect(runtime.validateGenerationRequest({ ...request, parameters: { width_1: 2 } })).rejects.toMatchObject({ inputPath: 'parameters.width_1' })
-      const adapter = createWorkbenchInputAdapter({ runtime, catalog: { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) } })
+      const adapter = createWorkbenchInputAdapter({ runtime, catalog: { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) } })
       await expect(adapter.validateGenerationInput({ ...draft.generation_input, parameters: { width_1: 2 } })).rejects.toMatchObject({ issues: [{ path: 'generation_input.parameters.width_1' }] })
       await expect(runtime.validateGenerationRequest(request, AbortSignal.abort())).rejects.toBeDefined()
       expect(official).not.toHaveBeenCalled()
@@ -117,7 +117,7 @@ describe('workbench generation input adapter', () => {
     const compiler = new ComfyWorkflowCompiler({ fetchImplementation: fetchDefinitions, officialApiWorkflowCompiler: { compile: official } })
     const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source, compiler })
     const runtime = new GenerationRuntime({ database, preparer, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media') })
-    const catalog = { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog })
     try {
       const operation = entry === 'prepare' ? adapter.prepareGenerationInput(draft) : adapter.validateGenerationInput(draft.generation_input)
@@ -152,7 +152,7 @@ describe('workbench generation input adapter', () => {
     const compiler = new ComfyWorkflowCompiler({ fetchImplementation: fetchDefinitions, officialApiWorkflowCompiler: { compile: official } })
     const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source, compiler })
     const runtime = new GenerationRuntime({ database, preparer, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media') })
-    const catalog = { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog })
     try {
       await expect(entry === 'prepare' ? adapter.prepareGenerationInput(draft) : adapter.validateGenerationInput(draft.generation_input)).rejects.toMatchObject({
@@ -178,7 +178,7 @@ describe('workbench generation input adapter', () => {
     const compiler = new ComfyWorkflowCompiler({ fetchImplementation: fetchDefinitions, officialApiWorkflowCompiler: { compile: official } })
     const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source, compiler })
     const runtime = new GenerationRuntime({ database, preparer, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media') })
-    const catalog = { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog, signal: controller.signal })
     try {
       const operation = entry === 'prepare' ? adapter.prepareGenerationInput(draft) : adapter.validateGenerationInput(draft.generation_input)
@@ -193,7 +193,7 @@ describe('workbench generation input adapter', () => {
   })
 
   it('resolves all resource classes using catalog files and template defaults while preserving existing selections', async () => {
-    const catalog = { compatibleResourceIds: vi.fn(), details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(async (id: string) => ({ id, file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async (id: string) => ({ id, file_name: 'glass.safetensors', weight: 0.7, trigger_words: ['glass'], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'template', base_model_id: '5', model_id: '3' })) }
+    const catalog = { details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(async (id: string) => ({ id, file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async (id: string) => ({ id, file_name: 'glass.safetensors', weight: 0.7, trigger_words: ['glass'], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'template', base_model_id: '5', model_id: '3' })) }
     const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'width_1', kind: 'width', value_type: 'integer', current_value: 512 }], size_candidates: [] }), validateGenerationRequest: async () => {} }, catalog })
     const current = structuredClone(draft); current.generation_input.loras = [{ id: '4', file_name: 'old.safetensors', weight: 1, trigger_words: [] }]; current.context_refs = [{ kind: 'character', id: '7' }, { kind: 'style', id: '8' }]
     const resolved = await adapter.resolveResourceRefs([{ kind: 'model', id: '3' }, { kind: 'lora', id: '4' }, { kind: 'comfyui-template', id: '2' }, { kind: 'character', id: '7' }], current)
@@ -206,7 +206,7 @@ describe('workbench generation input adapter', () => {
   })
 
   it('discards previous template parameters when the replacement has no selected instance', async () => {
-    const catalog = { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'replacement', base_model_id: '5', model_id: null })) }
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async (id: string) => ({ id, title: 'replacement', base_model_id: '5', model_id: null })) }
     const runtime = { inspectTemplateRuntimeParameters: vi.fn(), validateGenerationRequest: vi.fn() }
     const current: TaskDraft = { ...structuredClone(draft), generation_input: { ...draft.generation_input, instance_id: null, parameters: { steps_1: 18, positive_prompt_9: 'previous template prompt' } } }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog })
@@ -222,7 +222,7 @@ describe('workbench generation input adapter', () => {
 
   it('maps a synchronous CLI request validation failure at the published generation input path', async () => {
     const runtime = { inspectTemplateRuntimeParameters: vi.fn(), validateGenerationRequest: vi.fn() }
-    const catalog = { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog })
     await expect(adapter.validateGenerationInput({ ...draft.generation_input, title: '' }, [], 'artifact.generation_input')).rejects.toMatchObject({
       code: 'WORKBENCH_GENERATION_INVALID', issues: [{ path: 'artifact.generation_input' }],
@@ -233,7 +233,7 @@ describe('workbench generation input adapter', () => {
   it('reports catalog failures, filename mismatches and runtime field errors at the published artifact path', async () => {
     let failure: unknown
     const runtime = { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'width_1', kind: 'width' as const, value_type: 'integer' as const, current_value: 512 }], size_candidates: [] }), validateGenerationRequest: async () => { if (failure) throw failure } }
-    const catalog = { compatibleResourceIds: vi.fn(), details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(async () => ({ id: '3', file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async () => ({ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: [], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: '3' })) }
+    const catalog = { details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(async () => ({ id: '3', file_name: 'model.safetensors', base_model_id: '5', description: '', usage: '', skill_name: null })), resolveLora: vi.fn(async () => ({ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: [], base_model_id: '5', model_id: '3', description: '', usage: '' })), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: '3' })) }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog })
     const input = { ...draft.generation_input, model: { id: '3', file_name: 'model.safetensors' }, loras: [{ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: [] }] }
     await adapter.validateGenerationInput(input)
@@ -255,14 +255,14 @@ describe('workbench generation input adapter', () => {
 
   it('requires each nonempty prompt to have one actual template target', async () => {
     const runtime = { inspectTemplateRuntimeParameters: vi.fn(async () => ({ parameters: [], size_candidates: [] })), validateGenerationRequest: vi.fn(async () => {}) }
-    const adapter = createWorkbenchInputAdapter({ runtime, catalog: { compatibleResourceIds: vi.fn(), details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() } })
+    const adapter = createWorkbenchInputAdapter({ runtime, catalog: { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() } })
     await expect(adapter.prepareGenerationInput(draft)).rejects.toMatchObject({ issues: [{ path: 'prompt_input.positive_prompt' }] })
     await expect(adapter.prepareGenerationInput({ ...draft, generation_input: { ...draft.generation_input, instance_id: null } })).rejects.toMatchObject({ code: 'WORKBENCH_TEMPLATE_REQUIRED' })
   })
 
   it('maps prompts to inspected parameter ids and delegates proposed parameter values to runtime validation', async () => {
     const validate = vi.fn(async (_request: GenerationRequest) => {})
-    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt', value_type: 'string', current_value: '' }, { parameter_id: 'width_1', kind: 'width', value_type: 'integer', current_value: 512, minimum: 64, maximum: 2048 }], size_candidates: [] }), validateGenerationRequest: validate }, catalog: { compatibleResourceIds: vi.fn(), details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() } })
+    const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => ({ parameters: [{ parameter_id: 'positive_prompt_9', kind: 'positive_prompt', value_type: 'string', current_value: '' }, { parameter_id: 'width_1', kind: 'width', value_type: 'integer', current_value: 512, minimum: 64, maximum: 2048 }], size_candidates: [] }), validateGenerationRequest: validate }, catalog: { details: vi.fn(async () => ({} as never)), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn() } })
     const prepared = await adapter.prepareGenerationInput(draft)
     expect(prepared.parameters).toEqual({ positive_prompt_9: 'rain on glass' })
     await adapter.validateParameters(prepared, { width_1: 1024 }, 'artifact.parameters')

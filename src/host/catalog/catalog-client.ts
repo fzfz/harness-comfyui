@@ -10,6 +10,7 @@ import {
   CATALOG_PAGE_SIZE,
   CATALOG_QUERY_TIMEOUT_MS,
   catalogDefinition,
+  catalogResourceCompatible,
   parseBaseModelList,
   parseCatalogComfyuiInstancePage,
   parseCatalogComfyuiInstanceQueryRequest,
@@ -267,6 +268,7 @@ function normalizeItem(kind: CatalogKind, result: Record<string, unknown>): Cata
   return Object.freeze({
     context: sourceContext(kind, id, result),
     baseModelId: definition.baseModelScoped ? sourceNullableId(result.base_model_id) : null,
+    modelId: kind === 'lora' || kind === 'comfyui-template' ? sourceNullableId(result.model_id) : null,
     label: sourceLabel(result[definition.labelField]),
     subtitle: sourceSubtitle(result, definition.subtitleFields, sourceLabel(result[definition.labelField])),
     coverUrl: sourceCoverUrl(result.cover_url),
@@ -402,26 +404,19 @@ export class CatalogClient {
 
   private async collectMatchingRecords(request: CatalogQueryRequest, input: Record<string, unknown>, signal: AbortSignal): Promise<Record<string, unknown>[]> {
     const matches: Record<string, unknown>[] = []
-    const modelScoped = request.modelId !== null && usesModelAssociation(request.kind)
+    const target = { baseModelId: sourceId(input.base_model_id), modelId: request.modelId }
     let pageCount = 1
     for (let page = 1; page <= pageCount; page++) {
       signal.throwIfAborted()
       const source = sourcePage({ ...request, page }, await this.run(catalogDefinition(request.kind).path, { ...input, page }, signal))
       pageCount = Math.ceil(source.totalCount / CATALOG_PAGE_SIZE)
       for (const record of source.records) {
-        if (!modelScoped) { matches.push(record); continue }
-        const modelId = request.kind === 'model' ? sourceId(record.id) : sourceNullableId(record.model_id)
-        if (modelId === null || modelId === request.modelId) matches.push(record)
+        const item = normalizeItem(request.kind, record)
+        if (request.kind === 'model' && item.context.id !== request.modelId) continue
+        if (catalogResourceCompatible(item, target)) matches.push(record)
       }
     }
     return matches
-  }
-
-  async compatibleResourceIds(input: { kind: CatalogKind; modelId: string }, signal: AbortSignal): Promise<readonly string[]> {
-    const request = parseCatalogQueryRequest({ ...input, query: '', page: 1, baseModelId: null })
-    const sourceInput = await this.searchInput(request, signal)
-    if (sourceInput === null) return []
-    return (await this.collectMatchingRecords(request, sourceInput, signal)).map(record => sourceId(record.id))
   }
 
   async search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage> {

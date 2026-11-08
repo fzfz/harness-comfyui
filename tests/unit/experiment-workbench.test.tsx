@@ -520,7 +520,7 @@ describe('experiment workbench public interactions', () => {
       }),
     )
     await click(renderer, '移除 玻璃 LoRA')
-    await click(renderer, '移除 14')
+    await click(renderer, '移除 花房作品')
     await change(renderer, '本次执行预设', 'preset')
     await change(renderer, '持续实验', 'continuous')
     expect(onAction).toHaveBeenLastCalledWith(
@@ -1278,6 +1278,7 @@ describe('experiment workbench forms and task results', () => {
 const catalogItems: readonly CatalogItem[] = [
   {
     baseModelId: '1',
+    modelId: null,
     context: { kind: 'model', id: '11', file_name: 'model.safetensors' },
     label: '模型',
     subtitle: '生成模型',
@@ -1286,6 +1287,7 @@ const catalogItems: readonly CatalogItem[] = [
   },
   {
     baseModelId: null,
+    modelId: null,
     context: { kind: 'lora', id: '13', file_name: 'glass.safetensors' },
     label: '玻璃 LoRA',
     subtitle: '玻璃细节',
@@ -1294,6 +1296,7 @@ const catalogItems: readonly CatalogItem[] = [
   },
   {
     baseModelId: null,
+    modelId: null,
     context: { kind: 'work', id: '14', name: '花房作品' },
     label: '花房作品',
     subtitle: '玻璃建筑',
@@ -1302,6 +1305,7 @@ const catalogItems: readonly CatalogItem[] = [
   },
   {
     baseModelId: null,
+    modelId: null,
     context: {
       kind: 'character',
       id: '15',
@@ -1316,6 +1320,7 @@ const catalogItems: readonly CatalogItem[] = [
   },
   {
     baseModelId: null,
+    modelId: null,
     context: {
       kind: 'style',
       id: '16',
@@ -1329,6 +1334,7 @@ const catalogItems: readonly CatalogItem[] = [
   },
   {
     baseModelId: null,
+    modelId: null,
     context: { kind: 'prompt-term', id: '17', tag: 'glass' },
     label: 'glass',
     subtitle: '提示词',
@@ -1337,6 +1343,7 @@ const catalogItems: readonly CatalogItem[] = [
   },
   {
     baseModelId: null,
+    modelId: null,
     context: {
       kind: 'artist-string',
       id: '18',
@@ -1350,6 +1357,7 @@ const catalogItems: readonly CatalogItem[] = [
   },
   {
     baseModelId: null,
+    modelId: null,
     context: { kind: 'comfyui-template', id: '12', title: '文生图' },
     label: '文生图',
     subtitle: 'Workflow',
@@ -2288,6 +2296,7 @@ describe('experiment workbench Catalog removal persistence', () => {
     try {
       const created = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '资源选择', goal: '验证目录选择' } }, signal)
       const scope = { workspaceId: created.workspaceId, workId: created.workId!, branchId: created.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '13' } }, signal)
       await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '19' } }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'lora-weight', id: '13', value: 0.35 }, signal)
@@ -2522,6 +2531,7 @@ describe('experiment workbench LoRA draft persistence', () => {
     try {
       const created = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'LoRA 草稿', goal: '保留运行输入' } }, signal)
       const scope = { workspaceId: created.workspaceId, workId: created.workId!, branchId: created.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
       await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'rain on glass' }, signal)
@@ -2578,8 +2588,8 @@ describe('experiment workbench LoRA draft persistence', () => {
 
 describe('experiment workbench selected template names', () => {
   const items: CatalogItem[] = [
-    { baseModelId: '1', context: { kind: 'comfyui-template', id: '43', title: '模板 A' }, label: '模板 A', subtitle: '', coverUrl: null, sampleImageUrls: [] },
-    { baseModelId: '1', context: { kind: 'comfyui-template', id: '41', title: '模板 B' }, label: '模板 B', subtitle: '', coverUrl: null, sampleImageUrls: [] },
+    { baseModelId: '1', modelId: null, context: { kind: 'comfyui-template', id: '43', title: '模板 A' }, label: '模板 A', subtitle: '', coverUrl: null, sampleImageUrls: [] },
+    { baseModelId: '1', modelId: null, context: { kind: 'comfyui-template', id: '41', title: '模板 B' }, label: '模板 B', subtitle: '', coverUrl: null, sampleImageUrls: [] },
   ]
   const templateCatalog = () => {
     const catalog = makeCatalog(), search = vi.mocked(catalog.search).getMockImplementation()!, details = vi.mocked(catalog.details).getMockImplementation()!
@@ -2619,6 +2629,7 @@ describe('experiment workbench selected template names', () => {
     try {
       const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模板参数', goal: '切换模板输入' } }, signal)
       const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'glass house' }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'negative_prompt', value: 'blur' }, signal)
@@ -2672,6 +2683,7 @@ describe('experiment workbench selected template names', () => {
     try {
       const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '参数队列', goal: '切换模板后结束原参数保存' } }, signal)
       const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
       const environment = await host.remote.getEnvironment({}, signal)
       const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
@@ -2712,6 +2724,7 @@ describe('experiment workbench selected template names', () => {
     try {
       const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模板字段', goal: '切换可用参数' } }, signal)
       const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'shared prompt' }, signal)
       const environment = await host.remote.getEnvironment({}, signal)
@@ -2763,6 +2776,7 @@ describe('experiment workbench selected template names', () => {
     try {
       const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模板名称', goal: '读取目录名称' } }, signal)
       const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       const environment = await host.remote.getEnvironment({}, signal)
       const catalog = templateCatalog(), memory = new Map<string, string>()
       const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
@@ -2856,7 +2870,7 @@ describe('experiment workbench generation model change confirmation', () => {
     baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'SDXL' }] })),
     search: vi.fn(async request => ({
       ...request, totalCount: 1,
-      items: [{ context: { kind: 'model' as const, id: '21', file_name: 'anima.safetensors' }, baseModelId: '1', label: 'ANIMA3', subtitle: '', coverUrl: null, sampleImageUrls: [] }],
+      items: [{ context: { kind: 'model' as const, id: '21', file_name: 'anima.safetensors' }, baseModelId: '1', modelId: null, label: 'ANIMA3', subtitle: '', coverUrl: null, sampleImageUrls: [] }],
     })),
     details: makeCatalog().details,
   })
@@ -2890,6 +2904,12 @@ describe('experiment workbench generation model change confirmation', () => {
     try {
       const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模型确认', goal: '保留兼容资源' } }, signal)
       const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      const sourceDetails = host.catalog.details.getMockImplementation()!
+      host.catalog.details.mockImplementation(async (ref, requestSignal) => {
+        const details = await sourceDetails(ref, requestSignal)
+        const item = ref as { kind: string; id: string }
+        return { ...details, item: { ...details.item, modelId: ['comfyui-template', 'style', 'artist-string'].includes(item.kind) || item.kind === 'lora' && item.id === '3' ? '2' : null } }
+      })
       for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }, { kind: 'style', id: '7' }, { kind: 'artist-string', id: '8' }, { kind: 'character', id: '9' }, { kind: 'prompt-term', id: '10' }]) {
         await host.remote.mutate({ ...scope, type: 'resource-select', value }, signal)
       }
@@ -2897,13 +2917,13 @@ describe('experiment workbench generation model change confirmation', () => {
       await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'before preview' }, signal)
       const data = await host.remote.getProjection(scope, signal), before = structuredClone(data.branches[0]!.draft)
       host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: 'ANIMA3', base_model_id: '1' }))
-      host.catalog.search.mockImplementation(async input => ({ kind: input.kind, query: input.query, page: input.page, totalCount: input.kind === 'lora' ? 1 : 0, items: input.kind === 'lora' ? [{ context: { kind: 'lora', id: '4', file_name: 'rain.safetensors' }, baseModelId: '1', label: 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }] : [] }))
+      host.catalog.search.mockImplementation(async input => ({ kind: input.kind, query: input.query, page: input.page, totalCount: input.kind === 'lora' ? 1 : 0, items: input.kind === 'lora' ? [{ context: { kind: 'lora', id: '4', file_name: 'rain.safetensors' }, baseModelId: '1', modelId: null, label: 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }] : [] }))
       const details = host.catalog.details.getMockImplementation()!
-      host.catalog.details.mockImplementation(async ref => {
-        const kind = (ref as { kind: string }).kind
+      host.catalog.details.mockImplementation(async (ref, requestSignal) => {
+        const result = await details(ref, requestSignal), kind = (ref as { kind: string }).kind
         return kind === 'style' || kind === 'artist-string'
-          ? { item: { label: kind === 'style' ? '透明水彩' : '花园插画组合' } }
-          : details(ref)
+          ? { ...result, item: { ...result.item, label: kind === 'style' ? '透明水彩' : '花园插画组合' } }
+          : result
       })
       const onAction = vi.fn(request => host.remote.mutate(request, signal))
       const { renderer } = await mount(data, {
@@ -3072,7 +3092,7 @@ describe('experiment workbench generation model selection', () => {
       { id: '16', file_name: 'miaomiaoHarem_anima16.safetensors', base_model_id: '1' },
     ]
     const items: CatalogItem[] = records.map(record => ({
-      context: { kind: 'model', id: record.id, file_name: record.file_name }, baseModelId: record.base_model_id,
+      context: { kind: 'model', id: record.id, file_name: record.file_name }, baseModelId: record.base_model_id, modelId: null,
       label: record.file_name, subtitle: '', coverUrl: null, sampleImageUrls: [],
     }))
     const catalog: CatalogApi = {
@@ -3850,6 +3870,203 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     expect(
       renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked,
     ).toBe(true)
+  })
+})
+
+describe('experiment workbench Catalog resource compatibility controls', () => {
+  it.each(['card', 'details'] as const)('prioritizes incompatible selected resources and permits model switching from the %s', async entry => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    const lora: CatalogItem = { ...catalogItems[1]!, baseModelId: '2', modelId: null }
+    const model: CatalogItem = { ...catalogItems[0]!, baseModelId: '2', context: { ...catalogItems[0]!.context, id: '21' }, label: '其他底模模型' }
+    const details = vi.mocked(catalog.details).getMockImplementation()!
+    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: request.kind === 'lora' ? [lora] : request.kind === 'model' ? [model] : [], totalCount: 1 }))
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => request.kind === 'lora' || request.kind === 'model' ? { ...request, item: request.kind === 'lora' ? lora : model, fields: [] } : details(request, signal))
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '添加 LoRA')
+    if (entry === 'details') await click(renderer, '查看详情 玻璃 LoRA')
+    const panel = () => renderer.root.findByProps({ className: 'catalog-content' })
+    expect(panel().findByProps({ 'aria-label': '需更换生成模型 玻璃 LoRA' }).props.disabled).toBe(true)
+    expect(panel().findByProps({ 'aria-label': '需更换生成模型 玻璃 LoRA' }).props['aria-pressed']).toBe(true)
+    await click(renderer, '更换生成模型')
+    if (entry === 'details') await click(renderer, '查看详情 其他底模模型')
+    expect(panel().findByProps({ 'aria-label': '选择 其他底模模型' }).props.disabled).toBe(false)
+    await click(renderer, '选择 其他底模模型')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'resource-select', id: '21', value: { kind: 'model', id: '21' } }))
+  })
+
+  it('keeps a base-bound template unavailable for an empty draft while its details stay readable', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft = structuredClone(draft)
+    const template: CatalogItem = { ...catalogItems[7]!, baseModelId: '1', modelId: null }
+    const details = vi.mocked(catalog.details).getMockImplementation()!
+    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: request.kind === 'comfyui-template' ? [template] : [], totalCount: 1 }))
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => request.kind === 'comfyui-template' ? { ...request, item: template, fields: [] } : details(request, signal))
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '选择 Workflow 模板')
+    const panel = () => renderer.root.findByProps({ className: 'catalog-content' })
+    expect(panel().findByProps({ 'aria-label': '需更换生成模型 文生图' }).props.disabled).toBe(true)
+    await click(renderer, '查看详情 文生图')
+    expect(panel().findAllByType('h2').map(nodeText)).toEqual(['文生图'])
+    expect(panel().findByProps({ 'aria-label': '需更换生成模型 文生图' }).props.disabled).toBe(true)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it.each(['card', 'details'] as const)('uses current input compatibility in the %s selection button while leaving resource details available', async entry => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft.generation_input.loras = []
+    const item: CatalogItem = { ...catalogItems[1]!, baseModelId: '1', modelId: '21', label: '指定模型 LoRA' }
+    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: request.kind === 'lora' ? [item] : [], totalCount: request.kind === 'lora' ? 1 : 0 }))
+    const details = vi.mocked(catalog.details).getMockImplementation()!
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => request.kind === 'lora' ? { ...request, item, fields: [] } : details(request, signal))
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '添加 LoRA')
+    if (entry === 'details') await click(renderer, '查看详情 指定模型 LoRA')
+    const panel = renderer.root.findByProps({ className: entry === 'card' ? 'catalog-card ' : 'catalog-detail' })
+    const button = panel.findByProps({ 'aria-label': '需更换生成模型 指定模型 LoRA' })
+    expect(nodeText(button)).toBe('需更换生成模型')
+    expect(button.props.disabled).toBe(true)
+    expect(button.props['aria-pressed']).toBe(false)
+    if (entry === 'card') await click(renderer, '查看详情 指定模型 LoRA')
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['指定模型 LoRA'])
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
+describe('experiment workbench selected context summaries', () => {
+  it('shows the Catalog name and type for all context kinds and opens their details with the reference filter behavior', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    const contexts = catalogItems.filter(item => ['work', 'character', 'style', 'prompt-term', 'artist-string'].includes(item.context.kind))
+    data.branches[0]!.draft.context_refs = contexts.map(item => ({ kind: item.context.kind, id: item.context.id })) as TaskDraft['context_refs']
+    const { renderer, onAction } = await mount(data, { catalog })
+    const summaries = () => renderer.root.findByProps({ 'aria-label': '参考上下文' }).findAllByProps({ className: 'context-item' })
+    expect(summaries().map(node => node.findAllByType('button').map(nodeText))).toEqual([
+      ['花房作品', '×'], ['角色', '×'], ['柔光', '×'], ['glass', '×'], ['画师串', '×'],
+    ])
+    expect(summaries().map(node => node.findAllByType('small').map(nodeText))).toEqual([
+      ['作品'], ['角色'], ['画师或画风'], ['提示词条目'], ['画师串'],
+    ])
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '筛选生成模型', '11')
+    await click(renderer, '作品')
+    await change(renderer, '搜索资源', 'glass')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    await click(renderer, '下一页')
+    await click(renderer, '返回结果')
+    await click(renderer, '花房作品')
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['花房作品'])
+    await click(renderer, '返回资源列表')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('glass')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('2 / 7')
+    await act(async () => summaries()[1]!.findAllByType('button')[0]!.props.onClick())
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['角色'])
+    expect(renderer.root.findByProps({ className: 'catalog-kinds' }).findAllByProps({ 'aria-pressed': true }).map(nodeText)).toEqual(['角色'])
+    await click(renderer, '返回资源列表')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 7')
+    await click(renderer, 'LoRA')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('1')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('11')
+    expect(onAction).not.toHaveBeenCalled()
+  })
+  it.each(['work', 'character', 'style', 'prompt-term', 'artist-string'] as const)('removes only the %s context with a shared ID and persists card and detail reselection through the public Host', async kind => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const created = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '参考上下文', goal: '保留资源身份' } }, signal)
+      const scope = { workspaceId: created.workspaceId, workId: created.workId!, branchId: created.branchId! }
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
+      const contexts = catalogItems.filter(item => ['work', 'character', 'style', 'prompt-term', 'artist-string'].includes(item.context.kind))
+        .map(item => ({ ...item, context: { ...item.context, id: '14' } })) as CatalogItem[]
+      for (const item of contexts) await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: item.context.kind, id: item.context.id } }, signal)
+      const original = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
+      const item = contexts.find(item => item.context.kind === kind)!
+      const catalog = makeCatalog(), search = vi.mocked(catalog.search).getMockImplementation()!, details = vi.mocked(catalog.details).getMockImplementation()!
+      vi.mocked(catalog.search).mockImplementation(async (request, currentSignal) => {
+        const matching = contexts.filter(item => item.context.kind === request.kind)
+        return matching.length ? { ...request, items: matching, totalCount: matching.length } : search(request, currentSignal)
+      })
+      vi.mocked(catalog.details).mockImplementation(async (request, currentSignal) => {
+        const matching = contexts.find(item => item.context.kind === request.kind && item.context.id === request.id)
+        return matching ? { ...request, item: matching, fields: [] } : details(request, currentSignal)
+      })
+      const memory = new Map<string, string>()
+      const options: NonNullable<Parameters<typeof mount>[1]> = {
+        catalog, workspaceId: scope.workspaceId, workspaces: [{ id: scope.workspaceId, name: '参考资源', path: '/workspace/project' }],
+        storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
+        remote: {
+          getProjection: request => host.remote.getProjection(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
+        },
+        onAction: request => host.remote.mutate(request, signal),
+      }
+      const data = await host.remote.getProjection(scope, signal)
+      const { renderer } = await mount(data, options)
+      const summary = () => renderer.root.findByProps({ 'aria-label': '参考上下文' })
+      await click(renderer, `移除 ${item.label}`)
+      const remaining = original.context_refs.filter(ref => ref.kind !== kind)
+      const saved = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
+      expect(saved).toEqual({ ...original, context_refs: remaining })
+      expect(summary().findAllByProps({ className: 'context-item' })).toHaveLength(4)
+      await click(renderer, '添加参考上下文')
+      await act(async () => renderer.root.findByProps({ className: 'catalog-kinds' }).findAllByType('button').find(button => nodeText(button) === ({ work: '作品', character: '角色', style: '画师或画风', 'prompt-term': '提示词条目', 'artist-string': '画师串' })[kind])!.props.onClick())
+      await click(renderer, `选择 ${item.label}`)
+      expect(renderer.root.findByProps({ className: 'catalog-content' }).findByProps({ 'aria-label': `移除 ${item.label}` }).props['aria-pressed']).toBe(true)
+      await act(async () => renderer.root.findByProps({ className: 'catalog-content' }).findByProps({ 'aria-label': `移除 ${item.label}` }).props.onClick())
+      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft.context_refs).toEqual(remaining)
+      await click(renderer, `查看详情 ${item.label}`)
+      await click(renderer, `选择 ${item.label}`)
+      await act(async () => renderer.root.findByProps({ className: 'catalog-detail' }).findByProps({ 'aria-label': `移除 ${item.label}` }).props.onClick())
+      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft.context_refs).toEqual(remaining)
+      await click(renderer, `选择 ${item.label}`)
+      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft).toEqual({ ...original, context_refs: [...remaining, { kind, id: '14' }] })
+      await act(() => renderer.unmount())
+      const reopened = await mount(data, options)
+      expect(reopened.renderer.root.findByProps({ className: 'catalog-detail' }).findByProps({ 'aria-label': `移除 ${item.label}` }).props['aria-pressed']).toBe(true)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': '参考上下文' }).findAllByProps({ className: 'context-item' })).toHaveLength(5)
+      expect(nodeText(reopened.renderer.root.findByProps({ 'aria-label': '参考上下文' }))).toContain(item.label)
+      await act(() => reopened.renderer.unmount())
+    } finally { await host.dispose() }
+  })
+
+  it('aborts removed context reads and keeps a same-ID replacement name after a late response', async () => {
+    const data = fullProjection(), catalog = makeCatalog(), details = vi.mocked(catalog.details).getMockImplementation()!
+    data.runs = []
+    data.branches[0]!.draft.context_refs = [{ kind: 'work', id: 'same-id' }]
+    let finish!: () => Promise<void>, pendingSignal!: AbortSignal
+    vi.mocked(catalog.details).mockImplementation((request, signal) => request.kind === 'work'
+      ? new Promise(resolve => { pendingSignal = signal; finish = async () => resolve(await details(request, signal)) })
+      : details(request, signal))
+    const onAction = vi.fn(async () => { data.branches[0]!.draft.context_refs = [{ kind: 'style', id: 'same-id' }] })
+    const { renderer } = await mount(data, { catalog, onAction })
+    await click(renderer, '移除 same-id')
+    expect(pendingSignal.aborted).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '参考上下文' }))).toContain('柔光')
+    await act(async () => finish())
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '参考上下文' }))).toContain('柔光')
+    expect(nodeText(renderer.root.findByProps({ 'aria-label': '参考上下文' }))).not.toContain('花房作品')
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'resource-remove', id: 'same-id', value: 'work' }))
+  })
+
+  it('reports a context read error through the existing toast and locks context mutations while inspecting a Run', async () => {
+    const data = fullProjection(), catalog = makeCatalog(), details = vi.mocked(catalog.details).getMockImplementation()!
+    data.branches[0]!.draft.context_refs = [{ kind: 'work', id: '14' }]
+    vi.mocked(catalog.details).mockImplementation((request, signal) => request.kind === 'work' ? Promise.reject(new Error('作品读取失败，请重试。')) : details(request, signal))
+    const { renderer, onAction } = await mount(data, { catalog })
+    expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('作品读取失败，请重试。')
+    await click(renderer, '查看运行 r1')
+    const buttons = renderer.root.findByProps({ 'aria-label': '参考上下文' }).findAllByProps({ className: 'context-item' })[0]!.findAllByType('button')
+    expect(buttons.every(button => !button.props.disabled)).toBe(true)
+    await click(renderer, '移除 14')
+    expect(onAction).not.toHaveBeenCalled()
+    await act(async () => buttons[0]!.props.onClick())
+    expect(renderer.root.findAllByProps({ className: 'catalog-detail' })).toHaveLength(1)
+    expect(onAction).not.toHaveBeenCalled()
   })
 })
 

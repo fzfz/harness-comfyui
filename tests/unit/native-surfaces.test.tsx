@@ -74,7 +74,7 @@ const { act, create } = await vi.importActual('react-test-renderer') as {
 }
 
 const CONTEXT_OPTIONS: readonly CatalogItem[] = [
-  {
+  { modelId: null,
     baseModelId: null,
     context: { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
     label: 'wai_txt2img_lora',
@@ -85,7 +85,7 @@ const CONTEXT_OPTIONS: readonly CatalogItem[] = [
       'http://127.0.0.1:18092/media/images/template-3.webp',
     ],
   },
-  {
+  { modelId: null,
     baseModelId: null,
     context: { kind: 'comfyui-template', id: '36', title: 'wai_txt2img' },
     label: 'wai_txt2img',
@@ -93,7 +93,7 @@ const CONTEXT_OPTIONS: readonly CatalogItem[] = [
     coverUrl: null,
     sampleImageUrls: [],
   },
-  {
+  { modelId: null,
     baseModelId: null,
     context: { kind: 'lora', id: '91', file_name: 'StS_Age_Slider_Illustrious_v1.safetensors' },
     label: 'StS_Age_Slider_Illustrious_v1.safetensors',
@@ -1059,7 +1059,7 @@ it('returns from details and its gallery without changing the draft, selection o
   act(() => renderer!.unmount())
 })
 it('shows detail failures, retries and renders zero, empty and multi-value fields', async () => {
-  const result: CatalogDetails = { kind: 'prompt-term', id: '1', item: { context: { kind: 'prompt-term', id: '1', tag: 'tag' }, baseModelId: null, label: 'tag', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [
+  const result: CatalogDetails = { kind: 'prompt-term', id: '1', item: { modelId: null, context: { kind: 'prompt-term', id: '1', tag: 'tag' }, baseModelId: null, label: 'tag', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [
     { key: 'post_count', value: 0 }, { key: 'aliases_json', value: ['a', 'b'] }, { key: 'category', value: null },
     { key: 'description', value: '' }, { key: 'character_names', value: [] },
   ] }
@@ -1082,7 +1082,7 @@ it('cancels closed details and ignores late responses and failures', async () =>
   expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.loading)
   act(() => { renderer!.update(createElement(CatalogDetailsPanel, { ...props, request: { kind: 'work', id: '2' } })) })
   expect(pending[0]!.signal.aborted).toBe(true)
-  await act(async () => { pending[0]!.resolve({ kind: 'work', id: '1', item: { context: { kind: 'work', id: '1', name: '旧内容' }, baseModelId: null, label: '旧内容', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'name', value: '旧内容' }] }) })
+  await act(async () => { pending[0]!.resolve({ kind: 'work', id: '1', item: { modelId: null, context: { kind: 'work', id: '1', name: '旧内容' }, baseModelId: null, label: '旧内容', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'name', value: '旧内容' }] }) })
   expect(JSON.stringify(renderer!.toJSON())).not.toContain('旧内容')
   act(() => renderer!.unmount())
   await act(async () => pending[1]!.reject(new Error('late')))

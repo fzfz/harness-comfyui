@@ -47,11 +47,34 @@ async function fixture() {
 
 it('keeps source prompts, context and base model when running a branch from a Run, experience or generation candidate', async () => {
   const { remote, catalog, runtime, store, run, variables } = await fixture()
-  catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: id === '2' ? 'source.safetensors' : 'other.safetensors', base_model_id: id === '2' ? '1' : '9' }))
+  const models = {
+    '2': { id: '2', file_name: 'source.safetensors', base_model_id: '1' },
+    '3': { id: '3', file_name: 'other.safetensors', base_model_id: '9' },
+  }
+  const templates = {
+    '5': { id: '5', title: 'Source rain template', base_model_id: '1', model_id: null },
+    '6': { id: '6', title: 'Current sunshine template', base_model_id: '9', model_id: null },
+  }
+  catalog.resolveGenerationModel.mockImplementation(async id => models[id as keyof typeof models])
+  catalog.resolveTemplate.mockImplementation(async id => templates[id as keyof typeof templates])
+  const readDetails = catalog.details.getMockImplementation()!
+  catalog.details.mockImplementation(async (request, requestSignal) => {
+    const details = await readDetails(request, requestSignal)
+    const source = request.kind === 'model' ? models[request.id as keyof typeof models]
+      : request.kind === 'comfyui-template' ? templates[request.id as keyof typeof templates] : null
+    if (!source) return details
+    const context = 'file_name' in source ? { kind: 'model' as const, id: source.id, file_name: source.file_name }
+      : { kind: 'comfyui-template' as const, id: source.id, title: source.title }
+    return {
+      ...details,
+      item: { ...details.item, context, baseModelId: source.base_model_id, label: 'file_name' in source ? source.file_name : source.title },
+      fields: details.fields.map(field => ({ ...field, value: field.key in source ? source[field.key as keyof typeof source] : field.value })),
+    }
+  })
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '4' } }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Source rain on glass' }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'negative_prompt', value: 'Source blur' }, signal())
@@ -70,7 +93,8 @@ it('keeps source prompts, context and base model when running a branch from a Ru
   const experience = (await remote.getProjection(selected, signal())).experiences[0]!
   await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Current branch sunshine' }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'negative_prompt', value: 'Current branch darkness' }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '3' } }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '3', confirmedRemovals: [{ kind: 'comfyui-template', id: '5' }] } }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-remove', id: '4', value: 'character' }, signal())
   expect(store.getBranch(selected.branchId!).draft).toMatchObject({ base_model_id: '9', prompt_input: { positive_prompt: 'Current branch sunshine' }, context_refs: [] })
   const fromRun = await remote.mutate({ ...selected, type: 'create-branch', runId: source.actual.run_id, value: { name: 'From source Run', original_request: 'Repeat the source Run' } }, signal())
@@ -98,6 +122,7 @@ it('accepts a comparison with two Run references and rejects a single reference 
   const { remote, runtime, run, variables } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Compare rain treatments' } }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
   const runIds: string[] = []
   for (const prompt of ['Gentle rain', 'Heavy rain']) {
@@ -124,6 +149,7 @@ it('publishes a terminal Run review without an optional generation candidate thr
   const { ctx, remote, run, variables, runtime, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
   await remote.mutate({ ...selected, type: 'run' }, signal())
   const generationTask = (await remote.getProjection(selected, signal())).tasks[0]!
@@ -213,6 +239,7 @@ it('authorizes descendants, rejects unrelated sessions and returns retryable exp
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   for (const request of [
     { type: 'update-draft', field: 'instance_id', value: '8' },
+    { type: 'resource-select', value: { kind: 'model', id: '2' } },
     { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } },
     { type: 'update-execution', field: 'max_runs', value: 2 },
     { type: 'experiment' },

@@ -219,7 +219,7 @@ describe('Harness Client plugin registration', () => {
       conversation: { input: { for: inputFor } },
       remote: {
         $mount: vi.fn(async () => remoteDispose),
-        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels, sourceAddress: vi.fn(async () => ({ ok: true, value: { ok: true, value: { url: 'http://127.0.0.1', port: 18093 } } })), details: vi.fn(async () => ({ ok: true, value: { ok: true, value: { kind: 'work', id: '1', item: { context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] } } })) },
+        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels, sourceAddress: vi.fn(async () => ({ ok: true, value: { ok: true, value: { url: 'http://127.0.0.1', port: 18093 } } })), details: vi.fn(async () => ({ ok: true, value: { ok: true, value: { kind: 'work', id: '1', item: { modelId: null, context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] } } })) },
         harnessComfyuiGeneration: { list: remoteGenerationList },
       },
       sidebarRight: { openTab: vi.fn() },
@@ -524,7 +524,7 @@ describe('Harness Client plugin registration', () => {
     )).resolves.toEqual({ kind: 'model', query: '', page: 1, items: [], totalCount: 0 })
     await expect(catalog.baseModels(new AbortController().signal))
       .resolves.toEqual({ items: [{ id: '2', label: 'wai' }] })
-    await expect(catalog.details({ kind: 'work', id: '1' }, new AbortController().signal)).resolves.toEqual({ kind: 'work', id: '1', item: { context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] })
+    await expect(catalog.details({ kind: 'work', id: '1' }, new AbortController().signal)).resolves.toEqual({ kind: 'work', id: '1', item: { modelId: null, context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] })
     const generationStore = (detailsFace as { generationStore: { subscribe: Function; getSnapshot: Function } }).generationStore
     const stopGeneration = generationStore.subscribe('session-1', vi.fn())
     await vi.waitFor(() => expect(remoteGenerationList).toHaveBeenCalledOnce())

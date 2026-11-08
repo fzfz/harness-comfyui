@@ -4,6 +4,7 @@ import {
   CATALOG_COMFYUI_INSTANCE_QUERY,
   CATALOG_KIND_DEFINITIONS,
   catalogPageCount,
+  catalogResourceCompatible,
   contextLabel,
   parseBaseModelList,
   parseBaseModelResult,
@@ -54,7 +55,7 @@ describe('catalog Remote contract', () => {
       kind: 'model',
       query: 'soft',
       page: 2,
-      items: [{
+      items: [{ modelId: null,
         context: { kind: 'model', id: '15', file_name: 'rinSoftsketch_v20.safetensors' },
         baseModelId: '2',
         label: 'rinSoftsketch_v20.safetensors',
@@ -81,7 +82,7 @@ describe('catalog Remote contract', () => {
       kind: 'model',
       query: '',
       page: 1,
-      items: [{
+      items: [{ modelId: null,
         context: { kind: 'model', id: '15', file_name: 'model.safetensors' },
         baseModelId,
         label: 'model.safetensors',
@@ -100,7 +101,7 @@ describe('catalog Remote contract', () => {
       kind: 'model',
       query: '',
       page: 1,
-      items: [{
+      items: [{ modelId: null,
         context: { kind: 'model', id: '15', file_name: 'model.safetensors' },
         baseModelId,
         label: 'model.safetensors',
@@ -171,7 +172,7 @@ describe('catalog Remote contract', () => {
   })
 
   it('accepts one complete eight-card page and rejects a ninth card', () => {
-    const items = Array.from({ length: 8 }, (_, index) => ({
+    const items = Array.from({ length: 8 }, (_, index) => ({ modelId: null,
       context: { kind: 'model' as const, id: String(index + 1), file_name: `model-${index + 1}` },
       baseModelId: '2',
       label: `model-${index + 1}`,
@@ -298,17 +299,17 @@ describe('catalog Remote contract', () => {
   })
 
   it.each([
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'lora', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'kind'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '0', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'id'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: '', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'label'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: false, coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'subtitle'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: 'file:///tmp/x.png', sampleImageUrls: [] }], totalCount: 1 }, 'cover URL'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 0 }, 'total count'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'lora', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'kind'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '0', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'id'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: '', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'label'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: false, coverUrl: null, sampleImageUrls: [] }], totalCount: 1 }, 'subtitle'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: 'file:///tmp/x.png', sampleImageUrls: [] }], totalCount: 1 }, 'cover URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [] }], totalCount: 0 }, 'total count'],
     [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null }], totalCount: 1 }, 'properties'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: null }], totalCount: 1 }, 'sample image URLs'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: ['data:image/png;base64,AAAA'] }], totalCount: 1 }, 'sample image URL'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [SAMPLE, SAMPLE] }], totalCount: 1 }, 'duplicated'],
-    [{ kind: 'model', query: '', page: 1, items: [{ context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: COVER, sampleImageUrls: [COVER] }], totalCount: 1 }, 'cover URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: null }], totalCount: 1 }, 'sample image URLs'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: ['data:image/png;base64,AAAA'] }], totalCount: 1 }, 'sample image URL'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: null, sampleImageUrls: [SAMPLE, SAMPLE] }], totalCount: 1 }, 'duplicated'],
+    [{ kind: 'model', query: '', page: 1, items: [{ modelId: null, context: { kind: 'model', id: '1', file_name: 'x' }, baseModelId: '2', label: 'x', subtitle: 'y', coverUrl: COVER, sampleImageUrls: [COVER] }], totalCount: 1 }, 'cover URL'],
   ])('rejects invalid catalog page %j', (value, message) => {
     expect(() => parseCatalogPage(value)).toThrow(message)
   })
@@ -329,4 +330,23 @@ describe('catalog Remote contract', () => {
   ])('rejects invalid base-model list %j', (value, message) => {
     expect(() => parseBaseModelList(value)).toThrow(message)
   })
+})
+
+it.each([
+  [{ baseModelId: null, modelId: null }, { baseModelId: null, modelId: null }, true],
+  [{ baseModelId: '4', modelId: null }, { baseModelId: null, modelId: null }, false],
+  [{ baseModelId: null, modelId: '25' }, { baseModelId: '4', modelId: null }, false],
+  [{ baseModelId: '4', modelId: null }, { baseModelId: '4', modelId: '25' }, true],
+  [{ baseModelId: '4', modelId: '25' }, { baseModelId: '4', modelId: '25' }, true],
+  [{ baseModelId: '4', modelId: '24' }, { baseModelId: '4', modelId: '25' }, false],
+  [{ baseModelId: '3', modelId: '25' }, { baseModelId: '4', modelId: '25' }, false],
+] as const)('compares Catalog constraints %j with the current generation %j', (resource, target, expected) => {
+  expect(catalogResourceCompatible(resource, target)).toBe(expected)
+})
+
+it.each([undefined, '0', 'invalid', 25])('rejects a malformed public card model association %j', modelId => {
+  expect(() => parseCatalogPage({
+    kind: 'lora', query: '', page: 1, totalCount: 1,
+    items: [{ context: { kind: 'lora', id: '1', file_name: 'resource.safetensors' }, baseModelId: '4', modelId, label: 'Resource', subtitle: '', coverUrl: null, sampleImageUrls: [] }],
+  })).toThrow(TypeError)
 })

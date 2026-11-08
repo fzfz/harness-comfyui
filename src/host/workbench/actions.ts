@@ -135,7 +135,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
           throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '当前需要移除的资源与确认清单不一致，请重新选择模型。', 'value.confirmedRemovals')
         }
       }
-      const draft = await ctx.harnessComfyuiWorkbench.resolveResources([resource], branch.draft)
+      const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.draft)
       if (preview) {
         if (preview.removed.some(ref => ref.kind === 'comfyui-template')) {
           draft.generation_input.template_id = null
