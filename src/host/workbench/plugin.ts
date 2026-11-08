@@ -4,6 +4,7 @@ import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-workspace'
+import libraryConfig from '../../workbench/library-config.json' with { type: 'json' }
 import productAgent from '../../../config/product-agent.json' with { type: 'json' }
 import { WORKBENCH_FUNCTIONS as defaults } from '../../workbench/functions.ts'
 import type { WorkbenchEnvironment, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
@@ -79,8 +80,25 @@ export function apply(ctx: Context): void {
     validateContextRefs: input.validateReferences, validateResourceRefs: input.validateReferences,
     parameterIds: input.parameterIds, validateGenerationInput: input.validateGenerationInput,
     validateParameters: input.validateParameters, resolveGenerationDraft: input.resolveGenerationDraft,
-    resolveRunModelBaseId: async modelId => {
-      try { return (await catalog.resolveGenerationModel(modelId, signal)).base_model_id }
+    resolveBaseModelDraft: async (baseModelId, draft) => {
+      const available = await catalog.baseModels(signal).catch(error => {
+        if (error instanceof CatalogError) {
+          const failure = libraryConfig.errors.baseModelCatalogUnavailable
+          throw new WorkbenchError(failure.code, failure.message, failure.path)
+        }
+        throw error
+      })
+      if (!available.items.some(model => model.id === baseModelId)) {
+        const error = libraryConfig.errors.baseModelUnavailable
+        throw new WorkbenchError(error.code, error.message, error.path)
+      }
+      return input.resolveBaseModelDraft(baseModelId, draft)
+    },
+    resolveRunModelBaseId: async fixed => {
+      try {
+        const model = await catalog.resolveGenerationModel(fixed.id, signal)
+        return model.id === fixed.id && model.file_name === fixed.file_name ? model.base_model_id : null
+      }
       catch (error) {
         if (error instanceof CatalogError) return null
         throw error

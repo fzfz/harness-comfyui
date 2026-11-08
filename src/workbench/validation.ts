@@ -1,11 +1,12 @@
 import { contractFields } from '../shared/field-contract.ts'
 import Schema from '@deepseek-ai/schemastery'
-import { artifactSchemas, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema } from './schema.ts'
+import { artifactSchemas, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema } from './schema.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { TASK_KINDS } from './functions.ts'
-import { isRunReviewFunctionKind } from './contract.ts'
+import libraryConfig from './library-config.json' with { type: 'json' }
+import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, isRunReviewFunctionKind } from './contract.ts'
 import { requestTemplateProblem } from './request-template.ts'
-import type { ArtifactPayload, ContextRef, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, ReviewDraftUpdate, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
+import type { ArtifactPayload, ContextRef, FavoriteUpdate, ExperienceReuseInput, FunctionBinding, GenerationInput, JsonValue, ReviewDraft, ReviewDraftUpdate, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
 
 export interface FieldIssue { path: string; message: string }
 export class WorkbenchError extends Error {
@@ -162,6 +163,22 @@ export function validateReviewDraft(value: unknown): ReviewDraft {
 export function validateReviewDraftUpdate(value: unknown): ReviewDraftUpdate {
   try { return structuredClone(Schema.resolve(value, reviewDraftUpdateSchema, {})[0]) as ReviewDraftUpdate }
   catch (error) { throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), 'evaluationDraft') }
+}
+
+export function validateFavoriteUpdate(value: unknown): FavoriteUpdate {
+  try { return Schema.resolve(value, favoriteUpdateSchema, {})[0] as FavoriteUpdate }
+  catch {
+    const error = libraryConfig.errors.favoriteInvalid
+    throw new WorkbenchError(error.code, error.message, error.path)
+  }
+}
+
+export function validateExperienceReuseInput(value: unknown): ExperienceReuseInput {
+  try { return Schema.resolve(value, experienceReuseInputSchema, {})[0] as ExperienceReuseInput }
+  catch {
+    const error = libraryConfig.errors.reuseInvalid
+    throw new WorkbenchError(error.code, error.message.replaceAll('{maxLength}', String(WORKBENCH_BRANCH_NAME_MAX_LENGTH)), error.path)
+  }
 }
 
 export function validateFunctionBinding(value: FunctionBinding): FunctionBinding {

@@ -3,7 +3,7 @@ import { WORKBENCH_BRANCH_EDIT_FIELDS, type ExperimentWorkbenchAction } from '..
 import type { WorkbenchActionReceipt } from '../../workbench-remote.ts'
 import { isRunReviewFunctionKind, type FunctionBinding, type JsonValue, type ResourceRef } from '../../workbench/contract.ts'
 import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
-import { equalValue, jsonValue, validateReviewDraftUpdate, validateTaskDraft, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
+import { equalValue, jsonValue, validateFavoriteUpdate, validateExperienceReuseInput, validateReviewDraftUpdate, validateTaskDraft, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
@@ -191,10 +191,8 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       await service.replyTask({ taskId: text(request.taskId, 'task_id'), questionArtifactId: text(request.id, 'question_artifact_id'), answer: text(request.value, 'answer') }); break
     }
     case 'favorite': {
-      const targetType = request.value === 'experience' ? 'experience' : 'run'
-      const targetId = text(request.id ?? request.runId, 'target_id')
-      const saved = store.getProjection(selection).favorites.some(item => item.target_type === targetType && item.target_id === targetId)
-      store.setFavorite({ workspaceId: request.workspaceId, workId, targetType, targetId, favorite: !saved }); break
+      const value = validateFavoriteUpdate(request.value)
+      store.setFavorite({ workspaceId: request.workspaceId, workId, targetType: value.targetType, targetId: text(request.id, 'target_id'), favorite: value.favorite }); break
     }
     case 'update-review-draft': {
       const runId = text(request.runId, 'run_id'), update = validateReviewDraftUpdate(request.value)
@@ -202,7 +200,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     }
     case 'evaluate': {
       const runId = text(request.runId, 'run_id'), value = fields(request.value)
-      store.saveRunReview({ workspaceId: request.workspaceId, workId, runId, ...validateReviewDraftUpdate({ expected: value.expected, draft: value.draft }), saveExperience: value.saveExperience === true }); break
+      await service.saveRunReview({ workspaceId: request.workspaceId, workId, runId, ...validateReviewDraftUpdate({ expected: value.expected, draft: value.draft }), saveExperience: value.saveExperience === true }); break
     }
     case 'task-apply': case 'task-generation-apply': {
       const artifactId = text(request.id, 'artifact_id')
@@ -213,9 +211,8 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       await service.adoptArtifact({ artifactId, expected, candidate }); break
     }
     case 'reuse': {
-      const experience = store.getExperience(text(request.id, 'experience_id'))
-      if (experience.work_id !== workId) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的经验。', 'experience_id')
-      const created = await service.createBranchFromRun({ workspaceId: request.workspaceId, workId, runId: experience.source_run_id, name: experience.title.slice(0, 40), originalRequest: experience.note, sourceExperienceId: experience.experience_id })
+      const value = validateExperienceReuseInput(request.value)
+      const created = await service.createBranchFromExperience({ workspaceId: request.workspaceId, workId, experienceId: text(request.id, 'experience_id'), ...value })
       return { ...selection, branchId: created.branch_id }
     }
     case 'task-branch': {

@@ -8,6 +8,8 @@ import { equalValue, jsonValue, validateArtifact, validateFunctionBinding, valid
 import { deriveTaskStatus, isFinishedRun } from '../../workbench/state.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
 import { renderRequestTemplate } from '../../workbench/request-template.ts'
+import { WORKBENCH_BRANCH_NAME_MAX_LENGTH } from '../../workbench/contract.ts'
+import libraryConfig from '../../workbench/library-config.json' with { type: 'json' }
 import artifactAdoptionErrors from '../../workbench/artifact-adoption-errors.json' with { type: 'json' }
 import { transaction } from './transaction.ts'
 
@@ -117,7 +119,10 @@ export class WorkbenchStore {
       if (input.originalRequest !== undefined && typeof input.expectedOriginalRequest !== 'string') fail('WORKBENCH_INVALID_INPUT', '缺少编辑前的原始需求，请刷新页面后保存。', 'expectedOriginalRequest')
       if (!equalValue(branch.draft, input.expected)) fail('WORKBENCH_EDIT_CONFLICT', '分支内容已改变，请刷新后重新保存。', 'expected')
       if (input.originalRequest !== undefined && branch.original_request !== input.expectedOriginalRequest) fail('WORKBENCH_EDIT_CONFLICT', '原始需求已改变，请刷新后重新保存。', 'original_request')
-      if (input.name !== undefined && (!input.name.trim() || input.name.length > 40)) fail('WORKBENCH_INVALID_INPUT', '请填写分支名称；名称最多 40 字。', 'name')
+      if (input.name !== undefined && (!input.name.trim() || input.name.length > WORKBENCH_BRANCH_NAME_MAX_LENGTH)) {
+        const error = libraryConfig.errors.branchNameInvalid
+        fail(error.code, error.message.replaceAll('{maxLength}', String(WORKBENCH_BRANCH_NAME_MAX_LENGTH)), error.path)
+      }
       if (input.name !== undefined && branch.name !== input.expectedName) fail('WORKBENCH_EDIT_CONFLICT', '分支名称已改变，请刷新后重新保存。', 'name')
       if (input.originalRequest !== undefined && !input.originalRequest.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写原始需求。', 'original_request')
       const draft = validateTaskDraft(input.draft)
@@ -457,7 +462,7 @@ export class WorkbenchStore {
       return draft
     })
   }
-  saveRunReview(input: ReviewDraftUpdate & { workspaceId: string; workId: string; runId: string; saveExperience?: boolean }): { review: SavedReview; experience_id: string | null } {
+  saveRunReview(input: ReviewDraftUpdate & { workspaceId: string; workId: string; runId: string; saveExperience?: boolean; modelScope?: { model: GenerationInput['model']; base_model_id: string | null } }): { review: SavedReview; experience_id: string | null } {
     return transaction(this.database, () => {
       const run = this.assertReviewRun(input.workspaceId, input.workId, input.runId)
       const draft = validateReviewDraft(input.draft)
@@ -466,11 +471,15 @@ export class WorkbenchStore {
       const review: SavedReview = { verdict: draft.verdict, observation: draft.observation, conclusion: draft.conclusion, source_artifact_id: draft.review_artifact_id }
       let experienceId = draft.experience_id
       if (input.saveExperience) {
+        if (input.modelScope && !equalValue(input.modelScope.model, run.generation_input.model)) {
+          const error = libraryConfig.errors.modelScopeChanged
+          fail(error.code, error.message, error.path)
+        }
         for (const key of ['title', 'conditions', 'note'] as const) if (!draft[key].trim()) fail('WORKBENCH_INVALID_INPUT', '请填写经验标题、适用条件和经验结论。', `draft.${key}`)
         if (!draft.evidence_run_ids.includes(input.runId)) fail('WORKBENCH_INVALID_INPUT', '经验证据必须包含当前运行。', 'draft.evidence_run_ids')
         if (experienceId && this.getExperience(experienceId).source_run_id !== input.runId) fail('WORKBENCH_SCOPE_MISMATCH', '请更新当前运行对应的经验。', 'draft.experience_id')
         experienceId ??= randomUUID()
-        this.run('INSERT INTO workbench_experiences VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(experience_id) DO UPDATE SET title=excluded.title,conditions=excluded.conditions,note=excluded.note,evidence_run_ids_json=excluded.evidence_run_ids_json,source_artifact_id=excluded.source_artifact_id', experienceId, branch.work_id, branch.branch_id, draft.experience_artifact_id ? this.getArtifact(draft.experience_artifact_id).task_id : null, draft.title, draft.conditions, draft.note, task.input.base_model_id, run.generation_input.model?.id ?? null, JSON.stringify(draft.evidence_run_ids), input.runId, branch.source_experience_id, draft.experience_artifact_id)
+        this.run('INSERT INTO workbench_experiences VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(experience_id) DO UPDATE SET title=excluded.title,conditions=excluded.conditions,note=excluded.note,evidence_run_ids_json=excluded.evidence_run_ids_json,source_artifact_id=excluded.source_artifact_id,task_id=excluded.task_id,base_model_id=excluded.base_model_id,model_id=excluded.model_id', experienceId, branch.work_id, branch.branch_id, draft.experience_artifact_id ? this.getArtifact(draft.experience_artifact_id).task_id : null, draft.title, draft.conditions, draft.note, input.modelScope?.base_model_id ?? null, run.generation_input.model?.id ?? null, JSON.stringify(draft.evidence_run_ids), input.runId, branch.source_experience_id, draft.experience_artifact_id)
       }
       this.saveRunReviewDraft({ ...input, draft: { ...draft, experience_id: experienceId } })
       this.run('UPDATE generation_runs SET review_json=? WHERE run_id=?', JSON.stringify(review), input.runId)
@@ -480,7 +489,7 @@ export class WorkbenchStore {
   private experience(row: Row): Experience { const { evidence_run_ids_json, ...rest } = row; return { ...rest, evidence_run_ids: parse(evidence_run_ids_json) } as Experience }
   getExperience(experienceId: string): Experience { const row = this.row('SELECT * FROM workbench_experiences WHERE experience_id=?', experienceId); return row ? this.experience(row) : fail('WORKBENCH_NOT_FOUND', '经验不存在，请刷新列表。', 'experience_id') }
   listExperiences(workId: string): Experience[] { return this.rows('SELECT * FROM workbench_experiences WHERE work_id=? ORDER BY rowid', workId).map(row => this.experience(row)) }
-  setFavorite(input: { workspaceId: string; workId: string; targetType: 'run' | 'experience'; targetId: string; favorite: boolean }): void {
+  setFavorite(input: { workspaceId: string; workId: string; targetType: Favorite['target_type']; targetId: string; favorite: boolean }): void {
     this.assertScope(input.workspaceId, input.workId)
     if (input.targetType === 'run') this.assertRunInWork(input.targetId, input.workId)
     else if (input.targetType === 'experience') { if (this.getExperience(input.targetId).work_id !== input.workId) fail('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的经验。') }

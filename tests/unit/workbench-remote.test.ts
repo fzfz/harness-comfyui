@@ -35,6 +35,27 @@ function restrictSelectedResources(catalog: Awaited<ReturnType<typeof createWork
   })
 }
 
+it('requires explicit favorite states and complete experience reuse choices through the Remote codec', () => {
+  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
+  const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
+  for (const targetType of ['run', 'experience']) for (const favorite of [true, false]) {
+    const value = { targetType, favorite }
+    expect(codec.parse({ ...scope, type: 'favorite', id: 'target_1', value })).toMatchObject({ value })
+  }
+  for (const value of [undefined, 'experience', { targetType: 'run' }, { targetType: 'task', favorite: true }, { targetType: 'run', favorite: 'true' }, { targetType: 'run', favorite: true, extra: 1 }]) {
+    expect(() => codec.parse({ ...scope, type: 'favorite', id: 'target_1', value })).toThrow()
+  }
+  expect(() => codec.parse({ ...scope, type: 'favorite', runId: 'run_1', value: { targetType: 'run', favorite: true } })).toThrow()
+  for (const baseModelId of ['9', null]) {
+    const value = { name: 'Snow test', baseModelId }
+    expect(codec.parse({ ...scope, type: 'reuse', id: 'experience_1', value })).toMatchObject({ value })
+  }
+  for (const value of [undefined, { name: 'Snow test' }, { name: '', baseModelId: null }, { name: 'Snow test', baseModelId: '0' }, { name: 'Snow test', baseModelId: 'abc' }, { name: 'Snow test', baseModelId: null, goal: 'Other goal' }]) {
+    expect(() => codec.parse({ ...scope, type: 'reuse', id: 'experience_1', value })).toThrow()
+  }
+  expect(() => codec.parse({ ...scope, type: 'reuse', value: { name: 'Snow test', baseModelId: null } })).toThrow()
+})
+
 function fixture() {
   const context = new Context()
   const initializeWorkspace = vi.fn(async () => {})

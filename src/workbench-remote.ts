@@ -5,7 +5,7 @@ import type { WorkbenchProjection, AgentModel, TaskRequestDraft, WorkbenchRunInp
 import { jsonValueSchema } from './shared/json-contract.ts'
 import { workflowRuntimeParameterInspectionSchema, type WorkflowRuntimeParameterInspection } from './generation/inspection-contract.ts'
 import { contractObject, requiredNullable } from './shared/field-contract.ts'
-import { reviewDraftUpdateSchema, taskDraftSchema, taskRequestDraftSchema, workbenchRunInputSchema } from './workbench/schema.ts'
+import { favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftUpdateSchema, taskDraftSchema, taskRequestDraftSchema, workbenchRunInputSchema } from './workbench/schema.ts'
 
 export const WORKBENCH_REMOTE_NAMESPACE = 'harnessComfyuiWorkbenchRemote'
 export const WORKBENCH_REMOTE_SERVICE = `remote.${WORKBENCH_REMOTE_NAMESPACE}`
@@ -105,6 +105,10 @@ function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
   if (method === 'mutate') {
     const action = parsed as ExperimentWorkbenchAction
     if (action.type !== 'new-workspace') Schema.resolve(action.workspaceId, identifier().required(), {})
+    if (action.type === 'favorite' || action.type === 'reuse') {
+      Schema.resolve(action.id, identifier().required(), {})
+      Schema.resolve(action.value, action.type === 'favorite' ? favoriteUpdateSchema : experienceReuseInputSchema, {})
+    }
     if (action.type === 'task-generation-apply') {
       Schema.resolve(action.id, identifier().required(), {})
       Schema.resolve(action.value, taskDraftSchema, {})

@@ -135,6 +135,7 @@ export async function createWorkbenchHostFixture(preparer?: GenerationPreparatio
     },
   })
   const catalog = {
+    baseModels: vi.fn<CatalogClient['baseModels']>(async () => ({ items: [{ id: '1', label: 'Source base' }, { id: '9', label: 'Target base' }] })),
     queryComfyuiInstances: vi.fn<CatalogClient['queryComfyuiInstances']>(async () => ({ status: 'ok', message: null, results: [{ id: '8', title: 'win3080' }], page: 1, page_size: 100, total_count: 1 })),
     resolveGenerationModel: vi.fn(async (id: string) => ({ id, file_name: 'paint.safetensors', base_model_id: '1' })),
     resolveLora: vi.fn(async (id: string) => ({ id, file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] })),

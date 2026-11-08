@@ -1238,8 +1238,9 @@ describe('experiment workbench public interactions', () => {
     await click(renderer, 'r2 ↗')
     await click(renderer, '经验')
     await click(renderer, '复用经验')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
     expect(onAction).toHaveBeenLastCalledWith(
-      expect.objectContaining({ type: 'reuse', id: 'experience-a' }),
+      expect.objectContaining({ type: 'reuse', id: 'experience-a', value: { name: '经验复验 3', baseModelId: '1' } }),
     )
     await click(renderer, '移除收藏')
     await click(renderer, '查看来源经验')
@@ -4565,7 +4566,7 @@ describe('experiment workbench overlay and loading lifecycle', () => {
         .props.onClick(),
     )
     expect(onAction).toHaveBeenLastCalledWith(
-      expect.objectContaining({ type: 'favorite', id: 'r2', value: 'run' }),
+      expect.objectContaining({ type: 'favorite', id: 'r2', value: { targetType: 'run', favorite: false } }),
     )
     await click(renderer, '查看分支图')
     const runs = renderer.root.findAllByProps({
@@ -4808,7 +4809,7 @@ describe('experiment workbench resource references', () => {
       expect.objectContaining({
         type: 'favorite',
         id: 'experience-a',
-        value: 'experience',
+        value: { targetType: 'experience', favorite: false },
       }),
     )
   })
@@ -7287,6 +7288,20 @@ describe('experiment workbench preparing historical Run input', () => {
 })
 
 
+describe('experiment workbench reuse target display', () => {
+  it.each([[null, '沿用来源底模'], ['99', '99']] as const)('shows the current target for source base %s before submitting it', async (baseModelId, label) => {
+    const data = fullProjection()
+    data.experiences[0]!.base_model_id = baseModelId
+    const { renderer, onAction } = await mount(data)
+    await click(renderer, '经验')
+    await click(renderer, '复用经验')
+    const select = renderer.root.findByProps({ id: 'reuse-model' })
+    expect(select.findAllByType('option').find(option => option.props.value === select.props.value)?.children).toEqual([label])
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'reuse', value: { name: '经验复验 3', baseModelId } }))
+  })
+})
+
 describe('experiment workbench Run review through Remote', () => {
   const signal = new AbortController().signal
   type Host = Awaited<ReturnType<typeof import('../support/workbench-host.ts').createWorkbenchHostFixture>>
@@ -7309,9 +7324,9 @@ describe('experiment workbench Run review through Remote', () => {
     await host.remote.mutate({ ...root, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
     for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }])
       await host.remote.mutate({ ...root, type: 'resource-select', value }, signal)
-    const createRun = async (finish = true) => {
-      const receipt = await host.remote.mutate({ ...root, type: 'run' }, signal)
-      const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.task_id === receipt.taskId)!
+    const createRun = async (finish = true, scope = root) => {
+      const receipt = await host.remote.mutate({ ...scope, type: 'run' }, signal)
+      const task = (await host.remote.getProjection(scope, signal)).tasks.find(item => item.task_id === receipt.taskId)!
       const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
       const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() },
         [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
@@ -7334,6 +7349,345 @@ describe('experiment workbench Run review through Remote', () => {
     } satisfies NonNullable<Parameters<typeof mount>[1]>
     return { host, root, runId, createRun, options }
   }
+
+  it('focuses the source experience ahead of other saved entries and clears the previous library query through Remote', async () => {
+    const { host, root, runId, createRun, options } = await setup(true)
+    try {
+      const otherRunId = await createRun()
+      for (const [id, title] of [[runId, '第一次窗框经验'], [otherRunId, '第二次窗框经验']] as const) {
+        const baseline = (await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === id)!.review_draft!
+        await host.remote.mutate({ ...root, runId: id, type: 'evaluate', value: { expected: baseline,
+          draft: { ...baseline, title, conditions: '玻璃建筑', note: '分别描述材质' }, saveExperience: true } }, signal)
+      }
+      const initial = await host.remote.getProjection(root, signal)
+      const source = initial.experiences.at(-1)!
+      const { renderer } = await mount(initial, options)
+      await click(renderer, '经验')
+      await change(renderer, '搜索经验与收藏', source.title)
+      const sourceCard = renderer.root.findByProps({ 'data-experience': source.experience_id })
+      await act(async () => sourceCard.findAllByType('button').find(button => nodeText(button) === '复用经验')!.props.onClick())
+      expect(renderer.root.findByProps({ id: 'reuse-name' }).props.value).toBe('经验复验 2')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      await click(renderer, '查看来源经验')
+      const cards = renderer.root.findAllByProps({ className: 'experience-card' })
+      expect(cards).toHaveLength(2)
+      expect(cards[0]!.props['data-experience']).toBe(source.experience_id)
+      expect(cards.every(card => card.props.hidden === false)).toBe(true)
+      expect(renderer.root.findByProps({ 'aria-label': '搜索经验与收藏' }).props.value).toBe('')
+    } finally { await host.dispose() }
+  })
+
+  it('rechecks another base model with waiting resources, Catalog choices, a prompt Task and a new Run through Remote', async () => {
+    const { host, root, createRun, options } = await setup(true)
+    try {
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal)
+      await host.remote.mutate({ ...root, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal)
+      await host.remote.mutate({ ...root, type: 'update-draft', field: 'positive_prompt', value: '来源固定提示词' }, signal)
+      const sourceRunId = await createRun()
+      const before = await host.remote.getProjection(root, signal)
+      const fixedRun = before.runs.find(item => item.run_id === sourceRunId)!
+      const baseline = fixedRun.review_draft!
+      await host.remote.mutate({ ...root, runId: sourceRunId, type: 'evaluate', value: { expected: baseline,
+        draft: { ...baseline, title: '窗框经验', conditions: '玻璃建筑', note: '分别描述材质' }, saveExperience: true } }, signal)
+      const saved = (await host.remote.getProjection(root, signal)).experiences[0]!
+      const targetItems: CatalogItem[] = [
+        { context: { kind: 'model', id: '22', file_name: 'target.safetensors' }, baseModelId: '9', modelId: null,
+          label: '目标模型', subtitle: '', coverUrl: null, sampleImageUrls: [] },
+        { context: { kind: 'comfyui-template', id: '25', title: '目标模板' }, baseModelId: '9', modelId: null,
+          label: '目标模板', subtitle: '', coverUrl: null, sampleImageUrls: [] },
+      ]
+      const readDetails = host.catalog.details.getMockImplementation()!
+      host.catalog.details.mockImplementation(async (request, readSignal) => {
+        const item = targetItems.find(item => item.context.kind === request.kind && item.context.id === request.id)
+        return item ? { ...request, item, fields: [] } : readDetails(request, readSignal)
+      })
+      host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: id === '22' ? 'target.safetensors' : 'paint.safetensors', base_model_id: id === '22' ? '9' : '1' }))
+      host.catalog.resolveTemplate.mockImplementation(async id => ({ id, title: id === '25' ? '目标模板' : 'Rain template', base_model_id: id === '25' ? '9' : '1', model_id: null }))
+      const catalog: CatalogApi = { ...makeCatalog(), baseModels: host.catalog.baseModels, details: host.catalog.details,
+        search: vi.fn(async request => { const items = targetItems.filter(item => item.context.kind === request.kind)
+          return { ...request, items: request.page === 1 ? items : [], totalCount: items.length } }) }
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, catalog,
+        baseModels: [{ id: '1', label: '底模 A' }, { id: '9', label: '底模 B' }],
+        remote: { ...options.remote, previewModelChange: request => host.remote.previewModelChange(request, signal),
+          getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getTaskDraft: request => host.remote.getTaskDraft(request, signal),
+          saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
+      await click(renderer, '经验')
+      await click(renderer, '复用经验')
+      await change(renderer, '目标底模', '9')
+      await act(async () => renderer.root.findByProps({ id: 'reuse-name' }).props.onChange({ target: { value: '跨底模复验' } }))
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      const allScope = { workspaceId: root.workspaceId, workId: root.workId }
+      const created = (await host.remote.getProjection(allScope, signal)).branches.find(item => item.name === '跨底模复验')!
+      expect(created).toMatchObject({ parent_branch_id: root.branchId, original_request: '保留窗框',
+        source_run_id: sourceRunId, source_experience_id: saved.experience_id,
+        draft: { base_model_id: '9', prompt_input: { positive_prompt: '来源固定提示词' },
+          generation_input: { model: null, template_id: null, parameters: {}, loras: [] } } })
+      const picked = renderer.root.findByProps({ 'aria-label': '已选资源' }).findAllByProps({ className: 'picked-item' })
+      expect(picked.map(nodeText).join(' ')).toContain('生成模型 · 底模 B未选择')
+      expect(picked.map(nodeText).join(' ')).toContain('Workflow 模板未选择')
+      expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(0)
+      await click(renderer, '更换生成模型')
+      await click(renderer, '选择 目标模型')
+      await click(renderer, '选择 Workflow 模板')
+      await click(renderer, '选择 目标模板')
+      await click(renderer, '生成提示词')
+      await change(renderer, '任务要求', '根据窗框经验重新编写目标底模提示词')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      const promptTask = (await host.remote.getProjection(allScope, signal)).tasks.find(item => item.branch_id === created.branch_id && item.kind === 'prompt')!
+      expect(promptTask.input.requirements.original_request).toBe('保留窗框')
+      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: promptTask.task_id,
+        artifact: { type: 'prompt', positive_prompt: '目标底模窗框提示词', negative_prompt: '断裂边缘' } },
+        { workspaceId: root.workspaceId, sessionId: promptTask.session_id!, turn: 1, callId: 'target-prompt' })
+      host.official.agents.get(promptTask.session_id!)!.status = 'idle'
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('目标底模窗框提示词'), { timeout: 3000 })
+      await click(renderer, '运行任务')
+      const runTask = (await host.remote.getProjection(allScope, signal)).tasks.find(item => item.branch_id === created.branch_id && item.kind === 'run')!
+      expect(runTask.input.generation_input).toMatchObject({ model: { id: '22' }, template_id: '25' })
+      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+      const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: runTask.session_id!, turn: 1, callId: 'target-run' },
+        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(runTask.input.generation_input)) }], signal, runTask.task_id)
+      for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
+      host.official.agents.get(runTask.session_id!)!.status = 'idle'
+      const runId = accepted.items[0]!.runId
+      await click(renderer, '运行结果')
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ 'aria-label': '查看运行 ' + runId }), nodeText(renderer.root)).toHaveLength(1), { timeout: 3000 })
+      const after = await host.remote.getProjection(allScope, signal)
+      expect(after.runs.find(item => item.run_id === runId)).toMatchObject({ workbench_task_id: runTask.task_id, status: 'succeeded', generation_input: { model: { id: '22' } } })
+      expect(after.runs.find(item => item.run_id === sourceRunId)!.generation_input).toEqual(fixedRun.generation_input)
+      expect(after.experiences).toEqual([saved])
+    } finally { await host.dispose() }
+  })
+
+  it('opens same-Work cross-Branch evidence at its fixed Run input and original Task through Remote', async () => {
+    const { host, root, runId, createRun, options } = await setup(true)
+    try {
+      const child = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '另一证据分支', original_request: '独立证据要求' } }, signal)
+      await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '当次固定的证据输入' }, signal)
+      const childRunId = await createRun(true, child)
+      await host.remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '分支当前已修改的输入' }, signal)
+      const baseline = (await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)!.review_draft!
+      await host.remote.mutate({ ...root, runId, type: 'evaluate', value: { expected: baseline,
+        draft: { ...baseline, title: '跨分支经验', conditions: '玻璃建筑', note: '比较两次结果', evidence_run_ids: [runId, childRunId] }, saveExperience: true } }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '经验')
+      expect(nodeText(renderer.root.findByProps({ className: 'evidence' }))).toContain('作为证据的运行')
+      expect(renderer.root.findByProps({ className: 'evidence' }).findAllByType('button')).toHaveLength(2)
+      for (const [id, name, prompt] of [[childRunId, '另一证据分支', '当次固定的证据输入'], [runId, '主分支', '']] as const) {
+        await click(renderer, id + ' ↗')
+        await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true))
+        expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(name)
+        expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(prompt)
+        expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(id.slice(0, 12))
+        await click(renderer, '经验')
+      }
+      await click(renderer, childRunId + ' ↗')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('当次固定的证据输入'))
+      await click(renderer, '任务')
+      const taskId = (await host.remote.getProjection(child, signal)).runs.find(item => item.run_id === childRunId)!.workbench_task_id
+      const taskCard = renderer.root.findAllByProps({ className: 'agent-task-card' }).find(card => card.findAllByProps({ title: taskId }).length > 0)!
+      expect(nodeText(taskCard)).toContain('独立证据要求')
+      expect(nodeText(taskCard)).toContain(childRunId.slice(0, 12))
+    } finally { await host.dispose() }
+  })
+
+  it('keeps failed reuse fields, creates once on repeated submit and ignores its late receipt after reopening', async () => {
+    const { host, root, runId, options } = await setup(true)
+    let release!: () => void
+    const gate = new Promise<void>(resolve => { release = resolve })
+    let mode: 'fail' | 'delay' = 'fail'
+    try {
+      const baseline = (await host.remote.getProjection(root, signal)).runs[0]!.review_draft!
+      await host.remote.mutate({ ...root, runId, type: 'evaluate', value: { expected: baseline,
+        draft: { ...baseline, title: '窗框经验', conditions: '玻璃建筑', note: '分别描述材质' }, saveExperience: true } }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, onAction: async request => {
+        if (request.type === 'reuse') {
+          if (mode === 'fail') throw new Error('创建分支失败：连接已中断，请重试。')
+          await gate
+        }
+        return options.onAction(request)
+      } })
+      await click(renderer, '经验')
+      await click(renderer, '复用经验')
+      await act(async () => renderer.root.findByProps({ id: 'reuse-name' }).props.onChange({ target: { value: '保留输入的复验' } }))
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      expect(renderer.root.findByProps({ id: 'reuse-name' }).props.value).toBe('保留输入的复验')
+      expect(nodeText(renderer.root)).toContain('创建分支失败：连接已中断，请重试。')
+      expect((await host.remote.getProjection(root, signal)).branches).toHaveLength(1)
+      mode = 'delay'
+      const pending: Promise<void>[] = []
+      await act(() => {
+        const submit = renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit
+        pending.push(submit({ preventDefault() {} }), submit({ preventDefault() {} }))
+      })
+      await click(renderer, '取消')
+      await click(renderer, '复用经验')
+      await act(async () => renderer.root.findByProps({ id: 'reuse-name' }).props.onChange({ target: { value: '后开的复验' } }))
+      await act(async () => { release(); await Promise.all(pending) })
+      expect(renderer.root.findByProps({ id: 'reuse-name' }).props.value).toBe('后开的复验')
+      expect(renderer.root.findByProps({ 'aria-label': '经验' }).props.className).toBe('active')
+      const projection = await host.remote.getProjection(root, signal)
+      expect(projection.branches.filter(item => item.name === '保留输入的复验')).toHaveLength(1)
+      expect(projection.branches.filter(item => item.name === '后开的复验')).toHaveLength(0)
+      await click(renderer, '取消')
+    } finally { release(); await host.dispose() }
+  })
+
+  it('opens the reuse form before creating a source-linked Branch and cancels without writing through Remote', async () => {
+    const { host, root, runId, options } = await setup(true)
+    try {
+      const baseline = (await host.remote.getProjection(root, signal)).runs[0]!.review_draft!
+      await host.remote.mutate({ ...root, runId, type: 'evaluate', value: { expected: baseline,
+        draft: { ...baseline, title: '窗框经验', conditions: '玻璃建筑', note: '分别描述材质' }, saveExperience: true } }, signal)
+      const saved = (await host.remote.getProjection(root, signal)).experiences[0]!
+      await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '其他浏览分支', original_request: '其他场景' } }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '切换分支 其他浏览分支')
+      await click(renderer, '经验')
+      const count = (await host.remote.getProjection(root, signal)).branches.length
+      await click(renderer, '复用经验')
+      expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain('来源运行：' + runId)
+      expect(renderer.root.findByProps({ 'aria-label': '目标底模' }).props.value).toBe('1')
+      expect(renderer.root.findByProps({ id: 'reuse-name' }).props.maxLength).toBe(40)
+      expect(options.onAction.mock.calls.filter(([request]) => request.type === 'reuse')).toEqual([])
+      await click(renderer, '取消')
+      expect((await host.remote.getProjection(root, signal)).branches).toHaveLength(count)
+      await click(renderer, '复用经验')
+      const escape = new Event('keydown')
+      Object.defineProperty(escape, 'key', { value: 'Escape' })
+      await act(() => { document.dispatchEvent(escape) })
+      expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
+      await click(renderer, '复用经验')
+      await act(async () => renderer.root.findByProps({ id: 'reuse-name' }).props.onChange({ target: { value: '同底模复验' } }))
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      const projection = await host.remote.getProjection(root, signal)
+      const created = projection.branches.find(item => item.name === '同底模复验')!
+      expect(created).toMatchObject({ parent_branch_id: root.branchId, source_run_id: runId, source_experience_id: saved.experience_id,
+        original_request: '保留窗框' })
+      expect(created.draft.generation_input).toEqual(projection.runs.find(item => item.run_id === runId)!.generation_input)
+      expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('同底模复验')
+      expect(nodeText(renderer.root.findByProps({ className: 'section-label' }))).toBe('任务输入')
+      await click(renderer, '查看来源经验')
+      expect(renderer.root.findAllByProps({ className: 'experience-card' })[0]!.props['data-experience']).toBe(saved.experience_id)
+      expect(renderer.root.findByProps({ 'aria-label': '搜索经验与收藏' }).props.value).toBe('')
+    } finally { await host.dispose() }
+  })
+
+  it('searches both favorite groups by displayed names after independent Run model details arrive', async () => {
+    const { host, root, runId, options } = await setup(true)
+    let release!: () => void
+    const gate = new Promise<void>(resolve => { release = resolve })
+    try {
+      const baseline = (await host.remote.getProjection(root, signal)).runs[0]!.review_draft!
+      await host.remote.mutate({ ...root, runId, type: 'evaluate', value: { expected: baseline,
+        draft: { ...baseline, title: '窗框经验', conditions: '玻璃建筑', note: '分别描述材质' }, saveExperience: true } }, signal)
+      const experience = (await host.remote.getProjection(root, signal)).experiences[0]!
+      for (const [targetType, id] of [['run', runId], ['experience', experience.experience_id]] as const)
+        await host.remote.mutate({ ...root, type: 'favorite', id, value: { targetType, favorite: true } }, signal)
+      const catalog: CatalogApi = { ...makeCatalog(), details: vi.fn(async request => {
+        await gate
+        return { ...request, item: { context: { kind: 'model', id: request.id, file_name: 'paint.safetensors' },
+          baseModelId: '2', modelId: null, label: 'paint.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [] }
+      }) }
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, catalog,
+        baseModels: [{ id: '1', label: 'SDXL' }, { id: '2', label: 'ANIMA' }] })
+      await click(renderer, '收藏')
+      const cards = () => renderer.root.findAllByProps({ className: 'experience-card' })
+      expect(cards()).toHaveLength(2)
+      expect(nodeText(renderer.root)).toContain('收藏的运行')
+      expect(nodeText(cards()[1]!)).toContain('paint.safetensors')
+      await change(renderer, '搜索经验与收藏', ' anima ')
+      expect(cards()[0]!.props.hidden).toBe(true)
+      expect(cards()[1]!.props.hidden).toBe(true)
+      await act(async () => { release(); await gate })
+      await vi.waitFor(() => expect(nodeText(cards()[1]!)).toContain('ANIMA'))
+      expect(cards()[1]!.props.hidden).toBe(false)
+      await change(renderer, '搜索经验与收藏', ' sDxL ')
+      expect(cards()[0]!.props.hidden).toBe(false)
+      expect(cards()[1]!.props.hidden).toBe(true)
+      await change(renderer, '搜索经验与收藏', '运行评价')
+      expect(cards()[0]!.props.hidden).toBe(true)
+      expect(cards()[1]!.props.hidden).toBe(false)
+      await click(renderer, '查看运行')
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true))
+      expect(catalog.details).toHaveBeenCalledWith({ kind: 'model', id: '2' }, expect.any(AbortSignal))
+    } finally { release(); await host.dispose() }
+  })
+
+  it('saves and updates one experience and searches its visible model while favorites preserve the query through Remote', async () => {
+    const { host, root, runId, createRun, options } = await setup(true)
+    try {
+      const unsavedRunId = await createRun()
+      const baseline = (await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === unsavedRunId)!.review_draft!
+      await host.remote.mutate({ ...root, runId: unsavedRunId, type: 'update-review-draft',
+        value: { expected: baseline, draft: { ...baseline, title: '尚未保存的经验', conditions: '候选条件', note: '候选结论' } } }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await change(renderer, '经验标题', '窗框经验')
+      await change(renderer, '适用条件', '玻璃建筑')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      expect(nodeText(renderer.root.findByProps({ id: 'evaluation-error' }))).toContain('经验标题、适用条件和经验结论')
+      await change(renderer, '经验结论', '分别描述窗框与玻璃')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      const experienceId = (await host.remote.getProjection(root, signal)).experiences[0]!.experience_id
+      await click(renderer, '记录评价与经验')
+      await change(renderer, '经验结论', '窗框与玻璃分别描述，保持连续边缘')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
+      await click(renderer, '经验')
+      const cards = () => renderer.root.findAllByProps({ className: 'experience-card' })
+      expect(cards()).toHaveLength(1)
+      expect(nodeText(cards()[0]!)).not.toContain('尚未保存的经验')
+      expect(nodeText(cards()[0]!)).toContain('窗框与玻璃分别描述，保持连续边缘')
+      for (const query of ['窗框经验', '玻璃建筑', '连续边缘', ' sDxL ']) {
+        await change(renderer, '搜索经验与收藏', query)
+        expect(cards()[0]!.props.hidden).toBe(false)
+      }
+      await click(renderer, '添加收藏')
+      expect(renderer.root.findByProps({ 'aria-label': '经验' }).props.className).toBe('active')
+      expect(renderer.root.findByProps({ 'aria-label': '搜索经验与收藏' }).props.value).toBe(' sDxL ')
+      await vi.waitFor(() => expect(nodeText(cards()[0]!)).toContain('移除收藏'))
+      await change(renderer, '搜索经验与收藏', '无匹配的关键词')
+      expect(cards()).toHaveLength(1)
+      expect(cards()[0]!.props.hidden).toBe(true)
+      expect(nodeText(renderer.root)).not.toContain('尚未保存经验')
+      await click(renderer, '收藏')
+      await change(renderer, '搜索经验与收藏', '窗框经验')
+      await click(renderer, '移除收藏')
+      expect(renderer.root.findByProps({ 'aria-label': '收藏' }).props.className).toBe('active')
+      expect(renderer.root.findByProps({ 'aria-label': '搜索经验与收藏' }).props.value).toBe('窗框经验')
+      const projection = await host.remote.getProjection(root, signal)
+      expect(projection.experiences).toHaveLength(1)
+      expect(projection.experiences[0]!.experience_id).toBe(experienceId)
+      expect(projection.favorites).toEqual([])
+    } finally { await host.dispose() }
+  })
+
+  it('preserves the selected successful Run while adding and removing its favorite through Remote', async () => {
+    const { host, root, runId, createRun, options } = await setup(true)
+    try {
+      await createRun()
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '收藏运行')
+      await vi.waitFor(async () => {
+        expect((await host.remote.getProjection(root, signal)).favorites).toEqual([{ target_type: 'run', target_id: runId }])
+      })
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect(renderer.root.findAllByType('button').some(button => nodeText(button) === '移除收藏')).toBe(true)
+      await click(renderer, '移除收藏')
+      await vi.waitFor(async () => { expect((await host.remote.getProjection(root, signal)).favorites).toEqual([]) })
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect(renderer.root.findAllByType('button').some(button => nodeText(button) === '收藏运行')).toBe(true)
+      expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === runId)?.media).toHaveLength(1)
+    } finally { await host.dispose() }
+  })
 
   it('keeps diagnosis and comparison on the result page and opens the fixed review from the completed Task', async () => {
     for (const kind of ['diagnose', 'compare'] as const) {

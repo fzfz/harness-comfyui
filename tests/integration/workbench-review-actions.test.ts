@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import type { GenerationTransport } from '../../src/host/generation/generation-runtime.ts'
 import type { ReviewDraft } from '../../src/workbench/contract.ts'
 import type { WorkbenchScope } from '../../src/workbench-remote.ts'
+import { CatalogError } from '../../src/host/catalog/catalog-client.ts'
 import { toGenerationRequest } from '../../src/cli/contract.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 
@@ -10,6 +11,182 @@ const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup() })
 const signal = () => new AbortController().signal
 type Host = Awaited<ReturnType<typeof createWorkbenchHostFixture>>
+
+it('saves an experience in the actual later experiment Run model scope without changing the original Task', async () => {
+  const host = await fixture(), selected = await selectWork(host)
+  const firstRunId = await acceptRun(host, selected, true, 'experiment')
+  const task = (await host.remote.getProjection(selected, signal())).tasks.find(item => item.kind === 'experiment')!
+  const originalInput = structuredClone(task.input)
+  const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'later-model' }
+  host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: id === '4' ? 'snow.safetensors' : 'paint.safetensors', base_model_id: id === '4' ? '9' : '1' }))
+  await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'review', observation: 'Rain is complete', conclusion: 'Try the snow model', run_ids: [firstRunId] } }, identity)
+  const candidate = { ...task.input.generation_input, model: { id: '4', file_name: 'snow.safetensors' } }
+  await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [] } }, identity)
+  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  const runId = accepted.items[0]!.runId
+  for (let phase = 0; phase < 4; phase += 1) await host.runtime.advance()
+  const expected = await reviewDraft(host, selected, runId)
+  await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Snow edges', conditions: 'Snow model', note: 'Keep the hard light' }, saveExperience: true } }, signal())
+  const projection = await host.remote.getProjection(selected, signal())
+  expect(projection.experiences).toMatchObject([{ model_id: '4', base_model_id: '9', source_run_id: runId }])
+  expect(projection.tasks.find(item => item.task_id === task.task_id)!.input).toEqual(originalInput)
+})
+
+it('updates one saved experience with the latest contributing Task and artifact', async () => {
+  const host = await fixture(), selected = await selectWork(host), runId = await acceptRun(host, selected)
+  let latestTaskId = '', latestArtifactId = '', experienceId: string | null = null
+  for (const note of ['Keep the rain', 'Keep the snow']) {
+    const { task, identity } = await startEvaluation(host, selected, runId, 'experience')
+    const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'experience', title: 'Weather edges', conditions: 'Backlight', note, base_model_id: '1', model_id: '2', run_ids: [runId] } }, identity)
+    const expected = await reviewDraft(host, selected, runId)
+    await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: expected, saveExperience: true } }, signal())
+    const projection = await host.remote.getProjection(selected, signal())
+    expect(projection.experiences).toHaveLength(1)
+    experienceId ??= projection.experiences[0]!.experience_id
+    expect(projection.experiences[0]!.experience_id).toBe(experienceId)
+    latestTaskId = task.task_id
+    latestArtifactId = published.artifact_id
+  }
+  expect((await host.remote.getProjection(selected, signal())).experiences[0]).toMatchObject({ task_id: latestTaskId, source_artifact_id: latestArtifactId, note: 'Keep the snow' })
+})
+
+it('sets and removes Run and experience favorites explicitly while browsing another branch', async () => {
+  const host = await fixture(), selected = await selectWork(host), runId = await acceptRun(host, selected)
+  const expected = await reviewDraft(host, selected, runId)
+  await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Rain edges', conditions: 'Glass', note: 'Keep the light' }, saveExperience: true } }, signal())
+  const experienceId = (await host.remote.getProjection(selected, signal())).experiences[0]!.experience_id
+  const sibling = await host.remote.mutate({ ...selected, type: 'create-branch', value: { name: 'Other branch', original_request: 'Paint snow' } }, signal())
+  for (const [targetType, id] of [['run', runId], ['experience', experienceId]] as const) {
+    for (let repeat = 0; repeat < 2; repeat += 1) await host.remote.mutate({ ...sibling, type: 'favorite', id, value: { targetType, favorite: true } }, signal())
+  }
+  const all = { workspaceId: selected.workspaceId, workId: selected.workId }
+  expect((await host.remote.getProjection(all, signal())).favorites).toEqual(expect.arrayContaining([{ target_type: 'run', target_id: runId }, { target_type: 'experience', target_id: experienceId }]))
+  for (const [targetType, id] of [['run', runId], ['experience', experienceId]] as const) {
+    for (let repeat = 0; repeat < 2; repeat += 1) await host.remote.mutate({ ...sibling, type: 'favorite', id, value: { targetType, favorite: false } }, signal())
+  }
+  const after = await host.remote.getProjection(all, signal())
+  expect(after.favorites).toEqual([])
+  expect(after.experiences).toHaveLength(1)
+  expect(after.runs.find(run => run.run_id === runId)!.media).toHaveLength(1)
+  const other = await selectWork(host)
+  await expect(host.remote.mutate({ ...other, type: 'favorite', id: runId, value: { targetType: 'run', favorite: true } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+  await expect(host.remote.mutate({ ...sibling, workspaceId: 'workspace_2', type: 'favorite', id: experienceId, value: { targetType: 'experience', favorite: true } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+})
+
+it('reuses an experience across base models with compatible resources and saved prompts before creating its branch', async () => {
+  const host = await fixture(), selected = await selectWork(host)
+  const readDetails = host.catalog.details.getMockImplementation()!
+  host.catalog.details.mockImplementation(async (request, requestSignal) => {
+    const details = await readDetails(request, requestSignal)
+    return { ...details, item: { ...details.item, baseModelId: request.id === '6' ? null : details.item.baseModelId } }
+  })
+  for (const value of [{ kind: 'lora', id: '3' }, { kind: 'lora', id: '6' }, { kind: 'style', id: '4' }, { kind: 'artist-string', id: '6' }, { kind: 'character', id: '7' }]) await host.remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await host.remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Source rain prompt' }, signal())
+  const runId = await acceptRun(host, selected), expected = await reviewDraft(host, selected, runId)
+  const sourceInput = await host.remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
+  await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Rain edges', conditions: 'Glass', note: 'Keep the light' }, saveExperience: true } }, signal())
+  const experience = (await host.remote.getProjection(selected, signal())).experiences[0]!
+  const created = await host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Target base recheck', baseModelId: '9' } }, signal())
+  const projection = await host.remote.getProjection(created, signal())
+  const draft = projection.branches.find(branch => branch.branch_id === created.branchId)!.draft
+  expect(projection.branches.find(branch => branch.branch_id === created.branchId)).toMatchObject({ name: 'Target base recheck', original_request: 'Paint a glasshouse', parent_branch_id: selected.branchId, source_run_id: runId, source_experience_id: experience.experience_id })
+  expect(draft).toEqual({
+    base_model_id: '9', prompt_input: sourceInput.prompt_input,
+    generation_input: { ...sourceInput.generation_input, model: null, template_id: null, parameters: {}, loras: sourceInput.generation_input.loras.filter(lora => lora.id === '6') },
+    context_refs: [{ kind: 'artist-string', id: '6' }, { kind: 'character', id: '7' }],
+  })
+  expect((await host.remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())).generation_input).toEqual(sourceInput.generation_input)
+  const sourceDetails = host.catalog.details.getMockImplementation()!
+  host.catalog.details.mockImplementation(async (request, requestSignal) => {
+    const details = await sourceDetails(request, requestSignal)
+    return { ...details, item: { ...details.item, baseModelId: request.kind === 'model' && request.id === '4' || request.kind === 'comfyui-template' && request.id === '10' ? '9' : details.item.baseModelId } }
+  })
+  host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: id === '4' ? 'snow.safetensors' : 'paint.safetensors', base_model_id: id === '4' ? '9' : '1' }))
+  host.catalog.resolveTemplate.mockImplementation(async id => ({ id, title: 'Selected template', base_model_id: id === '10' ? '9' : '1', model_id: null }))
+  for (const value of [{ kind: 'model', id: '4' }, { kind: 'comfyui-template', id: '10' }]) await host.remote.mutate({ ...created, type: 'resource-select', value }, signal())
+  const recheckRunId = await acceptRun(host, created), recheckReview = await reviewDraft(host, created, recheckRunId)
+  await host.remote.mutate({ ...created, type: 'evaluate', runId: recheckRunId, value: { expected: recheckReview, draft: { ...recheckReview, title: 'Rechecked edges', conditions: 'Target model', note: 'The new setup works' }, saveExperience: true } }, signal())
+  const all = await host.remote.getProjection({ workspaceId: selected.workspaceId, workId: selected.workId }, signal())
+  const recheckTask = all.tasks.find(task => task.task_id === all.runs.find(run => run.run_id === recheckRunId)!.workbench_task_id)!
+  expect(recheckTask).toMatchObject({ branch_id: created.branchId, input: { base_model_id: '9', requirements: { original_request: 'Paint a glasshouse' }, prompt_input: sourceInput.prompt_input } })
+  expect(all.experiences.find(item => item.source_run_id === recheckRunId)).toMatchObject({ branch_id: created.branchId, source_experience_id: experience.experience_id, model_id: '4', base_model_id: '9' })
+  expect(all.experiences.find(item => item.experience_id === experience.experience_id)).toEqual(experience)
+})
+
+it.each(['missing', 'different-id', 'different-file', 'template-model'] as const)('keeps unknown experience model metadata nullable for %s', async mode => {
+  const host = await fixture(), selected = await selectWork(host)
+  if (mode === 'template-model') await host.remote.mutate({ ...selected, type: 'resource-remove', value: 'model' }, signal())
+  const runId = await acceptRun(host, selected), expected = await reviewDraft(host, selected, runId)
+  if (mode === 'missing') host.catalog.resolveGenerationModel.mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The model catalog is unavailable'))
+  else if (mode !== 'template-model') host.catalog.resolveGenerationModel.mockResolvedValue({ id: mode === 'different-id' ? '7' : '2', file_name: mode === 'different-file' ? 'changed.safetensors' : 'paint.safetensors', base_model_id: '9' })
+  await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Rain edges', conditions: 'Glass', note: 'Keep the light' }, saveExperience: true } }, signal())
+  expect((await host.remote.getProjection(selected, signal())).experiences[0]).toMatchObject({ model_id: mode === 'template-model' ? null : '2', base_model_id: null })
+})
+
+it('rolls back a saved experience when its review draft changes during model resolution', async () => {
+  const host = await fixture(), selected = await selectWork(host), runId = await acceptRun(host, selected), expected = await reviewDraft(host, selected, runId)
+  let finish!: (value: { id: string; file_name: string; base_model_id: string }) => void
+  let started!: () => void
+  const reading = new Promise<void>(resolve => { started = resolve })
+  host.catalog.resolveGenerationModel.mockImplementation(() => { started(); return new Promise(resolve => { finish = resolve }) })
+  const pending = host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Rain edges', conditions: 'Glass', note: 'Keep the light' }, saveExperience: true } }, signal())
+  await reading
+  const draft = { ...expected, observation: 'Changed while saving' }
+  await host.remote.mutate({ ...selected, type: 'update-review-draft', runId, value: { expected, draft } }, signal())
+  finish({ id: '2', file_name: 'paint.safetensors', base_model_id: '1' })
+  await expect(pending).rejects.toMatchObject({ details: { code: 'WORKBENCH_EDIT_CONFLICT' } })
+  const result = await host.remote.getProjection(selected, signal())
+  expect(result.experiences).toEqual([])
+  expect(result.runs.find(run => run.run_id === runId)).toMatchObject({ review: null, review_draft: draft })
+})
+
+it('leaves no branch when a reused experience target or resource catalog is unavailable', async () => {
+  const host = await fixture(), selected = await selectWork(host), runId = await acceptRun(host, selected), expected = await reviewDraft(host, selected, runId)
+  await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Rain edges', conditions: 'Glass', note: 'Keep the light' }, saveExperience: true } }, signal())
+  const before = await host.remote.getProjection(selected, signal()), experience = before.experiences[0]!
+  const readBaseModels = host.catalog.baseModels.getMockImplementation()!
+  host.catalog.baseModels.mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The base model catalog is unavailable'))
+  await expect(host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Offline base catalog', baseModelId: '9' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
+  host.catalog.baseModels.mockImplementation(readBaseModels)
+  await expect(host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Missing base', baseModelId: '10' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
+  host.catalog.details.mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The resource catalog is unavailable'))
+  await expect(host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Missing resource', baseModelId: '9' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
+  const other = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_2', value: { name: 'Other work', goal: 'Paint snow' } }, signal())
+  await expect(host.remote.mutate({ ...other, type: 'reuse', id: experience.experience_id, value: { name: 'Other work', baseModelId: null } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+  expect((await host.remote.getProjection(selected, signal())).branches).toEqual(before.branches)
+})
+
+it('saves failed cross-branch evidence in the same Work and rejects evidence from another Work', async () => {
+  let fail = false
+  const host = await fixture(() => fail), selected = await selectWork(host), runId = await acceptRun(host, selected)
+  const sibling = await host.remote.mutate({ ...selected, type: 'create-branch', value: { name: 'Failure evidence', original_request: 'Compare the failure' } }, signal())
+  fail = true
+  const failedRunId = await acceptRun(host, sibling), expected = await reviewDraft(host, selected, runId)
+  await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Rain boundary', conditions: 'Glass', note: 'Compare both runs', evidence_run_ids: [runId, failedRunId] }, saveExperience: true } }, signal())
+  const all = { workspaceId: selected.workspaceId, workId: selected.workId }
+  const before = await host.remote.getProjection(all, signal()), experience = before.experiences[0]!
+  expect(experience.evidence_run_ids).toEqual([runId, failedRunId])
+  const failure = before.runs.find(run => run.run_id === failedRunId)!
+  expect(failure).toMatchObject({ status: 'failed', error: { code: 'COMFYUI_REMOTE_ERROR', message: 'Controlled node failure' } })
+  expect(before.tasks.find(task => task.task_id === failure.workbench_task_id)).toMatchObject({ branch_id: sibling.branchId })
+  expect(await host.remote.getRunInput({ ...all, workId: selected.workId!, runId: failedRunId }, signal())).toMatchObject({ branch_id: sibling.branchId, generation_input: failure.generation_input })
+  const other = await selectWork(host, 'workspace_2'), foreignRunId = await acceptRun(host, other)
+  const current = await reviewDraft(host, selected, runId)
+  await expect(host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected: current, draft: { ...current, note: 'Rejected evidence', evidence_run_ids: [runId, foreignRunId] }, saveExperience: true } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+  await expect(host.remote.getRunInput({ ...all, workId: selected.workId!, runId: foreignRunId }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+  const after = await host.remote.getProjection(all, signal())
+  expect(after.experiences).toEqual(before.experiences)
+  expect(after.runs.find(run => run.run_id === runId)!.review_draft).toEqual(current)
+})
+
+it.each(['title', 'conditions', 'note'] as const)('rejects an experience with missing %s without saving its review or draft', async field => {
+  const host = await fixture(), selected = await selectWork(host), runId = await acceptRun(host, selected), expected = await reviewDraft(host, selected, runId)
+  const draft = { ...expected, title: 'Rain edges', conditions: 'Glass', note: 'Keep the light', [field]: ' ' }
+  await expect(host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft, saveExperience: true } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: `draft.${field}`, message: expect.any(String) }] } })
+  const result = await host.remote.getProjection(selected, signal())
+  expect(result.experiences).toEqual([])
+  expect(result.runs.find(run => run.run_id === runId)).toMatchObject({ review: null, review_draft: expected })
+})
 
 async function fixture(fail: boolean | (() => boolean) = false) {
   const transport: GenerationTransport = {
@@ -46,7 +223,7 @@ async function acceptRun(host: Host, selected: WorkbenchScope, finish = true, ty
   const receipt = await host.remote.mutate({ ...selected, type }, signal())
   const task = (await host.remote.getProjection(selected, signal())).tasks.find(item => item.task_id === receipt.taskId)!
   const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: randomUUID() }
-  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...task.input.generation_input, instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
   const runId = accepted.items[0]!.runId
   if (finish) for (let phase = 0; phase < 4; phase += 1) await host.runtime.advance()
   return runId

@@ -16,6 +16,7 @@ import {
 } from '../../catalog/contract.ts'
 import type {
   Branch,
+  Experience,
   FunctionBinding,
   JsonValue,
   Task,
@@ -23,7 +24,7 @@ import type {
   TaskDraft,
   WorkbenchRun,
 } from '../../workbench/contract.ts'
-import { isRunReviewFunctionKind } from '../../workbench/contract.ts'
+import { isRunReviewFunctionKind, WORKBENCH_BRANCH_NAME_MAX_LENGTH } from '../../workbench/contract.ts'
 import type { WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import type {
   ExperimentActionType,
@@ -62,6 +63,8 @@ import { useRunInputs } from './experiment-run-input.ts'
 import { RunReviewEditor } from './experiment-review-editor.ts'
 import { ExperimentReviewDialog } from './experiment-review-dialog.tsx'
 import reviewPresentation from './experiment-review-presentation.json' with { type: 'json' }
+import libraryPresentation from './experiment-library-presentation.json' with { type: 'json' }
+import { ExperimentReuseDialog } from './experiment-reuse-dialog.tsx'
 
 export type {
   ExperimentWorkbenchAction,
@@ -130,14 +133,42 @@ function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
   </div>
 }
 
-function RunModelName({ model, load, baseModels }: {
+function useRunModelName({ model, load, baseModels }: {
   readonly model: WorkbenchRun['generation_input']['model']
   readonly load?: CatalogApi['details']
   readonly baseModels: ExperimentWorkbenchProps['baseModels']
 }) {
   const { details } = useCatalogDetails(model ? { kind: 'model', id: model.id } : null, load)
   const baseModel = baseModels?.find(item => details?.id === model?.id && item.id === details?.item.baseModelId)
-  return <>{baseModel?.label ?? model?.file_name ?? model?.id ?? taskPresentation.unrecorded}</>
+  return baseModel?.label ?? model?.file_name ?? model?.id ?? taskPresentation.unrecorded
+}
+
+function RunModelName(props: Parameters<typeof useRunModelName>[0]) {
+  return <>{useRunModelName(props)}</>
+}
+
+function FavoriteRunCard({ run, branchName, query, load, baseModels, onOpen, onRemove }: {
+  readonly run: WorkbenchRun
+  readonly branchName: string
+  readonly query: string
+  readonly load?: CatalogApi['details']
+  readonly baseModels: ExperimentWorkbenchProps['baseModels']
+  readonly onOpen: () => void
+  readonly onRemove: () => void
+}) {
+  const modelName = useRunModelName({ model: run.generation_input.model, load, baseModels })
+  const source = libraryPresentation.runSource.replace(/\{modelName\}|\{branchName\}|\{taskId\}/g,
+    token => token === '{modelName}' ? modelName : token === '{branchName}' ? branchName : run.workbench_task_id)
+  return <article className="experience-card"
+    hidden={![`${shortId(run.run_id)} · ${run.title}`, source, libraryPresentation.openRun, libraryPresentation.removeFavorite]
+      .join('').toLowerCase().includes(query.trim().toLowerCase())}>
+    <h3><Identifier value={run.run_id} /> · {run.title}</h3>
+    <p>{source}</p>
+    <div className="row">
+      <Button kind="small" onClick={onOpen}>{libraryPresentation.openRun}</Button>
+      <Button kind="small quiet" onClick={onRemove}>{libraryPresentation.removeFavorite}</Button>
+    </div>
+  </article>
 }
 
 function ContextSummary({ item, load, onError, onDetail, onRemove }: {
@@ -254,14 +285,17 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     readonly navigation: number
   } | null>(null)
   const [imageRunId, setImageRunId] = useState<string | null>(null)
+  const [reuseExperience, setReuseExperience] = useState<Experience | null>(null)
+  const [focusExperienceId, setFocusExperienceId] = useState<string | null>(null)
   const [modal, setModalState] = useState<
-    'new-work' | 'new-workspace' | 'branch' | 'image' | 'model-change' | 'evaluate' | null
+    'new-work' | 'new-workspace' | 'branch' | 'image' | 'model-change' | 'evaluate' | 'reuse' | null
   >(null)
   const setModal = useCallback((value: typeof modal) => {
     modalInstance.current++
     setFormSubmitting(false)
     if (value !== 'model-change') setModelChange(null)
     if (value !== 'image') setImageRunId(null)
+    if (value !== 'reuse') setReuseExperience(null)
     setModalState(value)
   }, [])
   const [search, setSearch] = useState('')
@@ -295,6 +329,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   }, [state.workspaceId, state.view.workId, state.view.branchId, props.visible])
   useEffect(() => {
     setMessage(null)
+    setFocusExperienceId(null)
   }, [state.workspaceId, state.view.workId, props.visible])
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -470,7 +505,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ...extra,
       })
       if (!stillCurrent()) return false
-      const keepsTaskNavigation = !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'task-apply' || type === 'task-generation-apply'
+      const keepsCurrentNavigation = type === 'favorite' || !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'task-apply' || type === 'task-generation-apply'
       const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
         && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
       if (selection?.taskId && view.workId) {
@@ -478,7 +513,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         const functionName = p?.functions.find(item => item.function_id === functionId)?.name ?? selection.taskId
         notifyTask(functionName, selection.taskId, view.workId, 'submitted')
       }
-      if (selection && !keepsCatalogNavigation && !keepsTaskNavigation) navigate(() => {
+      if (selection && !keepsCatalogNavigation && !keepsCurrentNavigation) navigate(() => {
         selectWorkspace(selection.workspaceId)
         props.onWorkspaceChange(selection.workspaceId)
         if (type === 'new-workspace') changePage('workbench')
@@ -495,7 +530,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       const refreshNavigation = store.getNavigationSequence()
       await store.refresh()
       if (store.getNavigationSequence() !== refreshNavigation) return false
-      if (!keepsTaskNavigation && selection?.branchId && selection.branchId !== view.branchId)
+      if (!keepsCurrentNavigation && selection?.branchId && selection.branchId !== view.branchId)
         selectBranch(selection.branchId)
       return !isCurrent || isCurrent()
     } catch (error) {
@@ -940,7 +975,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               icon="star"
               disabled={run.status !== 'succeeded'}
               onClick={() =>
-                void action('favorite', { id: run.run_id, value: 'run' })
+                void action('favorite', { id: run.run_id, value: { targetType: 'run', favorite: !p?.favorites.some(item => item.target_type === 'run' && item.target_id === run.run_id) } })
               }
             >
               {p?.favorites.some(
@@ -1059,18 +1094,15 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const favoritePage = view.page === 'favorites'
   const experiences =
     p?.experiences.filter(
-      (item) =>
-        (!favoritePage ||
-          p.favorites.some(
-            (favorite) =>
-              favorite.target_type === 'experience' &&
-              favorite.target_id === item.experience_id,
-          )) &&
-        [item.title, item.conditions, item.note, item.base_model_id]
-          .join(' ')
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-    ) ?? []
+      (item) => !favoritePage ||
+        p.favorites.some(
+          (favorite) => favorite.target_type === 'experience' &&
+            favorite.target_id === item.experience_id,
+        ),
+    ).sort((a, b) => Number(b.experience_id === focusExperienceId) - Number(a.experience_id === focusExperienceId)) ?? []
+  const favoriteRuns = favoritePage ? p?.favorites.filter(item => item.target_type === 'run')
+    .map(item => p.runs.find(run => run.run_id === item.target_id))
+    .filter((item): item is WorkbenchRun => !!item) ?? [] : []
   const library = (
     <main className="center">
       <PanelHead title={favoritePage ? '收藏' : '经验'}>{back}</PanelHead>
@@ -1086,13 +1118,17 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         </div>
         {favoritePage && (
           <div className="eyebrow" style={{ margin: '5px 0 14px' }}>
-            收藏的经验
+            {libraryPresentation.favoriteExperiences}
           </div>
         )}
         <div>
-          {experiences.map((item) => (
-            <article className="experience-card" key={item.experience_id}>
-              <span className="eyebrow">{item.base_model_id}</span>
+          {experiences.map((item) => {
+            const baseModelName = props.baseModels?.find(model => model.id === item.base_model_id)?.label ?? item.base_model_id ?? ''
+            const favorite = p?.favorites.some(target => target.target_type === 'experience' && target.target_id === item.experience_id) ?? false
+            return <article className="experience-card" key={item.experience_id} data-experience={item.experience_id}
+              hidden={![baseModelName, item.title, item.conditions, item.note, libraryPresentation.evidence, ...item.evidence_run_ids.map(id => id + ' ↗'),
+                libraryPresentation.reuse, favorite ? libraryPresentation.removeFavorite : libraryPresentation.addFavorite].join('').toLowerCase().includes(search.trim().toLowerCase())}>
+              <span className="eyebrow">{baseModelName}</span>
               <h3>{item.title}</h3>
               <p>
                 {item.conditions}
@@ -1100,7 +1136,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 {item.note}
               </p>
               <div className="evidence">
-                <span className="muted">支持记录</span>
+                <span className="muted">{libraryPresentation.evidence}</span>
                 {item.evidence_run_ids.map((id) => (
                   <button
                     key={id}
@@ -1115,11 +1151,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 <Button
                   kind="small"
                   icon="branch"
-                  onClick={() =>
-                    void action('reuse', { id: item.experience_id })
-                  }
+                  onClick={() => { setReuseExperience(item); setModal('reuse') }}
                 >
-                  复用经验
+                  {libraryPresentation.reuse}
                 </Button>
                 <Button
                   kind="small quiet"
@@ -1127,21 +1161,15 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   onClick={() =>
                     void action('favorite', {
                       id: item.experience_id,
-                      value: 'experience',
+                      value: { targetType: 'experience', favorite: !favorite },
                     })
                   }
                 >
-                  {p?.favorites.some(
-                    (favorite) =>
-                      favorite.target_type === 'experience' &&
-                      favorite.target_id === item.experience_id,
-                  )
-                    ? '移除收藏'
-                    : '添加收藏'}
+                  {favorite ? libraryPresentation.removeFavorite : libraryPresentation.addFavorite}
                 </Button>
               </div>
             </article>
-          ))}
+          })}
           {!experiences.length && (
             <div className="empty">
               <h3>{favoritePage ? '尚未收藏经验' : '尚未保存经验'}</h3>
@@ -1155,43 +1183,13 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               </Button>
             </div>
           )}
-          {favoritePage &&
-            p?.favorites
-              .filter((item) => item.target_type === 'run')
-              .map((item) =>
-                p.runs.find((run) => run.run_id === item.target_id),
-              )
-              .filter((item): item is WorkbenchRun => !!item)
-              .map((item) => (
-                <article className="experience-card" key={item.run_id}>
-                  <h3>
-                    <Identifier value={item.run_id} /> · {item.title}
-                  </h3>
-                  <p>
-                    {item.generation_input.model?.file_name} ·{' '}
-                    {branchFor(item)?.name} · 任务 {item.workbench_task_id}
-                  </p>
-                  <div className="row">
-                    <Button
-                      kind="small"
-                      onClick={() => selectRun(item.run_id)}
-                    >
-                      查看运行
-                    </Button>
-                    <Button
-                      kind="small quiet"
-                      onClick={() =>
-                        void action('favorite', {
-                          id: item.run_id,
-                          value: 'run',
-                        })
-                      }
-                    >
-                      移除收藏
-                    </Button>
-                  </div>
-                </article>
-              ))}
+          {favoriteRuns.length > 0 && <>
+            <div className="eyebrow" style={{ margin: '22px 0 14px' }}>{libraryPresentation.favoriteRuns}</div>
+            {favoriteRuns.map(item => <FavoriteRunCard key={item.run_id} run={item} branchName={branchFor(item)?.name ?? ''}
+              query={search} load={props.catalog?.details} baseModels={props.baseModels}
+              onOpen={() => selectRun(item.run_id)}
+              onRemove={() => { void action('favorite', { id: item.run_id, value: { targetType: 'run', favorite: false } }) }} />)}
+          </>}
         </div>
       </div>
     </main>
@@ -1629,7 +1627,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         )}
         <fieldset className="configuration" disabled={locked}>
           {field('分支名称', 'name', branch.name, {
-            maxLength: 40,
+            maxLength: WORKBENCH_BRANCH_NAME_MAX_LENGTH,
             branch: true,
           })}
           {field('原始需求', 'original_request', branch.original_request, {
@@ -1818,7 +1816,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           <div className="note">
             <Button
               kind="small quiet"
-              onClick={() => changePage('experiences')}
+              onClick={() => { setFocusExperienceId(branch.source_experience_id); changePage('experiences') }}
             >
               查看来源经验
             </Button>
@@ -2347,7 +2345,21 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             }
           }}
         />}
-        {modal && modal !== 'evaluate' && (
+        {modal === 'reuse' && reuseExperience && <ExperimentReuseDialog key={modalInstance.current}
+          experience={reuseExperience} baseModels={props.baseModels} branchCount={p?.branches.length ?? 0}
+          onClose={() => setModal(null)} onSubmit={async value => {
+            const instance = modalInstance.current
+            if (formSubmissionPending.current === instance) return
+            const isCurrent = () => modalInstance.current === instance
+            formSubmissionPending.current = instance
+            try {
+              const saved = await action('reuse', { id: reuseExperience.experience_id, value }, isCurrent)
+              if (saved && isCurrent()) setModal(null)
+            } finally {
+              if (formSubmissionPending.current === instance) formSubmissionPending.current = null
+            }
+          }} />}
+        {modal && modal !== 'evaluate' && modal !== 'reuse' && (
           <div
             className="modal-backdrop"
           >
@@ -2466,7 +2478,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                             ? '工作名称'
                             : '分支名称'
                       }
-                      maxLength={40}
+                      maxLength={modal === 'branch' ? WORKBENCH_BRANCH_NAME_MAX_LENGTH : 40}
                       required
                       autoComplete={modal === 'new-workspace' ? 'off' : undefined}
                       defaultValue={

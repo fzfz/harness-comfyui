@@ -543,11 +543,13 @@ it('reuses an undescribed experience through the source Run branch with fixed ra
   const experience = (await remote.getProjection(selected, signal())).experiences[0]!
   const sibling = await remote.mutate({ ...selected, type: 'create-branch', value: { name: 'Browsing sibling', original_request: 'Other input' } }, signal())
   host.inspect.mockClear().mockRejectedValue(new Error('The current template is unavailable'))
-  const reused = await remote.mutate({ ...sibling, type: 'reuse', id: experience.experience_id }, signal())
+  host.catalog.resolveGenerationModel.mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The current model catalog is unavailable'))
+  host.catalog.details.mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The current resource catalog is unavailable'))
+  const reused = await remote.mutate({ ...sibling, type: 'reuse', id: experience.experience_id, value: { name: 'Opaque recheck', baseModelId: '1' } }, signal())
   const after = await remote.getProjection(reused, signal())
   expect(after.branches.find(branch => branch.branch_id === reused.branchId)).toMatchObject({
-    parent_branch_id: selected.branchId, source_run_id: runId, source_experience_id: experience.experience_id,
-    draft: { generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }], prompt_input: { positive_prompt: null, negative_prompt: null } },
+    name: 'Opaque recheck', original_request: 'Paint rain', parent_branch_id: selected.branchId, source_run_id: runId, source_experience_id: experience.experience_id,
+    draft: { base_model_id: '1', generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }], prompt_input: { positive_prompt: null, negative_prompt: null } },
   })
   expect(host.inspect).not.toHaveBeenCalled()
   expect((await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())).generation_input).toEqual(candidate)

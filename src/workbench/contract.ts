@@ -1,3 +1,4 @@
+import libraryConfig from './library-config.json' with { type: 'json' }
 import type { CatalogKind as CatalogResourceKind } from '../catalog/contract.ts'
 import type { JsonValue } from '../shared/json-contract.ts'
 
@@ -182,7 +183,13 @@ export interface Experience {
   source_experience_id: string | null
   source_artifact_id: string | null
 }
-export interface Favorite { target_type: 'run' | 'experience'; target_id: string }
+export const WORKBENCH_BRANCH_NAME_MAX_LENGTH = libraryConfig.branchNameMaxLength
+export const WORKBENCH_FAVORITE_TARGET_TYPES = ['run', 'experience'] as const
+
+export interface FavoriteUpdate { targetType: Favorite['target_type']; favorite: boolean }
+export interface ExperienceReuseInput { name: string; baseModelId: string | null }
+
+export interface Favorite { target_type: typeof WORKBENCH_FAVORITE_TARGET_TYPES[number]; target_id: string }
 export interface WorkbenchViewState {
   workspace_id: string | null; work_id: string | null; branch_id: string | null
   page: string; selected_run_id: string | null; inspect_run: boolean; compare_run_id: string | null

@@ -2,7 +2,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import { jsonValueSchema } from '../shared/json-contract.ts'
-import type { ArtifactType } from './contract.ts'
+import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, WORKBENCH_FAVORITE_TARGET_TYPES, type ArtifactType } from './contract.ts'
 
 import { workflowRuntimeParameterInspectionSchema } from '../generation/inspection-contract.ts'
 const text = () => Schema.string().required()
@@ -35,6 +35,8 @@ const candidateSchema = object({ generation_input: generationInputSchema, contex
 const promptInputFields = { positive_prompt: requiredNullable(text()), negative_prompt: requiredNullable(text()) }
 export const promptInputSchema = object(promptInputFields)
 const taskDraftFields = { prompt_input: promptInputSchema, generation_input: generationInputSchema, context_refs: Schema.array(contextRefSchema).required(), base_model_id: requiredNullable(id()) }
+export const favoriteUpdateSchema = object({ targetType: Schema.union([...WORKBENCH_FAVORITE_TARGET_TYPES]).required(), favorite: Schema.boolean().required() })
+export const experienceReuseInputSchema = object({ name: Schema.string().min(1).max(WORKBENCH_BRANCH_NAME_MAX_LENGTH).pattern(/\S/u).required(), baseModelId: requiredNullable(id()) })
 export const taskDraftSchema = object(taskDraftFields)
 export const artifactSchemas = {
   prompt: object({ type: Schema.const('prompt').required(), ...promptInputFields, source_files: Schema.array(text()).default(undefined as never) }),
