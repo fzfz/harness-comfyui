@@ -2,6 +2,7 @@ import React, { type ReactNode, useCallback, useEffect, useState } from 'react'
 
 const icons = {
   branch: 'M5 3v12a3 3 0 0 0 3 3h8M5 7h6a4 4 0 0 0 4-4',
+  arrow: 'M5 12h14m-5-5 5 5-5 5',
   run: 'm7 4 11 8-11 8Z',
   star: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9Z',
   plus: 'M12 5v14M5 12h14',
@@ -49,6 +50,16 @@ export function Button({ children, onClick, kind = '', icon, disabled, label, au
   )
 }
 
+export function trapDialogFocus(event: React.KeyboardEvent<HTMLElement>) {
+  if (event.key !== 'Tab') return
+  const elements = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input,textarea,select,a,summary')]
+    .filter(element => element.offsetParent !== null)
+  const first = elements[0], last = elements.at(-1)
+  const { activeElement } = event.currentTarget.getRootNode() as Document | ShadowRoot
+  if (event.shiftKey && activeElement === first) { event.preventDefault(); last?.focus() }
+  else if (!event.shiftKey && activeElement === last) { event.preventDefault(); first?.focus() }
+}
+
 export function Modal({ title, children, onClose, kind = '' }: {
   readonly title: string
   readonly children: ReactNode
@@ -63,14 +74,7 @@ export function Modal({ title, children, onClose, kind = '' }: {
   return (
     <div className="modal-backdrop">
       <section className={`modal ${kind}`} role="dialog" aria-modal="true" aria-labelledby="modal-title"
-        onKeyDown={(event) => {
-          if (event.key !== 'Tab') return
-          const elements = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input,textarea,select,a,summary')]
-            .filter(element => element.offsetParent !== null)
-          const first = elements[0], last = elements.at(-1)
-          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
-          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
-        }}>
+        onKeyDown={trapDialogFocus}>
         <div className="modal-head">
           <h2 id="modal-title">{title}</h2>
           <Button kind="quiet small" label="关闭对话框" autoFocus onClick={onClose}>×</Button>

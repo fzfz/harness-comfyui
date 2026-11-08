@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Button,
   IconSparkleRegular,
@@ -16,6 +17,7 @@ import type {
   ExperimentWorkspace,
 } from './experiment-contract.ts'
 import { ExperimentWorkbench } from './experiment-workbench.tsx'
+import { experimentWorkbenchStyles } from './experiment-style.ts'
 
 export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment'
 type RemoteReply<T> =
@@ -65,6 +67,21 @@ export function ExperimentWorkbenchEntry({
     </Button>
   )
 }
+function ExperimentWorkbenchSurface({ children }: { readonly children: ReactNode }) {
+  const [root, setRoot] = useState<ShadowRoot | null>(null)
+  const mount = useCallback((element: HTMLDivElement | null) => {
+    if (element) setRoot(element.shadowRoot ?? element.attachShadow({ mode: 'open' }))
+  }, [])
+  return (
+    <div data-experiment-workbench-root="" ref={mount}>
+      {root && createPortal(
+        <><style>{experimentWorkbenchStyles}</style>{children}</>,
+        root,
+      )}
+    </div>
+  )
+}
+
 export function ExperimentWorkbenchHost({
   remote,
   catalog,
@@ -148,17 +165,14 @@ export function ExperimentWorkbenchHost({
     setAttempt((value) => value + 1)
     return selection
   }
-  if (error && !environment)
-    return (
-      <div role="alert">
-        <p>{error}</p>
-        <button type="button" onClick={() => setAttempt((value) => value + 1)}>
-          重试
-        </button>
-      </div>
-    )
-  if (!environment) return <div role="status">正在加载工作区…</div>
-  return (
+  const content = error && !environment ? (
+    <div role="alert">
+      <p>{error}</p>
+      <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+        重试
+      </button>
+    </div>
+  ) : !environment ? <div role="status">正在加载工作区…</div> : (
     <ExperimentWorkbench
       remote={api}
       catalog={catalog}
@@ -173,4 +187,5 @@ export function ExperimentWorkbenchHost({
       onAction={mutate}
     />
   )
+  return <ExperimentWorkbenchSurface>{content}</ExperimentWorkbenchSurface>
 }

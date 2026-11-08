@@ -1,10 +1,10 @@
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
-import { catalogDefinition, parseCatalogStableId, parseCatalogOperationResult, type CatalogKind } from './contract.ts'
+import { catalogDefinition, parseCatalogItem, parseCatalogStableId, parseCatalogOperationResult, type CatalogItem, type CatalogKind } from './contract.ts'
 
 export interface CatalogDetailsRequest { readonly kind: CatalogKind; readonly id: string }
 export type CatalogDetailValue = string | number | readonly (string | number)[] | null
 export interface CatalogDetailField { readonly key: string; readonly value: CatalogDetailValue }
-export type CatalogDetails = { [K in CatalogKind]: { readonly kind: K; readonly id: string; readonly fields: readonly CatalogDetailField[] } }[CatalogKind]
+export type CatalogDetails = { [K in CatalogKind]: { readonly kind: K; readonly id: string; readonly item: CatalogItem; readonly fields: readonly CatalogDetailField[] } }[CatalogKind]
 export const CATALOG_PRESENTATION = presentation
 export const CATALOG_FIELDS = presentation.fields
 
@@ -29,8 +29,10 @@ function fieldValue(key: string, value: unknown): CatalogDetailValue {
 }
 export function parseCatalogDetails(value: unknown): CatalogDetails {
   const input = object(value)
-  if (Object.keys(input).length !== 3) throw new TypeError('Catalog details response: provide exactly kind, id and fields.')
+  if (Object.keys(input).length !== 4) throw new TypeError('Catalog details response: provide exactly kind, id, item and fields.')
   const identity = parseCatalogDetailsRequest({ kind: input.kind, id: input.id })
+  const item = parseCatalogItem(input.item)
+  if (item.context.kind !== identity.kind || item.context.id !== identity.id) throw new TypeError('Catalog details item: return the requested kind and id.')
   const keys = presentation.kinds[identity.kind].details
   if (!Array.isArray(input.fields) || input.fields.length !== keys.length) throw new TypeError('Catalog details response fields: provide every field of the requested category in its configured order.')
   const fields = input.fields.map((raw, index) => {
@@ -39,7 +41,7 @@ export function parseCatalogDetails(value: unknown): CatalogDetails {
     return { key: keys[index]!, value: fieldValue(keys[index]!, field.value) }
   })
   if (fields[0]!.value !== identity.id) throw new TypeError('Catalog details response: return the requested id in the first field as well as the top-level id.')
-  return { ...identity, fields }
+  return { ...identity, item, fields }
 }
 export function parseCatalogDetailsResult(value: unknown) {
   return parseCatalogOperationResult(value, parseCatalogDetails, 'catalog details result')

@@ -141,7 +141,7 @@ function catalog(items: readonly CatalogItem[] = CONTEXT_OPTIONS, totalCount?: n
     if (signal.aborted) throw new DOMException('cancelled', 'AbortError')
     return { items: [{ id: '2', label: 'wai' }, { id: '1', label: 'anima' }] }
   })
-  return { search, baseModels, details: vi.fn(async () => ({ kind: 'comfyui-template', id: '37', fields: [{ key: 'title', value: 'wai_txt2img_lora' }] })) } as never
+  return { search, baseModels, details: vi.fn(async () => ({ kind: 'comfyui-template', id: '37', item: CONTEXT_OPTIONS.find(item => item.context.kind === 'comfyui-template')!, fields: [{ key: 'title', value: 'wai_txt2img_lora' }] })) } as never
 }
 
 function inputState(draft = '') {
@@ -1059,7 +1059,7 @@ it('returns from details and its gallery without changing the draft, selection o
   act(() => renderer!.unmount())
 })
 it('shows detail failures, retries and renders zero, empty and multi-value fields', async () => {
-  const result: CatalogDetails = { kind: 'prompt-term', id: '1', fields: [
+  const result: CatalogDetails = { kind: 'prompt-term', id: '1', item: { context: { kind: 'prompt-term', id: '1', tag: 'tag' }, baseModelId: null, label: 'tag', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [
     { key: 'post_count', value: 0 }, { key: 'aliases_json', value: ['a', 'b'] }, { key: 'category', value: null },
     { key: 'description', value: '' }, { key: 'character_names', value: [] },
   ] }
@@ -1082,7 +1082,7 @@ it('cancels closed details and ignores late responses and failures', async () =>
   expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.loading)
   act(() => { renderer!.update(createElement(CatalogDetailsPanel, { ...props, request: { kind: 'work', id: '2' } })) })
   expect(pending[0]!.signal.aborted).toBe(true)
-  await act(async () => { pending[0]!.resolve({ kind: 'work', id: '1', fields: [{ key: 'name', value: '旧内容' }] }) })
+  await act(async () => { pending[0]!.resolve({ kind: 'work', id: '1', item: { context: { kind: 'work', id: '1', name: '旧内容' }, baseModelId: null, label: '旧内容', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'name', value: '旧内容' }] }) })
   expect(JSON.stringify(renderer!.toJSON())).not.toContain('旧内容')
   act(() => renderer!.unmount())
   await act(async () => pending[1]!.reject(new Error('late')))

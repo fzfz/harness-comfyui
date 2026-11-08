@@ -5,7 +5,7 @@ import { SourceClientError } from '../../src/host/source-client/http-client.ts'
 
 const work = { id: 1, name: '作品', aliases_json: ['别名'], category_name: '游戏', character_names: ['角色'], cover_url: null, sample_image_urls: [] }
 function cli(source: unknown) {
-  const query = vi.fn<CatalogQuery>(async () => ({ status: 'ok', message: null, page: 1, page_size: 1, total_count: 1, results: [source] }))
+  const query = vi.fn<CatalogQuery>(async () => ({ status: 'ok', message: null, page: 1, page_size: 1, total_count: 1, results: [{ cover_url: null, sample_image_urls: [], ...source as object }] }))
   return { process: query, api: new CatalogClient({ settings: { get: () => ({ url: 'http://127.0.0.1', port: 18093 }) }, query }) }
 }
 describe('Catalog details', () => {
@@ -13,7 +13,8 @@ describe('Catalog details', () => {
     const { api, process } = cli({ ...work, workflow_json: { private: true } })
     const signal = new AbortController().signal
     const details = await api.details({ kind: 'work', id: '1' }, signal)
-    expect(details).toEqual({ kind: 'work', id: '1', fields: [
+    expect(details.item).toEqual({ context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '作品类别：游戏', coverUrl: null, sampleImageUrls: [] })
+    expect(details).toMatchObject({ kind: 'work', id: '1', fields: [
       { key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: ['别名'] },
       { key: 'category_name', value: '游戏' }, { key: 'character_names', value: ['角色'] },
     ] })
@@ -44,7 +45,7 @@ it('preserves nulls, empty lists and multiline text, with strict remote fields',
   const descriptor = CATALOG_REMOTE.descriptors.find(item => item.method === 'details')!
   expect((descriptor.parameters[0]!.codec as { create: () => { parse: (value: unknown) => unknown } }).create().parse({ kind: 'work', id: '1' })).toEqual({ kind: 'work', id: '1' })
   expect((descriptor.result as { create: () => { parse: (value: unknown) => unknown } }).create().parse({ ok: true, value: detail })).toEqual({ ok: true, value: detail })
-  for (const bad of [null, { ...detail, extra: true }, { ...detail, fields: [] }, { ...detail, fields: [{ key: 'secret', value: 'x' }, ...detail.fields.slice(1)] }]) expect(() => parseCatalogDetails(bad)).toThrow()
+  for (const bad of [null, { ...detail, extra: true }, { ...detail, fields: [] }, { ...detail, item: undefined }, { ...detail, item: { ...detail.item, context: { kind: 'work', id: '2', name: '另一个资源' } } }, { ...detail, item: { ...detail.item, context: { kind: 'prompt-term', id: '1', tag: 'tag' } } }, { ...detail, fields: [{ key: 'secret', value: 'x' }, ...detail.fields.slice(1)] }]) expect(() => parseCatalogDetails(bad)).toThrow()
 })
 it('keeps zero-valued tag counts and numeric categories', async () => {
   const detail = await cli({ id: 1, canonical_tag: 'tag', aliases_json: [], category: 0, post_count: 0 }).api.details({ kind: 'prompt-term', id: '1' }, new AbortController().signal)
@@ -75,6 +76,15 @@ it('validates the shared card and detail presentation configuration', () => {
     { ...CATALOG_PRESENTATION, kinds: { ...CATALOG_PRESENTATION.kinds, work: { details: ['id', 'name'], summary: ['name', 'name'] } } },
     { ...CATALOG_PRESENTATION, kinds: { ...CATALOG_PRESENTATION.kinds, work: { details: ['name'], summary: [] } } },
     { ...CATALOG_PRESENTATION, kinds: { ...CATALOG_PRESENTATION.kinds, work: { details: ['id'], summary: ['name'] } } },
+    { ...CATALOG_PRESENTATION, resourceDetails: ['unknown'] },
+    { ...CATALOG_PRESENTATION, resourceDetails: ['resource_type', 'resource_type'] },
+    { ...CATALOG_PRESENTATION, resourceDetails: 'resource_type' },
+    { ...CATALOG_PRESENTATION, resourceSources: { unknown: { description: 'style_description' } } },
+    { ...CATALOG_PRESENTATION, resourceSources: { style: { description: 'unknown' } } },
+    { ...CATALOG_PRESENTATION, resourceSources: { style: { id: 'style_description' } } },
+    { ...CATALOG_PRESENTATION, resourceSources: { style: [] } },
+    { ...CATALOG_PRESENTATION, resourceSources: [] },
+    { ...CATALOG_PRESENTATION, templateTypes: { text_to_image: '' } },
   ]
   for (const value of bad) expect(() => parseCatalogPresentation(value)).toThrow()
 })

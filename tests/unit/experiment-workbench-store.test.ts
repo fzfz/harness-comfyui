@@ -30,6 +30,51 @@ const flush = async () => {
 }
 
 describe('experiment workbench browsing', () => {
+  it('preserves a list scroll position on reopening when no detail is selected', async () => {
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const remote = { getProjection: async () => projection('a', 'work-a') }
+    const store = new ExperimentWorkbenchStore(remote, storage)
+    store.setWorkspace('a')
+    await flush()
+    store.updateView({ page: 'resources', scrollPositions: { 'catalog:work-a:list': { top: 360, left: 12 } } })
+    store.dispose()
+    const reopened = new ExperimentWorkbenchStore(remote, storage)
+    reopened.setWorkspace('a')
+    await flush()
+    expect(reopened.getSnapshot().view.catalogDetail).toBeNull()
+    expect(reopened.getSnapshot().view.scrollPositions).toEqual({ 'catalog:work-a:list': { top: 360, left: 12 } })
+    reopened.dispose()
+  })
+
+  it('restores detail identity while resetting resource scroll only for a reopened workspace', async () => {
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const remote = { getProjection: async ({ workspaceId }: { workspaceId: string }) => projection(workspaceId, `work-${workspaceId}`) }
+    const store = new ExperimentWorkbenchStore(remote, storage)
+    store.setWorkspace('a')
+    await flush()
+    store.updateView({
+      page: 'resources', catalogDetail: { kind: 'lora', id: '99' },
+      catalogFilters: { kind: 'lora', query: 'light', page: 2, baseModelId: '1', modelId: '9' },
+      scrollPositions: { 'catalog:work-a:list': { top: 407, left: 0 }, 'catalog:work-a:detail:lora:99': { top: 142, left: 0 }, 'tasks:work-a': { top: 120, left: 0 } },
+    })
+    store.setWorkspace('b')
+    await flush()
+    store.setWorkspace('a')
+    await flush()
+    expect(store.getSnapshot().view.scrollPositions['catalog:work-a:list']).toEqual({ top: 407, left: 0 })
+    expect(store.getSnapshot().view.catalogDetail).toEqual({ kind: 'lora', id: '99' })
+    store.dispose()
+    const reopened = new ExperimentWorkbenchStore(remote, storage)
+    reopened.setWorkspace('a')
+    await flush()
+    expect(reopened.getSnapshot().view.catalogDetail).toEqual({ kind: 'lora', id: '99' })
+    expect(reopened.getSnapshot().view.catalogFilters).toEqual({ kind: 'lora', query: 'light', page: 2, baseModelId: '1', modelId: '9' })
+    expect(reopened.getSnapshot().view.scrollPositions).toEqual({ 'tasks:work-a': { top: 120, left: 0 } })
+    reopened.dispose()
+  })
+
   afterEach(() => vi.useRealTimers())
   it.each([null, 'deleted-work'])(
     'selects the first existing work from a workspace-only response with cached selection %s',

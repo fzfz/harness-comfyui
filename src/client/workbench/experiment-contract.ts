@@ -3,7 +3,11 @@ import type { WorkflowRuntimeParameterInspection } from '../../generation/inspec
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
 import type { CatalogApi } from './catalog-browser.tsx'
+import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
+
 import type { WorkbenchProjection } from '../../workbench/contract.ts'
+
+export const EXPERIMENT_CATALOG_SCROLL_PREFIX = 'catalog:'
 
 export type ExperimentPage =
   | 'workbench'
@@ -67,6 +71,7 @@ export interface ExperimentViewState {
   readonly inspectRun: boolean
   readonly compareRunId: string | null
   readonly collapsedBranches: readonly string[]
+  readonly catalogDetail: CatalogDetailsRequest | null
   readonly catalogFilters: {
     readonly kind: string
     readonly baseModelId: string

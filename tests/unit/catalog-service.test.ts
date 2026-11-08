@@ -13,7 +13,7 @@ describe('Catalog Remote service', () => {
     const baseModelList = { items: [{ id: '2', label: 'wai' }] } as const
     const search = vi.fn(async () => page)
     const baseModels = vi.fn(async () => baseModelList)
-    const details = vi.fn(async () => ({ kind: 'work', id: '1', fields: [] }))
+    const details = vi.fn(async () => ({ kind: 'work', id: '1', item: { context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] }))
     const readSourceAddress = vi.fn(() => ({ url: 'http://127.0.0.1', port: 8188 }))
     const service = new CatalogRemoteService(context, { search, baseModels, details } as never, readSourceAddress)
 
@@ -34,7 +34,7 @@ describe('Catalog Remote service', () => {
     cancelled.abort()
     await expect(service.sourceAddress(cancelled.signal)).rejects.toMatchObject({ name: 'AbortError' })
     expect(readSourceAddress).toHaveBeenCalledOnce()
-    await expect(service.details({ kind: 'work', id: '1' }, controller.signal)).resolves.toEqual({ ok: true, value: { kind: 'work', id: '1', fields: [] } })
+    await expect(service.details({ kind: 'work', id: '1' }, controller.signal)).resolves.toEqual({ ok: true, value: { kind: 'work', id: '1', item: { context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] } })
     expect(details).toHaveBeenCalledWith({ kind: 'work', id: '1' }, controller.signal)
     await context.fiber.dispose()
   })

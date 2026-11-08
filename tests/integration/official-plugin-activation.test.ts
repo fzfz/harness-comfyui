@@ -48,7 +48,7 @@ describe('official Host plugin activation', () => {
       services: {
         catalog: {
           search: vi.fn(async () => ({ items: [], totalCount: 0 })),
-          details: vi.fn(async () => ({ kind: 'work', id: 'work-1', fields: [] })),
+          details: vi.fn(async () => ({ kind: 'work', id: '1', item: { context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] })),
           baseModels: vi.fn(async () => ({ items: [] })),
         },
         runtime: { queryRuns: vi.fn(() => []), queryMedia: vi.fn(() => []) },

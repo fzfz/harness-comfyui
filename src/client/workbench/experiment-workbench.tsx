@@ -27,6 +27,8 @@ import type {
   ExperimentWorkbenchAction,
   ExperimentWorkbenchProps,
 } from './experiment-contract.ts'
+import { EXPERIMENT_CATALOG_SCROLL_PREFIX } from './experiment-contract.ts'
+import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 import {
   ExperimentInputDescriptionCache,
   readExperimentParameter,
@@ -36,10 +38,9 @@ import type {
   WorkflowRuntimeParameterInspection,
   StandardRuntimeParameterKind,
 } from '../../generation/inspection-contract.ts'
-import { Button, Icon, useToastMessage } from './experiment-controls.tsx'
+import { Button, Icon, trapDialogFocus, useToastMessage } from './experiment-controls.tsx'
 import { ExperimentFunctionSettings, formatExperimentAgentModel } from './experiment-function-settings.tsx'
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
-import { experimentWorkbenchStyles } from './experiment-style.ts'
 import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogReference } from './catalog-browser.tsx'
 import { workbenchContextKey } from './contract.ts'
 
@@ -627,8 +628,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       </div>
     )
   }
-  const scrollPanel = (key: string) => ({
+  const scrollPanel = (key: string, ready = true) => ({
     ref: (element: HTMLDivElement | null) => {
+      if (!ready) {
+        if (element) delete element.dataset.restored
+        return
+      }
       const position = view.scrollPositions[key]
       if (element && position && element.dataset.restored !== key) {
         element.scrollTop = position.top
@@ -637,6 +642,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       }
     },
     onScroll: (event: React.UIEvent<HTMLDivElement>) => {
+      if (!ready) return
       const element = event.currentTarget
       store.updateView({
         scrollPositions: {
@@ -1363,6 +1369,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     store.updateView({
       page: 'resources',
       catalogFilters: { ...view.catalogFilters, kind, query: '', page: 1 },
+      catalogDetail: null,
     })
   }
   const inspector = branch && inputs && (
@@ -1898,7 +1905,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           : `${run?.run_id} · 图片 1`
   return (
     <div className="experiment-workbench" ref={host}>
-      <style>{experimentWorkbenchStyles}</style>
       <div className="experiment-workbench-content">
         <header className="titlebar">
           <span className="brandmark">h</span>
@@ -2053,11 +2059,13 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               <ExperimentCatalog
                 catalog={props.catalog}
                 filters={view.catalogFilters}
+                detailRequest={view.catalogDetail}
+                onDetail={catalogDetail => navigate(() => store.updateView({ catalogDetail }))}
                 queryText={catalogQueryText}
                 onQueryChange={value => setCatalogQueryDraft({ workspaceId: state.workspaceId, value })}
                 onFilters={(patch) => {
                   if (patch.query !== undefined) setCatalogQueryDraft({ workspaceId: state.workspaceId, value: patch.query })
-                  store.updateView({ catalogFilters: { ...store.getSnapshot().view.catalogFilters, ...patch } })
+                  store.updateView({ catalogFilters: { ...store.getSnapshot().view.catalogFilters, ...patch }, ...(patch.query !== undefined ? { catalogDetail: null } : {}) })
                 }}
                 back={back}
                 selected={inputs}
@@ -2074,8 +2082,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   })
                 }
                 locked={locked}
-                scroll={scrollPanel(
-                  `catalog:${view.workId}:${JSON.stringify(view.catalogFilters)}`,
+                scroll={(panel, ready) => scrollPanel(
+                  `${EXPERIMENT_CATALOG_SCROLL_PREFIX}${view.workId}:${JSON.stringify(view.catalogFilters)}:${panel}`, ready,
                 )}
               />
             ) : view.page === 'tasks' ? (
@@ -2175,19 +2183,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               role="dialog"
               aria-modal="true"
               aria-label={modalTitle}
-              onKeyDown={(event) => {
-                if (event.key !== 'Tab') return
-                const elements = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input,textarea,select,a,summary')]
-                  .filter(element => element.offsetParent !== null)
-                const first = elements[0], last = elements.at(-1)
-                if (event.shiftKey && document.activeElement === first) {
-                  event.preventDefault()
-                  last?.focus()
-                } else if (!event.shiftKey && document.activeElement === last) {
-                  event.preventDefault()
-                  first?.focus()
-                }
-              }}
+              onKeyDown={trapDialogFocus}
             >
               <div className="modal-head">
                 <h2>{modalTitle}</h2>
@@ -2322,6 +2318,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
 
 interface ExperimentCatalogProps {
   readonly catalog: ExperimentWorkbenchProps['catalog']
+  readonly detailRequest: CatalogDetailsRequest | null
+  readonly onDetail: (request: CatalogDetailsRequest | null) => void
   readonly filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters']
   readonly onFilters: (
     filters: Partial<import('./experiment-contract.ts').ExperimentViewState['catalogFilters']>,
@@ -2333,13 +2331,15 @@ interface ExperimentCatalogProps {
   readonly locked: boolean
   readonly onSelect: (item: CatalogItem) => void
   readonly onRemove: (item: CatalogItem) => void
-  readonly scroll: {
+  readonly scroll: (panel: string, ready: boolean) => {
     readonly ref: (element: HTMLDivElement | null) => void
     readonly onScroll: (event: React.UIEvent<HTMLDivElement>) => void
   }
 }
 function ExperimentCatalog({
   catalog,
+  detailRequest,
+  onDetail,
   filters,
   onFilters,
   queryText,
@@ -2351,21 +2351,22 @@ function ExperimentCatalog({
   onRemove,
   scroll,
 }: ExperimentCatalogProps) {
-  const { definition: kind, page: result, baseModels, models, modelError, status, error: listError, baseModelError, retry } = useCatalogBrowser({
+  const { definition: kind, page: result, baseModels, baseModelStatus, models, modelError, status, error: listError, baseModelError, retry } = useCatalogBrowser({
     catalog,
     query: { kind: filters.kind, query: filters.query, page: filters.page, baseModelId: filters.baseModelId || null, modelId: filters.modelId || null },
     modelOptions: true,
   })
-  const [detail, setDetail] = useState<CatalogItem | null>(null)
   const [gallery, setGallery] = useState<{ item: CatalogItem; index: number } | null>(null)
-  const { details, error: detailError, retry: retryDetails } = useCatalogDetails(detail === null ? null : detail.context, catalog?.details)
-  const error = detail === null ? listError ?? baseModelError ?? (kind.baseModelScoped ? modelError : null) : detailError
+  const { details, error: detailError, retry: retryDetails } = useCatalogDetails(detailRequest, catalog?.details)
+  const detail = details?.item ?? (detailRequest && result?.items.find(item => item.context.kind === detailRequest.kind && item.context.id === detailRequest.id)) ?? null
+  const needsBaseModels = detailRequest ? !!detail?.baseModelId : (result?.items.some(item => item.baseModelId !== null) ?? false)
+  const error = detailRequest === null ? listError ?? baseModelError ?? (kind.baseModelScoped ? modelError : null) : detailError ?? (needsBaseModels ? baseModelError : null)
+  const retryError = detailRequest && detailError ? retryDetails : retry
   const loading = status === 'loading'
   const bases = baseModels?.items ?? []
   useEffect(() => {
-    setDetail(null)
     setGallery(null)
-  }, [filters.kind, filters.query, filters.baseModelId, filters.modelId, filters.page])
+  }, [filters.kind, filters.query, filters.baseModelId, filters.modelId, filters.page, detailRequest?.kind, detailRequest?.id])
   const selection: CatalogReference[] = [
     ...(selected?.generation_input.model ? [{ kind: 'model' as const, id: selected.generation_input.model.id }] : []),
     ...(selected?.generation_input.template_id ? [{ kind: 'comfyui-template' as const, id: selected.generation_input.template_id }] : []),
@@ -2381,6 +2382,9 @@ function ExperimentCatalog({
   }
   const galleryImages = catalogImageUrls(gallery?.item ?? null)
   const detailPreviewUrl = catalogImageUrls(detail)[0]
+  const panel = gallery ? `gallery:${workbenchContextKey(gallery.item.context)}` : detailRequest ? `detail:${workbenchContextKey(detailRequest)}` : 'list'
+  const baseModelsPending = needsBaseModels && (baseModelStatus === 'idle' || baseModelStatus === 'loading')
+  const contentReady = gallery !== null || (error === null && !baseModelsPending && (detailRequest ? details !== null : status === 'ready'))
   const pages = catalogPageCount(result?.totalCount ?? 0)
   useEffect(() => {
     if (result && result.kind === filters.kind && result.query === filters.query
@@ -2408,7 +2412,7 @@ function ExperimentCatalog({
             </button>
           )}</CatalogKinds>
         </nav>
-        <div className="catalog-content" {...scroll}>
+        <div key={panel} className="catalog-content" {...scroll(panel, contentReady)}>
           {gallery ? (
             <div className="catalog-gallery">
               <div className="row between">
@@ -2451,16 +2455,16 @@ function ExperimentCatalog({
                 </Button>
               </div>
             </div>
-          ) : detail ? (
+          ) : detailRequest ? (
             <div className="catalog-detail">
               <div className="row between">
-                <Button kind="small quiet" onClick={() => setDetail(null)}>
-                  返回资源列表
+                <Button kind="small quiet" onClick={() => onDetail(null)}>
+                  <Icon name="arrow" />返回资源列表
                 </Button>
-                {selectButton(detail)}
+                {detail && selectButton(detail)}
               </div>
-              <h2>{detail.label}</h2>
-              {detailPreviewUrl !== undefined && (
+              {detail && <h2>{detail.label}</h2>}
+              {detail && detailPreviewUrl !== undefined && (
                 <button
                   className="detail-cover"
                   type="button"
@@ -2475,13 +2479,13 @@ function ExperimentCatalog({
                   <p role="alert">{error}</p>
                   <Button
                     kind="small"
-                    onClick={detail ? retryDetails : retry}
+                    onClick={retryError}
                   >
                     重试
                   </Button>
                 </div>
               ) : details ? (
-                <CatalogDetailFields details={details} presentation="resource" />
+                <CatalogDetailFields details={details} presentation="resource" baseModels={bases} />
               ) : (
                 <div className="empty">
                   <span className="loading-ring" />
@@ -2565,7 +2569,7 @@ function ExperimentCatalog({
                   <p role="alert">{error}</p>
                   <Button
                     kind="small"
-                    onClick={detail ? retryDetails : retry}
+                    onClick={retryError}
                   >
                     重试
                   </Button>
@@ -2590,7 +2594,7 @@ function ExperimentCatalog({
                         <p>{item.subtitle}</p>
                         <div className="row between">
                           {selectButton(item, selected)}
-                          <Button kind="small quiet" label={`查看详情 ${item.label}`} onClick={() => setDetail(item)}>查看详情</Button>
+                          <Button kind="small quiet" label={`查看详情 ${item.label}`} onClick={() => onDetail({ kind: item.context.kind, id: item.context.id })}>查看详情</Button>
                         </div>
                       </div>
                     </article>

@@ -21,6 +21,7 @@ import {
   type BaseModelItem,
   type BaseModelList,
   type CatalogItem,
+  type CatalogKind,
   type CatalogComfyuiInstancePage,
   type CatalogComfyuiInstanceQueryRequest,
   type CatalogContext,
@@ -255,19 +256,20 @@ function sourcePage(request: CatalogQueryRequest, value: unknown): { readonly re
   return { records: envelope.results.map(sourceRecord), totalCount: envelope.total_count as number }
 }
 
-function normalizePage(request: CatalogQueryRequest, records: readonly Record<string, unknown>[], totalCount: number): CatalogPage {
-  const definition = catalogDefinition(request.kind)
-  const items: CatalogItem[] = records.map(result => {
-    const id = sourceId(result.id)
-    return Object.freeze({
-      context: sourceContext(request.kind, id, result),
-      baseModelId: definition.baseModelScoped ? sourceNullableId(result.base_model_id) : null,
-      label: sourceLabel(result[definition.labelField]),
-      subtitle: sourceSubtitle(result, definition.subtitleFields, sourceLabel(result[definition.labelField])),
-      coverUrl: sourceCoverUrl(result.cover_url),
-      sampleImageUrls: sourceSampleImageUrls(result.sample_image_urls),
-    })
+function normalizeItem(kind: CatalogKind, result: Record<string, unknown>): CatalogItem {
+  const definition = catalogDefinition(kind)
+  const id = sourceId(result.id)
+  return Object.freeze({
+    context: sourceContext(kind, id, result),
+    baseModelId: definition.baseModelScoped ? sourceNullableId(result.base_model_id) : null,
+    label: sourceLabel(result[definition.labelField]),
+    subtitle: sourceSubtitle(result, definition.subtitleFields, sourceLabel(result[definition.labelField])),
+    coverUrl: sourceCoverUrl(result.cover_url),
+    sampleImageUrls: sourceSampleImageUrls(result.sample_image_urls),
   })
+}
+function normalizePage(request: CatalogQueryRequest, records: readonly Record<string, unknown>[], totalCount: number): CatalogPage {
+  const items = records.map(result => normalizeItem(request.kind, result))
   try {
     return parseCatalogPage({
       kind: request.kind,
@@ -418,6 +420,7 @@ export class CatalogClient {
     try {
       return parseCatalogDetails({
         ...request,
+        item: normalizeItem(request.kind, source),
         fields: CATALOG_PRESENTATION.kinds[request.kind].details.map(key => ({
           key, value: CATALOG_FIELDS[key]!.type === 'id' && source[key] !== null ? sourceId(source[key]) : source[key],
         })),

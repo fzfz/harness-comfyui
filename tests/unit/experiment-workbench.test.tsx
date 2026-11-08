@@ -30,7 +30,7 @@ interface RenderNode {
 }
 const { act, create } = (await vi.importActual('react-test-renderer')) as {
   act: (callback: () => void | Promise<void>) => Promise<void>
-  create: (node: React.ReactElement) => {
+  create: (node: React.ReactElement, options?: { createNodeMock: (element: { props: Record<string, unknown> }) => unknown }) => {
     readonly root: RenderNode
     unmount(): void
     toJSON(): unknown
@@ -87,6 +87,7 @@ afterEach(async () => {
 const mount = async (
   data: WorkbenchProjection,
   options: Partial<ExperimentWorkbenchProps> = {},
+  renderOptions?: Parameters<typeof create>[1],
 ) => {
   vi.stubGlobal('document', Object.assign(new EventTarget(), { hidden: false }))
   vi.stubGlobal(
@@ -136,6 +137,7 @@ const mount = async (
         ]}
         {...options}
       />,
+      renderOptions,
     )
   })
   mounts.push(renderer)
@@ -912,7 +914,7 @@ describe('experiment workbench forms and task results', () => {
     expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('其他窗口的新名称')
   })
 
-  it('matches the reference workspace dialog controls and cycles keyboard focus within the dialog', async () => {
+  it.each([9, 11])('matches the reference workspace dialog controls and cycles focus within root node type %s', async (nodeType) => {
     const { renderer } = await mount(empty)
     await click(renderer, '添加工作区')
     const dialog = renderer.root.findByProps({ role: 'dialog' })
@@ -922,11 +924,11 @@ describe('experiment workbench forms and task results', () => {
     const cancel = dialog.findAllByType('button').find(button => nodeText(button) === '取消')!
     expect(cancel.props.className).toBe('btn quiet')
     const first = { offsetParent: {}, focus: vi.fn() }, last = { offsetParent: {}, focus: vi.fn() }
-    const preventDefault = vi.fn(), currentTarget = { querySelectorAll: () => [first, last] }
-    Object.defineProperty(document, 'activeElement', { configurable: true, value: last })
+    const root = nodeType === 9 ? Object.assign(document, { activeElement: last }) : { nodeType, activeElement: last }
+    const preventDefault = vi.fn(), currentTarget = { querySelectorAll: () => [first, last], getRootNode: () => root }
     await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: false, currentTarget, preventDefault }))
     expect(first.focus).toHaveBeenCalledOnce()
-    Object.defineProperty(document, 'activeElement', { configurable: true, value: first })
+    root.activeElement = first
     await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: true, currentTarget, preventDefault }))
     expect(last.focus).toHaveBeenCalledOnce()
     expect(preventDefault).toHaveBeenCalledTimes(2)
@@ -1320,6 +1322,7 @@ const makeCatalog = (): CatalogApi => ({
   })),
   details: vi.fn(async (request) => ({
     ...request,
+    item: { ...catalogItems.find(item => item.context.kind === request.kind)!, context: { ...catalogItems.find(item => item.context.kind === request.kind)!.context, id: request.id } },
     fields: [
       { key: 'file_name', value: 'model.safetensors' },
       { key: 'description', value: ['玻璃', '自然光'] },
@@ -1970,7 +1973,10 @@ describe('experiment workbench Catalog image availability', () => {
     { coverUrl: '/cover.png', expected: ['/cover.png', '/sample-1.png', '/sample-2.png'] },
   ])('previews all available images from the card and details with cover $coverUrl', async ({ coverUrl, expected }) => {
     const catalog = makeCatalog()
-    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: [{ ...catalogItems[0]!, coverUrl, sampleImageUrls: ['/sample-1.png', '/sample-2.png'] }], totalCount: 1 }))
+    const item = { ...catalogItems[0]!, coverUrl, sampleImageUrls: ['/sample-1.png', '/sample-2.png'] }
+    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: [item], totalCount: 1 }))
+    const loadDetails = vi.mocked(catalog.details).getMockImplementation()!
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => ({ ...await loadDetails(request, signal), item }))
     const { renderer } = await mount(fullProjection(), { catalog })
     await click(renderer, '资源')
     const preview = renderer.root.findByProps({ 'aria-label': '预览图片 模型' })
@@ -2082,11 +2088,378 @@ describe('experiment workbench resource cards', () => {
   })
 })
 
+describe('experiment workbench Catalog delayed scroll restoration', () => {
+  const scrollElement = (initialHeight: number) => {
+    let height = initialHeight, top = 0
+    const element = {
+      clientHeight: 400,
+      get scrollHeight() { return height },
+      get scrollTop() { return top },
+      set scrollTop(value: number) { top = Math.max(0, Math.min(value, height - element.clientHeight)) },
+      setContentHeight(value: number) {
+        height = value
+        element.scrollTop = top
+      },
+      scrollLeft: 0,
+      dataset: {},
+    }
+    return element
+  }
+
+  it('restores a saved list after its delayed query creates the scroll range', async () => {
+    const { catalog } = modelFilterCatalog(), search = vi.mocked(catalog.search).getMockImplementation()!
+    let pending = false, finish!: () => Promise<void>
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (pending && request.query === 'A') return new Promise(resolve => { finish = async () => resolve(await search(request, signal)) })
+      return search(request, signal)
+    })
+    const data = fullProjection(), memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    let element = scrollElement(1400)
+    const nodeMock = { createNodeMock: (node: { props: Record<string, unknown> }) => node.props.className === 'catalog-content' ? element : null }
+    const { renderer } = await mount(data, { catalog, storage }, nodeMock)
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '搜索资源', 'A')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    element.scrollTop = 142
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await act(() => renderer.unmount())
+    pending = true
+    element = scrollElement(400)
+    const reopened = await mount(data, { catalog, storage }, nodeMock)
+    await act(() => reopened.renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    element.setContentHeight(1400)
+    await act(async () => finish())
+    expect(reopened.renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3')).toHaveLength(8)
+    expect(element.scrollTop).toBe(142)
+  })
+
+  it.each(['base-models', 'model-options'])('retains list scroll through a failed %s source and retry', async (source) => {
+    const catalog = makeCatalog(), search = vi.mocked(catalog.search).getMockImplementation()!
+    let modelsFail = false
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (modelsFail && request.kind === 'model') return Promise.reject(new Error('模型选项不可用'))
+      return search(request, signal)
+    })
+    let element = scrollElement(1400)
+    const { renderer } = await mount(fullProjection(), { catalog }, { createNodeMock: node => node.props.className === 'catalog-content' ? element : null })
+    await click(renderer, '资源')
+    await click(renderer, 'LoRA')
+    element.scrollTop = 142
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '任务')
+    if (source === 'base-models') vi.mocked(catalog.baseModels).mockRejectedValueOnce(new Error('底模不可用'))
+    else modelsFail = true
+    element = scrollElement(400)
+    await click(renderer, '资源')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain(source === 'base-models' ? '底模不可用' : '模型选项不可用')
+    const errorWasRestored = 'restored' in element.dataset
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    modelsFail = false
+    element.setContentHeight(1400)
+    await click(renderer, '重试')
+    expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3')).toHaveLength(1)
+    expect(element.scrollTop).toBe(142)
+    expect(errorWasRestored).toBe(false)
+  })
+
+  it('waits for the base-model row before restoring the detail scroll range', async () => {
+    const catalog = makeCatalog(), loadBases = vi.mocked(catalog.baseModels).getMockImplementation()!
+    let pending = false, finish!: () => Promise<void>
+    vi.mocked(catalog.baseModels).mockImplementation(async signal => {
+      const result = await loadBases(signal)
+      return pending ? new Promise(resolve => { finish = async () => resolve(result) }) : result
+    })
+    let element = scrollElement(563)
+    const { renderer } = await mount(fullProjection(), { catalog }, { createNodeMock: node => node.props.className === 'catalog-content' ? element : null })
+    await click(renderer, '资源')
+    await click(renderer, '查看详情 模型')
+    element.scrollTop = 142
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '任务')
+    pending = true
+    element = scrollElement(520)
+    await click(renderer, '资源')
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('dt').map(nodeText)).not.toContain('底模')
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    element.setContentHeight(563)
+    await act(async () => finish())
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('dd').map(nodeText)).toContain('SDXL')
+    expect(element.scrollTop).toBe(142)
+  })
+
+  it('reports a failed detail base-model source and restores saved scroll after retrying that source', async () => {
+    const catalog = makeCatalog()
+    let element = scrollElement(1400)
+    const { renderer } = await mount(fullProjection(), { catalog }, { createNodeMock: node => node.props.className === 'catalog-content' ? element : null })
+    await click(renderer, '资源')
+    await click(renderer, '查看详情 模型')
+    element.scrollTop = 142
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '任务')
+    vi.mocked(catalog.baseModels).mockRejectedValueOnce(new Error('底模不可用'))
+    element = scrollElement(400)
+    await click(renderer, '资源')
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toContain('底模不可用')
+    expect(element.dataset).not.toHaveProperty('restored')
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    const detailCalls = vi.mocked(catalog.details).mock.calls.length
+    const baseCalls = vi.mocked(catalog.baseModels).mock.calls.length
+    let finish!: (value: { items: { id: string; label: string }[] }) => void
+    vi.mocked(catalog.baseModels).mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+    await click(renderer, '重试')
+    expect(catalog.baseModels).toHaveBeenCalledTimes(baseCalls + 1)
+    expect(catalog.details).toHaveBeenCalledTimes(detailCalls)
+    expect(element.dataset).not.toHaveProperty('restored')
+    expect(element.scrollTop).toBe(0)
+    element.setContentHeight(1400)
+    await act(async () => finish({ items: [{ id: '1', label: 'SDXL' }] }))
+    expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('dd').map(nodeText)).toContain('SDXL')
+    expect(element.scrollTop).toBe(142)
+  })
+
+  it('keeps a detail without a base-model dependency ready when the base source fails', async () => {
+    const catalog = makeCatalog()
+    let element = scrollElement(1400)
+    const { renderer } = await mount(fullProjection(), { catalog }, { createNodeMock: node => node.props.className === 'catalog-content' ? element : null })
+    await click(renderer, '资源')
+    await click(renderer, '画师或画风')
+    await click(renderer, '查看详情 柔光')
+    element.scrollTop = 142
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '任务')
+    vi.mocked(catalog.baseModels).mockRejectedValueOnce(new Error('底模不可用'))
+    element = scrollElement(1400)
+    await click(renderer, '资源')
+    expect(catalog.baseModels).toHaveBeenCalledTimes(2)
+    expect(renderer.root.findAllByProps({ role: 'alert' })).toHaveLength(0)
+    const detail = renderer.root.findByProps({ className: 'catalog-detail' })
+    expect(detail.findAllByType('h2').map(nodeText)).toEqual(['柔光'])
+    expect(detail.findAllByType('dt').map(nodeText)).not.toContain('底模')
+    expect(detail.findAllByType('dt').map(nodeText)).toContain('资源类型')
+    expect(element.scrollTop).toBe(142)
+  })
+
+  it('restores a detail only after its delayed fields create the scroll range', async () => {
+    const catalog = makeCatalog(), load = vi.mocked(catalog.details).getMockImplementation()!
+    let pending = false, finish!: () => Promise<void>
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => {
+      const result = { ...await load(request, signal), fields: [{ key: 'description', value: '详情正文。'.repeat(200) }] }
+      return pending ? new Promise(resolve => { finish = async () => resolve(result) }) : result
+    })
+    let element = scrollElement(1400)
+    const { renderer } = await mount(fullProjection(), { catalog }, { createNodeMock: node => node.props.className === 'catalog-content' ? element : null })
+    await click(renderer, '资源')
+    await click(renderer, '查看详情 模型')
+    element.scrollTop = 142
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '任务')
+    pending = true
+    element = scrollElement(400)
+    await click(renderer, '资源')
+    expect(element.scrollTop).toBe(0)
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    element.setContentHeight(1400)
+    await act(async () => finish())
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('dd').map(nodeText)).toContain('详情正文。'.repeat(200))
+    expect(element.scrollTop).toBe(142)
+  })
+})
+
+describe('experiment workbench Catalog detail navigation', () => {
+  it('keeps a restored list at its saved scroll position when no detail was opened', async () => {
+    const { catalog } = modelFilterCatalog(), data = fullProjection()
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const element = { scrollTop: 0, scrollLeft: 0, dataset: {} }
+    const { renderer } = await mount(data, { catalog, storage }, { createNodeMock: node => node.props.className === 'catalog-content' ? element : null })
+    await click(renderer, '资源')
+    element.scrollTop = 360
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await act(() => renderer.unmount())
+    const freshElement = { scrollTop: 0, scrollLeft: 0, dataset: {} }
+    const reopened = await mount(data, { catalog, storage }, { createNodeMock: node => node.props.className === 'catalog-content' ? freshElement : null })
+    expect(reopened.renderer.root.findAllByProps({ className: 'catalog-list-panel' })).toHaveLength(1)
+    expect(freshElement.scrollTop).toBe(360)
+  })
+
+  it('restores the selected detail after leaving resources and reopening the workspace', async () => {
+    const catalog = makeCatalog(), data = fullProjection()
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const element = { scrollTop: 0, scrollLeft: 0, dataset: {} }
+    const { renderer, onAction } = await mount(data, { catalog, storage }, { createNodeMock: node => node.props.className === 'catalog-content' ? element : null })
+    await click(renderer, '资源')
+    await click(renderer, 'LoRA')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '筛选生成模型', '11')
+    await change(renderer, '搜索资源', 'glass')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    await click(renderer, '下一页')
+    element.scrollTop = 407
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '查看详情 玻璃 LoRA')
+    element.scrollTop = 142
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '任务')
+    await click(renderer, '资源')
+    expect(renderer.root.findAllByProps({ className: 'catalog-detail' })).toHaveLength(1)
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['玻璃 LoRA'])
+    expect(element.scrollTop).toBe(142)
+    await act(() => renderer.unmount())
+    const freshElement = { scrollTop: 0, scrollLeft: 0, dataset: {} }
+    const reopened = await mount(data, { catalog, storage }, { createNodeMock: node => node.props.className === 'catalog-content' ? freshElement : null })
+    expect(freshElement.scrollTop).toBe(0)
+    expect(reopened.renderer.root.findAllByProps({ className: 'catalog-detail' })).toHaveLength(1)
+    expect(reopened.renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['玻璃 LoRA'])
+    await click(reopened.renderer, '返回资源列表')
+    expect(freshElement.scrollTop).toBe(0)
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('glass')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('1')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('11')
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('2 / 7')
+    expect(onAction).not.toHaveBeenCalled()
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+
+  it('cancels details on return and keeps the next resource visible after a late response', async () => {
+    const catalog = makeCatalog()
+    const load = vi.mocked(catalog.details).getMockImplementation()!
+    let finish!: () => Promise<void>, signal!: AbortSignal
+    vi.mocked(catalog.details).mockImplementation((request, currentSignal) => {
+      if (request.kind === 'model') {
+        signal = currentSignal
+        return new Promise(resolve => { finish = async () => resolve(await load(request, currentSignal)) })
+      }
+      return load(request, currentSignal)
+    })
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '查看详情 模型')
+    await click(renderer, '返回资源列表')
+    expect(signal.aborted).toBe(true)
+    await click(renderer, 'LoRA')
+    await click(renderer, '查看详情 玻璃 LoRA')
+    await act(async () => finish())
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['玻璃 LoRA'])
+    await click(renderer, '返回资源列表')
+    await click(renderer, '查看详情 玻璃 LoRA')
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['玻璃 LoRA'])
+  })
+
+  it('restores list scrolling after the detail panel scrolls while retaining the current query and page', async () => {
+    const { catalog } = modelFilterCatalog()
+    const data = fullProjection(), originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const element = { scrollTop: 0, scrollLeft: 0, dataset: {} }
+    const { renderer, onAction } = await mount(data, { catalog }, {
+      createNodeMock: node => node.props.className === 'catalog-content' ? element : null,
+    })
+    const selected = nodeText(renderer.root.findByProps({ className: 'selected-resources' }))
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '搜索资源', 'glass')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    await click(renderer, '下一页')
+    const labels = renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)
+    element.scrollTop = 360
+    element.scrollLeft = 12
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '查看详情 A 模型 110')
+    expect(catalog.details).toHaveBeenLastCalledWith({ kind: 'model', id: '110' }, expect.any(AbortSignal))
+    element.scrollTop = 0
+    element.scrollLeft = 0
+    await act(() => renderer.root.findByProps({ className: 'catalog-content' }).props.onScroll({ currentTarget: element }))
+    await click(renderer, '返回资源列表')
+    expect({ top: element.scrollTop, left: element.scrollLeft }).toEqual({ top: 360, left: 12 })
+    expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('1')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('glass')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('2 / 2')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(labels)
+    expect(nodeText(renderer.root.findByProps({ className: 'selected-resources' }))).toBe(selected)
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+})
+
 describe('experiment workbench Catalog detail values', () => {
+  it.each([
+    {
+      kind: 'model' as const, category: '生成模型', id: '11', label: '模型',
+      fields: [
+        { key: 'id', value: '11' }, { key: 'base_model_id', value: '1' },
+        { key: 'file_name', value: 'model.safetensors' }, { key: 'file_format', value: 'safetensors' },
+        { key: 'precision_or_quantization', value: 'fp16' }, { key: 'author', value: '作者' },
+        { key: 'version', value: null }, { key: 'description', value: '模型说明' },
+        { key: 'usage', value: '模型用法' }, { key: 'skill_name', value: '生成 Skill' },
+      ],
+      expected: [['资源类型', '生成模型'], ['底模', 'anima'], ['文件名', 'model.safetensors'], ['文件格式', 'safetensors'], ['精度 / 量化', 'fp16'], ['说明', '模型说明']],
+    },
+    {
+      kind: 'lora' as const, category: 'LoRA', id: '13', label: '玻璃 LoRA',
+      fields: [
+        { key: 'id', value: '13' }, { key: 'base_model_id', value: '1' }, { key: 'model_id', value: '11' },
+        { key: 'file_name', value: 'glass.safetensors' }, { key: 'file_format', value: 'safetensors' },
+        { key: 'precision_or_quantization', value: null }, { key: 'author', value: '作者' },
+        { key: 'version', value: 'v1' }, { key: 'description', value: 'LoRA 说明' },
+        { key: 'usage', value: 'LoRA 用法' }, { key: 'trigger_words_json', value: ['glass', 'soft light'] }, { key: 'weight', value: 0 },
+      ],
+      expected: [['资源类型', 'LoRA'], ['底模', 'anima'], ['文件名', 'glass.safetensors'], ['文件格式', 'safetensors'], ['版本', 'v1'], ['说明', 'LoRA 说明'], ['触发词', 'glass、soft light'], ['建议权重', '0']],
+    },
+    {
+      kind: 'comfyui-template' as const, category: 'Workflow 模板', id: '12', label: '文生图',
+      fields: [
+        { key: 'id', value: '12' }, { key: 'base_model_id', value: '1' }, { key: 'model_id', value: '11' },
+        { key: 'lora_id', value: null }, { key: 'title', value: '文生图' }, { key: 'template_type', value: 'text_to_image' },
+      ],
+      expected: [['资源类型', 'Workflow 模板'], ['底模', 'anima'], ['模板类型', '文生图']],
+    },
+    {
+      kind: 'style' as const, category: '画师或画风', id: '16', label: '柔光',
+      fields: [
+        { key: 'id', value: '16' }, { key: 'base_model_id', value: '1' }, { key: 'name', value: '柔光' },
+        { key: 'aliases_json', value: [] }, { key: 'prompt_text', value: 'soft light' }, { key: 'style_description', value: '画风说明' },
+      ],
+      expected: [['资源类型', '画师或画风'], ['底模', 'anima'], ['说明', '画风说明'], ['提示词', 'soft light']],
+    },
+    {
+      kind: 'artist-string' as const, category: '画师串', id: '18', label: '画师串',
+      fields: [
+        { key: 'id', value: '18' }, { key: 'base_model_id', value: '1' }, { key: 'title', value: '画师串' },
+        { key: 'description', value: '组合说明' }, { key: 'artist_string', value: 'artist1, artist2' }, { key: 'style_ids', value: ['16'] },
+      ],
+      expected: [['资源类型', '画师串'], ['底模', 'anima'], ['说明', '组合说明'], ['提示词', 'artist1, artist2']],
+    },
+    {
+      kind: 'prompt-term' as const, category: '提示词条目', id: '17', label: 'glass',
+      fields: [
+        { key: 'id', value: '17' }, { key: 'canonical_tag', value: 'glass' }, { key: 'aliases_json', value: [] },
+        { key: 'category', value: 0 }, { key: 'post_count', value: 0 },
+      ],
+      expected: [['资源类型', '提示词条目'], ['提示词', 'glass']],
+    },
+  ])('shows the prototype detail rows for $kind from the Catalog values', async ({ kind, category, id, label, fields, expected }) => {
+    const catalog = makeCatalog()
+    vi.mocked(catalog.baseModels).mockResolvedValue({ items: [{ id: '1', label: 'anima' }] })
+    vi.mocked(catalog.details).mockResolvedValue({ kind, id, item: { ...catalogItems.find(item => item.context.kind === kind)!, baseModelId: kind === 'prompt-term' ? null : '1' }, fields })
+    const { renderer, onAction } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, category)
+    await click(renderer, `查看详情 ${label}`)
+    expect(catalog.details).toHaveBeenLastCalledWith({ kind, id }, expect.any(AbortSignal))
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual([label])
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('button').find(button => nodeText(button) === '返回资源列表')!.findAllByType('svg')).toHaveLength(1)
+    expect(renderer.root.findAllByType('dt').map(nodeText).map((label, index) => [label, renderer.root.findAllByType('dd').map(nodeText)[index]])).toEqual(expected)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
   it('preserves empty fields and zero while omitting null fields in resource details', async () => {
     const catalog = makeCatalog()
     vi.mocked(catalog.details).mockResolvedValue({
-      kind: 'lora', id: '13',
+      kind: 'lora', id: '13', item: catalogItems[1]!,
       fields: [
         { key: 'id', value: '13' },
         { key: 'base_model_id', value: null },
@@ -2106,7 +2479,7 @@ describe('experiment workbench Catalog detail values', () => {
     await click(renderer, '资源')
     await click(renderer, 'LoRA')
     await click(renderer, '查看详情')
-    expect(renderer.root.findAllByType('dd').map(nodeText)).toEqual(['13', '', '', '0'])
+    expect(renderer.root.findAllByType('dd').map(nodeText)).toEqual(['LoRA', '', '', '0'])
   })
 })
 
@@ -2959,7 +3332,7 @@ describe('experiment workbench function editor controls', () => {
     }))
   })
 
-  it('keeps keyboard focus inside the function dialog and closes with Escape', async () => {
+  it.each([9, 11])('keeps function dialog focus within root node type %s and closes with Escape', async (nodeType) => {
     const data = fullProjection()
     const getEnvironment = vi.fn(async () => functionEnvironment)
     const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
@@ -2969,12 +3342,12 @@ describe('experiment workbench function editor controls', () => {
     const first = { offsetParent: {}, focus: vi.fn() }
     const hidden = { offsetParent: null, focus: vi.fn() }
     const last = { offsetParent: {}, focus: vi.fn() }
-    const currentTarget = { querySelectorAll: () => [first, hidden, last] }
+    const root = nodeType === 9 ? Object.assign(document, { activeElement: last }) : { nodeType, activeElement: last }
+    const currentTarget = { querySelectorAll: () => [first, hidden, last], getRootNode: () => root }
     const preventDefault = vi.fn()
-    Object.assign(document, { activeElement: last })
     await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: false, currentTarget, preventDefault }))
     expect(first.focus).toHaveBeenCalledOnce()
-    Object.assign(document, { activeElement: first })
+    root.activeElement = first
     await act(() => dialog.props.onKeyDown({ key: 'Tab', shiftKey: true, currentTarget, preventDefault }))
     expect(last.focus).toHaveBeenCalledOnce()
     expect(preventDefault).toHaveBeenCalledTimes(2)

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import {
   CATALOG_KIND_DEFINITIONS,
   catalogPageCount,
+  catalogDefinition,
   type BaseModelList,
   type CatalogContext,
   type CatalogItem,
@@ -174,14 +175,26 @@ export function catalogImageUrls(item: CatalogItem | null): readonly string[] {
   return item.coverUrl === null ? item.sampleImageUrls : [item.coverUrl, ...item.sampleImageUrls]
 }
 
-export function CatalogDetailFields({ details, presentation }: {
+export function CatalogDetailFields({ details, presentation, baseModels = [] }: {
   readonly details: CatalogDetails
   readonly presentation: 'chat' | 'resource'
+  readonly baseModels?: BaseModelList['items']
 }) {
-  return <dl>{details.fields.filter(field => presentation === 'chat' || field.value !== null).map(field => <div key={field.key}>
+  const values = new Map(details.fields.map(field => [field.key, field.value]))
+  values.set('resource_type', catalogDefinition(details.kind).label)
+  values.set('base_model', baseModels.find(item => item.id === details.item.baseModelId)?.label ?? null)
+  const fields = presentation === 'resource'
+    ? CATALOG_PRESENTATION.resourceDetails.flatMap(key => {
+      const value = values.get(CATALOG_PRESENTATION.resourceSources[details.kind]?.[key] ?? key)
+      return value === undefined || value === null ? [] : [{ key, value }]
+    })
+    : details.fields
+  return <dl>{fields.map(field => <div key={field.key}>
     <dt>{CATALOG_FIELDS[field.key]!.label}</dt>
     <dd>{presentation === 'chat' && (field.value === null || field.value === '' || Array.isArray(field.value) && field.value.length === 0)
       ? CATALOG_PRESENTATION.copy.emptyValue
-      : Array.isArray(field.value) ? field.value.join('、') : String(field.value)}</dd>
+      : presentation === 'resource' && field.key === 'template_type'
+        ? CATALOG_PRESENTATION.templateTypes[String(field.value)] ?? String(field.value)
+        : Array.isArray(field.value) ? field.value.join('、') : String(field.value)}</dd>
   </div>)}</dl>
 }

@@ -1,4 +1,8 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
+vi.mock('react-dom', () => ({
+  createPortal: vi.fn((children: React.ReactNode, _container: ShadowRoot) => children),
+}))
 import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   Button: ({ children, ...props }: any) =>
@@ -18,11 +22,21 @@ import {
 import type { ExperimentWorkbenchProps } from '../../src/client/workbench/experiment-contract.ts'
 const { act, create } = (await vi.importActual('react-test-renderer')) as any
 const mounts: any[] = []
+const boundaries: { root: ShadowRoot; attachShadow: ReturnType<typeof vi.fn> }[] = []
+const createNodeMock = (element: { props: Record<string, unknown> }) => {
+  if (!('data-experiment-workbench-root' in element.props)) return null
+  const root = { mode: 'open' } as ShadowRoot
+  const host = { shadowRoot: null, attachShadow: vi.fn(() => root) }
+  boundaries.push({ root, attachShadow: host.attachShadow })
+  return host
+}
 afterEach(async () => {
   await act(() => {
     for (const renderer of mounts.splice(0)) renderer.unmount()
   })
   vi.unstubAllGlobals()
+  boundaries.length = 0
+  vi.mocked(createPortal).mockClear()
 })
 const environment = {
   workspaces: [{ id: 'workspace-a', name: '画面项目', path: '/art' }],
@@ -69,12 +83,38 @@ const mount = async (api: ExperimentHostRemote) => {
   await act(async () => {
     renderer = create(
       <ExperimentWorkbenchHost remote={api} catalog={catalog()} />,
+      { createNodeMock },
     )
   })
   mounts.push(renderer)
   return renderer
 }
 describe('official experiment workbench adapter', () => {
+  it('keeps one open style boundary and portal target across updates, then unmounts its content', async () => {
+    const api = remote(), renderer = await mount(api)
+    expect(boundaries).toHaveLength(1)
+    const boundary = boundaries[0]!
+    expect(boundary.attachShadow).toHaveBeenCalledExactlyOnceWith({ mode: 'open' })
+    expect(renderer.root.findAllByProps({ 'data-experiment-workbench-root': '' })).toHaveLength(1)
+    const style = renderer.root.findByType('style')
+    const scrollbarSelectors = String(style.props.children).match(/[^{}]+(?=\{[^{}]*\})/g)!
+      .filter(selector => selector.includes('::-webkit-scrollbar'))
+    expect(scrollbarSelectors.length).toBeGreaterThan(0)
+    expect(scrollbarSelectors.every(selector => selector.split(',').every(part => part.includes('.run-cards')))).toBe(true)
+    await act(async () => {
+      await renderer.root.findByType(ExperimentWorkbench).props.onAction({
+        type: 'new-workspace', workspaceId: 'workspace-a', value: { name: '画面项目', path: '/art' },
+      })
+    })
+    expect(boundary.attachShadow).toHaveBeenCalledOnce()
+    expect(renderer.root.findAllByType('style')).toHaveLength(1)
+    expect(vi.mocked(createPortal).mock.calls.length).toBeGreaterThan(1)
+    expect(vi.mocked(createPortal).mock.calls.every(([, target]) => target === boundary.root)).toBe(true)
+    await act(() => renderer.unmount())
+    mounts.splice(mounts.indexOf(renderer), 1)
+    expect(renderer.toJSON()).toBeNull()
+  })
+
   it('refreshes the workspace list after creation and leaves navigation to the active form', async () => {
     const api = remote(), renderer = await mount(api)
     vi.mocked(api.mutate).mockResolvedValueOnce({ ok: true, value: { workspaceId: 'workspace-b' } })
@@ -209,6 +249,7 @@ describe('official experiment workbench adapter', () => {
     await act(async () => {
       renderer = create(
         <ExperimentWorkbenchHost remote={api} catalog={source} />,
+        { createNodeMock },
       )
     })
     mounts.push(renderer)
