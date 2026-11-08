@@ -2055,9 +2055,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 filters={view.catalogFilters}
                 queryText={catalogQueryText}
                 onQueryChange={value => setCatalogQueryDraft({ workspaceId: state.workspaceId, value })}
-                onFilters={(catalogFilters) => {
-                  setCatalogQueryDraft({ workspaceId: state.workspaceId, value: catalogFilters.query })
-                  store.updateView({ catalogFilters })
+                onFilters={(patch) => {
+                  if (patch.query !== undefined) setCatalogQueryDraft({ workspaceId: state.workspaceId, value: patch.query })
+                  store.updateView({ catalogFilters: { ...store.getSnapshot().view.catalogFilters, ...patch } })
                 }}
                 back={back}
                 selected={inputs}
@@ -2324,7 +2324,7 @@ interface ExperimentCatalogProps {
   readonly catalog: ExperimentWorkbenchProps['catalog']
   readonly filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters']
   readonly onFilters: (
-    filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters'],
+    filters: Partial<import('./experiment-contract.ts').ExperimentViewState['catalogFilters']>,
   ) => void
   readonly queryText: string
   readonly onQueryChange: (query: string) => void
@@ -2382,6 +2382,12 @@ function ExperimentCatalog({
   const galleryImages = catalogImageUrls(gallery?.item ?? null)
   const detailPreviewUrl = catalogImageUrls(detail)[0]
   const pages = catalogPageCount(result?.totalCount ?? 0)
+  useEffect(() => {
+    if (result && result.kind === filters.kind && result.query === filters.query
+      && result.page === filters.page && result.page > pages) {
+      onFilters({ page: pages })
+    }
+  }, [result, filters, pages, onFilters])
   const reset = () =>
     onFilters({ ...filters, baseModelId: '', modelId: '', query: '', page: 1 })
   return (

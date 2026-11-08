@@ -1349,6 +1349,171 @@ function modelFilterCatalog() {
   return { catalog, modelsA, modelsB }
 }
 
+describe('experiment workbench Catalog pagination', () => {
+  const paginatedCatalog = () => {
+    const catalog = makeCatalog()
+    const search = vi.mocked(catalog.search).getMockImplementation()!
+    const items: CatalogItem[] = Array.from({ length: 19 }, (_, index) => ({
+      ...catalogItems[2]!,
+      context: { kind: 'work', id: String(100 + index), name: `作品 ${index + 1}` },
+      label: `作品 ${index + 1}`,
+    }))
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (request.kind !== 'work') return search(request, signal)
+      const matches = request.query === 'light' ? items.slice(0, 4) : request.query === 'none' ? [] : items
+      return Promise.resolve({ ...request, items: matches.slice((request.page - 1) * 8, request.page * 8), totalCount: matches.length })
+    })
+    return catalog
+  }
+
+  it('visits every page in Catalog order and retains the last page after reopening', async () => {
+    const catalog = paginatedCatalog()
+    const data = fullProjection(), originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer, onAction } = await mount(data, { catalog, storage })
+    const selected = nodeText(renderer.root.findByProps({ className: 'selected-resources' }))
+    await click(renderer, '资源')
+    await click(renderer, '作品')
+    const assertPage = (page: string, labels: string[], disabled: boolean[]) => {
+      expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain(page)
+      expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(labels)
+      expect(nodeText(renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('19 项')
+      expect(renderer.root.findByProps({ className: 'catalog-pagination' }).findAllByType('button').map(button => button.props.disabled)).toEqual(disabled)
+      expect(renderer.root.findAllByType('button').filter(button => nodeText(button) === '清除筛选')).toHaveLength(0)
+      expect(nodeText(renderer.root.findByProps({ className: 'selected-resources' }))).toBe(selected)
+    }
+    assertPage('1 / 3', ['作品 1', '作品 2', '作品 3', '作品 4', '作品 5', '作品 6', '作品 7', '作品 8'], [true, false])
+    await click(renderer, '下一页')
+    assertPage('2 / 3', ['作品 9', '作品 10', '作品 11', '作品 12', '作品 13', '作品 14', '作品 15', '作品 16'], [false, false])
+    await click(renderer, '下一页')
+    assertPage('3 / 3', ['作品 17', '作品 18', '作品 19'], [false, true])
+    await act(() => renderer.unmount())
+    const reopened = await mount(data, { catalog, storage })
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('3 / 3')
+    expect(reopened.renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['作品 17', '作品 18', '作品 19'])
+    await click(reopened.renderer, '上一页')
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('2 / 3')
+    await click(reopened.renderer, '上一页')
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 3')
+    expect(reopened.renderer.root.findByProps({ className: 'catalog-pagination' }).findAllByType('button').map(button => button.props.disabled)).toEqual([true, false])
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'selected-resources' }))).toBe(selected)
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+
+  it.each(['base', 'model', 'search'] as const)('returns to the first page after changing %s', async transition => {
+    const { catalog } = modelFilterCatalog()
+    const { renderer, onAction } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '下一页')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('2 / 2')
+    if (transition === 'base') await change(renderer, '筛选底模', '1')
+    if (transition === 'model') await change(renderer, '筛选生成模型', '110')
+    if (transition === 'search') {
+      await change(renderer, '搜索资源', 'none')
+      await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    }
+    expect(catalog.search).toHaveBeenCalledWith({
+      kind: 'model', query: transition === 'search' ? 'none' : '', page: 1,
+      baseModelId: transition === 'base' ? '1' : null, modelId: transition === 'model' ? '110' : null,
+    }, expect.any(AbortSignal))
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain(transition === 'base' ? '1 / 2' : '1 / 1')
+    expect(renderer.root.findByProps({ className: 'catalog-pagination' }).findAllByType('button')[0]!.props.disabled).toBe(true)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('resets an empty page to the complete first page and retains the selected resources after reopening', async () => {
+    const catalog = paginatedCatalog()
+    const data = fullProjection(), originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer, onAction } = await mount(data, { catalog, storage })
+    const selected = nodeText(renderer.root.findByProps({ className: 'selected-resources' }))
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '筛选生成模型', '11')
+    await click(renderer, '作品')
+    await click(renderer, '下一页')
+    await change(renderer, '搜索资源', 'none')
+    await click(renderer, '下一页')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 1')
+    expect(renderer.root.findByProps({ className: 'catalog-pagination' }).findAllByType('button').map(button => button.props.disabled)).toEqual([true, true])
+    expect(nodeText(renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('0 项')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['没有匹配的资源'])
+    expect(renderer.root.findAllByType('button').filter(button => nodeText(button) === '清除筛选')).toHaveLength(1)
+    await click(renderer, '清除筛选')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('')
+    expect(catalog.search).toHaveBeenLastCalledWith({ kind: 'work', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 3')
+    expect(nodeText(renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('19 项')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['作品 1', '作品 2', '作品 3', '作品 4', '作品 5', '作品 6', '作品 7', '作品 8'])
+    expect(nodeText(renderer.root.findByProps({ className: 'selected-resources' }))).toBe(selected)
+    await act(() => renderer.unmount())
+    const reopened = await mount(data, { catalog, storage })
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 3')
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('19 项')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('')
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'selected-resources' }))).toBe(selected)
+    await click(reopened.renderer, '生成模型')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).props.value).toBe('')
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+
+  it('keeps text typed while an out-of-range response is being corrected', async () => {
+    const catalog = paginatedCatalog()
+    const search = vi.mocked(catalog.search).getMockImplementation()!
+    let finish!: () => Promise<void>
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (request.kind === 'work' && request.query === 'light' && request.page === 2) {
+        return new Promise(resolve => { finish = async () => resolve(await search(request, signal)) })
+      }
+      return search(request, signal)
+    })
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '作品')
+    await change(renderer, '搜索资源', 'light')
+    await click(renderer, '下一页')
+    await change(renderer, '搜索资源', 'latest draft')
+    await act(async () => finish())
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('latest draft')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['作品 1', '作品 2', '作品 3', '作品 4'])
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 1')
+  })
+
+  it('contracts a page-changing pending search and restores its results after reopening', async () => {
+    const catalog = paginatedCatalog()
+    const data = fullProjection(), originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer, onAction } = await mount(data, { catalog, storage })
+    const selected = nodeText(renderer.root.findByProps({ className: 'selected-resources' }))
+    await click(renderer, '资源')
+    await click(renderer, '作品')
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 3')
+    await change(renderer, '搜索资源', 'light')
+    await click(renderer, '下一页')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['作品 1', '作品 2', '作品 3', '作品 4'])
+    expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 1')
+    expect(renderer.root.findByProps({ className: 'catalog-pagination' }).findAllByType('button').map(button => button.props.disabled)).toEqual([true, true])
+    expect(nodeText(renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('4 项')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('light')
+    expect(nodeText(renderer.root.findByProps({ className: 'selected-resources' }))).toBe(selected)
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+    await act(() => renderer.unmount())
+    const reopened = await mount(data, { catalog, storage })
+    expect(nodeText(reopened.renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 1')
+    expect(reopened.renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['作品 1', '作品 2', '作品 3', '作品 4'])
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('light')
+  })
+})
+
 describe('experiment workbench Catalog search transitions', () => {
   it('saves pending text when a same-workspace action returns a new work and branch', async () => {
     const first = fullProjection()
