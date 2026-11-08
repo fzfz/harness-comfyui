@@ -216,6 +216,24 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     store.getSnapshot,
     store.getSnapshot,
   )
+  const [catalogQueryDraft, setCatalogQueryDraft] = useState<{ workspaceId: string | null; value: string } | null>(null)
+  const catalogQueryText = catalogQueryDraft?.workspaceId === state.workspaceId
+    ? catalogQueryDraft.value : state.view.catalogFilters.query
+  const catalogQueryRef = useRef({ workspaceId: state.workspaceId, value: catalogQueryText })
+  catalogQueryRef.current = { workspaceId: state.workspaceId, value: catalogQueryText }
+  const navigate = useCallback((change: () => void) => {
+    const current = store.getSnapshot(), draft = catalogQueryRef.current
+    if (draft.workspaceId === current.workspaceId && current.view.page === 'resources' && draft.value !== current.view.catalogFilters.query) {
+      store.updateView({ catalogFilters: { ...current.view.catalogFilters, query: draft.value } })
+    }
+    change()
+  }, [store])
+  const selectWorkspace = useCallback((workspaceId: string | null) => {
+    if (workspaceId !== store.getSnapshot().workspaceId) navigate(() => store.setWorkspace(workspaceId))
+  }, [store, navigate])
+  const selectWork = (workId: string) => navigate(() => store.selectWork(workId))
+  const selectBranch = (branchId: string) => navigate(() => store.selectBranch(branchId))
+  const selectRun = (runId: string, inspectRun = true) => navigate(() => store.selectRun(runId, inspectRun))
   const [message, setMessage] = useToastMessage()
   const functionWrites = useRef(new Map<string, Promise<void>>())
   const [functionBindings, setFunctionBindings] = useState<ReadonlyMap<string, FunctionBinding>>(() => new Map())
@@ -238,8 +256,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const fieldEditor = useBranchFieldEdits(state.workspaceId, state.view.workId, state.view.branchId)
   const host = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    store.setWorkspace(props.workspaceId)
-  }, [store, props.workspaceId])
+    selectWorkspace(props.workspaceId)
+  }, [selectWorkspace, props.workspaceId])
   useEffect(() => {
     const sync = () =>
       store.setVisible(
@@ -382,7 +400,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       : item.generation_input.model?.file_name || '未选择底模'
   }
   const changePage = (page: ExperimentPage) => {
-    store.updateView({ page, compareRunId: null })
+    navigate(() => store.updateView({ page, compareRunId: null }))
     setSearch('')
   }
   const action = async (
@@ -406,8 +424,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       if (!stillCurrent()) return false
       const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
         && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
-      if (selection && !keepsCatalogNavigation) {
-        store.setWorkspace(selection.workspaceId)
+      if (selection && !keepsCatalogNavigation) navigate(() => {
+        selectWorkspace(selection.workspaceId)
         props.onWorkspaceChange(selection.workspaceId)
         if (type === 'new-workspace') changePage('workbench')
         if (selection.workId) store.selectWork(selection.workId)
@@ -419,12 +437,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             compareRunId: null,
             page: 'workbench',
           })
-      }
+      })
       const refreshNavigation = store.getNavigationSequence()
       await store.refresh()
       if (store.getNavigationSequence() !== refreshNavigation) return false
       if (selection?.branchId && selection.branchId !== view.branchId)
-        store.selectBranch(selection.branchId)
+        selectBranch(selection.branchId)
       return !isCurrent || isCurrent()
     } catch (error) {
       if (stillCurrent())
@@ -482,7 +500,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             type="button"
             className="artwork preview-image"
             onClick={() => {
-              store.selectRun(item.run_id, view.inspectRun)
+              selectRun(item.run_id, view.inspectRun)
               setModal('image')
             }}
             aria-label={`查看原图 ${item.run_id}`}
@@ -514,7 +532,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       onClick={() =>
         comparing
           ? store.updateView({ compareRunId: item.run_id })
-          : store.selectRun(item.run_id)
+          : selectRun(item.run_id)
       }
     >
       <div className="run-card-art">{runVisual(item)}</div>
@@ -576,7 +594,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             type="button"
             className={`branch-item ${active ? 'active' : ''}`}
             aria-label={`切换分支 ${item.name}`}
-            onClick={() => store.selectBranch(item.branch_id)}
+            onClick={() => selectBranch(item.branch_id)}
           >
             <span className="branch-name">
               {item.name}
@@ -859,7 +877,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             <Button
               kind="small"
               onClick={() => {
-                store.selectBranch(item.branch_id)
+                selectBranch(item.branch_id)
                 changePage('workbench')
               }}
             >
@@ -876,7 +894,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               <Button
                 key={item.run_id}
                 kind="small"
-                onClick={() => store.selectRun(item.run_id)}
+                onClick={() => selectRun(item.run_id)}
               >
                 <span title={item.run_id}>
                   {`${shortId(item.run_id)} · ${item.status === 'succeeded'
@@ -953,7 +971,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   <button
                     key={id}
                     type="button"
-                    onClick={() => store.selectRun(id)}
+                    onClick={() => selectRun(id)}
                   >
                     {id} ↗
                   </button>
@@ -1022,7 +1040,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   <div className="row">
                     <Button
                       kind="small"
-                      onClick={() => store.selectRun(item.run_id)}
+                      onClick={() => selectRun(item.run_id)}
                     >
                       查看运行
                     </Button>
@@ -1093,7 +1111,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   <Button
                     kind="small quiet"
                     onClick={() => {
-                      store.selectBranch(item.branch_id)
+                      selectBranch(item.branch_id)
                       changePage('workbench')
                     }}
                   >
@@ -1217,7 +1235,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   <div className="task-output" key={run.run_id}>
                     <Button
                       kind="small"
-                      onClick={() => store.selectRun(run.run_id)}
+                      onClick={() => selectRun(run.run_id)}
                     >
                       查看运行 <Identifier value={run.run_id} />
                     </Button>
@@ -1341,9 +1359,10 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     save={(nextValue, expectedValue) => saveField(id, options, nextValue, expectedValue)}
   />
   const openCatalog = (kind: CatalogKind) => {
+    setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
     store.updateView({
       page: 'resources',
-      catalogFilters: { ...view.catalogFilters, kind, page: 1 },
+      catalogFilters: { ...view.catalogFilters, kind, query: '', page: 1 },
     })
   }
   const inspector = branch && inputs && (
@@ -1898,7 +1917,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               title={workspace?.path}
               value={state.workspaceId ?? ''}
               onChange={(event) => {
-                store.setWorkspace(event.target.value)
+                selectWorkspace(event.target.value)
                 props.onWorkspaceChange(event.target.value)
               }}
             >
@@ -1936,7 +1955,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 id="experiment-work-picker"
                 aria-label="切换工作"
                 value={view.workId ?? ''}
-                onChange={(event) => store.selectWork(event.target.value)}
+                onChange={(event) => selectWork(event.target.value)}
               >
                 {p?.works.map((item) => (
                   <option key={item.work_id} value={item.work_id}>
@@ -2034,9 +2053,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               <ExperimentCatalog
                 catalog={props.catalog}
                 filters={view.catalogFilters}
-                onFilters={(catalogFilters) =>
+                queryText={catalogQueryText}
+                onQueryChange={value => setCatalogQueryDraft({ workspaceId: state.workspaceId, value })}
+                onFilters={(catalogFilters) => {
+                  setCatalogQueryDraft({ workspaceId: state.workspaceId, value: catalogFilters.query })
                   store.updateView({ catalogFilters })
-                }
+                }}
                 back={back}
                 selected={inputs}
                 onSelect={(item) =>
@@ -2131,7 +2153,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       <Button
                         kind="small"
                         onClick={() => {
-                          store.selectRun(item.run_id)
+                          selectRun(item.run_id)
                           setSheet(false)
                         }}
                       >
@@ -2304,6 +2326,8 @@ interface ExperimentCatalogProps {
   readonly onFilters: (
     filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters'],
   ) => void
+  readonly queryText: string
+  readonly onQueryChange: (query: string) => void
   readonly back: ReactNode
   readonly selected?: TaskDraft
   readonly locked: boolean
@@ -2318,6 +2342,8 @@ function ExperimentCatalog({
   catalog,
   filters,
   onFilters,
+  queryText,
+  onQueryChange,
   back,
   selected,
   locked,
@@ -2330,7 +2356,6 @@ function ExperimentCatalog({
     query: { kind: filters.kind, query: filters.query, page: filters.page, baseModelId: filters.baseModelId || null, modelId: filters.modelId || null },
     modelOptions: true,
   })
-  const [query, setQuery] = useState(filters.query)
   const [detail, setDetail] = useState<CatalogItem | null>(null)
   const [gallery, setGallery] = useState<{ item: CatalogItem; index: number } | null>(null)
   const { details, error: detailError, retry: retryDetails } = useCatalogDetails(detail === null ? null : detail.context, catalog?.details)
@@ -2338,7 +2363,6 @@ function ExperimentCatalog({
   const loading = status === 'loading'
   const bases = baseModels?.items ?? []
   useEffect(() => {
-    setQuery(filters.query)
     setDetail(null)
     setGallery(null)
   }, [filters.kind, filters.query, filters.baseModelId, filters.modelId, filters.page])
@@ -2471,6 +2495,7 @@ function ExperimentCatalog({
                         onFilters({
                           ...filters,
                           baseModelId: event.target.value,
+                          query: queryText,
                           modelId: '',
                           page: 1,
                         })
@@ -2493,6 +2518,7 @@ function ExperimentCatalog({
                         onFilters({
                           ...filters,
                           modelId: event.target.value,
+                          query: queryText,
                           page: 1,
                         })
                       }
@@ -2511,14 +2537,14 @@ function ExperimentCatalog({
                 className="catalog-search"
                 onSubmit={(event) => {
                   event.preventDefault()
-                  onFilters({ ...filters, query, page: 1 })
+                  onFilters({ ...filters, query: queryText.trim(), page: 1 })
                 }}
               >
                 <input
                   aria-label="搜索资源"
                   placeholder={`搜索${kind.label}`}
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  value={queryText}
+                  onChange={(event) => onQueryChange(event.target.value)}
                 />
                 <button className="btn" type="submit">
                   搜索
@@ -2578,7 +2604,7 @@ function ExperimentCatalog({
                   kind="small"
                   disabled={filters.page <= 1 || loading}
                   onClick={() =>
-                    onFilters({ ...filters, page: filters.page - 1 })
+                    onFilters({ ...filters, query: queryText, page: filters.page - 1 })
                   }
                 >
                   上一页
@@ -2588,7 +2614,7 @@ function ExperimentCatalog({
                   kind="small"
                   disabled={filters.page >= pages || loading}
                   onClick={() =>
-                    onFilters({ ...filters, page: filters.page + 1 })
+                    onFilters({ ...filters, query: queryText, page: filters.page + 1 })
                   }
                 >
                   下一页

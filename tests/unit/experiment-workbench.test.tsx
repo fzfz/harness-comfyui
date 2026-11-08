@@ -1349,6 +1349,226 @@ function modelFilterCatalog() {
   return { catalog, modelsA, modelsB }
 }
 
+describe('experiment workbench Catalog search transitions', () => {
+  it('saves pending text when a same-workspace action returns a new work and branch', async () => {
+    const first = fullProjection()
+    const second: WorkbenchProjection = {
+      ...first, work_id: 'work-b', total_branch_count: 1,
+      branches: [{ ...first.branches[0]!, branch_id: 'returned-root', work_id: 'work-b', name: '返回的主分支', draft: { ...first.branches[0]!.draft, prompt_input: { positive_prompt: 'returned work prompt', negative_prompt: '' } } }],
+      tasks: [], runs: [], artifacts: [], experiments: [], experiences: [], favorites: [],
+    }
+    const originalDrafts = structuredClone([...first.branches, ...second.branches].map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const onAction = vi.fn(async () => ({ workspaceId: 'workspace-a', workId: 'work-b', branchId: 'returned-root' }))
+    const options: Partial<ExperimentWorkbenchProps> = {
+      catalog: makeCatalog(), storage, onAction,
+      remote: {
+        getProjection: async request => request.workId === 'work-b' ? second : first,
+        getEnvironment: async () => functionEnvironment,
+        getInputDescription: async () => inputDescription,
+      },
+    }
+    const { renderer } = await mount(first, options)
+    await click(renderer, '资源')
+    await change(renderer, '搜索资源', '  returned navigation draft  ')
+    await click(renderer, '新建工作')
+    await act(async () => renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({ preventDefault() {}, currentTarget: { name: '返回的工作', goal: '验证返回导航' } }))
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: 'new-work', workspaceId: 'workspace-a' }))
+    expect(renderer.root.findByProps({ 'aria-label': '切换工作' }).props.value).toBe('work-b')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('返回的主分支')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('returned work prompt')
+    await act(() => renderer.unmount())
+    const reopened = await mount(first, options)
+    await click(reopened.renderer, '资源')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('  returned navigation draft  ')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('返回的主分支')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('returned work prompt')
+    expect([...first.branches, ...second.branches].map(branch => branch.draft)).toEqual(originalDrafts)
+  })
+
+  it.each(['work', 'branch', 'run'] as const)('saves the pending query before %s navigation and reloads the correct target inputs', async navigation => {
+    const first = treeProjection()
+    first.runs.find(run => run.run_id === 'warm-r1')!.generation_input.parameters.positive_1 = 'selected run prompt'
+    const second: WorkbenchProjection = {
+      ...first, work_id: 'work-b', total_branch_count: 1,
+      branches: [{ ...first.branches[0]!, branch_id: 'root-b', work_id: 'work-b', name: '另一个工作分支', draft: { ...first.branches[0]!.draft, prompt_input: { positive_prompt: 'second work prompt', negative_prompt: '' } } }],
+      tasks: [], runs: [], artifacts: [], experiments: [], experiences: [], favorites: [],
+    }
+    const originalDrafts = structuredClone([...first.branches, ...second.branches].map(branch => branch.draft))
+    const { catalog } = modelFilterCatalog()
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const options: Partial<ExperimentWorkbenchProps> = {
+      catalog, storage,
+      remote: {
+        getProjection: async request => request.workId === 'work-b' ? second : first,
+        getEnvironment: async () => functionEnvironment,
+        getInputDescription: async () => inputDescription,
+      },
+    }
+    const { renderer, onAction } = await mount(first, options)
+    await click(renderer, '资源')
+    await change(renderer, '搜索资源', '  navigation draft  ')
+    if (navigation === 'work') await change(renderer, '切换工作', 'work-b')
+    if (navigation === 'branch') await click(renderer, '切换分支 暖光')
+    if (navigation === 'run') {
+      await click(renderer, '查看运行记录')
+      const card = renderer.root.findByProps({ 'aria-label': '运行记录' }).findAllByType('article').find(node => nodeText(node).includes('warm-r1'))!
+      await act(() => card.findAllByType('button').find(button => nodeText(button) === '查看运行')!.props.onClick())
+    }
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(navigation === 'work' ? '另一个工作分支' : '暖光')
+    expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(navigation === 'work' ? 'second work prompt' : navigation === 'run' ? 'selected run prompt' : 'warm prompt')
+    await act(() => renderer.unmount())
+    const reopened = await mount(first, options)
+    await click(reopened.renderer, '资源')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('  navigation draft  ')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe(navigation === 'work' ? '另一个工作分支' : '暖光')
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe(navigation === 'work' ? 'second work prompt' : navigation === 'run' ? 'selected run prompt' : 'warm prompt')
+    expect([...first.branches, ...second.branches].map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+
+  it('discards unsaved typing on reload and restores each workspace query after navigation', async () => {
+    const first = fullProjection()
+    const second: WorkbenchProjection = {
+      ...first, workspace_id: 'workspace-b', work_id: 'work-b', total_branch_count: 1,
+      works: [{ ...first.works[0]!, workspace_id: 'workspace-b', work_id: 'work-b' }],
+      branches: [{ ...first.branches[0]!, branch_id: 'root-b', work_id: 'work-b' }],
+      tasks: [], runs: [], artifacts: [], experiments: [], experiences: [], favorites: [], functions: [],
+    }
+    const originalDrafts = structuredClone([...first.branches, ...second.branches].map(branch => branch.draft))
+    const catalog = makeCatalog()
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const options: Partial<ExperimentWorkbenchProps> = {
+      catalog, storage,
+      workspaces: [{ id: 'workspace-a', name: '工作区 A', path: '/projects/a' }, { id: 'workspace-b', name: '工作区 B', path: '/projects/b' }],
+      remote: {
+        getProjection: async request => request.workspaceId === 'workspace-b' ? second : first,
+        getEnvironment: async () => functionEnvironment,
+        getInputDescription: async () => inputDescription,
+      },
+    }
+    const initial = await mount(first, options)
+    await click(initial.renderer, '资源')
+    await change(initial.renderer, '搜索资源', '  saved A  ')
+    await act(async () => initial.renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    await change(initial.renderer, '搜索资源', '  reload draft  ')
+    await act(() => initial.renderer.unmount())
+    const reopened = await mount(first, options), renderer = reopened.renderer
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('saved A')
+    await change(renderer, '搜索资源', '  workspace A draft  ')
+    await change(renderer, '切换工作区', 'workspace-b')
+    await click(renderer, '资源')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('')
+    await change(renderer, '搜索资源', '  saved B  ')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    await change(renderer, '切换工作区', 'workspace-a')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('  workspace A draft  ')
+    expect(catalog.search).toHaveBeenCalledWith(expect.objectContaining({ query: '  workspace A draft  ' }), expect.any(AbortSignal))
+    await change(renderer, '切换工作区', 'workspace-b')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('saved B')
+    expect([...first.branches, ...second.branches].map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(initial.onAction).not.toHaveBeenCalled()
+    expect(reopened.onAction).not.toHaveBeenCalled()
+  })
+
+  it('retains the final submitted search and selection when an earlier response arrives late', async () => {
+    const catalog = makeCatalog(), search = vi.mocked(catalog.search).getMockImplementation()!
+    let finishFirst!: () => void
+    let firstSignal!: AbortSignal
+    vi.mocked(catalog.search).mockImplementation((request, signal) => {
+      if (request.kind === 'work' && request.query === 'first') return new Promise(resolve => {
+        firstSignal = signal
+        finishFirst = () => resolve({ ...request, items: [{ ...catalogItems[2]!, label: '先发结果' }], totalCount: 1 })
+      })
+      if (request.kind === 'work' && request.query === 'last') return Promise.resolve({ ...request, items: [{ ...catalogItems[2]!, label: '最后结果' }], totalCount: 1 })
+      return search(request, signal)
+    })
+    const data = fullProjection(), originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const { renderer, onAction } = await mount(data, { catalog })
+    const selected = nodeText(renderer.root.findByProps({ className: 'selected-resources' }))
+    await click(renderer, '资源')
+    await click(renderer, '作品')
+    await change(renderer, '搜索资源', 'first')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    await change(renderer, '搜索资源', 'last')
+    expect(firstSignal.aborted).toBe(false)
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    expect(firstSignal.aborted).toBe(true)
+    await act(async () => finishFirst())
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['最后结果'])
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('last')
+    expect(nodeText(renderer.root.findByProps({ className: 'selected-resources' }))).toBe(selected)
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('stages text without querying or saving, trims form submission and restores all records on empty submission', async () => {
+    const catalog = makeCatalog()
+    const data = fullProjection()
+    const originalDrafts = structuredClone(data.branches.map(branch => branch.draft))
+    const memory = new Map<string, string>()
+    const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+    const { renderer, onAction } = await mount(data, { catalog, storage })
+    await click(renderer, '资源')
+    await click(renderer, '作品')
+    const calls = vi.mocked(catalog.search).mock.calls.length
+    const saved = [...memory.entries()]
+    await change(renderer, '搜索资源', '  glass  ')
+    expect(vi.mocked(catalog.search).mock.calls).toHaveLength(calls)
+    expect([...memory.entries()]).toEqual(saved)
+    expect(renderer.root.findByProps({ className: 'catalog-search' }).findAllByType('button')[0]!.props.type).toBe('submit')
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    expect(catalog.search).toHaveBeenLastCalledWith({ kind: 'work', query: 'glass', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('glass')
+    const submittedCalls = vi.mocked(catalog.search).mock.calls.length
+    await change(renderer, '搜索资源', '')
+    expect(vi.mocked(catalog.search).mock.calls).toHaveLength(submittedCalls)
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['花房作品'])
+    await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
+    expect(catalog.search).toHaveBeenLastCalledWith({ kind: 'work', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
+    expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it.each(['base', 'model', 'page', 'category'] as const)('applies the current input draft when changing %s', async transition => {
+    const { catalog } = modelFilterCatalog()
+    const { renderer, onAction } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await change(renderer, '筛选底模', '1')
+    await change(renderer, '搜索资源', '  pending  ')
+    if (transition === 'base') await change(renderer, '筛选底模', '2')
+    if (transition === 'model') await change(renderer, '筛选生成模型', '101')
+    if (transition === 'page') await click(renderer, '下一页')
+    if (transition === 'category') await click(renderer, 'LoRA')
+    const query = transition === 'category' ? '' : '  pending  '
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe(query)
+    expect(catalog.search).toHaveBeenCalledWith({
+      kind: transition === 'category' ? 'lora' : 'model', query,
+      page: transition === 'page' ? 2 : 1, baseModelId: transition === 'base' ? '2' : '1', modelId: transition === 'model' ? '101' : null,
+    }, expect.any(AbortSignal))
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('retains the input draft through page navigation and clears it from the direct LoRA entry', async () => {
+    const { catalog } = modelFilterCatalog()
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await change(renderer, '搜索资源', '  page draft  ')
+    await click(renderer, '任务')
+    await click(renderer, '资源')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('  page draft  ')
+    expect(catalog.search).toHaveBeenCalledWith(expect.objectContaining({ kind: 'model', query: '  page draft  ' }), expect.any(AbortSignal))
+    await change(renderer, '搜索资源', '  direct entry draft  ')
+    await click(renderer, '添加 LoRA')
+    expect(renderer.root.findByProps({ 'aria-label': '搜索资源' }).props.value).toBe('')
+    expect(catalog.search).toHaveBeenLastCalledWith(expect.objectContaining({ kind: 'lora', query: '', page: 1 }), expect.any(AbortSignal))
+  })
+})
+
 describe('experiment workbench generation-model filtering', () => {
   it('keeps independent work results visible when model options fail and retries scoped options', async () => {
     const { catalog } = modelFilterCatalog()
