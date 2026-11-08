@@ -1,4 +1,5 @@
 {
+  "fieldPlaceholders": { "references": "图片文件路径" },
   "parameterLabels": {
     "positive_prompt": "正向提示词",
     "negative_prompt": "负向提示词",

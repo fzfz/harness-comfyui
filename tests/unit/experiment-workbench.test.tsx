@@ -270,6 +270,94 @@ describe('experiment workbench prompt editing', () => {
   })
 })
 
+describe('experiment workbench reference image paths', () => {
+  it('keeps the prototype path placeholder while the template has no image parameter', async () => {
+    const { renderer } = await mount(fullProjection(), { remote: { getInputDescription: async () => ({
+      ...inputDescription, parameters: inputDescription.parameters.filter(parameter => parameter.kind !== 'reference_image'),
+    }) } })
+    const input = renderer.root.findByProps({ 'aria-label': '参考图路径' })
+    expect(input.props.type).toBe('text')
+    expect(input.props.placeholder).toBe('图片文件路径')
+    expect(input.props.value).toBe('')
+    expect(input.props.disabled).toBe(true)
+  })
+
+  it('saves exact image paths before blur and retains correction through branch changes and remount', async () => {
+    const paths = ['参考 图/正面 (1).png', '参考 图/侧面 (2).png', '参考 图/背面 (3).png']
+    const parameterId = 'reference_image_113'
+    let available = fullProjection()
+    available.branches[0]!.draft.generation_input.parameters[parameterId] = paths[0]!
+    const original = structuredClone(available.branches[0]!.draft)
+    const otherBranch = structuredClone(available.branches[1]!.draft)
+    const description: typeof inputDescription = { ...inputDescription, parameters: [
+      ...inputDescription.parameters.filter(parameter => parameter.kind !== 'reference_image'),
+      { parameter_id: parameterId, kind: 'reference_image', value_type: 'choice',
+        current_value: paths[0]!, allowed_values: paths },
+    ] }
+    const onAction = vi.fn<ExperimentWorkbenchProps['onAction']>(async request => {
+      if (!paths.includes(String(request.value))) throw new RemoteError(
+        'workbench/operation-failed', '图片路径不在模板允许的范围内。',
+        { code: 'GENERATION_PARAMETER_VALUE_INVALID', issues: [
+          { path: `generation_input.parameters.${parameterId}`, message: '图片路径不在模板允许的范围内。' },
+        ] },
+      )
+      available = { ...available, branches: available.branches.map(branch => branch.branch_id === request.branchId
+        ? { ...branch, draft: { ...branch.draft, generation_input: { ...branch.draft.generation_input,
+          parameters: { ...branch.draft.generation_input.parameters, [request.id!]: request.value as string } } } }
+        : branch) }
+    })
+    const options = { onAction, remote: {
+      getProjection: async () => structuredClone(available), getInputDescription: async () => description,
+    } }
+    const { renderer } = await mount(available, options)
+    await change(renderer, '参考图路径', paths[1]!)
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: 'update-draft', branchId: 'root', field: 'parameter', id: parameterId, value: paths[1],
+    }))
+    expect(available.branches[0]!.draft).toEqual({ ...original, generation_input: {
+      ...original.generation_input, parameters: { ...original.generation_input.parameters, [parameterId]: paths[1] },
+    } })
+    await change(renderer, '参考图路径', '尚未选定.png')
+    const rejected = renderer.root.findByProps({ 'aria-label': '参考图路径' })
+    expect(rejected.props.value).toBe('尚未选定.png')
+    expect(rejected.props['aria-invalid']).toBe(true)
+    expect(nodeText(renderer.root.findByProps({ id: rejected.props['aria-describedby'] }))).toBe('图片路径不在模板允许的范围内。')
+    expect(available.branches[0]!.draft.generation_input.parameters[parameterId]).toBe(paths[1])
+    await change(renderer, '参考图路径', paths[2]!)
+    expect(renderer.root.findByProps({ 'aria-label': '参考图路径' }).props['aria-invalid']).toBeUndefined()
+    await click(renderer, '切换分支 暖光探索')
+    expect(available.branches[1]!.draft).toEqual(otherBranch)
+    await click(renderer, '切换分支 主分支')
+    expect(renderer.root.findByProps({ 'aria-label': '参考图路径' }).props.value).toBe(paths[2])
+    await act(() => renderer.unmount())
+    const reopened = await mount(available, options)
+    expect(reopened.renderer.root.findByProps({ 'aria-label': '参考图路径' }).props.value).toBe(paths[2])
+    expect(available.branches[0]!.draft).toEqual({ ...original, generation_input: {
+      ...original.generation_input, parameters: { ...original.generation_input.parameters, [parameterId]: paths[2] },
+    } })
+  })
+
+  it('renders the reference image choice as the prototype path text input', async () => {
+    const imagePath = '参考 图/正面 (1).png'
+    const data = fullProjection()
+    data.branches[0]!.draft.generation_input.parameters.reference_image_113 = imagePath
+    const description: typeof inputDescription = {
+      ...inputDescription,
+      parameters: [
+        ...inputDescription.parameters.filter(parameter => parameter.kind !== 'reference_image'),
+        { parameter_id: 'reference_image_113', kind: 'reference_image', value_type: 'choice',
+          current_value: imagePath, allowed_values: [imagePath, '参考 图/侧面 (2).png'] },
+      ],
+    }
+    const { renderer } = await mount(data, { remote: { getInputDescription: async () => description } })
+    const input = renderer.root.findByProps({ 'aria-label': '参考图路径' })
+    expect(input.props.type).toBe('text')
+    expect(input.props.id).toBe('references')
+    expect(input.props.placeholder).toBe('图片文件路径')
+    expect(input.props.value).toBe(imagePath)
+  })
+})
+
 describe('experiment workbench described parameters', () => {
   it('does not repeat the same rejected value queued by blur', async () => {
     let finish!: () => void

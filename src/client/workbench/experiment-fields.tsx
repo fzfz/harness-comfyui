@@ -1,4 +1,7 @@
 import React, { useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import inputOptions from './experiment-input-options.json' with { type: 'json' }
+
+const fieldPlaceholders: Readonly<Record<string, string>> = inputOptions.fieldPlaceholders
 
 export interface FieldOptions {
   multiline?: boolean
@@ -131,7 +134,7 @@ export function AutosaveField({ label, inputLabel = label, className, id, value,
     ) : options.multiline ? (
       <textarea {...common} className={options.short ? id === 'original_request' ? 'short branch-goal' : 'short' : ''} />
     ) : (
-      <input {...common} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} maxLength={options.maxLength} />
+      <input {...common} placeholder={id ? fieldPlaceholders[id] : undefined} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} maxLength={options.maxLength} />
     )}
     {error && <p id={id ? `${id}-error` : undefined} className="binding-problem" role="alert">{error}</p>}
   </label>

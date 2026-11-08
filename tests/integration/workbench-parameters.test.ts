@@ -7,8 +7,10 @@ const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup() })
 const signal = () => new AbortController().signal
 
-async function fixture(withSizes = false) {
+async function fixture(withSizes = false, referenceImageType?: 'STRING' | 'choice') {
   const nodeIds = [41, 42]
+  const referenceNodeIds = referenceImageType ? [113, 114] : []
+  const imageChoices = ['参考素材/初始 图.png', '参考素材/第一轮/角色 正面.png', '参考素材/第二轮/角色 侧面.png']
   const workflow: UiWorkflow = { version: 0.4, nodes: [
     ...nodeIds.map(id => ({
       id, type: 'ParameterGenerator', mode: 0,
@@ -19,11 +21,18 @@ async function fixture(withSizes = false) {
       outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [id] }],
       widgets_values: [512, 768, 20, 7.5, 'euler', true, 'template note'],
     })),
+    ...referenceNodeIds.flatMap(id => [
+      { id, type: 'LoadImage', mode: 0, inputs: [{ name: 'image', type: referenceImageType === 'STRING' ? 'STRING' : 'COMBO', link: null, widget: { name: 'image' } }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [id] }], widgets_values: ['参考素材/初始 图.png'] },
+      { id: id + 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: id }], outputs: [], widgets_values: [] },
+    ]),
     ...(withSizes ? [
       { id: 50, type: 'MergeImages', mode: 0, inputs: [{ name: 'first', type: 'IMAGE', link: 41 }, { name: 'second', type: 'IMAGE', link: 42 }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [50] }], widgets_values: [] },
       { id: 60, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 50 }], outputs: [], widgets_values: [] },
     ] : nodeIds.map(id => ({ id: id + 10, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: id }], outputs: [], widgets_values: [] }))),
-  ], links: withSizes ? [[41, 41, 0, 50, 0, 'IMAGE'], [42, 42, 0, 50, 1, 'IMAGE'], [50, 50, 0, 60, 0, 'IMAGE']] : nodeIds.map(id => [id, id, 0, id + 10, 0, 'IMAGE']) }
+  ], links: [
+    ...(withSizes ? [[41, 41, 0, 50, 0, 'IMAGE'], [42, 42, 0, 50, 1, 'IMAGE'], [50, 50, 0, 60, 0, 'IMAGE']] : nodeIds.map(id => [id, id, 0, id + 10, 0, 'IMAGE'])),
+    ...referenceNodeIds.map(id => [id, id, 0, id + 10, 0, 'IMAGE']),
+  ] }
   const definitions = {
     ParameterGenerator: {
       input: { required: {
@@ -33,6 +42,10 @@ async function fixture(withSizes = false) {
       } },
       input_order: { required: ['width', 'height', 'steps', 'cfg', 'sampler_name', 'scheduler', 'denoise'], optional: [] },
       output: ['IMAGE'], output_node: false,
+    },
+    LoadImage: {
+      input: { required: { image: [referenceImageType === 'choice' ? imageChoices : 'STRING', {}] } },
+      input_order: { required: ['image'], optional: [] }, output: ['IMAGE'], output_node: false,
     },
     MergeImages: { input: { required: { first: ['IMAGE'], second: ['IMAGE'] } }, input_order: { required: ['first', 'second'], optional: [] }, output: ['IMAGE'], output_node: false },
     SaveImage: { input: { required: { images: ['IMAGE'] } }, input_order: { required: ['images'], optional: [] }, output_node: true },
@@ -60,6 +73,58 @@ async function fixture(withSizes = false) {
   }
   return { ...host, scope, read, source, officialExport, randomSeed, fetchDefinitions }
 }
+
+it.each(['STRING', 'choice'] as const)('saves and replaces one reference-image path under the %s contract while preserving other inputs and branches', async valueType => {
+  const { remote, scope, read, official, officialExport, randomSeed } = await fixture(false, valueType)
+  const description = await remote.getInputDescription(scope, signal())
+  expect(description?.parameters.filter(parameter => parameter.kind === 'reference_image')).toEqual([
+    { parameter_id: 'reference_image_113', kind: 'reference_image', value_type: valueType === 'STRING' ? 'string' : 'choice', current_value: '参考素材/初始 图.png',
+      ...(valueType === 'choice' ? { allowed_values: ['参考素材/初始 图.png', '参考素材/第一轮/角色 正面.png', '参考素材/第二轮/角色 侧面.png'] } : {}) },
+    { parameter_id: 'reference_image_114', kind: 'reference_image', value_type: valueType === 'STRING' ? 'string' : 'choice', current_value: '参考素材/初始 图.png',
+      ...(valueType === 'choice' ? { allowed_values: ['参考素材/初始 图.png', '参考素材/第一轮/角色 正面.png', '参考素材/第二轮/角色 侧面.png'] } : {}) },
+  ])
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Keep the reference composition' }, signal())
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'negative_prompt', value: 'Keep this negative prompt' }, signal())
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'steps_42', value: 31 }, signal())
+  const sibling = await remote.mutate({ ...scope, type: 'create-branch', value: { name: 'Other reference', original_request: 'Keep its reference' } }, signal())
+  const before = await read()
+  const siblingBefore = before.projection.branches.find(branch => branch.branch_id === sibling.branchId)!
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference_image_113', value: '参考素材/第一轮/角色 正面.png' }, signal())
+  const first = await read()
+  expect(first.draft).toEqual({ ...before.draft, generation_input: { ...before.draft.generation_input, parameters: { ...before.draft.generation_input.parameters, reference_image_113: '参考素材/第一轮/角色 正面.png' } } })
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference_image_113', value: '参考素材/第二轮/角色 侧面.png' }, signal())
+  const replaced = await read()
+  expect(replaced.draft).toEqual({ ...before.draft, generation_input: { ...before.draft.generation_input, parameters: { ...before.draft.generation_input.parameters, reference_image_113: '参考素材/第二轮/角色 侧面.png' } } })
+  expect(replaced.draft.generation_input.parameters.reference_image_114).toBe('参考素材/初始 图.png')
+  expect(replaced.draft.generation_input.parameters).not.toHaveProperty('reference_image')
+  expect(replaced.projection.branches.find(branch => branch.branch_id === sibling.branchId)).toEqual(siblingBefore)
+  expect(replaced.projection.tasks).toEqual([])
+  expect(replaced.projection.runs).toEqual([])
+  expect(official.controller.create).not.toHaveBeenCalled()
+  expect(officialExport).not.toHaveBeenCalled()
+  expect(randomSeed).not.toHaveBeenCalled()
+})
+
+it('rejects a reference-image path outside the LoadImage choices, retains the last valid draft and saves its correction', async () => {
+  const { remote, scope, read, official, officialExport } = await fixture(false, 'choice')
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Keep this composition' }, signal())
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'negative_prompt', value: 'Keep this negative prompt' }, signal())
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'steps_42', value: 31 }, signal())
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference_image_113', value: '参考素材/第一轮/角色 正面.png' }, signal())
+  const before = (await read()).draft
+  await expect(remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference_image_113', value: '参考素材/未登记/角色 背面.png' }, signal())).rejects.toMatchObject({
+    code: 'workbench/operation-failed',
+    details: { code: 'GENERATION_PARAMETER_INVALID', issues: [{ path: 'generation_input.parameters.reference_image_113', message: 'Generation parameter "reference_image_113" for 113:LoadImage.image received "参考素材/未登记/角色 背面.png"; allowed values ["参考素材/初始 图.png","参考素材/第一轮/角色 正面.png","参考素材/第二轮/角色 侧面.png"].' }] },
+  })
+  expect((await read()).draft).toEqual(before)
+  await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference_image_113', value: '参考素材/第二轮/角色 侧面.png' }, signal())
+  const corrected = await read()
+  expect(corrected.draft).toEqual({ ...before, generation_input: { ...before.generation_input, parameters: { ...before.generation_input.parameters, reference_image_113: '参考素材/第二轮/角色 侧面.png' } } })
+  expect(corrected.projection.tasks).toEqual([])
+  expect(corrected.projection.runs).toEqual([])
+  expect(official.controller.create).not.toHaveBeenCalled()
+  expect(officialExport).not.toHaveBeenCalled()
+})
 
 it('rechecks the complete combination when different inspected IDs claim the same Workflow widget', async () => {
   const host = await fixture()

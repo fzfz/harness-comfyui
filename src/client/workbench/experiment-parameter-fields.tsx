@@ -26,7 +26,8 @@ export function RuntimeParameterField({ label, id, parameter, value, editor, loc
   readonly save: (value: JsonValue) => Promise<void>
 }) {
   const error = useSyncExternalStore(editor.subscribe, editor.getErrorSnapshot, editor.getErrorSnapshot)
-  const values = parameter?.allowed_values ?? (parameter?.value_type === 'boolean' ? [true, false] : undefined)
+  const values = parameter?.kind === 'reference_image' ? undefined
+    : parameter?.allowed_values ?? (parameter?.value_type === 'boolean' ? [true, false] : undefined)
   const numeric = parameter?.value_type === 'integer' || parameter?.value_type === 'number'
   const options: FieldOptions = {
     disabled: !parameter, saveOnChange: true,
