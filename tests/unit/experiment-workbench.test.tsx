@@ -473,7 +473,7 @@ describe('experiment workbench public interactions', () => {
   })
 
   it('forwards edited input, resource and execution values with the active branch identity', async () => {
-    const { renderer, onAction } = await mount(fullProjection())
+    const { renderer, onAction } = await mount(fullProjection(), { catalog: makeCatalog() })
     await click(renderer, '切换分支 暖光探索')
     await change(renderer, '分支名称', '暖光复验')
     await blur(renderer, '分支名称', '暖光复验')
@@ -509,7 +509,7 @@ describe('experiment workbench public interactions', () => {
     }
     await change(renderer, 'ComfyUI 实例', '2')
     await change(renderer, '画面尺寸', '768 × 1024')
-    await blur(renderer, 'glass.safetensors 权重', '0.7')
+    await blur(renderer, '玻璃 LoRA 权重', '0.7')
     expect(onAction).toHaveBeenLastCalledWith(
       expect.objectContaining({
         type: 'update-draft',
@@ -518,7 +518,7 @@ describe('experiment workbench public interactions', () => {
         value: 0.7,
       }),
     )
-    await click(renderer, '移除 glass.safetensors')
+    await click(renderer, '移除 玻璃 LoRA')
     await click(renderer, '移除 14')
     await change(renderer, '本次执行预设', 'preset')
     await change(renderer, '持续实验', 'continuous')
@@ -2319,7 +2319,7 @@ describe('experiment workbench Catalog removal persistence', () => {
       expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ ...scope, type: 'resource-remove', id: '13', value: 'lora' }))
       expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(1)
       await click(renderer, '选择 玻璃 LoRA')
-      expect(renderer.root.findByProps({ 'aria-label': '移除 玻璃 LoRA' }).props['aria-pressed']).toBe(true)
+      expect(renderer.root.findByProps({ className: 'catalog-content' }).findByProps({ 'aria-label': '移除 玻璃 LoRA' }).props['aria-pressed']).toBe(true)
       expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(2)
       expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft.generation_input.loras).toEqual([
         { id: '19', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] },
@@ -2337,6 +2337,240 @@ describe('experiment workbench Catalog removal persistence', () => {
       expect(renderer.root.findAllByProps({ className: 'context-item' })).toHaveLength(1)
       expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
       await act(() => renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
+describe('experiment workbench LoRA draft persistence', () => {
+  it.each(['loading', 'failure'] as const)('identifies two LoRAs by their saved files during a %s Catalog read', async state => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft.generation_input.loras = [
+      { id: '13', file_name: 'glass.safetensors', weight: 0.35, trigger_words: ['glass'] },
+      { id: '19', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] },
+    ]
+    const before = structuredClone(data.branches[0]!.draft), details = vi.mocked(catalog.details).getMockImplementation()!
+    const finish: Record<string, () => Promise<void>> = {}
+    vi.mocked(catalog.details).mockImplementation((request, signal) => {
+      if (request.kind !== 'lora') return details(request, signal)
+      if (state === 'failure') return Promise.reject(Error('Catalog LoRA metadata returned HTTP 503.'))
+      return new Promise(resolve => {
+        finish[request.id] = async () => {
+          const result = await details(request, signal)
+          resolve({ ...result, item: { ...result.item, label: request.id === '13' ? '玻璃细节' : '雨后光线' } })
+        }
+      })
+    })
+    const { renderer, onAction } = await mount(data, { catalog })
+    const shownNames = () => renderer.root.findAllByProps({ className: 'picked-lora' }).map(row => row.findAllByType('b').map(nodeText))
+    expect(shownNames()).toEqual([['glass.safetensors'], ['rain.safetensors']])
+    for (const item of before.generation_input.loras) {
+      const weight = renderer.root.findByProps({ 'aria-label': `${item.file_name} 权重` })
+      expect(String(weight.props.value)).toBe(String(item.weight))
+      expect(weight.props.disabled).not.toBe(true)
+      expect(renderer.root.findByProps({ 'aria-label': `移除 ${item.file_name}` }).props.disabled).not.toBe(true)
+    }
+    if (state === 'failure') expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('Catalog LoRA metadata returned HTTP 503.')
+    else {
+      await act(async () => finish['19']!())
+      expect(shownNames()).toEqual([['glass.safetensors'], ['雨后光线']])
+      await act(async () => finish['13']!())
+      expect(shownNames()).toEqual([['玻璃细节'], ['雨后光线']])
+      expect(String(renderer.root.findByProps({ 'aria-label': '玻璃细节 权重' }).props.value)).toBe('0.35')
+      expect(String(renderer.root.findByProps({ 'aria-label': '雨后光线 权重' }).props.value)).toBe('0.8')
+    }
+    expect(data.branches[0]!.draft).toEqual(before)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('shows Catalog LoRA names separately from stored files and preserves each weight', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft.generation_input.loras = [
+      { id: '13', file_name: 'glass.safetensors', weight: 0.35, trigger_words: ['glass trigger'] },
+      { id: '19', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain trigger'] },
+    ]
+    const before = structuredClone(data.branches[0]!.draft), details = vi.mocked(catalog.details).getMockImplementation()!
+    vi.mocked(catalog.details).mockImplementation(async (request, signal) => {
+      const result = await details(request, signal)
+      if (request.kind !== 'lora') return result
+      const item = data.branches[0]!.draft.generation_input.loras.find(item => item.id === request.id)!
+      return { ...result, item: { ...result.item, context: { kind: 'lora', id: item.id, file_name: item.file_name }, label: item.id === '13' ? '玻璃细节' : '雨后光线' } }
+    })
+    const { renderer, onAction } = await mount(data, { catalog })
+    const rows = renderer.root.findAllByProps({ className: 'picked-lora' })
+    expect(rows.map(row => row.findAllByType('b').map(nodeText))).toEqual([['玻璃细节'], ['雨后光线']])
+    expect(String(renderer.root.findByProps({ 'aria-label': '玻璃细节 权重' }).props.value)).toBe('0.35')
+    expect(String(renderer.root.findByProps({ 'aria-label': '雨后光线 权重' }).props.value)).toBe('0.8')
+    expect(renderer.root.findByProps({ 'aria-label': '移除 玻璃细节' }).props.disabled).not.toBe(true)
+    expect(nodeText(rows[0]!)).not.toContain('glass.safetensors')
+    expect(nodeText(rows[0]!)).not.toContain('glass trigger')
+    expect(data.branches[0]!.draft).toEqual(before)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it.each(['success', 'failure'] as const)('keeps the current LoRA identity when an old name arrives after a %s read', async outcome => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft.generation_input.loras = [{ id: '13', file_name: 'glass.safetensors', weight: 0.35, trigger_words: ['glass'] }]
+    data.branches[1]!.draft.generation_input.loras = [{ id: '19', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] }]
+    const drafts = data.branches.map(branch => structuredClone(branch.draft)), details = vi.mocked(catalog.details).getMockImplementation()!
+    let finishA!: () => Promise<void>, signalA!: AbortSignal
+    vi.mocked(catalog.details).mockImplementation((request, signal) => {
+      if (request.kind !== 'lora') return details(request, signal)
+      if (request.id === '13') return new Promise(resolve => {
+        signalA = signal
+        finishA = async () => { const result = await details(request, signal); resolve({ ...result, item: { ...result.item, label: '玻璃细节' } }) }
+      })
+      if (outcome === 'failure') return Promise.reject(Error('Catalog LoRA metadata returned HTTP 503.'))
+      return details(request, signal).then(result => ({ ...result, item: { ...result.item, label: '雨后光线' } }))
+    })
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '切换分支 暖光探索')
+    const name = outcome === 'success' ? '雨后光线' : 'rain.safetensors'
+    const summary = () => renderer.root.findByProps({ className: 'picked-lora' }).findAllByType('b').map(nodeText)
+    expect(summary()).toEqual([name])
+    expect(signalA.aborted).toBe(true)
+    if (outcome === 'failure') expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('Catalog LoRA metadata returned HTTP 503.')
+    await act(async () => finishA())
+    expect(summary()).toEqual([name])
+    expect(String(renderer.root.findByProps({ 'aria-label': `${name} 权重` }).props.value)).toBe('0.8')
+    expect(data.branches.map(branch => branch.draft)).toEqual(drafts)
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('shows the selected Branch or fixed Run weight and saves an edit only to its Branch', async () => {
+    const data = fullProjection(), label = '玻璃 LoRA 权重'
+    data.branches[0]!.draft.generation_input.loras[0]!.weight = 0.35
+    data.branches[1]!.draft.generation_input.loras[0]!.weight = 0.8
+    data.runs[0]!.generation_input.loras[0]!.weight = 0.65
+    const originalDrafts = data.branches.map(branch => structuredClone(branch.draft))
+    const originalRun = structuredClone(data.runs[0])
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === 'update-draft' && request.field === 'lora-weight')
+        data.branches.find(branch => branch.branch_id === request.branchId)!.draft.generation_input.loras.find(item => item.id === request.id)!.weight = Number(request.value)
+    })
+    const { renderer } = await mount(data, { onAction, catalog: makeCatalog() })
+    const shownWeight = () => {
+      const input = renderer.root.findByProps({ 'aria-label': label })
+      return String(input.props.value ?? input.props.defaultValue)
+    }
+    expect(shownWeight()).toBe('0.35')
+    await click(renderer, '切换分支 暖光探索')
+    expect(shownWeight()).toBe('0.8')
+    await click(renderer, '切换分支 主分支')
+    expect(shownWeight()).toBe('0.35')
+    await click(renderer, '查看运行 r1')
+    expect(shownWeight()).toBe('0.65')
+    await click(renderer, '编辑任务输入')
+    expect(shownWeight()).toBe('0.35')
+    expect(onAction).not.toHaveBeenCalled()
+    await change(renderer, label, '0.45')
+    await blur(renderer, label, '0.45')
+    expect(shownWeight()).toBe('0.45')
+    expect(data.branches[0]!.draft).toEqual({ ...originalDrafts[0], generation_input: { ...originalDrafts[0]!.generation_input, loras: [{ ...originalDrafts[0]!.generation_input.loras[0]!, weight: 0.45 }] } })
+    expect(data.branches[1]!.draft).toEqual(originalDrafts[1])
+    expect(data.runs[0]).toEqual(originalRun)
+    expect(onAction).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['failure', 'pending'] as const)('ends a removed LoRA editor before readding the same ID after a %s save', async mode => {
+    const data = fullProjection(), label = '玻璃 LoRA 权重'
+    data.runs = []
+    const lora = { ...data.branches[0]!.draft.generation_input.loras[0]!, weight: 0.5 }
+    data.branches[0]!.draft.generation_input.loras = [structuredClone(lora)]
+    let releaseWrite!: () => void, wroteValue!: () => void
+    const pendingWrite = new Promise<void>(resolve => { releaseWrite = resolve })
+    const savedValue = new Promise<void>(resolve => { wroteValue = resolve })
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      const input = data.branches[0]!.draft.generation_input
+      if (request.type === 'resource-remove') input.loras = []
+      if (request.type === 'resource-select') input.loras = [structuredClone(lora)]
+      if (request.type === 'update-draft' && request.field === 'lora-weight') {
+        if (mode === 'failure') throw Error('LoRA weight storage returned HTTP 503.')
+        input.loras[0]!.weight = Number(request.value)
+        wroteValue()
+        await pendingWrite
+      }
+    })
+    try {
+      const { renderer } = await mount(data, { onAction, catalog: makeCatalog() })
+      await change(renderer, label, '0.6')
+      await blur(renderer, label, '0.6')
+      if (mode === 'pending') {
+        await savedValue
+        await change(renderer, label, '0.7')
+        await blur(renderer, label, '0.7')
+      } else expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('LoRA weight storage returned HTTP 503.')
+      await click(renderer, '移除 玻璃 LoRA')
+      expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(0)
+      await click(renderer, '添加 LoRA')
+      await click(renderer, '选择 玻璃 LoRA')
+      await act(async () => releaseWrite())
+      const input = renderer.root.findByProps({ 'aria-label': label })
+      expect(String(input.props.value ?? input.props.defaultValue)).toBe('0.5')
+      expect(data.branches[0]!.draft.generation_input.loras).toEqual([lora])
+      expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'update-draft', field: 'lora-weight', value: 0.7 }))
+    } finally { releaseWrite() }
+  })
+
+  it('saves a numeric weight across refresh and removes only the draft while preserving the accepted Run input', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const { parseCliGenerationRequest, toGenerationRequest } = await import('../../src/cli/contract.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const created = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'LoRA 草稿', goal: '保留运行输入' } }, signal)
+      const scope = { workspaceId: created.workspaceId, workId: created.workId!, branchId: created.branchId! }
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
+      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'rain on glass' }, signal)
+      const before = host.store.getBranch(scope.branchId).draft
+      const environment = await host.remote.getEnvironment({}, signal), catalog = makeCatalog()
+      const details = vi.mocked(catalog.details).getMockImplementation()!
+      vi.mocked(catalog.details).mockImplementation(async (request, readSignal) => request.kind === 'lora' ? {
+        ...await details(request, readSignal), fields: [{ key: 'file_name', value: 'rain.safetensors' }, { key: 'trigger_words_json', value: ['rain'] }, { key: 'weight', value: 0.65 }],
+      } : details(request, readSignal))
+      const memory = new Map<string, string>()
+      const options: Partial<ExperimentWorkbenchProps> = {
+        workspaceId: scope.workspaceId, workspaces: environment.workspaces, catalog,
+        storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        onAction: request => host.remote.mutate(request, signal),
+      }
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
+      await click(renderer, '添加 LoRA')
+      await click(renderer, '查看详情 玻璃 LoRA')
+      const shownDetails = renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('dd').map(nodeText)
+      expect(shownDetails).toContain('rain.safetensors')
+      expect(shownDetails).toContain('rain')
+      await click(renderer, '选择 玻璃 LoRA')
+      expect(host.store.getBranch(scope.branchId).draft.generation_input.loras).toEqual([{ id: '13', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }])
+      await click(renderer, '运行任务')
+      const task = (await host.remote.getProjection(scope, signal)).tasks[0]!
+      const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'lora-history' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+      const runId = accepted.items[0]!.runId
+      await blur(renderer, '玻璃 LoRA 权重', '0.35')
+      const saved = await host.remote.getProjection(scope, signal)
+      expect(saved.branches[0]!.draft.generation_input.loras[0]!.weight).toBe(0.35)
+      const fixedRun = saved.runs.find(run => run.run_id === runId)!
+      expect(fixedRun.generation_input.loras[0]!.weight).toBe(0.65)
+      await act(() => renderer.unmount())
+      const reopened = await mount(saved, options)
+      const weight = reopened.renderer.root.findByProps({ 'aria-label': '玻璃 LoRA 权重' })
+      expect(String(weight.props.value ?? weight.props.defaultValue)).toBe('0.35')
+      await click(reopened.renderer, '移除 玻璃 LoRA')
+      const removed = await host.remote.getProjection(scope, signal)
+      expect(removed.branches[0]!.draft).toEqual(before)
+      expect(removed.runs.find(run => run.run_id === runId)).toEqual(fixedRun)
+      expect(reopened.renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(0)
+      await click(reopened.renderer, '运行结果')
+      await click(reopened.renderer, `查看运行 ${runId}`)
+      const historicalWeight = reopened.renderer.root.findByProps({ 'aria-label': '玻璃 LoRA 权重' })
+      expect(String(historicalWeight.props.value ?? historicalWeight.props.defaultValue)).toBe('0.65')
+      await click(reopened.renderer, '编辑任务输入')
+      expect(reopened.renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(0)
+      expect(host.store.getBranch(scope.branchId).draft).toEqual(before)
+      await act(() => reopened.renderer.unmount())
     } finally { await host.dispose() }
   })
 })

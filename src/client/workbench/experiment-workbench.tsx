@@ -43,7 +43,7 @@ import type {
 import { Button, Icon, trapDialogFocus, useToastMessage } from './experiment-controls.tsx'
 import { ExperimentFunctionSettings, formatExperimentAgentModel } from './experiment-function-settings.tsx'
 import { ExperimentWorkbenchStore } from './experiment-store.ts'
-import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogReference } from './catalog-browser.tsx'
+import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogApi, type CatalogReference } from './catalog-browser.tsx'
 import { workbenchContextKey } from './contract.ts'
 
 export type {
@@ -172,9 +172,11 @@ function useBranchFieldEdits(workspaceId: string | null, workId: string | null, 
   }
 }
 
-function AutosaveField({ label, id, value, options, save, editor, locked }: {
+function AutosaveField({ label, inputLabel = label, className, id, value, options, save, editor, locked }: {
   readonly label: string
-  readonly id: string
+  readonly inputLabel?: string
+  readonly className?: string
+  readonly id?: string
   readonly value: string
   readonly options: FieldOptions
   readonly save: SaveField
@@ -184,7 +186,7 @@ function AutosaveField({ label, id, value, options, save, editor, locked }: {
   const edited = useSyncExternalStore(editor.subscribe, editor.getSnapshot, editor.getSnapshot)
   const common = {
     id,
-    'aria-label': label,
+    'aria-label': inputLabel,
     value: (!locked ? edited : undefined) ?? value,
     disabled: options.disabled,
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -194,7 +196,7 @@ function AutosaveField({ label, id, value, options, save, editor, locked }: {
       if (!options.disabled) editor.blur(event.target.value, value, save)
     },
   }
-  return <label className="field">
+  return <label className={className}>
     <span>{label}</span>
     {options.multiline ? (
       <textarea {...common} className={options.short ? id === 'original_request' ? 'short branch-goal' : 'short' : ''} />
@@ -202,6 +204,27 @@ function AutosaveField({ label, id, value, options, save, editor, locked }: {
       <input {...common} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} maxLength={options.maxLength} />
     )}
   </label>
+}
+
+function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
+  readonly scope: { workspaceId: string | null; workId: string | null; branchId: string | null }
+  readonly item: TaskDraft['generation_input']['loras'][number]
+  readonly load?: CatalogApi['details']
+  readonly save: SaveField
+  readonly locked: boolean
+  readonly onError: (message: string) => void
+  readonly onRemove: () => void
+}) {
+  const editor = useBranchFieldEdits(scope.workspaceId, scope.workId, scope.branchId, item.id)(item.id)
+  const { details, error } = useCatalogDetails({ kind: 'lora', id: item.id }, load)
+  const name = details?.kind === 'lora' && details.id === item.id ? details.item.label : item.file_name
+  useEffect(() => { if (error) onError(error) }, [error, onError])
+  return <div className="picked-lora">
+    <b>{name}</b>
+    <AutosaveField label="权重" inputLabel={`${name} 权重`} value={String(item.weight)}
+      options={{ type: 'number', step: 0.05 }} editor={editor} save={save} locked={locked} />
+    <Button kind="quiet small" label={`移除 ${name}`} onClick={onRemove}>×</Button>
+  </div>
 }
 
 export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
@@ -1351,7 +1374,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   )
   const locked = view.inspectRun || !!experiment
   const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
-  const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string) => {
+  const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string, resourceId?: string) => {
     const currentBranch = () => {
       const current = store.getSnapshot()
       return current.workspaceId === state.workspaceId &&
@@ -1364,6 +1387,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         workId: view.workId ?? undefined,
         branchId: view.branchId ?? undefined,
         field: id,
+        ...(resourceId === undefined ? {} : { id: resourceId }),
         value: options.type === 'number' ? Number(value) : value,
         ...(options.branch ? { expectedValue } : {}),
       })
@@ -1384,6 +1408,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   ) => <AutosaveField
     key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, locked, identity])}
     label={label}
+    className="field"
     id={id}
     value={value === null || value === undefined ? '' : String(value)}
     options={options}
@@ -1552,37 +1577,16 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 </Button>
               </div>
               {inputs.generation_input.loras.map((item) => (
-                <div className="picked-lora" key={item.id}>
-                  <b>{item.file_name}</b>
-                  <label>
-                    <span>权重</span>
-                    <input
-                      type="number"
-                      aria-label={`${item.file_name} 权重`}
-                      defaultValue={item.weight}
-                      step="0.05"
-                      onBlur={(event) =>
-                        void action('update-draft', {
-                          field: 'lora-weight',
-                          id: item.id,
-                          value: Number(event.target.value),
-                        })
-                      }
-                    />
-                  </label>
-                  <Button
-                    kind="quiet small"
-                    label={`移除 ${item.file_name}`}
-                    onClick={() =>
-                      void action('resource-remove', {
-                        id: item.id,
-                        value: 'lora',
-                      })
-                    }
-                  >
-                    ×
-                  </Button>
-                </div>
+                <LoraSummary
+                  key={item.id}
+                  scope={{ workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId }}
+                  item={item}
+                  load={props.catalog?.details}
+                  locked={locked}
+                  onError={setMessage}
+                  save={(value, expectedValue) => saveField('lora-weight', { type: 'number' }, value, expectedValue, item.id)}
+                  onRemove={() => void action('resource-remove', { id: item.id, value: 'lora' })}
+                />
               ))}
               {!inputs.generation_input.loras.length && (
                 <p className="muted">未选择 LoRA</p>

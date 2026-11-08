@@ -73,7 +73,7 @@ const catalog = () => ({
   baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'SDXL' }] })),
   search: vi.fn(),
   details: vi.fn<CatalogApi['details']>(async request => ({
-    ...request, item: { context: { kind: 'comfyui-template', id: request.id, title: '文生图' }, baseModelId: '1', label: '文生图', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [],
+    ...request, item: { context: request.kind === 'lora' ? { kind: 'lora', id: request.id, file_name: 'glass.safetensors' } : { kind: 'comfyui-template', id: request.id, title: '文生图' }, baseModelId: '1', label: request.kind === 'lora' ? '玻璃 LoRA' : '文生图', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [],
   })),
 })
 const mount = async (api: ExperimentHostRemote) => {
