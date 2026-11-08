@@ -25,7 +25,7 @@ function catalog(process: CatalogQuery): CatalogClient {
 }
 
 describe('Catalog client', () => {
-  it('queries the ComfyUI instance directory with the fixed object request and returns only instance ids', async () => {
+  it('queries the ComfyUI instance directory with the fixed object request and returns safe ids and titles', async () => {
     const execute = vi.fn<CatalogQuery>(async () => (response([{
         id: 2,
         title: 'win3080',
@@ -38,7 +38,7 @@ describe('Catalog client', () => {
     await expect(catalog(execute).queryComfyuiInstances(request, controller.signal)).resolves.toEqual({
       status: 'ok',
       message: null,
-      results: [{ id: '2' }],
+      results: [{ id: '2', title: 'win3080' }],
       page: 1,
       page_size: 100,
       total_count: 1,
@@ -55,6 +55,14 @@ describe('Catalog client', () => {
       { mode: 'search', query: '', page: 1, page_size: 100 },
       new AbortController().signal,
     )).rejects.toMatchObject({ code: 'CATALOG_PROTOCOL_ERROR', message: expect.stringContaining(message) })
+  })
+
+  it.each([undefined, null, '', '   ', 12])('rejects an invalid source instance title %j', async (title) => {
+    const execute: CatalogQuery = async () => response([{ id: 2, title }], 1, 1, 100)
+    await expect(catalog(execute).queryComfyuiInstances(
+      { mode: 'search', query: '', page: 1, page_size: 100 },
+      new AbortController().signal,
+    )).rejects.toMatchObject({ code: 'CATALOG_PROTOCOL_ERROR', message: expect.stringContaining('title') })
   })
 
   it('rejects a non-fixed ComfyUI instance request before querying the source', async () => {

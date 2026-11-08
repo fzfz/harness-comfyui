@@ -93,7 +93,7 @@ export function apply(ctx: Context): void {
       const skills = workspaceId && presetId && presets.some(preset => preset.id === presetId && !preset.broken)
         ? await presetSkills(workspaceId, presetId) : []
       const instances = await catalog.queryComfyuiInstances(CATALOG_COMFYUI_INSTANCE_QUERY, signal)
-        .then(page => page.results.map(item => ({ id: item.id, name: item.id })))
+        .then(page => page.results.map(item => ({ id: item.id, name: item.title })))
         .catch(error => { ctx.logger('harness-comfyui').warn('Workbench instance catalog unavailable: %s', error instanceof Error ? error.message : String(error)); return [] })
       return { instances, workspaces, presets: presets.map(preset => ({ id: preset.id, name: preset.name ?? preset.id, ...(preset.broken ? { broken: preset.broken } : {}) })), models, skills }
     },

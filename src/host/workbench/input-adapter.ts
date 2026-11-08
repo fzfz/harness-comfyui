@@ -17,9 +17,20 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
     try { return await read }
     catch (error) { throw new WorkbenchError('WORKBENCH_RESOURCE_UNAVAILABLE', error instanceof Error ? error.message : String(error), path) }
   }
+  const generationAt = async <T>(read: () => Promise<T>, path: string): Promise<T> => {
+    try { return await read() }
+    catch (error) {
+      if (signal.aborted || error instanceof Error && error.name === 'AbortError') throw error
+      const message = error instanceof Error ? error.message : String(error)
+      const inputPath = error instanceof GenerationInputValidationError ? error.inputPath : null
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : 'WORKBENCH_GENERATION_INVALID'
+      throw new WorkbenchError(code, message, inputPath ? `${path}.${inputPath}` : path)
+    }
+  }
   const inspect = async (input: GenerationInput) => {
-    if (!input.instance_id || !input.template_id) throw new WorkbenchError('WORKBENCH_TEMPLATE_REQUIRED', '请选择 ComfyUI 实例和 Workflow 模板。', 'generation_input')
-    return runtime.inspectTemplateRuntimeParameters({ instanceId: input.instance_id, templateId: input.template_id }, signal)
+    const instanceId = input.instance_id, templateId = input.template_id
+    if (!instanceId || !templateId) throw new WorkbenchError('WORKBENCH_TEMPLATE_REQUIRED', '请选择 ComfyUI 实例和 Workflow 模板。', 'generation_input')
+    return generationAt(() => runtime.inspectTemplateRuntimeParameters({ instanceId, templateId }, signal), 'generation_input')
   }
   const validateReferences = async (refs: readonly ResourceRef[], path = 'context_refs'): Promise<void> => {
     await Promise.all(refs.map(async (ref, index) => {
@@ -39,13 +50,7 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
       const lora = await resourceAt(catalog.resolveLora(selection.id, signal), `${path}.loras.${index}.id`)
       if (lora.file_name !== selection.file_name) throw new WorkbenchError('WORKBENCH_RESOURCE_MISMATCH', 'LoRA 文件名与目录记录不一致，请重新选择 LoRA。', `${path}.loras.${index}.file_name`)
     }
-    try { await runtime.validateGenerationRequest(toGenerationRequest(parseCliGenerationRequest(input)), signal) }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      const inputPath = error instanceof GenerationInputValidationError ? error.inputPath : null
-      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : 'WORKBENCH_GENERATION_INVALID'
-      throw new WorkbenchError(code, message, inputPath ? `${path}.${inputPath}` : path)
-    }
+    await generationAt(() => runtime.validateGenerationRequest(toGenerationRequest(parseCliGenerationRequest(input)), signal), path)
   }
   const promptParameter = (parameters: readonly WorkflowRuntimeParameterInspectionParameter[], kind: 'positive_prompt' | 'negative_prompt', allowMissing: boolean) => {
     const matching = parameters.filter(parameter => parameter.kind === kind)

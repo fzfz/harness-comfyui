@@ -109,6 +109,7 @@ export type CatalogComfyuiInstanceQueryRequest = typeof CATALOG_COMFYUI_INSTANCE
 
 export interface CatalogComfyuiInstanceItem {
   readonly id: string
+  readonly title: string
 }
 
 export interface CatalogComfyuiInstancePage {
@@ -256,7 +257,7 @@ function nullableStableId(value: unknown): string | null {
 
 function itemText(value: unknown, subject: string, maxLength: number): string {
   if (typeof value !== 'string' || value.trim().length === 0 || value.length > maxLength) {
-    throw new TypeError(`${subject} is invalid`)
+    throw new TypeError(`Set ${subject} to a string with non-whitespace text and at most ${maxLength} characters.`)
   }
   return value
 }
@@ -329,9 +330,10 @@ export function parseCatalogComfyuiInstanceQueryRequest(value: unknown): Catalog
 
 function parseCatalogComfyuiInstanceItem(value: unknown, index: number): CatalogComfyuiInstanceItem {
   const input = record(value, `ComfyUI instance catalog result ${index}`)
-  exactKeys(input, ['id'], `ComfyUI instance catalog result ${index}`)
+  exactKeys(input, ['id', 'title'], `ComfyUI instance catalog result ${index}`)
   return Object.freeze({
     id: parseCatalogStableId(input.id),
+    title: itemText(input.title, 'ComfyUI instance title', 500),
   })
 }
 

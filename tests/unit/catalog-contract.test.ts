@@ -127,14 +127,14 @@ describe('catalog Remote contract', () => {
     expect(parseCatalogComfyuiInstancePage({
       status: 'ok',
       message: null,
-      results: [{ id: '2' }],
+      results: [{ id: '2', title: 'win3080' }],
       page: 1,
       page_size: 100,
       total_count: 1,
     })).toEqual({
       status: 'ok',
       message: null,
-      results: [{ id: '2' }],
+      results: [{ id: '2', title: 'win3080' }],
       page: 1,
       page_size: 100,
       total_count: 1,
@@ -156,12 +156,18 @@ describe('catalog Remote contract', () => {
     [{ status: 'ok', message: 'failed', results: [], page: 1, page_size: 100, total_count: 0 }, 'envelope'],
     [{ status: 'ok', message: null, results: [], page: 2, page_size: 100, total_count: 0 }, 'envelope'],
     [{ status: 'ok', message: null, results: [], page: 1, page_size: 99, total_count: 0 }, 'envelope'],
-    [{ status: 'ok', message: null, results: [{ id: '0' }], page: 1, page_size: 100, total_count: 1 }, 'id'],
-    [{ status: 'ok', message: null, results: [{ id: '2', title: 'hidden' }], page: 1, page_size: 100, total_count: 1 }, 'properties'],
-    [{ status: 'ok', message: null, results: [{ id: '2' }], page: 1, page_size: 100, total_count: 0 }, 'total count'],
+    [{ status: 'ok', message: null, results: [{ id: '0', title: 'win3080' }], page: 1, page_size: 100, total_count: 1 }, 'id'],
+    [{ status: 'ok', message: null, results: [{ id: '2', title: 'win3080', authorization: 'private' }], page: 1, page_size: 100, total_count: 1 }, 'properties'],
+    [{ status: 'ok', message: null, results: [{ id: '2', title: 'win3080' }], page: 1, page_size: 100, total_count: 0 }, 'total count'],
     [{ status: 'ok', message: null, results: [], page: 1, page_size: 100, total_count: 0, extra: true }, 'properties'],
   ])('rejects invalid ComfyUI instance response %j', (value, message) => {
     expect(() => parseCatalogComfyuiInstancePage(value)).toThrow(message)
+  })
+
+  it.each([null, '', '   ', 12])('rejects an invalid public instance title %j', (title) => {
+    expect(() => parseCatalogComfyuiInstancePage({
+      status: 'ok', message: null, results: [{ id: '2', title }], page: 1, page_size: 100, total_count: 1,
+    })).toThrow('title')
   })
 
   it('accepts one complete eight-card page and rejects a ninth card', () => {

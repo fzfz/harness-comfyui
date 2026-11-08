@@ -2235,19 +2235,19 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
           },
         })
       } catch {
-        throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
+        throw new GenerationInputValidationError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.', 'instance_id')
       }
-      if (!response.ok) throw new GenerationRuntimeError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /object_info.`)
+      if (!response.ok) throw new GenerationInputValidationError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /object_info.`, 'instance_id')
       let nodeDefinitionsText: string
       try {
         nodeDefinitionsText = await response.text()
       } catch {
-        throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.')
+        throw new GenerationInputValidationError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.', 'instance_id')
       }
       try {
         return parseNodeDefinitions(nodeDefinitionsText)
       } catch {
-        throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.')
+        throw new GenerationInputValidationError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.', 'instance_id')
       }
     } finally {
       clearTimeout(timeout)
@@ -2300,7 +2300,7 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
         if (input.signal?.aborted === true) {
           throw new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'ComfyUI node definitions request was canceled by the caller.')
         }
-        throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
+        throw new GenerationInputValidationError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.', 'instance_id')
       }
       return createRuntimeParameterPlan(input.workflow, snapshot.definitions, snapshot.numericSources)
     } finally {

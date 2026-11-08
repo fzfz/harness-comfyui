@@ -144,6 +144,52 @@ const mount = async (
   return { renderer, onAction, remote }
 }
 
+describe('experiment workbench instance selection', () => {
+  it('renders registered names and persists two instance IDs through refresh and branch reopening without changing other inputs', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture()
+    const signal = new AbortController().signal
+    try {
+      host.catalog.queryComfyuiInstances.mockResolvedValue({
+        status: 'ok', message: null, results: [{ id: '8', title: 'win3080' }, { id: '9', title: 'render-node' }], page: 1, page_size: 100, total_count: 2,
+      })
+      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '实例选择', goal: '保留生成输入' } }, signal)
+      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+      const branch = host.store.getBranch(scope.branchId)
+      const seeded = structuredClone(fullProjection().branches[0]!.draft)
+      seeded.generation_input.instance_id = null
+      host.store.saveBranchDraft({ ...scope, expected: branch.draft, draft: seeded })
+      host.store.createBranch({ workId: scope.workId, parentBranchId: scope.branchId, name: '另一分支', originalRequest: '独立输入', draft: structuredClone(seeded) })
+      const environment = await host.remote.getEnvironment({}, signal)
+      const memory = new Map<string, string>()
+      const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
+      const options: Partial<ExperimentWorkbenchProps> = {
+        workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, storage,
+        remote: {
+          getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal),
+          getProjection: request => host.remote.getProjection(request, signal),
+        },
+        onAction: request => host.remote.mutate(request, signal),
+      }
+      const data = await host.remote.getProjection(scope, signal)
+      const { renderer } = await mount(data, options)
+      expect(renderer.root.findByProps({ 'aria-label': 'ComfyUI 实例' }).findAllByType('option').map(node => [node.props.value, nodeText(node)])).toEqual([['', '请选择'], ['8', 'win3080'], ['9', 'render-node']])
+      await change(renderer, 'ComfyUI 实例', '8')
+      expect(host.store.getBranch(scope.branchId).draft).toEqual({ ...seeded, generation_input: { ...seeded.generation_input, instance_id: '8' } })
+      await act(() => renderer.unmount())
+      const reopened = await mount(data, options)
+      expect(reopened.renderer.root.findByProps({ 'aria-label': 'ComfyUI 实例' }).props.value).toBe('8')
+      await change(reopened.renderer, 'ComfyUI 实例', '9')
+      await click(reopened.renderer, '切换分支 另一分支')
+      await click(reopened.renderer, '切换分支 主分支')
+      expect(reopened.renderer.root.findByProps({ 'aria-label': 'ComfyUI 实例' }).props.value).toBe('9')
+      expect(host.store.getBranch(scope.branchId).draft).toEqual({ ...seeded, generation_input: { ...seeded.generation_input, instance_id: '9' } })
+      await act(() => reopened.renderer.unmount())
+    } finally { await host.dispose() }
+  })
+})
+
 describe('experiment workbench shell', () => {
   it('fits full backend IDs into the reference cards while preserving action identities', async () => {
     const data = fullProjection()

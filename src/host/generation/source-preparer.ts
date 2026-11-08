@@ -6,6 +6,7 @@ import {
   type JsonValue,
   type PreparedGeneration,
 } from './generation-runtime.ts'
+import { GenerationInputValidationError } from './workflow-compiler.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 export type {
   WorkflowRuntimeParameterInspectionParameter, WorkflowWidthHeightSizeCandidate,
@@ -110,6 +111,14 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
     if (options.defaultInstanceId.trim().length === 0) throw new TypeError('Default ComfyUI instance id is required.')
   }
 
+  private async readInstance(instanceId: string, signal?: AbortSignal): Promise<ComfyInstanceSource> {
+    try { return await this.options.source.readInstance(instanceId, signal) }
+    catch (error) {
+      if (signal?.aborted || !(error instanceof GenerationRuntimeError) || error.name === 'AbortError') throw error
+      throw new GenerationInputValidationError(error.code, error.message, 'instance_id')
+    }
+  }
+
   async inspectRuntimeParameters(
     input: GenerationTemplateRuntimeParameterInspectionInput,
     signal?: AbortSignal,
@@ -117,7 +126,7 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
     if (input.templateId.trim().length === 0) throw new TypeError('ComfyUI template id is required for parameter inspection.')
     if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for parameter inspection.')
     const bundle = await this.options.source.readTemplate(input.templateId, signal)
-    const instance = await this.options.source.readInstance(input.instanceId, signal)
+    const instance = await this.readInstance(input.instanceId, signal)
     return this.options.compiler.inspectRuntimeParameters({
       instanceId: instance.id,
       workflow: bundle.workflow,
@@ -132,7 +141,7 @@ export class SourceGenerationPreparer implements GenerationPreparationAdapter {
 
   private async compilerInput(request: GenerationRequest, signal?: AbortSignal) {
     const bundle = await this.options.source.readTemplate(request.templateId, signal)
-    const instance = await this.options.source.readInstance(request.instanceId ?? this.options.defaultInstanceId, signal)
+    const instance = await this.readInstance(request.instanceId ?? this.options.defaultInstanceId, signal)
     const connection = Object.freeze({ url: instance.url, origin: comfyInstanceOrigin(instance.url), authorization: instance.authorization })
     const input: WorkflowCompilerInput = { instanceId: instance.id, workflow: bundle.workflow, connection, runtimeParameters: request.parameters, model: request.model, loras: request.loras, signal }
     return { bundle, instance, connection, input }

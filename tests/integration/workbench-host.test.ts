@@ -1,4 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
+import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
+import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../src/catalog/contract.ts'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import type { ExperimentWorkbenchAction, WorkbenchScope } from '../../src/workbench-remote.ts'
@@ -10,6 +12,24 @@ async function fixture() {
   cleanups.push(result.dispose)
   return result
 }
+
+it('reads registered instance titles through the public Catalog and exposes only their IDs and names', async () => {
+  const { remote, catalog } = await fixture()
+  const query = vi.fn(async () => ({
+    status: 'ok', message: null, page: 1, page_size: 100, total_count: 2,
+    results: [
+      { id: 8, title: 'win3080', url: 'http://private-a', authorization: 'private-a-token' },
+      { id: 9, title: 'render-node', url: 'http://private-b', authorization: 'private-b-token' },
+    ],
+  }))
+  const source = new CatalogClient({ settings: { get: () => ({ url: 'https://catalog.example.com', port: 18093 }) }, query })
+  catalog.queryComfyuiInstances.mockImplementation((request, signal) => source.queryComfyuiInstances(request, signal))
+  const environment = await remote.getEnvironment({}, signal())
+  expect(catalog.queryComfyuiInstances).toHaveBeenCalledWith(CATALOG_COMFYUI_INSTANCE_QUERY, expect.any(AbortSignal))
+  expect(environment.instances).toEqual([{ id: '8', name: 'win3080' }, { id: '9', name: 'render-node' }])
+  expect(JSON.stringify(environment.instances)).not.toContain('private-')
+  expect(query).toHaveBeenCalledOnce()
+})
 
 it.each(['', '   ', ' 生成提示词 '])('rejects a blank or duplicate function name through Remote and preserves saved input: %j', async name => {
   const { remote, store } = await fixture()
@@ -534,7 +554,7 @@ it('reads official presets, models and invocable Skills and always releases the 
     workspaces: [{ id: 'workspace_1', name: 'First project', path: '/workspace/project' }, { id: 'workspace_2', name: 'Second project', path: '/workspace/other' }],
     models: { default: { provider: 'provider-a', model: 'model-a' } },
     presets: [{ id: 'preset-a', name: 'Preset A' }, { id: 'preset-broken', name: 'preset-broken', broken: 'Missing component' }],
-    skills: [{ name: 'prompt-builder', description: 'Compose prompts' }], instances: [{ id: '8', name: '8' }],
+    skills: [{ name: 'prompt-builder', description: 'Compose prompts' }], instances: [{ id: '8', name: 'win3080' }],
   })
   expect(official.listSkills).toHaveBeenCalledWith({ cwd: workspaces[0]!.path, scope: 'preset-scope' })
   expect(official.disposeScope).toHaveBeenCalledOnce()

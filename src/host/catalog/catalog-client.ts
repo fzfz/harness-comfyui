@@ -339,7 +339,7 @@ function normalizeComfyuiInstances(value: unknown): CatalogComfyuiInstancePage {
       message: null,
       results: envelope.results.map((value) => {
         const result = sourceRecord(value)
-        return { id: sourceId(result.id) }
+        return { id: sourceId(result.id), title: result.title }
       }),
       page: CATALOG_COMFYUI_INSTANCE_QUERY.page,
       page_size: CATALOG_COMFYUI_INSTANCE_QUERY.page_size,

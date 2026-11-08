@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { GenerationRuntime } from '../../src/host/generation/generation-runtime.js'
+import { GenerationRuntime, GenerationRuntimeError } from '../../src/host/generation/generation-runtime.js'
 import { SourceGenerationPreparer } from '../../src/host/generation/source-preparer.js'
 import { GenerationInputValidationError } from '../../src/host/generation/workflow-compiler.js'
 import { describe, expect, it, vi } from 'vitest'
@@ -96,7 +96,97 @@ describe('workbench generation input adapter', () => {
       expect(source.readTemplate).toHaveBeenCalledWith('2', undefined)
       expect(source.readInstance).toHaveBeenCalledWith('1', undefined)
       await expect(runtime.validateGenerationRequest({ ...request, parameters: { width_1: 2 } })).rejects.toMatchObject({ inputPath: 'parameters.width_1' })
+      const adapter = createWorkbenchInputAdapter({ runtime, catalog: { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) } })
+      await expect(adapter.validateGenerationInput({ ...draft.generation_input, parameters: { width_1: 2 } })).rejects.toMatchObject({ issues: [{ path: 'generation_input.parameters.width_1' }] })
       await expect(runtime.validateGenerationRequest(request, AbortSignal.abort())).rejects.toBeDefined()
+      expect(official).not.toHaveBeenCalled()
+      expect(runtime.queryRuns({ workspaceId: 'workspace', sessionId: 'session' })).toEqual([])
+    } finally { runtime.close(); database.close(); rmSync(directory, { recursive: true, force: true }) }
+  })
+
+  it.each(['prepare', 'validate'].flatMap(entry => ['instance', 'cancel', 'template'].map(failureKind => ({ entry, failureKind }))))('reports a $failureKind source read failure during $entry before accepting a Run', async ({ entry, failureKind }) => {
+    const directory = mkdtempSync(join(tmpdir(), 'workbench-instance-preflight-'))
+    const database = new DatabaseSync(':memory:')
+    const failure = failureKind === 'cancel' ? new DOMException('Canceled', 'AbortError') : new GenerationRuntimeError('SOURCE_QUERY_FAILED', 'Source record is unavailable.')
+    const source = {
+      readTemplate: vi.fn(async () => { if (failureKind === 'template') throw failure; return { id: '2', title: 'template', workflow } }),
+      readInstance: vi.fn(async () => { throw failure }),
+    }
+    const fetchDefinitions = vi.fn(async () => new Response(JSON.stringify(definitions)))
+    const official = vi.fn(async () => { throw new Error('preflight must not export') })
+    const compiler = new ComfyWorkflowCompiler({ fetchImplementation: fetchDefinitions, officialApiWorkflowCompiler: { compile: official } })
+    const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source, compiler })
+    const runtime = new GenerationRuntime({ database, preparer, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media') })
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const adapter = createWorkbenchInputAdapter({ runtime, catalog })
+    try {
+      const operation = entry === 'prepare' ? adapter.prepareGenerationInput(draft) : adapter.validateGenerationInput(draft.generation_input)
+      if (failureKind === 'cancel') await expect(operation).rejects.toBe(failure)
+      else await expect(operation).rejects.toMatchObject({
+        code: 'SOURCE_QUERY_FAILED', issues: [{ path: failureKind === 'instance' ? 'generation_input.instance_id' : 'generation_input', message: failure.message }],
+      })
+      if (failureKind === 'template') expect(source.readInstance).not.toHaveBeenCalled()
+      else expect(source.readInstance).toHaveBeenCalledExactlyOnceWith('1', expect.any(AbortSignal))
+      expect(fetchDefinitions).not.toHaveBeenCalled()
+      expect(official).not.toHaveBeenCalled()
+      expect(runtime.queryRuns({ workspaceId: 'workspace', sessionId: 'session' })).toEqual([])
+    } finally { runtime.close(); database.close(); rmSync(directory, { recursive: true, force: true }) }
+  })
+
+  it.each(['prepare', 'validate'].flatMap(entry => [
+    { failure: 'offline', code: 'COMFYUI_CONNECTION_FAILED', message: 'ComfyUI node definitions request failed.' },
+    { failure: '401', code: 'COMFYUI_HTTP_ERROR', message: 'ComfyUI returned HTTP 401 for /object_info.' },
+    { failure: '503', code: 'COMFYUI_HTTP_ERROR', message: 'ComfyUI returned HTTP 503 for /object_info.' },
+  ].map(failure => ({ entry, ...failure }))))('locates object_info $failure at the instance field during $entry', async ({ entry, failure, code, message }) => {
+    const directory = mkdtempSync(join(tmpdir(), 'workbench-object-info-preflight-'))
+    const database = new DatabaseSync(':memory:')
+    const source = {
+      readTemplate: vi.fn(async () => ({ id: '2', title: 'template', workflow })),
+      readInstance: vi.fn(async () => ({ id: '1', title: 'instance', url: 'http://comfy.test', credentialType: 'none' as const, authorization: null })),
+    }
+    const fetchDefinitions = vi.fn(async () => {
+      if (failure === 'offline') throw new TypeError('offline')
+      return new Response('', { status: Number(failure) })
+    })
+    const official = vi.fn(async () => { throw new Error('preflight must not export') })
+    const compiler = new ComfyWorkflowCompiler({ fetchImplementation: fetchDefinitions, officialApiWorkflowCompiler: { compile: official } })
+    const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source, compiler })
+    const runtime = new GenerationRuntime({ database, preparer, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media') })
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const adapter = createWorkbenchInputAdapter({ runtime, catalog })
+    try {
+      await expect(entry === 'prepare' ? adapter.prepareGenerationInput(draft) : adapter.validateGenerationInput(draft.generation_input)).rejects.toMatchObject({
+        code, issues: [{ path: 'generation_input.instance_id', message }],
+      })
+      expect(source.readInstance).toHaveBeenCalledExactlyOnceWith('1', expect.any(AbortSignal))
+      expect(fetchDefinitions).toHaveBeenCalledExactlyOnceWith('http://comfy.test/object_info', expect.objectContaining({ signal: expect.any(AbortSignal) }))
+      expect(official).not.toHaveBeenCalled()
+      expect(runtime.queryRuns({ workspaceId: 'workspace', sessionId: 'session' })).toEqual([])
+    } finally { runtime.close(); database.close(); rmSync(directory, { recursive: true, force: true }) }
+  })
+
+  it.each(['prepare', 'validate'])('preserves cancellation during object_info in %s', async (entry) => {
+    const directory = mkdtempSync(join(tmpdir(), 'workbench-object-info-cancel-'))
+    const database = new DatabaseSync(':memory:')
+    const controller = new AbortController()
+    const source = {
+      readTemplate: vi.fn(async () => ({ id: '2', title: 'template', workflow })),
+      readInstance: vi.fn(async () => ({ id: '1', title: 'instance', url: 'http://comfy.test', credentialType: 'none' as const, authorization: null })),
+    }
+    const fetchDefinitions = vi.fn(async () => { controller.abort(); return new Response(JSON.stringify(definitions)) })
+    const official = vi.fn(async () => { throw new Error('preflight must not export') })
+    const compiler = new ComfyWorkflowCompiler({ fetchImplementation: fetchDefinitions, officialApiWorkflowCompiler: { compile: official } })
+    const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source, compiler })
+    const runtime = new GenerationRuntime({ database, preparer, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media') })
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const adapter = createWorkbenchInputAdapter({ runtime, catalog, signal: controller.signal })
+    try {
+      const operation = entry === 'prepare' ? adapter.prepareGenerationInput(draft) : adapter.validateGenerationInput(draft.generation_input)
+      const error: unknown = await operation.catch(error => error)
+      expect(error).toMatchObject({ code: 'COMFYUI_REQUEST_CANCELED' })
+      expect(error).not.toHaveProperty('inputPath')
+      expect(error).not.toHaveProperty('issues')
+      expect(fetchDefinitions).toHaveBeenCalledOnce()
       expect(official).not.toHaveBeenCalled()
       expect(runtime.queryRuns({ workspaceId: 'workspace', sessionId: 'session' })).toEqual([])
     } finally { runtime.close(); database.close(); rmSync(directory, { recursive: true, force: true }) }
@@ -113,6 +203,16 @@ describe('workbench generation input adapter', () => {
     expect(await adapter.parameterIds(draft.generation_input)).toEqual(['width_1'])
     await adapter.validateReferences([{ kind: 'work', id: '6' }])
     expect(current.generation_input.loras[0]!.file_name).toBe('old.safetensors')
+  })
+
+  it('maps a synchronous CLI request validation failure at the published generation input path', async () => {
+    const runtime = { inspectTemplateRuntimeParameters: vi.fn(), validateGenerationRequest: vi.fn() }
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const adapter = createWorkbenchInputAdapter({ runtime, catalog })
+    await expect(adapter.validateGenerationInput({ ...draft.generation_input, title: '' }, [], 'artifact.generation_input')).rejects.toMatchObject({
+      code: 'WORKBENCH_GENERATION_INVALID', issues: [{ path: 'artifact.generation_input' }],
+    })
+    expect(runtime.validateGenerationRequest).not.toHaveBeenCalled()
   })
 
   it('reports catalog failures, filename mismatches and runtime field errors at the published artifact path', async () => {

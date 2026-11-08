@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { vi } from 'vitest'
+import type { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import * as workbench from '../../src/host/workbench/plugin.ts'
@@ -110,7 +111,7 @@ export async function createWorkbenchHostFixture() {
     },
   })
   const catalog = {
-    queryComfyuiInstances: vi.fn(async () => ({ results: [{ id: '8' }] })),
+    queryComfyuiInstances: vi.fn<CatalogClient['queryComfyuiInstances']>(async () => ({ status: 'ok', message: null, results: [{ id: '8', title: 'win3080' }], page: 1, page_size: 100, total_count: 1 })),
     resolveGenerationModel: vi.fn(async (id: string) => ({ id, file_name: 'paint.safetensors', base_model_id: '1' })),
     resolveLora: vi.fn(async (id: string) => ({ id, file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] })),
     resolveTemplate: vi.fn(async (id: string) => ({ id, base_model_id: '1' })),
