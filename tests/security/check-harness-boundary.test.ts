@@ -125,6 +125,26 @@ describe('Harness source boundary', () => {
     }
   })
 
+  it('accepts public UI slot registration and component type imports', () => {
+    const root = fixture("import type { InjectFace, PropsLocale, SlotCore } from '@deepseek-ai/dsh-client-ui-slots'\n")
+    try {
+      expect(run(root).status).toBe(0)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a runtime import from the type-only UI slot permission', () => {
+    const root = fixture("import { SlotCore } from '@deepseek-ai/dsh-client-ui-slots'\n")
+    try {
+      const result = run(root)
+      expect(result.status).toBe(1)
+      expect(result.stderr).toContain("must import '@deepseek-ai/dsh-client-ui-slots' as a type-only specifier")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('accepts public SubagentRuntime type-only imports for descendant queries', () => {
     const root = fixture("import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'\n")
     try {

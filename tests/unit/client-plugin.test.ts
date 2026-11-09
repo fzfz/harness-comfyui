@@ -18,6 +18,8 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   Toast: () => null,
 }))
 
+import { SlotCore } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PanelInfo } from '@deepseek-ai/dsh-client-ui-layout/client'
 import { apply, inject, name } from '../../src/client/index.tsx'
 import pluginPackage from '../../config/plugin-package.json' with { type: 'json' }
 import {
@@ -65,6 +67,8 @@ afterEach(() => {
 function installImmediateInject(context: Record<string, any>): void {
   context.sidebarRight ??= { openTab: vi.fn() }
   context.layout ??= { selectPanel: vi.fn() }
+  context.layout.panelInfo ??= { getSnapshot: () => ({ activePanelId: null }), subscribe: () => () => {} }
+  context.shortcuts ??= { catalog: { getSnapshot: () => [], subscribe: () => () => {} } }
   context.connection ??= { state: createConnectionState().source }
   context.remote.harnessComfyuiWorkbenchRemote ??= { getEnvironment: vi.fn(), getProjection: vi.fn(), mutate: vi.fn() }
   context.sidebarRightTabs ??= { register: vi.fn(() => vi.fn()) }
@@ -174,7 +178,112 @@ function installImmediateInject(context: Record<string, any>): void {
 }
 
 describe('Harness Client plugin registration', () => {
-  it('registers only the supported additive native seats', async () => {
+  it.each([null, EXPERIMENT_PANEL_ID])('restores native leading controls after navigation and unloading (initial panel: %s)', async initialPanelId => {
+    const slots = new SlotCore()
+    slots.register({
+      name: 'root',
+      children: { 'shell.leading': { kind: 'single', scope: 'root' } },
+    } as never, () => null)
+    const NativeLeading = () => null
+    slots.register({ name: 'shell.leading' }, NativeLeading)
+    const nativeEntry = slots.entriesOfSlot('shell.leading')[0]
+    let panel: PanelInfo = { activePanelId: initialPanelId }
+    const listeners = new Set<() => void>()
+    const context = {
+      slots: {
+        inject: (_name: string, setup: () => () => void) => setup(),
+        register: (registration: Registration, component: any) => registration.name === 'shell.leading'
+          ? slots.register(registration as never, component)
+          : () => {},
+      },
+      sessions: { scope: vi.fn() },
+      conversation: { input: { for: vi.fn() } },
+      remote: {
+        $mount: vi.fn(async () => () => {}),
+        harnessComfyuiCatalog: { search: vi.fn(), baseModels: vi.fn() },
+        harnessComfyuiGeneration: { list: vi.fn() },
+      },
+      layout: {
+        panelInfo: {
+          getSnapshot: () => panel,
+          subscribe(listener: () => void) {
+            listeners.add(listener)
+            return () => { listeners.delete(listener) }
+          },
+        },
+        toggleSidebar: vi.fn(),
+      },
+    }
+    const select = (activePanelId: PanelInfo['activePanelId']) => {
+      panel = { activePanelId }
+      for (const listener of listeners) listener()
+    }
+    installImmediateInject(context)
+    const dispose = await apply(context as never)
+    expect(listeners.size).toBe(1)
+    if (initialPanelId === EXPERIMENT_PANEL_ID) expect(slots.entriesOfSlot('shell.leading')[0]).not.toBe(nativeEntry)
+    else expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    select(null)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+
+    select(EXPERIMENT_PANEL_ID)
+    const experimentEntry = slots.entriesOfSlot('shell.leading')[0]!
+    expect(experimentEntry).not.toBe(nativeEntry)
+    expect(experimentEntry.locale).toBe('sidebar')
+    const face = experimentEntry.inject!() as { toggleSidebar(): void; hooks: { shortcuts: unknown } }
+    expect(face.hooks.shortcuts).toBe((context as any).shortcuts.catalog)
+    face.toggleSidebar()
+    expect(context.layout.toggleSidebar).toHaveBeenCalledOnce()
+    expect(context.layout.toggleSidebar.mock.contexts[0]).toBe(context.layout)
+    select(EXPERIMENT_PANEL_ID)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([experimentEntry])
+
+    select('plugins' as PanelInfo['activePanelId'])
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    select(null)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    select(EXPERIMENT_PANEL_ID)
+    expect(slots.entriesOfSlot('shell.leading')[0]).not.toBe(nativeEntry)
+    await dispose()
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    expect(listeners.size).toBe(0)
+    select(EXPERIMENT_PANEL_ID)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+  })
+
+  it('releases the panel subscription and Remote mount when the leading registration fails', async () => {
+    const listeners = new Set<() => void>()
+    const remoteDispose = vi.fn()
+    const context = {
+      slots: {
+        inject: (_name: string, setup: () => () => void) => setup(),
+        register: () => { throw new Error('leading registration failed') },
+      },
+      sessions: { scope: vi.fn() },
+      conversation: { input: { for: vi.fn() } },
+      remote: {
+        $mount: vi.fn(async () => remoteDispose),
+        harnessComfyuiCatalog: { search: vi.fn(), baseModels: vi.fn() },
+        harnessComfyuiGeneration: { list: vi.fn() },
+      },
+      layout: {
+        panelInfo: {
+          getSnapshot: () => ({ activePanelId: EXPERIMENT_PANEL_ID }),
+          subscribe(listener: () => void) {
+            listeners.add(listener)
+            return () => { listeners.delete(listener) }
+          },
+        },
+        toggleSidebar: vi.fn(),
+      },
+    }
+    installImmediateInject(context)
+    await expect(apply(context as never)).rejects.toThrow('leading registration failed')
+    expect(listeners.size).toBe(0)
+    expect(remoteDispose).toHaveBeenCalledOnce()
+  })
+
+  it('registers the supported native seats without replacing the expanded sidebar', async () => {
     const registrationDisposers = new Map<string, ReturnType<typeof vi.fn>>()
     const injectionDisposers = new Map<string, ReturnType<typeof vi.fn>>()
     const registrations = new Map<string, Registration>()
@@ -233,7 +342,7 @@ describe('Harness Client plugin registration', () => {
     expect(name).toBe('harness-comfyui')
     expect(name).toBe(pluginPackage.packageName)
     expect(inject).toEqual([
-      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms', 'layout', 'connection',
+      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms', 'layout', 'connection', 'shortcuts',
     ])
     expect((context as any).inject).toHaveBeenCalledWith([
       'remote.harnessComfyuiCatalog',

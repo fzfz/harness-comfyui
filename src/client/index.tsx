@@ -45,6 +45,7 @@ import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
 import { WorkbenchDetails } from './workbench/results-drawer.tsx'
 import { WORKBENCH_REMOTE_SERVICE } from '../workbench-remote.ts'
 import { EXPERIMENT_PANEL_ID, ExperimentWorkbenchEntry, ExperimentWorkbenchHost } from './workbench/experiment-host.tsx'
+import { registerExperimentLeading, type ExperimentShortcuts } from './workbench/experiment-leading.tsx'
 
 export const name = pluginPackage.packageName
 export const inject = [
@@ -57,6 +58,7 @@ export const inject = [
   'configForms',
   'layout',
   'connection',
+  'shortcuts',
 ] as const
 
 interface ClientSessions {
@@ -91,6 +93,7 @@ type ClientContext = Context & {
   readonly sessions: ClientSessions
   readonly slots: ClientSlotRegistry
   readonly connection: ConnectionHandle
+  readonly shortcuts: { readonly catalog: ExperimentShortcuts }
 }
 
 function getRemoteNamespace<Namespace extends string>(
@@ -133,6 +136,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const disposers: Array<() => void | Promise<void>> = [() => contextDialogNavigationStore.dispose()]
   try {
     disposers.push(await ctx.remote.$mount(HARNESS_COMFYUI_REMOTE))
+    disposers.push(ctx.slots.inject('shell.leading', () => registerExperimentLeading(ctx.slots, ctx.layout, ctx.shortcuts.catalog)))
     disposers.push(ctx.sidebarRightTabs.register({
       id: WORKBENCH_RESULTS_TAB.id,
       kind: WORKBENCH_RESULTS_TAB.kind,
