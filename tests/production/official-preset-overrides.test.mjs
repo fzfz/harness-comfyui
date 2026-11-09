@@ -24,8 +24,11 @@ async function installedRoot() {
 async function resolvePatched(root, patch) {
   const original = await readRows(join(root, 'agent-presets/presets.cordis.yml'))
   const rows = apply(original, patch.config.patches)
+  const product = JSON.parse(await readFile(join(root, 'config/product-agent.json'), 'utf8'))
+  const targets = rows.filter(row => row.config?.id === product.preset.id)
+  expect(targets).toHaveLength(1)
   const result = []
-  for (const row of rows) {
+  for (const row of targets) {
     const composition = row.config.plugins.find(entry => entry.id === 'composition')
     const path = resolve(root, 'agent-presets', composition.config.path)
     const originalComposition = await readRows(path)
@@ -101,6 +104,9 @@ describe('installed Preset Profile overrides', () => {
     const patch = await createOfficialPresetProfilePatch({ installedPackageRoot: root, mcpUrl: 'http://127.0.0.1:31234/mcp' })
     expect(patch.id).toBe('harness-comfyui-presets')
     const { original, rows, result } = await resolvePatched(root, patch)
+    const targetedIds = new Set(result.map(entry => entry.row.id))
+    expect(patch.config.patches.map(entry => entry.id)).toEqual([...targetedIds])
+    expect(rows.filter(row => !targetedIds.has(row.id))).toEqual(original.filter(row => !targetedIds.has(row.id)))
     const pluginIdentities = entries => entries.map(row => row.config.plugins.map(({ id, name }) => ({ id, name })))
     expect(pluginIdentities(rows)).toEqual(pluginIdentities(original))
     for (const entry of result) {

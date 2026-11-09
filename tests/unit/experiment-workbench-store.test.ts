@@ -7,6 +7,7 @@ const projection = (
   workspaceId: string,
   workId: string,
 ): WorkbenchProjection => ({
+  reference_destinations: [],
   workspace_id: workspaceId,
   total_branch_count: 0,
   work_id: workId,

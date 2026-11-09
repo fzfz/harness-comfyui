@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { afterEach, expect, it } from 'vitest'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
@@ -79,7 +80,7 @@ it('keeps a later request draft and prompt edit while the earlier task waits for
   try {
     await entered
     await remote.saveTaskDraft({ ...scope, functionId: 'prompt', draft: next }, signal())
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'A later manual prompt' }, signal())
+    await saveFixtureDraft(remote, { ...scope }, draft => { draft.prompt_input.positive_prompt = 'A later manual prompt' }, signal())
   } finally { release() }
   const accepted = await submitting
   expect(accepted.taskId).toEqual(expect.any(String))
@@ -110,6 +111,7 @@ it.each([
 ] as const)('fixes the complete %s submission snapshot and retains a later draft saved %s', async (boundary, edited) => {
   const { remote, scope, official, ctx } = await fixture()
   await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...scope }, () => {}, signal())
   const first = { instructions: '  Submitted requirement\n', resources: { instance_id: '8', template_id: '5' } }
   const beforeDispatch = { instructions: 'A later requirement before dispatch', resources: { instance_id: '9', template_id: '6' } }
   const duringDispatch = { instructions: 'A later requirement during dispatch', resources: { instance_id: '10', template_id: '7' } }
@@ -137,6 +139,7 @@ it.each([
 it.each(['prompt', 'parameters'])('clears an unchanged raw %s draft after accepting its trimmed submission snapshot', async functionId => {
   const { remote, scope } = await fixture()
   await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...scope }, () => {}, signal())
   const draft = { instructions: '  Keep the submitted requirement\n', resources: functionId === 'parameters' ? { instance_id: '8', template_id: '5' } : {} }
   await remote.saveTaskDraft({ ...scope, functionId, draft }, signal())
   const accepted = await remote.mutate({ ...scope, type: 'agent-action', id: functionId, value: { draft } }, signal())

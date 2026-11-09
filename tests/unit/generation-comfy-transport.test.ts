@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ComfyHttpTransport } from '../../src/host/generation/comfy-http-transport.ts'
@@ -22,6 +25,38 @@ const instanceOrigin = 'http://127.0.0.1:8188'
 const webpBytes = Uint8Array.from([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50])
 
 describe('ComfyHttpTransport', () => {
+  it.each([
+    { name: 'folder\\image.webp', subfolder: '', type: 'input' },
+    { name: 'image.webp', subfolder: '/outside', type: 'input' },
+    { name: '..', subfolder: '', type: 'input' },
+  ])('rejects an invalid uploaded image identity %j', async identity => {
+    const directory = await mkdtemp(join(tmpdir(), 'comfy-upload-invalid-'))
+    try {
+      const filePath = join(directory, 'source.webp')
+      await writeFile(filePath, webpBytes)
+      const transport = new ComfyHttpTransport({ source, fetchImplementation: async () => new Response(JSON.stringify(identity)) })
+      await expect(transport.upload({ instanceId: '2', connection: { url: 'http://127.0.0.1:8188', origin: instanceOrigin, authorization: null }, imageRefId: 'image_ref', filePath, filename: 'source.webp', mediaType: 'image/webp' })).rejects.toMatchObject({ code: 'COMFYUI_PROTOCOL_ERROR' })
+    } finally { await rm(directory, { recursive: true, force: true }) }
+  })
+
+  it('uploads local image bytes to the selected instance using multipart data and preserves the returned identity', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'comfy-upload-'))
+    try {
+      const filePath = join(directory, 'source.webp')
+      await writeFile(filePath, webpBytes)
+      const fetchImplementation = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ name: 'remote.webp', subfolder: 'inputs', type: 'input' }), { status: 200 }))
+      const transport = new ComfyHttpTransport({ source, fetchImplementation })
+      const result = await transport.upload({ instanceId: '2', connection: { url: 'http://127.0.0.1:8188', origin: instanceOrigin, authorization: 'Bearer token' }, imageRefId: 'image_ref', filePath, filename: 'source.webp', mediaType: 'image/webp' })
+      expect(result).toEqual({ name: 'remote.webp', subfolder: 'inputs', type: 'input' })
+      const [url, init] = fetchImplementation.mock.calls[0]!
+      expect(url).toBe('http://127.0.0.1:8188/upload/image')
+      const body = init!.body as FormData
+      expect(body.get('type')).toBe('input')
+      expect(new Uint8Array(await (body.get('image') as File).arrayBuffer())).toEqual(webpBytes)
+      expect(init!.headers).toEqual({ accept: 'application/json', authorization: 'Bearer token' })
+    } finally { await rm(directory, { recursive: true, force: true }) }
+  })
+
   it('submits a stable prompt id and projects job outputs from configured output nodes', async () => {
     const fetchImplementation = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response(JSON.stringify({

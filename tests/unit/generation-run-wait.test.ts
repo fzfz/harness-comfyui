@@ -3,6 +3,24 @@ import type { JobHooks, JobSpec } from '@deepseek-ai/dsh-jobs'
 import { GenerationRunWaitService } from '../../src/host/generation/run-wait-service.ts'
 
 describe('Generation Run completion observation', () => {
+  it('observes each Run in its recorded Workspace after cross-Workspace registration', async () => {
+    vi.useFakeTimers()
+    try {
+      let hooks!: JobHooks
+      let reads = 0
+      const readGenerationRunMedia = vi.fn(async () => ({ runs: [{ run_id: 'run_source', workspace_id: 'workspace-source', lookup_status: 'available', status: reads++ === 0 ? 'remote_running' : 'succeeded' }] }))
+      const service = new GenerationRunWaitService({
+        runtime: { readGenerationRunMedia } as never,
+        jobs: { start(spec) { hooks = spec.run({ id: 'generation-wait-1', append() {}, updateProgress() {} } as never); return 'generation-wait-1' as never } }, pollIntervalMs: 10,
+      })
+      await service.register({ workspaceId: 'workspace-current', sessionId: 'session-1', callId: 'call-1', rootCallId: 'call-1' }, ['run_source'])
+      await vi.advanceTimersByTimeAsync(10)
+      expect(await hooks.done).toMatchObject({ status: 'completed' })
+      expect(readGenerationRunMedia.mock.calls[1]).toEqual([{ workspaceId: 'workspace-source', runIds: ['run_source'] }, expect.any(AbortSignal)])
+      await service.close()
+    } finally { vi.useRealTimers() }
+  })
+
   it('honors observation cancellation while the read is in flight and contains read failures', async () => {
     vi.useFakeTimers()
     try {
@@ -10,7 +28,7 @@ describe('Generation Run completion observation', () => {
       let release!: (value: unknown) => void
       let first = true
       const readGenerationRunMedia = vi.fn(async () => {
-        if (first) { first = false; return { runs: [{ run_id: 'run_1', lookup_status: 'available', status: 'remote_running' }] } }
+        if (first) { first = false; return { runs: [{ run_id: 'run_1', lookup_status: 'available', workspace_id: 'workspace-1', status: 'remote_running' }] } }
         return new Promise(resolve => { release = resolve })
       })
       const service = new GenerationRunWaitService({
@@ -21,7 +39,7 @@ describe('Generation Run completion observation', () => {
       await service.register(identity, ['run_1'])
       await vi.advanceTimersByTimeAsync(10)
       hooks.cancel()
-      release({ runs: [{ run_id: 'run_1', lookup_status: 'available', status: 'succeeded' }] })
+      release({ runs: [{ run_id: 'run_1', lookup_status: 'available', workspace_id: 'workspace-1', status: 'succeeded' }] })
       expect(await hooks.done).toEqual({ status: 'killed' })
       first = true
       await service.register(identity, ['run_1'])
@@ -37,9 +55,9 @@ describe('Generation Run completion observation', () => {
     let hooks!: JobHooks
     const service = new GenerationRunWaitService({
       runtime: { readGenerationRunMedia: async () => ({ runs: [
-        { run_id: 'run_b', lookup_status: 'available', status: 'cancelled' },
-        { run_id: 'run_a', lookup_status: 'available', status: 'succeeded' },
-        { run_id: 'run_b', lookup_status: 'available', status: 'cancelled' },
+        { run_id: 'run_b', lookup_status: 'available', workspace_id: 'workspace-1', status: 'cancelled' },
+        { run_id: 'run_a', lookup_status: 'available', workspace_id: 'workspace-1', status: 'succeeded' },
+        { run_id: 'run_b', lookup_status: 'available', workspace_id: 'workspace-1', status: 'cancelled' },
       ] }) } as never,
       jobs: { start(spec) { hooks = spec.run({ id: 'generation-wait-1', append() {}, updateProgress() {} } as never); return 'generation-wait-1' as never } }, pollIntervalMs: 10,
     })
@@ -51,20 +69,20 @@ describe('Generation Run completion observation', () => {
   it('rejects registration after cancellation or service disposal and explains Job admission failures', async () => {
     let release!: (value: unknown) => void
     const start = vi.fn(() => { throw new Error('no job controller serves this agent') })
-    const read = vi.fn(async () => ({ runs: [{ run_id: 'run_1', lookup_status: 'available', status: 'succeeded' }] }))
+    const read = vi.fn(async () => ({ runs: [{ run_id: 'run_1', lookup_status: 'available', workspace_id: 'workspace-1', status: 'succeeded' }] }))
     const service = new GenerationRunWaitService({ runtime: { readGenerationRunMedia: read } as never, jobs: { start }, pollIntervalMs: 10 })
     await expect(service.register({ workspaceId: 'workspace-1', sessionId: 'session-1', callId: 'call-1', rootCallId: 'call-1' }, ['run_1'])).rejects.toMatchObject({ code: 'GENERATION_WAIT_UNAVAILABLE', message: expect.stringContaining('job_list') })
     read.mockImplementationOnce(() => new Promise(resolve => { release = resolve }) as never)
     const controller = new AbortController()
     const pending = service.register({ workspaceId: 'workspace-1', sessionId: 'session-1', callId: 'call-1', rootCallId: 'call-1' }, ['run_1'], controller.signal)
     controller.abort()
-    release({ runs: [{ run_id: 'run_1', lookup_status: 'available', status: 'succeeded' }] })
+    release({ runs: [{ run_id: 'run_1', lookup_status: 'available', workspace_id: 'workspace-1', status: 'succeeded' }] })
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
     expect(start).toHaveBeenCalledTimes(1)
     read.mockImplementationOnce(() => new Promise(resolve => { release = resolve }) as never)
     const duringDisposal = service.register({ workspaceId: 'workspace-1', sessionId: 'session-1', callId: 'call-1', rootCallId: 'call-1' }, ['run_1'])
     await service.close()
-    release({ runs: [{ run_id: 'run_1', lookup_status: 'available', status: 'succeeded' }] })
+    release({ runs: [{ run_id: 'run_1', lookup_status: 'available', workspace_id: 'workspace-1', status: 'succeeded' }] })
     await expect(duringDisposal).rejects.toMatchObject({ code: 'GENERATION_WAIT_UNAVAILABLE' })
     expect(start).toHaveBeenCalledTimes(1)
   })
@@ -79,7 +97,7 @@ describe('Generation Run completion observation', () => {
         return id
       })
       const statuses = new Map([['run_1', 'remote_running'], ['run_2', 'succeeded']])
-      const readGenerationRunMedia = vi.fn(async ({ runIds }: { runIds: string[] }) => ({ runs: runIds.map(run_id => ({ run_id: run_id === 'run_1_prefix' ? 'run_1' : run_id, lookup_status: 'available', status: statuses.get(run_id === 'run_1_prefix' ? 'run_1' : run_id) })) }))
+      const readGenerationRunMedia = vi.fn(async ({ runIds }: { runIds: string[] }) => ({ runs: runIds.map(run_id => ({ run_id: run_id === 'run_1_prefix' ? 'run_1' : run_id, lookup_status: 'available', workspace_id: 'workspace-1', status: statuses.get(run_id === 'run_1_prefix' ? 'run_1' : run_id) })) }))
       const service = new GenerationRunWaitService({ runtime: { readGenerationRunMedia } as never, jobs: { start }, pollIntervalMs: 10 })
       const owner = { workspaceId: 'workspace-1', sessionId: 'session-1', callId: 'call-1', rootCallId: 'call-1' }
       const receipts = await Promise.all([
@@ -121,8 +139,8 @@ describe('Generation Run completion observation', () => {
       })
       let status = 'remote_running'
       const readGenerationRunMedia = vi.fn(async (_input?: unknown, _signal?: AbortSignal) => ({ runs: [
-        { run_id: 'run_1', lookup_status: 'available', status: 'failed' },
-        { run_id: 'run_2', lookup_status: 'available', status },
+        { run_id: 'run_1', lookup_status: 'available', workspace_id: 'workspace-1', status: 'failed' },
+        { run_id: 'run_2', lookup_status: 'available', workspace_id: 'workspace-1', status },
       ] }))
       const service = new GenerationRunWaitService({ runtime: { readGenerationRunMedia } as never, jobs: { start }, pollIntervalMs: 10 })
       const foreground = new AbortController()
@@ -147,7 +165,7 @@ describe('Generation Run completion observation', () => {
       return 'generation-wait-1' as never
     })
     const readGenerationRunMedia = vi.fn(async (_input?: unknown, _signal?: AbortSignal) => ({ runs: [{
-      run_id: 'run_1', lookup_status: 'available', status: 'succeeded',
+      run_id: 'run_1', lookup_status: 'available', workspace_id: 'workspace-1', status: 'succeeded',
     }] }))
     const service = new GenerationRunWaitService({ runtime: { readGenerationRunMedia } as never, jobs: { start }, pollIntervalMs: 10 })
     const result = await service.register({ workspaceId: 'workspace-1', sessionId: 'session-1', callId: 'call-1', rootCallId: 'root-1' }, ['run_1'])

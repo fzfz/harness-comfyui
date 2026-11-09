@@ -53,6 +53,10 @@ import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, a
 import { writeOfficialPresetProfilePatch } from './fixtures/official-preset-overrides.mjs'
 import { collectOfficialSessionTrace } from '../../scripts/verification/collect-session-trace.mjs'
 
+import translationConfig from '../../config/workbench-translation.json' with { type: 'json' }
+import translationFixture from './fixtures/official-translation-fixture.json' with { type: 'json' }
+import { assertTranslationPresetObservation } from './fixtures/official-translation-acceptance.mjs'
+
 const sourceRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const active = []
@@ -97,6 +101,7 @@ const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'official-business-install-failure.json',
   'official-business-mcp.json',
   'official-business-mcp-scope.json',
+  'official-business-translation-scope.json',
   'official-business-mcp-activation.json',
   'official-business-native-continuation.json',
   'official-business-native-cold-resume.json',
@@ -1032,7 +1037,7 @@ async function verifyOfficialMcpActivationRecovery({
           })
           if (!workspace.ok) return { workspace }
           const sessions = []
-          for (const presetId of ${JSON.stringify([...PROJECT_PRESET_IDS, 'standard', 'minimal', 'cordis'])}) {
+          for (const presetId of ${JSON.stringify([...PROJECT_PRESET_IDS, translationConfig.preset_id, 'standard', 'minimal', 'cordis'])}) {
             sessions.push({ presetId, result: await window.__runPanelTestContext.get('remote.session').create({
               workspaceId: workspace.value.workspace.workspaceId, agentPreset: presetId,
             }) })
@@ -2189,7 +2194,7 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   expect(state.roster).toEqual(expect.objectContaining({ ok: true }))
   const presetIds = state.roster.value.presets.map(preset => preset.id)
   expect(presetIds).toContain('standard')
-  for (const presetId of PROJECT_PRESET_IDS) expect(presetIds).toContain(presetId)
+  for (const presetId of [...PROJECT_PRESET_IDS, translationConfig.preset_id]) expect(presetIds).toContain(presetId)
   const defaultPresetId = state.roster.value.presets.find(preset => preset.isDefault)?.id
   expect(defaultPresetId).toBe('standard')
   const sessions = new Map(state.sessions.map(session => [session.key, session]))
@@ -2199,6 +2204,9 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   }
   expect(sessions.get('implicit-default').created.value.agentPreset).toBe(defaultPresetId)
   expect(sessions.get(PRODUCT_PRESET_ID).created.value.agentPreset).toBe(PRODUCT_PRESET_ID)
+  const translationSession = sessions.get(translationConfig.preset_id)
+  expect(translationSession.created.value.agentPreset).toBe(translationConfig.preset_id)
+  expect(translationSession.skills.value.skills).toEqual([])
 
   const expectedLinkedSkills = expectedRepositorySkills.filter(skill =>
     skill.name !== OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName)
@@ -2270,7 +2278,47 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   expect(isAbsolute(skillPaths.user)).toBe(true)
   expect(isPathWithin(skillPaths.workspace, configuredRoots.workspaceSkills)).toBe(true)
   expect(isPathWithin(skillPaths.user, configuredRoots.userSkills)).toBe(true)
-  return { productSessionId: sessions.get(PRODUCT_PRESET_ID).sessionId, skillPaths }
+  return { productSessionId: sessions.get(PRODUCT_PRESET_ID).sessionId, translationSessionId: translationSession.sessionId, skillPaths }
+}
+
+async function verifyTranslationPresetScope(page, services, mcp, sessionId, installedPackageRoot, evidenceDirectory) {
+  const runtimeModel = { provider: OFFICIAL_BUSINESS_FIXTURE.provider.id, model: OFFICIAL_BUSINESS_FIXTURE.provider.modelId }
+  const installedConfiguration = JSON.parse(await readFile(join(installedPackageRoot, 'config/workbench-translation.json'), 'utf8'))
+  const requestStart = services.requestLog.length
+  const mcpStart = mcp.requests.length
+  const setup = await page.evaluate(`(async () => {
+    const remote = window.__runPanelTestContext.get('remote.session')
+    const selected = await remote.selectModel({ sessionId: ${JSON.stringify(sessionId)}, ...${JSON.stringify(runtimeModel)} })
+    const skills = await window.__runPanelTestContext.get('remote.skills').list({ sessionId: ${JSON.stringify(sessionId)} })
+    return { selected, skills }
+  })()`)
+  expect(setup.selected).toMatchObject({ ok: true })
+  expect(setup.skills).toMatchObject({ ok: true })
+  const prompt = await page.evaluate(`window.__runPanelTestContext.get('remote.session').prompt({
+    sessionId: ${JSON.stringify(sessionId)}, requestId: ${JSON.stringify(randomUUID())}, mode: 'queue',
+    content: [{ type: 'text', text: ${JSON.stringify(translationFixture.scopePrompt)} }]
+  })`)
+  expect(prompt).toMatchObject({ ok: true, value: { accepted: true } })
+  const request = await services.requestWhere(request => request.sequence >= requestStart
+    && (request.body.messages ?? []).some(message => message.role === 'user'
+      && requestMessageText(message) === translationFixture.scopePrompt), 30_000)
+  await waitForOfficialSessionEnd(page, sessionId, 'completed')
+  const projection = await page.evaluate(`window.__runPanelTestContext.get('remote.session').projections({ sessionId: ${JSON.stringify(sessionId)} })`)
+  expect(projection).toMatchObject({ ok: true })
+  const observation = {
+    classification: 'automated-regression', acceptanceClaim: false,
+    presetId: translationConfig.preset_id, sessionId,
+    configuredModel: installedConfiguration.agent_model,
+    selected: setup.selected.value.selected,
+    projectionModel: projection.value.values.modelSelection.lastUsed,
+    requestModel: request.body.model,
+    tools: (request.body.tools ?? []).map(tool => tool.function?.name ?? tool.name),
+    skills: setup.skills.value.skills,
+    mcpCalls: mcp.requests.slice(mcpStart).filter(request => request.method === 'tools/call'),
+  }
+  assertTranslationPresetObservation(observation, runtimeModel)
+  await writeFile(join(evidenceDirectory, 'official-business-translation-scope.json'), JSON.stringify(observation, null, 2))
+  return observation
 }
 
 async function verifyKimiPptHostRequestDisabled(page, capture, workspaceId) {
@@ -3088,6 +3136,8 @@ description: ${USER_SKILL_DESCRIPTION}
         agentsHome: canonicalAgentsHome,
         installedPluginSkillDirectory,
       })
+      await verifyTranslationPresetScope(page, promptCapture, mcp, presetSessions.translationSessionId,
+        dirname(installation.installedPackagePath), context.businessEvidenceDirectory)
       await verifyPackagedSkillReads(
         page,
         promptCapture,

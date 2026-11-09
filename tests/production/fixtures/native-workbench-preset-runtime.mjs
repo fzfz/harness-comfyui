@@ -23,6 +23,9 @@ const directory = await mkdtemp(join(tmpdir(), 'native-workbench-preset-'))
 const root = new cordis.Context()
 const agentScopes = []
 const registrations = []
+const workbenchToolNames = [
+  'workbench_experiment_end', 'workbench_task_get', 'workbench_task_publish',
+]
 let removeDependencies
 
 async function declare(id = 'workbench', config = {}, customSkillDirs) {
@@ -263,7 +266,7 @@ const scenarios = {
     await declare('other', { toolName: 'other_preset_tool' })
     const other = await mountAgent('other-parent', 'other')
     for (const key of [parent.agent, child.agent, standing.key]) {
-      await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+      await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
     }
     for (let registration = 0; registration < 2; registration++) {
       removeDependencies = root.tools.register(fixtureTool('load_workspace_dependencies'))
@@ -273,7 +276,7 @@ const scenarios = {
           agent: key, callId: 'late-denied-dependencies', signal: new AbortController().signal })
         assert.ok(result.error, JSON.stringify(result))
         assert.match(JSON.stringify(result), /unknown tool/u)
-        await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+        await assertTools(key, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
       }
       await assertTools(other.agent, ['host_global', 'load_workspace_dependencies', 'other_preset_tool'])
       removeDependencies()
@@ -301,10 +304,10 @@ const scenarios = {
       assert.ok(result.error, JSON.stringify(result))
       assert.match(JSON.stringify(result), /unknown tool/u)
     }
-    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
-    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
     const standing = await root.agentPresets.acquireScope('workbench')
-    await assertTools(standing.key, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(standing.key, ['create_goal', 'get_goal', 'host_global', 'host_late', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
     await standing[Symbol.asyncDispose]()
     await declare('other', { toolName: 'other_preset_tool' })
     const other = await mountAgent('other-parent', 'other')
@@ -321,14 +324,14 @@ const scenarios = {
     await standing[Symbol.asyncDispose]()
     await unregister()
     await assert.rejects(root.agentPresets.resolve('workbench'), /Unknown agent preset/u)
-    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
-    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(parent.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
     await child.scope.dispose()
     await parent.scope.dispose()
     await assertTools(retiredKey, ['host_global', 'load_workspace_dependencies'])
     await declare()
     const reloaded = await mountAgent('reloaded-parent')
-    await assertTools(reloaded.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(reloaded.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
   },
 
   async failure() {
@@ -342,9 +345,9 @@ const scenarios = {
     await unregister()
     await declare()
     await root.agentPresets.mount(rejected.scope.ctx, 'workbench')
-    await assertTools(rejected.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(rejected.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
     const child = composeChild('recovered-child', rejected)
-    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+    await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
   },
 
   async prompt() {
@@ -376,7 +379,7 @@ const scenarios = {
       assert.deepEqual(prompt.renderContextSections(assembly).map(entry => entry.name), expected)
       assert.deepEqual(prompt.renderContextSections(root.systemPrompt.refreshContext(assembly,
         { scope: mounted.agent })).map(entry => entry.name), expected)
-      await assertTools(mounted.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal'])
+      await assertTools(mounted.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
     }
     await declare('other')
     const other = await mountAgent('other-parent', 'other')
@@ -435,8 +438,9 @@ try {
   root.loader.builtins.include = include.default
   root.loader.builtins.group = group.default
   root.loader.internal = { import: (name, baseUrl) => name.startsWith('@deepseek-ai/')
-    ? sdkRequire(name) : import(new URL(name, baseUrl).href) }
+    ? sdkRequire(name) : import(URL.canParse(name) ? name : pathToFileURL(createRequire(baseUrl).resolve(name)).href) }
   root.provide('workingDirectory', { ensure: async () => directory })
+  root.provide('harnessComfyuiWorkbench', { service: {} })
   await root.plugin(skillRegistry.default)
   root.skills.register({ name: 'office-example', description: 'Global Office fixture', source: 'bundled', content: 'OFFICE' })
   await root.plugin(sessions.default)

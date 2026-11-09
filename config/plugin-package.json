@@ -30,7 +30,9 @@
     "scripts/cli/help.mjs",
     "scripts/cli/help-schema.mjs",
     "config/source-client.json",
-    "locales"
+    "locales",
+    "config/workbench-tool-descriptions.json",
+    "config/workbench-translation.json"
   ],
   "artifacts": [
     ".local/source-host",

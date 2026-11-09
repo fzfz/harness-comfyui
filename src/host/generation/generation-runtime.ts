@@ -10,6 +10,7 @@ import { GENERATION_MAX_SUBMISSION_ITEMS } from '../../cli/limits.ts'
 import type { GenerationRunStatus } from '../../generation/run-status.ts'
 import {
   isGenerationRequestId,
+  type GenerationImageUpload,
   type GenerationLoraSelection,
   type GenerationModelSelection,
   type GenerationRequest,
@@ -40,6 +41,7 @@ export { GenerationRuntimeError, GenerationSubmissionNotSentError } from './gene
 export type { GenerationRunStatus } from '../../generation/run-status.ts'
 export type { GenerationLoraSelection, GenerationModelSelection, GenerationRequest } from '../../generation/submission-contract.ts'
 
+import { imageRefSchema, workflowImageBindingSchema } from '../../workbench/schema.ts'
 import Schema from '@deepseek-ai/schemastery'
 import { workflowRuntimeParameterInspectionSchema } from '../../generation/inspection-contract.ts'
 
@@ -56,7 +58,15 @@ export interface ComfyConnection {
   readonly authorization: string | null
 }
 
+export type { GenerationImageUpload } from '../../generation/submission-contract.ts'
+
+export interface GenerationPreparationContext {
+  readonly onImageUploaded: (upload: GenerationImageUpload) => void
+}
+
 export interface PreparedGeneration {
+  readonly effectiveInput?: GenerationRequest
+  readonly imageUploads?: readonly GenerationImageUpload[]
   readonly instanceId: string
   readonly instanceTitle: string
   readonly templateTitle: string
@@ -74,7 +84,7 @@ export interface GenerationPreparationAdapter {
     input: GenerationTemplateRuntimeParameterInspectionInput,
     signal?: AbortSignal,
   ): Promise<WorkflowRuntimeParameterInspection>
-  prepare(request: GenerationRequest, signal?: AbortSignal): Promise<PreparedGeneration>
+  prepare(request: GenerationRequest, signal?: AbortSignal, context?: GenerationPreparationContext): Promise<PreparedGeneration>
 }
 
 export interface GenerationOutputDescriptor {
@@ -167,7 +177,7 @@ export interface GenerationMediaSnapshot {
 }
 
 export interface GenerationRunInputLookupErrorReport {
-  readonly workspaceId: string
+  readonly workspaceId?: string
   readonly runId: string
   readonly error: unknown
 }
@@ -181,6 +191,7 @@ export interface WorkbenchGenerationAcceptance {
 }
 
 export interface WorkbenchGenerationPort {
+  taskWorkspace(taskId: string): string
   assertGenerationAcceptance(input: WorkbenchGenerationAcceptance): {
     readonly iterationIndex: number | null
     readonly candidateArtifactId: string | null
@@ -228,6 +239,8 @@ interface RunRow {
   revision: number
   prompt_id: string | null
   request_json: string
+  effective_input_json: string | null
+  image_uploads_json: string | null
   workbench_task_id: string | null
   source_snapshot_path: string | null
   api_workflow_path: string | null
@@ -415,6 +428,8 @@ function generationRequest(document: string): GenerationRequest {
     model,
     parameters: source.parameters as Readonly<Record<string, JsonValue>>,
     loras: Object.freeze(loras),
+    ...(source.imageRefs === undefined ? {} : { imageRefs: Schema.resolve(source.imageRefs, Schema.array(imageRefSchema), {})[0] }),
+    ...(source.workflowImageBindings === undefined ? {} : { workflowImageBindings: Schema.resolve(source.workflowImageBindings, Schema.array(workflowImageBindingSchema), {})[0] }),
   })
 }
 
@@ -437,6 +452,8 @@ function runInputArguments(request: GenerationRequest): GenerationRunInputArgume
       model: Object.freeze({ id: request.model.id, file_name: request.model.fileName }),
     }),
     parameters: request.parameters,
+    ...(request.imageRefs === undefined ? {} : { image_refs: request.imageRefs }),
+    ...(request.workflowImageBindings === undefined ? {} : { workflow_image_bindings: request.workflowImageBindings }),
     loras: Object.freeze(request.loras.map(lora => Object.freeze({
       id: lora.id,
       file_name: lora.fileName,
@@ -450,8 +467,7 @@ function runInputError(code: string, message: string): GenerationRunInputError {
   return Object.freeze({ code, message })
 }
 
-function assertRunLookupInput(input: { readonly workspaceId: string; readonly runIds: readonly string[] }): void {
-  assertPathId(input.workspaceId, 'workspaceId')
+function assertRunLookupInput(input: { readonly runIds: readonly string[] }): void {
   if (
     !Array.isArray(input.runIds)
     || input.runIds.length === 0
@@ -650,6 +666,7 @@ export class GenerationRuntime {
       }
       this.migrateRequestIdentity()
       for (const [name, type] of Object.entries({
+        effective_input_json: 'TEXT', image_uploads_json: 'TEXT',
         workbench_task_id: 'TEXT', iteration_index: 'INTEGER', initiator: 'TEXT',
         candidate_artifact_id: 'TEXT', retry_of_run_id: 'TEXT', review_artifact_id: 'TEXT',
         review_json: 'TEXT', review_draft_json: 'TEXT',
@@ -730,6 +747,8 @@ export class GenerationRuntime {
     if (workbenchTaskId !== undefined && (workbenchTaskId.trim().length === 0 || !this.options.workbench)) {
       throw new GenerationRuntimeError('GENERATION_SUBMISSION_INVALID', 'The workbench task is unavailable. Read workbench task get --help and verify task_id.')
     }
+    const workspaceId = workbenchTaskId === undefined ? identity.workspaceId : this.options.workbench!.taskWorkspace(workbenchTaskId)
+    assertPathId(workspaceId, 'workspaceId')
     const requestIds = new Set<string>()
     const normalized = items.map(item => {
       if (item === null || typeof item !== 'object' || !isGenerationRequestId(item.requestId)) {
@@ -756,14 +775,16 @@ export class GenerationRuntime {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'created', 0, ?, ?, ?)
       `)
       for (const item of normalized) {
-        const row = find.get(identity.workspaceId, identity.sessionId, item.requestId) as unknown as RunRow | undefined
+        const row = find.get(workspaceId, identity.sessionId, item.requestId) as unknown as RunRow | undefined
         const acceptance: WorkbenchGenerationAcceptance = {
-          taskId: workbenchTaskId ?? null, workspaceId: identity.workspaceId, reused: row !== undefined,
+          taskId: workbenchTaskId ?? null, workspaceId, reused: row !== undefined,
           ...(row === undefined ? {} : { runId: row.run_id }),
           input: {
             title: item.request.title, instance_id: item.request.instanceId, template_id: item.request.templateId,
             model: item.request.model === null ? null : { id: item.request.model.id, file_name: item.request.model.fileName },
             parameters: item.request.parameters,
+            ...(item.request.imageRefs === undefined ? {} : { image_refs: [...item.request.imageRefs] }),
+            ...(item.request.workflowImageBindings === undefined ? {} : { workflow_image_bindings: item.request.workflowImageBindings.map(binding => ({ parameter_id: binding.parameter_id, image_ref_ids: [...binding.image_ref_ids] })) }),
             loras: item.request.loras.map(lora => ({ id: lora.id, file_name: lora.fileName, weight: lora.weight, trigger_words: [...lora.triggerWords] })),
           },
         }
@@ -783,7 +804,7 @@ export class GenerationRuntime {
         assertPathId(runId, 'runId')
         const createdAt = this.now()
         insert.run(
-          runId, item.requestId, identity.workspaceId, identity.sessionId, identity.turn, identity.callId,
+          runId, item.requestId, workspaceId, identity.sessionId, identity.turn, identity.callId,
           item.request.title, item.request.templateId, item.requestJson, createdAt, createdAt,
         )
         if (workbenchTaskId !== undefined) this.options.workbench!.registerGenerationRun({ ...acceptance, runId })
@@ -859,7 +880,7 @@ export class GenerationRuntime {
   }
 
   async readGenerationRunInputs(
-    input: { readonly workspaceId: string; readonly runIds: readonly string[] },
+    input: { readonly workspaceId?: string; readonly runIds: readonly string[] },
     signal?: AbortSignal,
   ): Promise<GenerationRunInputResult> {
     assertRunLookupInput(input)
@@ -867,7 +888,7 @@ export class GenerationRuntime {
     for (const runId of input.runIds) {
       signal?.throwIfAborted()
       try {
-        runs.push(await this.readGenerationRunInput(input.workspaceId, runId, signal))
+        runs.push(await this.readGenerationRunInput(runId, signal))
       } catch (error) {
         if (signal?.aborted === true || (error instanceof DOMException && error.name === 'AbortError')) throw error
         if (error instanceof GenerationRuntimeError) {
@@ -897,7 +918,7 @@ export class GenerationRuntime {
   }
 
   async readGenerationRunMedia(
-    input: { readonly workspaceId: string; readonly runIds: readonly string[]; readonly includeParameters?: boolean },
+    input: { readonly workspaceId?: string; readonly runIds: readonly string[]; readonly includeParameters?: boolean },
     signal?: AbortSignal,
   ): Promise<GenerationRunMediaResult> {
     assertRunLookupInput(input)
@@ -905,9 +926,9 @@ export class GenerationRuntime {
     for (const requestedRunId of input.runIds) {
       signal?.throwIfAborted()
       try {
-        const row = this.resolveGenerationRunRow(input.workspaceId, requestedRunId)
+        const row = this.resolveGenerationRunRow(requestedRunId)
         const parameters = input.includeParameters === true
-          ? runInputArguments(historicalGenerationRequest(row.request_json)).parameters
+          ? runInputArguments(historicalGenerationRequest(row.effective_input_json ?? row.request_json)).parameters
           : undefined
         const mediaRows = this.database.prepare(`
           SELECT * FROM generation_media
@@ -917,6 +938,7 @@ export class GenerationRuntime {
         runs.push(Object.freeze({
           run_id: row.run_id,
           request_id: row.request_id,
+          workspace_id: row.workspace_id,
           lookup_status: 'available' as const,
           title: row.title,
           status: row.status,
@@ -1014,19 +1036,22 @@ export class GenerationRuntime {
   }
 
   private async readGenerationRunInput(
-    workspaceId: string,
     requestedRunId: string,
     signal?: AbortSignal,
   ): Promise<AvailableGenerationRunInput> {
-    const row = this.resolveGenerationRunRow(workspaceId, requestedRunId)
+    const row = this.resolveGenerationRunRow(requestedRunId)
     const request = historicalGenerationRequest(row.request_json)
-    const argumentsValue = runInputArguments(request)
+    const submittedInput = runInputArguments(request)
+    const effectiveInput = row.effective_input_json === null ? null : runInputArguments(historicalGenerationRequest(row.effective_input_json))
+    const inputs = { workspace_id: row.workspace_id, submitted_input: submittedInput, effective_input: effectiveInput, image_uploads: row.image_uploads_json === null ? [] : JSON.parse(row.image_uploads_json) as GenerationImageUpload[] }
+    const argumentsValue = effectiveInput ?? submittedInput
     const inputDescription = await this.readRunInputDescription(row, signal)
     if (row.actual_workflow_path === null) {
       return Object.freeze({
         run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
+        ...inputs,
         input_description: inputDescription,
         workflow_status: 'unavailable',
         workflow_error: runInputError(
@@ -1045,6 +1070,7 @@ export class GenerationRuntime {
         run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
+        ...inputs,
         input_description: inputDescription,
         workflow_status: 'available',
         workflow,
@@ -1055,6 +1081,7 @@ export class GenerationRuntime {
         run_id: row.run_id,
         lookup_status: 'available',
         arguments: argumentsValue,
+        ...inputs,
         input_description: inputDescription,
         workflow_status: 'unavailable',
         workflow_error: runInputError(error.code, error.message),
@@ -1062,7 +1089,7 @@ export class GenerationRuntime {
     }
   }
 
-  private resolveGenerationRunRow(workspaceId: string, requestedRunId: string): RunRow {
+  private resolveGenerationRunRow(requestedRunId: string): RunRow {
     if (!SAFE_PATH_ID.test(requestedRunId)) {
       throw new GenerationRuntimeError(
         'GENERATION_RUN_ID_INVALID',
@@ -1071,24 +1098,16 @@ export class GenerationRuntime {
     }
     const exactRow = this.database.prepare('SELECT * FROM generation_runs WHERE run_id = ?')
       .get(requestedRunId) as unknown as RunRow | undefined
-    if (exactRow !== undefined && exactRow.workspace_id !== workspaceId) {
-      throw new GenerationRuntimeError(
-        'GENERATION_RUN_NOT_FOUND',
-        'Generation Run was not found in the current Workspace.',
-      )
-    }
-    let row = exactRow?.workspace_id === workspaceId ? exactRow : undefined
+    let row = exactRow
     if (row === undefined && isCanonicalRunIdPrefix(requestedRunId)) {
       const prefixRows = this.database.prepare(`
         SELECT * FROM generation_runs
-        WHERE workspace_id = ?
-          AND substr(run_id, 1, length(?)) = ?
+        WHERE substr(run_id, 1, length(?)) = ?
           AND length(run_id) = ?
           AND run_id GLOB ?
         ORDER BY run_id
         LIMIT 2
       `).all(
-        workspaceId,
         requestedRunId,
         requestedRunId,
         CANONICAL_RUN_ID_LENGTH,
@@ -1097,7 +1116,7 @@ export class GenerationRuntime {
       if (prefixRows.length > 1) {
         throw new GenerationRuntimeError(
           'GENERATION_RUN_ID_AMBIGUOUS',
-          'Generation Run ID prefix matches multiple Runs in the current Workspace. Add more characters and retry it.',
+          'Generation Run ID prefix matches multiple Runs. Add more characters and retry it.',
         )
       }
       row = prefixRows[0]
@@ -1110,7 +1129,7 @@ export class GenerationRuntime {
     if (row === undefined) {
       throw new GenerationRuntimeError(
         'GENERATION_RUN_NOT_FOUND',
-        'Generation Run was not found in the current Workspace.',
+        'Generation Run was not found.',
       )
     }
     return row
@@ -1433,7 +1452,14 @@ export class GenerationRuntime {
 
   private async prepareOnce(runId: string, request: GenerationRequest, signal?: AbortSignal): Promise<void> {
     try {
-      const prepared = await this.options.preparer.prepare(request, signal)
+      const imageUploads: GenerationImageUpload[] = []
+      const prepared = await this.options.preparer.prepare(request, signal, {
+        onImageUploaded: upload => {
+          imageUploads.push(upload)
+          this.database.prepare('UPDATE generation_runs SET image_uploads_json = ? WHERE run_id = ? AND status = ?')
+            .run(canonicalJson(imageUploads as unknown as JsonValue), runId, 'created')
+        },
+      })
       const row = this.getRow(runId)
       const relativeDirectory = join('workspaces', row.workspace_id, 'runs', runId)
       const absoluteDirectory = join(this.options.runDirectory, relativeDirectory)
@@ -1455,7 +1481,7 @@ export class GenerationRuntime {
         UPDATE generation_runs SET
           instance_id = ?, instance_title = ?, instance_origin = ?, template_title = ?, status = 'prepared',
           revision = revision + 1, source_snapshot_path = ?, actual_workflow_path = ?,
-          api_workflow_path = ?, expected_output_node_ids_json = ?, updated_at = ?
+          api_workflow_path = ?, expected_output_node_ids_json = ?, effective_input_json = ?, image_uploads_json = ?, updated_at = ?
         WHERE run_id = ? AND status = 'created'
       `).run(
         prepared.instanceId,
@@ -1466,6 +1492,8 @@ export class GenerationRuntime {
         files.actual,
         files.api,
         canonicalJson(prepared.expectedOutputNodeIds as unknown as JsonValue),
+        canonicalJson((prepared.effectiveInput ?? request) as unknown as JsonValue),
+        canonicalJson((prepared.imageUploads ?? imageUploads) as unknown as JsonValue),
         updatedAt,
         runId,
       )

@@ -3717,6 +3717,42 @@ describe('ComfyWorkflowCompiler', () => {
     expect(compiled.apiWorkflow['6']).toMatchObject({ inputs: { seed: 42 } })
   })
 
+  it.each([
+    ['STRING', {}, 'one'],
+    ['COMBO', { options: ['a.png', 'b.png'], multiselect: true }, 'many'],
+    ['COMBO', { options: [['a.png', 'b.png']] }, 'one'],
+  ])('reports image cardinality from the %s node contract', async (type, options, expected) => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({
+      id: 4, type: 'LoadImage', mode: 0, inputs: [], outputs: [], widgets_values: [[], 'image'],
+    })
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        LoadImage: { input: { required: { image: [type, options] } }, input_order: { required: ['image'], optional: [] }, output_node: false },
+      }), { status: 200 })),
+    })
+    const inspection = await compiler.inspectRuntimeParameters({ instanceId: 'test-instance', workflow: actual, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null } })
+    expect(inspection.parameters.find(parameter => parameter.kind === 'reference_image')).toMatchObject({ image_cardinality: expected })
+  })
+
+  it('refreshes image choices after the selected instance receives an upload', async () => {
+    const actual = structuredClone(workflow)
+    ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({ id: 4, type: 'LoadImage', mode: 0, inputs: [], outputs: [], widgets_values: ['source.png', 'image'] })
+    let uploaded = false
+    const compiler = createCompiler({
+      fetchImplementation: vi.fn(async () => new Response(JSON.stringify({
+        ...objectInfo,
+        LoadImage: { input: { required: { image: [[...(uploaded ? ['remote.png'] : []), 'source.png'], {}] } }, input_order: { required: ['image'], optional: [] }, output_node: false },
+      }), { status: 200 })),
+    })
+    const input = { instanceId: 'test-instance', workflow: actual, connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null } }
+    await compiler.inspectRuntimeParameters(input)
+    uploaded = true
+    const compiled = await compiler.compile({ ...input, refreshNodeDefinitions: true, runtimeParameters: { reference_image: 'remote.png' }, loras: [] })
+    expect(compiled.apiWorkflow['4']).toMatchObject({ inputs: { image: 'remote.png' } })
+  })
+
   it('resolves a reference image to the LoadImage widget without a binding hint', async () => {
     const actual = structuredClone(workflow)
     ;(actual.nodes as Array<UiWorkflow['nodes'][number]>).push({

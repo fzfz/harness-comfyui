@@ -187,7 +187,7 @@ function unusedImageReader() {
 
 it.each(['instance_id', 'prompt_id', 'run_error'])('rejects an available media result without required nullable field %s', async field => {
   const run: Record<string, unknown> = {
-    run_id: 'run_1', request_id: 'request_1', lookup_status: 'available', title: 'portrait',
+    run_id: 'run_1', request_id: 'request_1', workspace_id: 'workspace-source', lookup_status: 'available', title: 'portrait',
     status: 'succeeded', revision: 1, updated_at: 1000, instance_id: null, prompt_id: null,
     run_error: null, images: [],
   }
@@ -224,13 +224,35 @@ it('rejects a malformed nested Host result through the CLI result contract', asy
 })
 
 describe('Harness ComfyUI managed CLI route', () => {
-  it('registers observation with Host ownership and returns only a Job receipt', async () => {
+  it('accepts task generation in the task Workspace while preserving the authenticated caller', async () => {
+    const accepted = vi.fn(async () => ({ items: [{ requestId: '01234567-89ab-4cde-8fab-0123456789ab', runId: 'run_task', acceptance: 'accepted' }] }))
+    const taskWorkspace = vi.fn(() => 'workspace-source')
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: { authorize: () => ({ sessionId: 'session-caller', turn: 4, callId: 'shell-call', rootCallId: 'root-call', cwd: '/unregistered' }) },
+      runtime: { acceptGenerations: accepted } as never,
+      workbench: { taskWorkspace, authorizeGeneration: async () => undefined } as never,
+      imageReader: unusedImageReader(),
+      workspaceRegistry: { resolveByPath: async () => { throw new Error('Task generation must resolve its task Workspace') } },
+    }))
+    try {
+      const response = await post(server.origin, 'capability', { command: 'generation.submit', workbench_task_id: 'task-source', items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: { title: 'Task image', instance_id: '2', template_id: '34', model: null, parameters: {}, loras: [] } }] })
+      expect(response.status).toBe(200)
+      expect(accepted.mock.calls[0]).toEqual([
+        { workspaceId: 'workspace-source', sessionId: 'session-caller', turn: 4, callId: 'shell-call' },
+        expect.any(Array), expect.any(AbortSignal), 'task-source',
+      ])
+      expect(taskWorkspace).toHaveBeenCalledWith('task-source')
+    } finally { await server.close() }
+  })
+
+  it('registers observation with Host ownership without resolving the caller Workspace', async () => {
     const register = vi.fn(async (_identity: unknown, _runIds: unknown, _signal: AbortSignal) => ({ job_id: 'generation-wait-1', run_ids: ['run_1'] }))
     const identity = { sessionId: 'session-parent', turn: 4, callId: 'shell-call', rootCallId: 'root-call', cwd: '/workspace' }
     const options = {
       capabilities: { authorize: () => identity },
       runtime: {} as never, imageReader: unusedImageReader(),
-      workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1', sessionIds: [] }) },
+      workspaceRegistry: { resolveByPath: async () => { throw new Error('Run lookup must not resolve the caller Workspace') } },
       runWait: { register },
     }
     const server = await serve(webServer => registerHarnessComfyuiCliRoute({ webServer, ...options }))
@@ -238,7 +260,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       const response = await post(server.origin, 'capability', { command: 'generation.wait', run_ids: ['run_1'] })
       expect(response.status).toBe(200)
       expect(await response.json()).toEqual({ ok: true, data: { job_id: 'generation-wait-1', run_ids: ['run_1'] } })
-      expect(register).toHaveBeenCalledWith({ workspaceId: 'workspace_1', sessionId: 'session-parent', callId: 'shell-call', rootCallId: 'root-call' }, ['run_1'], expect.any(AbortSignal))
+      expect(register).toHaveBeenCalledWith({ sessionId: 'session-parent', callId: 'shell-call', rootCallId: 'root-call' }, ['run_1'], expect.any(AbortSignal))
       expect(register.mock.calls[0]![2].aborted).toBe(false)
     } finally { await server.close() }
   })
@@ -515,7 +537,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       run_ids: [submitEnvelope.data.items[0]!.run_id, 'not a valid run id', submitEnvelope.data.items[0]!.run_id],
     })
     expect(queryResponse.status).toBe(200)
-    expect(await queryResponse.json()).toEqual({
+    expect(await queryResponse.json()).toMatchObject({
       ok: true,
       data: {
         runs: [
@@ -704,10 +726,10 @@ describe('Harness ComfyUI managed CLI route', () => {
   })
 
 
-  it('dispatches Run media under the current Workspace and inspects exactly one image', async () => {
+  it('reads Run media by ID without resolving the caller Workspace and inspects one image', async () => {
     const readGenerationRunMedia = vi.fn(async () => ({
       runs: [{
-        run_id: 'run_1', request_id: 'request_1', lookup_status: 'available', title: 'portrait',
+        run_id: 'run_1', request_id: 'request_1', workspace_id: 'workspace-source', lookup_status: 'available', title: 'portrait',
         status: 'succeeded', revision: 1, updated_at: 1000, instance_id: null, prompt_id: null,
         run_error: null, parameters: {}, images: [],
       }],
@@ -723,7 +745,7 @@ describe('Harness ComfyUI managed CLI route', () => {
       runtime: { acceptGenerations: vi.fn(), readGenerationRunInputs: vi.fn(), readGenerationRunMedia } as never,
       imageReader: { inspect } as never,
       workspaceRegistry: {
-        resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
+        resolveByPath: vi.fn(async () => { throw new Error('Run ID queries must not resolve the caller Workspace') }),
       },
     }))
 
@@ -747,13 +769,13 @@ describe('Harness ComfyUI managed CLI route', () => {
     expect(await mediaResponse.json()).toEqual({
       ok: true,
       data: { runs: [{
-        run_id: 'run_1', request_id: 'request_1', lookup_status: 'available', title: 'portrait',
+        run_id: 'run_1', request_id: 'request_1', workspace_id: 'workspace-source', lookup_status: 'available', title: 'portrait',
         status: 'succeeded', revision: 1, updated_at: 1000, instance_id: null, prompt_id: null,
         run_error: null, parameters: {}, images: [],
       }] },
     })
     expect(readGenerationRunMedia).toHaveBeenCalledWith(
-      { workspaceId: 'workspace_1', runIds: ['run_1'], includeParameters: false },
+      { runIds: ['run_1'], includeParameters: false },
       expect.any(AbortSignal),
     )
     expect(inspectionResponse.status).toBe(200)

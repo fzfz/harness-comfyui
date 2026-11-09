@@ -9,3 +9,12 @@
         name: cordis:include
         config:
           path: ./harness-comfyui-cli-candidate/agent.cordis.yml
+- id: preset-harness-comfyui-translation
+  name: ./translation-preset.mjs
+  config:
+    order: 92
+    plugins:
+      - id: composition
+        name: cordis:include
+        config:
+          path: ./harness-comfyui-translation/agent.cordis.yml

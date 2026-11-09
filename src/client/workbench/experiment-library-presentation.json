@@ -5,13 +5,5 @@
   "addFavorite": "添加收藏",
   "removeFavorite": "移除收藏",
   "openRun": "查看运行",
-  "runSource": "{modelName} · {branchName} · 任务 {taskId}",
-  "reuse": "复用经验",
-  "sourceRun": "来源运行：{runId}",
-  "targetBaseModel": "目标底模",
-  "sourceBaseModel": "沿用来源底模",
-  "branchName": "分支名称",
-  "defaultBranchName": "经验复验 {number}",
-  "createBranch": "创建分支",
-  "cancel": "取消"
+  "runSource": "{modelName} · {branchName} · 任务 {taskId}"
 }

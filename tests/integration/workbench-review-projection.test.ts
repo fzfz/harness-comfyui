@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it } from 'vitest'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
@@ -10,8 +11,9 @@ it('provides the effective Run review draft for a displayed adoption snapshot', 
   const { remote, runtime, dispose } = await createWorkbenchHostFixture()
   cleanups.push(dispose)
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint a glasshouse' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
-  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) { await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal()) }
   const submission = await remote.mutate({ ...selected, type: 'run' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks.find(item => item.task_id === submission.taskId)!
   const accepted = await runtime.acceptGenerations({ workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'generation' }, [{

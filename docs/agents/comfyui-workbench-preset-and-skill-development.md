@@ -15,11 +15,11 @@
 
 1. [config/product-agent.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/product-agent.json>)保存工作台 Preset ID 与资源根目录。开发者修改配置时，必须同步核对 [config/product-agent-schema.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/product-agent-schema.mjs>) 的约束。
 
-2. 插件的 [Preset registry](</Volumes/4Tdisk/work/AI2/harness-comfyui/agent-presets/presets.cordis.yml>)必须只注册工作台 Preset。开发者修改插件预设注册时，必须保留宿主提供的官方内置 Preset。工作台通过包内相对路径加载[工作台配置](</Volumes/4Tdisk/work/AI2/harness-comfyui/agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml>)与[共享组合](</Volumes/4Tdisk/work/AI2/harness-comfyui/agent-presets/shared/agent.cordis.yml>)。
+2. 插件的 [Preset registry](../../agent-presets/presets.cordis.yml)注册工作台预设与翻译预设。开发者修改插件预设注册时，必须保留宿主提供的官方内置预设。各预设通过包内相对路径加载资源，入口见[目录结构](../system/directory-structure.md#preset-与-skill-资源)。
 
 3. 插件安装包必须交付[包清单](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/plugin-package.json>)声明的预设资源及业务 Skill 正文、参考文档和脚本。
 
-4. 开发者修改预设注册时，必须使用产品配置声明的工作台 ID，并在 Preset registry 中声明工作台名称、排序与源码入口。
+4. 开发者修改预设注册时，工作台身份采用产品配置，翻译预设身份采用 [config/workbench-translation.json](../../config/workbench-translation.json)；注册表声明各预设的排序与源码入口。
 
 5. 官方全局默认 Preset 和默认对话模型由用户选择。
 

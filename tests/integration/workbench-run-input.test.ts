@@ -1,8 +1,10 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it, vi } from 'vitest'
 import { toGenerationRequest } from '../../src/cli/contract.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import type { WorkbenchScope } from '../../src/workbench-remote.ts'
+import { generationInputWithImages, taskDraftFromRunInput } from '../../src/workbench/validation.ts'
 import { flattenWorkflowRuntimeParameters } from '../../src/generation/inspection-contract.ts'
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
@@ -32,9 +34,107 @@ function deferred() {
 type Fixture = Awaited<ReturnType<typeof fixture>>
 
 async function selectGeneration(host: Fixture, scope: WorkbenchScope) {
-  await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
-  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) await host.remote.mutate({ ...scope, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(host.remote, { ...scope }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) { await host.remote.mutate({ ...scope, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(host.remote, { ...scope }, () => {}, signal()) }
 }
+
+it('removes uploaded image parameters before inheriting a Run and rejects submission after its Workflow use is removed', async () => {
+  const workflow: UiWorkflow = { version: 0.4, nodes: [
+    { id: 1, type: 'LoadImage', mode: 0, inputs: [], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }], widgets_values: ['template-default.png'] },
+    { id: 3, type: 'ImageScale', mode: 0, inputs: [{ name: 'image', type: 'IMAGE', link: 1 }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [2] }], widgets_values: ['nearest-exact', 768, 512, 'disabled'] },
+    { id: 2, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 2 }], outputs: [], widgets_values: ['result'] },
+  ], links: [[1, 1, 0, 3, 0, 'IMAGE'], [2, 3, 0, 2, 0, 'IMAGE']] }
+  const compiler = new ComfyWorkflowCompiler({ fetchImplementation: async () => new Response(JSON.stringify({
+    LoadImage: { input: { required: { image: [['template-default.png', 'previous-upload.png'], { image_upload: true }] } }, input_order: { required: ['image'], optional: [] }, output_node: false },
+    ImageScale: { input: { required: { image: ['IMAGE'], upscale_method: [['nearest-exact'], {}], width: ['INT', { min: 1, max: 4096 }], height: ['INT', { min: 1, max: 4096 }], crop: [['disabled'], {}] } }, input_order: { required: ['image', 'upscale_method', 'width', 'height', 'crop'], optional: [] }, output_node: false },
+    SaveImage: { input: { required: { images: ['IMAGE'], filename_prefix: ['STRING', {}] } }, input_order: { required: ['images', 'filename_prefix'], optional: [] }, output_node: true },
+  })), officialApiWorkflowCompiler: { compile: async input => ({ apiWorkflow: input.runtimeProjection, cacheKey: 'image-reuse', cacheStatus: 'miss' }) } })
+  const preparer = new SourceGenerationPreparer({ defaultInstanceId: '8', compiler, source: {
+    readInstance: async id => ({ id, title: 'Target', url: 'http://comfy.test', credentialType: 'none', authorization: null }),
+    readTemplate: async id => ({ id, title: 'Image template', workflow }),
+  }, images: {
+    resolve: async () => ({ filePath: '/controlled/image.png', filename: 'image.png', mediaType: 'image/png' }),
+    upload: async () => ({ name: 'previous-upload.png', subfolder: '', type: 'input' }),
+  } })
+  const host = await fixture(preparer, {
+    submit: async input => { input.onRequestStart(); return { promptId: input.promptId } },
+    observe: async () => ({ status: 'error', outputs: [], error: { code: 'COMFYUI_REMOTE_ERROR', message: 'Controlled image run failure' } }), download: vi.fn(),
+  })
+  const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Inherited Workflow image', goal: 'Keep image inputs explicit' } }, signal())
+  await saveFixtureDraft(host.remote, selected, draft => { draft.generation_input.instance_id = '8'; draft.prompt_input = { positive_prompt: null, negative_prompt: null } }, signal())
+  await host.remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
+  await saveFixtureDraft(host.remote, selected, () => {}, signal())
+  const withoutImageReceipt = await host.remote.mutate({ ...selected, type: 'agent-action', id: 'parameters' }, signal())
+  const withoutImageTask = host.store.getTask(withoutImageReceipt.taskId!)
+  await expect(host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: withoutImageTask.task_id, artifact: { type: 'parameters', parameters: { width: 1024 } } }, { workspaceId: selected.workspaceId, sessionId: withoutImageTask.session_id!, turn: 1, callId: 'parameters-before-images' })).resolves.toMatchObject({ disposition: 'applied' })
+  expect(host.store.getBranch(selected.branchId!).editing_draft?.generation_input.parameters.width).toBe(1024)
+  await saveFixtureDraft(host.remote, selected, draft => {
+    draft.generation_input.parameters.width = 768
+    expect(draft.generation_input.parameters).not.toHaveProperty('reference_image')
+    draft.image_refs = [{ image_ref_id: 'image-a', source: { kind: 'uploaded_file', file_id: 'file-a' }, purpose: 'both', reference_requirement: 'Keep the composition' }]
+    draft.workflow_image_bindings = [{ parameter_id: 'reference_image', image_ref_ids: ['image-a'] }]
+  }, signal())
+  const taskReceipt = await host.remote.mutate({ ...selected, type: 'run' }, signal())
+  const task = host.store.getTask(taskReceipt.taskId!)
+  const submission = generationInputWithImages(task.input.generation_input, task.input)
+  const accepted = await host.runtime.acceptGenerations({ workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'image-source' }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...submission, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  for (let phase = 0; phase < 3; phase += 1) await host.runtime.advance()
+  const historical = await host.remote.getRunInput({ ...selected, workId: selected.workId!, runId: accepted.items[0]!.runId }, signal())
+  expect(historical.effective_input?.parameters).toMatchObject({ reference_image: 'previous-upload.png', width: 768, height: 512 })
+  expect(historical.image_uploads).toMatchObject([{ parameter_id: 'reference_image', name: 'previous-upload.png' }])
+  expect(taskDraftFromRunInput(historical).generation_input.parameters).toEqual({ width: 768, height: 512 })
+  const parameterReceipt = await host.remote.mutate({ ...selected, type: 'agent-action', id: 'parameters' }, signal())
+  const parameterTask = host.store.getTask(parameterReceipt.taskId!)
+  expect(parameterTask.output_contract.parameter_ids).not.toContain('reference_image')
+  await expect(host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: parameterTask.task_id, artifact: { type: 'parameters', parameters: { width: 1024 } } }, { workspaceId: selected.workspaceId, sessionId: parameterTask.session_id!, turn: 1, callId: 'publish-width' })).resolves.toMatchObject({ disposition: 'applied' })
+  const retried = await host.remote.mutate({ ...selected, type: 'retry', runId: historical.run_id }, signal())
+  const retry = host.store.getTask(retried.taskId!)
+  expect(retry.input.generation_input.parameters).toEqual({ width: 768, height: 512 })
+  expect(retry.input.image_refs).toEqual(historical.image_refs)
+  expect(retry.input.workflow_image_bindings).toEqual(historical.workflow_image_bindings)
+  const child = await host.remote.mutate({ ...selected, type: 'create-branch', runId: historical.run_id, value: { name: 'Remove Workflow image', original_request: 'Use no Workflow image' } }, signal())
+  await saveFixtureDraft(host.remote, child, draft => { draft.image_refs = draft.image_refs.map(image => ({ ...image, purpose: 'agent' })); draft.workflow_image_bindings = [] }, signal())
+  const saved = host.store.getBranch(child.branchId!).draft
+  expect(saved.generation_input.parameters).toEqual({ width: 768, height: 512 })
+  const validate = vi.spyOn(host.runtime, 'validateGenerationRequest')
+  await expect(host.remote.mutate({ ...child, type: 'run' }, signal())).rejects.toMatchObject({ details: { code: 'GENERATION_IMAGE_BINDING_REQUIRED', issues: [{ path: 'input.workflow_image_bindings.reference_image', message: expect.stringContaining('image_refs') }] } })
+  expect(validate.mock.calls.at(-1)?.[0].parameters).toEqual({ width: 768, height: 512 })
+  expect((await host.remote.getProjection(child, signal())).tasks.filter(value => value.branch_id === child.branchId)).toEqual([])
+})
+
+it('keeps fixed task images at the root and assembles them only for generation submission', async () => {
+  const host = await fixture()
+  const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Image input', goal: 'Use an analysis image' } }, signal())
+  await selectGeneration(host, selected)
+  const images = [{ image_ref_id: 'image-a', source: { kind: 'uploaded_file' as const, file_id: 'file-a' }, purpose: 'agent' as const, reference_requirement: 'Retain the atmosphere' }]
+  await saveFixtureDraft(host.remote, selected, draft => { draft.image_refs = images }, signal())
+  const receipt = await host.remote.mutate({ ...selected, type: 'run' }, signal())
+  const task = host.store.getTask(receipt.taskId!)
+  expect(task.input.image_refs).toEqual(images)
+  expect(task.input.generation_input).not.toHaveProperty('image_refs')
+  expect(task.input.generation_input).not.toHaveProperty('workflow_image_bindings')
+  const accepted = await host.runtime.acceptGenerations({ workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'submit-images' }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...generationInputWithImages(task.input.generation_input, task.input), instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
+  const historical = await host.remote.getRunInput({ ...selected, workId: selected.workId!, runId: accepted.items[0]!.runId }, signal())
+  expect(historical.submitted_input.image_refs).toEqual(images)
+  expect(historical.image_refs).toEqual(images)
+  const records = await host.remote.queryRecords({ type: 'run' }, signal())
+  expect(records.find(record => record.id === historical.run_id)).toHaveProperty('base_model_id', '1')
+  const child = await host.remote.mutate({ ...selected, type: 'create-branch', runId: historical.run_id, value: { name: 'Clear inherited images', original_request: 'Generate without images' } }, signal())
+  const inherited = host.store.getBranch(child.branchId!).draft
+  expect(inherited.image_refs).toEqual(images)
+  expect(inherited.generation_input).not.toHaveProperty('image_refs')
+  await saveFixtureDraft(host.remote, child, draft => { draft.image_refs = []; draft.workflow_image_bindings = [] }, signal())
+  const clearedReceipt = await host.remote.mutate({ ...child, type: 'run' }, signal())
+  const cleared = host.store.getTask(clearedReceipt.taskId!)
+  expect(cleared.input.image_refs).toEqual([])
+  expect(cleared.input.workflow_image_bindings).toEqual([])
+  expect(cleared.input.generation_input).not.toHaveProperty('image_refs')
+  const cleanSubmission = generationInputWithImages(cleared.input.generation_input, cleared.input)
+  expect(cleanSubmission.image_refs).toEqual([])
+  const cleanRun = await host.runtime.acceptGenerations({ workspaceId: child.workspaceId, sessionId: cleared.session_id!, turn: 1, callId: 'submit-cleared' }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...cleanSubmission, instance_id: cleanSubmission.instance_id!, template_id: cleanSubmission.template_id! }) }], undefined, cleared.task_id)
+  expect((await host.remote.getRunInput({ ...child, workId: child.workId!, runId: cleanRun.items[0]!.runId }, signal())).image_refs).toEqual([])
+})
 
 it('decodes absent stored mapping as null and leaves historical Branch and Task JSON unchanged', async () => {
   const host = await fixture()
@@ -67,7 +167,8 @@ it.each([null, { positive_prompt: null, negative_prompt: null }, { positive_prom
   draft.generation_input.parameters = { positive: 'Cached positive', negative: 'Cached negative', seed: 42, opaque: null }
   host.store.saveBranchDraft({ workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId!, expected: branch.draft, draft })
   await host.remote.mutate({ ...selected, type: 'resource-remove', value: 'comfyui-template' }, signal())
-  await host.remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: null }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, draft => { draft.generation_input.instance_id = null }, signal())
   host.inspect.mockClear().mockRejectedValue(new Error('Cleared resources must not inspect'))
   const receipt = await host.remote.mutate({ ...selected, type: 'agent-action', id: 'rewrite' }, signal())
   const task = host.store.getTask(receipt.taskId!)
@@ -96,10 +197,11 @@ it('replaces every descriptor classification together with the template paramete
   const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Replace template', goal: 'Keep a single parameter source' } }, signal())
   await selectGeneration(host, selected)
   const original = host.store.getBranch(selected.branchId!).draft
-  await host.remote.mutate({ ...selected, type: 'update-draft', field: 'parameter', id: 'steps', value: 28 }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, draft => { draft.generation_input.parameters['steps'] = 28 }, signal())
   expect(host.store.getBranch(selected.branchId!).draft.parameter_mapping).toEqual(original.parameter_mapping)
   host.inspect.mockResolvedValue({ parameters: [{ parameter_id: 'opaque-slot', kind: 'positive_prompt', value_type: 'string', current_value: 'Replacement baseline' }, { parameter_id: 'opaque-control', kind: 'cfg', value_type: 'number', current_value: 6 }], size_candidates: [] })
   await host.remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, () => {}, signal())
   const replaced = host.store.getBranch(selected.branchId!).draft
   expect(replaced.generation_input.parameters).toEqual({ 'opaque-slot': 'Replacement baseline', 'opaque-control': 6 })
   expect(replaced.parameter_mapping).toEqual({ 'opaque-slot': 'positive_prompt', 'opaque-control': 'cfg' })
@@ -176,7 +278,7 @@ it('freezes newly acquired descriptor kinds for an older draft and preserves opa
   expect(result).toHaveProperty('unresolved_parameters', { negative: 'Baseline negative', unknown: { nested: [null, false, 7, 'text'] }, positive_prompt: 'An opaque name' })
   expect(task.input.parameter_mapping).toMatchObject({ positive: 'positive_prompt', negative: 'negative_prompt', seed: 'seed', width: 'width', height: 'height' })
   host.inspect.mockResolvedValue({ parameters: [], size_candidates: [] })
-  await host.remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Later edit' }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Later edit' }, signal())
   expect(await host.service.getTask({ taskId: task.task_id }, identity)).toEqual(result)
   expect(host.store.getTask(task.task_id).input.generation_input.parameters).toEqual(draft.generation_input.parameters)
 })
@@ -186,14 +288,14 @@ it('projects the captured Task 40 prompt snapshot without losing its stored temp
   host.inspect.mockResolvedValue({ ...host.description, parameters: host.description.parameters.map((parameter, index) => index < 2 ? { ...parameter, current_value: index === 0 ? 'Batch02 positive baseline' : 'Batch02 negative baseline' } : parameter) })
   const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Task 40', goal: 'Paint a greenhouse' } }, signal())
   await selectGeneration(host, selected)
-  await host.remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Current greenhouse text' }, signal())
-  await host.remote.mutate({ ...selected, type: 'update-draft', field: 'negative_prompt', value: 'Current exclusion text' }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Current greenhouse text' }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, draft => { draft.prompt_input.negative_prompt = 'Current exclusion text' }, signal())
   const receipt = await host.remote.mutate({ ...selected, type: 'agent-action', id: 'rewrite' }, signal())
   const task = host.store.getTask(receipt.taskId!)
   const raw = structuredClone(task.input.generation_input.parameters)
   const result = await host.service.getTask({ taskId: task.task_id }, { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'snapshot' })
   expect(result.prompt_input).toEqual({ positive_prompt: 'Current greenhouse text', negative_prompt: 'Current exclusion text' })
-  expect(result.generation_input.parameters).toEqual({ seed: 17, steps: 20, reference: '', width: 512, height: 512 })
+  expect(result.generation_input.parameters).toEqual({ seed: 17, steps: 20, width: 512, height: 512 })
   expect(result).toHaveProperty('unresolved_parameters', {})
   expect(result).not.toHaveProperty('parameter_mapping')
   expect(host.store.getTask(task.task_id).input.generation_input.parameters).toEqual(raw)
@@ -237,17 +339,14 @@ it.each(['created', 'failed'])('reads a %s Run fixed input and Task context with
   const host = await fixture(), { remote } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Historical input', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Historical rain' }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '7' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Historical rain' }, signal())
   const { task, runId } = await acceptRun(host, selected)
   if (stage === 'failed') await host.runtime.advance()
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Current sunshine' }, signal())
-  await remote.mutate({ ...selected, type: 'resource-remove', id: '7', value: 'character' }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '8' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Current sunshine' }, signal())
   const before = (await remote.getProjection(selected, signal())).branches
   host.inspect.mockRejectedValue(new Error('Current template is unavailable'))
   const result = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
-  expect(result).toEqual({ run_id: runId, branch_id: selected.branchId, generation_input: task.input.generation_input, context_refs: [{ kind: 'character', id: '7' }], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } })
+  expect(result).toMatchObject({ run_id: runId, branch_id: selected.branchId, generation_input: task.input.generation_input, image_refs: [], workflow_image_bindings: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } })
   expect((await remote.getProjection(selected, signal())).branches).toEqual(before)
 })
 
@@ -266,14 +365,14 @@ it('reads saved parameter kinds and prompts after the current template and model
   const { remote } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Saved input', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Prepared rain' }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'negative_prompt', value: 'blur' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Prepared rain' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.negative_prompt = 'blur' }, signal())
   const { task, runId } = await acceptRun(host, selected)
   await host.runtime.advance()
   inspect.mockRejectedValue(new Error('The current template has changed'))
   host.catalog.resolveGenerationModel.mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The model was deleted'))
   const result = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
-  expect(result).toEqual({ run_id: runId, branch_id: selected.branchId, generation_input: task.input.generation_input, context_refs: [], input_description: description, prompt_input: { positive_prompt: 'Prepared rain', negative_prompt: 'blur' } })
+  expect(result).toMatchObject({ run_id: runId, branch_id: selected.branchId, generation_input: task.input.generation_input, image_refs: [], workflow_image_bindings: [], input_description: description, prompt_input: { positive_prompt: 'Prepared rain', negative_prompt: 'blur' } })
   const imported = await remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Saved description child', original_request: 'Reuse saved input' } }, signal())
   const mapping = { positive_prompt_9: 'positive_prompt', negative_prompt_10: 'negative_prompt', steps_4: 'steps' }
   expect(host.store.getBranch(imported.branchId!).draft.parameter_mapping).toEqual(mapping)
@@ -314,7 +413,7 @@ it.each([{ kind: 'run', maxRuns: 1 }, { kind: 'experiment', maxRuns: 1 }, { kind
   expect(submit).toHaveBeenCalledOnce()
   if (kind === 'experiment') {
     await host.service.publish({ taskId: task.task_id, artifact: { type: 'review', observation: 'Submission unconfirmed', conclusion: 'Wait for confirmation', run_ids: [runId] } }, { ...identity, callId: 'unknown-review' })
-    await host.service.publish({ taskId: task.task_id, artifact: { type: 'generation_input', generation_input: task.input.generation_input, context_refs: [] } }, { ...identity, callId: 'unknown-candidate' })
+    await host.service.publish({ taskId: task.task_id, artifact: { type: 'generation_input', generation_input: task.input.generation_input, image_refs: [], workflow_image_bindings: [] } }, { ...identity, callId: 'unknown-candidate' })
     const reviewed = await remote.getProjection(selected, signal())
     expect(reviewed.tasks.find(item => item.task_id === task.task_id)?.status).toBe('needs_attention')
     expect(reviewed.experiments.find(item => item.task_id === task.task_id)?.control_state).toBe('running')
@@ -328,10 +427,10 @@ it('creates a Run child under the Run owning branch while browsing a sibling bra
   const root = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Root', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, root)
   const source = await remote.mutate({ ...root, type: 'create-branch', value: { name: 'Source branch', original_request: 'Source requirements' } }, signal())
-  await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Source run rain' }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Source run rain' }, signal())
   const { task, runId } = await acceptRun(host, source)
   await host.runtime.advance()
-  await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Later parent edit' }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Later parent edit' }, signal())
   const sibling = await remote.mutate({ ...root, type: 'create-branch', value: { name: 'Sibling', original_request: 'Sibling requirements' } }, signal())
   const before = (await remote.getProjection(root, signal())).branches
   const fork = await remote.mutate({ ...sibling, type: 'create-branch', runId, value: { name: 'Run fork', original_request: 'New exploration' } }, signal())
@@ -353,7 +452,7 @@ it('returns Work Runs in global creation order when experiment iterations interl
   const single = await acceptRun(host, selected)
   time.mockReturnValue(3000)
   await service.publish({ taskId: experiment.task.task_id, artifact: { type: 'review', observation: 'Instance unavailable', conclusion: 'Try again', run_ids: [experiment.runId] } }, { ...experiment.identity, callId: 'review' })
-  await service.publish({ taskId: experiment.task.task_id, artifact: { type: 'generation_input', generation_input: experiment.task.input.generation_input, context_refs: [] } }, { ...experiment.identity, callId: 'candidate' })
+  await service.publish({ taskId: experiment.task.task_id, artifact: { type: 'generation_input', generation_input: experiment.task.input.generation_input, image_refs: [], workflow_image_bindings: [] } }, { ...experiment.identity, callId: 'candidate' })
   const second = await runtime.acceptGenerations(experiment.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...experiment.task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, experiment.task.task_id)
   const projection = await remote.getProjection({ workspaceId: selected.workspaceId, workId: selected.workId }, signal())
   expect(projection.runs.map(run => run.run_id)).toEqual([experiment.runId, single.runId, second.items[0]!.runId])
@@ -416,45 +515,59 @@ it('projects every real worker stage and routes each Run media while retaining a
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(bytes[index])
     const invalid = new URL(origin + media.url)
     invalid.searchParams.set('session_id', third.task.session_id!)
-    expect((await fetch(invalid)).status).toBe(404)
+    expect((await fetch(invalid)).status).toBe(200)
   }
   expect((await remote.getProjection(selected, signal())).runs).toHaveLength(3)
+  const media = projection.runs.find(run => run.run_id === first.runId)!.media[0]!
+  host.store.setFavorite({ workspaceId: selected.workspaceId, targetType: 'run', targetId: first.runId, favorite: true })
+  const favorites = await remote.queryRecords({ type: 'favorite' }, signal())
+  expect(favorites).toMatchObject([{ type: 'run', id: first.runId, run: { media: [{ media_id: media.media_id, url: expect.any(String), download_url: expect.any(String) }] } }])
+  const favoriteImage = await fetch(origin + favorites[0]!.run!.media[0]!.url)
+  expect(new Uint8Array(await favoriteImage.arrayBuffer())).toEqual(bytes[0])
+  await saveFixtureDraft(remote, selected, draft => {
+    draft.image_refs = [{ image_ref_id: 'result-reference', source: { kind: 'run_media', run_id: first.runId, media_id: media.media_id }, purpose: 'agent', reference_requirement: 'Compare the generated image' }]
+  }, signal())
+  const referenced = await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
+  expect(host.store.getTask(referenced.taskId!).input.image_refs).toMatchObject([{ source: { run_id: first.runId, media_id: media.media_id } }])
+  const experience = host.store.saveExperience({ title: 'Image evidence', conditions: 'Use completed output', note: 'Retain Run ownership', provenance: { created_by_task_id: referenced.taskId!, evidence: [{ run_id: first.runId, generation_task_id: null, role: 'supporting_evidence' }] } })
+  expect(experience.evidence_run_ids).toEqual([first.runId])
+  expect(experience.provenance).toEqual({ created_by_task_id: referenced.taskId!, evidence: [{ run_id: first.runId, generation_task_id: first.task.task_id, role: 'supporting_evidence' }] })
+  const destination = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_2', value: { name: 'Cross-work input', goal: 'Reuse the completed Run' } }, signal())
+  const inherited = await remote.mutate({ ...destination, type: 'create-branch', runId: first.runId, value: { name: 'Imported Run', original_request: 'Keep source settings' } }, signal())
+  expect(host.store.getBranch(inherited.branchId!)).toMatchObject({ work_id: destination.workId, parent_branch_id: destination.branchId, source_run_id: first.runId })
 })
 
 it('shares the original candidate context between task iterations and Run input reads', async () => {
   const host = await fixture(), { remote, runtime, service } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Candidate context', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '7' } }, signal())
   const source = await acceptRun(host, selected, 'experiment')
   await runtime.advance()
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'review', observation: 'Failed preparation', conclusion: 'Try a candidate', run_ids: [source.runId] } }, { ...source.identity, callId: 'review' })
   const input = { ...source.task.input.generation_input, parameters: { ...source.task.input.generation_input.parameters, positive: 'Candidate prompt' } }
-  await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: input, context_refs: [{ kind: 'character', id: '8' }] } }, { ...source.identity, callId: 'candidate' })
+  await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: input, image_refs: [], workflow_image_bindings: [] } }, { ...source.identity, callId: 'candidate' })
   const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...input, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
   const runId = accepted.items[0]!.runId
-  await remote.mutate({ ...selected, type: 'resource-remove', id: '7', value: 'character' }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '9' } }, signal())
   const result = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
   const task = await service.getTask({ taskId: source.task.task_id }, source.identity)
-  expect(result).toMatchObject({ generation_input: input, context_refs: [{ kind: 'character', id: '8' }], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } })
-  expect(task.iterations.find(item => item.run_id === runId)?.context_refs).toEqual(result.context_refs)
+  expect(result).toMatchObject({ generation_input: input, image_refs: [], workflow_image_bindings: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } })
+  expect(task.iterations.find(item => item.run_id === runId)?.image_refs).toEqual(result.image_refs)
 })
 
-it.each(['workspace_1', 'workspace_2'])('rejects historical input reads from another Work in %s', async workspaceId => {
+it.each(['workspace_1', 'workspace_2'])('reads historical input from another Work in %s', async workspaceId => {
   const host = await fixture(), { remote } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Source', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   const { runId } = await acceptRun(host, source)
   const other = await remote.mutate({ type: 'new-work', workspaceId, value: { name: 'Other', goal: 'Paint snow' } }, signal())
-  await expect(remote.getRunInput({ workspaceId, workId: other.workId!, runId }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+  expect(await remote.getRunInput({ workspaceId, workId: other.workId!, runId }, signal())).toMatchObject({ run_id: runId, branch_id: source.branchId })
   expect((await remote.getProjection(other, signal())).runs).toEqual([])
 })
 
 it('rejects incomplete generation input before creating a Task or Run and retains the draft', async () => {
   const host = await fixture(), { remote } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Incomplete input', goal: 'Paint rain' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Retained prompt' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Retained prompt' }, signal())
   const before = await remote.getProjection(selected, signal())
   await expect(remote.mutate({ ...selected, type: 'run' }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_TEMPLATE_REQUIRED' } })
   const after = await remote.getProjection(selected, signal())
@@ -496,7 +609,10 @@ it('keeps each experimental Run complete when its candidate changes template, re
     compiled.push(structuredClone(input.runtimeProjection))
     return { apiWorkflow: input.runtimeProjection, cacheKey: 'experimental-input-fixture', cacheStatus: 'miss' }
   } } })
-  const host = await fixture(new SourceGenerationPreparer({ defaultInstanceId: '8', source, compiler }), {
+  const host = await fixture(new SourceGenerationPreparer({ defaultInstanceId: '8', source, compiler, images: {
+    resolve: async () => ({ filePath: '/controlled/candidate.png', filename: 'candidate.png', mediaType: 'image/png' }),
+    upload: async () => ({ name: 'second.png', subfolder: '', type: 'input' }),
+  } }), {
     submit: async input => { input.onRequestStart(); return { promptId: input.promptId } },
     observe: async () => ({ status: 'error', outputs: [], error: { code: 'COMFYUI_REMOTE_ERROR', message: 'Controlled generation failure' } }), download: vi.fn(),
   })
@@ -506,6 +622,7 @@ it('keeps each experimental Run complete when its candidate changes template, re
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Complete rounds', goal: 'Compare generation conditions' } }, signal())
   await selectGeneration(host, selected)
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   const initial = await acceptRun(host, selected, 'experiment')
   for (let phase = 0; phase < 3; phase += 1) await runtime.advance()
   const first = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId: initial.runId }, signal())
@@ -513,14 +630,15 @@ it('keeps each experimental Run complete when its candidate changes template, re
   await service.publish({ taskId: initial.task.task_id, artifact: { type: 'review', observation: 'First conditions failed', conclusion: 'Change all conditions', run_ids: [initial.runId] } }, { ...initial.identity, callId: 'review-all' })
   const candidate = { ...initial.task.input.generation_input, title: 'Second conditions', instance_id: '9', template_id: '6',
     model: { id: '4', file_name: 'second.safetensors' }, loras: [{ id: '6', file_name: 'snow.safetensors', weight: 0.9, trigger_words: ['snow'] }],
-    parameters: { positive_prompt: 'Second snow', negative_prompt: 'Second blur', width: 1024, height: 768, seed: 42, steps: 31, cfg: 7, sampler_name: 'lcm', scheduler: 'simple', denoise: 0.7, batch_size: 2, reference_image: 'second.png' },
+    parameters: { positive_prompt: 'Second snow', negative_prompt: 'Second blur', width: 1024, height: 768, seed: 42, steps: 31, cfg: 7, sampler_name: 'lcm', scheduler: 'simple', denoise: 0.7, batch_size: 2 },
   }
-  const published = await service.publish({ taskId: initial.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }] } }, { ...initial.identity, callId: 'candidate-all' })
-  const accepted = await runtime.acceptGenerations(initial.identity, [{ requestId: randomUUID(), request: toGenerationRequest(candidate) }], undefined, initial.task.task_id)
+  const candidateImages = { image_refs: [{ image_ref_id: 'candidate-image', source: { kind: 'uploaded_file' as const, file_id: 'file-candidate' }, purpose: 'workflow' as const, reference_requirement: '' }], workflow_image_bindings: [{ parameter_id: 'reference_image', image_ref_ids: ['candidate-image'] }] }
+  const published = await service.publish({ taskId: initial.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, ...candidateImages } }, { ...initial.identity, callId: 'candidate-all' })
+  const accepted = await runtime.acceptGenerations(initial.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...generationInputWithImages(candidate, candidateImages), instance_id: '9', template_id: '6' }) }], undefined, initial.task.task_id)
   const runId = accepted.items[0]!.runId
   await runtime.advance()
   const second = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
-  expect(second).toMatchObject({ generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }], prompt_input: { positive_prompt: 'Second snow', negative_prompt: 'Second blur' } })
+  expect(second).toMatchObject({ generation_input: { ...candidate, parameters: { ...candidate.parameters, reference_image: 'second.png' } }, ...candidateImages, prompt_input: { positive_prompt: 'Second snow', negative_prompt: 'Second blur' } })
   expect(flattenWorkflowRuntimeParameters(second.input_description!)).toEqual(expect.arrayContaining(Object.entries(candidate.parameters).map(([parameter_id, current_value]) => expect.objectContaining({ parameter_id, current_value }))))
   expect(compiled.at(-1)?.['1']).toMatchObject({ inputs: { ckpt_name: 'models/second.safetensors', lora_name: 'loras/snow.safetensors', strength_model: 0.9 } })
   expect(source.readTemplate).toHaveBeenCalledWith('6', expect.any(AbortSignal))
@@ -551,11 +669,14 @@ it('persists the real compiler description through Source preparation and Runtim
   const host = await fixture(new SourceGenerationPreparer({ defaultInstanceId: '8', source, compiler })), { remote } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Compiled history', goal: 'Paint rain' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'resource-remove', value: 'model' }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Historical effective prompt' }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'parameter', id: 'seed', value: -1 }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Historical effective prompt' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.parameters['seed'] = -1 }, signal())
   const { runId } = await acceptRun(host, selected)
   await host.runtime.advance()
   source.readTemplate.mockRejectedValue(new Error('The template is deleted'))
@@ -575,19 +696,19 @@ it('retries a failed later candidate with its saved prompts, model, context and 
   const { remote, runtime, service } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Candidate retry', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Initial rain' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Initial rain' }, signal())
   const source = await acceptRun(host, selected, 'experiment')
   for (let phase = 0; phase < 3; phase += 1) await runtime.advance()
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'review', observation: 'First failure', conclusion: 'Try snow', run_ids: [source.runId] } }, { ...source.identity, callId: 'review' })
   host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: 'paint.safetensors', base_model_id: id === '4' ? '9' : '1' }))
   const candidate = { ...source.task.input.generation_input, model: { id: '4', file_name: 'paint.safetensors' }, parameters: { positive: 'Candidate snow', negative: 'mist', seed: 31 } }
-  await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }] } }, { ...source.identity, callId: 'candidate' })
+  await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...source.identity, callId: 'candidate' })
   const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
   const runId = accepted.items[0]!.runId
   for (let phase = 0; phase < 3; phase += 1) await runtime.advance()
   const failed = (await remote.getProjection(selected, signal())).runs.find(run => run.run_id === runId)!
   const retried = await acceptRun(host, selected, 'retry', runId)
-  expect(retried.task.input).toMatchObject({ generation_input: candidate, prompt_input: { positive_prompt: 'Candidate snow', negative_prompt: 'mist' }, base_model_id: '9', context_refs: [{ kind: 'character', id: '8' }] })
+  expect(retried.task.input).toMatchObject({ generation_input: candidate, prompt_input: { positive_prompt: 'Candidate snow', negative_prompt: 'mist' }, base_model_id: '9', image_refs: [], workflow_image_bindings: [] })
   const after = await remote.getProjection(selected, signal())
   expect(after.runs.find(run => run.run_id === retried.runId)).toMatchObject({ workbench_task_id: retried.task.task_id, retry_of_run_id: runId, generation_input: candidate })
   expect(after.runs.find(run => run.run_id === runId)).toEqual(failed)
@@ -598,27 +719,28 @@ it.each([true, false])('copies a described Run input when Catalog metadata is un
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Archived resources', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
   if (!explicitModel) await remote.mutate({ ...selected, type: 'resource-remove', value: 'model' }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Archived rain' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Archived rain' }, signal())
   const { task, runId } = await acceptRun(host, selected)
   await host.runtime.advance()
   host.catalog.resolveGenerationModel.mockRejectedValue(new CatalogError('CATALOG_PROTOCOL_ERROR', 'Model record no longer exists'))
   host.catalog.resolveTemplate.mockRejectedValue(new Error('Current template is unavailable'))
   const created = await remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Copied source', original_request: 'Keep the archived input' } }, signal())
   const branch = (await remote.getProjection(created, signal())).branches.find(branch => branch.branch_id === created.branchId)!
-  expect(branch.draft).toMatchObject({ generation_input: task.input.generation_input, prompt_input: { positive_prompt: 'Archived rain', negative_prompt: '' }, base_model_id: null })
+  expect(branch.draft).toMatchObject({ generation_input: task.input.generation_input, prompt_input: { positive_prompt: 'Archived rain', negative_prompt: '' }, base_model_id: '1' })
 })
 
-it('preserves unexpected Catalog failures instead of treating them as missing optional metadata', async () => {
+it('copies fixed model classification without querying a current Catalog record', async () => {
   const host = await preparedFixture(), { remote } = host
-  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Unexpected Catalog failure', goal: 'Paint rain' } }, signal())
+  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Fixed classification', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
   const { runId } = await acceptRun(host, selected)
   await host.runtime.advance()
-  const failure = new Error('Unexpected Catalog implementation failure')
-  host.catalog.resolveGenerationModel.mockRejectedValue(failure)
-  const before = (await remote.getProjection(selected, signal())).branches
-  await expect(remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Unwritten branch', original_request: 'Copy the source' } }, signal())).rejects.toBe(failure)
-  expect((await remote.getProjection(selected, signal())).branches).toEqual(before)
+  host.catalog.resolveGenerationModel.mockReset().mockRejectedValue(new Error('Current Catalog is unavailable'))
+  const created = await remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Copied branch', original_request: 'Copy the source' } }, signal())
+  const branch = (await remote.getProjection(created, signal())).branches.find(branch => branch.branch_id === created.branchId)!
+  expect(branch.draft.base_model_id).toBe('1')
+  expect(host.catalog.resolveGenerationModel).not.toHaveBeenCalled()
   expect((await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())).run_id).toBe(runId)
 })
 
@@ -642,12 +764,12 @@ async function undescribedCandidateFixture() {
   const host = await fixture(), { remote, runtime, service } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Unmapped candidate', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Initial rain' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Initial rain' }, signal())
   const source = await acceptRun(host, selected, 'experiment')
   await runtime.advance()
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'review', observation: 'Prepare failed', conclusion: 'Use candidate', run_ids: [source.runId] } }, { ...source.identity, callId: 'review' })
   const candidate = { ...source.task.input.generation_input, parameters: { positive: 'Candidate snow', negative: 'Candidate mist', seed: 31, opaque: { keep: true } } }
-  await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }] } }, { ...source.identity, callId: 'candidate' })
+  await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...source.identity, callId: 'candidate' })
   const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
   const runId = accepted.items[0]!.runId
   await runtime.advance()
@@ -663,10 +785,10 @@ it('retries and branches an undescribed later candidate without borrowing Task p
   const historical = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
   expect(historical.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null })
   const retried = await acceptRun(host, selected, 'retry', runId)
-  expect(retried.task.input).toMatchObject({ generation_input: candidate, prompt_input: { positive_prompt: null, negative_prompt: null }, context_refs: [{ kind: 'character', id: '8' }] })
+  expect(retried.task.input).toMatchObject({ generation_input: candidate, prompt_input: { positive_prompt: null, negative_prompt: null }, image_refs: [], workflow_image_bindings: [] })
   const created = await remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Raw candidate branch', original_request: 'Keep all candidate inputs' } }, signal())
   const branch = (await remote.getProjection(created, signal())).branches.find(branch => branch.branch_id === created.branchId)!
-  expect(branch).toMatchObject({ parent_branch_id: selected.branchId, source_run_id: runId, draft: { generation_input: candidate, prompt_input: { positive_prompt: null, negative_prompt: null }, context_refs: [{ kind: 'character', id: '8' }] } })
+  expect(branch).toMatchObject({ parent_branch_id: selected.branchId, source_run_id: runId, draft: { generation_input: candidate, prompt_input: { positive_prompt: null, negative_prompt: null }, image_refs: [], workflow_image_bindings: [] } })
   const copiedRun = await acceptRun(host, created)
   expect(copiedRun.task.input.generation_input).toEqual(candidate)
   expect(host.inspect).not.toHaveBeenCalled()
@@ -680,7 +802,7 @@ it.each(['positive_prompt', 'negative_prompt'] as const)('projects only an expli
   const { remote, service } = host
   const created = await remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Edit one slot', original_request: 'Keep untouched raw values' } }, signal())
   for (const value of ['Edited candidate prompt', '']) {
-    await remote.mutate({ ...created, type: 'update-draft', field: kind, value }, signal())
+    await saveFixtureDraft(remote, { ...created }, draft => { draft.prompt_input[kind as 'positive_prompt' | 'negative_prompt'] = value as never }, signal())
     const branch = (await remote.getProjection(created, signal())).branches.find(item => item.branch_id === created.branchId)!
     expect(branch.draft.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null, [kind]: value })
     expect(branch.draft.generation_input).toEqual(candidate)
@@ -705,7 +827,8 @@ it.each(['positive_prompt', 'negative_prompt'] as const)('applies an Agent Promp
   const result = await service.getTask({ taskId: task.task_id }, identity)
   expect(result.artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
   const branch = (await remote.getProjection(created, signal())).branches.find(item => item.branch_id === created.branchId)!
-  expect(branch.draft.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null, [kind]: '' })
+  expect(branch.editing_draft?.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null, [kind]: '' })
+  await saveFixtureDraft(remote, created, () => {}, signal())
   const submitted = await acceptRun(host, created)
   expect(submitted.task.input.generation_input).toEqual({ ...candidate, parameters: { ...candidate.parameters, [kind === 'positive_prompt' ? 'positive' : 'negative']: '' } })
 })
@@ -714,7 +837,7 @@ it('preserves edited unknown input when its canonical Prompt slot has no availab
   const { host, selected, runId } = await undescribedCandidateFixture()
   const { remote } = host
   const created = await remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Missing mapping', original_request: 'Keep my edit' } }, signal())
-  await remote.mutate({ ...created, type: 'update-draft', field: 'positive_prompt', value: 'Edited positive' }, signal())
+  await saveFixtureDraft(remote, { ...created }, draft => { draft.prompt_input.positive_prompt = 'Edited positive' }, signal())
   const before = await remote.getProjection(created, signal())
   host.inspect.mockResolvedValue({ parameters: [], size_candidates: [] })
   await expect(remote.mutate({ ...created, type: 'run' }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_PROMPT_PARAMETER_REQUIRED' } })
@@ -727,10 +850,10 @@ it('preserves null Prompt edits and rejects nontext values before changing the d
   const { host, selected, runId } = await undescribedCandidateFixture()
   const { remote } = host
   const created = await remote.mutate({ ...selected, type: 'create-branch', runId, value: { name: 'Nullable edit', original_request: 'Keep unknown distinct from empty' } }, signal())
-  await remote.mutate({ ...created, type: 'update-draft', field: 'positive_prompt', value: null }, signal())
+  await saveFixtureDraft(remote, { ...created }, draft => { draft.prompt_input.positive_prompt = null }, signal())
   const before = await remote.getProjection(created, signal())
   expect(before.branches.find(item => item.branch_id === created.branchId)!.draft.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null })
-  await expect(remote.mutate({ ...created, type: 'update-draft', field: 'negative_prompt', value: 123 }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT' } })
+  await expect(saveFixtureDraft(remote, { ...created }, draft => { draft.prompt_input.negative_prompt = 123 as never }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT' } })
   expect((await remote.getProjection(created, signal())).branches).toEqual(before.branches)
 })
 it('compiles an unmapped opaque candidate again through Run branch and raw retry without requiring an inspection', async () => {
@@ -760,11 +883,12 @@ it('compiles an unmapped opaque candidate again through Run branch and raw retry
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Opaque candidate history', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, selected)
   await remote.mutate({ ...selected, type: 'resource-remove', value: 'model' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   const initial = await acceptRun(host, selected, 'experiment')
   for (let phase = 0; phase < 3; phase += 1) await runtime.advance()
   await service.publish({ taskId: initial.task.task_id, artifact: { type: 'review', observation: 'First run failed', conclusion: 'Try opaque template', run_ids: [initial.runId] } }, { ...initial.identity, callId: 'review' })
   const candidate = { ...initial.task.input.generation_input, template_id: '6', parameters: { positive_prompt: 'Opaque candidate snow', sampler_name: { b: [2], a: 1 } } }
-  await service.publish({ taskId: initial.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }] } }, { ...initial.identity, callId: 'candidate' })
+  await service.publish({ taskId: initial.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...initial.identity, callId: 'candidate' })
   const accepted = await runtime.acceptGenerations(initial.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8' }) }], undefined, initial.task.task_id)
   const runId = accepted.items[0]!.runId
   for (let phase = 0; phase < 3; phase += 1) await runtime.advance()
@@ -778,7 +902,7 @@ it('compiles an unmapped opaque candidate again through Run branch and raw retry
   await runtime.advance()
   const after = await remote.getProjection({ workspaceId: selected.workspaceId, workId: selected.workId }, signal())
   for (const copied of [fromBranch, retry]) {
-    expect(copied.task.input).toMatchObject({ generation_input: candidate, prompt_input: { positive_prompt: null, negative_prompt: null }, context_refs: fixed.context_refs })
+    expect(copied.task.input).toMatchObject({ generation_input: candidate, prompt_input: { positive_prompt: null, negative_prompt: null }, image_refs: fixed.image_refs })
     expect(after.runs.find(run => run.run_id === copied.runId)).toMatchObject({ status: copied === fromBranch ? 'remote_pending' : 'prepared', generation_input: candidate })
     expect((await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId: copied.runId }, signal())).input_description).toBeNull()
   }
@@ -799,7 +923,7 @@ it('reuses an undescribed experience through the source Run branch with fixed ra
   const after = await remote.getProjection(reused, signal())
   expect(after.branches.find(branch => branch.branch_id === reused.branchId)).toMatchObject({
     name: 'Opaque recheck', original_request: 'Paint rain', parent_branch_id: selected.branchId, source_run_id: runId, source_experience_id: experience.experience_id,
-    draft: { parameter_mapping: null, base_model_id: '1', generation_input: candidate, context_refs: [{ kind: 'character', id: '8' }], prompt_input: { positive_prompt: null, negative_prompt: null } },
+    draft: { parameter_mapping: null, base_model_id: '1', generation_input: candidate, image_refs: [], workflow_image_bindings: [], prompt_input: { positive_prompt: null, negative_prompt: null } },
   })
   expect(host.inspect).not.toHaveBeenCalled()
   expect((await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())).generation_input).toEqual(candidate)

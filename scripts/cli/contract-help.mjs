@@ -1,3 +1,4 @@
+import descriptions from '../../config/workbench-tool-descriptions.json' with { type: 'json' }
 import { LORA_WEIGHT_ROLE, LORA_TRIGGER_WORDS_ROLE } from '../../src/generation/lora-contract.ts'
 import { JSON_VALUE_ROLE, JSON_OBJECT_ROLE, JSON_ARRAY_ROLE } from '../../src/shared/json-contract.ts'
 import { contractFields, fieldIsRequired } from '../../src/shared/field-contract.ts'
@@ -27,10 +28,15 @@ function typeName(schema) {
 function fields(schema, prefix = '', seen = new Map()) {
   if (schema.type === 'union' && schema.list.some(item => contractFields(item))) {
     const variants = schema.list.filter(item => contractFields(item))
-    return variants.flatMap(item => {
-      const selectors = Object.entries(item.dict).filter(([, field]) => field.type === 'const').map(([key, field]) => `${key}: ${typeName(field)}`)
-      return [...(variants.length > 1 ? [`${prefix} 分支（${selectors.join('，')}）：`] : []), ...fields(item, prefix, seen)]
-    })
+    const common = Object.entries(variants[0].dict).filter(([name, field]) => variants.every(item => item.dict[name] === field))
+    const sharedNames = new Set(common.map(([name]) => name))
+    return [
+      ...common.flatMap(([name, field]) => fieldLines(field, prefix ? `${prefix}.${name}` : name, seen)),
+      ...variants.flatMap(item => {
+        const selectors = Object.entries(item.dict).filter(([, field]) => field.type === 'const').map(([key, field]) => `${key}: ${typeName(field)}`)
+        return [...(variants.length > 1 ? [`${prefix} 分支（${selectors.join('，')}）：`] : []), ...Object.entries(item.dict).filter(([name]) => !sharedNames.has(name)).flatMap(([name, field]) => fieldLines(field, prefix ? `${prefix}.${name}` : name, seen))]
+      }),
+    ]
   }
   const properties = contractFields(schema)
   if (!properties) return []
@@ -76,10 +82,20 @@ function fieldLines(field, path, seen, element = false) {
   return [line, ...fields(field, path, seen)]
 }
 
+function businessGuidance(key) {
+  if (key === 'workbench task get') {
+    const declared = fields(cliResultSchemas[key])
+    return ['任务字段用途：', ...Object.entries(descriptions.fields).filter(([field]) => declared.some(line => line.startsWith(`${field}:`))).map(([field, description]) => `${field}：${description}`)]
+  }
+  if (key === 'workbench task publish') return ['产物提交要求：', ...descriptions.publish.steps, ...Object.entries(descriptions.publish.artifact_fields).map(([type, description]) => `${type}：${description}`)]
+  if (key === 'generation submit' || key === 'generation run-inputs') return ['图片字段用途：', ...['image_refs', 'workflow_image_bindings'].map(field => `${field}：${descriptions.fields[field]}`)]
+  return []
+}
+
 export function renderCommandContract(key) {
   if (key === '') return ['JSON value: null | string | finite number | boolean | JSON value[] | Record<string, JSON value>。']
   const input = cliInputSchemas[key]
   if (!input) return []
   const jobResult = cliJobResultSchemas[key]
-  return ['输入 JSON：', ...fields(input), '结果文件 JSON：', ...fields(cliResultSchemas[key]), ...(jobResult ? ['Job 完成结果 JSON（job_output 的 text）：', ...fields(jobResult)] : [])]
+  return [...businessGuidance(key), '输入 JSON：', ...fields(input), '结果文件 JSON：', ...fields(cliResultSchemas[key]), ...(jobResult ? ['Job 完成结果 JSON（job_output 的 text）：', ...fields(jobResult)] : [])]
 }

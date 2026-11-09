@@ -45,6 +45,9 @@
    | [agent-presets/workbench-composition.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/agent-presets/workbench-composition.mjs>) | 工作台原生上下文覆盖与工具限制的接入。 |
    | [agent-presets/noobai-mcp.cordis.yml](</Volumes/4Tdisk/work/AI2/harness-comfyui/agent-presets/noobai-mcp.cordis.yml>) | 工作台的 NoobAI MCP 服务配置。 |
    | [agent-presets/project-installed-presets.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/agent-presets/project-installed-presets.mjs>) | 已安装 Preset 资源入口。 |
+   | [agent-presets/harness-comfyui-translation/](../../agent-presets/harness-comfyui-translation/) | 翻译预设的模型与能力组合。 |
+   | [agent-presets/translation-preset.mjs](../../agent-presets/translation-preset.mjs) | 翻译预设身份的配置入口。 |
+   | [agent-presets/translation-composition.mjs](../../agent-presets/translation-composition.mjs) | 翻译会话的工具范围。 |
 
 2. 下表列出随插件交付的 8 个业务 Skill；执行入口为各目录的 `SKILL.md`。来源配置见[工作台装配配置](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/configuration.md#工作台装配配置>)。
 

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import sharp from 'sharp'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { Context } from '@deepseek-ai/cordis'
 import { expect, it, vi } from 'vitest'
 import { parseCatalogDetails } from '../../src/catalog/details-schema.ts'
@@ -5,12 +8,52 @@ import { WorkbenchRemoteService } from '../../src/host/workbench/remote-service.
 import { WORKBENCH_REMOTE } from '../../src/workbench-remote.ts'
 import { WorkbenchError } from '../../src/workbench/validation.ts'
 import { parseCliGenerationRequest, toGenerationRequest } from '../../src/cli/contract.ts'
-import type { WorkbenchProjection } from '../../src/workbench/contract.ts'
+import type { WorkbenchProjection, TaskDraft } from '../../src/workbench/contract.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
+
+it('imports image bytes and resolves each reference independently through the mounted Remote', async () => {
+  const host = await createWorkbenchHostFixture()
+  try {
+    const bytes = await sharp({ create: { width: 2, height: 2, channels: 3, background: '#abc' } }).png().toBuffer()
+    const imported = await host.remote.importImages({ files: [{ name: 'reference.png', media_type: 'image/png', bytes: Array.from(bytes) }] }, new AbortController().signal)
+    expect(imported.images).toEqual([{ image_ref_id: expect.any(String), source: { kind: 'uploaded_file', file_id: expect.any(String) }, purpose: 'workflow', reference_requirement: '' }])
+    const result = await host.remote.resolveImages({ image_refs: [...imported.images, { image_ref_id: 'missing', source: { kind: 'uploaded_file', file_id: 'missing-file' }, purpose: 'agent', reference_requirement: 'Inspect the missing source' }] }, new AbortController().signal)
+    expect(result.images[0]).toMatchObject({ image_ref_id: imported.images[0]!.image_ref_id, name: 'reference.png', file_path: expect.any(String), url: expect.any(String) })
+    expect(readFileSync(result.images[0]!.file_path!)).toEqual(bytes)
+    expect(result.images[1]).toMatchObject({ image_ref_id: 'missing', file_path: null, url: null, error: expect.any(String) })
+    await expect(host.remote.importImages({ files: [{ name: 'cancelled.png', media_type: 'image/png', bytes: Array.from(bytes) }] }, AbortSignal.abort())).rejects.toMatchObject({ name: 'AbortError' })
+  } finally { await host.dispose() }
+})
+
+it('starts, reads and cancels isolated translations through the mounted Remote', async () => {
+  const host = await createWorkbenchHostFixture()
+  try {
+    const signal = new AbortController().signal
+    const request = { request_id: 'translate-positive', workspace_id: 'workspace_1', source_text: '(light:1.2)\n<lora:portrait:0.7>' }
+    expect(await host.remote.translateStart(request, signal)).toEqual({ request_id: request.request_id, status: 'running' })
+    const created = await host.official.controller.create.mock.results.at(-1)!.value
+    const binding = host.store.getFunctionBinding('workspace_1', 'translate')
+    expect(host.official.controller.create).toHaveBeenLastCalledWith({ workspaceId: 'workspace_1', agentPreset: binding.preset_id })
+    expect(host.official.controller.selectModel).toHaveBeenLastCalledWith({ sessionId: created.sessionId, ...binding.agent_model })
+    expect(host.official.controller.prompt).toHaveBeenLastCalledWith(expect.objectContaining({ sessionId: created.sessionId, content: [{ type: 'text', text: expect.stringContaining(request.source_text) }] }), expect.any(AbortSignal))
+    host.official.events.set(created.sessionId, [
+      { type: 'assistant/message', data: { turn: 1, message: { content: [{ type: 'text', text: '(光线:1.2)\n<lora:portrait:0.7>' }] } } },
+      { type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+    ] as SessionEvent[])
+    expect(await host.remote.translateGet({ request_id: request.request_id }, signal)).toEqual({ request_id: request.request_id, status: 'succeeded', text: '(光线:1.2)\n<lora:portrait:0.7>' })
+    await host.remote.translateStart({ ...request, request_id: 'translate-cancelled', source_text: 'blur' }, signal)
+    const cancelled = await host.official.controller.create.mock.results.at(-1)!.value
+    expect(cancelled.sessionId).not.toBe(created.sessionId)
+    expect(await host.remote.translateCancel({ request_id: 'translate-cancelled' }, signal)).toMatchObject({ request_id: 'translate-cancelled', status: 'failed' })
+    expect(host.official.controller.cancel).toHaveBeenLastCalledWith({ sessionId: cancelled.sessionId })
+    await expect(host.remote.translateGet({ request_id: 'translate-cancelled' }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_TRANSLATION_NOT_FOUND' } })
+    expect(host.store.getProjection({ workspaceId: 'workspace_1' }).tasks).toEqual([])
+  } finally { await host.dispose() }
+})
 
 function projection(): WorkbenchProjection {
   return {
-    workspace_id: 'workspace_1', total_branch_count: 0, work_id: 'work_1', works: [], branches: [], tasks: [], artifacts: [], experiments: [], experiences: [], favorites: [], functions: [], refreshAfterMs: 777,
+    workspace_id: 'workspace_1', reference_destinations: [], total_branch_count: 0, work_id: 'work_1', works: [], branches: [], tasks: [], artifacts: [], experiments: [], experiences: [], favorites: [], functions: [], refreshAfterMs: 777,
     runs: [{
       run_id: 'run_1', session_id: 'session_1', workbench_task_id: 'task_1', iteration_index: 1, status: 'succeeded', title: 'Rain', created_at: 1, updated_at: 2,
       generation_input: { title: 'Rain', instance_id: '8', template_id: '5', model: null, parameters: {}, loras: [] },
@@ -81,7 +124,60 @@ function fixture() {
   return { remote: new WorkbenchRemoteService(context), initializeWorkspace, getProjection, environment }
 }
 
-it('describes the current Branch and reads historical Run input through its scoped saved-input method', async () => {
+it('validates record, image and translation request and result codecs by operation', () => {
+  const image = { image_ref_id: 'image-1', source: { kind: 'uploaded_file', file_id: 'file-1' }, purpose: 'workflow', reference_requirement: '' }
+  const cases = [
+    { method: 'queryRecords', request: { type: 'run', workspaceId: 'workspace_1', keyword: 'Rain' }, result: [{ type: 'run', id: 'run_1', workspace_id: 'workspace_1', work_id: 'work_1', branch_id: 'branch_1', task_id: null, title: 'Rain', run: projection().runs[0] }], badRequest: { type: 'image' }, badResult: [{}] },
+    { method: 'importImages', request: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [0, 255] }] }, result: { images: [image] }, badRequest: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [256] }] }, badResult: { images: [{ ...image, purpose: 'unknown' }] } },
+    { method: 'resolveImages', request: { image_refs: [image] }, result: { images: [{ image_ref_id: 'image-1', file_path: '/images/reference.png', name: 'reference.png', url: '/api/reference.png' }] }, badRequest: { image_refs: [{ ...image, source: { kind: 'uploaded_file' } }] }, badResult: { images: [{ image_ref_id: 'image-1', file_path: 7 }] } },
+    { method: 'translateStart', request: { request_id: 'translation-1', workspace_id: 'workspace_1', source_text: '(warm light:1.2)' }, result: { request_id: 'translation-1', status: 'running' }, badRequest: { request_id: 'translation-1', workspace_id: 'workspace_1', source_text: '' }, badResult: { request_id: 'translation-1', status: 'unknown' } },
+    { method: 'translateGet', request: { request_id: 'translation-1' }, result: { request_id: 'translation-1', status: 'succeeded', text: '（暖光：1.2）' }, badRequest: {}, badResult: { request_id: 'translation-1', status: 'succeeded', text: 7 } },
+    { method: 'translateCancel', request: { request_id: 'translation-1' }, result: { request_id: 'translation-1', status: 'failed', error: 'Translation was cancelled.' }, badRequest: { request_id: '' }, badResult: { request_id: 'translation-1', status: 'failed', error: 7 } },
+  ]
+  for (const item of cases) {
+    const descriptor = WORKBENCH_REMOTE.descriptors.find(value => value.method === item.method)!
+    const request = descriptor.parameters[0]!.codec.create(), result = descriptor.result.create()
+    expect(request.parse(JSON.parse(JSON.stringify(item.request)))).toEqual(item.request)
+    expect(result.parse(JSON.parse(JSON.stringify(item.result)))).toEqual(item.result)
+    expect(() => request.parse(item.badRequest), item.method).toThrow()
+    expect(() => result.parse(item.badResult), item.method).toThrow()
+    expect(() => request.parse({ ...item.request, extra: true }), item.method).toThrow()
+  }
+})
+
+async function saveDraft(
+  remote: WorkbenchRemoteService,
+  scope: { workspaceId: string; workId: string; branchId: string },
+  update: (draft: TaskDraft) => void,
+  signal: AbortSignal,
+) {
+  const branch = (await remote.getProjection(scope, signal)).branches.find(item => item.branch_id === scope.branchId)!
+  const draft = structuredClone(branch.editing_draft ?? branch.draft)
+  update(draft)
+  await remote.mutate({ ...scope, type: 'save-draft', value: { expected: branch.draft, expectedEditingDraft: branch.editing_draft, draft } }, signal)
+}
+
+it('requires the editor snapshot and validates the accepted editor receipt', () => {
+  const descriptor = WORKBENCH_REMOTE.descriptors.find(item => item.method === 'mutate')!
+  const request = descriptor.parameters[0].codec.create(), result = descriptor.result.create()
+  const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
+  const cancel = { ...scope, type: 'edit-draft', value: { expected: null, draft: null } }
+  expect(request.parse(cancel)).toMatchObject(cancel)
+  expect(() => request.parse({ ...cancel, value: { draft: null } })).toThrow()
+  expect(result.parse({ ...scope, editingDraft: null })).toEqual({ ...scope, editingDraft: null })
+  expect(() => result.parse({ ...scope, editingDraft: { broken: true } })).toThrow()
+})
+async function selectResource(
+  remote: WorkbenchRemoteService,
+  scope: { workspaceId: string; workId: string; branchId: string },
+  value: { kind: string; id: string },
+  signal: AbortSignal,
+) {
+  await remote.mutate({ ...scope, type: 'resource-select', value }, signal)
+  await saveDraft(remote, scope, () => {}, signal)
+}
+
+it('describes a Branch and reads referenced Run inputs across Workspaces by Run ID', async () => {
   const host = await createWorkbenchHostFixture()
   try {
     const { remote, inspect, description, runtime } = host
@@ -90,17 +186,17 @@ it('describes the current Branch and reads historical Run input through its scop
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
     expect(await remote.getInputDescription(scope, signal)).toBeNull()
     expect(inspect).not.toHaveBeenCalled()
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
+    await saveDraft(remote, scope, draft => { draft.generation_input.instance_id = '8' }, signal)
+    await selectResource(remote, scope, { kind: 'model', id: '2' }, signal)
+    await selectResource(remote, scope, { kind: 'comfyui-template', id: '5' }, signal)
     expect(await remote.getInputDescription(scope, signal)).toEqual(description)
     expect(inspect).toHaveBeenLastCalledWith({ templateId: '5', instanceId: '8' }, signal)
     await remote.mutate({ ...scope, type: 'run' }, signal)
     const task = (await remote.getProjection(scope, signal)).tasks[0]!
     const accepted = await runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'accepted' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
     const runId = accepted.items[0]!.runId
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '9' }, signal)
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal)
+    await saveDraft(remote, scope, draft => { draft.generation_input.instance_id = '9' }, signal)
+    await selectResource(remote, scope, { kind: 'comfyui-template', id: '6' }, signal)
     inspect.mockClear()
     const runScope = { workspaceId: scope.workspaceId, workId: scope.workId, runId }
     expect(await remote.getRunInput(runScope, signal)).toMatchObject({ run_id: runId, generation_input: task.input.generation_input, input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } })
@@ -108,9 +204,9 @@ it('describes the current Branch and reads historical Run input through its scop
     expect(await remote.getInputDescription(scope, signal)).toEqual(description)
     expect(inspect).toHaveBeenLastCalledWith({ templateId: '6', instanceId: '9' }, signal)
     inspect.mockClear()
-    await expect(remote.getRunInput({ ...runScope, workspaceId: 'workspace_2' }, signal)).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
-    const other = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Other', goal: 'Paint clouds' } }, signal)
-    await expect(remote.getRunInput({ workspaceId: other.workspaceId, workId: other.workId!, runId }, signal)).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+    await expect(remote.getRunInput({ ...runScope, workspaceId: 'workspace_2' }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
+    const other = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_2', value: { name: 'Other', goal: 'Paint clouds' } }, signal)
+    await expect(remote.getRunInput({ workspaceId: other.workspaceId, workId: other.workId!, runId }, signal)).resolves.toMatchObject({ run_id: runId, branch_id: scope.branchId })
     await expect(remote.getInputDescription(scope, AbortSignal.abort())).rejects.toMatchObject({ name: 'AbortError' })
     expect(inspect).not.toHaveBeenCalled()
   } finally { await host.dispose() }
@@ -124,17 +220,20 @@ it('changes the model without removing selected resources or changing other inpu
     const signal = new AbortController().signal
     const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
-    for (const ref of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }, { kind: 'style', id: '7' }, { kind: 'character', id: '8' }]) {
-      await remote.mutate({ ...scope, type: 'resource-select', value: ref }, signal)
+    await saveDraft(remote, scope, draft => { draft.generation_input.instance_id = '8' }, signal)
+    for (const ref of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }]) {
+      await selectResource(remote, scope, ref, signal)
     }
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference', value: '/reference.png' }, signal)
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Latest prompt' }, signal)
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'lora-weight', id: '4', value: 1.2 }, signal)
+    await saveDraft(remote, scope, draft => {
+      draft.image_refs = [{ image_ref_id: 'image-reference', source: { kind: 'uploaded_file', file_id: 'file-reference' }, purpose: 'both', reference_requirement: 'Retain the composition' }]
+      draft.workflow_image_bindings = [{ parameter_id: 'reference', image_ref_ids: ['image-reference'] }]
+    }, signal)
+    await saveDraft(remote, scope, draft => { draft.prompt_input.positive_prompt = 'Latest prompt' }, signal)
+    await saveDraft(remote, scope, draft => { draft.generation_input.loras.find(lora => lora.id === '4')!.weight = 1.2 }, signal)
     restrictSelectedResources(catalog, '4')
     catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: id === '9' ? 'other.safetensors' : 'paint.safetensors', base_model_id: id === '9' ? '9' : '1' }))
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '9' } }, signal)
+    await selectResource(remote, scope, { kind: 'model', id: '9' }, signal)
     const after = (await remote.getProjection(scope, signal)).branches[0]!.draft
     expect(after).toEqual({
       ...before, base_model_id: '9',
@@ -144,10 +243,11 @@ it('changes the model without removing selected resources or changing other inpu
     const started = await remote.mutate({ ...scope, type: 'run' }, signal)
     const task = (await remote.getProjection(scope, signal)).tasks.find(item => item.task_id === started.taskId)!
     const expectedInput = { ...after.generation_input, parameters: { ...after.generation_input.parameters, positive: 'Latest prompt', negative: '' } }
-    expect(task.input).toMatchObject({ generation_input: expectedInput, context_refs: after.context_refs, base_model_id: '9' })
-    const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'mixed-model-run' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+    expect(task.input).toMatchObject({ generation_input: expectedInput, image_refs: after.image_refs, workflow_image_bindings: after.workflow_image_bindings, base_model_id: '9' })
+    const expectedSubmission = { ...expectedInput, image_refs: after.image_refs, workflow_image_bindings: after.workflow_image_bindings }
+    const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'mixed-model-run' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(expectedSubmission)) }], signal, task.task_id)
     const projection = await remote.getProjection(scope, signal)
-    expect(projection.runs.find(run => run.run_id === accepted.items[0]!.runId)?.generation_input).toEqual(expectedInput)
+    expect(projection.runs.find(run => run.run_id === accepted.items[0]!.runId)?.generation_input).toEqual(expectedSubmission)
   } finally { await host.dispose() }
 })
 
@@ -159,13 +259,16 @@ it('retains template parameters and LoRAs without scanning Catalog pages', async
     const signal = new AbortController().signal
     const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
-    for (const ref of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }]) await remote.mutate({ ...scope, type: 'resource-select', value: ref }, signal)
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'seed', value: 77 }, signal)
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'parameter', id: 'reference', value: '/reference.png' }, signal)
+    await saveDraft(remote, scope, draft => { draft.generation_input.instance_id = '8' }, signal)
+    for (const ref of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }]) await selectResource(remote, scope, ref, signal)
+    await saveDraft(remote, scope, draft => { draft.generation_input.parameters.seed = 77 }, signal)
+    await saveDraft(remote, scope, draft => {
+      draft.image_refs = [{ image_ref_id: 'image-reference', source: { kind: 'uploaded_file', file_id: 'file-reference' }, purpose: 'both', reference_requirement: 'Retain the composition' }]
+      draft.workflow_image_bindings = [{ parameter_id: 'reference', image_ref_ids: ['image-reference'] }]
+    }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
 
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '9' } }, signal)
+    await selectResource(remote, scope, { kind: 'model', id: '9' }, signal)
     const after = (await remote.getProjection(scope, signal)).branches[0]!.draft
     expect(after).toEqual({ ...before, generation_input: { ...before.generation_input, model: { id: '9', file_name: 'paint.safetensors' } } })
     expect((await remote.getInputDescription(scope, signal))?.parameters.some(parameter => parameter.kind === 'seed')).toBe(true)
@@ -181,8 +284,8 @@ it('keeps a concurrent draft edit while the replacement model is being resolved'
     const signal = new AbortController().signal
     const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal)
+    await selectResource(remote, scope, { kind: 'model', id: '2' }, signal)
+    await selectResource(remote, scope, { kind: 'comfyui-template', id: '5' }, signal)
     let started!: () => void, release!: () => void
     const reading = new Promise<void>(resolve => { started = resolve })
     const resume = new Promise<void>(resolve => { release = resolve })
@@ -190,7 +293,7 @@ it('keeps a concurrent draft edit while the replacement model is being resolved'
     catalog.resolveGenerationModel.mockImplementationOnce(async id => { started(); await resume; return read(id) })
     const pending = remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '9' } }, signal)
     await reading
-    await remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Concurrent prompt' }, signal)
+    await saveDraft(remote, scope, draft => { draft.prompt_input.positive_prompt = 'Concurrent prompt' }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
     release()
 
@@ -207,8 +310,8 @@ it('rejects an unavailable replacement model before saving any draft change', as
     const signal = new AbortController().signal
     const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal)
     const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
-    await remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal)
+    await selectResource(remote, scope, { kind: 'model', id: '2' }, signal)
+    await selectResource(remote, scope, { kind: 'lora', id: '3' }, signal)
     const before = (await remote.getProjection(scope, signal)).branches[0]!.draft
     catalog.resolveGenerationModel.mockRejectedValueOnce(new Error('Source unavailable'))
     await expect(remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '9' } }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
@@ -259,17 +362,13 @@ it('stops already cancelled calls and cancels a projection completed after the c
   await expect(remote.getProjection(request, controller.signal)).rejects.toMatchObject({ name: 'AbortError' })
 })
 
-it('requires the edited branch field and its original string in update requests', () => {
+it('accepts complete saved-draft snapshots and rejects retired field update actions', () => {
   const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
-  for (const field of ['name', 'original_request']) {
-    const request = { ...scope, type: 'update-branch', field, value: 'Edited text', expectedValue: '  Original text\nSecond line  ' }
-    expect(codec.parse(request)).toMatchObject(request)
-    expect(() => codec.parse({ ...scope, type: 'update-branch', field, value: 'Edited text' })).toThrow()
-    for (const expectedValue of [undefined, null, 7]) expect(() => codec.parse({ ...request, expectedValue })).toThrow()
-  }
-  for (const field of [undefined, 'goal']) expect(() => codec.parse({ ...scope, type: 'update-branch', field, value: 'Edited text', expectedValue: 'Original text' })).toThrow()
-  expect(codec.parse({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'Rain' })).toMatchObject({ type: 'update-draft' })
+  const draft = { parameter_mapping: null, generation_input: projection().runs[0]!.generation_input, prompt_input: { positive_prompt: '', negative_prompt: '' }, image_refs: [], workflow_image_bindings: [], reference_task_ids: [], reference_run_ids: [], reference_experiences: [], instructions: '', base_model_id: null }
+  const value = { expected: draft, expectedEditingDraft: null, draft, name: 'Edited branch', expectedName: 'Original branch', originalRequest: 'Edited request', expectedOriginalRequest: 'Original request' }
+  expect(codec.parse({ ...scope, type: 'save-draft', value })).toMatchObject({ value })
+  for (const type of ['update-branch', 'update-draft']) expect(() => codec.parse({ ...scope, type, field: 'name', value: 'Edited branch', expectedValue: 'Original branch' })).toThrow()
 })
 
 it('requires complete review updates and generation adoption snapshots through the Remote codec', () => {
@@ -283,7 +382,7 @@ it('requires complete review updates and generation adoption snapshots through t
     expect(() => codec.parse({ ...scope, type: 'update-review-draft', runId: 'run_1', value })).toThrow()
     expect(() => codec.parse({ ...scope, type: 'agent-action', id: 'review', runId: 'run_1', value: { evaluationDraft: value } })).toThrow()
   }
-  const expected = { parameter_mapping: null, generation_input: { title: 'Rain', instance_id: '8', template_id: '5', model: null, parameters: {}, loras: [] }, prompt_input: { positive_prompt: null, negative_prompt: null }, context_refs: [], base_model_id: null }
+  const expected = { parameter_mapping: null, generation_input: { title: 'Rain', instance_id: '8', template_id: '5', model: null, parameters: {}, loras: [] }, prompt_input: { positive_prompt: null, negative_prompt: null }, image_refs: [], workflow_image_bindings: [], base_model_id: null }
   expect(codec.parse({ ...scope, type: 'task-generation-apply', id: 'artifact_1', value: expected })).toMatchObject({ value: expected })
   expect(() => codec.parse({ ...scope, type: 'task-generation-apply', value: expected })).toThrow()
   expect(() => codec.parse({ ...scope, type: 'task-generation-apply', id: 'artifact_1', value: { generation_input: expected.generation_input } })).toThrow()
@@ -306,6 +405,7 @@ it('validates each RPC request from JSON with exact field names and identifier c
 it('round trips a complete projection through the declared result codec and rejects non-object results', () => {
   for (const descriptor of WORKBENCH_REMOTE.descriptors) {
     const codec = descriptor.result.create()
+    if (['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel'].includes(descriptor.method)) continue
     if (descriptor.method === 'getTaskDraft' || descriptor.method === 'saveTaskDraft') {
       const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
       expect(codec.parse(draft)).toEqual(draft)
@@ -315,7 +415,7 @@ it('round trips a complete projection through the declared result codec and reje
       continue
     }
     if (descriptor.method === 'getRunInput') {
-      const input = { run_id: 'run_1', branch_id: 'branch_1', generation_input: projection().runs[0]!.generation_input, context_refs: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } }
+      const input = { run_id: 'run_1', branch_id: 'branch_1', generation_input: projection().runs[0]!.generation_input, submitted_input: projection().runs[0]!.generation_input, effective_input: null, image_uploads: [], parameter_mapping: null, base_model_id: null, image_refs: [], workflow_image_bindings: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } }
       expect(codec.parse(input)).toEqual(input)
       continue
     }
@@ -348,7 +448,7 @@ it('validates the historical Run request and nullable saved-input result through
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', runId: 'run_1' }
   expect(request.parse(scope)).toEqual(scope)
   for (const value of [{ ...scope, runId: '' }, { ...scope, workId: undefined }, { ...scope, branchId: 'current_branch' }]) expect(() => request.parse(value)).toThrow()
-  const input = { run_id: 'run_1', branch_id: 'branch_1', generation_input: projection().runs[0]!.generation_input, context_refs: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } }
+  const input = { run_id: 'run_1', branch_id: 'branch_1', generation_input: projection().runs[0]!.generation_input, submitted_input: projection().runs[0]!.generation_input, effective_input: null, image_uploads: [], parameter_mapping: null, base_model_id: null, image_refs: [], workflow_image_bindings: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } }
   expect(result.parse(input)).toEqual(input)
   for (const value of [{}, { ...input, generation_input: null }, { ...input, input_description: [] }, { ...input, prompt_input: { positive_prompt: 1 } }, { ...input, extra: true }]) expect(() => result.parse(value)).toThrow()
 })

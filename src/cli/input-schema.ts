@@ -35,6 +35,8 @@ export const cliLoraSchema = cliInputObject({
   weight: loraWeightSchema,
   trigger_words: cliLoraTriggerWordsSchema,
 }).required() satisfies Schema<any, CliGenerationLora>
+import { imageRefSchema, workflowImageBindingSchema } from '../workbench/schema.ts'
+
 export const cliGenerationRequestSchema = cliInputObject({
   title: cliTextSchema,
   instance_id: cliStableIdSchema,
@@ -42,6 +44,8 @@ export const cliGenerationRequestSchema = cliInputObject({
   model: requiredNullable(cliModelSchema),
   parameters: cliParametersSchema,
   loras: Schema.array(cliLoraSchema).max(100).required(),
+  image_refs: Schema.array(imageRefSchema).default(undefined as never),
+  workflow_image_bindings: Schema.array(workflowImageBindingSchema).default(undefined as never),
 }).required() satisfies Schema<any, CliGenerationRequest>
 export const cliSubmissionItemSchema = cliInputObject({
   request_id: Schema.string().pattern(GENERATION_REQUEST_ID).required(),

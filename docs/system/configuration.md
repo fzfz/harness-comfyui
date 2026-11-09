@@ -100,6 +100,10 @@
 
 5. 包内资源范围由 [config/plugin-package.json](../../config/plugin-package.json) 定义。开发验收时，Profile patch 可将 `bundledSkillDir` 指向候选 checkout 的业务 Skill 目录。
 
+6. [src/workbench/functions.json](../../src/workbench/functions.json)定义功能及默认执行要求。用户在实验工作台配置中心保存各功能的预设、模型与执行要求；任务创建时固定本次执行配置。
+
+7. [config/workbench-translation.json](../../config/workbench-translation.json)定义翻译预设的 ID、名称与默认模型。[翻译组合](../../agent-presets/translation-composition.mjs)限定工具范围，[翻译预设](../../agent-presets/harness-comfyui-translation/agent.cordis.yml)配置独立 Skill 服务。模型必须由当前 Profile 的 Provider 配置提供。
+
 ## 图片读取设置
 
 1. Host 使用当前官方 Profile 的 `harness-comfyui-image-reader` 条目保存图片读取设置。用户在 Client 的“图片读取”设置页管理配置；持久化字段如下。

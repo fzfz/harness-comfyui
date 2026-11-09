@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { Branch, FunctionBinding, TaskRequestDraft } from '../../workbench/contract.ts'
 import { catalogPageCount, type CatalogItem } from '../../catalog/contract.ts'
 import type { CatalogApi } from './catalog-browser.tsx'
@@ -6,12 +6,14 @@ import { Button, trapDialogFocus } from './experiment-controls.tsx'
 import type { TaskRequestEditor } from './experiment-task-request.ts'
 import options from './experiment-input-options.json' with { type: 'json' }
 
-export function ExperimentTaskRequestDialog({ editor, binding, branch, presetName, modelName, catalog, instances, onClose, onSubmit }: {
+export function ExperimentTaskRequestDialog({ editor, binding, branch, currentTemplateLabel, presetName, modelName, references, catalog, instances, onClose, onSubmit }: {
   readonly editor: TaskRequestEditor
   readonly binding: FunctionBinding
   readonly branch: Branch
+  readonly currentTemplateLabel?: string
   readonly presetName: string
   readonly modelName: string
+  readonly references?: ReactNode
   readonly catalog: CatalogApi | undefined
   readonly instances: readonly { readonly id: string; readonly name: string }[]
   readonly onClose: () => void
@@ -75,12 +77,13 @@ export function ExperimentTaskRequestDialog({ editor, binding, branch, presetNam
       <p>{labels.preset}{presetName}</p><p>{labels.model}{modelName}</p>
       <label className="field"><span>{labels.instructions}</span><textarea id="task-instruction" aria-label={labels.instructions} required disabled={state.loading} value={state.draft.instructions}
         onChange={event => editor.change({ ...state.draft, instructions: event.target.value })} /></label>
+      {references}
       {parameters && <>
         <label className="field"><span>{labels.instance}</span><select id="task-instance" aria-label={labels.instanceInput} disabled={state.loading} value={selectedResource(state.draft, 'instance_id')} onChange={event => selectResource('instance_id', event.target.value)}>
           <option value="">{labels.select}</option>{instances.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select></label>
         <label className="field"><span>{labels.template}</span><select id="task-template" aria-label={labels.templateInput} disabled={state.loading} value={selectedResource(state.draft, 'template_id')} onChange={event => selectResource('template_id', event.target.value)}>
-          <option value="">{labels.select}</option>{templates.map(item => <option key={item.context.id} value={item.context.id}>{item.label}</option>)}
+          <option value="">{labels.select}</option>{selectedResource(state.draft, 'template_id') && !templates.some(item => item.context.id === selectedResource(state.draft, 'template_id')) && <option value={selectedResource(state.draft, 'template_id')}>{currentTemplateLabel || selectedResource(state.draft, 'template_id')}</option>}{templates.map(item => <option key={item.context.id} value={item.context.id}>{item.label}</option>)}
         </select></label>
       </>}
       <p id="task-error" role="alert" className="binding-problem">{error || state.error || catalogError}</p>

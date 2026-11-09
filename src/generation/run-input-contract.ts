@@ -1,4 +1,7 @@
 import Schema from '@deepseek-ai/schemastery'
+import { imageRefSchema, imageUploadSchema, workflowImageBindingSchema } from '../workbench/schema.ts'
+import type { ImageRef, WorkflowImageBinding } from '../workbench/contract.ts'
+import type { GenerationImageUpload } from './submission-contract.ts'
 import { loraWeightSchema } from './lora-contract.ts'
 import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import type { JsonValue } from '../shared/json-contract.ts'
@@ -32,6 +35,8 @@ export interface GenerationRunInputModel {
 }
 
 export interface GenerationRunInputArguments {
+  readonly image_refs?: readonly ImageRef[]
+  readonly workflow_image_bindings?: readonly WorkflowImageBinding[]
   readonly title: string
   readonly instance_id?: string
   readonly template_id: string
@@ -41,6 +46,10 @@ export interface GenerationRunInputArguments {
 }
 
 interface AvailableGenerationRunInputBase {
+  readonly workspace_id: string
+  readonly submitted_input: GenerationRunInputArguments
+  readonly effective_input: GenerationRunInputArguments | null
+  readonly image_uploads: readonly GenerationImageUpload[]
   readonly run_id: string
   readonly lookup_status: 'available'
   readonly arguments: GenerationRunInputArguments
@@ -80,6 +89,7 @@ export const generationRunInputLoraSchema = Schema.object({
   trigger_words: Schema.array(Schema.string().required()).required(),
 }).required()
 export const generationRunInputArgumentsSchema = contractObject({
+  image_refs: Schema.array(imageRefSchema), workflow_image_bindings: Schema.array(workflowImageBindingSchema),
   title: Schema.string().required(), instance_id: Schema.string(), template_id: Schema.string().required(),
   model: generationRunInputModelSchema,
   parameters: generationParametersSchema,
@@ -88,6 +98,9 @@ export const generationRunInputArgumentsSchema = contractObject({
 const availableRunInput = {
   run_id: Schema.string().required(), lookup_status: Schema.const('available').required(),
   arguments: generationRunInputArgumentsSchema,
+  workspace_id: Schema.string().required(), submitted_input: generationRunInputArgumentsSchema,
+  effective_input: requiredNullable(generationRunInputArgumentsSchema),
+  image_uploads: Schema.array(imageUploadSchema).required(),
   input_description: requiredNullable(workflowRuntimeParameterInspectionSchema),
 }
 export const generationRunLookupErrorSchema = Schema.object({

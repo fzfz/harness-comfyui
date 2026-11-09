@@ -2,9 +2,13 @@ import { createTestCredentialProvider } from '../support/credential-provider.ts'
 import { provideWorkbenchOfficialServices } from '../support/workbench-host.ts'
 import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { createServer } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import sharp from 'sharp'
+import { SourceGenerationPreparer, type UiWorkflow } from '../../src/host/generation/source-preparer.ts'
+import { ComfyWorkflowCompiler } from '../../src/host/generation/workflow-compiler.ts'
 import { Context } from '@deepseek-ai/cordis'
 import { SettingsForms, type SettingsPathOp } from '@deepseek-ai/dsh-settings'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
@@ -146,6 +150,63 @@ function provideHostServices(ctx: Context) {
   }
 }
 
+it('prepares an imported Workflow image through the mounted Core image resolver and upload transport', async () => {
+  stubTestProfileEnvironment()
+  const bytes = await sharp({ create: { width: 2, height: 2, channels: 3, background: '#abc' } }).png().toBuffer()
+  const uploaded: string[] = []
+  const fetchImplementation: typeof fetch = async (url, init) => {
+    if (String(url).endsWith('/upload/image')) {
+      const image = (init!.body as FormData).get('image') as File
+      expect(new Uint8Array(await image.arrayBuffer())).toEqual(new Uint8Array(bytes))
+      uploaded.push(image.name)
+      return new Response(JSON.stringify({ name: 'uploaded-reference.png', subfolder: 'workbench', type: 'input' }))
+    }
+    if (String(url).endsWith('/object_info')) return new Response(JSON.stringify({
+      LoadImage: { input: { required: { image: [['template-default.png', 'workbench/uploaded-reference.png'], { image_upload: true }] } }, input_order: { required: ['image'], optional: [] }, output_node: false },
+      SaveImage: { input: { required: { images: ['IMAGE'], filename_prefix: ['STRING', {}] } }, input_order: { required: ['images', 'filename_prefix'], optional: [] }, output_node: true },
+    }))
+    throw new Error('Unexpected image preparation URL: ' + String(url))
+  }
+  vi.stubGlobal('fetch', fetchImplementation)
+  const sourceServer = createServer((request, response) => {
+    response.setHeader('content-type', 'application/json')
+    response.end(JSON.stringify(request.url === '/internal/comfyui-source' ? { openapi: '3.1.0', paths: {} }
+      : { status: 'ok', message: null, results: [{ id: 8, title: 'Target', url: 'http://comfy.test', credential_type: 'none' }], page: 1, page_size: 1, total_count: 1 }))
+  })
+  await new Promise<void>(resolve => sourceServer.listen(0, '127.0.0.1', resolve))
+  const address = sourceServer.address()
+  if (!address || typeof address === 'string') throw new Error('Test source has no port')
+  const ctx = new Context()
+  provideHostServices(ctx)
+  try {
+    const core = await import('../../src/host/core/plugin.ts')
+    await ctx.plugin(core, { configurationProfile: 'production', configuration: { url: 'http://127.0.0.1', port: address.port } })
+    const { inputFiles, images } = ctx.harnessComfyuiCore.services
+    const file = await inputFiles.importFile({ name: 'reference.png', media_type: 'image/png', bytes })
+    const workflow: UiWorkflow = { version: 0.4, nodes: [
+      { id: 1, type: 'LoadImage', mode: 0, inputs: [], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }], widgets_values: ['template-default.png'] },
+      { id: 2, type: 'SaveImage', mode: 0, inputs: [{ name: 'images', type: 'IMAGE', link: 1 }], outputs: [], widgets_values: ['result'] },
+    ], links: [[1, 1, 0, 2, 0, 'IMAGE']] }
+    const compiler = new ComfyWorkflowCompiler({ fetchImplementation, officialApiWorkflowCompiler: { compile: async input => ({ apiWorkflow: input.runtimeProjection, cacheKey: 'core-image-service', cacheStatus: 'miss' }) } })
+    const preparer = new SourceGenerationPreparer({ defaultInstanceId: '8', compiler, images, source: {
+      readInstance: async id => ({ id, title: 'Target', url: 'http://comfy.test', credentialType: 'none', authorization: null }),
+      readTemplate: async id => ({ id, title: 'Image template', workflow }),
+    } })
+    const result = await preparer.prepare({ title: 'Core image preparation', instanceId: '8', templateId: '5', model: null, loras: [], parameters: {},
+      imageRefs: [{ image_ref_id: 'imported', source: { kind: 'uploaded_file', file_id: file.file_id }, purpose: 'workflow', reference_requirement: '' }], workflowImageBindings: [{ parameter_id: 'reference_image', image_ref_ids: ['imported'] }],
+    })
+    expect(uploaded).toHaveLength(1)
+    expect(result.effectiveInput?.parameters).toEqual({ reference_image: 'workbench/uploaded-reference.png' })
+    expect(result.apiWorkflow['1']).toMatchObject({ class_type: 'LoadImage', inputs: { image: 'workbench/uploaded-reference.png' } })
+    expect(result.imageUploads).toMatchObject([{ image_ref_id: 'imported', instance_id: '8', name: 'uploaded-reference.png', subfolder: 'workbench' }])
+  } finally {
+    await ctx.fiber.dispose()
+    vi.unstubAllGlobals()
+    sourceServer.closeAllConnections()
+    await new Promise<void>(resolve => sourceServer.close(() => resolve()))
+  }
+})
+
 it('associates accepted Runs with Workbench tasks through the mounted Core transaction', async () => {
   stubTestProfileEnvironment()
   const core = await import('../../src/host/core/plugin.ts')
@@ -160,12 +221,12 @@ it('associates accepted Runs with Workbench tasks through the mounted Core trans
         parameter_mapping: null,
         prompt_input: { positive_prompt: 'rain on glass', negative_prompt: '' },
         generation_input: { title: 'Core task association', instance_id: '8', template_id: '5', model: null, parameters: { positive: 'rain on glass', seed: 17 }, loras: [] },
-        context_refs: [], base_model_id: null,
+        base_model_id: null, instructions: '', reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [],
       },
     })
     const task = store.createTask({
       branchId: branch.branch_id, functionId: 'run', title: 'Run the source input', kind: 'run',
-      input: { ...branch.draft, requirements: { original_request: branch.original_request, instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 1 },
+      input: { ...branch.draft, reference_task_artifacts: [], requirements: { original_request: branch.original_request, instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 1 },
       outputContract: WORKBENCH_FUNCTIONS.find(descriptor => descriptor.kind === 'run')!.output_contract,
       applyTarget: { kind: 'branch', id: branch.branch_id, expected: {} },
       bindingSnapshot: { function_id: 'run', name: 'Run', kind: 'run', preset_id: 'preset-a', agentModel: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read task {{task_id}}' },

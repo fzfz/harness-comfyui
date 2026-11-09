@@ -23,7 +23,7 @@
 
 ## 项目 Preset、Skills 与目录访问
 
-1. 项目预设由 [Preset registry](../../agent-presets/presets.cordis.yml) 注册。用户通过官方会话界面选择 ComfyUI工作台预设；官方内置 Preset 由宿主管理。
+1. 项目预设由 [Preset registry](../../agent-presets/presets.cordis.yml) 注册，包括 ComfyUI工作台预设与翻译预设；官方内置 Preset 由宿主管理。
 
 2. ComfyUI工作台预设通过[共享组合](../../agent-presets/shared/agent.cordis.yml)加载 NoobAI MCP、前台 shell、会话目录、Skill 访问和 compaction。[工作台配置](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml)定义绘图任务目标与 MCP、CLI、Skill 的分工，并装配官方子 Agent 组件。
 
@@ -45,7 +45,7 @@
 
 3. 宿主 `workingDirectory` 服务管理当前工作目录，并向模型提供目录上下文。官方 `working_directory` 工具读取或切换会话目录。Shell 使用当前工作目录执行命令和解释相对文件路径；shell 的 `workdir` 参数只覆盖单次命令的执行位置。
 
-4. CLI route 通过 [resolveGenerationWorkspaceId()](../../src/host/generation/workspace-access.ts) 按原始项目目录取得已有 Workspace。Session、Turn 与 Tool Call 身份来自宿主执行上下文。未分组子会话可使用同一业务入口；当前工作目录变化后，Run 仍归属原始项目。原始项目目录尚未注册时，业务接口提示用户通过官方入口选择或创建 Workspace。调用身份入口为 [CLI route](../../src/host/cli/route.ts)。
+4. [CLI route](../../src/host/cli/route.ts)从宿主执行上下文取得 Session、Turn 与 Tool Call 身份。[dispatch()](../../src/host/cli/dispatch.ts)按任务 ID 定位工作台请求；普通生成请求通过 [resolveGenerationWorkspaceId()](../../src/host/generation/workspace-access.ts)按原始项目目录取得 Workspace。归属规则见 [ADR 0005](../adr/0005-harness-identities-and-generation-run-ownership.md)。
 
 5. [dispatch()](../../src/host/cli/dispatch.ts) 将 Generation 请求交给 Runtime，将图片读取请求交给 Image Reader。Host coordinator 负责持续执行已接纳的 Run。
 
@@ -55,19 +55,19 @@
 
 1. [GenerationRuntime.acceptGenerations()](../../src/host/generation/generation-runtime.ts) 在同一事务内接纳整份清单。接纳成功后，调用方按输入顺序取得 `request_id`、`run_id` 与 `accepted` 或 `reused`。接纳校验失败时，本次新增 Run 数为零。
 
-2. 请求身份和重放规则见 [ADR 0005](../adr/0005-harness-identities-and-generation-run-ownership.md)。CLI 调用凭证确定 Run 归属；提交清单中的标识用于复用请求。
+2. 请求身份、Run 归属和重放规则见 [ADR 0005](../adr/0005-harness-identities-and-generation-run-ownership.md)。提交清单中的标识用于复用请求。
 
 3. 接纳事务提交后，[GenerationCoordinator](../../src/host/generation/generation-coordinator.ts) 通过 [SourceGenerationPreparer](../../src/host/generation/source-preparer.ts) 准备 Workflow，再推进远端提交、观察、下载与媒体登记。各 Run 独立保存状态与错误。调用结束和应用重启后的执行规则见 [ADR 0002](../adr/0002-generation-runs-are-durable-and-asynchronous.md)。
 
 4. Run Repository 保存状态和索引；每个 Run 的目录保存请求、来源快照、Actual Workflow 与 API Workflow；Saved Media 保存下载后的媒体文件。对应写入和恢复逻辑由 [GenerationRuntime](../../src/host/generation/generation-runtime.ts) 维护，目录字段见[配置规范](configuration.md#configuration-profile-字段)。
 
-5. `GenerationRuntime.readGenerationRunInputs()` 与 `readGenerationRunMedia()` 统一处理当前 Workspace 的历史查询。批量查询、Run ID 匹配与查询取消规则见 [GenerationRuntime](../../src/host/generation/generation-runtime.ts)。
+5. `GenerationRuntime.readGenerationRunInputs()` 与 `readGenerationRunMedia()` 按 Run ID 查询当前 Profile 的历史记录。批量查询、Run ID 匹配与查询取消规则见 [GenerationRuntime](../../src/host/generation/generation-runtime.ts)。
 
 6. 历史输入查询读取已保存的参数与 Actual Workflow；媒体查询默认读取状态、错误和图片路径，显式请求时附带参数。字段分别由 [run-input-contract.ts](../../src/generation/run-input-contract.ts) 与 [run-media-contract.ts](../../src/image-reader/run-media-contract.ts) 定义。状态类型共用 [run-status.ts](../../src/generation/run-status.ts)。
 
 ## Generation Run 等待通知
 
-1. [Generation Run Wait](../../CONTEXT.md#生成记录与媒体) 由受管 CLI 登记。[GenerationRunWaitService](../../src/host/generation/run-wait-service.ts)核对 Workspace 访问范围，并使用宿主 Tool Call 身份确定所有者。调用合同由 `generation wait --help` 提供。
+1. [Generation Run Wait](../../CONTEXT.md#生成记录与媒体) 由受管 CLI 登记。[GenerationRunWaitService](../../src/host/generation/run-wait-service.ts)按 Run ID 定位记录，并使用宿主 Tool Call 身份确定等待所有者。调用合同由 `generation wait --help` 提供。
 2. 观察任务由官方 jobs 服务管理。官方 Job 工具向所有者投递完成通知，Agent 随后查询媒体并继续用户请求。工具装配见[共享组合](../../agent-presets/shared/agent.cordis.yml)，生图执行职责见“Generation Run 生命周期与历史查询”。
 3. 取消 Generation Run Wait 只停止观察。取消生成沿用 [Generation Run 取消规则](../adr/0002-generation-runs-are-durable-and-asynchronous.md#2-恢复与取消)。官方 Job 随应用进程和所有者生命周期释放；应用重启后，Agent 查询持久 Run 并重新登记仍需等待的 Run。
 
@@ -105,19 +105,23 @@
 
 3. 聊天上下文弹窗和实验工作台共用 [catalog-browser.tsx](../../src/client/workbench/catalog-browser.tsx) 的目录组件。两个入口分别位于 [native-surfaces.tsx](../../src/client/workbench/native-surfaces.tsx) 和 [experiment-workbench.tsx](../../src/client/workbench/experiment-workbench.tsx)。用户打开预览或详情后，Catalog 界面保留查询条件、选中项和返回位置。展示字段与详情接口分别由 [src/catalog/presentation.json](../../src/catalog/presentation.json) 和 [src/catalog/details-schema.ts](../../src/catalog/details-schema.ts) 定义；`coverUrl` 与 `sampleImageUrls` 属于 Client 展示投影。
 
-4. [media-routes.ts](../../src/host/generation/media-routes.ts) 经官方 `webServer` 提供查看页、媒体内容、原文件下载与 Actual Workflow 路由。每次访问校验 HTTP 方法、Session、Workspace 和媒体归属。查看页的启动数据包含媒体展示字段、Run ID 与保存的正向 Prompt。
+4. [media-routes.ts](../../src/host/generation/media-routes.ts) 经官方 `webServer` 提供查看页、媒体内容、原文件下载与 Actual Workflow 路由。每次访问校验 HTTP 方法与调用 Session，并按当前 Profile 的记录 ID 读取来源媒体及所属 Run。查看页的启动数据包含媒体展示字段、Run ID 与保存的正向 Prompt。
 
 5. [media-viewer-page.ts](../../src/host/generation/media-viewer-page.ts) 展示同一 Session 的媒体，按 Runtime 返回顺序切换并更新当前 URL。图片和视频按原始宽高比完整显示，像素尺寸来自媒体文件。承载查看页 iframe 的 Client 界面提供完整 Run ID、Run ID 复制与原文件下载。iframe 当前媒体消息的结构由 [src/generation/contract.ts](../../src/generation/contract.ts) 定义。[ProjectionMediaGallery](../../src/client/workbench/results-drawer.tsx)负责校验该消息的来源与媒体归属。
 
 ## 实验工作台
 
-1. [ExperimentWorkbenchHost](../../src/client/workbench/experiment-host.tsx) 在官方主面板承载实验工作台。[ExperimentWorkbenchStore](../../src/client/workbench/experiment-store.ts) 管理工作区内的浏览选择、轮询和滚动位置；界面通过 [Workbench Remote](../../src/workbench-remote.ts) 读取工作范围内的数据。
+1. [ExperimentWorkbenchHost](../../src/client/workbench/experiment-host.tsx) 在官方主面板承载实验工作台。[ExperimentWorkbenchStore](../../src/client/workbench/experiment-store.ts) 管理浏览选择、轮询和滚动位置；界面通过 [Workbench Remote](../../src/workbench-remote.ts) 读取工作数据及当前 Profile 的经验、收藏与引用记录。
 
-2. [WorkbenchService](../../src/workbench/service.ts) 处理任务输入、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。Agent 通过受管 CLI 的 `workbench task get` 与 `workbench task publish` 读写指定任务。
+2. [WorkbenchService](../../src/workbench/service.ts) 处理任务固定输入、引用快照、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。[工作台原生 Tool](../../src/host/workbench/tools.ts) 与受管 CLI 共用领域服务、[schema](../../src/workbench/schema.ts)及[字段说明](../../config/workbench-tool-descriptions.json)。
 
 3. [Core](../../src/host/core/plugin.ts) 管理 Generation Runtime 与 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 共用的数据库连接。产物文件保存在插件 Run 目录下的 `task-artifacts` 中。
 
-4. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 复用 Workflow 编译器的参数与资源校验。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID 和尺寸候选。
+4. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 校验准备输入与模板参数。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID、类型、单图或多图类型和尺寸候选。分支的编辑输入与已保存输入分别持久化，产物回填由 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 写入所属分支。
+
+5. [WorkbenchInputFileService](../../src/host/generation/input-file-service.ts) 保存本机导入图片。[输入图片解析](../../src/host/workbench/input-images.ts)提供 Run 媒体与导入文件的本地路径及预览地址。[SourceGenerationPreparer](../../src/host/generation/source-preparer.ts)向所选实例上传 Workflow 用途图片，保存上传响应并生成实际输入；Run 同时保留提交输入。
+
+6. [WorkbenchTranslations](../../src/host/workbench/translation-service.ts) 使用独立官方会话执行翻译，按请求 ID 查询结果及取消。翻译预设的配置入口见[工作台装配配置](configuration.md#工作台装配配置)。
 
 ## 图片读取与 Prompt 对比职责
 

@@ -7,6 +7,9 @@ import officialBusinessFixtureJson from './official-business-fixture.json' with 
 import { parseOfficialBusinessFixture } from './official-business-schema.mjs'
 import { startOfficialBusinessServices } from './official-business-services.mjs'
 
+import translation from '../../../config/workbench-translation.json' with { type: 'json' }
+import { assertTranslationPresetObservation } from './official-translation-acceptance.mjs'
+
 describe('controlled model response scripts', () => {
   it('serves the configured PNG dimensions and reports its actual byte length', async () => {
     const outputPngBytes = await sharp({ create: { width: 512, height: 512, channels: 4, background: '#7f9fbfff' } }).png().toBuffer()
@@ -124,6 +127,45 @@ describe('controlled model response scripts', () => {
     } finally {
       await services.close()
     }
+  })
+})
+
+describe('official translation Preset scope assertions', () => {
+  const runtimeModel = { provider: officialBusinessFixtureJson.provider.id, model: officialBusinessFixtureJson.provider.modelId }
+  const observation = () => ({
+    presetId: translation.preset_id,
+    configuredModel: structuredClone(translation.agent_model),
+    selected: { ...runtimeModel }, projectionModel: { ...runtimeModel }, requestModel: runtimeModel.model,
+    tools: [], skills: [], mcpCalls: [],
+  })
+
+  it('checks the selected, durable and transmitted model against the fixture route', () => {
+    for (const changed of [
+      { selected: { ...runtimeModel, model: 'other-model' } },
+      { selected: { ...runtimeModel, provider: translation.agent_model.provider } },
+      { projectionModel: { ...runtimeModel, model: 'other-model' } },
+      { requestModel: 'other-model' },
+    ]) {
+      expect(() => assertTranslationPresetObservation({ ...observation(), ...changed }, runtimeModel)).toThrow()
+    }
+  })
+
+  it('keeps the configured default separate from the explicitly selected fixture route', () => {
+    const result = observation()
+    expect(assertTranslationPresetObservation(result, runtimeModel)).toBe(result)
+    expect(result.configuredModel).toEqual(translation.agent_model)
+    expect(result.selected.provider).toBe(officialBusinessFixtureJson.provider.id)
+    expect(() => assertTranslationPresetObservation({ ...result, configuredModel: runtimeModel }, runtimeModel)).toThrow()
+  })
+
+  it('rejects inherited Skills and actual MCP calls', () => {
+    for (const changed of [{ skills: [{ name: 'office' }] }, { mcpCalls: [{ method: 'tools/call' }] }]) {
+      expect(() => assertTranslationPresetObservation({ ...observation(), ...changed }, runtimeModel)).toThrow()
+    }
+  })
+
+  it('rejects tools inherited from another Preset', () => {
+    expect(() => assertTranslationPresetObservation({ ...observation(), tools: ['skill'] }, runtimeModel)).toThrow()
   })
 })
 

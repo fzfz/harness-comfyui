@@ -11,6 +11,7 @@ import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { CATALOG_KIND_DEFINITIONS, type CatalogItem } from '../../src/catalog/contract.ts'
 import { GenerationRuntime, type GenerationPreparationAdapter, type GenerationTransport } from '../../src/host/generation/generation-runtime.ts'
 import type { WorkbenchModelCatalog } from '../../src/workbench/contract.ts'
+import { WorkbenchInputFileService } from '../../src/host/generation/input-file-service.ts'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import * as workbench from '../../src/host/workbench/plugin.ts'
 import { WorkbenchRemoteService } from '../../src/host/workbench/remote-service.ts'
@@ -82,6 +83,7 @@ export async function createWorkbenchHostFixture(preparer?: GenerationPreparatio
     database, transport, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media'),
     preparer: preparer ?? { inspectRuntimeParameters: inspect, validateInput: vi.fn(async () => {}), prepare: async () => { throw new Error('Generation must be advanced explicitly') } },
     workbench: {
+      taskWorkspace: taskId => store.taskWorkspace(taskId),
       assertGenerationAcceptance: input => store.assertGenerationAcceptance(input),
       registerGenerationRun: input => store.registerGenerationRun(input),
     },
@@ -144,8 +146,15 @@ export async function createWorkbenchHostFixture(preparer?: GenerationPreparatio
     search,
     details: vi.fn<CatalogClient['details']>((request, signal) => detailSource.details(request, signal)),
   }
+  const inputFiles = new WorkbenchInputFileService({ database, directory: join(directory, 'input-files'), maxFileBytes: 10_000_000 })
   ctx.provide('harnessComfyuiCore' as never, { services: {
-    runtime, catalog, workbenchStore: store,
+    runtime, catalog, workbenchStore: store, inputFiles,
+    images: { async resolve(ref: import('../../src/workbench/contract.ts').ImageRef, signal: AbortSignal) {
+      if (ref.source.kind === 'uploaded_file') return inputFiles.resolve(ref.source.file_id, signal)
+      const media = runtime.getMedia(ref.source.media_id)
+      if (media.runId !== ref.source.run_id) throw new Error('Run does not own selected media')
+      return { filePath: runtime.mediaContentPath(media.mediaId), filename: media.filename, mediaType: media.mediaType }
+    } },
     profile: { client: { runRefreshIntervalMs: 777 }, cliServer: { host: '127.0.0.1', port: 0, shutdownTimeoutMs: 1000 }, jobs: { pollIntervalMs: 1000 }, paths: {} },
   } } as never)
   const fiber = await ctx.plugin(workbench)

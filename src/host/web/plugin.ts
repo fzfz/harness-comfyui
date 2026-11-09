@@ -12,8 +12,11 @@ import { BrowserSettingsRemoteService } from '../core/browser-settings-service.t
 
 export const name = 'harness-comfyui-web'
 export const inject = ['harnessComfyuiCore', 'imageReader', 'webServer', 'workspaceRegistry', 'sessionPersistence', 'subagents', 'harnessComfyuiWorkbench'] as const
+import { registerInputFileRoutes } from '../workbench/input-file-routes.ts'
+
 export function apply(ctx: Context): void {
   const { catalog, runtime, profile, sourceAddress } = ctx.harnessComfyuiCore.services
+  ctx.effect(() => registerInputFileRoutes((ctx as unknown as { webServer: GenerationWebServer }).webServer, ctx.harnessComfyuiCore.services.inputFiles), 'Workbench input images')
   new WorkbenchRemoteService(ctx)
   new CatalogRemoteService(ctx, catalog, sourceAddress)
   new GenerationRemoteService(ctx, runtime, profile.client.runRefreshIntervalMs, ctx.workspaceRegistry)

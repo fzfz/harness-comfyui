@@ -82,7 +82,7 @@ export const draft: TaskDraft = {
       },
     ],
   },
-  context_refs: [{ kind: 'work', id: '14' }],
+  reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], instructions: '',
   base_model_id: '1',
 }
 export const makeBranch = (id: string, parent: string | null): Branch => ({
@@ -95,6 +95,7 @@ export const makeBranch = (id: string, parent: string | null): Branch => ({
   source_artifact_id: null,
   source_experience_id: parent ? 'experience-a' : null,
   draft: structuredClone(draft),
+  editing_draft: null,
   execution: { mode: 'once', max_runs: 3 },
 })
 export const makeBinding = (
@@ -124,6 +125,7 @@ export const makeTask = (
   status: 'succeeded',
   input: {
     ...structuredClone(draft),
+    reference_task_artifacts: [],
     requirements: { original_request: '玻璃花房', instructions: '比较光线' },
     reference_run_ids: [],
     requested_skill: null,
@@ -232,6 +234,7 @@ export const treeProjection = (): WorkbenchProjection => {
 
 export const fullProjection = (): WorkbenchProjection => ({
   workspace_id: 'workspace-a',
+  reference_destinations: [],
   total_branch_count: 2,
   work_id: 'work-a',
   works: [
@@ -269,6 +272,7 @@ export const fullProjection = (): WorkbenchProjection => ({
       base_model_id: '1',
       model_id: '11',
       evidence_run_ids: ['r2'],
+      provenance: { created_by_task_id: null, evidence: [{ run_id: 'r2', generation_task_id: 't2', role: 'supporting_evidence' }] },
       source_run_id: 'r2',
       source_experience_id: null,
       source_artifact_id: null,
@@ -307,6 +311,10 @@ export function runInputDescription(parameters: WorkbenchRun['generation_input']
         ? { ...candidate, aspect_ratio: current(candidate.aspect_ratio), megapixels: current(candidate.megapixels) }
         : { ...candidate, parameter: current(candidate.parameter) }),
   }
+}
+
+export function runInputDefaults(input: import('../../src/workbench/contract.ts').GenerationInput) {
+  return { submitted_input: input, effective_input: input, image_uploads: [], parameter_mapping: null, base_model_id: null }
 }
 
 export const inputDescription: WorkflowRuntimeParameterInspection = {

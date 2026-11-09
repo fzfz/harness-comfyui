@@ -1,0 +1,20 @@
+{
+  "rawParameter": {
+    "code": "GENERATION_IMAGE_BINDING_INVALID",
+    "message": "Workflow 图片参数 {parameter} 需要通过图片引用选择。请从 parameters 移除文件名，并提供 image_refs 和 workflow_image_bindings。"
+  },
+  "missingBinding": {
+    "code": "GENERATION_IMAGE_BINDING_REQUIRED",
+    "message": "Workflow 图片参数 {parameter} 需要图片。请提供 image_refs 和 workflow_image_bindings。"
+  },
+  "invalidBinding": {
+    "code": "GENERATION_IMAGE_BINDING_INVALID",
+    "messages": {
+      "duplicateReference": "图片引用编号重复，请为每张图片使用唯一的 image_ref_id。",
+      "unknownParameter": "所选 Workflow 未提供图片参数 {parameter} 的绑定声明，请选择已声明的图片参数。",
+      "cardinality": "图片参数 {parameter} 的绑定数量有误。请调整 image_ref_ids：单图参数绑定 1 张图片，多图参数至少绑定 1 张图片。",
+      "unavailableReference": "图片 {image} 无法用于 Workflow 参数 {parameter}，请核对图片编号并选择 Workflow 用途。",
+      "unboundReference": "Workflow 图片 {image} 尚未绑定模板参数，请补充 workflow_image_bindings。"
+    }
+  }
+}

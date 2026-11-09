@@ -58,9 +58,9 @@ export class HarnessWorkbenchSessions {
   }
 
   async authorize(input: { task: { task_id: string; session_id: string | null }; identity: WorkbenchIdentity }): Promise<boolean> {
-    if (input.task.session_id === null || this.host.workspaceForTask(input.task.task_id) !== input.identity.workspaceId) return false
+    if (input.task.session_id === null) return false
     const scope = await this.host.scopeForSession(input.task.session_id)
-    return scope.workspaceId === input.identity.workspaceId && scope.sessionIds.includes(input.identity.sessionId)
+    return scope.sessionIds.includes(input.identity.sessionId)
   }
 
   async status(input: { sessionId: string }): Promise<ExecutionState | null> {

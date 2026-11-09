@@ -13,6 +13,7 @@ import { CLI_ENVIRONMENT_NAMES, CLI_ROUTE_PATH } from '../../src/cli/contract.ts
 import { BROWSER_SETTINGS_REMOTE_NAMESPACE } from '../../src/browser-settings-schema.ts'
 import { BROWSER_SETTINGS_REMOTE } from '../../src/browser-settings/remote.ts'
 import { GENERATION_MEDIA_ROUTE_PREFIX } from '../../src/host/generation/media-routes.ts'
+import inputFileConfiguration from '../../src/workbench/input-files.json' with { type: 'json' }
 import type { CoreServices } from '../../src/host/core/schema.ts'
 import HARNESS_COMFYUI_REMOTE from '../../src/remote.ts'
 import * as cli from '../../src/host/cli/plugin.ts'
@@ -41,8 +42,12 @@ describe('official Host plugin activation', () => {
     provideWorkbenchOfficialServices(context)
     context.provide('harnessComfyuiWorkbench' as never, { service: {} } as never)
     let browserExecutablePath = process.execPath
-    const unregisterRoute = vi.fn()
-    const registerRoute = vi.fn(() => unregisterRoute)
+    const unregisterRoutes = new Map<string, ReturnType<typeof vi.fn>>()
+    const registerRoute = vi.fn((route: { readonly path: string }) => {
+      const unregister = vi.fn()
+      unregisterRoutes.set(route.path, unregister)
+      return unregister
+    })
     const sourceAddress = vi.fn(() => ({ url: 'https://catalog.example.com', port: 443 }))
     const core = {
       services: {
@@ -101,10 +106,11 @@ describe('official Host plugin activation', () => {
       { method: 'configuration', invocation: { kind: 'direct' } },
       { method: 'validate', invocation: { kind: 'direct' } },
     ])
-    expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
-      kind: 'prefix',
-      path: GENERATION_MEDIA_ROUTE_PREFIX,
-    }))
+    const routePaths = [inputFileConfiguration.url_prefix.replace(/\/$/u, ''), GENERATION_MEDIA_ROUTE_PREFIX]
+    expect(registerRoute.mock.calls.map(([route]) => route)).toEqual(routePaths.map(path => expect.objectContaining({
+      kind: 'prefix', path,
+    })))
+    for (const unregister of unregisterRoutes.values()) expect(unregister).not.toHaveBeenCalled()
     expect(HARNESS_COMFYUI_REMOTE.descriptors).toContain(BROWSER_SETTINGS_REMOTE.descriptors[0])
     const imageReaderRemote = context.reflect.get('harnessComfyuiImageReader') as {
       configuration(signal: AbortSignal): Promise<{ activeProfileId: string; profiles: readonly { id: string }[] }>
@@ -144,7 +150,7 @@ describe('official Host plugin activation', () => {
     })).toThrow()
 
     await disposeFiber(fiber)
-    expect(unregisterRoute).toHaveBeenCalledOnce()
+    for (const path of routePaths) expect(unregisterRoutes.get(path)).toHaveBeenCalledOnce()
     expect(context.reflect.get('harnessComfyuiBrowserSettings')).toBeUndefined()
     await disposeFiber(imageReaderFiber)
   })

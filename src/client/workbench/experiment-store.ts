@@ -1,4 +1,4 @@
-import type { WorkbenchProjection } from '../../workbench/contract.ts'
+import { WORKBENCH_RESOURCE_KINDS, type WorkbenchProjection } from '../../workbench/contract.ts'
 import { parseCatalogDetailsRequest, type CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 import {
   EXPERIMENT_CATALOG_SCROLL_PREFIX,
@@ -47,7 +47,6 @@ const initialView = (): ExperimentViewState => ({
     page: 1,
   },
   scrollPositions: {},
-  presetOverride: null,
 })
 export interface ExperimentSnapshot {
   readonly workspaceId: string | null
@@ -128,15 +127,13 @@ export class ExperimentWorkbenchStore {
         catalogDetail,
         catalogGallery,
         catalogFilters:
-          raw.catalogFilters && typeof raw.catalogFilters.kind === 'string'
+          raw.catalogFilters && WORKBENCH_RESOURCE_KINDS.some(kind => kind === raw.catalogFilters!.kind)
             ? { ...base.catalogFilters, ...raw.catalogFilters }
             : base.catalogFilters,
         scrollPositions:
           raw.scrollPositions && typeof raw.scrollPositions === 'object'
             ? Object.fromEntries(Object.entries(raw.scrollPositions).filter(([key]) => !firstRestore || (catalogDetail === null && catalogGallery === null) || !key.startsWith(EXPERIMENT_CATALOG_SCROLL_PREFIX)))
             : {},
-        presetOverride:
-          typeof raw.presetOverride === 'string' ? raw.presetOverride : null,
       }
     } catch {
       return initialView()

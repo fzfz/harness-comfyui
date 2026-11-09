@@ -1,8 +1,30 @@
-import type { Experiment, StoredArtifact, Task, TaskStatus, WorkbenchRun } from './contract.ts'
+import type { Experiment, GenerationInput, JsonValue, PromptInput, StoredArtifact, Task, TaskDraft, TaskStatus, WorkbenchRun } from './contract.ts'
 
+import { equalValue } from '../shared/json-contract.ts'
+import { WorkbenchError } from './validation.ts'
 import { isGenerationRunTerminal } from '../generation/run-status.ts'
 
 export function isFinishedRun(status: WorkbenchRun['status']): boolean { return isGenerationRunTerminal(status) }
+
+export function mergeTaskDraft(expected: TaskDraft, draft: TaskDraft, current: TaskDraft): TaskDraft {
+  const record = (value: object) => value as Record<string, unknown>
+  const merge = (before: object, next: object, actual: object, prefix = '', excluded: readonly string[] = []) => {
+    const baseline = record(before), desired = record(next), existing = record(actual), result = structuredClone(existing)
+    for (const key of new Set([...Object.keys(baseline), ...Object.keys(desired)])) {
+      if (excluded.includes(key) || equalValue(baseline[key], desired[key])) continue
+      const path = prefix ? `${prefix}.${key}` : key
+      if (!equalValue(existing[key], baseline[key]) && !equalValue(existing[key], desired[key])) throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新编辑。', path)
+      if (Object.hasOwn(desired, key)) Object.defineProperty(result, key, { value: structuredClone(desired[key]), enumerable: true, configurable: true, writable: true })
+      else delete result[key]
+    }
+    return result
+  }
+  const merged = merge(expected, draft, current, '', ['prompt_input', 'generation_input']) as unknown as TaskDraft
+  merged.prompt_input = merge(expected.prompt_input, draft.prompt_input, current.prompt_input, 'prompt_input') as unknown as PromptInput
+  merged.generation_input = merge(expected.generation_input, draft.generation_input, current.generation_input, 'generation_input', ['parameters']) as unknown as GenerationInput
+  merged.generation_input.parameters = merge(expected.generation_input.parameters, draft.generation_input.parameters, current.generation_input.parameters, 'generation_input.parameters') as Record<string, JsonValue>
+  return merged
+}
 
 export function shouldTrackExecution(task: Task, experiment: Experiment | null = null): boolean {
   return task.session_id !== null

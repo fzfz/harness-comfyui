@@ -23,6 +23,10 @@
     "web": {
       "sourceEntryRelativePath": "src/host/web/plugin.ts",
       "outputEntryRelativePath": ".local/source-host/web.js"
+    },
+    "workbench-tools": {
+      "sourceEntryRelativePath": "src/host/workbench/tools.ts",
+      "outputEntryRelativePath": ".local/source-host/workbench-tools.js"
     }
   },
   "client": {

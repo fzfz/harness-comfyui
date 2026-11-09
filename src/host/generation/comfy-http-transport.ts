@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+import type { GenerationImagePreparationPort } from './source-preparer.ts'
 import { randomUUID } from 'node:crypto'
 import { ERROR_CATALOG } from '../../../config/error-catalog-schema.ts'
 
@@ -142,6 +144,21 @@ export class ComfyHttpTransport implements GenerationTransport {
     this.maxMediaBytes = options.maxMediaBytes ?? 536_870_912
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 1) throw new TypeError('ComfyUI transport timeout is invalid.')
     if (!Number.isSafeInteger(this.maxMediaBytes) || this.maxMediaBytes < 1) throw new TypeError('ComfyUI media byte limit is invalid.')
+  }
+
+  async upload(input: Parameters<GenerationImagePreparationPort['upload']>[0]): ReturnType<GenerationImagePreparationPort['upload']> {
+    input.signal?.throwIfAborted()
+    const instance = await this.instance(input.instanceId, input.connection.origin, input.signal)
+    const bytes = await readFile(input.filePath, { signal: input.signal })
+    if (bytes.byteLength < 1 || bytes.byteLength > this.maxMediaBytes) throw new GenerationRuntimeError('GENERATION_IMAGE_PREPARATION_FAILED', `Image ${input.imageRefId} must contain between 1 and ${this.maxMediaBytes} bytes.`)
+    const body = new FormData()
+    body.set('image', new Blob([bytes], { type: input.mediaType }), input.filename)
+    body.set('type', 'input')
+    const result = record(await this.requestJson(instance, '/upload/image', { method: 'POST', body, signal: input.signal }), 'ComfyUI image upload')
+    if (typeof result.name !== 'string' || !result.name || result.name === '.' || result.name === '..' || result.name.includes('/') || result.name.includes('\\') || typeof result.subfolder !== 'string' || result.subfolder.startsWith('/') || result.subfolder.includes('\\') || result.subfolder.split('/').some(segment => segment === '..') || result.type !== 'input') {
+      throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', `ComfyUI returned an invalid image identity for ${input.imageRefId}.`)
+    }
+    return { name: result.name, subfolder: result.subfolder, type: 'input' }
   }
 
   async submit(input: Parameters<GenerationTransport['submit']>[0]): Promise<{ readonly promptId: string }> {
@@ -339,7 +356,7 @@ export class ComfyHttpTransport implements GenerationTransport {
           headers: {
             accept: init.accept ?? 'application/json',
             ...(instance.authorization === null ? {} : { authorization: instance.authorization }),
-            ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
+            ...(init.body === undefined || init.body instanceof FormData ? {} : { 'content-type': 'application/json' }),
           },
         })
         return await consume(response)

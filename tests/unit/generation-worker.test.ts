@@ -166,6 +166,7 @@ describe('GenerationRuntime worker lifecycle', () => {
     expect(result).toEqual({ runs: [{
       run_id: accepted.runId,
       request_id: accepted.requestId,
+      workspace_id: 'workspace_1',
       lookup_status: 'available',
       title: '两个结果',
       status: 'succeeded', revision: 5, updated_at: expect.any(Number), instance_id: '2',
@@ -204,15 +205,14 @@ describe('GenerationRuntime worker lifecycle', () => {
         error: expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
       },
       {
-        run_id: accepted.runId, request_id: accepted.requestId, lookup_status: 'available', title: '两个结果',
+        run_id: accepted.runId, request_id: accepted.requestId, workspace_id: 'workspace_1', lookup_status: 'available', title: '两个结果',
         status: 'prepared', revision: 1, updated_at: expect.any(Number), instance_id: '2', prompt_id: null, run_error: null, images: [],
       },
     ] })
     await expect(generation.readGenerationRunMedia({
       workspaceId: 'workspace_other', runIds: [accepted.runId],
-    })).resolves.toEqual({ runs: [{
-      run_id: accepted.runId, lookup_status: 'error',
-      error: expect.objectContaining({ code: 'GENERATION_RUN_NOT_FOUND' }),
+    })).resolves.toMatchObject({ runs: [{
+      run_id: accepted.runId, lookup_status: 'available', workspace_id: 'workspace_1',
     }] })
     generation.close()
   })

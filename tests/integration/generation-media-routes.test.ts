@@ -38,6 +38,33 @@ afterEach(() => {
 })
 
 describe('Generation media HTTP routes', () => {
+  it('serves media across Workspaces and builds the viewer from the media source Session', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-cross-workspace-media-'))
+    temporaryDirectories.push(root)
+    const path = join(root, 'source.png')
+    writeFileSync(path, 'source-image')
+    const media = { mediaId: 'media_source', runId: 'run_source', workspaceId: 'workspace_2', sessionId: 'source_session', filename: 'source.png', mediaType: 'image/png' }
+    const queries: unknown[] = []
+    let handler: ((request: IncomingMessage, response: ServerResponse) => void | Promise<void>) | undefined
+    registerGenerationMediaRoutes({
+      ...nativeAccess(),
+      webServer: { register(route) { handler = route.handler; return () => undefined } },
+      runtime: { getMedia: () => media, mediaContentPath: () => path, queryMedia: (input: unknown) => { queries.push(input); return [media] }, positivePromptForRun: () => null } as never,
+    })
+    const server = createServer((request, response) => void handler!(request, response))
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (address === null || typeof address === 'string') throw new Error('server address unavailable')
+    try {
+      const origin = `http://127.0.0.1:${address.port}/api/harness-comfyui/media/media_source`
+      expect(await (await fetch(origin + '/content?session_id=session_1')).text()).toBe('source-image')
+      const response = await fetch(origin + '/view?session_id=session_1')
+      expect(response.status).toBe(200)
+      expect((viewerData(await response.text()) as { currentMediaId: string }).currentMediaId).toBe('media_source')
+      expect(queries).toEqual([{ workspaceId: 'workspace_2', sessionId: 'source_session' }])
+    } finally { await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())) }
+  })
+
   it('serves a same-Session media viewer with ordered minimal data and locked response headers', async () => {
     const media = [
       {
@@ -334,6 +361,8 @@ describe('Generation media HTTP routes', () => {
           if (mediaId === 'boom') throw new Error('broken storage')
           return media[mediaId as keyof typeof media] as never
         },
+        queryMedia: () => [media.media_a, media.media_b],
+        positivePromptForRun: () => null,
         mediaContentPath: (mediaId: string) => paths[mediaId as 'media_a' | 'media_b' | 'missing_media'],
         mediaRunId: (mediaId: string) => media[mediaId as keyof typeof media].runId,
         actualWorkflowPath: (runId: string) => {
@@ -390,13 +419,13 @@ describe('Generation media HTTP routes', () => {
       fetch(`${origin}/api/harness-comfyui/media/media_a/view?session_id=session_2`),
     ])
     expect(missingSession.status).toBe(404)
-    expect(wrongWorkspace.status).toBe(404)
+    expect(wrongWorkspace.status).toBe(200)
     expect(missingViewer.status).toBe(404)
-    expect(wrongWorkspaceViewer.status).toBe(404)
+    expect(wrongWorkspaceViewer.status).toBe(200)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
-  it('serves parent and descendant media while rejecting unrelated or cross-Workspace Sessions', async () => {
+  it('serves Profile media by ID and uses the selected media source for viewer navigation', async () => {
     const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-descendant-media-'))
     temporaryDirectories.push(root)
     const paths = {
@@ -465,16 +494,15 @@ describe('Generation media HTTP routes', () => {
     expect(Buffer.from(await grandchildDownload.arrayBuffer()).toString()).toBe('grandchild-media')
     expect(await childWorkflow.json()).toEqual({ source: 'child' })
     expect((viewerData(await viewer.text()) as { items: Array<{ mediaId: string; contentUrl: string }> }).items).toEqual([
-      expect.objectContaining({ mediaId: 'media_grandchild', contentUrl: '/api/harness-comfyui/media/media_grandchild/content?session_id=session_root' }),
       expect.objectContaining({ mediaId: 'media_child', contentUrl: '/api/harness-comfyui/media/media_child/content?session_id=session_root' }),
     ])
-    expect(unrelatedContent.status).toBe(404)
-    expect(unpersistedContent.status).toBe(404)
-    expect(foreignContent.status).toBe(404)
+    expect(unrelatedContent.status).toBe(200)
+    expect(unpersistedContent.status).toBe(200)
+    expect(foreignContent.status).toBe(200)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
 
-  it('reports the unreadable native descendant branch before accessing media', async () => {
+  it('resolves media without consulting unrelated descendant Session state', async () => {
     let handler: Parameters<Parameters<typeof registerGenerationMediaRoutes>[0]['webServer']['register']>[0]['handler']
     const access = nativeAccess({ session_root: '/workspace' })
     let mediaLookups = 0
@@ -482,7 +510,7 @@ describe('Generation media HTTP routes', () => {
       ...access,
       subagents: { listDescendants: async () => [{ kind: 'diagnostic', id: 'child-unavailable', reason: 'unavailable', parentId: 'session_root', depth: 1 }] as never },
       webServer: { register: route => { handler = route.handler; return () => undefined } },
-      runtime: { getMedia: () => { mediaLookups++; throw new Error('media should not be accessed') } } as never,
+      runtime: { getMedia: () => { mediaLookups++; throw new GenerationRuntimeError('GENERATION_MEDIA_NOT_FOUND', 'Media is missing.') } } as never,
     })
     const server = createServer((request, response) => void handler(request, response))
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -490,9 +518,9 @@ describe('Generation media HTTP routes', () => {
     if (address === null || typeof address === 'string') throw new Error('test server address is unavailable')
     try {
       const response = await fetch(`http://127.0.0.1:${address.port}/api/harness-comfyui/media/media_child/content?session_id=session_root`)
-      expect(response.status).toBe(503)
-      expect(await response.json()).toMatchObject({ code: 'GENERATION_SESSION_UNAVAILABLE', message: expect.stringContaining('child-unavailable') })
-      expect(mediaLookups).toBe(0)
+      expect(response.status).toBe(404)
+      expect(await response.json()).toEqual({ code: 'GENERATION_MEDIA_NOT_FOUND' })
+      expect(mediaLookups).toBe(1)
     } finally {
       await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
     }

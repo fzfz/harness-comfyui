@@ -12,12 +12,15 @@ import { WORKBENCH_FUNCTIONS as defaults } from '../../workbench/functions.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../catalog/contract.ts'
 import { WorkbenchService } from '../../workbench/service.ts'
-import type { AgentModel, WorkbenchModelCatalog, GenerationInput, ContextRef, TaskDraft } from '../../workbench/contract.ts'
+import type { AgentModel, WorkbenchModelCatalog, GenerationInput, TaskDraft } from '../../workbench/contract.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import { createWorkbenchInputAdapter } from './input-adapter.ts'
 import { workspaceSessionScopeForSession } from '../generation/workspace-access.ts'
 import { HarnessWorkbenchSessions, type OfficialSessionController } from './harness-adapter.ts'
 import type {} from '../core/plugin.ts'
+
+import { resolveInputImages } from './input-images.ts'
+import { WorkbenchTranslations } from './translation-service.ts'
 
 import { CatalogError } from '../catalog/catalog-client.ts'
 
@@ -28,8 +31,10 @@ function skillsFor(ctx: Context): SkillCatalog { return ctx.get('skills') as Ski
 interface WorkbenchHost {
   readonly service: WorkbenchService
   readonly signal: AbortSignal
+  readonly validateDraft: ReturnType<typeof createWorkbenchInputAdapter>['validateDraft']
   readonly validateParameters: ReturnType<typeof createWorkbenchInputAdapter>['validateParameters']
-  readonly resolveGenerationDraft: (input: GenerationInput, refs: ContextRef[]) => Promise<TaskDraft>
+  readonly resolveGenerationDraft: (input: GenerationInput) => Promise<TaskDraft>
+  readonly translations: WorkbenchTranslations
   readonly resolveResourceSelection: ReturnType<typeof createWorkbenchInputAdapter>['resolveResourceSelection']
   readonly environment: (workspaceId?: string, presetId?: string) => Promise<WorkbenchEnvironment>
   readonly initializeWorkspace: (workspaceId: string) => Promise<void>
@@ -71,9 +76,10 @@ export function apply(ctx: Context): void {
   }
   const service = new WorkbenchService({
     store, sessions, descriptors: defaults,
+    resolveImageSources: refs => resolveInputImages(ctx.harnessComfyuiCore.services, refs, signal),
     refreshAfterMs: profile.client.runRefreshIntervalMs,
     prepareGenerationInput: input.prepareGenerationInput, resolveResourceRefs: input.resolveResourceRefs, resolveResourceSelection: input.resolveResourceSelection,
-    validateContextRefs: input.validateReferences, validateResourceRefs: input.validateReferences,
+    validateResourceRefs: input.validateReferences,
     resolveParameterMapping: input.resolveParameterMapping, parameterIds: input.parameterIds, validateGenerationInput: input.validateGenerationInput,
     validateParameters: input.validateParameters, resolveGenerationDraft: input.resolveGenerationDraft,
     resolveBaseModelDraft: async (baseModelId, draft) => {
@@ -106,9 +112,11 @@ export function apply(ctx: Context): void {
       return result.input_description
     },
   })
+  const translations = new WorkbenchTranslations({ controller, binding: workspaceId => store.getFunctionBinding(workspaceId, 'translate'), events: sessionId => ctx.agents.get(SessionId(sessionId))?.session.snapshotEvents() ?? [] })
+  ctx.effect(() => () => translations.dispose(), 'Workbench translations')
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
   ctx.provide('harnessComfyuiWorkbench', {
-    service, signal, validateParameters: input.validateParameters, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
+    service, signal, translations, validateDraft: input.validateDraft, validateParameters: input.validateParameters, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
     async validateFunctionAgentModel(selection) {
       const models = await controller.modelCatalog().catch(cause => {
         const failure = agentModelSelection.catalogUnavailable

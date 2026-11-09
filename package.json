@@ -241,6 +241,10 @@
     "./presets/locale/en.json": "./locales/presets/en.json",
     "./presets/locale/zh.json": "./locales/presets/zh.json",
     "./web/locale/en.json": "./locales/web/en.json",
-    "./web/locale/zh.json": "./locales/web/zh.json"
+    "./web/locale/zh.json": "./locales/web/zh.json",
+    "./workbench-tools": {
+      "types": "./src/host/workbench/tools.ts",
+      "default": "./.local/source-host/workbench-tools.js"
+    }
   }
 }

@@ -1,3 +1,8 @@
+import { randomUUID } from 'node:crypto'
+import type { WorkbenchImageImportRequest, WorkbenchImageResolveRequest, WorkbenchTranslationLookup } from '../../workbench-remote.ts'
+import type { WorkbenchRecordQuery, WorkbenchRun, ImageRef } from '../../workbench/contract.ts'
+import type { TranslationRequest } from '../../workbench/translation.ts'
+import { resolveInputImages } from './input-images.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchRunInputRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope, type WorkbenchTaskDraftRequest, type WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
@@ -19,6 +24,40 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   constructor(private readonly host: Context) {
     super(host, WORKBENCH_REMOTE_NAMESPACE)
     for (const initialize of initializers) initialize(this)
+  }
+  async queryRecords(request: WorkbenchRecordQuery, signal: AbortSignal) {
+    signal.throwIfAborted()
+    const media = (run: WorkbenchRun): WorkbenchRun => ({ ...run, media: run.media.map(item => ({ ...item, url: generationMediaContentUrl(item.media_id, run.session_id), download_url: generationMediaDownloadUrl(item.media_id, run.session_id) })) })
+    return report(async () => (await this.host.harnessComfyuiWorkbench.service.queryRecords(request)).map(record => ({ ...record, ...(record.run ? { run: media(record.run) } : {}), ...(record.runs ? { runs: record.runs.map(media) } : {}) })))
+  }
+  async importImages(request: WorkbenchImageImportRequest, signal: AbortSignal) {
+    return report(async () => {
+      const images: ImageRef[] = []
+      for (const input of request.files) {
+        signal.throwIfAborted()
+        const file = await this.host.harnessComfyuiCore.services.inputFiles.importFile({ ...input, bytes: new Uint8Array(input.bytes) }, signal)
+        images.push({ image_ref_id: randomUUID(), source: { kind: 'uploaded_file', file_id: file.file_id }, purpose: 'workflow', reference_requirement: '' })
+      }
+      return { images }
+    })
+  }
+  async resolveImages(request: WorkbenchImageResolveRequest, signal: AbortSignal) {
+    return report(async () => ({ images: await resolveInputImages(this.host.harnessComfyuiCore.services, request.image_refs, signal) }))
+  }
+  async translateStart(request: TranslationRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => {
+      await this.host.harnessComfyuiWorkbench.initializeWorkspace(request.workspace_id)
+      return this.host.harnessComfyuiWorkbench.translations.start(request)
+    })
+  }
+  async translateGet(request: WorkbenchTranslationLookup, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => this.host.harnessComfyuiWorkbench.translations.get(request.request_id))
+  }
+  async translateCancel(request: WorkbenchTranslationLookup, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => this.host.harnessComfyuiWorkbench.translations.cancel(request.request_id))
   }
   async getEnvironment(request: WorkbenchEnvironmentRequest, signal: AbortSignal) {
     signal.throwIfAborted()
@@ -64,7 +103,7 @@ export class WorkbenchRemoteService extends TypertRemoteService {
     return report(async () => {
       const { store } = this.host.harnessComfyuiWorkbench.service
       store.assertScope(request.workspaceId, request.workId, request.branchId)
-      const input = store.getBranch(request.branchId).draft.generation_input
+      const input = request.generationInput ?? store.getBranch(request.branchId).draft.generation_input
       if (!input.template_id || !input.instance_id) return null
       return this.host.harnessComfyuiCore.services.runtime.inspectTemplateRuntimeParameters({ templateId: input.template_id, instanceId: input.instance_id }, signal)
     })
@@ -75,7 +114,7 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []
-for (const name of ['getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
+for (const name of ['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel', 'getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
   Remote(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
     addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
   } as never)

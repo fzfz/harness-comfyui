@@ -14,7 +14,7 @@ import {
   type GenerationMediaViewerItem,
 } from './media-viewer-page.ts'
 import {
-  workspaceSessionScopeForSession,
+  generationSessionForId,
   type SessionPersistenceProjection,
   type SubagentQueryProjection,
   type WorkspaceRegistryProjection,
@@ -133,24 +133,11 @@ export function registerGenerationMediaRoutes(options: RegisterGenerationMediaRo
           send(response, 404, 'Not Found')
           return
         }
-        const sessionScope = await workspaceSessionScopeForSession(
-          options.workspaceRegistry,
-          options.sessionPersistence,
-          options.subagents,
-          sessionId,
-          abortController.signal,
-        )
+        await generationSessionForId(options.sessionPersistence, sessionId, abortController.signal)
         abortController.signal.throwIfAborted()
         const media = options.runtime.getMedia(mediaId)
-        if (media.workspaceId !== sessionScope.workspaceId || !sessionScope.sessionIds.includes(media.sessionId)) {
-          send(response, 404, 'Not Found')
-          return
-        }
         if (match[2] === 'view') {
-          const sessionMedia = sessionScope.sessionIds.flatMap(relatedSessionId => options.runtime.queryMedia({
-            workspaceId: sessionScope.workspaceId,
-            sessionId: relatedSessionId,
-          }))
+          const sessionMedia = [...options.runtime.queryMedia({ workspaceId: media.workspaceId, sessionId: media.sessionId })]
           sessionMedia.sort((left, right) =>
             right.createdAt - left.createdAt
             || right.outputIndex - left.outputIndex
