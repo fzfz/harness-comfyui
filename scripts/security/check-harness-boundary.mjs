@@ -11,6 +11,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-agent', 'value-or-type'],
   ['@deepseek-ai/dsh-agent-preset-registry', 'type-only'],
   ['@deepseek-ai/dsh-api-remotes/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-connection/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-input-trigger/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-layout/client', 'type-only'],

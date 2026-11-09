@@ -157,6 +157,7 @@ it('associates accepted Runs with Workbench tasks through the mounted Core trans
     const { work, branch } = store.createWork({
       workspaceId: 'workspace_1', name: 'Rain', goal: 'Paint rain on glass',
       draft: {
+        parameter_mapping: null,
         prompt_input: { positive_prompt: 'rain on glass', negative_prompt: '' },
         generation_input: { title: 'Core task association', instance_id: '8', template_id: '5', model: null, parameters: { positive: 'rain on glass', seed: 17 }, loras: [] },
         context_refs: [], base_model_id: null,

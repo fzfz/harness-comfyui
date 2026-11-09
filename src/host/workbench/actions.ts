@@ -8,8 +8,6 @@ import { equalValue, jsonValue, validateFavoriteUpdate, validateExperienceReuseI
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
-import resourceSelectionErrors from '../../workbench/resource-selection-errors.json' with { type: 'json' }
-
 function fields(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '操作输入 value 必须是对象。请按操作要求填写字段。', 'value')
   return value as Record<string, unknown>
@@ -152,19 +150,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     case 'resource-select': {
       const ref = fields(request.value)
       const resource = { kind: text(ref.kind, 'kind'), id: text(ref.id, 'id') } as ResourceRef
-      const preview = resource.kind === 'model'
-        ? await ctx.harnessComfyuiWorkbench.previewModelChange(resource.id, branch.draft) : null
-      if (preview) {
-        const confirmed = ref.confirmedRemovals === undefined ? [] : ref.confirmedRemovals
-        if (!Array.isArray(confirmed) || confirmed.some(item => !item || typeof item !== 'object' || Array.isArray(item) || Object.keys(item).length !== 2 || typeof item.kind !== 'string' || typeof item.id !== 'string')) {
-          throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '模型切换确认清单无效，请重新选择模型。', 'value.confirmedRemovals')
-        }
-        if (confirmed.length !== preview.removed.length || preview.removed.some(item => !confirmed.some(ref => ref.kind === item.kind && ref.id === item.id))) {
-          const error = resourceSelectionErrors.modelChangeMismatch
-          throw new WorkbenchError(error.code, error.message, error.path)
-        }
-      }
-      const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.draft, preview ?? undefined)
+      const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.draft)
       store.saveBranchDraft({ ...selection, expected: branch.draft, draft }); break
     }
     case 'resource-remove': {
@@ -190,8 +176,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       await service.controlTask({ taskId: text(request.taskId, 'task_id'), action: request.type === 'task-interrupt' ? 'interrupt' : request.type === 'pause-experiment' ? 'pause' : 'continue' }); break
     }
     case 'stop-experiment': {
-      await service.controlTask({ taskId: text(request.taskId, 'task_id'), action: 'pause' })
-      store.endExperiment(text(request.taskId, 'task_id'), 'user_ended'); break
+      await service.endExperiment({ taskId: text(request.taskId, 'task_id'), reason: 'user_ended' }, { workspaceId: request.workspaceId, workId }); break
     }
     case 'task-answer': {
       await service.replyTask({ taskId: text(request.taskId, 'task_id'), questionArtifactId: text(request.id, 'question_artifact_id'), answer: text(request.value, 'answer') }); break

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { Branch, FunctionBinding, TaskRequestDraft } from '../../workbench/contract.ts'
-import { catalogPageCount, catalogResourceCompatible, type CatalogItem } from '../../catalog/contract.ts'
+import { catalogPageCount, type CatalogItem } from '../../catalog/contract.ts'
 import type { CatalogApi } from './catalog-browser.tsx'
 import { Button, trapDialogFocus } from './experiment-controls.tsx'
 import type { TaskRequestEditor } from './experiment-task-request.ts'
@@ -40,13 +40,11 @@ export function ExperimentTaskRequestDialog({ editor, binding, branch, presetNam
         const next = await catalog.search({ ...query, page }, abort.signal)
         items.push(...next.items)
       }
-      if (!abort.signal.aborted) setTemplates(items.filter(item => catalogResourceCompatible(item, {
-        baseModelId: branch.draft.base_model_id, modelId: branch.draft.generation_input.model?.id ?? null,
-      })))
+      if (!abort.signal.aborted) setTemplates(items)
     }
     void read().catch((failure: Error) => { if (!abort.signal.aborted) setCatalogError(failure.message) })
     return () => abort.abort()
-  }, [catalog, parameters, branch.draft.base_model_id, branch.draft.generation_input.model?.id])
+  }, [catalog, parameters])
   const selectedResource = (draft: TaskRequestDraft, name: 'instance_id' | 'template_id') =>
     (name in draft.resources ? draft.resources[name] : branch.draft.generation_input[name]) ?? ''
   const selectResource = (name: 'instance_id' | 'template_id', value: string) => {

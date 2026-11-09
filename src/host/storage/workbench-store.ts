@@ -9,6 +9,7 @@ import { deriveTaskStatus, isFinishedRun } from '../../workbench/state.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
 import { renderRequestTemplate } from '../../workbench/request-template.ts'
 import { WORKBENCH_BRANCH_NAME_MAX_LENGTH } from '../../workbench/contract.ts'
+import experimentControlErrors from '../../workbench/experiment-control-errors.json' with { type: 'json' }
 import libraryConfig from '../../workbench/library-config.json' with { type: 'json' }
 import artifactAdoptionErrors from '../../workbench/artifact-adoption-errors.json' with { type: 'json' }
 import { transaction } from './transaction.ts'
@@ -25,6 +26,10 @@ export interface NewTask {
   applyTarget: ApplyTarget; bindingSnapshot: BindingSnapshot; initiator?: 'human' | 'agent'; retryOfRunId?: string | null
 }
 export interface WorkbenchStoreOptions { database: DatabaseSync; artifactDirectory: string }
+
+function experimentIsClosed(experiment: Experiment | null): boolean {
+  return experiment?.control_state === 'ended' || experiment?.control_state === 'completed'
+}
 
 export class WorkbenchStore {
   readonly database: DatabaseSync
@@ -90,7 +95,7 @@ export class WorkbenchStore {
     return transaction(this.database, () => {
       const work: Work = { work_id: randomUUID(), workspace_id: input.workspaceId, name: input.name, goal: input.goal }
       this.run('INSERT INTO workbench_works VALUES(?,?,?,?)', work.work_id, work.workspace_id, work.name, work.goal)
-      const draft = input.draft ?? { prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: input.name, instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, context_refs: [], base_model_id: null }
+      const draft = input.draft ?? { parameter_mapping: null, prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: input.name, instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, context_refs: [], base_model_id: null }
       const branch = this.insertBranch({ workId: work.work_id, name: '主分支', originalRequest: input.goal, draft })
       return { work, branch }
     })
@@ -108,7 +113,7 @@ export class WorkbenchStore {
     return branch
   }
   createBranch(input: Parameters<WorkbenchStore['insertBranch']>[0] & { parentBranchId: string }): Branch { return transaction(this.database, () => this.insertBranch(input)) }
-  private branch(row: Row): Branch { const { draft_json, execution_json, ...rest } = row; return { ...rest, draft: parse(draft_json), execution: parse(execution_json) } as Branch }
+  private branch(row: Row): Branch { const { draft_json, execution_json, ...rest } = row; return { ...rest, draft: { parameter_mapping: null, ...parse<Partial<TaskDraft>>(draft_json) }, execution: parse(execution_json) } as Branch }
   getBranch(branchId: string): Branch { const row = this.row('SELECT * FROM workbench_branches WHERE branch_id=?', branchId); return row ? this.branch(row) : fail('WORKBENCH_NOT_FOUND', '分支不存在，请重新选择分支。', 'branch_id') }
   listBranches(workId: string): Branch[] { return this.rows('SELECT * FROM workbench_branches WHERE work_id=? ORDER BY rowid', workId).map(row => this.branch(row)) }
   saveBranchDraft(input: { workspaceId: string; workId: string; branchId: string; expected: TaskDraft; draft: TaskDraft; originalRequest?: string; expectedOriginalRequest?: string; execution?: ExecutionDraft; name?: string; expectedName?: string }): Branch {
@@ -169,7 +174,7 @@ export class WorkbenchStore {
       const task = this.getTask(taskId)
       const branch = this.getBranch(task.branch_id)
       if (resources && equalValue(branch.draft.generation_input, resources.expected.generation_input) && branch.draft.base_model_id === resources.expected.base_model_id) {
-        const draft = { ...branch.draft, generation_input: resources.draft.generation_input, base_model_id: resources.draft.base_model_id }
+        const draft = { ...branch.draft, generation_input: resources.draft.generation_input, parameter_mapping: resources.draft.parameter_mapping, base_model_id: resources.draft.base_model_id }
         this.run('UPDATE workbench_branches SET draft_json=? WHERE branch_id=?', JSON.stringify(draft), branch.branch_id)
       }
       if (expected && equalValue(this.getTaskDraft(branch.branch_id, task.function_id), expected)) {
@@ -194,7 +199,7 @@ export class WorkbenchStore {
   }
   private task(row: Row): Task {
     const { input_json, output_contract_json, apply_target_json, binding_snapshot_json, selected_model_json, answers_json, error_json, ...rest } = row
-    return { ...rest, input: parse(input_json), output_contract: parse(output_contract_json), apply_target: parse(apply_target_json), binding_snapshot: parse(binding_snapshot_json), selected_model: selected_model_json ? parse(selected_model_json) : null, answers: parse(answers_json), error: error_json ? parse(error_json) : null } as Task
+    return { ...rest, input: { parameter_mapping: null, ...parse<Partial<TaskInput>>(input_json) }, output_contract: parse(output_contract_json), apply_target: parse(apply_target_json), binding_snapshot: parse(binding_snapshot_json), selected_model: selected_model_json ? parse(selected_model_json) : null, answers: parse(answers_json), error: error_json ? parse(error_json) : null } as Task
   }
   findTask(taskId: string): Task | null { const row = this.row('SELECT * FROM workbench_tasks WHERE task_id=?', taskId); return row ? this.task(row) : null }
   getTask(taskId: string): Task { return this.findTask(taskId) ?? fail('WORKBENCH_TASK_NOT_FOUND', '任务不存在，请核对 task_id。', 'task_id') }
@@ -211,6 +216,20 @@ export class WorkbenchStore {
   }
   markExecution(taskId: string, state: ExecutionState, error: Task['error'] = null): Task {
     this.getTask(taskId); this.run('UPDATE workbench_tasks SET execution_state=?,error_json=?,updated_at=? WHERE task_id=?', state, error ? JSON.stringify(error) : null, Date.now(), taskId); return this.refreshTask(taskId)
+  }
+
+  settleTaskDispatch(taskId: string, error: Task['error'] = null, pauseOnFailure = false): Task {
+    return transaction(this.database, () => {
+      const task = this.refreshTask(taskId)
+      const experiment = this.getExperiment(taskId)
+      if (task.execution_state === 'interrupted' || experimentIsClosed(experiment)) return task
+      if (error) {
+        if (experiment && pauseOnFailure) this.run('UPDATE workbench_experiments SET control_state=? WHERE task_id=?', 'paused', taskId)
+        return this.markExecution(taskId, 'failed', error)
+      }
+      if (experiment?.control_state === 'paused') return task
+      return this.markExecution(taskId, 'running')
+    })
   }
   private artifact(row: Row): StoredArtifact {
     const { payload_json, source_files_json, skill_refs_json, applied_target_json, publish_receipt_json: _receipt, ...rest } = row
@@ -250,7 +269,7 @@ export class WorkbenchStore {
     for (const key of segments.slice(0, -1)) { const next = current[key]; if (next === null || typeof next !== 'object' || Array.isArray(next)) current[key] = {}; current = current[key] as Record<string, JsonValue> }
     current[segments.at(-1)!] = content
   }
-  private applyPatch(task: Task, patch: Record<string, JsonValue>, expected: Record<string, JsonValue>, target = task.apply_target): boolean {
+  private applyPatch(task: Task, patch: Record<string, JsonValue>, expected: Record<string, JsonValue>, target = task.apply_target, parameterMapping?: TaskDraft['parameter_mapping']): boolean {
     const current = this.targetValues(target)
     const reviewExpected = target.kind === 'run_review' ? validateReviewDraft(current) : undefined
     for (const key of Object.keys(patch)) {
@@ -262,6 +281,7 @@ export class WorkbenchStore {
       if (!equalValue(this.field(current, key), baseline)) return false
     }
     for (const [key, value] of Object.entries(patch)) this.put(current, key, value)
+    if (target.kind === 'branch' && Object.hasOwn(patch, 'generation_input') && parameterMapping !== undefined) current.parameter_mapping = jsonValue(parameterMapping)
     if (target.kind === 'branch') this.run('UPDATE workbench_branches SET draft_json=? WHERE branch_id=?', JSON.stringify(current), target.id)
     else this.saveRunReviewDraft({ workspaceId: this.taskWorkspace(task.task_id), workId: this.getBranch(task.branch_id).work_id, runId: target.id, expected: reviewExpected!, draft: validateReviewDraft(current) })
     return true
@@ -338,7 +358,7 @@ export class WorkbenchStore {
       const target = generation ? { kind: 'branch' as const, id: task.branch_id, expected: input.expected } : task.apply_target
       if (stored.artifact.type === 'review' && !input.candidate) patch.review_artifact_id = stored.artifact_id
       if (stored.artifact.type === 'experience') patch.experience_artifact_id = stored.artifact_id
-      if (!this.applyPatch(task, patch, input.expected, target)) fail('WORKBENCH_EDIT_CONFLICT', '目标内容已改变，请刷新差异后重新采用。', 'expected')
+      if (!this.applyPatch(task, patch, input.expected, target, input.resolvedDraft?.parameter_mapping)) fail('WORKBENCH_EDIT_CONFLICT', '目标内容已改变，请刷新差异后重新采用。', 'expected')
       if (!input.candidate) this.run('UPDATE workbench_task_artifacts SET disposition=?,applied_target_json=? WHERE artifact_id=?', 'applied', JSON.stringify({ kind: target.kind, id: target.id, fields: Object.keys(patch) }), stored.artifact_id)
       return { task_id: task.task_id, artifact_id: stored.artifact_id, disposition: input.candidate ? stored.disposition : 'applied' }
     })
@@ -360,7 +380,13 @@ export class WorkbenchStore {
   }
   controlTask(taskId: string, action: 'interrupt' | 'pause' | 'continue'): Task {
     return transaction(this.database, () => {
-      const task = this.getTask(taskId)
+      const task = this.refreshTask(taskId)
+      const experiment = this.getExperiment(taskId)
+      if (experimentIsClosed(experiment)) {
+        if (action === 'interrupt') return task
+        const error = experimentControlErrors.closed
+        fail(error.code, error.message, error.path)
+      }
       if (action === 'pause' && task.kind !== 'experiment') fail('WORKBENCH_INVALID_INPUT', '请选择持续实验任务后暂停。')
       if (task.kind === 'experiment') this.run('UPDATE workbench_experiments SET control_state=? WHERE task_id=?', action === 'pause' ? 'paused' : action === 'interrupt' ? 'ended' : 'running', taskId)
       this.run('UPDATE workbench_tasks SET execution_state=?,status=?,error_json=NULL,updated_at=? WHERE task_id=?', action === 'interrupt' ? 'interrupted' : 'pending', action === 'pause' ? 'paused' : 'pending', Date.now(), taskId)
@@ -368,9 +394,15 @@ export class WorkbenchStore {
     })
   }
   endExperiment(taskId: string, reason: 'goal_met' | 'user_ended'): Experiment {
-    if (!this.getExperiment(taskId)) fail('WORKBENCH_INVALID_INPUT', '请选择持续实验任务。', 'task_id')
-    this.run('UPDATE workbench_experiments SET control_state=?,end_reason=? WHERE task_id=?', 'ended', reason, taskId)
-    this.refreshTask(taskId); return this.getExperiment(taskId)!
+    return transaction(this.database, () => {
+      this.refreshTask(taskId)
+      const experiment = this.getExperiment(taskId)
+      if (!experiment) return fail('WORKBENCH_INVALID_INPUT', '请选择持续实验任务。', 'task_id')
+      if (experimentIsClosed(experiment)) return experiment
+      this.run('UPDATE workbench_experiments SET control_state=?,end_reason=? WHERE task_id=?', 'ended', reason, taskId)
+      this.refreshTask(taskId)
+      return this.getExperiment(taskId)!
+    })
   }
   private generationInput(row: Row): GenerationInput {
     const input = parse<GenerationRequest>(row.request_json)

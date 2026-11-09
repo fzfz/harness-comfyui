@@ -1,11 +1,13 @@
 import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import type { ConnectionStateSource } from '@deepseek-ai/dsh-client-connection/client'
+import type { ILayout, MainPanelId, PanelInfo, UsePanelInfo } from '@deepseek-ai/dsh-client-ui-layout/client'
 import {
   Button,
   IconSparkleRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview, WorkbenchTaskDraftRequest, WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchTaskDraftRequest, WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
@@ -20,14 +22,13 @@ import type {
 import { ExperimentWorkbench } from './experiment-workbench.tsx'
 import { experimentWorkbenchStyles } from './experiment-style.ts'
 
-export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment'
+export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment' as MainPanelId
 type RemoteReply<T> = RemoteResult<T>
 export type ExperimentEnvironment = WorkbenchEnvironment
 export interface ExperimentHostRemote {
   readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<RemoteReply<WorkbenchRunInput>>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft | null>>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft>>
-  readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<RemoteReply<WorkbenchModelChangePreview>>
   readonly getInputDescription: (
     scope: WorkbenchInputDescriptionRequest,
   ) => Promise<RemoteReply<WorkflowRuntimeParameterInspection | null>>
@@ -48,11 +49,14 @@ function unwrap<T>(reply: RemoteReply<T>): T {
 }
 export function ExperimentWorkbenchEntry({
   wide,
-  open,
+  usePanelInfo,
+  selectPanel,
 }: {
   readonly wide: boolean
-  readonly open: () => void
+  readonly usePanelInfo: UsePanelInfo
+  readonly selectPanel: ILayout['selectPanel']
 }) {
+  const active = usePanelInfo((info: PanelInfo) => info.activePanelId === EXPERIMENT_PANEL_ID)
   return (
     <Button
       className="harness-comfyui-sidebar-entry"
@@ -61,7 +65,8 @@ export function ExperimentWorkbenchEntry({
       icon={<IconSparkleRegular size={16} />}
       aria-label="实验工作台"
       title="实验工作台"
-      onClick={open}
+      aria-pressed={active}
+      onClick={() => selectPanel(active ? null : EXPERIMENT_PANEL_ID)}
     >
       {wide ? '实验工作台' : null}
     </Button>
@@ -85,9 +90,11 @@ function ExperimentWorkbenchSurface({ children }: { readonly children: ReactNode
 export function ExperimentWorkbenchHost({
   remote,
   catalog,
+  connectionState,
 }: {
   readonly remote: ExperimentHostRemote
   readonly catalog: CatalogApi
+  readonly connectionState: ConnectionStateSource
 }) {
   const [environment, setEnvironment] = useState<ExperimentEnvironment | null>(
     null,
@@ -120,8 +127,6 @@ export function ExperimentWorkbenchHost({
         unwrap(await remote.getTaskDraft(request)),
       saveTaskDraft: async (request: WorkbenchSaveTaskDraftRequest) =>
         unwrap(await remote.saveTaskDraft(request)),
-      previewModelChange: async (request: WorkbenchModelChangeRequest) =>
-        unwrap(await remote.previewModelChange(request)),
       getEnvironment: async (request: WorkbenchEnvironmentRequest) =>
         unwrap(await remote.getEnvironment(request)),
       getInputDescription: async (scope: WorkbenchInputDescriptionRequest) =>
@@ -182,6 +187,7 @@ export function ExperimentWorkbenchHost({
   ) : !environment ? <div role="status">正在加载工作区…</div> : (
     <ExperimentWorkbench
       remote={api}
+      connectionState={connectionState}
       catalog={catalog}
       workspaces={environment.workspaces}
       workspaceId={workspaceId}

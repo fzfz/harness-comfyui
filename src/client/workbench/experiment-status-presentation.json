@@ -10,5 +10,6 @@
   "budget": "已提交 {submitted} 次 · 还可提交 {remaining} 次",
   "active": "{runId} 正在运行",
   "round": "第 {index} 轮 · {runId}",
-  "openRound": "查看本轮结果"
+  "openRound": "查看本轮结果",
+  "progress": "已完成 {completed} / {max} 次"
 }

@@ -34,3 +34,7 @@ export function readSavedPromptInput(input: GenerationInput, parameters: readonl
   }
   return result
 }
+
+export function parameterMapping(parameters: readonly WorkflowRuntimeParameterInspectionParameter[]): NonNullable<import('./contract.ts').ParameterMapping> {
+  return Object.fromEntries(parameters.map(parameter => [parameter.parameter_id, parameter.kind]))
+}

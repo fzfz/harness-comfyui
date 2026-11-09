@@ -9,10 +9,10 @@ import { agentModelProblem } from '../../workbench/agent-model.ts'
 import libraryConfig from '../../workbench/library-config.json' with { type: 'json' }
 import productAgent from '../../../config/product-agent.json' with { type: 'json' }
 import { WORKBENCH_FUNCTIONS as defaults } from '../../workbench/functions.ts'
-import type { WorkbenchEnvironment, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../catalog/contract.ts'
 import { WorkbenchService } from '../../workbench/service.ts'
-import type { AgentModel, WorkbenchModelCatalog, GenerationInput, ContextRef, TaskDraft, ResourceRef } from '../../workbench/contract.ts'
+import type { AgentModel, WorkbenchModelCatalog, GenerationInput, ContextRef, TaskDraft } from '../../workbench/contract.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import { createWorkbenchInputAdapter } from './input-adapter.ts'
 import { workspaceSessionScopeForSession } from '../generation/workspace-access.ts'
@@ -30,7 +30,6 @@ interface WorkbenchHost {
   readonly signal: AbortSignal
   readonly validateParameters: ReturnType<typeof createWorkbenchInputAdapter>['validateParameters']
   readonly resolveGenerationDraft: (input: GenerationInput, refs: ContextRef[]) => Promise<TaskDraft>
-  readonly previewModelChange: (modelId: string, draft: TaskDraft, signal?: AbortSignal) => Promise<WorkbenchModelChangePreview>
   readonly resolveResourceSelection: ReturnType<typeof createWorkbenchInputAdapter>['resolveResourceSelection']
   readonly environment: (workspaceId?: string, presetId?: string) => Promise<WorkbenchEnvironment>
   readonly initializeWorkspace: (workspaceId: string) => Promise<void>
@@ -75,7 +74,7 @@ export function apply(ctx: Context): void {
     refreshAfterMs: profile.client.runRefreshIntervalMs,
     prepareGenerationInput: input.prepareGenerationInput, resolveResourceRefs: input.resolveResourceRefs, resolveResourceSelection: input.resolveResourceSelection,
     validateContextRefs: input.validateReferences, validateResourceRefs: input.validateReferences,
-    parameterIds: input.parameterIds, validateGenerationInput: input.validateGenerationInput,
+    resolveParameterMapping: input.resolveParameterMapping, parameterIds: input.parameterIds, validateGenerationInput: input.validateGenerationInput,
     validateParameters: input.validateParameters, resolveGenerationDraft: input.resolveGenerationDraft,
     resolveBaseModelDraft: async (baseModelId, draft) => {
       const available = await catalog.baseModels(signal).catch(error => {
@@ -89,7 +88,7 @@ export function apply(ctx: Context): void {
         const error = libraryConfig.errors.baseModelUnavailable
         throw new WorkbenchError(error.code, error.message, error.path)
       }
-      return input.resolveBaseModelDraft(baseModelId, draft)
+      return { ...structuredClone(draft), base_model_id: baseModelId }
     },
     resolveRunModelBaseId: async fixed => {
       try {
@@ -109,7 +108,7 @@ export function apply(ctx: Context): void {
   })
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
   ctx.provide('harnessComfyuiWorkbench', {
-    service, signal, validateParameters: input.validateParameters, previewModelChange: input.previewModelChange, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
+    service, signal, validateParameters: input.validateParameters, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
     async validateFunctionAgentModel(selection) {
       const models = await controller.modelCatalog().catch(cause => {
         const failure = agentModelSelection.catalogUnavailable

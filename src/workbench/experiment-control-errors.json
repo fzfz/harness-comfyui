@@ -1,0 +1,8 @@
+{
+  "dispatchFailureCode": "WORKBENCH_DISPATCH_FAILED",
+  "closed": {
+    "code": "WORKBENCH_EXPERIMENT_CLOSED",
+    "message": "实验已结束，请查看已有轮次或创建新的实验。",
+    "path": "task_id"
+  }
+}

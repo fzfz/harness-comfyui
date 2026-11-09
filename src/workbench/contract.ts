@@ -1,11 +1,14 @@
 import libraryConfig from './library-config.json' with { type: 'json' }
 import type { CatalogKind as CatalogResourceKind } from '../catalog/contract.ts'
+import type { StandardRuntimeParameterKind } from '../generation/inspection-contract.ts'
 import type { JsonValue } from '../shared/json-contract.ts'
 
 export type { JsonValue }
 const RUN_REVIEW_FUNCTION_KINDS = ['review', 'compare', 'diagnose', 'experience'] as const
 export type RunReviewFunctionKind = typeof RUN_REVIEW_FUNCTION_KINDS[number]
-export type TaskKind = 'prompt' | 'rewrite' | 'parameters' | 'resources' | RunReviewFunctionKind | 'run' | 'experiment'
+const BRANCH_NON_GENERATION_TASK_KINDS = ['prompt', 'rewrite', 'parameters', 'resources'] as const
+export type BranchNonGenerationTaskKind = typeof BRANCH_NON_GENERATION_TASK_KINDS[number]
+export type TaskKind = BranchNonGenerationTaskKind | RunReviewFunctionKind | 'run' | 'experiment'
 export function isRunReviewFunctionKind(kind: TaskKind): kind is RunReviewFunctionKind { return RUN_REVIEW_FUNCTION_KINDS.some(reviewKind => reviewKind === kind) }
 export type TaskStatus = 'pending' | 'running' | 'waiting_input' | 'waiting_generation' | 'needs_attention' | 'paused' | 'interrupted' | 'succeeded' | 'failed'
 export type ArtifactType = ArtifactPayload['type']
@@ -33,7 +36,9 @@ export interface WorkbenchRunInput {
   prompt_input: PromptInput
 }
 
-export interface TaskDraft { prompt_input: PromptInput; generation_input: GenerationInput; context_refs: ContextRef[]; base_model_id: string | null }
+export type ParameterMapping = Record<string, StandardRuntimeParameterKind> | null
+export function isBranchNonGenerationTaskKind(kind: TaskKind): kind is BranchNonGenerationTaskKind { return BRANCH_NON_GENERATION_TASK_KINDS.some(branchKind => branchKind === kind) }
+export interface TaskDraft { prompt_input: PromptInput; generation_input: GenerationInput; parameter_mapping: ParameterMapping; context_refs: ContextRef[]; base_model_id: string | null }
 
 export interface TaskRequestDraft {
   instructions: string
@@ -220,9 +225,14 @@ export interface WorkbenchProjection {
   functions: FunctionBinding[]
   refreshAfterMs: number
 }
-export interface TaskGetResult extends TaskInput {
-  task_id: string; kind: TaskKind; status: TaskStatus; output_contract: OutputContract
+export interface TaskGetCommon extends Omit<TaskInput, 'generation_input' | 'parameter_mapping'> {
+  task_id: string; status: TaskStatus; output_contract: OutputContract
   artifacts: { artifact_id: string; artifact: ArtifactPayload; disposition: ArtifactDisposition }[]
   iterations: { index: number; run_id: string; generation_input: GenerationInput; context_refs: ContextRef[]; review_artifact_id: string | null }[]
   answers: TaskAnswer[]
 }
+
+export interface BranchNonGenerationTaskGetResult extends TaskGetCommon { kind: BranchNonGenerationTaskKind; generation_input: GenerationInput; unresolved_parameters: Record<string, JsonValue> }
+export interface GenerationTaskGetResult extends TaskGetCommon { kind: 'run' | 'experiment'; generation_input: GenerationInput }
+export interface HistoricalTaskGetResult extends TaskGetCommon { kind: RunReviewFunctionKind; generation_input: GenerationInput }
+export type TaskGetResult = BranchNonGenerationTaskGetResult | GenerationTaskGetResult | HistoricalTaskGetResult

@@ -10,7 +10,6 @@ import React, {
 import {
   catalogPageCount,
   catalogDefinition,
-  catalogResourceCompatible,
   type CatalogItem,
   type CatalogKind,
 } from '../../catalog/contract.ts'
@@ -25,7 +24,6 @@ import type {
   WorkbenchRun,
 } from '../../workbench/contract.ts'
 import { isRunReviewFunctionKind, WORKBENCH_BRANCH_NAME_MAX_LENGTH } from '../../workbench/contract.ts'
-import type { WorkbenchModelChangeRequest, WorkbenchModelChangePreview } from '../../workbench-remote.ts'
 import type {
   ExperimentActionType,
   ExperimentPage,
@@ -57,6 +55,7 @@ import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useC
 import { workbenchContextKey } from './contract.ts'
 import inputOptions from './experiment-input-options.json' with { type: 'json' }
 import taskPresentation from './experiment-task-presentation.json' with { type: 'json' }
+import connectionPresentation from './experiment-connection-presentation.json' with { type: 'json' }
 import { isGenerationRunTerminal } from '../../generation/run-status.ts'
 import runPresentation from './experiment-run-presentation.json' with { type: 'json' }
 import { useRunInputs } from './experiment-run-input.ts'
@@ -65,7 +64,7 @@ import { ExperimentReviewDialog } from './experiment-review-dialog.tsx'
 import reviewPresentation from './experiment-review-presentation.json' with { type: 'json' }
 import libraryPresentation from './experiment-library-presentation.json' with { type: 'json' }
 import { ExperimentReuseDialog } from './experiment-reuse-dialog.tsx'
-import { ExperimentStatus } from './experiment-status.tsx'
+import { ExperimentStatus, ExperimentTaskRounds } from './experiment-status.tsx'
 
 export type {
   ExperimentWorkbenchAction,
@@ -261,7 +260,15 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const selectWork = (workId: string) => navigate(() => store.selectWork(workId))
   const selectBranch = (branchId: string) => navigate(() => store.selectBranch(branchId))
   const selectRun = (runId: string, inspectRun = true) => navigate(() => store.selectRun(runId, inspectRun))
-  const [message, setMessage, messageTask, clearTransientMessage] = useToastMessage<TaskNotificationTarget>()
+  const [message, setMessage, messageTarget, clearTransientMessage] = useToastMessage<TaskNotificationTarget | 'connection'>()
+  const messageTask = messageTarget && messageTarget !== 'connection' ? messageTarget : undefined
+  const connectionObservation = useRef<{
+    source: ExperimentWorkbenchProps['connectionState']
+    status: 'connected' | 'disconnected' | undefined
+  }>({
+    source: props.connectionState,
+    status: props.connectionState.getSnapshot() === 'connected' ? 'connected' : undefined,
+  })
   const taskCards = useRef(new Map<string, HTMLElement>())
   const [taskToReveal, setTaskToReveal] = useState<string | null>(null)
   const taskNotifications = useRef<{ readonly workspaceId: string; readonly workId: string; readonly states: Map<string, string> } | null>(null)
@@ -280,21 +287,15 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   reviewAction.current = props.onAction
   const [reviewEditor, setReviewEditor] = useState<RunReviewEditor | null>(null)
   const [taskRequest, setTaskRequest] = useState<{ editor: TaskRequestEditor; binding: FunctionBinding; navigation: number } | null>(null)
-  const [modelChange, setModelChange] = useState<{
-    readonly request: WorkbenchModelChangeRequest
-    readonly preview: WorkbenchModelChangePreview
-    readonly navigation: number
-  } | null>(null)
   const [imageRunId, setImageRunId] = useState<string | null>(null)
   const [reuseExperience, setReuseExperience] = useState<Experience | null>(null)
   const [focusExperienceId, setFocusExperienceId] = useState<string | null>(null)
   const [modal, setModalState] = useState<
-    'new-work' | 'new-workspace' | 'branch' | 'image' | 'model-change' | 'evaluate' | 'reuse' | null
+    'new-work' | 'new-workspace' | 'branch' | 'image' | 'evaluate' | 'reuse' | null
   >(null)
   const setModal = useCallback((value: typeof modal) => {
     modalInstance.current++
     setFormSubmitting(false)
-    if (value !== 'model-change') setModelChange(null)
     if (value !== 'image') setImageRunId(null)
     if (value !== 'reuse') setReuseExperience(null)
     setModalState(value)
@@ -320,10 +321,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     modalInstance.current++
     store.dispose()
   }, [store])
-  const navigationSequence = store.getNavigationSequence()
-  useEffect(() => {
-    if (modelChange && (modelChange.navigation !== navigationSequence || props.visible === false)) setModal(null)
-  }, [navigationSequence, props.visible, modelChange, setModal])
   useEffect(() => {
     setModal(null)
     setSheet(false)
@@ -333,6 +330,33 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     setMessage(null)
     setFocusExperienceId(null)
   }, [state.workspaceId, state.view.workId, props.visible])
+  useEffect(() => {
+    const source = props.connectionState
+    if (connectionObservation.current.source !== source) {
+      connectionObservation.current = {
+        source,
+        status: source.getSnapshot() === 'connected' ? 'connected' : undefined,
+      }
+    }
+    const observe = () => {
+      if (props.visible === false || document.hidden) return
+      const current = source.getSnapshot(), previous = connectionObservation.current.status
+      if (current === 'connected') {
+        connectionObservation.current.status = 'connected'
+        if (previous === 'disconnected') setMessage(connectionPresentation.connected, 'connection')
+      } else if (current && previous === 'connected') {
+        connectionObservation.current.status = 'disconnected'
+        setMessage(connectionPresentation.disconnected, 'connection')
+      }
+    }
+    const unsubscribe = source.subscribe(observe)
+    document.addEventListener('visibilitychange', observe)
+    observe()
+    return () => {
+      unsubscribe()
+      document.removeEventListener('visibilitychange', observe)
+    }
+  }, [props.connectionState, props.visible, setMessage])
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -356,10 +380,13 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     p?.tasks.find((task) => task.task_id === item.workbench_task_id)
   const branchFor = (item: WorkbenchRun) =>
     p?.branches.find((branch) => branch.branch_id === taskFor(item)?.branch_id)
-  const experiment = p?.experiments.find(
-    item => p.tasks.find(task => task.task_id === item.task_id)?.branch_id === branch?.branch_id &&
-      ['running', 'paused'].includes(item.control_state),
-  )
+  const branchExperiments = p?.experiments.filter(
+    item => p.tasks.find(task => task.task_id === item.task_id)?.branch_id === branch?.branch_id,
+  ) ?? []
+  const experiment = branchExperiments.find(item => ['running', 'paused'].includes(item.control_state))
+  const displayedExperiment = experiment ?? branchExperiments.at(-1)
+  const displayedExperimentTask = p?.tasks.find(task => task.task_id === displayedExperiment?.task_id)
+  const displayedExperimentRuns = p?.runs.filter(item => item.workbench_task_id === displayedExperiment?.task_id) ?? []
   const experimentTask = p?.tasks.find(task => task.task_id === experiment?.task_id)
   const experimentRuns = p?.runs.filter(item => item.workbench_task_id === experiment?.task_id) ?? []
   const firstExperimentRun = experimentRuns.find(item => item.iteration_index === 1)
@@ -522,7 +549,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         presetOverrideRevision.current === submittedPresetRevision)
         store.updateView({ presetOverride: null })
       if (!stillCurrent()) return false
-      const keepsCurrentNavigation = type === 'favorite' || !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'task-apply' || type === 'task-generation-apply'
+      const keepsCurrentNavigation = type === 'favorite' || !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'pause-experiment' || type === 'resume-experiment' || type === 'stop-experiment' || type === 'task-apply' || type === 'task-generation-apply'
       const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
         && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
       if (selection?.taskId && view.workId) {
@@ -556,29 +583,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       return false
     }
   }
-  const selectResource = async (item: CatalogItem) => {
+  const selectResource = (item: CatalogItem) => {
     if (locked) return
-    if (item.context.kind !== 'model') {
-      void action('resource-select', { id: item.context.id, value: item.context })
-      return
-    }
-    if (!state.workspaceId || !view.workId || !view.branchId) return
-    const request = { workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId, modelId: item.context.id }
-    setModal(null)
-    const instance = modalInstance.current, navigation = store.getNavigationSequence()
-    const isCurrent = () => modalInstance.current === instance && store.getNavigationSequence() === navigation
-    try {
-      const preview = await props.remote.previewModelChange(request)
-      if (!isCurrent()) return
-      if (preview.removed.length) {
-        setModelChange({ request, preview, navigation })
-        setModal('model-change')
-      } else {
-        await action('resource-select', { id: request.modelId, value: { kind: 'model', id: request.modelId } }, isCurrent)
-      }
-    } catch (error) {
-      if (isCurrent()) setMessage(error instanceof Error ? error.message : '模型兼容性读取失败，请重新选择生成模型。')
-    }
+    void action('resource-select', { id: item.context.id, value: item.context })
   }
   const editorForReview = (runId: string) => {
     const target = p?.runs.find(item => item.run_id === runId)
@@ -1233,6 +1240,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 artifact.type === 'prompt' || artifact.type === 'parameters' || artifact.type === 'generation_input'
                 || (artifact.artifact.type === 'review' && !!artifact.artifact.candidate)
               ),
+              taskExperiment = p.experiments.find(experiment => experiment.task_id === item.task_id),
               taskRuns = p.runs.filter(
                 (run) => run.workbench_task_id === item.task_id,
               ),
@@ -1376,7 +1384,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       )}
                     </div>
                 )}
-                {taskRuns.map((run) => (
+                {taskExperiment ? <ExperimentTaskRounds experiment={taskExperiment} runs={taskRuns} artifacts={artifacts} onRun={selectRun} /> : taskRuns.map((run) => (
                   <div className="task-output" key={run.run_id}>
                     <Button
                       kind="small"
@@ -1627,9 +1635,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 : '任务输入'}
           </span>
         </div>
-        {experiment && experimentTask && <ExperimentStatus experiment={experiment} task={experimentTask}
-          runs={experimentRuns} presetName={presetName(experimentTask.binding_snapshot.preset_id)}
-          modelName={formatAgentModel(experimentTask.binding_snapshot.agentModel)} onRun={selectRun} />}
+        {displayedExperiment && displayedExperimentTask && <ExperimentStatus experiment={displayedExperiment} task={displayedExperimentTask}
+          runs={displayedExperimentRuns} presetName={presetName(displayedExperimentTask.binding_snapshot.preset_id)}
+          modelName={formatAgentModel(displayedExperimentTask.binding_snapshot.agentModel)} onRun={selectRun} />}
         <fieldset className="configuration" disabled={locked}>
           {field('分支名称', 'name', branch.name, {
             maxLength: WORKBENCH_BRANCH_NAME_MAX_LENGTH,
@@ -2031,7 +2039,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   )
   const imageRun = p?.runs.find(item => item.run_id === imageRunId)
   const ModalHeading = modal === 'image' ? 'header' : 'div'
-  const modalHeadingId = modal === 'image' ? 'image-title' : modal === 'model-change' ? 'modal-title' : undefined
+  const modalHeadingId = modal === 'image' ? 'image-title' : undefined
   const modalTitle =
     modal === 'new-work'
       ? '新建工作'
@@ -2039,9 +2047,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         ? '添加工作区'
         : modal === 'branch'
           ? '创建子分支'
-          : modal === 'model-change'
-            ? '更换生成模型'
-            : `${imageRun?.run_id} · 图片 1`
+          : `${imageRun?.run_id} · 图片 1`
   return (
     <div className="experiment-workbench" ref={host}>
       <div className="experiment-workbench-content">
@@ -2166,7 +2172,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             </Button>
           </div>
         )}
-        {state.error ? (
+        {state.error && !p ? (
           <main className="empty workspace-empty">
             <h1>工作台加载失败</h1>
             <p role="alert">{state.error}</p>
@@ -2389,43 +2395,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                 <div className="original-image">
                   {imageRun && media(imageRun) && <img src={media(imageRun)} alt={imageRun.title} />}
                 </div>
-              ) : modal === 'model-change' ? (
-                <form id="modal-form" onSubmit={async event => {
-                  event.preventDefault()
-                  if (!modelChange || modelChange.navigation !== store.getNavigationSequence()) return
-                  const instance = modalInstance.current
-                  if (formSubmissionPending.current === instance) return
-                  const isCurrent = () => modalInstance.current === instance && modelChange.navigation === store.getNavigationSequence()
-                  formSubmissionPending.current = instance
-                  setFormSubmitting(true)
-                  clearTransientMessage()
-                  const saved = await action('resource-select', {
-                    workspaceId: modelChange.request.workspaceId,
-                    workId: modelChange.request.workId,
-                    branchId: modelChange.request.branchId,
-                    id: modelChange.request.modelId,
-                    value: {
-                      kind: 'model', id: modelChange.request.modelId,
-                      confirmedRemovals: modelChange.preview.removed.map(({ kind, id }) => ({ kind, id })),
-                    },
-                  }, isCurrent)
-                  if (formSubmissionPending.current === instance) formSubmissionPending.current = null
-                  if (isCurrent()) {
-                    setFormSubmitting(false)
-                    if (saved) setModal(null)
-                  }
-                }}>
-                  <p>更换为 {modelChange?.preview.model.label} 后，将移除以下不兼容的资源：</p>
-                  <ul className="incompatible-resources">
-                    {modelChange?.preview.removed.map(item => (
-                      <li key={`${item.kind}:${item.id}`}><b>{item.label}</b><small>{catalogDefinition(item.kind).label}</small></li>
-                    ))}
-                  </ul>
-                  <div className="modal-actions">
-                    <Button kind="quiet" onClick={() => setModal(null)}>取消</Button>
-                    <button className="btn primary" type="submit" disabled={formSubmitting}>更换模型</button>
-                  </div>
-                </form>
               ) : (
                 <form
                   onSubmit={async (event) => {
@@ -2605,12 +2574,10 @@ function ExperimentCatalog({
     ...(selected?.context_refs ?? []),
   ]
   const chosen = (item: CatalogItem) => selection.some(ref => workbenchContextKey(ref) === workbenchContextKey(item.context))
-  const compatibilityTarget = { baseModelId: selected?.base_model_id ?? null, modelId: selected?.generation_input.model?.id ?? null }
   const selectButton = (item: CatalogItem, selected = chosen(item)) => {
     const multiple = item.context.kind !== 'model' && item.context.kind !== 'comfyui-template'
-    const compatible = item.context.kind === 'model' || catalogResourceCompatible(item, compatibilityTarget)
-    const label = !compatible ? '需更换生成模型' : selected ? multiple ? '移除' : '已选择' : '选择'
-    return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || !compatible || selected && !multiple}
+    const label = selected ? multiple ? '移除' : '已选择' : '选择'
+    return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || selected && !multiple}
       label={`${label} ${item.label}`} pressed={selected} onClick={() => selected && multiple ? onRemove(item) : onSelect(item)}>{label}</Button>
   }
   const openGallery = (item: CatalogItem) => onGallery({ kind: item.context.kind, id: item.context.id, index: 0 })

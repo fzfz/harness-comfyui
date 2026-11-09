@@ -1,4 +1,5 @@
 import React from 'react'
+import type { MainPanelId, PanelInfo } from '@deepseek-ai/dsh-client-ui-layout/client'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { createPortal } from 'react-dom'
 vi.mock('react-dom', () => ({
@@ -18,6 +19,7 @@ import {
 import { ExperimentWorkbench } from '../../src/client/workbench/experiment-workbench.tsx'
 import {
   fullProjection,
+  createConnectionState,
   inputDescription,
   runInputDescription,
 } from './experiment-workbench-fixtures.ts'
@@ -63,7 +65,6 @@ const remote = (): ExperimentHostRemote => ({
   }),
   getTaskDraft: vi.fn(async () => ({ ok: true as const, value: null })),
   saveTaskDraft: vi.fn(async request => ({ ok: true as const, value: request.draft })),
-  previewModelChange: vi.fn(async request => ({ ok: true as const, value: { model: { id: request.modelId, label: 'ANIMA3' }, removed: [] } })),
   getInputDescription: vi.fn(async () => ({
     ok: true as const,
     value: inputDescription,
@@ -97,7 +98,7 @@ const mount = async (api: ExperimentHostRemote) => {
   let renderer: any
   await act(async () => {
     renderer = create(
-      <ExperimentWorkbenchHost remote={api} catalog={catalog()} />,
+      <ExperimentWorkbenchHost remote={api} catalog={catalog()} connectionState={createConnectionState().source} />,
       { createNodeMock },
     )
   })
@@ -105,6 +106,54 @@ const mount = async (api: ExperimentHostRemote) => {
   return renderer
 }
 describe('official experiment workbench adapter', () => {
+  it('passes the official connection source through the Host to visible workbench tips', async () => {
+    vi.stubGlobal('document', new EventTarget())
+    vi.stubGlobal('localStorage', { getItem: () => 'workspace-a', setItem: vi.fn() })
+    const connection = createConnectionState(), api = remote()
+    let renderer: any
+    await act(() => {
+      renderer = create(<ExperimentWorkbenchHost remote={api} catalog={catalog()} connectionState={connection.source} />, { createNodeMock })
+    })
+    mounts.push(renderer)
+    expect(renderer.root.findByType(ExperimentWorkbench).props.connectionState).toBe(connection.source)
+    expect(connection.subscriberCount).toBe(1)
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await act(() => connection.set('disconnected'))
+    expect(renderer.root.findByProps({ className: 'toast' }).findByType('span').children).toEqual(['连接已断开'])
+    await act(() => renderer.unmount())
+    expect(connection.subscriberCount).toBe(0)
+  })
+
+  it.each([true, false])('toggles the workbench and follows the host panel selection with wide=%s', async wide => {
+    let selectOtherPanel!: () => void
+    const selectedPanels: (string | null)[] = []
+    function HostPanel() {
+      const [panel, setPanel] = React.useState<MainPanelId | null>(null)
+      selectOtherPanel = () => setPanel('plugins' as MainPanelId)
+      const props: React.ComponentProps<typeof ExperimentWorkbenchEntry> = {
+        wide,
+        usePanelInfo: <T,>(select: (info: PanelInfo) => T) => select({ activePanelId: panel }),
+        selectPanel: id => { selectedPanels.push(id); setPanel(id) },
+      }
+      return <ExperimentWorkbenchEntry {...props} />
+    }
+    let renderer: any
+    await act(() => { renderer = create(<HostPanel />) })
+    mounts.push(renderer)
+    const button = () => renderer.root.findByProps({ 'aria-label': '实验工作台' })
+    expect(button().props['aria-pressed']).toBe(false)
+    await act(() => button().props.onClick())
+    expect(button().props['aria-pressed']).toBe(true)
+    await act(() => button().props.onClick())
+    expect(button().props['aria-pressed']).toBe(false)
+    await act(() => button().props.onClick())
+    await act(() => selectOtherPanel())
+    expect(button().props['aria-pressed']).toBe(false)
+    await act(() => button().props.onClick())
+    expect(button().props['aria-pressed']).toBe(true)
+    expect(selectedPanels).toEqual(['harness-comfyui-experiment', null, 'harness-comfyui-experiment', 'harness-comfyui-experiment'])
+  })
+
   it('forwards task draft scope and payload and preserves Remote failures and accepted task identity', async () => {
     const api = remote(), renderer = await mount(api)
     const shell: ExperimentWorkbenchProps = renderer.root.findByType(ExperimentWorkbench).props
@@ -136,14 +185,15 @@ describe('official experiment workbench adapter', () => {
       field: 'parameter', id: 'steps_42', value: 101 })).rejects.toBe(failure)
   })
 
-  it('forwards model previews and unwraps actionable Remote errors', async () => {
+  it('forwards generation model selection through the ordinary resource mutation', async () => {
     const api = remote(), renderer = await mount(api)
-    const request = { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', modelId: '21' }
-    const client = renderer.root.findByType(ExperimentWorkbench).props.remote
-    await expect(client.previewModelChange(request)).resolves.toEqual({ model: { id: '21', label: 'ANIMA3' }, removed: [] })
-    expect(api.previewModelChange).toHaveBeenCalledExactlyOnceWith(request)
-    vi.mocked(api.previewModelChange).mockResolvedValueOnce({ ok: false, error: new RemoteError('workbench/operation-failed', '模型读取失败，请重新选择生成模型。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] }) })
-    await expect(client.previewModelChange(request)).rejects.toThrow('模型读取失败，请重新选择生成模型。')
+    const request = { type: 'resource-select' as const, workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', id: '21', value: { kind: 'model', id: '21' } }
+    const shell: ExperimentWorkbenchProps = renderer.root.findByType(ExperimentWorkbench).props
+    await expect(shell.onAction(request)).resolves.toEqual({ workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child' })
+    expect(api.mutate).toHaveBeenCalledExactlyOnceWith(request)
+    const failure = new RemoteError('workbench/operation-failed', '模型读取失败，请重新选择生成模型。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] })
+    vi.mocked(api.mutate).mockResolvedValueOnce({ ok: false, error: failure })
+    await expect(shell.onAction(request)).rejects.toBe(failure)
   })
 
   it('keeps one open style boundary and portal target across updates, then unmounts its content', async () => {
@@ -254,14 +304,14 @@ describe('official experiment workbench adapter', () => {
       'harness-comfyui:experiment-workspace',
       'workspace-a',
     )
-    const open = vi.fn()
+    const selectPanel = vi.fn()
     let entry: any
     await act(() => {
-      entry = create(<ExperimentWorkbenchEntry wide open={open} />)
+      entry = create(<ExperimentWorkbenchEntry wide usePanelInfo={<T,>(selector: (info: PanelInfo) => T) => selector({ activePanelId: null })} selectPanel={selectPanel} />)
     })
     mounts.push(entry)
     await act(() => entry.root.findByType('button').props.onClick())
-    expect(open).toHaveBeenCalledOnce()
+    expect(selectPanel).toHaveBeenCalledWith('harness-comfyui-experiment')
   })
   it('shows environment failures, retries loading and rejects failed mutations', async () => {
     const api = remote()
@@ -304,7 +354,7 @@ describe('official experiment workbench adapter', () => {
     let renderer: any
     await act(async () => {
       renderer = create(
-        <ExperimentWorkbenchHost remote={api} catalog={source} />,
+        <ExperimentWorkbenchHost remote={api} catalog={source} connectionState={createConnectionState().source} />,
         { createNodeMock },
       )
     })

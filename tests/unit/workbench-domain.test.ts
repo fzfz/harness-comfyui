@@ -5,7 +5,7 @@ import type { TaskKind } from '../../src/workbench/contract.js'
 import { describe, expect, it } from 'vitest'
 import { validateArtifact, validateTaskInput, validateGenerationInput, validateContextRefs, WorkbenchError } from '../../src/workbench/validation.js'
 
-const input = { prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: 'test', instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, context_refs: [], base_model_id: null, requirements: { original_request: 'a scene', instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 0 }
+const input = { parameter_mapping: null, prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: 'test', instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, context_refs: [], base_model_id: null, requirements: { original_request: 'a scene', instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 0 }
 
 describe('workbench shared validation', () => {
   it.each(['prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'run', 'experiment'] as TaskKind[])('validates the %s task input contract', kind => {
@@ -26,7 +26,8 @@ describe('workbench shared validation', () => {
   })
 
   it('returns task inputs without evaluation fields and accepts reviews without candidate inputs', () => {
-    const task = { task_id: 'task-a', kind: 'prompt', status: 'running', ...input, output_contract: { artifact_types: ['prompt'], required_artifact_types: ['prompt'], parameter_ids: [], apply_mode: 'automatic', requires_finished_runs: false }, artifacts: [], iterations: [], answers: [] }
+    const { parameter_mapping, ...publicInput } = input
+    const task = { task_id: 'task-a', kind: 'prompt', status: 'running', ...publicInput, unresolved_parameters: {}, output_contract: { artifact_types: ['prompt'], required_artifact_types: ['prompt'], parameter_ids: [], apply_mode: 'automatic', requires_finished_runs: false }, artifacts: [], iterations: [], answers: [] }
     const result = Schema.resolve(task, taskGetResultSchema, {})[0]
     expect(result).toMatchObject({ task_id: 'task-a', kind: 'prompt', max_runs: 0 })
     expect(result.evaluation_input).toBeUndefined()

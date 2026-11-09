@@ -1,7 +1,8 @@
-import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchModelChangeRequest, WorkbenchModelChangePreview, WorkbenchTaskDraftRequest, WorkbenchSaveTaskDraftRequest, WorkbenchActionReceipt } from '../../workbench-remote.ts'
+import type { WorkbenchEnvironmentRequest, WorkbenchInputDescriptionRequest, WorkbenchTaskDraftRequest, WorkbenchSaveTaskDraftRequest, WorkbenchActionReceipt } from '../../workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
+import type { ConnectionStateSource } from '@deepseek-ai/dsh-client-connection/client'
 import type { CatalogApi } from './catalog-browser.tsx'
 import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 
@@ -31,7 +32,6 @@ export interface ExperimentRemote {
   readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<WorkbenchRunInput>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<TaskRequestDraft | null>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<TaskRequestDraft>
-  readonly previewModelChange: (request: WorkbenchModelChangeRequest) => Promise<WorkbenchModelChangePreview>
   readonly getEnvironment: (request: WorkbenchEnvironmentRequest) => Promise<WorkbenchEnvironment>
   readonly getInputDescription: (
     scope: WorkbenchInputDescriptionRequest,
@@ -48,6 +48,7 @@ import type { ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 export type ExperimentSelection = WorkbenchActionReceipt
 export interface ExperimentWorkbenchProps {
   readonly remote: ExperimentRemote
+  readonly connectionState: ConnectionStateSource
   readonly workspaces: readonly ExperimentWorkspace[]
   readonly workspaceId: string | null
   readonly environmentError?: string | null

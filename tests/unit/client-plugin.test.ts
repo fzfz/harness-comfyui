@@ -31,6 +31,7 @@ import type { ImageReaderConfiguration } from '../../src/image-reader/settings.t
 import { BROWSER_SETTINGS_REMOTE_SERVICE } from '../../src/browser-settings-schema.ts'
 import { WORKBENCH_REMOTE_SERVICE } from '../../src/workbench-remote.ts'
 import { EXPERIMENT_PANEL_ID } from '../../src/client/workbench/experiment-host.tsx'
+import { createConnectionState } from './experiment-workbench-fixtures.ts'
 
 type Registration = {
   name: string
@@ -64,6 +65,7 @@ afterEach(() => {
 function installImmediateInject(context: Record<string, any>): void {
   context.sidebarRight ??= { openTab: vi.fn() }
   context.layout ??= { selectPanel: vi.fn() }
+  context.connection ??= { state: createConnectionState().source }
   context.remote.harnessComfyuiWorkbenchRemote ??= { getEnvironment: vi.fn(), getProjection: vi.fn(), mutate: vi.fn() }
   context.sidebarRightTabs ??= { register: vi.fn(() => vi.fn()) }
   context.remote.harnessComfyuiCatalog.sourceAddress ??= vi.fn(async () => ({
@@ -231,7 +233,7 @@ describe('Harness Client plugin registration', () => {
     expect(name).toBe('harness-comfyui')
     expect(name).toBe(pluginPackage.packageName)
     expect(inject).toEqual([
-      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms', 'layout',
+      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms', 'layout', 'connection',
     ])
     expect((context as any).inject).toHaveBeenCalledWith([
       'remote.harnessComfyuiCatalog',
@@ -257,11 +259,15 @@ describe('Harness Client plugin registration', () => {
     expect(registrations.get('main')).toMatchObject({ key: EXPERIMENT_PANEL_ID })
     expect(registrations.get('main')!.inject()).toEqual({
       remote: (context as any).remote.harnessComfyuiWorkbenchRemote,
+      connectionState: (context as any).connection.state,
       catalog: expect.objectContaining({ search: expect.any(Function), details: expect.any(Function), baseModels: expect.any(Function) }),
     })
     const experimentEntry = register.mock.calls.find(([registration]) => registration.id === `${EXPERIMENT_PANEL_ID}-entry`)![0]
-    ;(experimentEntry.inject() as { open: () => void }).open()
-    expect((context as any).layout.selectPanel).toHaveBeenCalledWith(EXPERIMENT_PANEL_ID)
+    const experimentNavigation = experimentEntry.inject() as { selectPanel: (id: typeof EXPERIMENT_PANEL_ID | null) => void }
+    experimentNavigation.selectPanel(EXPERIMENT_PANEL_ID)
+    expect((context as any).layout.selectPanel).toHaveBeenLastCalledWith(EXPERIMENT_PANEL_ID)
+    experimentNavigation.selectPanel(null)
+    expect((context as any).layout.selectPanel).toHaveBeenLastCalledWith(null)
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
       id: WORKBENCH_ENTRY_ID,
       order: 10,

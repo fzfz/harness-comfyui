@@ -95,15 +95,20 @@ it('forks allowed parameter values into the fixed Task generation input and leav
   expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
 })
 
-it('forks a review candidate with prompts and model context resolved from its generation input', async () => {
+it('forks a review candidate with mixed catalog model scopes and preserves its full generation input', async () => {
   const host = await fixture(), { remote, service, catalog } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Review', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   const runId = await acceptRun(host, source)
   const { task, identity } = await startTask(host, source, 'review', runId)
+  const readDetails = catalog.details.getMockImplementation()!
+  catalog.details.mockImplementation(async (ref, requestSignal) => {
+    const details = await readDetails(ref, requestSignal)
+    return { ...details, item: { ...details.item, baseModelId: '99', modelId: '98' } }
+  })
   catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: 'paint.safetensors', base_model_id: id === '4' ? '9' : '1' }))
   const candidate = {
-    generation_input: { ...task.input.generation_input, model: { id: '4', file_name: 'paint.safetensors' }, parameters: { positive: 'Review candidate', negative: 'haze', seed: 31, steps: 29 } },
+    generation_input: { ...task.input.generation_input, model: { id: '4', file_name: 'paint.safetensors' }, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] }], parameters: { positive: 'Review candidate', negative: 'haze', seed: 31, steps: 29 } },
     context_refs: [{ kind: 'character' as const, id: '7' }],
   }
   const artifact = { type: 'review' as const, observation: 'Visible rain', conclusion: 'Try closer framing', run_ids: [runId], candidate }
@@ -118,6 +123,8 @@ it('forks a review candidate with prompts and model context resolved from its ge
   expect(await branchAt(remote, source)).toEqual(parent)
   expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
   expect((await remote.getProjection(source, signal())).runs.map(run => run.run_id)).toEqual([runId])
+  const acceptedId = await acceptRun(host, fork)
+  expect((await remote.getProjection(fork, signal())).runs.find(run => run.run_id === acceptedId)!.generation_input).toEqual(candidate.generation_input)
 })
 
 
@@ -141,7 +148,7 @@ it.each([
   expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
 })
 
-it('rejects incompatible recommended resources and preserves the source target, selected branch and artifact', async () => {
+it('applies recommended resources from another base model to the Task branch', async () => {
   const host = await fixture(), { remote, service, catalog } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Resources', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
@@ -156,13 +163,15 @@ it('rejects incompatible recommended resources and preserves the source target, 
   const target = await branchAt(remote, source)
   const selected = await remote.mutate({ ...source, type: 'create-branch', value: { name: 'Selected resources', original_request: 'Other requirements' } }, signal())
   const selectedBefore = await branchAt(remote, selected)
-  await expect(remote.mutate({ ...selected, type: 'task-apply', id: published.artifact_id, value: target.draft }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_INCOMPATIBLE' } })
-  expect(await branchAt(remote, source)).toEqual(target)
+  await remote.mutate({ ...selected, type: 'task-apply', id: published.artifact_id, value: target.draft }, signal())
+  expect((await branchAt(remote, source)).draft).toEqual({
+    ...target.draft, generation_input: { ...target.draft.generation_input, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
+  })
   expect(await branchAt(remote, selected)).toEqual(selectedBefore)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
 })
 
-it.each([false, true])('applies a recommended model before its compatible resources and removes incompatible current selections: reversed=%s', async reversed => {
+it.each([false, true])('applies a model and LoRA recommendation in either order while retaining current resources: reversed=%s', async reversed => {
   const host = await fixture(), { remote, service, catalog } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Model bundle', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
@@ -183,9 +192,9 @@ it.each([false, true])('applies a recommended model before its compatible resour
   expect(before.generation_input.model?.id).toBe('2')
   await remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: before }, signal())
   expect((await branchAt(remote, source)).draft).toEqual({
-    ...before, base_model_id: '9', context_refs: [], generation_input: {
-      ...before.generation_input, model: { id: '4', file_name: 'paint.safetensors' }, template_id: null, parameters: {},
-      loras: [{ id: '4', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }],
+    ...before, base_model_id: '9', generation_input: {
+      ...before.generation_input, model: { id: '4', file_name: 'paint.safetensors' },
+      loras: [...before.generation_input.loras, { id: '4', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }],
     },
   })
 })
@@ -280,32 +289,26 @@ it('preserves edited parameters when adopting an already selected template recom
   expect(await branchAt(remote, source)).toEqual(before)
 })
 
-it('uses the confirmed model-removal snapshot when catalog compatibility changes during selection', async () => {
+it('changes the model without reading the selected LoRAs again', async () => {
   const host = await fixture(), { remote, catalog } = host
-  const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Confirmed removals', goal: 'Paint rain' } }, signal())
+  const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Selected resources', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal())
   const before = await branchAt(remote, source)
-  const readDetails = catalog.details.getMockImplementation()!
-  let loraReads = 0
-  catalog.details.mockImplementation(async (ref, signal) => {
-    const details = await readDetails(ref, signal)
-    if (ref.kind !== 'lora') return details
-    loraReads += 1
-    return { ...details, item: { ...details.item, baseModelId: loraReads === 1 ? '1' : '9' } }
-  })
-  await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'model', id: '4', confirmedRemovals: [] } }, signal())
+  catalog.details.mockClear().mockRejectedValue(new Error('Selected resource catalog is unavailable'))
+  await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'model', id: '4' } }, signal())
   expect((await branchAt(remote, source)).draft).toEqual({
     ...before.draft, generation_input: { ...before.draft.generation_input, model: { id: '4', file_name: 'paint.safetensors' } },
   })
+  expect(catalog.details).not.toHaveBeenCalled()
 })
 
 it.each([
-  { baseModelId: '9', modelId: null, removeModel: false, conflict: '底模 ID 要求为 9，当前为 1' },
-  { baseModelId: '1', modelId: '4', removeModel: false, conflict: '模型 ID 要求为 4，当前为 2' },
-  { baseModelId: '9', modelId: '4', removeModel: false, conflict: '底模 ID 要求为 9，当前为 1；模型 ID 要求为 4，当前为 2' },
-  { baseModelId: '1', modelId: '4', removeModel: true, conflict: '模型 ID 要求为 4，当前尚未选择模型' },
-])('reports the exact resource and incompatible constraints: $conflict', async ({ baseModelId, modelId, removeModel, conflict }) => {
+  { baseModelId: '9', modelId: null, removeModel: false },
+  { baseModelId: '1', modelId: '4', removeModel: false },
+  { baseModelId: '9', modelId: '4', removeModel: false },
+  { baseModelId: '1', modelId: '4', removeModel: true },
+])('applies resource recommendations with catalog classification %j', async ({ baseModelId, modelId, removeModel }) => {
   const host = await fixture(), { remote, service, catalog } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Resource conflict', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
@@ -319,10 +322,11 @@ it.each([
   const artifact = { type: 'resources' as const, refs: [{ kind: 'character' as const, id: '7' }, { kind: 'lora' as const, id: '3' }] }
   const published = await service.publish({ taskId: task.task_id, artifact }, identity)
   const before = await branchAt(remote, source)
-  await expect(remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: before.draft }, signal())).rejects.toMatchObject({
-    message: `资源“Fine rain LoRA”（ID：3）无法采用。${conflict}。请更换生成模型或选择其他资源。`,
-    details: { code: 'WORKBENCH_RESOURCE_INCOMPATIBLE', issues: [{ path: 'value.id' }] },
+  await remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: before.draft }, signal())
+  expect((await branchAt(remote, source)).draft).toEqual({
+    ...before.draft,
+    context_refs: [{ kind: 'character', id: '7' }],
+    generation_input: { ...before.draft.generation_input, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
   })
-  expect(await branchAt(remote, source)).toEqual(before)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
 })

@@ -105,7 +105,7 @@ describe('workbench storage public boundary', () => {
     await expect(f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manual) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })).rejects.toMatchObject({ code: 'WORKBENCH_EDIT_CONFLICT' })
     expect(f.store.getBranch(f.branch.branch_id).draft).toEqual(manualBase)
     await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manualBase) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })
-    expect(f.store.getBranch(f.branch.branch_id).draft).toEqual({ generation_input: candidate, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'candidate clear' }, context_refs: [{ kind: 'character', id: '7' }], base_model_id: '5' })
+    expect(f.store.getBranch(f.branch.branch_id).draft).toEqual({ parameter_mapping: { positive_prompt_9: 'positive_prompt', negative_prompt_10: 'negative_prompt' }, generation_input: candidate, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'candidate clear' }, context_refs: [{ kind: 'character', id: '7' }], base_model_id: '5' })
     const next = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
     expect(next.input.generation_input.parameters).toEqual(candidate.parameters)
     acceptRun(f, next.task_id, 'candidate-source', next.input.generation_input)
@@ -205,11 +205,11 @@ describe('workbench storage public boundary', () => {
     expect(f.store.getArtifact(model.artifact_id).disposition).toBe('candidate')
   })
 
-  it('preserves completed and idle task snapshots when official sessions unload or reload', async () => {
+  it('preserves completed snapshots and observes unfinished idle tasks after official Sessions reload', async () => {
     const sessions = new Map<string, import('../../src/workbench/contract.ts').ExecutionState>()
     const statusCalls: string[] = []
     let sequence = 0
-    const f = fixture({ sessions: { authorize: async () => true, create: async () => { const sessionId = `official-${++sequence}`; sessions.set(sessionId, 'running'); return { sessionId, selectedModel: {} } }, dispatch: async () => {}, status: async ({ sessionId }) => { statusCalls.push(sessionId); return sessions.get(sessionId) ?? 'interrupted' } } })
+    const f = fixture({ sessions: { authorize: async () => true, create: async () => { const sessionId = `official-${++sequence}`; sessions.set(sessionId, 'running'); return { sessionId, selectedModel: {} } }, dispatch: async () => {}, status: async ({ sessionId }) => { statusCalls.push(sessionId); return sessions.get(sessionId) ?? null } } })
     const complete = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'prompt' })
     await f.service.publish({ taskId: complete.task_id, artifact: { type: 'prompt', positive_prompt: 'rain', negative_prompt: '' } }, { workspaceId: 'workspace', sessionId: complete.session_id!, turn: 1, callId: 'publish' })
     const completedSnapshot = f.store.getTask(complete.task_id)
@@ -225,12 +225,12 @@ describe('workbench storage public boundary', () => {
     sessions.delete(unfinished.session_id!)
     expect((await f.service.getProjection({ workspaceId: 'workspace', workId: f.work.work_id })).tasks.find(task => task.task_id === unfinished.task_id)).toEqual(idle)
     sessions.set(unfinished.session_id!, 'running')
-    expect((await f.service.getProjection({ workspaceId: 'workspace', workId: f.work.work_id })).tasks.find(task => task.task_id === unfinished.task_id)).toEqual(idle)
-    expect(statusCalls).toEqual([unfinished.session_id])
+    expect((await f.service.getProjection({ workspaceId: 'workspace', workId: f.work.work_id })).tasks.find(task => task.task_id === unfinished.task_id)).toMatchObject({ task_id: unfinished.task_id, status: 'running', execution_state: 'running' })
+    expect(statusCalls).toEqual([unfinished.session_id, unfinished.session_id, unfinished.session_id])
   })
 
   it('tracks active official execution and finishes background Runs after their session unloads', async () => {
-    let official: import('../../src/workbench/contract.ts').ExecutionState = 'pending'
+    let official: import('../../src/workbench/contract.ts').ExecutionState | null = 'pending'
     let statusCalls = 0
     const f = fixture({ sessions: { authorize: async () => true, create: async () => ({ sessionId: 'active-official', selectedModel: {} }), dispatch: async () => {}, status: async () => { statusCalls++; return official } } })
     const draft = structuredClone(f.branch.draft); draft.generation_input.instance_id = '1'; draft.generation_input.template_id = '2'
@@ -242,11 +242,11 @@ describe('workbench storage public boundary', () => {
     acceptRun(f, task.task_id, 'background-run', task.input.generation_input)
     official = 'idle'
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'waiting_generation', execution_state: 'idle' })
-    official = 'interrupted'
+    official = null
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'waiting_generation', execution_state: 'idle' })
     f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('background-run')
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'succeeded', execution_state: 'idle' })
-    expect(statusCalls).toBe(3)
+    expect(statusCalls).toBe(4)
   })
 
   it('retains Run completion when it arrives during an official status query', async () => {
@@ -262,7 +262,7 @@ describe('workbench storage public boundary', () => {
     expect(statusCalls).toBe(1)
   })
 
-  it('queries official execution status and continues the same execution session after pause and end', async () => {
+  it('queries official execution status and preserves an ended experiment after continuing its paused Session', async () => {
     let status: import('../../src/workbench/contract.js').ExecutionState = 'idle'
     const controls: string[] = []
     const f = fixture({ sessions: { authorize: async () => true, create: async () => ({ sessionId: 'official-session', selectedModel: {} }), dispatch: async () => {}, status: async () => status, control: async input => { controls.push(`${input.sessionId}:${input.action}`) }, skillReadRefs: async () => [{ name: 'builder', session_id: 'official-session', turn: 1, call_id: 'read', source_file: null }] } })
@@ -279,7 +279,7 @@ describe('workbench storage public boundary', () => {
     await f.service.authorizeGeneration(task.task_id, { workspaceId: 'workspace', sessionId: task.session_id!, turn: 1, callId: 'generation' })
     await f.service.authorizeGeneration(null, { workspaceId: 'workspace', sessionId: task.session_id!, turn: 1, callId: 'chat' })
     expect((await f.service.endExperiment({ taskId: task.task_id, reason: 'user_ended' }, { workspaceId: 'workspace', sessionId: task.session_id!, turn: 1, callId: 'end' })).end_reason).toBe('user_ended')
-    expect((await f.service.controlTask({ taskId: task.task_id, action: 'interrupt' })).status).toBe('interrupted')
+    expect((await f.service.controlTask({ taskId: task.task_id, action: 'interrupt' })).status).toBe('succeeded')
     expect(controls).toEqual(['official-session:continue', 'official-session:pause', 'official-session:continue', 'official-session:interrupt'])
   })
 

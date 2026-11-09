@@ -93,7 +93,7 @@ it('keeps fixed source inputs, context and base model when running a branch from
   const experience = (await remote.getProjection(selected, signal())).experiences[0]!
   await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Current branch sunshine' }, signal())
   await remote.mutate({ ...selected, type: 'update-draft', field: 'negative_prompt', value: 'Current branch darkness' }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '3', confirmedRemovals: [{ kind: 'comfyui-template', id: '5' }] } }, signal())
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '3' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-remove', id: '4', value: 'character' }, signal())
   expect(store.getBranch(selected.branchId!).draft).toMatchObject({ base_model_id: '9', prompt_input: { positive_prompt: 'Current branch sunshine' }, context_refs: [] })

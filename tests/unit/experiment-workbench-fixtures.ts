@@ -10,6 +10,28 @@ import type {
   WorkbenchRun,
 } from '../../src/workbench/contract.ts'
 
+import type { ConnectionState, ConnectionStateSource } from '@deepseek-ai/dsh-client-connection/client'
+
+export function createConnectionState(initial: ConnectionState | undefined = 'connected') {
+  let state: ConnectionState | undefined = initial
+  const listeners = new Set<() => void>()
+  const source: ConnectionStateSource = {
+    getSnapshot: () => state,
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+  }
+  return {
+    source,
+    set(next: ConnectionState | undefined) {
+      state = next
+      for (const listener of listeners) listener()
+    },
+    get subscriberCount() { return listeners.size },
+  }
+}
+
 export const functionEnvironment = {
   defaultPresetId: 'preset',
   workspaces: [{ id: 'workspace-a', name: '画面实验', path: '/projects/art' }],
@@ -35,6 +57,7 @@ export const agentModel: AgentModel = {
   reasoningEffort: 'high',
 }
 export const draft: TaskDraft = {
+  parameter_mapping: null,
   prompt_input: { positive_prompt: 'glass house', negative_prompt: 'blur' },
   generation_input: {
     title: '玻璃花房',

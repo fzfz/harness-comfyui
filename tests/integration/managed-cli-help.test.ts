@@ -15,6 +15,12 @@ function help(...args: string[]) {
 }
 
 describe('managed CLI help discovery', () => {
+  it('discovers unresolved task parameters through command help without exposing internal mapping', async () => {
+    const output = await help('workbench', 'task', 'get')
+    expect(output).toMatch(/^unresolved_parameters:/mu)
+    expect(output).toMatch(/^generation_input\.parameters:/mu)
+    expect(output).not.toMatch(/^parameter_mapping:/mu)
+  })
   it('keeps the public file protocol at the root and links child help to it', async () => {
     const root = await help()
     expect(root).toContain('stdout 只返回该文件的绝对路径和换行')

@@ -73,7 +73,7 @@ it('sets and removes Run and experience favorites explicitly while browsing anot
   await expect(host.remote.mutate({ ...sibling, workspaceId: 'workspace_2', type: 'favorite', id: experienceId, value: { targetType: 'experience', favorite: true } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
 })
 
-it('reuses an experience across base models with compatible resources and saved prompts before creating its branch', async () => {
+it('reuses an experience across base models while preserving its full saved input', async () => {
   const host = await fixture(), selected = await selectWork(host)
   const readDetails = host.catalog.details.getMockImplementation()!
   host.catalog.details.mockImplementation(async (request, requestSignal) => {
@@ -91,9 +91,9 @@ it('reuses an experience across base models with compatible resources and saved 
   const draft = projection.branches.find(branch => branch.branch_id === created.branchId)!.draft
   expect(projection.branches.find(branch => branch.branch_id === created.branchId)).toMatchObject({ name: 'Target base recheck', original_request: 'Paint a glasshouse', parent_branch_id: selected.branchId, source_run_id: runId, source_experience_id: experience.experience_id })
   expect(draft).toEqual({
-    base_model_id: '9', prompt_input: sourceInput.prompt_input,
-    generation_input: { ...sourceInput.generation_input, model: null, template_id: null, parameters: {}, loras: sourceInput.generation_input.loras.filter(lora => lora.id === '6') },
-    context_refs: [{ kind: 'artist-string', id: '6' }, { kind: 'character', id: '7' }],
+    parameter_mapping: { positive: 'positive_prompt', negative: 'negative_prompt', seed: 'seed' }, base_model_id: '9', prompt_input: sourceInput.prompt_input,
+    generation_input: sourceInput.generation_input,
+    context_refs: sourceInput.context_refs,
   })
   expect((await host.remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())).generation_input).toEqual(sourceInput.generation_input)
   const sourceDetails = host.catalog.details.getMockImplementation()!
@@ -140,7 +140,7 @@ it('rolls back a saved experience when its review draft changes during model res
   expect(result.runs.find(run => run.run_id === runId)).toMatchObject({ review: null, review_draft: draft })
 })
 
-it('leaves no branch when a reused experience target or resource catalog is unavailable', async () => {
+it('rejects unavailable target base models and reuses saved input without rescanning resources', async () => {
   const host = await fixture(), selected = await selectWork(host), runId = await acceptRun(host, selected), expected = await reviewDraft(host, selected, runId)
   await host.remote.mutate({ ...selected, type: 'evaluate', runId, value: { expected, draft: { ...expected, title: 'Rain edges', conditions: 'Glass', note: 'Keep the light' }, saveExperience: true } }, signal())
   const before = await host.remote.getProjection(selected, signal()), experience = before.experiences[0]!
@@ -149,11 +149,14 @@ it('leaves no branch when a reused experience target or resource catalog is unav
   await expect(host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Offline base catalog', baseModelId: '9' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
   host.catalog.baseModels.mockImplementation(readBaseModels)
   await expect(host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Missing base', baseModelId: '10' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
-  host.catalog.details.mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The resource catalog is unavailable'))
-  await expect(host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Missing resource', baseModelId: '9' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_UNAVAILABLE' } })
   const other = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_2', value: { name: 'Other work', goal: 'Paint snow' } }, signal())
   await expect(host.remote.mutate({ ...other, type: 'reuse', id: experience.experience_id, value: { name: 'Other work', baseModelId: null } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
   expect((await host.remote.getProjection(selected, signal())).branches).toEqual(before.branches)
+  host.catalog.details.mockClear().mockRejectedValue(new CatalogError('CATALOG_QUERY_FAILED', 'The resource catalog is unavailable'))
+  const created = await host.remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Saved resources', baseModelId: '9' } }, signal())
+  const reused = (await host.remote.getProjection(created, signal())).branches.find(branch => branch.branch_id === created.branchId)!
+  expect(reused.draft).toMatchObject({ base_model_id: '9', generation_input: before.branches[0]!.draft.generation_input, context_refs: before.branches[0]!.draft.context_refs })
+  expect(host.catalog.details).not.toHaveBeenCalled()
 })
 
 it('saves failed cross-branch evidence in the same Work and rejects evidence from another Work', async () => {

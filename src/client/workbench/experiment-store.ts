@@ -315,10 +315,6 @@ export class ExperimentWorkbenchStore {
       }
       this.emit({ projection, view, loading: false, error: null })
       this.save()
-      if (projection.refreshAfterMs > 0)
-        this.timer = setTimeout(() => {
-          void this.refresh()
-        }, projection.refreshAfterMs)
     } catch (error) {
       if (this.disposed || !this.visible || sequence !== this.sequence) return
       this.emit({
@@ -327,6 +323,11 @@ export class ExperimentWorkbenchStore {
           error instanceof Error ? error.message : '工作台加载失败，请重试。',
       })
     }
+    const interval = this.snapshot.projection?.refreshAfterMs ?? 0
+    if (interval > 0)
+      this.timer = setTimeout(() => {
+        void this.refresh()
+      }, interval)
   }
   dispose(): void {
     this.save()

@@ -183,7 +183,13 @@
       "details": [
         "调用：{cli} workbench task get --stdin；也可使用 --file <task.json>。",
         "输入示例：{\"task_id\":\"本次执行要求中的任务 ID\"}。",
-        "使用 output_contract.artifact_types 选择产物类型，使用 output_contract.parameter_ids 确定可建议的参数。"
+        "prompt_input 保存本任务的正负提示词。字段值为 null 时，该提示词尚未解析。",
+        "kind 为 prompt、rewrite、parameters 或 resources 时，generation_input.parameters 保存已识别类型的非提示词参数。",
+        "这 4 类任务的 unresolved_parameters 保存未解析的原参数。其中包括类型未知的参数，以及 prompt_input 对应字段仍为 null 的提示词原值。",
+        "使用未解析的原参数时，先通过模板参数描述核对 parameter_id 和类型。当前提示词使用 prompt_input 中的非 null 值。",
+        "kind 为 run 或 experiment 时，generation_input 保存本任务首轮运行的固定输入。",
+        "kind 为 review、compare、diagnose 或 experience 时，generation_input 保存目标 Run 的原始输入。",
+        "使用 output_contract.artifact_types 选择产物类型。参数产物中的参数 ID 以 output_contract.parameter_ids 为准。"
       ],
       "after": [
         "读取产物提交结构：{cli} workbench task publish --help"

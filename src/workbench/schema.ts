@@ -3,9 +3,9 @@ import { TASK_KINDS } from './functions.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import { jsonValueSchema } from '../shared/json-contract.ts'
-import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, WORKBENCH_FAVORITE_TARGET_TYPES, type ArtifactType } from './contract.ts'
+import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, WORKBENCH_FAVORITE_TARGET_TYPES, isBranchNonGenerationTaskKind, type ArtifactType } from './contract.ts'
 
-import { workflowRuntimeParameterInspectionSchema } from '../generation/inspection-contract.ts'
+import { STANDARD_RUNTIME_PARAMETER_KINDS, workflowRuntimeParameterInspectionSchema } from '../generation/inspection-contract.ts'
 const text = () => Schema.string().required()
 const id = () => Schema.string().pattern(/^[1-9]\d*$/).required()
 const nonempty = () => Schema.string().min(1).required()
@@ -43,7 +43,7 @@ export const promptInputSchema = object(promptInputFields)
 const taskDraftFields = { prompt_input: promptInputSchema, generation_input: generationInputSchema, context_refs: Schema.array(contextRefSchema).required(), base_model_id: requiredNullable(id()) }
 export const favoriteUpdateSchema = object({ targetType: Schema.union([...WORKBENCH_FAVORITE_TARGET_TYPES]).required(), favorite: Schema.boolean().required() })
 export const experienceReuseInputSchema = object({ name: Schema.string().min(1).max(WORKBENCH_BRANCH_NAME_MAX_LENGTH).pattern(/\S/u).required(), baseModelId: requiredNullable(id()) })
-export const taskDraftSchema = object(taskDraftFields)
+export const taskDraftSchema = object({ ...taskDraftFields, parameter_mapping: requiredNullable(Schema.dict(Schema.union([...STANDARD_RUNTIME_PARAMETER_KINDS]).required()).required()) })
 export const artifactSchemas = {
   prompt: object({ type: Schema.const('prompt').required(), ...promptInputFields, source_files: Schema.array(text()).default(undefined as never) }),
   parameters: object({ type: Schema.const('parameters').required(), parameters: jsonObject(), source_files: Schema.array(text()).default(undefined as never) }),
@@ -63,8 +63,8 @@ export const workbenchRunInputSchema = object({
   context_refs: Schema.array(contextRefSchema).required(), input_description: requiredNullable(workflowRuntimeParameterInspectionSchema),
   prompt_input: promptInputSchema,
 })
-export const taskGetResultSchema = object({
-  task_id: nonempty(), kind: text(), status: text(),
+const taskGetResultFields = {
+  task_id: nonempty(), status: text(),
   ...taskDraftFields,
   requirements: object({ original_request: text(), instructions: text() }), reference_run_ids: strings(),
   evaluation_input: object({ run_id: nonempty(), verdict: text(), observation: text(), conclusion: text(), experience: object({ title: text(), conditions: text(), note: text() }) }).required(false).default(undefined as never),
@@ -73,4 +73,5 @@ export const taskGetResultSchema = object({
   artifacts: Schema.array(object({ artifact_id: nonempty(), artifact: taskArtifactSchema, disposition: text() })).required(),
   iterations: Schema.array(object({ index: Schema.natural().required(), run_id: nonempty(), generation_input: generationInputSchema, context_refs: Schema.array(contextRefSchema).required(), review_artifact_id: requiredNullable(text()) })).required(),
   answers: Schema.array(object({ question_artifact_id: nonempty(), answer: text() })).required(),
-})
+}
+export const taskGetResultSchema = Schema.union(TASK_KINDS.map(kind => object({ ...taskGetResultFields, kind: Schema.const(kind).required(), ...(isBranchNonGenerationTaskKind(kind) ? { unresolved_parameters: jsonObject() } : {}) }))).required()

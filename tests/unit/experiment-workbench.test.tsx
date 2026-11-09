@@ -8,6 +8,7 @@ import type { ExperimentWorkbenchProps } from '../../src/client/workbench/experi
 import { ExperimentWorkbench } from '../../src/client/workbench/experiment-workbench.tsx'
 import {
   fullProjection,
+  createConnectionState,
   functionEnvironment,
   treeProjection,
   inputDescription,
@@ -22,7 +23,7 @@ import type {
   WorkbenchProjection,
 } from '../../src/workbench/contract.ts'
 
-import type { WorkbenchEnvironment, WorkbenchModelChangePreview } from '../../src/workbench-remote.ts'
+import type { WorkbenchEnvironment } from '../../src/workbench-remote.ts'
 
 interface RenderNode {
   readonly props: Record<string, any>
@@ -56,6 +57,7 @@ const empty: WorkbenchProjection = {
   refreshAfterMs: 0,
 }
 const draft: TaskDraft = {
+  parameter_mapping: null,
   prompt_input: { positive_prompt: '', negative_prompt: '' },
   generation_input: {
     title: '',
@@ -124,12 +126,12 @@ const mount = async (
       }),
       getEnvironment: async () => functionEnvironment,
       getInputDescription: vi.fn(async (_request: import('../../src/workbench-remote.ts').WorkbenchInputDescriptionRequest) => inputDescription),
-      previewModelChange: vi.fn(async (request: { modelId: string }) => ({ model: { id: request.modelId, label: 'ANIMA3' }, removed: [] })),
     }
   let renderer!: ReturnType<typeof create>
   await act(async () => {
     renderer = create(
       <ExperimentWorkbench
+        connectionState={createConnectionState().source}
         workspaces={[
           { id: 'workspace-a', name: '画面实验', path: '/projects/art' },
         ]}
@@ -162,6 +164,225 @@ const mount = async (
   mounts.push(renderer)
   return { renderer, onAction, remote }
 }
+
+describe('experiment workbench connection tips', () => {
+  it('uses the official connection source once per outage while connecting and disconnected repeats preserve the toast timeout', async () => {
+    vi.useFakeTimers()
+    const connection = createConnectionState()
+    const { renderer } = await mount(fullProjection(), { connectionState: connection.source })
+    const toasts = () => renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)
+    expect(toasts()).toEqual([])
+    await act(() => connection.set('connecting'))
+    expect(toasts()).toEqual(['连接已断开'])
+    await act(async () => {
+      connection.set('disconnected')
+      await vi.advanceTimersByTimeAsync(5999)
+      connection.set('connecting')
+    })
+    expect(toasts()).toEqual(['连接已断开'])
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(toasts()).toEqual([])
+    await act(() => connection.set('disconnected'))
+    expect(toasts()).toEqual([])
+    await act(() => connection.set('connected'))
+    expect(toasts()).toEqual(['已重新连接'])
+    expect(renderer.root.findByProps({ className: 'toast' }).findAllByType('button')).toHaveLength(0)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000)
+      connection.set('connected')
+    })
+    expect(toasts()).toEqual([])
+    await act(() => connection.set('disconnected'))
+    expect(toasts()).toEqual(['连接已断开'])
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('主分支')
+  })
+
+  it('keeps initial failure and explicit retry while the first established connection creates no recovery notice', async () => {
+    vi.useFakeTimers()
+    const connection = createConnectionState('connecting')
+    const data = fullProjection(), failure = new Error('Initial read failed')
+    const getProjection = vi.fn().mockRejectedValueOnce(failure).mockResolvedValue(data)
+    const { renderer } = await mount(data, { connectionState: connection.source, remote: { getProjection } })
+    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe(failure.message)
+    await act(async () => {
+      connection.set('disconnected')
+      await vi.advanceTimersByTimeAsync(60000)
+      connection.set('connecting')
+      connection.set('connected')
+    })
+    expect(getProjection).toHaveBeenCalledTimes(1)
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await click(renderer, '重试')
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+  })
+
+  it.each([
+    new RemoteError('gateway/internal', 'SQLITE_BUSY: database is locked', {}),
+    new RemoteError('workbench/operation-failed', 'Work unavailable', { code: 'not_found', issues: [] }),
+    new RemoteError('gateway/cancelled', 'Query cancelled', {}),
+    new DOMException('Query aborted', 'AbortError'),
+  ])('keeps a $name projection rejection outside connection notices while the official source stays connected', async failure => {
+    vi.useFakeTimers()
+    const data = { ...fullProjection(), refreshAfterMs: 100 }, connection = createConnectionState()
+    const getProjection = vi.fn().mockResolvedValueOnce(data).mockRejectedValueOnce(failure).mockResolvedValue(data)
+    const { renderer } = await mount(data, { connectionState: connection.source, remote: { getProjection } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('主分支')
+  })
+
+  it('ignores hidden connection churn and releases the official subscription on unmount', async () => {
+    const connection = createConnectionState()
+    const { renderer } = await mount(fullProjection(), { connectionState: connection.source })
+    expect(connection.subscriberCount).toBe(1)
+    await act(() => {
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+      document.dispatchEvent(new Event('visibilitychange'))
+      connection.set('connecting')
+      connection.set('disconnected')
+      connection.set('connected')
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await act(() => renderer.unmount())
+    expect(connection.subscriberCount).toBe(0)
+    await act(() => connection.set('disconnected'))
+  })
+
+  it('retains recovery after a visible disconnection when props visibility returns from false to true', async () => {
+    vi.useFakeTimers()
+    const connection = createConnectionState()
+    const { renderer } = await mount(fullProjection(), { connectionState: connection.source })
+    const props = renderer.root.props as unknown as ExperimentWorkbenchProps
+    const toasts = () => renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)
+    await act(() => connection.set('disconnected'))
+    expect(toasts()).toEqual(['连接已断开'])
+    await act(() => renderer.update(<ExperimentWorkbench {...props} visible={false} />))
+    expect(toasts()).toEqual([])
+    await act(() => connection.set('connected'))
+    expect(toasts()).toEqual([])
+    await act(() => renderer.update(<ExperimentWorkbench {...props} visible />))
+    expect(toasts()).toEqual(['已重新连接'])
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5999)
+      connection.set('connected')
+    })
+    expect(toasts()).toEqual(['已重新连接'])
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(toasts()).toEqual([])
+  })
+
+  it('retains an ongoing hidden disconnection when props visibility returns from false to true', async () => {
+    vi.useFakeTimers()
+    const connection = createConnectionState()
+    const { renderer } = await mount(fullProjection(), { connectionState: connection.source })
+    const props = renderer.root.props as unknown as ExperimentWorkbenchProps
+    const toasts = () => renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)
+    await act(() => renderer.update(<ExperimentWorkbench {...props} visible={false} />))
+    await act(() => { connection.set('connecting'); connection.set('disconnected') })
+    expect(toasts()).toEqual([])
+    await act(() => renderer.update(<ExperimentWorkbench {...props} visible />))
+    expect(toasts()).toEqual(['连接已断开'])
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5999)
+      connection.set('connecting')
+      connection.set('disconnected')
+    })
+    expect(toasts()).toEqual(['连接已断开'])
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(toasts()).toEqual([])
+  })
+
+  it('keeps prop-hidden connection churn silent and replaces the official subscription without retaining the earlier source', async () => {
+    const first = createConnectionState(), next = createConnectionState()
+    const { renderer } = await mount(fullProjection(), { connectionState: first.source })
+    const props = renderer.root.props as unknown as ExperimentWorkbenchProps
+    await act(() => renderer.update(<ExperimentWorkbench {...props} visible={false} />))
+    await act(() => { first.set('disconnected'); first.set('connected') })
+    await act(() => renderer.update(<ExperimentWorkbench {...props} visible />))
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await act(() => renderer.update(<ExperimentWorkbench {...props} connectionState={next.source} />))
+    expect(first.subscriberCount).toBe(0)
+    expect(next.subscriberCount).toBe(1)
+    await act(() => first.set('disconnected'))
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await act(() => next.set('connecting'))
+    expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)).toEqual(['连接已断开'])
+  })
+
+  it.each(['success', 'failure'] as const)('keeps a late projection %s from a previous workspace outside official connection notices', async outcome => {
+    vi.useFakeTimers()
+    const connection = createConnectionState(), data = { ...fullProjection(), refreshAfterMs: 100 }
+    const next = { ...data, workspace_id: 'workspace-b', works: data.works.map(work => ({ ...work, workspace_id: 'workspace-b' })) }
+    let resolve!: (value: WorkbenchProjection) => void
+    let reject!: (error: unknown) => void
+    const late = new Promise<WorkbenchProjection>((yes, no) => { resolve = yes; reject = no })
+    const getProjection = vi.fn().mockResolvedValueOnce(data).mockReturnValueOnce(late).mockResolvedValue(next)
+    const { renderer } = await mount(data, { connectionState: connection.source, remote: { getProjection } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    const props = renderer.root.props as unknown as ExperimentWorkbenchProps
+    await act(() => renderer.update(<ExperimentWorkbench {...props} workspaceId="workspace-b"
+      workspaces={[...props.workspaces, { id: 'workspace-b', name: '另一工作区', path: '/projects/other' }]} />))
+    await act(() => {
+      if (outcome === 'success') resolve(data)
+      else reject(new RemoteError('gateway/internal', 'Previous scope failed', {}))
+    })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    expect(connection.subscriberCount).toBe(1)
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('主分支')
+  })
+
+  it('keeps a visible outage observation through hiding and shows recovery when visibility returns', async () => {
+    vi.useFakeTimers()
+    const connection = createConnectionState()
+    const { renderer } = await mount(fullProjection(), { connectionState: connection.source })
+    await act(() => connection.set('disconnected'))
+    expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)).toEqual(['连接已断开'])
+    await act(async () => {
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+      document.dispatchEvent(new Event('visibilitychange'))
+      connection.set('connecting')
+      connection.set('connected')
+      await vi.advanceTimersByTimeAsync(6000)
+    })
+    expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
+    await act(() => {
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)).toEqual(['已重新连接'])
+  })
+
+  it('queues official connection tips beside task notices while an action error retains priority', async () => {
+    vi.useFakeTimers()
+    const connection = createConnectionState()
+    const running = { ...makeTask('connection-notice-task', 'child', 'prompt'), status: 'running' as const }
+    let data: WorkbenchProjection = { ...fullProjection(), tasks: [running], refreshAfterMs: 100 }
+    const failure = new Error('Action failed')
+    const { renderer } = await mount(data, { connectionState: connection.source,
+      remote: { getProjection: async () => structuredClone(data) }, onAction: vi.fn().mockRejectedValue(failure) })
+    const toasts = () => renderer.root.findAllByProps({ className: 'toast' }).map(nodeText)
+    data = { ...data, tasks: [{ ...running, status: 'succeeded' }] }
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    const taskNotice = toasts()[0]
+    expect(renderer.root.findByProps({ className: 'toast' }).findAllByType('button')).toHaveLength(1)
+    await act(() => { connection.set('disconnected'); connection.set('connected') })
+    expect(toasts()).toEqual([taskNotice])
+    await click(renderer, '运行任务')
+    expect(toasts()).toEqual([failure.message])
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(toasts()).toEqual([taskNotice])
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(toasts()).toEqual(['连接已断开'])
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(toasts()).toEqual(['已重新连接'])
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    expect(toasts()).toEqual([])
+  })
+})
 
 describe('experiment workbench prompt editing', () => {
   it('finishes the latest prompt input on its original branch while another branch is edited', async () => {
@@ -253,7 +474,6 @@ describe('experiment workbench prompt editing', () => {
         workspaceId: scope.workspaceId, workspaces: environment.workspaces,
         storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
         remote: {
-          previewModelChange: request => host.remote.previewModelChange(request, signal),
           getEnvironment: request => host.remote.getEnvironment(request, signal),
           getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
           getProjection: request => host.remote.getProjection(request, signal),
@@ -284,6 +504,37 @@ describe('experiment workbench prompt editing', () => {
       expect((await readDraft(child.branchId!)).prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
       await act(() => reopened.renderer.unmount())
     } finally { await host.dispose() }
+  })
+})
+
+describe('experiment workbench parameter template choices', () => {
+  it('lists all template pages across bases and exclusive models and submits the selected template', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.branches[0]!.draft.generation_input.template_id = null
+    const templates: CatalogItem[] = [
+      { ...catalogItems[7]!, context: { kind: 'comfyui-template', id: '22', title: '其他底模模板' }, baseModelId: '2', modelId: null, label: '其他底模模板' },
+      { ...catalogItems[7]!, context: { kind: 'comfyui-template', id: '23', title: '专属模型模板' }, baseModelId: '1', modelId: '21', label: '专属模型模板' },
+      { ...catalogItems[7]!, context: { kind: 'comfyui-template', id: '24', title: '第二页模板' }, baseModelId: '3', modelId: '31', label: '第二页模板' },
+    ]
+    vi.mocked(catalog.search).mockImplementation(async request => ({
+      ...request, items: request.kind === 'comfyui-template' ? request.page === 1 ? templates.slice(0, 2) : templates.slice(2) : [],
+      totalCount: request.kind === 'comfyui-template' ? 9 : 0,
+    }))
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '建议参数')
+    const selector = renderer.root.findByProps({ 'aria-label': '任务 Workflow 模板' })
+    expect(selector.findAllByType('option').map(nodeText)).toEqual(['请选择', '其他底模模板', '专属模型模板', '第二页模板'])
+    expect(catalog.search).toHaveBeenCalledWith({ kind: 'comfyui-template', query: '', page: 2, baseModelId: null, modelId: null }, expect.any(AbortSignal))
+    await change(renderer, '任务要求', '测试模板组合')
+    await change(renderer, '任务 ComfyUI 实例', '2')
+    await change(renderer, '任务 Workflow 模板', '23')
+    await act(() => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenLastCalledWith({
+      type: 'agent-action', id: 'parameters', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root',
+      value: { draft: { instructions: '测试模板组合', resources: { instance_id: '2', template_id: '23' } } },
+    })
+    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
   })
 })
 
@@ -781,7 +1032,7 @@ describe('experiment workbench instance selection', () => {
       const options: NonNullable<Parameters<typeof mount>[1]> = {
         workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, storage,
         remote: {
-          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getEnvironment: request => host.remote.getEnvironment(request, signal),
           getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
           getProjection: request => host.remote.getProjection(request, signal),
         },
@@ -1614,9 +1865,9 @@ describe('experiment workbench forms and task results', () => {
     await change(renderer, '分支名称', '尚未提交的名称')
     failProjection = true
     await act(async () => { await vi.advanceTimersByTimeAsync(100) })
-    expect(nodeText(renderer.root)).toContain('工作台加载失败')
+    expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('尚未提交的名称')
     failProjection = false
-    await click(renderer, '重试')
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
     expect(renderer.root.findByProps({ 'aria-label': '分支名称' }).props.value).toBe('尚未提交的名称')
     await blur(renderer, '分支名称', '尚未提交的名称')
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ value: '尚未提交的名称', expectedValue: available.branches[0]!.name }))
@@ -3018,7 +3269,7 @@ describe('experiment workbench Catalog removal persistence', () => {
         remote: {
           getProjection: request => host.remote.getProjection(request, signal),
           getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
-          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getEnvironment: request => host.remote.getEnvironment(request, signal),
         },
         catalog: makeCatalog(), onAction,
       })
@@ -3253,7 +3504,7 @@ describe('experiment workbench LoRA draft persistence', () => {
       const options: NonNullable<Parameters<typeof mount>[1]> = {
         workspaceId: scope.workspaceId, workspaces: environment.workspaces, catalog,
         storage: { getItem: key => memory.get(key) ?? null, setItem: (key, value) => { memory.set(key, value) } },
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
@@ -3344,7 +3595,7 @@ describe('experiment workbench selected template names', () => {
       const environment = await host.remote.getEnvironment({}, signal)
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces,
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       })
       await click(renderer, '选择 Workflow 模板')
@@ -3401,7 +3652,7 @@ describe('experiment workbench selected template names', () => {
       })
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces, onAction,
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
       })
       await click(renderer, '选择 Workflow 模板')
       await click(renderer, '选择 模板 A')
@@ -3440,7 +3691,7 @@ describe('experiment workbench selected template names', () => {
       const options: NonNullable<Parameters<typeof mount>[1]> = {
         catalog: templateCatalog(), workspaceId: scope.workspaceId, workspaces: environment.workspaces, onAction,
         remote: {
-          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getProjection: request => host.remote.getProjection(request, signal),
+          getEnvironment: request => host.remote.getEnvironment(request, signal), getProjection: request => host.remote.getProjection(request, signal),
           getInputDescription: async request => {
             const description = await host.remote.getInputDescription(request, signal)
             if (waitForB && host.store.getBranch(request.branchId).draft.generation_input.template_id === '41')
@@ -3490,7 +3741,7 @@ describe('experiment workbench selected template names', () => {
       const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
       const options: NonNullable<Parameters<typeof mount>[1]> = {
         catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces,
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const data = await host.remote.getProjection(scope, signal)
@@ -3563,248 +3814,42 @@ describe('experiment workbench selected template names', () => {
   })
 })
 
-describe('experiment workbench generation model change confirmation', () => {
-  const preview = {
-    model: { id: '21', label: 'ANIMA3' },
-    removed: [
-      { kind: 'comfyui-template' as const, id: '12', label: 'SDXL 文生图' },
-      { kind: 'lora' as const, id: '13', label: '柔光 LoRA' },
-      { kind: 'lora' as const, id: '19', label: '线条 LoRA' },
-      { kind: 'style' as const, id: '27', label: '透明水彩' },
-      { kind: 'artist-string' as const, id: '28', label: '花园插画组合' },
-    ],
-  }
-  const modelCatalog = (): CatalogApi => ({
-    baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'SDXL' }] })),
-    search: vi.fn(async request => ({
-      ...request, totalCount: 1,
-      items: [{ context: { kind: 'model' as const, id: '21', file_name: 'anima.safetensors' }, baseModelId: '1', modelId: null, label: 'ANIMA3', subtitle: '', coverUrl: null, sampleImageUrls: [] }],
-    })),
-    details: makeCatalog().details,
-  })
-  const openChoice = async (renderer: Awaited<ReturnType<typeof mount>>['renderer']) => {
+describe('experiment workbench direct generation model selection', () => {
+  it('selects another model immediately and keeps the resource directory open without a removal dialog', async () => {
+    const data = fullProjection(), before = structuredClone(data.branches[0]!.draft)
+    const catalog = makeCatalog()
+    const model: CatalogItem = { ...catalogItems[0]!, context: { kind: 'model', id: '21', file_name: 'anima.safetensors' }, baseModelId: '2', label: 'ANIMA3' }
+    vi.mocked(catalog.search).mockImplementation(async request => ({
+      ...request, items: request.kind === 'model' ? [model] : [], totalCount: request.kind === 'model' ? 1 : 0,
+    }))
+    const { renderer, onAction } = await mount(data, { catalog })
     await click(renderer, '更换生成模型')
     await click(renderer, '选择 ANIMA3')
-  }
-
-  it('confirms only the previewed resource IDs once and stays on Catalog after saving', async () => {
-    let finish!: () => void
-    const onAction = vi.fn(() => new Promise<void>(resolve => { finish = resolve }))
-    const { renderer } = await mount(fullProjection(), { catalog: modelCatalog(), onAction, remote: { previewModelChange: async () => preview } })
-    await openChoice(renderer)
-    const submit = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit
-    await act(async () => { void submit({ preventDefault() {} }) })
-    await act(async () => { void submit({ preventDefault() {} }) })
-    expect(onAction).toHaveBeenCalledTimes(1)
-    expect(onAction).toHaveBeenCalledWith({
+    expect(onAction).toHaveBeenCalledExactlyOnceWith({
       type: 'resource-select', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', runId: 'r1', id: '21',
-      value: { kind: 'model', id: '21', confirmedRemovals: [{ kind: 'comfyui-template', id: '12' }, { kind: 'lora', id: '13' }, { kind: 'lora', id: '19' }, { kind: 'style', id: '27' }, { kind: 'artist-string', id: '28' }] },
+      value: { kind: 'model', id: '21', file_name: 'anima.safetensors' },
     })
-    expect(renderer.root.findByProps({ role: 'dialog' }).findByProps({ type: 'submit' }).props.disabled).toBe(true)
-    await act(async () => { finish() })
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
     expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
-  })
-
-  it('persists confirmed incompatible resources through the actual Host and retains latest unrelated input', async () => {
-    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
-    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
-    try {
-      const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模型确认', goal: '保留兼容资源' } }, signal)
-      const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
-      const sourceDetails = host.catalog.details.getMockImplementation()!
-      host.catalog.details.mockImplementation(async (ref, requestSignal) => {
-        const details = await sourceDetails(ref, requestSignal)
-        const item = ref as { kind: string; id: string }
-        return { ...details, item: { ...details.item, modelId: ['comfyui-template', 'style', 'artist-string'].includes(item.kind) || item.kind === 'lora' && item.id === '3' ? '2' : null } }
-      })
-      for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }, { kind: 'lora', id: '3' }, { kind: 'lora', id: '4' }, { kind: 'style', id: '7' }, { kind: 'artist-string', id: '8' }, { kind: 'character', id: '9' }, { kind: 'prompt-term', id: '10' }]) {
-        await host.remote.mutate({ ...scope, type: 'resource-select', value }, signal)
-      }
-      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal)
-      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'before preview' }, signal)
-      const data = await host.remote.getProjection(scope, signal), before = structuredClone(data.branches[0]!.draft)
-      host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: 'ANIMA3', base_model_id: '1' }))
-      host.catalog.search.mockImplementation(async input => ({ kind: input.kind, query: input.query, page: input.page, totalCount: input.kind === 'lora' ? 1 : 0, items: input.kind === 'lora' ? [{ context: { kind: 'lora', id: '4', file_name: 'rain.safetensors' }, baseModelId: '1', modelId: null, label: 'rain.safetensors', subtitle: '', coverUrl: null, sampleImageUrls: [] }] : [] }))
-      const details = host.catalog.details.getMockImplementation()!
-      host.catalog.details.mockImplementation(async (ref, requestSignal) => {
-        const result = await details(ref, requestSignal), kind = (ref as { kind: string }).kind
-        return kind === 'style' || kind === 'artist-string'
-          ? { ...result, item: { ...result.item, label: kind === 'style' ? '透明水彩' : '花园插画组合' } }
-          : result
-      })
-      const onAction = vi.fn(request => host.remote.mutate(request, signal))
-      const { renderer } = await mount(data, {
-        catalog: modelCatalog(), workspaceId: scope.workspaceId, workspaces: [{ id: scope.workspaceId, name: '画面实验', path: '/workspace/project' }],
-        remote: {
-          previewModelChange: request => host.remote.previewModelChange(request, signal),
-          getProjection: request => host.remote.getProjection(request, signal),
-          getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
-        },
-        onAction,
-      })
-      await openChoice(renderer)
-      expect(renderer.root.findByProps({ className: 'incompatible-resources' }).findAllByType('li').map(nodeText)).toEqual(['Rain templateWorkflow 模板', 'rain.safetensorsLoRA', '透明水彩画师或画风', '花园插画组合画师串'])
-      await click(renderer, '取消')
-      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft).toEqual(before)
-      expect(onAction).not.toHaveBeenCalled()
-      await openChoice(renderer)
-      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'positive_prompt', value: 'latest prompt' }, signal)
-      await host.remote.mutate({ ...scope, type: 'update-draft', field: 'lora-weight', id: '4', value: 1.2 }, signal)
-      await act(() => renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({ preventDefault() {} }))
-      const after = await host.remote.getProjection(scope, signal)
-      expect(after.branches[0]!.draft).toEqual({
-        ...before,
-        prompt_input: { ...before.prompt_input, positive_prompt: 'latest prompt' },
-        generation_input: { ...before.generation_input, model: { id: '21', file_name: 'ANIMA3' }, template_id: null, parameters: {}, loras: [{ id: '4', file_name: 'rain.safetensors', weight: 1.2, trigger_words: ['rain'] }] },
-        context_refs: [{ kind: 'character', id: '9' }, { kind: 'prompt-term', id: '10' }],
-      })
-      expect(after.functions).toEqual(data.functions)
-      expect(after.tasks).toEqual(data.tasks)
-      expect(after.runs).toEqual(data.runs)
-      expect(onAction).toHaveBeenCalledTimes(1)
-      expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
-      expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
-    } finally { await host.dispose() }
-  })
-
-  it('keeps the confirmation open after a save failure and retries the same removal list', async () => {
-    const onAction = vi.fn().mockRejectedValueOnce(new Error('草稿已更新，请重新选择生成模型。')).mockResolvedValueOnce(undefined)
-    const { renderer } = await mount(fullProjection(), { catalog: modelCatalog(), onAction, remote: { previewModelChange: async () => preview } })
-    await openChoice(renderer)
-    const submit = () => renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!.props.onSubmit({ preventDefault() {} })
-    await act(submit)
-    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe('草稿已更新，请重新选择生成模型。')
-    expect(renderer.root.findByProps({ role: 'dialog' }).findByProps({ type: 'submit' }).props.disabled).toBe(false)
-    expect(renderer.root.findByProps({ className: 'incompatible-resources' }).findAllByType('li').map(nodeText)).toEqual(['SDXL 文生图Workflow 模板', '柔光 LoRALoRA', '线条 LoRALoRA', '透明水彩画师或画风', '花园插画组合画师串'])
-    await act(submit)
-    expect(onAction).toHaveBeenCalledTimes(2)
-    expect(onAction.mock.calls[1]).toEqual(onAction.mock.calls[0])
-    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
-    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
-  })
-
-  it('shows actionable preview errors without saving or opening a confirmation', async () => {
-    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: {
-      previewModelChange: async () => { throw new Error('模型读取失败，请重新选择生成模型。') },
-    } })
-    await openChoice(renderer)
-    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
-    expect(nodeText(renderer.root.findByProps({ role: 'alert' }))).toBe('模型读取失败，请重新选择生成模型。')
-    expect(onAction).not.toHaveBeenCalled()
-  })
-
-  it.each(['branch', 'work', 'workspace', 'page', 'detail', 'Escape', 'new-modal', 'unmount'] as const)('ignores a late preview after %s changes the selection', async destination => {
-    const data = fullProjection()
-    data.works.push({ ...data.works[0]!, work_id: 'work-b', name: '另一工作' })
-    let finish!: (value: typeof preview) => void
-    const { renderer, onAction } = await mount(data, { catalog: modelCatalog(), remote: {
-      previewModelChange: () => new Promise(resolve => { finish = resolve }),
-    } })
-    await openChoice(renderer)
-    if (destination === 'branch') await click(renderer, '切换分支 暖光探索')
-    else if (destination === 'work') await change(renderer, '切换工作', 'work-b')
-    else if (destination === 'workspace') await change(renderer, '切换工作区', 'workspace-b')
-    else if (destination === 'page') await click(renderer, '任务')
-    else if (destination === 'detail') await click(renderer, '查看详情 ANIMA3')
-    else if (destination === 'Escape') await act(() => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
-    else if (destination === 'new-modal') await click(renderer, '新建工作')
-    else await act(() => renderer.unmount())
-    await act(async () => { finish(preview) })
-    if (destination !== 'unmount') expect(renderer.root.findAllByProps({ role: 'dialog', 'aria-labelledby': 'modal-title' })).toEqual([])
-    expect(onAction).not.toHaveBeenCalled()
-  })
-
-  it('ignores a superseded no-removal preview while the current confirmation is open', async () => {
-    let finish!: (value: WorkbenchModelChangePreview) => void
-    const previewModelChange = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finish = resolve })).mockResolvedValueOnce(preview)
-    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: { previewModelChange } })
-    await openChoice(renderer)
-    await openChoice(renderer)
-    expect(renderer.root.findByProps({ id: 'modal-title' }).children).toEqual(['更换生成模型'])
-    await act(async () => { finish({ model: preview.model, removed: [] }) })
-    expect(renderer.root.findByProps({ id: 'modal-title' }).children).toEqual(['更换生成模型'])
-    expect(onAction).not.toHaveBeenCalled()
-  })
-
-  it('ignores a late no-removal preview after leaving the Catalog page', async () => {
-    let finish!: (value: WorkbenchModelChangePreview) => void
-    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: { previewModelChange: () => new Promise(resolve => { finish = resolve }) } })
-    await openChoice(renderer)
-    await click(renderer, '任务')
-    await act(async () => { finish({ model: preview.model, removed: [] }) })
-    expect(onAction).not.toHaveBeenCalled()
-    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
-    expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
-  })
-
-  it('keeps a reopened confirmation when an earlier cancelled submission completes', async () => {
-    let finish!: () => void
-    const onAction = vi.fn().mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve })).mockResolvedValueOnce(undefined)
-    const { renderer } = await mount(fullProjection(), { catalog: modelCatalog(), onAction, remote: { previewModelChange: async () => preview } })
-    await openChoice(renderer)
-    await act(async () => { void renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
-    await click(renderer, '取消')
-    await openChoice(renderer)
-    const reopened = renderer.root.findByProps({ id: 'modal-form' })
-    await act(async () => { finish() })
-    expect(renderer.root.findByProps({ id: 'modal-form' })).toBe(reopened)
-    expect(reopened.findByProps({ type: 'submit' }).props.disabled).toBe(false)
-    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
-    await act(() => reopened.props.onSubmit({ preventDefault() {} }))
-    expect(onAction).toHaveBeenCalledTimes(2)
-    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
-  })
-
-  it('applies the model immediately when the preview has no removals', async () => {
-    const previewModelChange = vi.fn(async () => ({ model: preview.model, removed: [] }))
-    const { renderer, onAction } = await mount(fullProjection(), { catalog: modelCatalog(), remote: { previewModelChange } })
-    await openChoice(renderer)
-    expect(previewModelChange).toHaveBeenCalledTimes(1)
-    expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
-    expect(onAction).toHaveBeenCalledWith({
-      type: 'resource-select', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', runId: 'r1', id: '21',
-      value: { kind: 'model', id: '21' },
-    })
-    expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
-  })
-
-  it('previews the exact ordered removal list and keeps the draft unchanged on cancel, close and Escape', async () => {
-    const data = fullProjection(), before = structuredClone(data)
-    const previewModelChange = vi.fn(async () => preview)
-    const { renderer, onAction } = await mount(data, { catalog: modelCatalog(), remote: { previewModelChange } })
-    for (const dismissal of ['取消', '关闭对话框', 'Escape']) {
-      await openChoice(renderer)
-      expect(previewModelChange).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', modelId: '21' })
-      const modal = renderer.root.findByProps({ role: 'dialog', 'aria-labelledby': 'modal-title' })
-      expect(modal.findAllByType('p').map(nodeText)).toEqual(['更换为 ANIMA3 后，将移除以下不兼容的资源：'])
-      expect(modal.findByProps({ className: 'incompatible-resources' }).findAllByType('li').map(nodeText)).toEqual(['SDXL 文生图Workflow 模板', '柔光 LoRALoRA', '线条 LoRALoRA', '透明水彩画师或画风', '花园插画组合画师串'])
-      expect(modal.findAllByType('input')).toEqual([])
-      expect(onAction).not.toHaveBeenCalled()
-      if (dismissal === 'Escape') await act(() => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
-      else await click(renderer, dismissal)
-      expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
-      expect(data).toEqual(before)
-      expect(onAction).not.toHaveBeenCalled()
-    }
+    expect(data.branches[0]!.draft).toEqual(before)
   })
 })
 
 describe('experiment workbench generation model selection', () => {
-  it('persists a compatible model and its summary while preserving sibling inputs and the run Agent model', async () => {
+  it('persists a cross-base model and its summary while retaining templates, parameters, LoRAs, context and the run Agent model', async () => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
     const host = await createWorkbenchHostFixture()
     const signal = new AbortController().signal
     const records = [
       { id: '9', file_name: 'anima-preview3-base.safetensors', base_model_id: '1' },
-      { id: '16', file_name: 'miaomiaoHarem_anima16.safetensors', base_model_id: '1' },
+      { id: '16', file_name: 'miaomiaoHarem_anima16.safetensors', base_model_id: '2' },
     ]
     const items: CatalogItem[] = records.map(record => ({
       context: { kind: 'model', id: record.id, file_name: record.file_name }, baseModelId: record.base_model_id, modelId: null,
       label: record.file_name, subtitle: '', coverUrl: null, sampleImageUrls: [],
     }))
     const catalog: CatalogApi = {
-      baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'anima' }] })),
+      baseModels: vi.fn(async () => ({ items: [{ id: '1', label: 'anima' }, { id: '2', label: 'SDXL' }] })),
       search: vi.fn(async request => {
         const matches = request.kind === 'model' ? items.filter(item => (!request.baseModelId || item.baseModelId === request.baseModelId) && (!request.modelId || item.context.id === request.modelId)) : []
         return { ...request, items: matches, totalCount: matches.length }
@@ -3825,7 +3870,7 @@ describe('experiment workbench generation model selection', () => {
         generation_input: { ...branch.draft.generation_input, title: '原输入', instance_id: '8', template_id: '5', model: { id: '9', file_name: records[0]!.file_name },
           parameters: { width: 768, height: 1024, seed: 42, steps: 30, cfg: 3, reference: '/reference.png' },
           loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.35, trigger_words: ['rain'] }] },
-        context_refs: [{ kind: 'character' as const, id: '4' }],
+        context_refs: [{ kind: 'character' as const, id: '4' }, { kind: 'style' as const, id: '7' }, { kind: 'artist-string' as const, id: '8' }],
       }
       host.store.saveBranchDraft({ ...scope, expected: branch.draft, draft: seeded })
       const before = host.store.getBranch(scope.branchId)
@@ -3836,20 +3881,21 @@ describe('experiment workbench generation model selection', () => {
       const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value) } }
       const options: NonNullable<Parameters<typeof mount>[1]> = {
         catalog, storage, workspaceId: scope.workspaceId, workspaces: environment.workspaces, instances: environment.instances, presets: environment.presets,
-        baseModels: [{ id: '1', label: 'anima' }],
+        baseModels: [{ id: '1', label: 'anima' }, { id: '2', label: 'SDXL' }],
         agentModelGroups: [{ id: run.agent_model.provider, name: '提供商 A', models: [{ id: run.agent_model.model, name: 'Agent 模型 A' }] }],
-        remote: { previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
+        remote: { getEnvironment: request => host.remote.getEnvironment(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal) },
         onAction: request => host.remote.mutate(request, signal),
       }
       const data = await host.remote.getProjection(scope, signal)
       const { renderer } = await mount(data, options)
       await click(renderer, '更换生成模型')
+      await change(renderer, '筛选底模', '')
       await click(renderer, '选择 miaomiaoHarem_anima16.safetensors')
       expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
       const picked = renderer.root.findByProps({ className: 'selected-resources' }).findAllByProps({ className: 'picked-item' })[0]!
       expect(picked.findAllByType('b').map(nodeText)).toEqual([records[1]!.file_name])
-      expect(picked.findAllByType('span').map(nodeText)).toEqual(['生成模型 · anima'])
-      const expected = { ...before, draft: { ...seeded, generation_input: { ...seeded.generation_input, model: { id: '16', file_name: records[1]!.file_name } } } }
+      expect(picked.findAllByType('span').map(nodeText)).toEqual(['生成模型 · SDXL'])
+      const expected = { ...before, draft: { ...seeded, base_model_id: '2', generation_input: { ...seeded.generation_input, model: { id: '16', file_name: records[1]!.file_name } } } }
       expect(host.store.getBranch(scope.branchId)).toEqual(expected)
       expect(host.store.listFunctionBindings(scope.workspaceId)).toEqual(bindingsBefore)
       await click(renderer, '返回结果')
@@ -3858,7 +3904,7 @@ describe('experiment workbench generation model selection', () => {
       const reopened = await mount(data, options)
       const restored = reopened.renderer.root.findByProps({ className: 'selected-resources' }).findAllByProps({ className: 'picked-item' })[0]!
       expect(restored.findAllByType('b').map(nodeText)).toEqual([records[1]!.file_name])
-      expect(restored.findAllByType('span').map(nodeText)).toEqual(['生成模型 · anima'])
+      expect(restored.findAllByType('span').map(nodeText)).toEqual(['生成模型 · SDXL'])
       await click(reopened.renderer, '配置中心')
       await click(reopened.renderer, `编辑${run.name}`)
       expect(reopened.renderer.root.findByProps({ 'aria-label': 'Agent 提供商' }).props.value).toBe(run.agent_model.provider)
@@ -4581,65 +4627,73 @@ describe('experiment workbench overlay and loading lifecycle', () => {
   })
 })
 
-describe('experiment workbench Catalog resource compatibility controls', () => {
-  it.each(['card', 'details'] as const)('prioritizes incompatible selected resources and permits model switching from the %s', async entry => {
-    const data = fullProjection(), catalog = makeCatalog()
-    data.runs = []
-    const lora: CatalogItem = { ...catalogItems[1]!, baseModelId: '2', modelId: null }
-    const model: CatalogItem = { ...catalogItems[0]!, baseModelId: '2', context: { ...catalogItems[0]!.context, id: '21' }, label: '其他底模模型' }
-    const details = vi.mocked(catalog.details).getMockImplementation()!
-    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: request.kind === 'lora' ? [lora] : request.kind === 'model' ? [model] : [], totalCount: 1 }))
-    vi.mocked(catalog.details).mockImplementation(async (request, signal) => request.kind === 'lora' || request.kind === 'model' ? { ...request, item: request.kind === 'lora' ? lora : model, fields: [] } : details(request, signal))
-    const { renderer, onAction } = await mount(data, { catalog })
-    await click(renderer, '添加 LoRA')
-    if (entry === 'details') await click(renderer, '查看详情 玻璃 LoRA')
-    const panel = () => renderer.root.findByProps({ className: 'catalog-content' })
-    expect(panel().findByProps({ 'aria-label': '需更换生成模型 玻璃 LoRA' }).props.disabled).toBe(true)
-    expect(panel().findByProps({ 'aria-label': '需更换生成模型 玻璃 LoRA' }).props['aria-pressed']).toBe(true)
-    await click(renderer, '更换生成模型')
-    if (entry === 'details') await click(renderer, '查看详情 其他底模模型')
-    expect(panel().findByProps({ 'aria-label': '选择 其他底模模型' }).props.disabled).toBe(false)
-    await click(renderer, '选择 其他底模模型')
-    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'resource-select', id: '21', value: { kind: 'model', id: '21' } }))
+describe('experiment workbench free Catalog resource selection', () => {
+  const choices = [
+    ['lora', '添加 LoRA', 1],
+    ['comfyui-template', '选择 Workflow 模板', 7],
+    ['style', '画师或画风', 4],
+    ['artist-string', '画师串', 6],
+  ] as const
+
+  it.each(choices)('selects a cross-base and model-specific %s from cards and details', async (kind, entry, index) => {
+    for (const mode of ['card', 'details'] as const) {
+      for (const scope of [{ baseModelId: '2', modelId: null }, { baseModelId: '1', modelId: '21' }]) {
+        const data = fullProjection(), catalog = makeCatalog()
+        data.runs = []
+        data.branches[0]!.draft.generation_input.loras = []
+        data.branches[0]!.draft.generation_input.template_id = null
+        data.branches[0]!.draft.context_refs = []
+        const item: CatalogItem = { ...catalogItems[index]!, ...scope }
+        vi.mocked(catalog.search).mockImplementation(async request => ({
+          ...request, items: request.kind === kind ? [item] : [], totalCount: request.kind === kind ? 1 : 0,
+        }))
+        const details = vi.mocked(catalog.details).getMockImplementation()!
+        vi.mocked(catalog.details).mockImplementation(async (request, signal) =>
+          request.kind === kind ? { ...request, item, fields: [] } : details(request, signal))
+        const { renderer, onAction } = await mount(data, { catalog })
+        if (kind === 'lora' || kind === 'comfyui-template') await click(renderer, entry)
+        else { await click(renderer, '资源'); await click(renderer, entry) }
+        if (mode === 'details') await click(renderer, `查看详情 ${item.label}`)
+        const button = renderer.root.findByProps({ className: 'catalog-content' }).findByProps({ 'aria-label': `选择 ${item.label}` })
+        expect(button.props.disabled).toBe(false)
+        expect(button.props['aria-pressed']).toBe(false)
+        await act(() => button.props.onClick())
+        expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+          type: 'resource-select', id: item.context.id, value: item.context,
+        }))
+      }
+    }
   })
 
-  it('keeps a base-bound template unavailable for an empty draft while its details stay readable', async () => {
+  it.each(['card', 'details'] as const)('removes a selected cross-base LoRA from the %s', async entry => {
     const data = fullProjection(), catalog = makeCatalog()
     data.runs = []
-    data.branches[0]!.draft = structuredClone(draft)
-    const template: CatalogItem = { ...catalogItems[7]!, baseModelId: '1', modelId: null }
-    const details = vi.mocked(catalog.details).getMockImplementation()!
-    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: request.kind === 'comfyui-template' ? [template] : [], totalCount: 1 }))
-    vi.mocked(catalog.details).mockImplementation(async (request, signal) => request.kind === 'comfyui-template' ? { ...request, item: template, fields: [] } : details(request, signal))
-    const { renderer, onAction } = await mount(data, { catalog })
-    await click(renderer, '选择 Workflow 模板')
-    const panel = () => renderer.root.findByProps({ className: 'catalog-content' })
-    expect(panel().findByProps({ 'aria-label': '需更换生成模型 文生图' }).props.disabled).toBe(true)
-    await click(renderer, '查看详情 文生图')
-    expect(panel().findAllByType('h2').map(nodeText)).toEqual(['文生图'])
-    expect(panel().findByProps({ 'aria-label': '需更换生成模型 文生图' }).props.disabled).toBe(true)
-    expect(onAction).not.toHaveBeenCalled()
-  })
-
-  it.each(['card', 'details'] as const)('uses current input compatibility in the %s selection button while leaving resource details available', async entry => {
-    const data = fullProjection(), catalog = makeCatalog()
-    data.runs = []
-    data.branches[0]!.draft.generation_input.loras = []
-    const item: CatalogItem = { ...catalogItems[1]!, baseModelId: '1', modelId: '21', label: '指定模型 LoRA' }
+    const item: CatalogItem = { ...catalogItems[1]!, baseModelId: '2', modelId: '21' }
     vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: request.kind === 'lora' ? [item] : [], totalCount: request.kind === 'lora' ? 1 : 0 }))
     const details = vi.mocked(catalog.details).getMockImplementation()!
     vi.mocked(catalog.details).mockImplementation(async (request, signal) => request.kind === 'lora' ? { ...request, item, fields: [] } : details(request, signal))
     const { renderer, onAction } = await mount(data, { catalog })
     await click(renderer, '添加 LoRA')
-    if (entry === 'details') await click(renderer, '查看详情 指定模型 LoRA')
-    const panel = renderer.root.findByProps({ className: entry === 'card' ? 'catalog-card ' : 'catalog-detail' })
-    const button = panel.findByProps({ 'aria-label': '需更换生成模型 指定模型 LoRA' })
-    expect(nodeText(button)).toBe('需更换生成模型')
-    expect(button.props.disabled).toBe(true)
-    expect(button.props['aria-pressed']).toBe(false)
-    if (entry === 'card') await click(renderer, '查看详情 指定模型 LoRA')
-    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['指定模型 LoRA'])
-    expect(onAction).not.toHaveBeenCalled()
+    if (entry === 'details') await click(renderer, '查看详情 玻璃 LoRA')
+    const button = renderer.root.findByProps({ className: 'catalog-content' }).findByProps({ 'aria-label': '移除 玻璃 LoRA' })
+    expect(button.props.disabled).toBe(false)
+    expect(button.props['aria-pressed']).toBe(true)
+    await act(() => button.props.onClick())
+    expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'resource-remove', id: '13', value: 'lora' }))
+  })
+
+  it('selects a base-bound template before a generation model is chosen', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft = structuredClone(draft)
+    const item: CatalogItem = { ...catalogItems[7]!, baseModelId: '1', modelId: '21' }
+    vi.mocked(catalog.search).mockImplementation(async request => ({ ...request, items: request.kind === 'comfyui-template' ? [item] : [], totalCount: request.kind === 'comfyui-template' ? 1 : 0 }))
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '选择 Workflow 模板')
+    const button = renderer.root.findByProps({ 'aria-label': '选择 文生图' })
+    expect(button.props.disabled).toBe(false)
+    await act(() => button.props.onClick())
+    expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'resource-select', id: '12', value: item.context }))
   })
 })
 
@@ -4709,7 +4763,7 @@ describe('experiment workbench selected context summaries', () => {
         remote: {
           getProjection: request => host.remote.getProjection(request, signal),
           getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal),
-          previewModelChange: request => host.remote.previewModelChange(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getEnvironment: request => host.remote.getEnvironment(request, signal),
         },
         onAction: request => host.remote.mutate(request, signal),
       }
@@ -6278,7 +6332,7 @@ describe('experiment workbench task notifications with action errors', () => {
 
 
 describe('experiment workbench task notification retention during forms', () => {
-  it.each(['branch', 'model'] as const)('preserves both queued Task notices after the %s form is submitted', async operation => {
+  it.each(['branch', 'model'] as const)('preserves both queued Task notices after the %s action', async operation => {
     vi.useFakeTimers()
     const first = { ...makeTask('form-queue-first', 'child', 'prompt'), title: '光线生成', status: 'running' as const }
     const second = { ...makeTask('form-queue-second', 'root', 'prompt'), title: '场景改写', status: 'running' as const }
@@ -6299,7 +6353,6 @@ describe('experiment workbench task notification retention during forms', () => 
       catalog, onAction,
       remote: {
         getProjection: async () => structuredClone(data),
-        previewModelChange: async () => ({ model: { id: '21', label: 'ANIMA3' }, removed: [{ kind: 'comfyui-template', id: '12', label: 'SDXL 文生图' }] }),
       },
     }, { createNodeMock: element => targets.get(String(element.props['data-task'])) ?? null })
     data = { ...data, tasks: [{ ...first, status: 'succeeded' }, { ...second, status: 'waiting_input' }] }
@@ -6309,9 +6362,11 @@ describe('experiment workbench task notification retention during forms', () => 
     if (operation === 'model') {
       await click(renderer, '更换生成模型')
       await click(renderer, '选择 ANIMA3')
-    } else await click(renderer, '创建子分支')
-    const form = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!
-    await act(async () => form.props.onSubmit({ preventDefault() {}, currentTarget: { name: '追加分支', goal: '保留窗框' } }))
+    } else {
+      await click(renderer, '创建子分支')
+      const form = renderer.root.findByProps({ role: 'dialog' }).findAllByType('form')[0]!
+      await act(async () => form.props.onSubmit({ preventDefault() {}, currentTarget: { name: '追加分支', goal: '保留窗框' } }))
+    }
     expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: operation === 'model' ? 'resource-select' : 'create-branch' }))
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
     expect(toast()).toContain('光线生成已完成 · form-queue-first')
@@ -6650,7 +6705,7 @@ describe('experiment workbench current artifact conflict state', () => {
 
 
 describe('experiment workbench resource adoption through Remote', () => {
-  it.each([true, false])('adopts a compatible=%s resource through its task and preserves selection after rejection', async compatible => {
+  it.each([true, false])('adopts a compatible=%s resource through its task and preserves the current selection', async compatible => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
     const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
     try {
@@ -6679,26 +6734,13 @@ describe('experiment workbench resource adoption through Remote', () => {
       await click(renderer, '任务')
       expect(renderer.root.findByProps({ className: 'task-output' }).findAllByType('b').map(nodeText)).toEqual(['候选 LoRA'])
       expect(picked()).toHaveLength(1)
-      const beforeAdoption = await host.remote.getProjection(scope, signal)
       await click(renderer, '采用资源')
       expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'task-apply', taskId: task.task_id }))
       expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
-      if (compatible) {
-        await click(renderer, '查看任务输入')
-        expect(picked()).toHaveLength(2)
-        expect(picked().map(nodeText).join('')).toContain('候选 LoRA')
-      } else {
-        const message = nodeText(renderer.root.findByProps({ className: 'toast' }))
-        expect(message).toContain('候选 LoRA')
-        expect(message).toContain('ID：4')
-        expect(message).toContain('底模 ID 要求为 2')
-        expect(message).toContain('当前为 1')
-        expect(picked()).toHaveLength(1)
-        expect(picked().map(nodeText).join('')).toContain('rain.safetensors')
-        const rejected = await host.remote.getProjection(scope, signal)
-        expect(rejected.branches).toEqual(beforeAdoption.branches)
-        expect(rejected.artifacts).toEqual(beforeAdoption.artifacts)
-      }
+      await click(renderer, '查看任务输入')
+      expect(picked()).toHaveLength(2)
+      expect(picked().map(nodeText).join('')).toContain('候选 LoRA')
+      expect(picked().map(nodeText).join('')).toContain('rain.safetensors')
       await act(() => renderer.unmount())
     } finally { await host.dispose() }
   })
@@ -7310,17 +7352,19 @@ describe('experiment workbench reuse target display', () => {
 describe('experiment workbench Run review through Remote', () => {
   const signal = new AbortController().signal
   type Host = Awaited<ReturnType<typeof import('../support/workbench-host.ts').createWorkbenchHostFixture>>
-  const setup = async (successful = false) => {
+  type PrepareDescription = (request: import('../../src/generation/submission-contract.ts').GenerationRequest) => import('../../src/generation/inspection-contract.ts').WorkflowRuntimeParameterInspection
+  const setup = async (successful = false, observeFailure?: () => boolean, describeInput?: PrepareDescription) => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
     const host = await createWorkbenchHostFixture(successful ? {
       inspectRuntimeParameters: async () => inputDescription,
       validateInput: async () => {},
-      prepare: async request => ({ instanceId: '8', instanceTitle: 'Node', templateTitle: 'Template', sourceSnapshot: {}, inputDescription: runInputDescription(request.parameters),
+      prepare: async request => ({ instanceId: request.instanceId!, instanceTitle: 'Node', templateTitle: 'Template', sourceSnapshot: {}, inputDescription: describeInput?.(request) ?? runInputDescription(request.parameters),
         actualWorkflow: {}, apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } }, expectedOutputNodeIds: ['3'],
         connection: { origin: 'http://comfy.test', url: 'http://comfy.test', authorization: null } }),
     } : undefined, successful ? {
       submit: async input => { input.onRequestStart(); return { promptId: input.promptId } },
-      observe: async () => ({ status: 'success', outputs: [{ nodeId: '3', outputIndex: 0, mediaKind: 'image', filename: 'frame.png', subfolder: '', type: 'output' }] }),
+      observe: async () => observeFailure?.() ? { status: 'error', outputs: [], error: { code: 'COMFYUI_EXECUTION_ERROR', message: '本轮受控生成失败。' } }
+        : { status: 'success', outputs: [{ nodeId: '3', outputIndex: 0, mediaKind: 'image', filename: 'frame.png', subfolder: '', type: 'output' }] },
       download: async () => ({ bytes: Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1]), mediaType: 'image/png' }),
     } : undefined)
     const root = await host.remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: '运行评价', goal: '保留窗框' } }, signal)
@@ -7354,6 +7398,326 @@ describe('experiment workbench Run review through Remote', () => {
     } satisfies NonNullable<Parameters<typeof mount>[1]>
     return { host, root, runId, createRun, options }
   }
+
+  const startExperiment = async (maxRuns = 3, observeFailure?: () => boolean, describeInput?: PrepareDescription) => {
+    const state = await setup(true, observeFailure, describeInput)
+    const { host, root } = state
+    await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'experiment', value: 'preset-a' }, signal)
+    await host.remote.mutate({ ...root, type: 'update-execution', field: 'max_runs', value: maxRuns }, signal)
+    const receipt = await host.remote.mutate({ ...root, type: 'experiment' }, signal)
+    const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.task_id === receipt.taskId)!
+    const publish = (artifact: ArtifactPayload) => host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
+      { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() })
+    const accept = async (input = task.input.generation_input) => {
+      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+      const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() },
+        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(input)) }], signal, task.task_id)
+      return accepted.items[0]!.runId
+    }
+    const finish = async () => { for (let phase = 0; phase < 4; phase++) await host.runtime.advance() }
+    return { ...state, task, publish, accept, finish }
+  }
+
+  it.each(['prompt-first', 'review-first'] as const)('delivers parallel prompt and review Tasks to their fixed targets after browsing elsewhere: %s', async order => {
+    const { host, root, runId, options } = await setup(true)
+    try {
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal)
+      const baseline = (await host.remote.getProjection(root, signal)).runs.find(run => run.run_id === runId)!.review_draft!
+      await host.remote.mutate({ ...root, runId, type: 'evaluate', value: { expected: baseline,
+        draft: { ...baseline, conclusion: '保留人工保存评价' }, saveExperience: false } }, signal)
+      const promptBranch = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '提示词目标', original_request: '提示词目标需求' } }, signal)
+      const browsing = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '当前浏览分支', original_request: '当前浏览需求' } }, signal)
+      await host.remote.mutate({ ...browsing, type: 'update-draft', field: 'positive_prompt', value: '浏览分支原文' }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, remote: { ...options.remote,
+        getTaskDraft: request => host.remote.getTaskDraft(request, signal),
+        saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      await click(renderer, '分析结果')
+      await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).tasks.some(task => task.kind === 'review')).toBe(true))
+      await click(renderer, '取消')
+      await click(renderer, '切换分支 提示词目标')
+      await click(renderer, '生成提示词')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.disabled).toBe(false))
+      await change(renderer, '任务要求', '独立提示词任务')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      expect(renderer.root.findAllByProps({ role: 'dialog' }), renderer.root.findAllByProps({ id: 'task-error' }).map(nodeText).join(' ')).toHaveLength(0)
+      await click(renderer, '切换分支 当前浏览分支')
+      const accepted = await host.remote.getProjection({ workspaceId: root.workspaceId, workId: root.workId }, signal)
+      const review = accepted.tasks.find(task => task.kind === 'review')!
+      const prompt = accepted.tasks.find(task => task.kind === 'prompt')!
+      expect(review.apply_target).toMatchObject({ kind: 'run_review', id: runId })
+      expect(prompt.apply_target).toMatchObject({ kind: 'branch', id: promptBranch.branchId })
+      const publications = {
+        prompt: { task: prompt, artifact: { type: 'prompt', positive_prompt: '固定分支的新提示词', negative_prompt: '固定分支的新负向词' } as ArtifactPayload },
+        review: { task: review, artifact: { type: 'review', observation: '固定运行的观察', conclusion: '固定运行的新评价', run_ids: [runId] } as ArtifactPayload },
+      }
+      for (const kind of order === 'prompt-first' ? ['prompt', 'review'] as const : ['review', 'prompt'] as const) {
+        const publication = publications[kind]
+        await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: publication.task.task_id, artifact: publication.artifact },
+          { workspaceId: root.workspaceId, sessionId: publication.task.session_id!, turn: 1, callId: crypto.randomUUID() })
+      }
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('浏览分支原文')
+      expect(nodeText(renderer.root.findByProps({ className: 'config-head' }))).toContain('当前浏览分支')
+      await click(renderer, '切换分支 提示词目标')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('固定分支的新提示词'), { timeout: 3000 })
+      await click(renderer, '切换分支 主分支')
+      await click(renderer, '查看运行 ' + runId)
+      await click(renderer, '记录评价与经验')
+      expect(renderer.root.findByProps({ 'aria-label': '观察' }).props.value).toBe('固定运行的观察')
+      expect(renderer.root.findByProps({ 'aria-label': '评价结论' }).props.value).toBe('固定运行的新评价')
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.runs.find(run => run.run_id === runId)!.review!.conclusion).toBe('保留人工保存评价')
+      expect(after.branches.find(branch => branch.branch_id === browsing.branchId)!.draft.prompt_input.positive_prompt).toBe('浏览分支原文')
+    } finally { await host.dispose() }
+  })
+
+  it('keeps the selected real Run and input mounted across disconnection and refreshes after recovery', async () => {
+    const { host, root, runId, options } = await setup(true)
+    try {
+      let disconnected = false
+      const getProjection = vi.fn(async (request: { workspaceId: string; workId?: string }) => {
+        if (disconnected) throw new Error('Controlled connection interrupted')
+        return host.remote.getProjection(request, signal)
+      })
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, remote: { ...options.remote, getProjection } })
+      await click(renderer, '查看运行 ' + runId)
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('0'))
+      const before = getProjection.mock.calls.length
+      disconnected = true
+      await vi.waitFor(() => expect(getProjection.mock.calls.length).toBeGreaterThan(before), { timeout: 3000 })
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true)
+      expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('0')
+      await host.remote.mutate({ ...root, type: 'favorite', id: runId, value: { targetType: 'run', favorite: true } }, signal)
+      disconnected = false
+      await vi.waitFor(() => expect(renderer.root.findAllByType('button').map(nodeText)).toContain('移除收藏'), { timeout: 3000 })
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true)
+    } finally { await host.dispose() }
+  })
+
+  it('opens three real experiment rounds with their own inputs, linked automatic reviews and saved manual review', async () => {
+    const { host, root, task, options, accept, finish, publish } = await startExperiment(4)
+    try {
+      const first = await accept()
+      await finish()
+      let projection = await host.remote.getProjection(root, signal)
+      const baseline = projection.runs.find(item => item.run_id === first)!.review_draft!
+      await host.remote.mutate({ ...root, runId: first, type: 'evaluate', value: { expected: baseline,
+        draft: { ...baseline, observation: '人工观察', conclusion: '人工保存结论' }, saveExperience: false } }, signal)
+      await publish({ type: 'review', observation: '首轮玻璃边缘', conclusion: '首轮自动结论', run_ids: [first] })
+      const secondInput = { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, seed_1: 42 } }
+      await publish({ type: 'generation_input', generation_input: secondInput, context_refs: [] })
+      const second = await accept(secondInput)
+      await finish()
+      await publish({ type: 'review', observation: '第二轮边缘改善', conclusion: '第二轮自动结论', run_ids: [second] })
+      const thirdInput = { ...secondInput, parameters: { ...secondInput.parameters, seed_1: 73 } }
+      await publish({ type: 'generation_input', generation_input: thirdInput, context_refs: [] })
+      const third = await accept(thirdInput)
+      projection = await host.remote.getProjection(root, signal)
+      const { renderer } = await mount(projection, options)
+      const status = () => renderer.root.findByProps({ className: 'taskbox' })
+      expect(nodeText(status())).toContain('已提交 3 次 · 还可提交 1 次')
+      expect(nodeText(status())).toContain('2 / 4')
+      expect(nodeText(status())).toContain(third + ' 正在运行')
+      const steps = status().findAllByProps({ className: 'agent-step' })
+      expect(steps).toHaveLength(3)
+      for (const [index, runId] of [first, second, third].entries()) {
+        await act(async () => status().findAllByProps({ className: 'agent-step' })[index]!.findAllByType('button')[0]!.props.onClick())
+        expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+        await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true))
+        if (index < 2) await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe(index === 0 ? '0' : '42'))
+      }
+      await click(renderer, '任务')
+      const card = renderer.root.findAllByProps({ className: 'agent-task-card' }).find(item => item.props['data-task'] === task.task_id)!
+      expect(nodeText(card.findByProps({ className: 'task-progress' }))).toBe('已完成 2 / 4 次')
+      const rounds = card.findAllByProps({ className: 'row task-round' })
+      expect(rounds).toHaveLength(3)
+      expect(rounds.map(round => nodeText(round.findAllByType('span').at(-1)!))).toEqual(['首轮自动结论', '第二轮自动结论', ''])
+      await act(async () => rounds[0]!.findAllByType('button')[0]!.props.onClick())
+      await click(renderer, '记录评价与经验')
+      expect(renderer.root.findByProps({ 'aria-label': '评价结论' }).props.value).toBe('人工保存结论')
+      await click(renderer, '取消')
+      expect((await host.remote.getProjection(root, signal)).runs.find(item => item.run_id === first)!.review!.conclusion).toBe('人工保存结论')
+    } finally { await host.dispose() }
+  })
+
+  it('reads each experiment Run with its saved template description after the next round changes resources and parameter fields', async () => {
+    const describeInput: PrepareDescription = request => request.templateId === '6' ? {
+      parameters: [
+        { parameter_id: 'caption_2', kind: 'positive_prompt', value_type: 'string', current_value: request.parameters.caption_2! },
+        { parameter_id: 'negative_2', kind: 'negative_prompt', value_type: 'string', current_value: '' },
+        { parameter_id: 'seed_2', kind: 'seed', value_type: 'integer', current_value: request.parameters.seed_2! },
+        { parameter_id: 'steps_2', kind: 'steps', value_type: 'integer', current_value: request.parameters.steps_2! },
+        { parameter_id: 'sampler_2', kind: 'sampler_name', value_type: 'string', current_value: request.parameters.sampler_2! },
+        { parameter_id: 'reference_2', kind: 'reference_image', value_type: 'string', current_value: request.parameters.reference_2! },
+      ], size_candidates: [],
+    } : runInputDescription(request.parameters)
+    const { host, root, task, options, accept, finish, publish } = await startExperiment(3, undefined, describeInput)
+    try {
+      const first = await accept()
+      await finish()
+      await publish({ type: 'review', observation: '首轮窗框需要改善', conclusion: '下一轮更换模板和资源', run_ids: [first] })
+      const next = { ...task.input.generation_input, instance_id: '9', template_id: '6',
+        model: { id: '4', file_name: 'paint.safetensors' }, loras: [{ id: '6', file_name: 'rain.safetensors', weight: 0.9, trigger_words: ['rain'] }],
+        parameters: { caption_2: '第二模板的窗框', negative_2: '', seed_2: 123, steps_2: 13, sampler_2: 'euler', reference_2: '/images/round2.png' } }
+      await publish({ type: 'generation_input', generation_input: next, context_refs: [{ kind: 'work', id: '14' }] })
+      const second = await accept(next)
+      await finish()
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      const steps = () => renderer.root.findByProps({ className: 'taskbox' }).findAllByProps({ className: 'agent-step' })
+      await act(async () => steps()[1]!.findAllByType('button')[0]!.props.onClick())
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('123'))
+      expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('13')
+      expect(renderer.root.findByProps({ 'aria-label': '采样器' }).props.value).toBe('euler')
+      expect(renderer.root.findByProps({ 'aria-label': '正向提示词' }).props.value).toBe('第二模板的窗框')
+      expect(renderer.root.findByProps({ 'aria-label': '参考图路径' }).props.value).toBe('/images/round2.png')
+      expect(await host.remote.getRunInput({ workspaceId: root.workspaceId, workId: root.workId!, runId: second }, signal)).toMatchObject({ generation_input: next, context_refs: [{ kind: 'work', id: '14' }] })
+      await act(async () => steps()[0]!.findAllByType('button')[0]!.props.onClick())
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('0'))
+      expect(renderer.root.findByProps({ 'aria-label': '采样步数' }).props.value).toBe('20')
+      expect(await host.remote.getRunInput({ workspaceId: root.workspaceId, workId: root.workId!, runId: first }, signal)).toMatchObject({ generation_input: task.input.generation_input })
+    } finally { await host.dispose() }
+  })
+
+  it('waits for the final automatic review before retaining a completed two-Run budget with a failed round', async () => {
+    let fail = false
+    const { host, root, task, options, accept, finish, publish } = await startExperiment(2, () => fail)
+    try {
+      const first = await accept()
+      await finish()
+      await publish({ type: 'review', observation: '成功轮次', conclusion: '保留窗框', run_ids: [first] })
+      const candidate = { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, seed_1: 99 } }
+      await publish({ type: 'generation_input', generation_input: candidate, context_refs: [] })
+      const second = await accept(candidate)
+      fail = true
+      await finish()
+      const before = await host.remote.getProjection(root, signal)
+      expect(before.experiments[0]).toMatchObject({ control_state: 'running', submitted_count: 2 })
+      const { renderer } = await mount(before, options)
+      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('实验运行中')
+      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('已提交 2 次 · 还可提交 0 次')
+      await publish({ type: 'review', observation: '第二轮生成失败', conclusion: '本轮仍占用次数', run_ids: [second] })
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('实验已完成'), { timeout: 3000 })
+      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('2 / 2')
+      expect(renderer.root.findAllByType('button').map(nodeText)).not.toContain('暂停实验')
+      const steps = renderer.root.findByProps({ className: 'taskbox' }).findAllByProps({ className: 'agent-step' })
+      await act(async () => steps[1]!.findAllByType('button')[0]!.props.onClick())
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('99'))
+      expect(nodeText(renderer.root)).toContain('本轮受控生成失败。')
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.experiments[0]).toMatchObject({ control_state: 'completed', end_reason: 'budget_used', submitted_count: 2 })
+      expect(after.runs.filter(run => run.workbench_task_id === task.task_id).map(run => run.status)).toEqual(['succeeded', 'failed'])
+      const { renderer: reopened } = await mount(after, options)
+      expect(nodeText(reopened.root.findByProps({ className: 'taskbox' }))).toContain('实验已完成')
+      expect(reopened.root.findByProps({ className: 'taskbox' }).findAllByProps({ className: 'agent-step' })).toHaveLength(2)
+    } finally { await host.dispose() }
+  })
+
+  it('keeps accepted Runs updating while paused and adds one new round on the original Task after continuing', async () => {
+    const { host, root, task, options, accept, finish, publish } = await startExperiment()
+    try {
+      const first = await accept()
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '暂停实验')
+      await vi.waitFor(() => expect(renderer.root.findAllByType('button').map(nodeText)).toContain('继续实验'))
+      await finish()
+      await publish({ type: 'review', observation: '暂停期间完成', conclusion: '首轮已保存', run_ids: [first] })
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('1 / 3'), { timeout: 3000 })
+      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('已暂停')
+      const paused = await host.remote.getProjection(root, signal)
+      expect(paused.runs.find(run => run.run_id === first)!.status).toBe('succeeded')
+      const { renderer: reopened } = await mount(paused, options)
+      expect(nodeText(reopened.root.findByProps({ className: 'taskbox' }))).toContain('已暂停')
+      const candidate = { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, seed_1: 17 } }
+      await publish({ type: 'generation_input', generation_input: candidate, context_refs: [] })
+      await click(renderer, '继续实验')
+      await vi.waitFor(() => expect(renderer.root.findAllByType('button').map(nodeText)).toContain('暂停实验'))
+      const second = await accept(candidate)
+      await vi.waitFor(() => expect(renderer.root.findByProps({ className: 'taskbox' }).findAllByProps({ className: 'agent-step' })).toHaveLength(2), { timeout: 3000 })
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.experiments[0]).toMatchObject({ task_id: task.task_id, control_state: 'running', submitted_count: 2 })
+      expect(after.tasks.find(item => item.task_id === task.task_id)!.session_id).toBe(task.session_id)
+      expect(after.runs.filter(run => run.workbench_task_id === task.task_id).map(run => run.run_id)).toEqual([first, second])
+    } finally { await host.dispose() }
+  })
+
+  it('keeps the same paused experiment and selected input after continue dispatch fails, then retries it', async () => {
+    const { host, root, runId, task, options } = await startExperiment()
+    try {
+      await host.remote.mutate({ ...root, type: 'pause-experiment', taskId: task.task_id }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': 'Seed' }).props.value).toBe('0'))
+      host.official.controller.prompt.mockRejectedValueOnce(new Error('Controlled resume dispatch failed'))
+      await click(renderer, '继续实验')
+      await vi.waitFor(() => expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' ')).toContain('Controlled resume dispatch failed'))
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('已暂停')
+      expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true)
+      await click(renderer, '继续实验')
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('实验运行中'))
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.experiments[0]!.task_id).toBe(task.task_id)
+      expect(after.tasks.find(item => item.task_id === task.task_id)!.session_id).toBe(task.session_id)
+    } finally { await host.dispose() }
+  })
+
+  it('keeps an ended experiment visible while its accepted Run finishes and another Task continues', async () => {
+    const { host, root, options, task, accept, finish } = await startExperiment()
+    try {
+      const runId = await accept()
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal)
+      const other = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '并行提示词', original_request: '另一个任务目标' } }, signal)
+      const concurrent = await host.remote.mutate({ ...other, type: 'agent-action', id: 'prompt' }, signal)
+      const scope = { workspaceId: root.workspaceId, workId: root.workId }
+      const { renderer } = await mount(await host.remote.getProjection(scope, signal), options)
+      await click(renderer, '切换分支 主分支')
+      await click(renderer, '任务')
+      await click(renderer, '结束实验')
+      await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).experiments[0]!.control_state).toBe('ended'))
+      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('实验已结束')
+      expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+      expect(renderer.root.findAllByType('button').map(nodeText)).not.toContain('暂停实验')
+      await finish()
+      await vi.waitFor(() => expect(nodeText(renderer.root.findAllByProps({ className: 'agent-task-card' }).find(card => card.props['data-task'] === task.task_id)!)).toContain(runId.slice(0, 12)), { timeout: 3000 })
+      const projection = await host.remote.getProjection(scope, signal)
+      expect(projection.experiments.find(item => item.task_id === task.task_id)!.control_state).toBe('ended')
+      expect(projection.runs.find(item => item.run_id === runId)!.status).toBe('succeeded')
+      expect(projection.tasks.find(item => item.task_id === concurrent.taskId)!.execution_state).toBe('running')
+      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('已提交 1 次 · 还可提交 2 次')
+    } finally { await host.dispose() }
+  })
+
+  it('preserves the browsed Run and fixed input while pausing and continuing the same real experiment', async () => {
+    const { host, root, runId, options } = await setup(true)
+    try {
+      await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'experiment', value: 'preset-a' }, signal)
+      await host.remote.mutate({ ...root, type: 'update-execution', field: 'max_runs', value: 3 }, signal)
+      const receipt = await host.remote.mutate({ ...root, type: 'experiment' }, signal)
+      const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.task_id === receipt.taskId)!
+      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+      await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'active-experiment' },
+        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await click(renderer, '查看运行 ' + runId)
+      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true))
+      await click(renderer, '暂停实验')
+      await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).experiments[0]!.control_state).toBe('paused'))
+      expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain(runId.slice(0, 12))
+      expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true)
+      await click(renderer, '任务')
+      await click(renderer, '继续实验')
+      await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).experiments[0]!.control_state).toBe('running'))
+      expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
+      expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props.checked).toBe(true)
+      const after = await host.remote.getProjection(root, signal)
+      expect(after.experiments).toHaveLength(1)
+      expect(after.experiments[0]!.task_id).toBe(task.task_id)
+      expect(after.tasks.find(item => item.task_id === task.task_id)!.session_id).toBe(task.session_id)
+    } finally { await host.dispose() }
+  })
 
   it.each(['missing', 'broken'] as const)('keeps the unavailable %s default preset until the user selects an available one', async state => {
     const { host, root, options } = await setup(true)
@@ -7805,7 +8169,7 @@ describe('experiment workbench Run review through Remote', () => {
     } finally { await host.dispose() }
   })
 
-  it('rechecks another base model with waiting resources, Catalog choices, a prompt Task and a new Run through Remote', async () => {
+  it('reuses another base model while retaining resources, choosing replacements and starting a prompt Task and Run through Remote', async () => {
     const { host, root, createRun, options } = await setup(true)
     try {
       await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal)
@@ -7836,7 +8200,7 @@ describe('experiment workbench Run review through Remote', () => {
           return { ...request, items: request.page === 1 ? items : [], totalCount: items.length } }) }
       const { renderer } = await mount(await host.remote.getProjection(root, signal), { ...options, catalog,
         baseModels: [{ id: '1', label: '底模 A' }, { id: '9', label: '底模 B' }],
-        remote: { ...options.remote, previewModelChange: request => host.remote.previewModelChange(request, signal),
+        remote: { ...options.remote,
           getEnvironment: request => host.remote.getEnvironment(request, signal),
           getTaskDraft: request => host.remote.getTaskDraft(request, signal),
           saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
@@ -7851,11 +8215,11 @@ describe('experiment workbench Run review through Remote', () => {
       expect(created).toMatchObject({ parent_branch_id: root.branchId, original_request: '保留窗框',
         source_run_id: sourceRunId, source_experience_id: saved.experience_id,
         draft: { base_model_id: '9', prompt_input: { positive_prompt: '来源固定提示词' },
-          generation_input: { model: null, template_id: null, parameters: {}, loras: [] } } })
+          generation_input: fixedRun.generation_input } })
       const picked = renderer.root.findByProps({ 'aria-label': '已选资源' }).findAllByProps({ className: 'picked-item' })
-      expect(picked.map(nodeText).join(' ')).toContain('生成模型 · 底模 B未选择')
-      expect(picked.map(nodeText).join(' ')).toContain('Workflow 模板未选择')
-      expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(0)
+      expect(picked.map(nodeText).join(' ')).toContain('paint.safetensors')
+      expect(picked.map(nodeText).join(' ')).toContain('Rain template')
+      expect(renderer.root.findAllByProps({ className: 'picked-lora' })).toHaveLength(1)
       await click(renderer, '更换生成模型')
       await click(renderer, '选择 目标模型')
       await click(renderer, '选择 Workflow 模板')
@@ -8415,7 +8779,7 @@ describe('experiment workbench Run review through Remote', () => {
       expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
       expect(renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' ')).toContain('任务已提交')
       const remoteApi = renderer.root.props.remote
-      await act(() => renderer.update(<ExperimentWorkbench {...options} remote={remoteApi}
+      await act(() => renderer.update(<ExperimentWorkbench {...options} connectionState={renderer.root.props.connectionState} remote={remoteApi}
         onWorkspaceChange={vi.fn()} onAction={request => options.onAction(request)} />))
       const artifact: ArtifactPayload = kind === 'review'
         ? { type: 'review', observation: 'Agent 观察', conclusion: 'Agent 结论', run_ids: [runId] }

@@ -659,8 +659,9 @@ it('saves Workspace function bindings and verifies the requested Skill in the ac
   expect(store.getTask(task.task_id).binding_snapshot.requested_skill).toBe('prompt-builder')
   const otherWorkspace = await remote.getProjection({ workspaceId: 'workspace_2' }, signal())
   expect(otherWorkspace.functions.some(item => item.function_id === binding.function_id)).toBe(false)
+  const beforeUnload = (await remote.getProjection(selected, signal())).tasks[0]
   official.agents.delete(task.session_id!)
-  expect((await remote.getProjection(selected, signal())).tasks[0]).toMatchObject({ execution_state: 'interrupted', status: 'interrupted' })
+  expect((await remote.getProjection(selected, signal())).tasks[0]).toEqual(beforeUnload)
 })
 
 it('asks and answers a task question and pauses, continues and ends the same experiment Session', async () => {
@@ -740,7 +741,6 @@ it('mounts Workbench Remotes, creates one main branch and isolates Workspace pro
     { method: 'getEnvironment', invocation: { kind: 'direct' } },
     { method: 'getProjection', invocation: { kind: 'direct' } },
     { method: 'getInputDescription', invocation: { kind: 'direct' } },
-    { method: 'previewModelChange', invocation: { kind: 'direct' } },
     { method: 'getTaskDraft', invocation: { kind: 'direct' } },
     { method: 'saveTaskDraft', invocation: { kind: 'direct' } },
     { method: 'mutate', invocation: { kind: 'direct' } },
@@ -1028,7 +1028,7 @@ it('rejects invalid action input and cross-workspace targets before changing a b
   expect(store.getTask(foreignTask.task_id).execution_state).toBe('running')
 })
 
-it('rejects an incompatible resource through the public action before changing any draft field', async () => {
+it('selects a resource from another base model before a generation model is selected', async () => {
   const { remote, store, catalog } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Context', goal: 'Read references' } }, signal())
   const before = store.getBranch(selected.branchId!).draft
@@ -1037,9 +1037,8 @@ it('rejects an incompatible resource through the public action before changing a
     const details = await readDetails(request, requestSignal)
     return { ...details, item: { ...details.item, label: 'Other model style', baseModelId: '9', modelId: null } }
   })
-  await expect(remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'style', id: '7' } }, signal()))
-    .rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_INCOMPATIBLE', issues: [{ path: 'value.id' }] } })
-  expect(store.getBranch(selected.branchId!).draft).toEqual(before)
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'style', id: '7' } }, signal())
+  expect(store.getBranch(selected.branchId!).draft).toEqual({ ...before, context_refs: [{ kind: 'style', id: '7' }] })
 })
 
 it('persists all five context kinds with shared IDs and freezes the Task references before single-item removal', async () => {
@@ -1069,7 +1068,7 @@ it('persists all five context kinds with shared IDs and freezes the Task referen
 it.each([
   { baseModelId: '9', modelId: null },
   { baseModelId: '1', modelId: '3' },
-])('rejects the current Catalog constraints %j while preserving a complete selected draft', async constraints => {
+])('selects a LoRA with Catalog classification %j while preserving the complete input', async constraints => {
   const { remote, store, catalog } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Constraints', goal: 'Keep input' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
@@ -1081,9 +1080,10 @@ it.each([
     const details = await read(request, requestSignal)
     return { ...details, item: { ...details.item, ...constraints } }
   })
-  await expect(remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'lora', id: '7' } }, signal()))
-    .rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_INCOMPATIBLE', issues: [{ path: 'value.id' }] } })
-  expect(store.getBranch(selected.branchId!).draft).toEqual(before)
+  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'lora', id: '7' } }, signal())
+  expect(store.getBranch(selected.branchId!).draft).toEqual({
+    ...before, generation_input: { ...before.generation_input, loras: [{ id: '7', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
+  })
 })
 
 it('accepts unconstrained contexts before a generation model is selected', async () => {

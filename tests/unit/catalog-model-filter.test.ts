@@ -66,7 +66,7 @@ async function withSource(
 }
 
 
-it('reads only the selected resources for a Workbench model preview and its confirmed change', async () => {
+it('resolves only the replacement model and preserves selected LoRAs across catalog model scopes', async () => {
   const records = Array.from({ length: 19 }, (_, index) => ({
     id: index + 1, base_model_id: 4, model_id: index >= 8 && index < 18 ? 25 : 24,
     file_name: `lora-${index + 1}.safetensors`, file_format: 'safetensors', precision_or_quantization: 'fp16',
@@ -91,20 +91,13 @@ it('reads only the selected resources for a Workbench model preview and its conf
         search: source.search.bind(source), details: source.details.bind(source), resolveGenerationModel: source.resolveGenerationModel.bind(source),
       })
       const before = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
-      expect(await host.remote.previewModelChange({ ...scope, modelId: '25' }, signal)).toEqual({
-        model: { id: '25', label: 'selected.safetensors' }, removed: [{ kind: 'lora', id: '19', label: 'lora-19.safetensors' }],
-      })
-      expect(requests.filter(entry => entry.path === '/internal/semantic/loras').map(entry => entry.input)).toEqual(['9', '17', '19'].map(id => ({ mode: 'resolve', id })))
-      expect(requests.some(entry => entry.input.mode === 'search')).toBe(false)
-      expect((await host.remote.getProjection(scope, signal)).branches[0]!.draft).toEqual(before)
-      requests.splice(0)
-
-      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '25', confirmedRemovals: [{ kind: 'lora', id: '19' }] } }, signal)
-      expect(requests.filter(entry => entry.path === '/internal/semantic/loras').map(entry => entry.input)).toEqual(['9', '17', '19'].map(id => ({ mode: 'resolve', id })))
-      expect(requests.some(entry => entry.input.mode === 'search')).toBe(false)
+      await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '25' } }, signal)
+      expect(requests).toEqual([{ path: '/internal/semantic/generation-models', input: { mode: 'resolve', id: '25' } }])
       const after = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
-      expect(after.generation_input.model).toEqual({ id: '25', file_name: 'selected.safetensors' })
-      expect(after.generation_input.loras.map(lora => lora.id)).toEqual(['9', '17'])
+      expect(after).toEqual({
+        ...before, base_model_id: '4',
+        generation_input: { ...before.generation_input, model: { id: '25', file_name: 'selected.safetensors' } },
+      })
     } finally { await host.dispose() }
   })
 })

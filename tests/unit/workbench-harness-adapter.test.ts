@@ -3,6 +3,8 @@ import { createToolResultMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { HarnessWorkbenchSessions } from '../../src/host/workbench/harness-adapter.ts'
 
+const signal = () => new AbortController().signal
+
 function fixture() {
   const controller = {
     create: vi.fn(async () => ({ sessionId: 'session-task', agentPreset: 'chosen' })),
@@ -75,19 +77,19 @@ it('cancels live sessions in the official scope and clears a failure on redispat
   adapter.recordFailure('session-child')
   adapter.recordFailure('another-task')
   expect(await adapter.status({ sessionId: 'session-task' })).toBe('failed')
-  await adapter.dispatch({ sessionId: 'session-task', taskId: 'task-a', text: 'Continue' })
+  await adapter.dispatch({ sessionId: 'session-task', taskId: 'task-a', text: 'Continue', signal: signal() })
   expect(await adapter.status({ sessionId: 'session-task' })).toBe('running')
   host.scopeForSession.mockResolvedValueOnce({ workspaceId: 'workspace-a', sessionIds: ['another-task'] })
   expect(await adapter.status({ sessionId: 'another-task' })).toBe('failed')
   host.scopeForSession.mockResolvedValue({ workspaceId: 'workspace-a', sessionIds: ['session-task', 'session-child', 'unloaded'] })
-  await adapter.control({ sessionId: 'session-task', action: 'pause' })
+  await adapter.control({ sessionId: 'session-task', action: 'pause', signal: signal() })
   expect(controller.cancel.mock.calls).toEqual([[{ sessionId: 'session-task' }], [{ sessionId: 'session-child' }]])
   controller.cancel.mockClear()
-  await adapter.control({ sessionId: 'session-task', action: 'continue' })
+  await adapter.control({ sessionId: 'session-task', action: 'continue', signal: signal() })
   expect(controller.cancel).not.toHaveBeenCalled()
   host.scopeForSession.mockResolvedValue({ workspaceId: 'workspace-a', sessionIds: ['session-task'] })
   expect(await adapter.status({ sessionId: 'session-task' })).toBe('idle')
-  expect(await adapter.status({ sessionId: 'unloaded' })).toBe('interrupted')
+  expect(await adapter.status({ sessionId: 'unloaded' })).toBeNull()
   expect(await adapter.authorize({ task: { task_id: 'task-a', session_id: null }, identity: { workspaceId: 'workspace-a', sessionId: 'session-task', turn: 1, callId: 'a' } })).toBe(false)
 })
 
@@ -105,7 +107,7 @@ it('creates the selected preset in the task workspace and selects its exact mode
   expect(controller.create).toHaveBeenCalledWith({ workspaceId: 'workspace-a', agentPreset: 'chosen' })
   expect(controller.selectModel).toHaveBeenCalledWith({ sessionId: 'session-task', provider: 'provider-a', model: 'model-a', reasoningEffort: 'high' })
   expect(selected.selectedModel).toEqual({ provider: 'provider-a', model: 'model-a', reasoningEffort: 'high' })
-  await adapter.dispatch({ sessionId: selected.sessionId, text: 'Read task-a.', taskId: 'task-a' })
+  await adapter.dispatch({ sessionId: selected.sessionId, text: 'Read task-a.', taskId: 'task-a', signal: signal() })
   expect(controller.prompt).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 'session-task', mode: 'queue', content: [{ type: 'text', text: 'Read task-a.' }] }), expect.any(AbortSignal))
 })
 

@@ -105,6 +105,26 @@ describe('Harness source boundary', () => {
     }
   })
 
+  it('accepts public Client Connection handle and state source type-only imports', () => {
+    const root = fixture("import type { ConnectionHandle, ConnectionStateSource } from '@deepseek-ai/dsh-client-connection/client'\n")
+    try {
+      expect(run(root)).toMatchObject({ status: 0, stderr: '' })
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects a runtime import from the type-only Client Connection permission', () => {
+    const root = fixture("import { installConnection } from '@deepseek-ai/dsh-client-connection/client'\n")
+    try {
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain("must import '@deepseek-ai/dsh-client-connection/client' as a type-only specifier")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   it('accepts public SubagentRuntime type-only imports for descendant queries', () => {
     const root = fixture("import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'\n")
     try {

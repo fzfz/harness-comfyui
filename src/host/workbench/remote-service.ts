@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
-import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchRunInputRequest, type WorkbenchModelChangeRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope, type WorkbenchTaskDraftRequest, type WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
+import { WORKBENCH_REMOTE_NAMESPACE, type WorkbenchRunInputRequest, type WorkbenchInputDescriptionRequest, type WorkbenchEnvironmentRequest, type WorkbenchScope, type WorkbenchTaskDraftRequest, type WorkbenchSaveTaskDraftRequest } from '../../workbench-remote.ts'
 import type { ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import { generationMediaContentUrl, generationMediaDownloadUrl } from '../../generation/contract.ts'
@@ -69,22 +69,13 @@ export class WorkbenchRemoteService extends TypertRemoteService {
       return this.host.harnessComfyuiCore.services.runtime.inspectTemplateRuntimeParameters({ templateId: input.template_id, instanceId: input.instance_id }, signal)
     })
   }
-  async previewModelChange(request: WorkbenchModelChangeRequest, signal: AbortSignal) {
-    signal.throwIfAborted()
-    return report(async () => {
-      const workbench = this.host.harnessComfyuiWorkbench
-      const { store } = workbench.service
-      store.assertScope(request.workspaceId, request.workId, request.branchId)
-      return workbench.previewModelChange(request.modelId, store.getBranch(request.branchId).draft, signal)
-    })
-  }
   async mutate(request: ExperimentWorkbenchAction, signal: AbortSignal) {
     signal.throwIfAborted()
     return report(() => executeWorkbenchAction(this.host, request, signal))
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []
-for (const name of ['getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'previewModelChange', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
+for (const name of ['getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
   Remote(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
     addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
   } as never)

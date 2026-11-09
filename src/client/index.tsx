@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { TypertRemoteNamespace } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -55,6 +56,7 @@ export const inject = [
   'sidebarRightTabs',
   'configForms',
   'layout',
+  'connection',
 ] as const
 
 interface ClientSessions {
@@ -88,6 +90,7 @@ interface PluginBundleConfigSlotBoundary {
 type ClientContext = Context & {
   readonly sessions: ClientSessions
   readonly slots: ClientSlotRegistry
+  readonly connection: ConnectionHandle
 }
 
 function getRemoteNamespace<Namespace extends string>(
@@ -261,13 +264,13 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
         ctx.slots.inject('main', () => ctx.slots.register({
           name: 'main',
           key: EXPERIMENT_PANEL_ID,
-          inject: () => ({ remote: remoteWorkbench, catalog }),
+          inject: () => ({ remote: remoteWorkbench, catalog, connectionState: ctx.connection.state }),
         }, ExperimentWorkbenchHost)),
         ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
           name: 'sidebar.footer.action',
           id: `${EXPERIMENT_PANEL_ID}-entry`,
           order: 11,
-          inject: () => ({ open: () => ctx.layout.selectPanel(EXPERIMENT_PANEL_ID as Parameters<typeof ctx.layout.selectPanel>[0]) }),
+          inject: () => ({ selectPanel: (panelId: Parameters<typeof ctx.layout.selectPanel>[0]) => ctx.layout.selectPanel(panelId) }),
         }, ExperimentWorkbenchEntry)),
         ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
           name: 'sidebar.footer.action',

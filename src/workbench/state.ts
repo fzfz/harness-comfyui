@@ -6,7 +6,7 @@ export function isFinishedRun(status: WorkbenchRun['status']): boolean { return 
 
 export function shouldTrackExecution(task: Task, experiment: Experiment | null = null): boolean {
   return task.session_id !== null
-    && (task.execution_state === 'pending' || task.execution_state === 'running')
+    && (task.execution_state === 'pending' || task.execution_state === 'running' || task.execution_state === 'idle')
     && (experiment === null || experiment.control_state === 'running')
     && !['succeeded', 'failed', 'interrupted', 'paused'].includes(task.status)
 }

@@ -1,5 +1,6 @@
 import { contractFields } from '../shared/field-contract.ts'
 import Schema from '@deepseek-ai/schemastery'
+import { STANDARD_RUNTIME_PARAMETER_KINDS } from '../generation/inspection-contract.ts'
 import { artifactSchemas, functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema } from './schema.ts'
 import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
 import { TASK_KINDS } from './functions.ts'
@@ -79,6 +80,11 @@ class Validator {
       if (value.prompt_input.positive_prompt !== null) this.text(value.prompt_input.positive_prompt, `${path}.prompt_input.positive_prompt`)
       if (value.prompt_input.negative_prompt !== null) this.text(value.prompt_input.negative_prompt, `${path}.prompt_input.negative_prompt`)
     }
+    if (value.parameter_mapping !== null && this.object(value.parameter_mapping, `${path}.parameter_mapping`)) {
+      for (const [id, kind] of Object.entries(value.parameter_mapping)) {
+        if (!(STANDARD_RUNTIME_PARAMETER_KINDS as readonly unknown[]).includes(kind)) this.issue(`${path}.parameter_mapping.${id}`, '请使用模板参数描述中的参数类型。')
+      }
+    }
     this.generation(value.generation_input, `${path}.generation_input`, ready)
     this.refs(value.context_refs, `${path}.context_refs`); this.id(value.base_model_id, `${path}.base_model_id`, true)
   }
@@ -98,12 +104,12 @@ export function validateTaskRequestDraft(value: unknown): TaskRequestDraft {
 
 export function validateTaskDraft(value: unknown, path = 'draft'): TaskDraft {
   const v = new Validator()
-  if (v.object(value, path, ['prompt_input', 'generation_input', 'context_refs', 'base_model_id'])) v.draft(value, path)
+  if (v.object(value, path, ['prompt_input', 'generation_input', 'parameter_mapping', 'context_refs', 'base_model_id'])) v.draft(value, path)
   return v.finish(value)
 }
 export function validateTaskInput(kind: TaskKind, value: unknown): TaskInput {
   const v = new Validator()
-  if (!v.object(value, 'input', ['prompt_input', 'generation_input', 'context_refs', 'base_model_id', 'requirements', 'reference_run_ids', 'evaluation_input', 'requested_skill', 'max_runs'])) return v.finish(value)
+  if (!v.object(value, 'input', ['prompt_input', 'generation_input', 'parameter_mapping', 'context_refs', 'base_model_id', 'requirements', 'reference_run_ids', 'evaluation_input', 'requested_skill', 'max_runs'])) return v.finish(value)
   v.draft(value, 'input', kind === 'run' || kind === 'experiment')
   if (v.object(value.requirements, 'input.requirements', ['original_request', 'instructions'])) { v.text(value.requirements.original_request, 'input.requirements.original_request', true); v.text(value.requirements.instructions, 'input.requirements.instructions') }
   v.strings(value.reference_run_ids, 'input.reference_run_ids')

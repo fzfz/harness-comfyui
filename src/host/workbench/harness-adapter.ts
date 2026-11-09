@@ -50,10 +50,11 @@ export class HarnessWorkbenchSessions {
     return { sessionId: created.sessionId, selectedModel: { ...selected } }
   }
 
-  async dispatch(input: { sessionId: string; taskId: string; text: string }): Promise<void> {
+  async dispatch(input: { sessionId: string; taskId: string; text: string; signal: AbortSignal }): Promise<void> {
     const scope = await this.host.scopeForSession(input.sessionId)
+    if (input.signal.aborted) return
     for (const sessionId of scope.sessionIds) this.failedSessions.delete(sessionId)
-    await this.host.controller.prompt({ requestId: randomUUID(), sessionId: input.sessionId, mode: 'queue', content: [{ type: 'text', text: input.text }] }, new AbortController().signal)
+    await this.host.controller.prompt({ requestId: randomUUID(), sessionId: input.sessionId, mode: 'queue', content: [{ type: 'text', text: input.text }] }, input.signal)
   }
 
   async authorize(input: { task: { task_id: string; session_id: string | null }; identity: WorkbenchIdentity }): Promise<boolean> {
@@ -62,11 +63,11 @@ export class HarnessWorkbenchSessions {
     return scope.workspaceId === input.identity.workspaceId && scope.sessionIds.includes(input.identity.sessionId)
   }
 
-  async status(input: { sessionId: string }): Promise<ExecutionState> {
+  async status(input: { sessionId: string }): Promise<ExecutionState | null> {
     const scope = await this.host.scopeForSession(input.sessionId)
     if (scope.sessionIds.some(id => this.failedSessions.has(id))) return 'failed'
     if (scope.sessionIds.some(id => this.host.agent(id)?.status === 'running')) return 'running'
-    return this.host.agent(input.sessionId) === undefined ? 'interrupted' : 'idle'
+    return this.host.agent(input.sessionId)?.status ?? null
   }
 
   recordFailure(sessionId: string): void { this.failedSessions.add(sessionId) }
@@ -94,9 +95,10 @@ export class HarnessWorkbenchSessions {
     return refs
   }
 
-  async control(input: { sessionId: string; action: 'interrupt' | 'pause' | 'continue' }): Promise<void> {
+  async control(input: { sessionId: string; action: 'interrupt' | 'pause' | 'continue'; signal: AbortSignal }): Promise<void> {
     if (input.action === 'continue') return
     const scope = await this.host.scopeForSession(input.sessionId)
+    if (input.signal.aborted) return
     for (const sessionId of scope.sessionIds) {
       if (this.host.agent(sessionId) !== undefined) this.host.controller.cancel({ sessionId })
     }
