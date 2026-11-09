@@ -1,3 +1,5 @@
+import type { ArtifactPayload } from '../workbench/contract.ts'
+import { validateArtifact, WorkbenchError } from '../workbench/validation.ts'
 import help from '../../config/managed-cli-help.json' with { type: 'json' }
 import managedCliEnvironment from '../../config/managed-cli-environment.json' with { type: 'json' }
 import { parseManagedCliEnvironment } from '../../config/managed-cli-environment-schema.ts'
@@ -50,7 +52,10 @@ export interface CliGenerationManifestItem extends CliGenerationSubmissionItem {
   readonly parameter_files?: Readonly<Record<string, string>>
 }
 export type CliRequest =
-  | { readonly command: 'generation.submit'; readonly items: readonly CliGenerationSubmissionItem[] }
+  | { readonly command: 'workbench.task.get'; readonly task_id: string }
+  | { readonly command: 'workbench.task.publish'; readonly task_id: string; readonly artifact: ArtifactPayload }
+  | { readonly command: 'workbench.experiment.end'; readonly task_id: string; readonly reason: 'goal_met' | 'user_ended' }
+  | { readonly command: 'generation.submit'; readonly items: readonly CliGenerationSubmissionItem[]; readonly workbench_task_id?: string }
   | {
     readonly command: 'generation.inspect-template-parameters'
     readonly template_id: string
@@ -192,15 +197,27 @@ function generationSubmissionItems(value: unknown, allowFiles: boolean): readonl
 export function parseCliGenerationManifest(value: unknown): readonly CliGenerationManifestItem[] {
   const source = record(value, 'Generation manifest')
   exactKeys(source, inputKeys(source, 'generation submit'), 'Generation manifest')
+  if (Object.hasOwn(source, 'workbench_task_id')) Schema.resolve(source.workbench_task_id, cliInputSchemas['generation submit'].dict!.workbench_task_id!, {})
   return generationSubmissionItems(source.items, true)
 }
 
 export function parseCliRequest(value: unknown): CliRequest {
   const source = record(value, 'CLI request')
   if (typeof source.command !== 'string') throw new TypeError('CLI request command is invalid')
+  if (['workbench.task.get', 'workbench.task.publish', 'workbench.experiment.end'].includes(source.command)) {
+    const key = source.command.replaceAll('.', ' ') as 'workbench task get' | 'workbench task publish' | 'workbench experiment end'
+    exactKeys(source, inputKeys(source, key, true), 'CLI request')
+    if (typeof source.task_id !== 'string' || !source.task_id.trim()) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请使用任务返回的 task_id。', 'task_id')
+    const { command, ...input } = source
+    if (command === 'workbench.task.publish') input.artifact = validateArtifact(input.artifact)
+    const parsed = Schema.resolve(input, cliInputSchemas[key], {})[0]
+    return { command, ...parsed } as CliRequest
+  }
   if (source.command === 'generation.submit') {
     exactKeys(source, inputKeys(source, 'generation submit', true), 'CLI request')
-    return Object.freeze({ command: source.command, items: generationSubmissionItems(source.items, false) })
+    const taskId = Object.hasOwn(source, 'workbench_task_id')
+      ? Schema.resolve(source.workbench_task_id, cliInputSchemas['generation submit'].dict!.workbench_task_id!, {})[0] as string : undefined
+    return Object.freeze({ command: source.command, items: generationSubmissionItems(source.items, false), ...(taskId === undefined ? {} : { workbench_task_id: taskId }) })
   }
   if (source.command === 'generation.inspect-template-parameters') {
     exactKeys(source, inputKeys(source, 'generation inspect-template-parameters', true), 'CLI request')
@@ -238,6 +255,11 @@ export function parseCliRequest(value: unknown): CliRequest {
 }
 
 export function parseCliArguments(argv: readonly string[], stdin: string): CliRequest {
+  if (argv.length === 4 && argv[0] === 'workbench' && argv[3] === '--stdin') {
+    const source = record(JSON.parse(stdin) as unknown, 'Workbench stdin')
+    if (Object.hasOwn(source, 'command')) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请从命令行选择操作。', 'command')
+    return parseCliRequest({ ...source, command: argv.slice(0, 3).join('.') })
+  }
   const prefix = argv.slice(0, 3).join(' ')
   if (argv.length === 3 && (prefix === 'generation run-inputs --stdin' || prefix === 'generation wait --stdin')) {
     let request: unknown

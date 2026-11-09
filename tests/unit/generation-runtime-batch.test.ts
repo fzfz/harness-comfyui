@@ -73,7 +73,7 @@ function createRuntime(root = mkdtempSync(join(tmpdir(), 'generation-batch-'))) 
   if (!roots.includes(root)) roots.push(root)
   const prepare = vi.fn(async (_request: GenerationRequest) => ({
     instanceId: '2', instanceTitle: 'ComfyUI', templateTitle: 'Template',
-    sourceSnapshot: {}, actualWorkflow: {}, apiWorkflow: {}, expectedOutputNodeIds: ['10'],
+    inputDescription: { parameters: [], size_candidates: [] }, sourceSnapshot: {}, actualWorkflow: {}, apiWorkflow: {}, expectedOutputNodeIds: ['10'],
     connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
   }))
   const runtime = new GenerationRuntime({

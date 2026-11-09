@@ -143,6 +143,35 @@ describe('Client module materialization seam', () => {
     })
   })
 
+  it('uses the host React and createPortal exports for the workbench style boundary', async () => {
+    const fixture = await createFixture(
+      "export { useState, useCallback } from 'react'\nexport { createPortal } from 'react-dom'\n",
+    )
+    await materializeClientModule({
+      entry: join(fixture.directory, 'fixture.ts'),
+      css: join(fixture.directory, 'styles.css'),
+      output: fixture.output,
+    })
+    let handoff: { factory: (require: (specifier: string) => unknown) => Record<string, unknown> } | undefined
+    const hostReact = { useState() {}, useCallback() {} }
+    const hostReactDOM = { createPortal() {} }
+    const imports: string[] = []
+    vm.runInNewContext(await readFile(fixture.output, 'utf8'), {
+      document: { querySelector: () => ({}) },
+      window: { __ModuleLoader__: { load(value: typeof handoff) { handoff = value } } },
+    })
+    const exported = handoff!.factory((specifier) => {
+      imports.push(specifier)
+      if (specifier === 'react') return hostReact
+      if (specifier === 'react-dom') return hostReactDOM
+      throw new Error(`Unexpected style boundary external: ${specifier}`)
+    })
+    expect(imports).toEqual(['react', 'react-dom'])
+    expect(exported.useState).toBe(hostReact.useState)
+    expect(exported.useCallback).toBe(hostReact.useCallback)
+    expect(exported.createPortal).toBe(hostReactDOM.createPortal)
+  })
+
   it.each(expectedExternals)('keeps exact external %s outside the client bundle', async (specifier) => {
     const fixture = await createFixture(`import * as imported from '${specifier}'\nexport const value = imported\n`)
 

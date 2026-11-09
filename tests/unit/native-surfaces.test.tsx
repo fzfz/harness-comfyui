@@ -57,7 +57,6 @@ import { ContextDialogNavigationStore } from '../../src/client/workbench/context
 import {
   WorkbenchDock,
   WorkbenchEntry,
-  type CatalogApi,
 } from '../../src/client/workbench/native-surfaces.tsx'
 
 const { act, create } = await vi.importActual('react-test-renderer') as {
@@ -75,7 +74,8 @@ const { act, create } = await vi.importActual('react-test-renderer') as {
 }
 
 const CONTEXT_OPTIONS: readonly CatalogItem[] = [
-  {
+  { modelId: null,
+    baseModelId: null,
     context: { kind: 'comfyui-template', id: '37', title: 'wai_txt2img_lora' },
     label: 'wai_txt2img_lora',
     subtitle: 'text_to_image',
@@ -85,14 +85,16 @@ const CONTEXT_OPTIONS: readonly CatalogItem[] = [
       'http://127.0.0.1:18092/media/images/template-3.webp',
     ],
   },
-  {
+  { modelId: null,
+    baseModelId: null,
     context: { kind: 'comfyui-template', id: '36', title: 'wai_txt2img' },
     label: 'wai_txt2img',
     subtitle: 'text_to_image',
     coverUrl: null,
     sampleImageUrls: [],
   },
-  {
+  { modelId: null,
+    baseModelId: null,
     context: { kind: 'lora', id: '91', file_name: 'StS_Age_Slider_Illustrious_v1.safetensors' },
     label: 'StS_Age_Slider_Illustrious_v1.safetensors',
     subtitle: 'Shed_The_Skin',
@@ -139,7 +141,7 @@ function catalog(items: readonly CatalogItem[] = CONTEXT_OPTIONS, totalCount?: n
     if (signal.aborted) throw new DOMException('cancelled', 'AbortError')
     return { items: [{ id: '2', label: 'wai' }, { id: '1', label: 'anima' }] }
   })
-  return { search, baseModels, details: vi.fn(async () => ({ kind: 'comfyui-template', id: '37', fields: [{ key: 'title', value: 'wai_txt2img_lora' }] })) } as never
+  return { search, baseModels, details: vi.fn(async () => ({ kind: 'comfyui-template', id: '37', item: CONTEXT_OPTIONS.find(item => item.context.kind === 'comfyui-template')!, fields: [{ key: 'title', value: 'wai_txt2img_lora' }] })) } as never
 }
 
 function inputState(draft = '') {
@@ -173,6 +175,41 @@ async function openDialog(renderer: ReturnType<typeof create>): Promise<void> {
     await Promise.resolve()
   })
 }
+
+
+it.each([
+  { coverUrl: null, expected: ['/sample-1.png', '/sample-2.png'] },
+  { coverUrl: '/cover.png', expected: ['/cover.png', '/sample-1.png', '/sample-2.png'] },
+])('previews every chat Catalog image from cards and details with cover $coverUrl', async ({ coverUrl, expected }) => {
+  const option: CatalogItem = { ...CONTEXT_OPTIONS[0]!, coverUrl, sampleImageUrls: ['/sample-1.png', '/sample-2.png'] }
+  const input = sessionInput()
+  let renderer!: ReturnType<typeof create>
+  act(() => { renderer = create(createElement(WorkbenchDock, {
+    catalog: catalog([option]), dialogNavigation: freshDialogNavigation(), input: inputState() as never,
+    sessionId: 'images-session', sessionInput: input as never, workbench: activeController(),
+  })) })
+  try {
+    await openDialog(renderer)
+    expect(renderer.root.findAllByType('img')[0]!.props.src).toBe(expected[0])
+    for (const entry of ['card', 'details']) {
+      if (entry === 'details') await act(async () => { (renderer.root.findByProps({ 'aria-label': `详情 ${option.label}` }).props.onClick as Function)({ currentTarget: { focus() {} } }) })
+      const preview = entry === 'card' ? renderer.root.findByProps({ 'aria-label': `${WORKBENCH_COPY.openGallery} ${option.label}` }) : buttonByText(renderer, WORKBENCH_COPY.openGallery)
+      act(() => { (preview.props.onClick as Function)() })
+      for (const url of expected) {
+        expect(renderer.root.findByProps({ alt: `${option.label} ${WORKBENCH_COPY.image} ${expected.indexOf(url) + 1}` }).props.src).toBe(url)
+        if (url !== expected.at(-1)) act(() => { (renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.onClick as Function)() })
+      }
+      expect(renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.nextImage }).props.disabled).toBe(true)
+      for (const url of expected.slice(0, -1).reverse()) {
+        act(() => { (renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.onClick as Function)() })
+        expect(renderer.root.findByProps({ alt: `${option.label} ${WORKBENCH_COPY.image} ${expected.indexOf(url) + 1}` }).props.src).toBe(url)
+      }
+      expect(renderer.root.findByProps({ 'aria-label': WORKBENCH_COPY.previousImage }).props.disabled).toBe(true)
+      act(() => { (renderer.root.findByProps({ role: 'dialog' }).props.onClick as Function)() })
+    }
+    expect(input.setDraft).not.toHaveBeenCalled()
+  } finally { act(() => renderer.unmount()) }
+})
 
 describe('native Harness workbench surfaces', () => {
   let documentTarget: EventTarget
@@ -328,7 +365,7 @@ describe('native Harness workbench surfaces', () => {
     await openDialog(renderer!)
     expect(api.baseModels).toHaveBeenCalledOnce()
     expect(api.search).toHaveBeenCalledWith({
-      kind: 'comfyui-template', query: '', page: 1, baseModelId: null,
+      kind: 'comfyui-template', query: '', page: 1, baseModelId: null, modelId: null,
     }, expect.any(AbortSignal))
     expect(renderer!.root.findAllByType('img')).toHaveLength(1)
     expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.noCover)
@@ -567,13 +604,13 @@ describe('native Harness workbench surfaces', () => {
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
     expect(buttonByText(renderer!, CATALOG_KIND_DEFINITIONS[1].label).props.variant).toBe('primary')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => { (buttonByText(renderer!, WORKBENCH_COPY.cancel).props.onClick as () => void)() })
     api.search.mockClear()
     await openDialog(renderer!)
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => renderer!.unmount())
   })
@@ -618,7 +655,7 @@ describe('native Harness workbench surfaces', () => {
     expect(dialogNavigation.getSnapshot().state).toEqual(persistedNavigation)
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => renderer!.unmount())
   })
@@ -651,7 +688,7 @@ describe('native Harness workbench surfaces', () => {
 
     expect(api.search).not.toHaveBeenCalledWith(expect.objectContaining({ baseModelId: '9' }), expect.anything())
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 1, baseModelId: null,
+      kind: 'lora', query: 'Age', page: 1, baseModelId: null, modelId: null,
     }, expect.any(AbortSignal))
     expect(dialogNavigation.getSnapshot().state).toMatchObject({
       selectedBaseModelId: null,
@@ -730,7 +767,7 @@ describe('native Harness workbench surfaces', () => {
     expect(buttonByText(renderer!, CATALOG_KIND_DEFINITIONS[1].label).props.variant).toBe('primary')
     expect(buttonByText(renderer!, CATALOG_KIND_DEFINITIONS[7].label).props.variant).toBe('toolbar')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: '', page: 1, baseModelId: '2',
+      kind: 'lora', query: '', page: 1, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
 
     const searchInput = renderer!.root.findAllByType('input')[0]!
@@ -743,7 +780,7 @@ describe('native Harness workbench surfaces', () => {
       await Promise.resolve()
     })
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 1, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 1, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
 
     const next = buttonByText(renderer!, WORKBENCH_COPY.nextPage)
@@ -752,7 +789,7 @@ describe('native Harness workbench surfaces', () => {
       await Promise.resolve()
     })
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     const previous = buttonByText(renderer!, WORKBENCH_COPY.previousPage)
     await act(async () => {
@@ -760,7 +797,7 @@ describe('native Harness workbench surfaces', () => {
       await Promise.resolve()
     })
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 1, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 1, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     act(() => renderer!.unmount())
 
@@ -817,7 +854,7 @@ describe('native Harness workbench surfaces', () => {
     await openDialog(renderer!)
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('city refined')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'work', query: 'city', page: 3, baseModelId: null,
+      kind: 'work', query: 'city', page: 3, baseModelId: null, modelId: null,
     }, expect.any(AbortSignal))
 
     act(() => { renderer!.update(renderDock('session-a', sessionA, draftA)) })
@@ -891,7 +928,7 @@ describe('native Harness workbench surfaces', () => {
     expect(sessionA.getSnapshot().state).toEqual(sessionANavigation)
     expect(renderer!.root.findAllByType('input')[0]!.props.value).toBe('Age refined')
     expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 2, baseModelId: '2',
+      kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     expect(renderer!.root.findByProps({
       'aria-label': `${WORKBENCH_COPY.selectItem} ${option.label}`,
@@ -988,6 +1025,7 @@ describe('native Harness workbench surfaces', () => {
   })
 })
 
+import type { CatalogApi } from '../../src/client/workbench/catalog-browser.tsx'
 import { CatalogDetailsPanel } from '../../src/client/workbench/catalog-details.tsx'
 import type { CatalogDetails } from '../../src/catalog/details-schema.ts'
 
@@ -1021,7 +1059,7 @@ it('returns from details and its gallery without changing the draft, selection o
   act(() => renderer!.unmount())
 })
 it('shows detail failures, retries and renders zero, empty and multi-value fields', async () => {
-  const result: CatalogDetails = { kind: 'prompt-term', id: '1', fields: [
+  const result: CatalogDetails = { kind: 'prompt-term', id: '1', item: { modelId: null, context: { kind: 'prompt-term', id: '1', tag: 'tag' }, baseModelId: null, label: 'tag', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [
     { key: 'post_count', value: 0 }, { key: 'aliases_json', value: ['a', 'b'] }, { key: 'category', value: null },
     { key: 'description', value: '' }, { key: 'character_names', value: [] },
   ] }
@@ -1044,7 +1082,7 @@ it('cancels closed details and ignores late responses and failures', async () =>
   expect(JSON.stringify(renderer!.toJSON())).toContain(WORKBENCH_COPY.loading)
   act(() => { renderer!.update(createElement(CatalogDetailsPanel, { ...props, request: { kind: 'work', id: '2' } })) })
   expect(pending[0]!.signal.aborted).toBe(true)
-  await act(async () => { pending[0]!.resolve({ kind: 'work', id: '1', fields: [{ key: 'name', value: '旧内容' }] }) })
+  await act(async () => { pending[0]!.resolve({ kind: 'work', id: '1', item: { modelId: null, context: { kind: 'work', id: '1', name: '旧内容' }, baseModelId: null, label: '旧内容', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'name', value: '旧内容' }] }) })
   expect(JSON.stringify(renderer!.toJSON())).not.toContain('旧内容')
   act(() => renderer!.unmount())
   await act(async () => pending[1]!.reject(new Error('late')))

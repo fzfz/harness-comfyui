@@ -423,7 +423,7 @@ function materializeRgthreeRandomSeeds(
 }
 
 function loraError(code: string, message: string): never {
-  throw new GenerationRuntimeError(code, message)
+  throw new GenerationInputValidationError(code, message, 'loras')
 }
 
 function comboChoices(definition: UnknownRecord, inputName: string): readonly string[] {
@@ -608,7 +608,7 @@ interface ModelSlot {
 }
 
 function modelError(code: string, message: string): never {
-  throw new GenerationRuntimeError(code, message)
+  throw new GenerationInputValidationError(code, message, 'model')
 }
 
 function resolveInstanceModelPath(fileName: string, choices: readonly string[]): string {
@@ -713,8 +713,13 @@ function createRuntimeParameterPlan(
   }
 }
 
+export class GenerationInputValidationError extends GenerationRuntimeError {
+  readonly inputPath: string
+  constructor(code: string, message: string, inputPath: string) { super(code, message); this.inputPath = inputPath }
+}
+
 function parameterError(code: string, parameterId: string, message: string): never {
-  throw new GenerationRuntimeError(code, `Generation parameter "${parameterId}" ${message}`)
+  throw new GenerationInputValidationError(code, `Generation parameter "${parameterId}" ${message}`, `parameters.${parameterId}`)
 }
 
 function parameterMarker(node: UnknownRecord): string {
@@ -2177,7 +2182,7 @@ function projectRuntimeOutputNodes(
 function compile(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
-): Omit<WorkflowCompilerResult, 'actualWorkflow'> {
+): Pick<WorkflowCompilerResult, 'apiWorkflow' | 'activeOutputNodeIds'> {
   const apiWorkflow = projectRuntimeApiWorkflow(workflow, nodeDefinitions)
   const outputProjection = projectRuntimeOutputNodes(apiWorkflow, nodeDefinitions)
   const activeOutputNodeIds = [...outputProjection.active]
@@ -2230,19 +2235,19 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
           },
         })
       } catch {
-        throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
+        throw new GenerationInputValidationError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.', 'instance_id')
       }
-      if (!response.ok) throw new GenerationRuntimeError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /object_info.`)
+      if (!response.ok) throw new GenerationInputValidationError('COMFYUI_HTTP_ERROR', `ComfyUI returned HTTP ${response.status} for /object_info.`, 'instance_id')
       let nodeDefinitionsText: string
       try {
         nodeDefinitionsText = await response.text()
       } catch {
-        throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.')
+        throw new GenerationInputValidationError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.', 'instance_id')
       }
       try {
         return parseNodeDefinitions(nodeDefinitionsText)
       } catch {
-        throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.')
+        throw new GenerationInputValidationError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned invalid node definitions JSON.', 'instance_id')
       }
     } finally {
       clearTimeout(timeout)
@@ -2295,7 +2300,7 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
         if (input.signal?.aborted === true) {
           throw new GenerationRuntimeError('COMFYUI_REQUEST_CANCELED', 'ComfyUI node definitions request was canceled by the caller.')
         }
-        throw new GenerationRuntimeError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.')
+        throw new GenerationInputValidationError('COMFYUI_CONNECTION_FAILED', 'ComfyUI node definitions request failed.', 'instance_id')
       }
       return createRuntimeParameterPlan(input.workflow, snapshot.definitions, snapshot.numericSources)
     } finally {
@@ -2309,33 +2314,47 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
     return inspectRuntimeParameterPlan(await this.runtimeParameterPlan(input))
   }
 
-  async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
+  private async prepareRuntimeInput(input: WorkflowCompilerInput): Promise<RuntimeParameterPlan> {
     if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow compilation.')
-    const actualWorkflow = structuredClone(input.workflow) as UiWorkflow
+    const workflow = structuredClone(input.workflow) as UiWorkflow
     const plan = await this.runtimeParameterPlan({
-      instanceId: input.instanceId,
-      workflow: actualWorkflow,
-      connection: input.connection,
+      instanceId: input.instanceId, workflow, connection: input.connection,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     })
-    const runtimeParameters = input.runtimeParameters ?? {}
-    applyRuntimeParameters(plan, runtimeParameters)
-    materializeRgthreeRandomSeeds(actualWorkflow, plan.nodeDefinitions, this.createRandomSeed)
-    if (input.model !== undefined && input.model !== null) applyModel(actualWorkflow, plan.nodeDefinitions, input.model)
-    applyLoras(actualWorkflow, plan.nodeDefinitions, input.loras)
-    const compiled = compile(actualWorkflow, plan.nodeDefinitions)
+    applyRuntimeParameters(plan, input.runtimeParameters ?? {})
+    return plan
+  }
+
+  private applyResourceSelections(plan: RuntimeParameterPlan, input: WorkflowCompilerInput): void {
+    if (input.model !== undefined && input.model !== null) applyModel(plan.workflow, plan.nodeDefinitions, input.model)
+    applyLoras(plan.workflow, plan.nodeDefinitions, input.loras)
+  }
+
+  async validateInput(input: WorkflowCompilerInput): Promise<void> {
+    const plan = await this.prepareRuntimeInput(input)
+    this.applyResourceSelections(plan, input)
+    compile(plan.workflow, plan.nodeDefinitions)
+  }
+
+  async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
+    const plan = await this.prepareRuntimeInput(input)
+    materializeRgthreeRandomSeeds(plan.workflow, plan.nodeDefinitions, this.createRandomSeed)
+    this.applyResourceSelections(plan, input)
+    const compiled = compile(plan.workflow, plan.nodeDefinitions)
     const finalized = await this.officialApiWorkflowCompiler.compile({
       instanceId: input.instanceId,
       connection: input.connection,
       templateWorkflow: input.workflow,
-      actualWorkflow,
+      actualWorkflow: plan.workflow,
       runtimeProjection: compiled.apiWorkflow,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     })
-    return Object.freeze({
-      apiWorkflow: finalized.apiWorkflow,
-      activeOutputNodeIds: compiled.activeOutputNodeIds,
-      actualWorkflow,
-    })
+    let inputDescription: WorkflowRuntimeParameterInspection | null
+    try { inputDescription = inspectRuntimeParameterPlan(plan) }
+    catch (error) {
+      if (!(error instanceof GenerationInputValidationError) || error.code !== 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED') throw error
+      inputDescription = null
+    }
+    return Object.freeze({ apiWorkflow: finalized.apiWorkflow, activeOutputNodeIds: compiled.activeOutputNodeIds, actualWorkflow: plan.workflow, inputDescription })
   }
 }

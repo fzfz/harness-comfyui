@@ -219,6 +219,7 @@ async function discoverTemplates(catalog, signal) {
       query: '',
       page,
       baseModelId: null,
+      modelId: null,
     }, signal)
     totalCount = result.totalCount
     templates.push(...result.items.map(item => ({ id: item.context.id, title: item.context.title })))

@@ -1,0 +1,40 @@
+{
+  "branchNameMaxLength": 40,
+  "errors": {
+    "branchNameInvalid": {
+      "code": "WORKBENCH_INVALID_INPUT",
+      "message": "请填写分支名称；名称最多 {maxLength} 字。",
+      "path": "name"
+    },
+    "favoriteInvalid": {
+      "code": "WORKBENCH_INVALID_INPUT",
+      "message": "请选择运行或经验，并指定收藏状态后重试。",
+      "path": "value"
+    },
+    "reuseInvalid": {
+      "code": "WORKBENCH_INVALID_INPUT",
+      "message": "请填写 1 至 {maxLength} 个字的分支名称，并重新选择目标底模。",
+      "path": "value"
+    },
+    "modelScopeChanged": {
+      "code": "WORKBENCH_EDIT_CONFLICT",
+      "message": "运行模型已改变，请重新读取运行后保存经验。",
+      "path": "modelScope.model"
+    },
+    "baseModelAdapterUnavailable": {
+      "code": "WORKBENCH_RESOURCE_UNAVAILABLE",
+      "message": "当前无法读取目标底模，请稍后重新创建分支。",
+      "path": "baseModelId"
+    },
+    "baseModelCatalogUnavailable": {
+      "code": "WORKBENCH_RESOURCE_UNAVAILABLE",
+      "message": "无法读取底模目录，请稍后重试。",
+      "path": "baseModelId"
+    },
+    "baseModelUnavailable": {
+      "code": "WORKBENCH_RESOURCE_UNAVAILABLE",
+      "message": "目标底模已不可用，请重新选择底模后创建分支。",
+      "path": "baseModelId"
+    }
+  }
+}

@@ -102,12 +102,14 @@ export interface CatalogQueryRequest {
   readonly query: string
   readonly page: number
   readonly baseModelId: string | null
+  readonly modelId: string | null
 }
 
 export type CatalogComfyuiInstanceQueryRequest = typeof CATALOG_COMFYUI_INSTANCE_QUERY
 
 export interface CatalogComfyuiInstanceItem {
   readonly id: string
+  readonly title: string
 }
 
 export interface CatalogComfyuiInstancePage {
@@ -167,10 +169,37 @@ export type CatalogContext =
 
 export interface CatalogItem {
   readonly context: CatalogContext
+  readonly baseModelId: string | null
+  readonly modelId: string | null
   readonly label: string
   readonly subtitle: string
   readonly coverUrl: string | null
   readonly sampleImageUrls: readonly string[]
+}
+
+export interface CatalogResourceConflict {
+  readonly field: 'baseModelId' | 'modelId'
+  readonly required: string
+  readonly actual: string | null
+}
+
+export function catalogResourceConflicts(
+  resource: Pick<CatalogItem, CatalogResourceConflict['field']>,
+  target: Pick<CatalogItem, CatalogResourceConflict['field']>,
+): CatalogResourceConflict[] {
+  const conflicts: CatalogResourceConflict[] = []
+  for (const field of ['baseModelId', 'modelId'] as const) {
+    const required = resource[field], actual = target[field]
+    if (required !== null && required !== actual) conflicts.push({ field, required, actual })
+  }
+  return conflicts
+}
+
+export function catalogResourceCompatible(
+  resource: Pick<CatalogItem, CatalogResourceConflict['field']>,
+  target: Pick<CatalogItem, CatalogResourceConflict['field']>,
+): boolean {
+  return catalogResourceConflicts(resource, target).length === 0
 }
 
 export interface CatalogPage {
@@ -254,7 +283,7 @@ function nullableStableId(value: unknown): string | null {
 
 function itemText(value: unknown, subject: string, maxLength: number): string {
   if (typeof value !== 'string' || value.trim().length === 0 || value.length > maxLength) {
-    throw new TypeError(`${subject} is invalid`)
+    throw new TypeError(`Set ${subject} to a string with non-whitespace text and at most ${maxLength} characters.`)
   }
   return value
 }
@@ -295,17 +324,19 @@ export function catalogDefinition(kind: CatalogKind): (typeof CATALOG_KIND_DEFIN
 
 export function parseCatalogQueryRequest(value: unknown): CatalogQueryRequest {
   const input = record(value, 'catalog query')
-  exactKeys(input, ['kind', 'query', 'page', 'baseModelId'], 'catalog query')
+  exactKeys(input, ['kind', 'query', 'page', 'baseModelId', 'modelId'], 'catalog query')
   const kind = catalogKind(input.kind)
   const baseModelId = input.baseModelId === null ? null : parseCatalogStableId(input.baseModelId)
-  if (baseModelId !== null && !catalogDefinition(kind).baseModelScoped) {
-    throw new TypeError('catalog base model filter is invalid')
+  const modelId = input.modelId === null ? null : parseCatalogStableId(input.modelId)
+  if (!catalogDefinition(kind).baseModelScoped && (baseModelId !== null || modelId !== null)) {
+    throw new TypeError(`Set catalog baseModelId and modelId to null when kind is "${kind}".`)
   }
   return Object.freeze({
     kind,
     query: parseCatalogQueryText(input.query),
     page: parseCatalogPageNumber(input.page),
     baseModelId,
+    modelId,
   })
 }
 
@@ -325,9 +356,10 @@ export function parseCatalogComfyuiInstanceQueryRequest(value: unknown): Catalog
 
 function parseCatalogComfyuiInstanceItem(value: unknown, index: number): CatalogComfyuiInstanceItem {
   const input = record(value, `ComfyUI instance catalog result ${index}`)
-  exactKeys(input, ['id'], `ComfyUI instance catalog result ${index}`)
+  exactKeys(input, ['id', 'title'], `ComfyUI instance catalog result ${index}`)
   return Object.freeze({
     id: parseCatalogStableId(input.id),
+    title: itemText(input.title, 'ComfyUI instance title', 500),
   })
 }
 
@@ -471,10 +503,12 @@ export function parseCatalogResolvedGenerationModel(value: unknown): CatalogReso
 
 export function parseCatalogItem(value: unknown): CatalogItem {
   const input = record(value, 'catalog item')
-  exactKeys(input, ['context', 'label', 'subtitle', 'coverUrl', 'sampleImageUrls'], 'catalog item')
+  exactKeys(input, ['context', 'baseModelId', 'modelId', 'label', 'subtitle', 'coverUrl', 'sampleImageUrls'], 'catalog item')
   const parsedCoverUrl = coverUrl(input.coverUrl)
   return Object.freeze({
     context: parseCatalogContext(input.context),
+    baseModelId: nullableStableId(input.baseModelId),
+    modelId: nullableStableId(input.modelId),
     label: itemText(input.label, 'catalog item label', 500),
     subtitle: input.subtitle === '' ? '' : itemText(input.subtitle, 'catalog item subtitle', 500),
     coverUrl: parsedCoverUrl,

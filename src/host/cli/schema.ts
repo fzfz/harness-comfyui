@@ -11,6 +11,7 @@ import type {
 } from './shell-capability.ts'
 
 export interface CliHandlerOptions {
+  readonly workbench?: import('../../workbench/service.ts').WorkbenchService
   readonly capabilities: Pick<CliShellCapabilityStore, 'authorize'>
   readonly runtime: Pick<
     GenerationRuntime,

@@ -16,6 +16,7 @@ import {
 import { prepareResultFile, writeResultFile, discardUnpublishedResult } from './result-file.mjs'
 
 import { assertRequestSize, decodeUtf8, loadGenerationManifest } from './generation-manifest.mjs'
+import { loadWorkbenchRequest } from './workbench-request.mjs'
 import { renderCommandContract } from './contract-help.mjs'
 import { GENERATION_ACCEPTANCE_STATUSES } from '../../src/generation/submission-contract.ts'
 import { MIN_RUN_INPUT_ID_PREFIX_LENGTH } from '../../src/generation/run-input-contract.ts'
@@ -135,8 +136,10 @@ async function main() {
     return
   }
   const command = argv.join(' ')
-  const needsFile = argv.length === 4 && argv[0] === 'generation' && argv[1] === 'submit' && argv[2] === '--file'
-  const needsStdin = argv.length === 3 && (
+  const workbenchInput = argv[0] === 'workbench'
+  const needsFile = (argv.length === 4 && argv[0] === 'generation' && argv[1] === 'submit' && argv[2] === '--file')
+    || (workbenchInput && argv.length === 5 && argv[3] === '--file')
+  const needsStdin = (workbenchInput && argv.length === 4 && argv[3] === '--stdin') || argv.length === 3 && (
     command === 'generation submit --stdin'
     || command === 'generation inspect-template-parameters --stdin'
     || command === 'generation random-seeds --stdin'
@@ -147,15 +150,17 @@ async function main() {
   )
   let request
   try {
-    if (/^(image|generation) /.test(argv[0] ?? '')) {
+    if (/^(image|generation|workbench) /.test(argv[0] ?? '')) {
       const words = argv.flatMap((value, index) => index === 0 ? value.split(/\s+/) : [value])
       const example = "['node', CLI, " + words.map(shellQuote).join(', ') + ']'
       throw new TypeError(help.messages.splitCommand.replaceAll('{argv}', example).replaceAll('{help}', helpHint(help, words)))
     }
     const input = await stdinText(needsStdin)
-    request = argv[0] === 'generation' && argv[1] === 'submit' && (needsStdin || needsFile)
-      ? await loadGenerationManifest(argv, input)
-      : parseCliArguments(argv, input)
+    request = workbenchInput && (needsStdin || needsFile)
+      ? await loadWorkbenchRequest(argv, input)
+      : argv[0] === 'generation' && argv[1] === 'submit' && (needsStdin || needsFile)
+        ? await loadGenerationManifest(argv, input)
+        : parseCliArguments(argv, input)
     assertRequestSize(request)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'

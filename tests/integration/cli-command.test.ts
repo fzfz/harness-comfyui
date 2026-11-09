@@ -418,6 +418,19 @@ async function serveCliData(data: unknown) {
 describe('managed CLI result-file transport', () => {
   const commands = [
     { args: ['generation', 'submit', '--stdin'], input: { items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', request: { title: 'test', template_id: '1', instance_id: '2', model: null, parameters: {}, loras: [] } }] }, data: { items: [{ request_id: '01234567-89ab-4cde-8fab-0123456789ab', run_id: 'run_accepted', acceptance: 'accepted' }] } },
+    {
+      args: ['workbench', 'task', 'get', '--stdin'], input: { task_id: 'task_prompt_snapshot' },
+      data: {
+        task_id: 'task_prompt_snapshot', kind: 'prompt', status: 'running',
+        prompt_input: { positive_prompt: '玻璃花房\n保留窗框', negative_prompt: '' },
+        generation_input: { title: '玻璃花房', instance_id: null, template_id: null, model: null, parameters: {}, loras: [] },
+        unresolved_parameters: { opaque_7: '原提示词', opaque_8: { steps: 28, seed: 42, size: [768, 1024], optional: null, enabled: false } },
+        context_refs: [], base_model_id: null,
+        requirements: { original_request: '保留窗框，调整光线', instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 0,
+        output_contract: { artifact_types: ['prompt'], required_artifact_types: ['prompt'], parameter_ids: [], apply_mode: 'automatic', requires_finished_runs: false },
+        artifacts: [], iterations: [], answers: [],
+      },
+    },
     { args: ['generation', 'inspect-template-parameters', '--stdin'], input: { template_id: '1', instance_id: '2' }, data: { parameters: [], size_candidates: [] } },
     { args: ['generation', 'random-seeds', '--stdin'], input: { count: 2 }, data: { seeds: [12, 34] } },
     { args: ['generation', 'run-inputs', '--stdin'], input: { run_ids: ['run_1'] }, data: { runs: [{ run_id: 'run_1', workflow_status: 'available', workflow: { title: '中文 Workflow', nodes: [{ id: 9 }] } }] } },

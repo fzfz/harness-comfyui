@@ -390,7 +390,7 @@ test('production clients keep normal source reads and the no-default-model contr
   const settings = { get: () => fixture.sourceAddress };
   const catalog = new CatalogClient({ settings });
   const source = new GenerationSourceClient({ settings });
-  assert.deepEqual(await catalog.queryComfyuiInstances({ mode: 'search', query: '', page: 1, page_size: 100 }, new AbortController().signal), { status: 'ok', message: null, results: [{ id: '2' }], page: 1, page_size: 100, total_count: 1 });
+  assert.deepEqual(await catalog.queryComfyuiInstances({ mode: 'search', query: '', page: 1, page_size: 100 }, new AbortController().signal), { status: 'ok', message: null, results: [{ id: '2', title: 'win3080' }], page: 1, page_size: 100, total_count: 1 });
   assert.deepEqual(await source.readInstance('2'), { id: '2', title: 'win3080', url: 'http://127.0.0.1:8188/', credentialType: 'none', authorization: null });
   assert.deepEqual(await catalog.resolveTemplate('29', new AbortController().signal), { id: '29', title: 'wai_basic_txt2img', base_model_id: '2', model_id: null });
   assert.deepEqual(await source.readTemplate('29'), { id: '29', title: 'wai_basic_txt2img', workflow: testWorkflow });

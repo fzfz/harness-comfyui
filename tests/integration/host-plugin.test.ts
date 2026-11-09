@@ -1,4 +1,5 @@
 import { createTestCredentialProvider } from '../support/credential-provider.ts'
+import { provideWorkbenchOfficialServices } from '../support/workbench-host.ts'
 import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -19,6 +20,7 @@ import { materializeHostModule } from '../../scripts/build/host-module.mjs'
 import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
 import { IMAGE_READER_PROFILE_ENTRY_ID } from '../../src/image-reader/settings.ts'
 import * as harnessComfyui from '../support/product-plugin.ts'
+import { WORKBENCH_FUNCTIONS } from '../../src/workbench/functions.ts'
 import { inject as cliInject } from '../../src/host/cli/plugin.ts'
 import { SOURCE_PROFILE_ENTRY_ID } from '../../src/source-settings.ts'
 import { PLUGIN_RUNTIME_RESOURCE_PATHS } from '../../src/host/plugin-resources.ts'
@@ -84,6 +86,7 @@ function packageRootForHostEntry(entry: string): string {
 }
 
 function provideHostServices(ctx: Context) {
+  provideWorkbenchOfficialServices(ctx)
   const harnessHome = mkdtempSync(join(tmpdir(), 'harness-comfyui-harness-home-'))
   temporaryDirectories.push(harnessHome)
   const dshHomePath = vi.fn((...segments: string[]) => join(harnessHome, ...segments))
@@ -142,6 +145,46 @@ function provideHostServices(ctx: Context) {
     saveImage,
   }
 }
+
+it('associates accepted Runs with Workbench tasks through the mounted Core transaction', async () => {
+  stubTestProfileEnvironment()
+  const core = await import('../../src/host/core/plugin.ts')
+  const ctx = new Context()
+  provideHostServices(ctx)
+  await ctx.plugin(core, { configurationProfile: 'production' })
+  try {
+    const { runtime, workbenchStore: store } = ctx.harnessComfyuiCore.services
+    const { work, branch } = store.createWork({
+      workspaceId: 'workspace_1', name: 'Rain', goal: 'Paint rain on glass',
+      draft: {
+        parameter_mapping: null,
+        prompt_input: { positive_prompt: 'rain on glass', negative_prompt: '' },
+        generation_input: { title: 'Core task association', instance_id: '8', template_id: '5', model: null, parameters: { positive: 'rain on glass', seed: 17 }, loras: [] },
+        context_refs: [], base_model_id: null,
+      },
+    })
+    const task = store.createTask({
+      branchId: branch.branch_id, functionId: 'run', title: 'Run the source input', kind: 'run',
+      input: { ...branch.draft, requirements: { original_request: branch.original_request, instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 1 },
+      outputContract: WORKBENCH_FUNCTIONS.find(descriptor => descriptor.kind === 'run')!.output_contract,
+      applyTarget: { kind: 'branch', id: branch.branch_id, expected: {} },
+      bindingSnapshot: { function_id: 'run', name: 'Run', kind: 'run', preset_id: 'preset-a', agentModel: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read task {{task_id}}' },
+    })
+    store.bindSession(task.task_id, 'session_1', { provider: 'provider-a', model: 'model-a' })
+    const identity = { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'core-task-submit' }
+    const item = { requestId: crypto.randomUUID(), request: { title: 'Core task association', instanceId: '8', templateId: '5', model: null, parameters: { positive: 'rain on glass', seed: 17 }, loras: [] } }
+    const accepted = await runtime.acceptGenerations(identity, [item], undefined, task.task_id)
+    expect(accepted.items).toEqual([{ requestId: item.requestId, runId: expect.any(String), acceptance: 'accepted' }])
+    const projection = store.getProjection({ workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id })
+    expect(projection.runs).toHaveLength(1)
+    expect(projection.runs[0]).toMatchObject({ run_id: accepted.items[0]!.runId, workbench_task_id: task.task_id, session_id: 'session_1', initiator: 'human', generation_input: task.input.generation_input })
+    expect(projection.tasks[0]).toMatchObject({ task_id: task.task_id, status: 'waiting_generation' })
+    const replay = await runtime.acceptGenerations(identity, [item], undefined, task.task_id)
+    expect(replay.items).toEqual([{ requestId: item.requestId, runId: accepted.items[0]!.runId, acceptance: 'reused' }])
+    await expect(runtime.acceptGenerations(identity, [{ ...item, requestId: crypto.randomUUID() }], undefined, task.task_id)).rejects.toMatchObject({ code: 'WORKBENCH_BUDGET_EXHAUSTED' })
+    expect(store.getProjection({ workspaceId: 'workspace_1', workId: work.work_id }).runs).toHaveLength(1)
+  } finally { await ctx.fiber.dispose() }
+})
 
 function createBrowserSettingsForms() {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-browser-config-form-'))

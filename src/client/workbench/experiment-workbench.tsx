@@ -1,0 +1,2849 @@
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react'
+import {
+  catalogPageCount,
+  catalogDefinition,
+  type CatalogItem,
+  type CatalogKind,
+} from '../../catalog/contract.ts'
+import type {
+  Branch,
+  Experience,
+  FunctionBinding,
+  JsonValue,
+  Task,
+  StoredArtifact,
+  TaskDraft,
+  WorkbenchRun,
+} from '../../workbench/contract.ts'
+import { isRunReviewFunctionKind, WORKBENCH_BRANCH_NAME_MAX_LENGTH } from '../../workbench/contract.ts'
+import type {
+  ExperimentActionType,
+  ExperimentPage,
+  ExperimentWorkbenchAction,
+  ExperimentWorkbenchProps,
+} from './experiment-contract.ts'
+import { EXPERIMENT_CATALOG_SCROLL_PREFIX } from './experiment-contract.ts'
+import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
+import {
+  ExperimentInputDescriptionCache,
+  readExperimentParameterValue,
+  readExperimentParameter,
+  experimentSizeOptions,
+} from './experiment-input.ts'
+import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
+import type {
+  WorkflowRuntimeParameterInspection,
+  WorkflowRuntimeParameterInspectionParameter,
+  StandardRuntimeParameterKind,
+} from '../../generation/inspection-contract.ts'
+import { Button, Icon, trapDialogFocus, useToastMessage } from './experiment-controls.tsx'
+import { ExperimentFunctionSettings, formatExperimentAgentModel, agentModelProblem } from './experiment-function-settings.tsx'
+import { ExperimentWorkbenchStore } from './experiment-store.ts'
+import { AutosaveField, useBranchFieldEdits, type FieldOptions, type SaveField } from './experiment-fields.tsx'
+import { RuntimeParameterField, RuntimeSizeField } from './experiment-parameter-fields.tsx'
+import { TaskRequestEditor } from './experiment-task-request.ts'
+import { ExperimentTaskRequestDialog } from './experiment-task-request-dialog.tsx'
+import { catalogImageUrls, CatalogDetailFields, CatalogItems, CatalogKinds, useCatalogBrowser, useCatalogDetails, type CatalogApi, type CatalogReference } from './catalog-browser.tsx'
+import { workbenchContextKey } from './contract.ts'
+import inputOptions from './experiment-input-options.json' with { type: 'json' }
+import taskPresentation from './experiment-task-presentation.json' with { type: 'json' }
+import connectionPresentation from './experiment-connection-presentation.json' with { type: 'json' }
+import { isGenerationRunTerminal } from '../../generation/run-status.ts'
+import runPresentation from './experiment-run-presentation.json' with { type: 'json' }
+import { useRunInputs } from './experiment-run-input.ts'
+import { RunReviewEditor } from './experiment-review-editor.ts'
+import { ExperimentReviewDialog } from './experiment-review-dialog.tsx'
+import reviewPresentation from './experiment-review-presentation.json' with { type: 'json' }
+import libraryPresentation from './experiment-library-presentation.json' with { type: 'json' }
+import { ExperimentReuseDialog } from './experiment-reuse-dialog.tsx'
+import { ExperimentStatus, ExperimentTaskRounds } from './experiment-status.tsx'
+
+export type {
+  ExperimentWorkbenchAction,
+  ExperimentWorkbenchProps,
+} from './experiment-contract.ts'
+const shortId = (value: string) => value.length > 16 ? `${value.slice(0, 12)}…` : value
+function Identifier({ value }: { readonly value: string }) {
+  return <span title={value}>{shortId(value)}</span>
+}
+const pendingRun = (run: WorkbenchRun) => !isGenerationRunTerminal(run.status)
+const runTime = (run: WorkbenchRun) => new Date(run.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+const runStatusLabel = (run: WorkbenchRun) => runPresentation[run.status]
+const busyTask = (task: Task) =>
+  ['pending', 'running', 'waiting_input', 'waiting_generation'].includes(
+    task.status,
+  )
+function Status({ run }: { readonly run: WorkbenchRun }) {
+  const running = pendingRun(run)
+  return (
+    <span
+      className={`pill ${run.status === 'failed' ? 'red' : running ? 'amber' : ''}`}
+    >
+      <i className="dot" />
+      {runStatusLabel(run)}
+    </span>
+  )
+}
+function PanelHead({
+  title,
+  description,
+  children,
+}: {
+  readonly title: string
+  readonly description?: string
+  readonly children?: ReactNode
+}) {
+  return (
+    <div className="workbench-head">
+      <div className="row between">
+        <h1>{title}</h1>
+        {children}
+      </div>
+      {description && <p>{description}</p>}
+    </div>
+  )
+}
+
+function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
+  readonly scope: { workspaceId: string | null; workId: string | null; branchId: string | null }
+  readonly item: TaskDraft['generation_input']['loras'][number]
+  readonly load?: CatalogApi['details']
+  readonly save: SaveField
+  readonly locked: boolean
+  readonly onError: (message: string) => void
+  readonly onRemove: () => void
+}) {
+  const editor = useBranchFieldEdits(scope.workspaceId, scope.workId, scope.branchId, item.id)(item.id)
+  const { details, error } = useCatalogDetails({ kind: 'lora', id: item.id }, load)
+  const name = details?.kind === 'lora' && details.id === item.id ? details.item.label : item.file_name
+  useEffect(() => { if (error) onError(error) }, [error, onError])
+  return <div className="picked-lora">
+    <b>{name}</b>
+    <AutosaveField label="权重" inputLabel={`${name} 权重`} value={String(item.weight)}
+      options={{ type: 'number', step: 0.05 }} editor={editor} save={save} locked={locked} />
+    <Button kind="quiet small" label={`移除 ${name}`} onClick={onRemove}>×</Button>
+  </div>
+}
+
+function useRunModelName({ model, load, baseModels }: {
+  readonly model: WorkbenchRun['generation_input']['model']
+  readonly load?: CatalogApi['details']
+  readonly baseModels: ExperimentWorkbenchProps['baseModels']
+}) {
+  const { details } = useCatalogDetails(model ? { kind: 'model', id: model.id } : null, load)
+  const baseModel = baseModels?.find(item => details?.id === model?.id && item.id === details?.item.baseModelId)
+  return baseModel?.label ?? model?.file_name ?? model?.id ?? taskPresentation.unrecorded
+}
+
+function RunModelName(props: Parameters<typeof useRunModelName>[0]) {
+  return <>{useRunModelName(props)}</>
+}
+
+function FavoriteRunCard({ run, branchName, query, load, baseModels, onOpen, onRemove }: {
+  readonly run: WorkbenchRun
+  readonly branchName: string
+  readonly query: string
+  readonly load?: CatalogApi['details']
+  readonly baseModels: ExperimentWorkbenchProps['baseModels']
+  readonly onOpen: () => void
+  readonly onRemove: () => void
+}) {
+  const modelName = useRunModelName({ model: run.generation_input.model, load, baseModels })
+  const source = libraryPresentation.runSource.replace(/\{modelName\}|\{branchName\}|\{taskId\}/g,
+    token => token === '{modelName}' ? modelName : token === '{branchName}' ? branchName : run.workbench_task_id)
+  return <article className="experience-card"
+    hidden={![`${shortId(run.run_id)} · ${run.title}`, source, libraryPresentation.openRun, libraryPresentation.removeFavorite]
+      .join('').toLowerCase().includes(query.trim().toLowerCase())}>
+    <h3><Identifier value={run.run_id} /> · {run.title}</h3>
+    <p>{source}</p>
+    <div className="row">
+      <Button kind="small" onClick={onOpen}>{libraryPresentation.openRun}</Button>
+      <Button kind="small quiet" onClick={onRemove}>{libraryPresentation.removeFavorite}</Button>
+    </div>
+  </article>
+}
+
+function ContextSummary({ item, load, onError, onDetail, onRemove }: {
+  readonly item: TaskDraft['context_refs'][number]
+  readonly load?: CatalogApi['details']
+  readonly onError: (message: string) => void
+  readonly onDetail: () => void
+  readonly onRemove: () => void
+}) {
+  const { details, error } = useCatalogDetails(item, load)
+  const name = details?.kind === item.kind && details.id === item.id ? details.item.label : item.id
+  useEffect(() => { if (error) onError(error) }, [error, onError])
+  return <div className="context-item">
+    <Button kind="quiet small" onClick={onDetail}>{name}</Button>
+    <small>{catalogDefinition(item.kind).label}</small>
+    <Button kind="quiet small" label={`移除 ${name}`} onClick={onRemove}>×</Button>
+  </div>
+}
+
+interface TaskNotificationTarget {
+  readonly workspaceId: string
+  readonly workId: string
+  readonly taskId: string
+}
+
+function TaskResourceCandidate({ resource, load, onError, onDetail }: {
+  readonly resource: CatalogReference
+  readonly load: CatalogApi['details'] | undefined
+  readonly onError: (message: string) => void
+  readonly onDetail: () => void
+}) {
+  const { details, error } = useCatalogDetails(resource, load)
+  useEffect(() => { if (error) onError(error) }, [error, onError])
+  return <div className="row between">
+    <b>{details?.item.label ?? resource.id}</b>
+    <Button kind="small quiet" onClick={onDetail}>{taskPresentation.resourceDetails}</Button>
+  </div>
+}
+
+function latestTaskArtifact(artifacts: readonly StoredArtifact[]) {
+  return artifacts.slice().reverse().find(artifact => artifact.type !== 'question')
+}
+
+function taskConflicts(task: Task, artifacts: readonly StoredArtifact[]) {
+  const artifact = latestTaskArtifact(artifacts)
+  return task.output_contract.apply_mode === 'automatic' && artifact?.disposition === 'candidate' ? [artifact] : []
+}
+
+export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
+  const storage = useMemo(() => {
+    if (props.storage) return props.storage
+    try {
+      return typeof localStorage === 'undefined' ? undefined : localStorage
+    } catch {
+      return undefined
+    }
+  }, [props.storage])
+  const store = useMemo(
+    () => new ExperimentWorkbenchStore(props.remote, storage),
+    [props.remote, storage],
+  )
+  const inputDescriptionCache = useMemo(
+    () => new ExperimentInputDescriptionCache(props.remote.getInputDescription),
+    [props.remote],
+  )
+  const [inputDescriptions, setInputDescriptions] = useState<
+    Readonly<Record<string, WorkflowRuntimeParameterInspection | null>>
+  >({})
+  const state = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot,
+  )
+  const [catalogQueryDraft, setCatalogQueryDraft] = useState<{ workspaceId: string | null; value: string } | null>(null)
+  const catalogQueryText = catalogQueryDraft?.workspaceId === state.workspaceId
+    ? catalogQueryDraft.value : state.view.catalogFilters.query
+  const catalogQueryRef = useRef({ workspaceId: state.workspaceId, value: catalogQueryText })
+  catalogQueryRef.current = { workspaceId: state.workspaceId, value: catalogQueryText }
+  const navigate = useCallback((change: () => void) => {
+    const current = store.getSnapshot(), draft = catalogQueryRef.current
+    if (draft.workspaceId === current.workspaceId && current.view.page === 'resources' && draft.value !== current.view.catalogFilters.query) {
+      store.updateView({ catalogFilters: { ...current.view.catalogFilters, query: draft.value } })
+    }
+    change()
+  }, [store])
+  const selectWorkspace = useCallback((workspaceId: string | null) => {
+    if (workspaceId !== store.getSnapshot().workspaceId) navigate(() => store.setWorkspace(workspaceId))
+  }, [store, navigate])
+  const selectWork = (workId: string) => navigate(() => store.selectWork(workId))
+  const selectBranch = (branchId: string) => navigate(() => store.selectBranch(branchId))
+  const selectRun = (runId: string, inspectRun = true) => navigate(() => store.selectRun(runId, inspectRun))
+  const [message, setMessage, messageTarget, clearTransientMessage] = useToastMessage<TaskNotificationTarget | 'connection'>()
+  const messageTask = messageTarget && messageTarget !== 'connection' ? messageTarget : undefined
+  const connectionObservation = useRef<{
+    source: ExperimentWorkbenchProps['connectionState']
+    status: 'connected' | 'disconnected' | undefined
+  }>({
+    source: props.connectionState,
+    status: props.connectionState.getSnapshot() === 'connected' ? 'connected' : undefined,
+  })
+  const taskCards = useRef(new Map<string, HTMLElement>())
+  const [taskToReveal, setTaskToReveal] = useState<string | null>(null)
+  const taskNotifications = useRef<{ readonly workspaceId: string; readonly workId: string; readonly states: Map<string, string> } | null>(null)
+  const functionWrites = useRef(new Map<string, Promise<void>>())
+  const [functionBindings, setFunctionBindings] = useState<ReadonlyMap<string, FunctionBinding>>(() => new Map())
+  useEffect(() => {
+    if (props.environmentError) setMessage(props.environmentError)
+  }, [props.environmentError])
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const formSubmissionPending = useRef<number | null>(null)
+  const modalInstance = useRef(0)
+  const [sheet, setSheet] = useState(false)
+  const taskRequestEditors = useMemo(() => new Map<string, TaskRequestEditor>(), [props.remote])
+  const reviewEditors = useMemo(() => new Map<string, RunReviewEditor>(), [props.remote])
+  const reviewAction = useRef(props.onAction)
+  reviewAction.current = props.onAction
+  const [reviewEditor, setReviewEditor] = useState<RunReviewEditor | null>(null)
+  const [taskRequest, setTaskRequest] = useState<{ editor: TaskRequestEditor; binding: FunctionBinding; navigation: number } | null>(null)
+  const [imageRunId, setImageRunId] = useState<string | null>(null)
+  const [reuseExperience, setReuseExperience] = useState<Experience | null>(null)
+  const [focusExperienceId, setFocusExperienceId] = useState<string | null>(null)
+  const [modal, setModalState] = useState<
+    'new-work' | 'new-workspace' | 'branch' | 'image' | 'evaluate' | 'reuse' | null
+  >(null)
+  const setModal = useCallback((value: typeof modal) => {
+    modalInstance.current++
+    setFormSubmitting(false)
+    if (value !== 'image') setImageRunId(null)
+    if (value !== 'reuse') setReuseExperience(null)
+    setModalState(value)
+  }, [])
+  const [search, setSearch] = useState('')
+  const presetOverrideRevision = useRef(0)
+  const fieldEditor = useBranchFieldEdits(state.workspaceId, state.view.workId, state.view.branchId)
+  const host = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    selectWorkspace(props.workspaceId)
+  }, [selectWorkspace, props.workspaceId])
+  useEffect(() => {
+    const sync = () =>
+      store.setVisible(
+        props.visible !== false &&
+          (typeof document === 'undefined' || !document.hidden),
+      )
+    sync()
+    document.addEventListener('visibilitychange', sync)
+    return () => document.removeEventListener('visibilitychange', sync)
+  }, [store, props.visible])
+  useEffect(() => () => {
+    modalInstance.current++
+    store.dispose()
+  }, [store])
+  useEffect(() => {
+    setModal(null)
+    setSheet(false)
+    clearTransientMessage()
+  }, [state.workspaceId, state.view.workId, state.view.branchId, props.visible])
+  useEffect(() => {
+    setMessage(null)
+    setFocusExperienceId(null)
+  }, [state.workspaceId, state.view.workId, props.visible])
+  useEffect(() => {
+    const source = props.connectionState
+    if (connectionObservation.current.source !== source) {
+      connectionObservation.current = {
+        source,
+        status: source.getSnapshot() === 'connected' ? 'connected' : undefined,
+      }
+    }
+    const observe = () => {
+      if (props.visible === false || document.hidden) return
+      const current = source.getSnapshot(), previous = connectionObservation.current.status
+      if (current === 'connected') {
+        connectionObservation.current.status = 'connected'
+        if (previous === 'disconnected') setMessage(connectionPresentation.connected, 'connection')
+      } else if (current && previous === 'connected') {
+        connectionObservation.current.status = 'disconnected'
+        setMessage(connectionPresentation.disconnected, 'connection')
+      }
+    }
+    const unsubscribe = source.subscribe(observe)
+    document.addEventListener('visibilitychange', observe)
+    observe()
+    return () => {
+      unsubscribe()
+      document.removeEventListener('visibilitychange', observe)
+    }
+  }, [props.connectionState, props.visible, setMessage])
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setTaskRequest(null)
+        setModal(null)
+        setSheet(false)
+      }
+    }
+    document.addEventListener('keydown', keydown)
+    return () => document.removeEventListener('keydown', keydown)
+  }, [])
+  const p = state.projection,
+    view = state.view
+  const workspace = props.workspaces.find(
+    (item) => item.id === state.workspaceId,
+  )
+  const work = p?.works.find((item) => item.work_id === view.workId)
+  const branch = p?.branches.find((item) => item.branch_id === view.branchId)
+  const run = p?.runs.find((item) => item.run_id === view.selectedRunId)
+  const taskFor = (item: WorkbenchRun) =>
+    p?.tasks.find((task) => task.task_id === item.workbench_task_id)
+  const branchFor = (item: WorkbenchRun) =>
+    p?.branches.find((branch) => branch.branch_id === taskFor(item)?.branch_id)
+  const branchExperiments = p?.experiments.filter(
+    item => p.tasks.find(task => task.task_id === item.task_id)?.branch_id === branch?.branch_id,
+  ) ?? []
+  const experiment = branchExperiments.find(item => ['running', 'paused'].includes(item.control_state))
+  const displayedExperiment = experiment ?? branchExperiments.at(-1)
+  const displayedExperimentTask = p?.tasks.find(task => task.task_id === displayedExperiment?.task_id)
+  const displayedExperimentRuns = p?.runs.filter(item => item.workbench_task_id === displayedExperiment?.task_id) ?? []
+  const experimentTask = p?.tasks.find(task => task.task_id === experiment?.task_id)
+  const experimentRuns = p?.runs.filter(item => item.workbench_task_id === experiment?.task_id) ?? []
+  const firstExperimentRun = experimentRuns.find(item => item.iteration_index === 1)
+  const runInputs = useRunInputs(props.remote.getRunInput, state.workspaceId, view.workId,
+    p?.runs.filter(item => sheet || item.run_id === view.selectedRunId || item.run_id === view.compareRunId || item.run_id === firstExperimentRun?.run_id) ?? [], setMessage)
+  const branchRuns = (id: string) =>
+    p?.runs.filter((item) => taskFor(item)?.branch_id === id) ?? []
+  useEffect(() => {
+    if (
+      !state.workspaceId ||
+      !view.workId ||
+      !branch ||
+      view.inspectRun ||
+      !!experiment ||
+      props.visible === false
+    )
+      return
+    let active = true
+    const workspaceId = state.workspaceId,
+      workId = view.workId
+    const input = branch.draft.generation_input
+    void inputDescriptionCache
+      .load({ workspaceId, workId, branchId: branch.branch_id }, input)
+      .then(description => {
+        if (active)
+          setInputDescriptions(current => ({
+            ...current,
+            [inputDescriptionCache.key(workspaceId, input)]: description,
+          }))
+      })
+      .catch(error => {
+        if (active)
+          setMessage(error instanceof Error ? error.message : '输入字段读取失败，请刷新工作台。')
+      })
+    return () => {
+      active = false
+    }
+  }, [
+    inputDescriptionCache,
+    state.workspaceId,
+    view.workId,
+    branch?.branch_id,
+    branch?.draft.generation_input.instance_id,
+    branch?.draft.generation_input.template_id,
+    experiment?.task_id,
+    view.inspectRun,
+    props.visible,
+  ])
+  const descriptionFor = (input: WorkbenchRun['generation_input']) =>
+    state.workspaceId
+      ? inputDescriptions[inputDescriptionCache.key(state.workspaceId, input)]
+      : undefined
+  const runParameterValues = (run: WorkbenchRun) => {
+    const description = runInputs.get(run.run_id)?.input_description
+    return description
+      ? Object.fromEntries(flattenWorkflowRuntimeParameters(description).map(parameter => [parameter.parameter_id, parameter.current_value]))
+      : run.generation_input.parameters
+  }
+  const runParameter = (
+    run: WorkbenchRun,
+    kind: StandardRuntimeParameterKind,
+  ) =>
+    readExperimentParameter(
+      runInputs.get(run.run_id)?.input_description,
+      runParameterValues(run),
+      kind,
+    )
+  const binding = (kind: string) =>
+    p?.functions.find((item) => item.kind === kind && item.builtin) ??
+    p?.functions.find((item) => item.kind === kind)
+  const functionProblem = (selected: FunctionBinding | undefined, override?: string | null) => {
+    if (!selected) return '请先在配置中心配置此功能。'
+    const preset = props.presets?.find(item => item.id === (override || selected.preset_id))
+    if (!preset || preset.broken) return preset?.broken || '执行预设不可用，请重新选择预设。'
+    return agentModelProblem(selected.agent_model, props.agentModelGroups ?? [], props.routableProviders ?? [])
+  }
+  const executionProblem = functionProblem(binding(branch?.execution.mode === 'continuous' ? 'experiment' : 'run'), view.presetOverride)
+  const presetName = (id?: string) =>
+    props.presets?.find((preset) => preset.id === id)?.name ?? id ?? '未配置'
+  const modelLabel = (draft: Pick<TaskDraft, 'base_model_id' | 'generation_input'>) =>
+    props.baseModels?.find((item) => item.id === draft.base_model_id)?.label ||
+    draft.base_model_id ||
+    draft.generation_input.model?.id ||
+    '未选择底模'
+  const formatAgentModel = (model: FunctionBinding['agent_model'] | undefined) =>
+    formatExperimentAgentModel(model, props.agentModelGroups ?? [])
+  const agentModel = (binding: FunctionBinding | undefined) =>
+    formatAgentModel(binding?.agent_model)
+  const runModelLabel = (item: WorkbenchRun) =>
+    <RunModelName model={item.generation_input.model} load={props.catalog?.details} baseModels={props.baseModels} />
+  const notifyTask = (title: string, taskId: string, workId: string, kind: Exclude<keyof typeof taskPresentation.notifications, 'open'>) => {
+    if (!state.workspaceId) return
+    setMessage(taskPresentation.notifications[kind].replace('{title}', title).replace('{taskId}', taskId), { workspaceId: state.workspaceId, taskId, workId })
+  }
+  useEffect(() => {
+    if (!p || !state.workspaceId || !view.workId || p.workspace_id !== state.workspaceId || p.work_id !== view.workId) return
+    const previous = taskNotifications.current
+    const sameWork = previous?.workspaceId === state.workspaceId && previous.workId === view.workId
+    const states = new Map<string, string>()
+    for (const task of p.tasks) {
+      const artifacts = p.artifacts.filter(artifact => artifact.task_id === task.task_id)
+      const conflicts = taskConflicts(task, artifacts)
+      const kind = task.status === 'waiting_input' ? 'waiting_input'
+        : conflicts.length ? 'conflict' : task.status === 'succeeded' ? 'completed' : null
+      const signature = JSON.stringify([kind, kind === 'conflict' ? conflicts.map(artifact => artifact.artifact_id)
+        : kind === 'waiting_input' ? artifacts.filter(artifact => artifact.type === 'question' && !task.answers.some(answer => answer.question_artifact_id === artifact.artifact_id)).map(artifact => artifact.artifact_id) : []])
+      states.set(task.task_id, signature)
+      if (kind && sameWork && previous.states.get(task.task_id) !== signature)
+        notifyTask(task.title, task.task_id, view.workId, kind)
+    }
+    taskNotifications.current = { workspaceId: state.workspaceId, workId: view.workId, states }
+  }, [p, state.workspaceId, view.workId])
+  useEffect(() => {
+    if (view.page !== 'tasks' || !taskToReveal) return
+    const card = taskCards.current.get(taskToReveal)
+    if (!card) return
+    card.focus({ preventScroll: true })
+    card.scrollIntoView({ block: 'start' })
+    setTaskToReveal(null)
+  }, [view.page, p?.tasks, taskToReveal])
+  const openTask = (target: TaskNotificationTarget) => {
+    if (target.workspaceId !== store.getSnapshot().workspaceId) return
+    setTaskRequest(null)
+    setModal(null)
+    setSheet(false)
+    navigate(() => {
+      if (view.workId !== target.workId) store.selectWork(target.workId)
+      const task = p?.tasks.find(item => item.task_id === target.taskId)
+      if (task) store.selectBranch(task.branch_id)
+      store.updateView({ page: 'tasks', compareRunId: null })
+    })
+    setTaskToReveal(target.taskId)
+  }
+  const changePage = (page: ExperimentPage) => {
+    navigate(() => store.updateView({ page, compareRunId: null }))
+    setSearch('')
+  }
+  const action = async (
+    type: ExperimentActionType,
+    extra: Partial<ExperimentWorkbenchAction> = {},
+    isCurrent?: () => boolean,
+  ) => {
+    if (!state.workspaceId && type !== 'new-workspace') return false
+    const navigation = store.getNavigationSequence()
+    const submittedPresetRevision = presetOverrideRevision.current
+    const stillCurrent = () => store.getNavigationSequence() === navigation &&
+      (!isCurrent || isCurrent())
+    try {
+      const selection = await props.onAction({
+        type,
+        workspaceId: state.workspaceId ?? '',
+        ...(view.workId ? { workId: view.workId } : {}),
+        ...(view.branchId ? { branchId: view.branchId } : {}),
+        ...(run ? { runId: run.run_id } : {}),
+        ...extra,
+      })
+      const current = store.getSnapshot()
+      if (selection?.taskId && ['run', 'experiment', 'retry'].includes(type) &&
+        current.workspaceId === state.workspaceId && current.view.presetOverride === view.presetOverride &&
+        presetOverrideRevision.current === submittedPresetRevision)
+        store.updateView({ presetOverride: null })
+      if (!stillCurrent()) return false
+      const keepsCurrentNavigation = type === 'favorite' || !!selection?.taskId || type === 'task-answer' || type === 'task-interrupt' || type === 'task-resume' || type === 'pause-experiment' || type === 'resume-experiment' || type === 'stop-experiment' || type === 'task-apply' || type === 'task-generation-apply'
+      const keepsCatalogNavigation = selection && (type === 'resource-select' || type === 'resource-remove')
+        && selection.workspaceId === state.workspaceId && selection.workId === view.workId && selection.branchId === view.branchId
+      if (selection?.taskId && view.workId) {
+        const functionId = type === 'agent-action' ? extra.id : type === 'retry' ? 'run' : type
+        const functionName = p?.functions.find(item => item.function_id === functionId)?.name ?? selection.taskId
+        notifyTask(functionName, selection.taskId, view.workId, 'submitted')
+      }
+      if (selection && !keepsCatalogNavigation && !keepsCurrentNavigation) navigate(() => {
+        selectWorkspace(selection.workspaceId)
+        props.onWorkspaceChange(selection.workspaceId)
+        if (type === 'new-workspace') changePage('workbench')
+        if (selection.workId) store.selectWork(selection.workId)
+        if (selection.branchId)
+          store.updateView({
+            branchId: selection.branchId,
+            selectedRunId: null,
+            inspectRun: false,
+            compareRunId: null,
+            page: 'workbench',
+          })
+      })
+      const refreshNavigation = store.getNavigationSequence()
+      await store.refresh()
+      if (store.getNavigationSequence() !== refreshNavigation) return false
+      if (!keepsCurrentNavigation && selection?.branchId && selection.branchId !== view.branchId)
+        selectBranch(selection.branchId)
+      return !isCurrent || isCurrent()
+    } catch (error) {
+      if (stillCurrent())
+        setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
+      return false
+    }
+  }
+  const selectResource = (item: CatalogItem) => {
+    if (locked) return
+    void action('resource-select', { id: item.context.id, value: item.context })
+  }
+  const editorForReview = (runId: string) => {
+    const target = p?.runs.find(item => item.run_id === runId)
+    if (!target?.review_draft || !p?.work_id || !state.workspaceId) return null
+    const targetBranch = p.tasks.find(item => item.task_id === target.workbench_task_id)?.branch_id
+    if (!targetBranch) return null
+    const scope = { workspaceId: state.workspaceId, workId: p.work_id, branchId: targetBranch, runId }
+    const key = JSON.stringify([scope.workspaceId, scope.workId, runId])
+    let editor = reviewEditors.get(key)
+    if (!editor) {
+      editor = new RunReviewEditor(scope, target.review_draft, async value => {
+        await reviewAction.current({ ...scope, type: 'update-review-draft', value })
+        if (store.getSnapshot().workspaceId === scope.workspaceId) await store.refresh()
+      })
+      reviewEditors.set(key, editor)
+    }
+    return editor
+  }
+  const openReview = (runId: string) => {
+    const editor = editorForReview(runId)
+    if (editor) { setReviewEditor(editor); setModal('evaluate') }
+  }
+  useEffect(() => {
+    if (!p) return
+    for (const editor of reviewEditors.values()) {
+      if (editor.scope.workspaceId !== state.workspaceId || editor.scope.workId !== p.work_id) continue
+      const target = p.runs.find(item => item.run_id === editor.scope.runId)
+      if (target?.review_draft) editor.sync(target.review_draft)
+    }
+  }, [p, state.workspaceId, reviewEditors])
+  const referenceRunIds =
+    run && view.compareRunId ? [run.run_id, view.compareRunId] : []
+  const invokeAgentFunction = (selected: FunctionBinding | undefined, evaluationEditor?: RunReviewEditor) => {
+    if (!selected) return
+    const problem = functionProblem(selected)
+    if (problem) { setMessage(problem); return }
+    if (isRunReviewFunctionKind(selected.kind)) {
+      const editor = evaluationEditor ?? (run ? editorForReview(run.run_id) : null)
+      if (!editor) return
+      const references = selected.kind === 'compare' ? [...referenceRunIds] : [editor.scope.runId]
+      void editor.submit(async evaluationDraft => {
+        const receipt = await props.onAction({ ...editor.scope, type: 'agent-action', id: selected.function_id,
+          referenceRunIds: references, value: { evaluationDraft } })
+        if (store.getSnapshot().workspaceId === editor.scope.workspaceId && store.getSnapshot().view.workId === editor.scope.workId && receipt?.taskId)
+          notifyTask(selected.name, receipt.taskId, editor.scope.workId, 'submitted')
+      }).then(async () => {
+        if (store.getSnapshot().workspaceId === editor.scope.workspaceId) await store.refresh()
+      }).catch(error => {
+        if (store.getSnapshot().workspaceId === editor.scope.workspaceId) setMessage(error instanceof Error ? error.message : String(error))
+      })
+      return
+    }
+    if (inputOptions.taskRequest.kinds.includes(selected.kind) && state.workspaceId && view.workId && view.branchId && branch) {
+      const scope = { workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId, functionId: selected.function_id }
+      const key = JSON.stringify(Object.values(scope))
+      let editor = taskRequestEditors.get(key)
+      if (!editor) {
+        editor = new TaskRequestEditor(scope, props.remote, branch.original_request)
+        taskRequestEditors.set(key, editor)
+      }
+      setTaskRequest({ editor, binding: selected, navigation: store.getNavigationSequence() })
+    } else void action('agent-action', { id: selected.function_id })
+  }
+  const agentButton = (label: string, kind: string, disabled = false) => (
+    <Button
+      kind="small agent-action"
+      disabled={disabled || !!functionProblem(binding(kind))}
+      onClick={() => invokeAgentFunction(binding(kind))}
+    >
+      {label}
+    </Button>
+  )
+  const customActions = (kinds: readonly string[], disabled = false) =>
+    p?.functions
+      .filter((item) => !item.builtin && kinds.includes(item.kind))
+      .map((item) => (
+        <Button
+          key={item.function_id}
+          kind="small agent-action"
+          disabled={disabled || !!functionProblem(item)}
+          onClick={() => invokeAgentFunction(item)}
+        >
+          {item.name}
+        </Button>
+      ))
+  const back = (
+    <Button kind="small" onClick={() => changePage('workbench')}>
+      返回结果
+    </Button>
+  )
+  const media = (item: WorkbenchRun) =>
+    (item as WorkbenchRun & { media?: readonly { url: string }[] }).media?.[0]
+      ?.url
+  const runVisual = (item: WorkbenchRun, large = false) =>
+    item.status === 'succeeded' ? (
+      media(item) ? (
+        large ? (
+          <button
+            type="button"
+            className="artwork preview-image"
+            onClick={() => {
+              setImageRunId(item.run_id)
+              setModal('image')
+            }}
+            aria-label={`查看原图 ${item.run_id}`}
+          >
+            <img src={media(item)} alt={item.title} />
+          </button>
+        ) : (
+          <img src={media(item)} alt={item.title} />
+        )
+      ) : (
+        <span className="muted">暂无图片</span>
+      )
+    ) : pendingRun(item) ? (
+      <span className="loading-ring" aria-hidden="true" />
+    ) : (
+      <span className="run-failure-symbol" aria-hidden="true">
+        ×
+      </span>
+    )
+  const renderRunCard = (item: WorkbenchRun, comparing = false) => (
+    <button
+      key={item.run_id}
+      type="button"
+      className={`run-card status-${pendingRun(item) ? 'running' : item.status} ${(comparing ? view.compareRunId : view.selectedRunId) === item.run_id ? 'active' : ''}`}
+      aria-label={`${comparing ? '比较运行' : '查看运行'} ${item.run_id}`}
+      aria-pressed={
+        (comparing ? view.compareRunId : view.selectedRunId) === item.run_id
+      }
+      onClick={() =>
+        comparing
+          ? store.updateView({ compareRunId: item.run_id })
+          : selectRun(item.run_id)
+      }
+    >
+      <div className="run-card-art">{runVisual(item)}</div>
+      <div className="run-card-heading">
+        <b className="mono"><Identifier value={item.run_id} /></b>
+        <Status run={item} />
+      </div>
+      <small>任务 <Identifier value={item.workbench_task_id} /></small>
+      <small>发起者：{item.initiator === 'human' ? '人工' : 'Agent'}</small>
+      <small>
+        {runTime(item)}
+        {item.retry_of_run_id ? ` · 重试来源 ${item.retry_of_run_id}` : ''}
+      </small>
+      <small className="run-preset">
+        {presetName(taskFor(item)?.binding_snapshot.preset_id)}
+      </small>
+    </button>
+  )
+  const treeNode = (item: Branch, depth: number): ReactNode => {
+    const children = p!.branches.filter(
+        (child) => child.parent_branch_id === item.branch_id,
+      ),
+      open = !view.collapsedBranches.includes(item.branch_id),
+      active = item.branch_id === view.branchId
+    return (
+      <div
+        key={item.branch_id}
+        role="treeitem"
+        aria-selected={active}
+        aria-level={depth + 1}
+        aria-expanded={children.length ? open : undefined}
+      >
+        <div className={`tree-row ${active ? 'active' : ''}`}>
+          {children.length ? (
+            <button
+              type="button"
+              className="tree-toggle"
+              aria-label={`${open ? '收起' : '展开'}${item.name}`}
+              onClick={() =>
+                store.updateView({
+                  collapsedBranches: open
+                    ? [...view.collapsedBranches, item.branch_id]
+                    : view.collapsedBranches.filter(
+                        (id) => id !== item.branch_id,
+                      ),
+                })
+              }
+            >
+              {open ? '⌄' : '›'}
+            </button>
+          ) : (
+            <span className="tree-toggle" />
+          )}
+          <button
+            type="button"
+            className={`branch-item ${active ? 'active' : ''}`}
+            aria-label={`切换分支 ${item.name}`}
+            onClick={() => selectBranch(item.branch_id)}
+          >
+            <span className="branch-name">
+              {item.name}
+              {branchRuns(item.branch_id).some(pendingRun) && (
+                <span className="pill amber">
+                  <i className="dot" />
+                  运行中
+                </span>
+              )}
+              {p!.tasks.some(
+                (task) => task.branch_id === item.branch_id && busyTask(task),
+              ) && <span className="pill amber">Agent 执行中</span>}
+            </span>
+            <small>
+              {modelLabel(item.draft)} · {branchRuns(item.branch_id).length}{' '}
+              次运行
+            </small>
+            <span className="branch-origin" title={item.source_run_id ?? item.source_artifact_id ?? undefined}>
+              {item.parent_branch_id
+                ? `来源 ${p!.branches.find((parent) => parent.branch_id === item.parent_branch_id)?.name ?? ''} · ${shortId(item.source_run_id || item.source_artifact_id || '任务输入')}`
+                : '主分支'}
+            </span>
+          </button>
+        </div>
+        {children.length > 0 && open && (
+          <div className="tree-children" role="group">
+            {children.map((child) => treeNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+  const scrollPanel = (key: string, ready = true) => ({
+    ref: (element: HTMLDivElement | null) => {
+      if (!ready) {
+        if (element) delete element.dataset.restored
+        return
+      }
+      const position = view.scrollPositions[key]
+      if (element && position && element.dataset.restored !== key) {
+        element.scrollTop = position.top
+        element.scrollLeft = position.left
+        element.dataset.restored = key
+      }
+    },
+    onScroll: (event: React.UIEvent<HTMLDivElement>) => {
+      if (!ready) return
+      const element = event.currentTarget
+      store.updateView({
+        scrollPositions: {
+          ...store.getSnapshot().view.scrollPositions,
+          [key]: { top: element.scrollTop, left: element.scrollLeft },
+        },
+      })
+    },
+  })
+  const sidebar = (
+    <aside className="sidebar">
+      <div className="sidebar-head">
+        <div className="row between">
+          <h3>当前工作的分支</h3>
+          <small>共 {p?.branches.length ?? 0} 条</small>
+        </div>
+      </div>
+      <div
+        className="branch-list"
+        role="tree"
+        aria-label="当前工作分支树"
+        {...scrollPanel(`branches:${view.workId}`)}
+      >
+        {p?.branches
+          .filter((item) => !item.parent_branch_id)
+          .map((item) => treeNode(item, 0))}
+      </div>
+      <div className="sidebar-foot">
+        <Button icon="grid" onClick={() => changePage('graph')}>
+          查看分支图
+        </Button>
+      </div>
+    </aside>
+  )
+  const compare = p?.runs.find((item) => item.run_id === view.compareRunId)
+  const results = (
+    <main className="center">
+      <PanelHead title={work?.name ?? ''} description={work?.goal}>
+        <Button
+          kind="small"
+          icon="compare"
+          disabled={!run || (p?.runs.length ?? 0) < 2}
+          onClick={() =>
+            store.updateView({
+              compareRunId:
+                p?.runs.filter((item) => item.run_id !== run?.run_id).at(-1)?.run_id ??
+                null,
+            })
+          }
+        >
+          比较运行
+        </Button>
+      </PanelHead>
+      <div className="contextbar">
+        <Icon name="branch" />
+        <b>{branch?.name}</b>
+        {run && (
+          <>
+            <span className="muted">/</span>
+            <b className="mono"><Identifier value={run.run_id} /></b>
+            <span>任务 <Identifier value={run.workbench_task_id} /></span>
+          </>
+        )}
+        <span className="spacer" />
+        <Button
+          kind="small quiet"
+          icon="branch"
+          onClick={() => setModal('branch')}
+        >
+          {run ? '从此运行创建分支' : '创建子分支'}
+        </Button>
+      </div>
+      {compare && run ? (
+        <>
+          <div className="contextbar">
+            <span className="muted">比较</span>
+            <b className="mono">
+              <Identifier value={compare.run_id} /> / <Identifier value={run.run_id} />
+            </b>
+            <span className="spacer" />
+            {agentButton(
+              '比较结果',
+              'compare',
+              [compare, run].some((item) => item.status !== 'succeeded'),
+            )}
+            {customActions(['compare'], [compare, run].some(item => item.status !== 'succeeded'))}
+            <Button
+              kind="small quiet"
+              onClick={() => store.updateView({ compareRunId: null })}
+            >
+              结束比较
+            </Button>
+          </div>
+          <div className="canvas">
+            <div className="compare-grid">
+              {[compare, run].map((item) => (
+                <div key={item.run_id} className="compare-cell">
+                  {item.status === 'succeeded' ? runVisual(item, true) : <div className={`compare-run-state ${item.status}`}>
+                    {pendingRun(item) && <span className="loading-ring" />}
+                    <Status run={item} />
+                    {item.error && <p>{item.error.message}</p>}
+                  </div>}
+                  <h3>
+                    <Identifier value={item.run_id} /> · {branchFor(item)?.name}
+                  </h3>
+                  <p>
+                    {runModelLabel(item)} · 引导强度 {String(runParameter(item, 'cfg') ?? taskPresentation.unrecorded)} · Seed{' '}
+                    {String(runParameter(item, 'seed') ?? taskPresentation.unrecorded)}
+                  </p>
+                  <p style={{ marginTop: 6, color: 'var(--green)' }}>{runInputs.get(item.run_id)?.prompt_input?.positive_prompt ?? inputOptions.unresolved}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="canvas">
+          {!run ? (
+            <div className="empty">当前分支暂无运行记录。</div>
+          ) : run.status === 'failed' || run.status === 'submission_unknown' ? (
+            <div className="error-stage">
+              <span className="pill red"><Identifier value={run.run_id} /></span>
+              <h3 style={{ marginTop: 12 }}>{runStatusLabel(run)}</h3>
+              <p>{run.error?.message}</p>
+              {run.status === 'failed' && <><Button
+                kind="primary"
+                icon="run"
+                onClick={() => void action('retry', { value: { preset_override: view.presetOverride } })}
+              >
+                重试任务
+              </Button>
+              {agentButton('诊断失败', 'diagnose')}
+              {customActions(['diagnose'])}</>}
+            </div>
+          ) : pendingRun(run) ? (
+            <div className="empty running-stage">
+              <span className="loading-ring" aria-hidden="true" />
+              <h3>{runStatusLabel(run)}</h3>
+            </div>
+          ) : (
+            runVisual(run, true)
+          )}
+        </div>
+      )}
+      {run && (
+        <div className="stage-caption">
+          <div>
+            <div className="row">
+              <h3>{run.title}</h3>
+              <span role="status" aria-live="polite">
+                <Status run={run} />
+              </span>
+            </div>
+            <small>
+              <Identifier value={run.run_id} /> · 发起者：
+              {run.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
+              {runModelLabel(run)} · Seed{' '}
+              {String(runParameter(run, 'seed') ?? taskPresentation.unrecorded)} ·{' '}
+              {String(runParameter(run, 'steps') ?? taskPresentation.unrecorded)} 步
+            </small>
+            <small className="preset-provenance">
+              执行预设：{presetName(taskFor(run)?.binding_snapshot.preset_id)}
+            </small>
+            <small className="run-agent-model">
+              Agent 模型：
+              {formatAgentModel(taskFor(run)?.binding_snapshot.agentModel)}
+            </small>
+          </div>
+          <div className="actions">
+            <Button
+              kind="small"
+              icon="star"
+              disabled={run.status !== 'succeeded'}
+              onClick={() =>
+                void action('favorite', { id: run.run_id, value: { targetType: 'run', favorite: !p?.favorites.some(item => item.target_type === 'run' && item.target_id === run.run_id) } })
+              }
+            >
+              {p?.favorites.some(
+                (item) =>
+                  item.target_type === 'run' && item.target_id === run.run_id,
+              )
+                ? '移除收藏'
+                : '收藏运行'}
+            </Button>
+            <Button
+              kind="small"
+              disabled={pendingRun(run)}
+              onClick={() => openReview(run.run_id)}
+            >
+              {reviewPresentation.title}
+            </Button>
+          </div>
+        </div>
+      )}
+      {run?.review && (
+        <details className="saved-review">
+          <summary>运行评价</summary>
+          {run.review.observation && <p>观察：{run.review.observation}</p>}
+          <p>评价：{run.review.conclusion}</p>
+        </details>
+      )}
+      <section
+        className="run-strip"
+        aria-label={compare ? '比较对象' : '当前分支的运行'}
+      >
+        <div className="strip-head">
+          <span>{compare ? '比较对象' : '当前分支的运行'}</span>
+          <span className="muted">
+            {
+              (compare
+                ? p?.runs.filter((item) => item.run_id !== run?.run_id)
+                : branchRuns(branch?.branch_id ?? '')
+              )?.length
+            }{' '}
+            次运行
+          </span>
+        </div>
+        <div
+          className="run-cards"
+          {...scrollPanel(`runs:${view.workId}:${view.branchId}:${!!compare}`)}
+        >
+          {(compare
+            ? p?.runs.filter((item) => item.run_id !== run?.run_id)
+            : branchRuns(branch?.branch_id ?? '')
+          )?.map((item) => renderRunCard(item, !!compare))}
+          {!branchRuns(branch?.branch_id ?? '').length && (
+            <span className="muted">暂无运行记录</span>
+          )}
+        </div>
+      </section>
+    </main>
+  )
+
+  const graphNode = (item: Branch): ReactNode => {
+    const children = p!.branches.filter(
+      (child) => child.parent_branch_id === item.branch_id,
+    )
+    return (
+      <li key={item.branch_id}>
+        <article className="branch-graph-node">
+          <div className="row between">
+            <h3>{item.name}</h3>
+            <Button
+              kind="small"
+              onClick={() => {
+                selectBranch(item.branch_id)
+                changePage('workbench')
+              }}
+            >
+              进入分支
+            </Button>
+          </div>
+          <p title={item.source_run_id ?? item.source_artifact_id ?? undefined}>
+            {item.parent_branch_id
+              ? `来源：${p!.branches.find((parent) => parent.branch_id === item.parent_branch_id)?.name} · ${shortId(item.source_run_id || item.source_artifact_id || '任务输入')}`
+              : '主分支'}
+          </p>
+          <div className="branch-graph-runs">
+            {branchRuns(item.branch_id).map((item) => (
+              <Button
+                key={item.run_id}
+                kind="small"
+                onClick={() => selectRun(item.run_id)}
+              >
+                <span title={item.run_id}>
+                  {`${shortId(item.run_id)} · ${item.status === 'succeeded'
+                    ? '成功'
+                    : item.status === 'failed'
+                      ? '运行失败'
+                      : '运行中'}`}
+                </span>
+              </Button>
+            ))}
+            {!branchRuns(item.branch_id).length && <small>暂无运行记录</small>}
+          </div>
+        </article>
+        {children.length > 0 && <ul>{children.map(graphNode)}</ul>}
+      </li>
+    )
+  }
+  const graph = (
+    <main className="center">
+      <PanelHead title="分支图">{back}</PanelHead>
+      <div className="graph" {...scrollPanel(`graph:${view.workId}`)}>
+        <ul className="branch-graph">
+          {p?.branches.filter((item) => !item.parent_branch_id).map(graphNode)}
+        </ul>
+      </div>
+    </main>
+  )
+  const favoritePage = view.page === 'favorites'
+  const experiences =
+    p?.experiences.filter(
+      (item) => !favoritePage ||
+        p.favorites.some(
+          (favorite) => favorite.target_type === 'experience' &&
+            favorite.target_id === item.experience_id,
+        ),
+    ).sort((a, b) => Number(b.experience_id === focusExperienceId) - Number(a.experience_id === focusExperienceId)) ?? []
+  const favoriteRuns = favoritePage ? p?.favorites.filter(item => item.target_type === 'run')
+    .map(item => p.runs.find(run => run.run_id === item.target_id))
+    .filter((item): item is WorkbenchRun => !!item) ?? [] : []
+  const library = (
+    <main className="center">
+      <PanelHead title={favoritePage ? '收藏' : '经验'}>{back}</PanelHead>
+      <div className="library" {...scrollPanel(`${view.page}:${view.workId}`)}>
+        <div className="library-tools">
+          <input
+            type="search"
+            placeholder="搜索结论、底模或适用条件"
+            aria-label="搜索经验与收藏"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+        {favoritePage && (
+          <div className="eyebrow" style={{ margin: '5px 0 14px' }}>
+            {libraryPresentation.favoriteExperiences}
+          </div>
+        )}
+        <div>
+          {experiences.map((item) => {
+            const baseModelName = props.baseModels?.find(model => model.id === item.base_model_id)?.label ?? item.base_model_id ?? ''
+            const favorite = p?.favorites.some(target => target.target_type === 'experience' && target.target_id === item.experience_id) ?? false
+            return <article className="experience-card" key={item.experience_id} data-experience={item.experience_id}
+              hidden={![baseModelName, item.title, item.conditions, item.note, libraryPresentation.evidence, ...item.evidence_run_ids.map(id => id + ' ↗'),
+                libraryPresentation.reuse, favorite ? libraryPresentation.removeFavorite : libraryPresentation.addFavorite].join('').toLowerCase().includes(search.trim().toLowerCase())}>
+              <span className="eyebrow">{baseModelName}</span>
+              <h3>{item.title}</h3>
+              <p>
+                {item.conditions}
+                <br />
+                {item.note}
+              </p>
+              <div className="evidence">
+                <span className="muted">{libraryPresentation.evidence}</span>
+                {item.evidence_run_ids.map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => selectRun(id)}
+                  >
+                    {id} ↗
+                  </button>
+                ))}
+              </div>
+              <div className="row">
+                <Button
+                  kind="small"
+                  icon="branch"
+                  onClick={() => { setReuseExperience(item); setModal('reuse') }}
+                >
+                  {libraryPresentation.reuse}
+                </Button>
+                <Button
+                  kind="small quiet"
+                  icon="star"
+                  onClick={() =>
+                    void action('favorite', {
+                      id: item.experience_id,
+                      value: { targetType: 'experience', favorite: !favorite },
+                    })
+                  }
+                >
+                  {favorite ? libraryPresentation.removeFavorite : libraryPresentation.addFavorite}
+                </Button>
+              </div>
+            </article>
+          })}
+          {!experiences.length && (
+            <div className="empty">
+              <h3>{favoritePage ? '尚未收藏经验' : '尚未保存经验'}</h3>
+              <Button
+                kind="small"
+                onClick={() =>
+                  changePage(favoritePage ? 'experiences' : 'workbench')
+                }
+              >
+                {favoritePage ? '查看经验' : '查看结果'}
+              </Button>
+            </div>
+          )}
+          {favoriteRuns.length > 0 && <>
+            <div className="eyebrow" style={{ margin: '22px 0 14px' }}>{libraryPresentation.favoriteRuns}</div>
+            {favoriteRuns.map(item => <FavoriteRunCard key={item.run_id} run={item} branchName={branchFor(item)?.name ?? ''}
+              query={search} load={props.catalog?.details} baseModels={props.baseModels}
+              onOpen={() => selectRun(item.run_id)}
+              onRemove={() => { void action('favorite', { id: item.run_id, value: { targetType: 'run', favorite: false } }) }} />)}
+          </>}
+        </div>
+      </div>
+    </main>
+  )
+  const taskStatus: Record<Task['status'], string> = taskPresentation.statusLabels
+  const tasks = (
+    <main className="center">
+      <PanelHead title="任务">{back}</PanelHead>
+      <div className="agent-task-list" {...scrollPanel(`tasks:${view.workId}`)}>
+        {p?.tasks
+          .slice()
+          .reverse()
+          .map((item) => {
+            const artifacts = p.artifacts.filter(
+                (artifact) => artifact.task_id === item.task_id,
+              ),
+              question = artifacts
+                .slice()
+                .reverse()
+                .find((artifact) => artifact.type === 'question'),
+              artifact = latestTaskArtifact(artifacts),
+              sourceBranch = p.branches.find(branch => branch.branch_id === item.branch_id),
+              canCreateBranch = artifact && item.kind !== 'experiment' && (
+                artifact.type === 'prompt' || artifact.type === 'parameters' || artifact.type === 'generation_input'
+                || (artifact.artifact.type === 'review' && !!artifact.artifact.candidate)
+              ),
+              taskExperiment = p.experiments.find(experiment => experiment.task_id === item.task_id),
+              taskRuns = p.runs.filter(
+                (run) => run.workbench_task_id === item.task_id,
+              ),
+              targetDraft = item.apply_target.kind === 'branch'
+                ? p.branches.find(branch => branch.branch_id === item.apply_target.id)?.draft
+                : p.runs.find(run => run.run_id === item.apply_target.id)?.review_draft,
+              expected = targetDraft ? structuredClone(targetDraft) : undefined
+            return (
+              <article
+                className="agent-task-card"
+                data-task={item.task_id}
+                data-session={item.session_id ?? undefined}
+                key={item.task_id}
+                tabIndex={-1}
+                ref={element => {
+                  if (element) taskCards.current.set(item.task_id, element)
+                  else taskCards.current.delete(item.task_id)
+                }}
+              >
+                <div className="row between">
+                  <h2>{item.title}</h2>
+                  <span
+                    className={`pill ${item.status === 'succeeded' ? '' : item.status === 'failed' ? 'red' : 'amber'}`}
+                  >
+                    {taskStatus[item.status]}
+                  </span>
+                </div>
+                <div className="task-meta">
+                  <span className="mono"><Identifier value={item.task_id} /></span>
+                  <Button
+                    kind="small quiet"
+                    onClick={() => {
+                      selectBranch(item.branch_id)
+                      changePage('workbench')
+                    }}
+                  >
+                    {
+                      p.branches.find(
+                        (branch) => branch.branch_id === item.branch_id,
+                      )?.name
+                    }
+                  </Button>
+                </div>
+                <p className="task-preset">
+                  Agent 预设：{presetName(item.binding_snapshot.preset_id)}
+                </p>
+                <p className="task-model">
+                  Agent 模型：
+                  {formatAgentModel(item.binding_snapshot.agentModel)}
+                </p>
+                <p className="task-request">
+                  {item.input.requirements.instructions ||
+                    item.input.requirements.original_request}
+                </p>
+                <div className="task-skills">
+                  {item.input.requested_skill ? (
+                    <>
+                      <span>Skill</span>
+                      <code>{item.input.requested_skill}</code>
+                    </>
+                  ) : (
+                    <span>使用预设中的工具</span>
+                  )}
+                </div>
+                {item.status === 'running' && (
+                  <div className="task-progress">
+                    <span className="loading-ring" />
+                    {taskStatus.running}
+                  </div>
+                )}
+                {item.error && (
+                  <p className="task-conflict">{item.error.message}</p>
+                )}
+                {taskConflicts(item, artifacts).length > 0 && (
+                  <p className="task-conflict">{taskPresentation.conflict[item.apply_target.kind]}</p>
+                )}
+                {item.status === 'waiting_input' &&
+                  question?.artifact.type === 'question' && (
+                    <form
+                      className="task-answer"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        const form = event.currentTarget
+                        void action('task-answer', {
+                          taskId: item.task_id,
+                          id: question.artifact_id,
+                          value: new FormData(form).get('answer'),
+                        })
+                      }}
+                    >
+                      <label className="field">
+                        <span>{question.artifact.question}</span>
+                        <textarea
+                          aria-label="补充需求"
+                          name="answer"
+                          required
+                        />
+                      </label>
+                      <button className="btn primary" type="submit">
+                        回复并继续
+                      </button>
+                    </form>
+                  )}
+                {artifact && artifact.type !== 'generation_input' && (
+                    <div className="task-output" key={artifact.artifact_id}>
+                      {artifact.artifact.type === 'prompt' ? (
+                        <>
+                          <h3>正向提示词</h3>
+                          <p>{artifact.artifact.positive_prompt}</p>
+                          <h3>负向提示词</h3>
+                          <p>{artifact.artifact.negative_prompt || '—'}</p>
+                        </>
+                      ) : artifact.artifact.type === 'parameters' ? (
+                        <><h3>{taskPresentation.parameters}</h3><dl>
+                          {Object.entries(artifact.artifact.parameters).map(([id, value]) => <React.Fragment key={id}>
+                            <dt>{id}</dt><dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd>
+                          </React.Fragment>)}
+                        </dl></>
+                      ) : artifact.artifact.type === 'review' ? (
+                        <>
+                          <h3>{item.kind === 'diagnose' ? reviewPresentation.errorTitle : reviewPresentation.fields[1]!.label}</h3>
+                          <p>{artifact.artifact.observation}</p>
+                          <h3>{reviewPresentation.fields[2]!.label}</h3>
+                          <p>{artifact.artifact.conclusion}</p>
+                          {artifact.artifact.candidate && <details>
+                            <summary>{taskPresentation.candidate}</summary>
+                            <pre>{JSON.stringify(artifact.artifact.candidate, null, 2)}</pre>
+                          </details>}
+                        </>
+                      ) : artifact.artifact.type === 'resources' ? (
+                        artifact.artifact.refs.map(resource => <TaskResourceCandidate key={`${resource.kind}:${resource.id}`}
+                          resource={resource} load={props.catalog?.details} onError={setMessage} onDetail={() => openContextDetails(resource)} />)
+                      ) : artifact.artifact.type === 'experience' ? (
+                        <>
+                          <h3>{artifact.artifact.title}</h3>
+                          <p>{artifact.artifact.conditions}</p>
+                          <p>{artifact.artifact.note}</p>
+                        </>
+                      ) : (
+                        <pre>{JSON.stringify(artifact.artifact, null, 2)}</pre>
+                      )}
+                    </div>
+                )}
+                {taskExperiment ? <ExperimentTaskRounds experiment={taskExperiment} runs={taskRuns} artifacts={artifacts} onRun={selectRun} /> : taskRuns.map((run) => (
+                  <div className="task-output" key={run.run_id}>
+                    <Button
+                      kind="small"
+                      onClick={() => selectRun(run.run_id)}
+                    >
+                      查看运行 <Identifier value={run.run_id} />
+                    </Button>
+                  </div>
+                ))}
+                <details className="task-input">
+                  <summary>查看任务详情</summary>
+                  <p>执行要求</p>
+                  <pre className="request-snapshot">{item.request_text || taskPresentation.unrecorded}</pre>
+                  <p>{taskPresentation.details.model}</p>
+                  <pre className="request-snapshot" aria-label="Agent 调用配置 JSON">
+                    {JSON.stringify({
+                      create: item.session_id ? { workspaceId: p.workspace_id, sessionId: item.session_id, agentPreset: item.binding_snapshot.preset_id } : taskPresentation.unrecorded,
+                      selectModel: item.session_id ? { sessionId: item.session_id, ...item.binding_snapshot.agentModel } : taskPresentation.unrecorded,
+                      selectModelResult: item.selected_model ? { selected: item.selected_model } : taskPresentation.unrecorded,
+                    }, null, 2)}
+                  </pre>
+                  <p>任务输入</p>
+                  <pre className="request-snapshot" aria-label="任务输入 JSON">
+                    {JSON.stringify(item.input, null, 2)}
+                  </pre>
+                  <p>{taskPresentation.details.artifacts}</p>
+                  <pre className="request-snapshot" aria-label="产物 JSON">
+                    {artifacts.length ? JSON.stringify(artifacts.map(artifact => artifact.artifact), null, 2) : taskPresentation.unrecorded}
+                  </pre>
+                  {item.input.reference_run_ids.length > 0 && <div className="row">
+                    <span>{taskPresentation.details.runs}</span>
+                    {item.input.reference_run_ids.map(runId => <Button key={runId} kind="small quiet" onClick={() => selectRun(runId)}>{runId}</Button>)}
+                  </div>}
+                </details>
+                <div className="row task-actions">
+                  {item.kind !== 'experiment' && (item.status === 'running' || (item.status === 'waiting_generation' && item.execution_state === 'running')) && (
+                    <Button
+                      kind="small"
+                      onClick={() =>
+                        void action('task-interrupt', { taskId: item.task_id })
+                      }
+                    >
+                      中断任务
+                    </Button>
+                  )}
+                  {item.kind !== 'experiment' && item.status === 'interrupted' && (
+                    <Button
+                      kind="small primary"
+                      onClick={() =>
+                        void action('task-resume', { taskId: item.task_id })
+                      }
+                    >
+                      继续任务
+                    </Button>
+                  )}
+                  {artifact?.disposition === 'candidate' && artifact.type !== 'generation_input' && item.kind !== 'experiment' && (
+                    <Button kind="small primary" onClick={() => void action('task-apply', {
+                      taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id, value: expected,
+                    })}>
+                      {artifact.type === 'prompt' ? '采用提示词' : artifact.type === 'parameters' ? '采用参数'
+                        : artifact.type === 'resources' ? '采用资源' : artifact.type === 'review' ? '填入评价'
+                          : artifact.type === 'experience' ? '填入经验' : '采用建议输入'}
+                    </Button>
+                  )}
+                  {sourceBranch && artifact && canCreateBranch && (
+                    <Button kind="small" onClick={() => void action('task-branch', {
+                      taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id,
+                      value: { name: taskPresentation.branchName.replace(/\{parent\}|\{task\}/g, token => token === '{parent}' ? sourceBranch.name : item.title) },
+                    })}>{taskPresentation.branch}</Button>
+                  )}
+                  {artifact?.disposition === 'applied' && item.apply_target.kind === 'branch' && (
+                    <Button kind="small" onClick={() => {
+                      selectBranch(item.branch_id)
+                      store.updateView({ page: 'workbench', selectedRunId: null, inspectRun: false, compareRunId: null })
+                    }}>{taskPresentation.inputs}</Button>
+                  )}
+                  {artifact?.disposition === 'applied' && item.input.evaluation_input && <Button kind="small"
+                    onClick={() => openReview(item.input.evaluation_input!.run_id)}>{reviewPresentation.open}</Button>}
+                  {sourceBranch && artifact?.artifact.type === 'review' && artifact.artifact.candidate && <Button kind="small" onClick={() => void action('task-generation-apply', {
+                    taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id, value: structuredClone(sourceBranch.draft),
+                  })}>{reviewPresentation.candidate}</Button>}
+                </div>
+              </article>
+            )
+          })}
+        {!p?.tasks.length && (
+          <div className="empty">
+            <h3>暂无任务</h3>
+            {agentButton('生成提示词', 'prompt')}
+          </div>
+        )}
+      </div>
+    </main>
+  )
+  const historical = run ? runInputs.get(run.run_id) : undefined
+  const { details: historicalModel } = useCatalogDetails(
+    historical?.generation_input.model ? { kind: 'model', id: historical.generation_input.model.id } : null, props.catalog?.details)
+  const inputs = view.inspectRun && run
+    ? historical ? { generation_input: historical.generation_input, prompt_input: historical.prompt_input,
+      context_refs: historical.context_refs, base_model_id: historicalModel?.id === historical.generation_input.model?.id ? historicalModel?.item.baseModelId ?? null : null } : undefined
+    : experimentTask?.input ?? branch?.draft
+  const selectedTemplateId = inputs?.generation_input.template_id ?? null
+  const { details: selectedTemplate, error: selectedTemplateError } = useCatalogDetails(
+    selectedTemplateId ? { kind: 'comfyui-template', id: selectedTemplateId } : null,
+    props.catalog?.details,
+  )
+  const selectedTemplateName = selectedTemplate?.kind === 'comfyui-template' && selectedTemplate.id === selectedTemplateId
+    ? selectedTemplate.item.label : selectedTemplateId ?? ''
+  useEffect(() => {
+    if (selectedTemplateError) setMessage(selectedTemplateError)
+  }, [selectedTemplateError, setMessage])
+  const parameterScope = branch && state.workspaceId
+    ? inputDescriptionCache.key(state.workspaceId, branch.draft.generation_input) : ''
+  const parameterFieldEditor = useBranchFieldEdits(state.workspaceId, view.workId, view.branchId, parameterScope)
+  const inputDescription = view.inspectRun ? historical?.input_description : experiment ? firstExperimentRun ? runInputs.get(firstExperimentRun.run_id)?.input_description : null : inputs ? descriptionFor(inputs.generation_input) : null
+  const displayedParameters = inputs ? view.inspectRun && run ? runParameterValues(run) : inputs.generation_input.parameters : {}
+  const sizes = inputs
+    ? experimentSizeOptions(
+        inputDescription,
+        displayedParameters,
+      )
+    : []
+  const currentSize = sizes.find((size) => size.current)?.value ?? ''
+  const locked = view.inspectRun || !!experiment
+  const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
+  const saveField = async (id: string, options: FieldOptions, value: string, expectedValue: string | null, resourceId?: string) => {
+    const currentWork = () => {
+      const current = store.getSnapshot()
+      return current.workspaceId === state.workspaceId && current.view.workId === view.workId
+    }
+    const currentBranch = () => currentWork() && store.getSnapshot().view.branchId === view.branchId
+    try {
+      await props.onAction({
+        type: options.branch ? 'update-branch' : 'update-draft',
+        workspaceId: state.workspaceId ?? '',
+        workId: view.workId ?? undefined,
+        branchId: view.branchId ?? undefined,
+        field: id,
+        ...(resourceId === undefined ? {} : { id: resourceId }),
+        value: options.type === 'number' ? Number(value) : value,
+        ...(options.branch && expectedValue !== null ? { expectedValue } : {}),
+      })
+    } catch (error) {
+      if (currentBranch()) setMessage(error instanceof Error ? error.message : '操作失败，请重试。')
+      return false
+    }
+    if (currentWork()) await store.refresh()
+    return true
+  }
+  const field = (
+    label: string,
+    id: string,
+    value: JsonValue | undefined,
+    options: FieldOptions = {},
+  ) => <AutosaveField
+    key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, locked, id])}
+    label={label}
+    className="field"
+    id={id}
+    value={value === null ? null : value === undefined ? '' : String(value)}
+    options={options}
+    editor={fieldEditor(id)}
+    locked={locked}
+    save={(nextValue, expectedValue) => saveField(id, options, nextValue, expectedValue)}
+  />
+  const saveGenerationInput = async (change: Pick<ExperimentWorkbenchAction, 'field' | 'id' | 'value'>) => {
+    await props.onAction({ type: 'update-draft', workspaceId: state.workspaceId ?? '',
+      workId: view.workId ?? undefined, branchId: view.branchId ?? undefined, ...change })
+    const current = store.getSnapshot()
+    if (current.workspaceId === state.workspaceId && current.view.workId === view.workId) await store.refresh()
+  }
+  const renderParameter = (label: string, id: string, parameter: WorkflowRuntimeParameterInspectionParameter | undefined) =>
+    <RuntimeParameterField key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, parameterScope, locked, id])}
+      label={label} id={id} parameter={parameter} locked={locked}
+      value={parameter && inputs ? readExperimentParameterValue(parameter, displayedParameters) : undefined}
+      editor={parameterFieldEditor(JSON.stringify(['parameter', parameter?.parameter_id ?? id]))}
+      save={async value => {
+        if (parameter) await saveGenerationInput({ field: 'parameter', id: parameter.parameter_id, value })
+      }} />
+  const describedParameters = inputDescription ? flattenWorkflowRuntimeParameters(inputDescription) : []
+  const parameterLabel = (parameter: WorkflowRuntimeParameterInspectionParameter) =>
+    describedParameters.filter(item => item.kind === parameter.kind).length > 1
+      ? `${inputOptions.parameterLabels[parameter.kind]}（${parameter.parameter_id}）`
+      : inputOptions.parameterLabels[parameter.kind]
+  const primaryParameters = ['steps', 'cfg', 'seed', 'reference_image'].map(kind => describedParameters.find(parameter => parameter.kind === kind))
+  const parameterField = (kind: StandardRuntimeParameterKind) => {
+    const parameter = describedParameters.find(item => item.kind === kind)
+    return renderParameter(parameter ? parameterLabel(parameter) : inputOptions.parameterLabels[kind],
+      kind === 'reference_image' ? 'references' : kind, parameter)
+  }
+  const additionalParameters = describedParameters.filter(parameter =>
+    !['positive_prompt', 'negative_prompt'].includes(parameter.kind) && !primaryParameters.includes(parameter))
+  const openCatalog = (kind: CatalogKind) => {
+    setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
+    store.updateView({
+      page: 'resources',
+      catalogFilters: { ...view.catalogFilters, kind, baseModelId: branch?.draft.base_model_id ?? '', modelId: '', query: '', page: 1 },
+      catalogDetail: null,
+      catalogGallery: null,
+    })
+  }
+  const openContextDetails = (item: CatalogReference) => {
+    const changedKind = view.catalogFilters.kind !== item.kind
+    if (changedKind) setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
+    navigate(() => store.updateView({
+      page: 'resources',
+      ...(changedKind ? { catalogFilters: { ...store.getSnapshot().view.catalogFilters, kind: item.kind, query: '', page: 1 } } : {}),
+      catalogDetail: item,
+      catalogGallery: null,
+    }))
+  }
+  const inspector = branch && inputs && (
+    <aside className="inspector">
+      <header className="config-head">
+        <span className="muted">当前分支</span>
+        <h2>{branch.name}</h2>
+        <p>所属工作：{work?.name}</p>
+        <p title={branch.source_run_id ?? branch.source_artifact_id ?? undefined}>
+          起点：
+          {branch.parent_branch_id
+            ? `${p?.branches.find((item) => item.branch_id === branch.parent_branch_id)?.name} / ${shortId(branch.source_run_id || branch.source_artifact_id || '任务输入')}`
+            : '新建主分支'}
+        </p>
+      </header>
+      <div
+        className="inspector-body"
+        {...scrollPanel(`inspector:${view.workId}:${view.branchId}`)}
+      >
+        {run && (
+          <label className="snapshot-toggle">
+            <input
+              type="checkbox"
+              aria-label="查看运行输入"
+              checked={view.inspectRun}
+              onChange={(event) =>
+                store.updateView({ inspectRun: event.target.checked })
+              }
+            />
+            查看运行输入 · <Identifier value={run.run_id} />
+          </label>
+        )}
+        <div className="section-label">
+          <span title={view.inspectRun ? run?.run_id : undefined}>
+            {view.inspectRun
+              ? `${shortId(run?.run_id ?? '')} · 运行输入`
+              : experiment
+                ? '实验初始输入'
+                : '任务输入'}
+          </span>
+        </div>
+        {displayedExperiment && displayedExperimentTask && <ExperimentStatus experiment={displayedExperiment} task={displayedExperimentTask}
+          runs={displayedExperimentRuns} presetName={presetName(displayedExperimentTask.binding_snapshot.preset_id)}
+          modelName={formatAgentModel(displayedExperimentTask.binding_snapshot.agentModel)} onRun={selectRun} />}
+        <fieldset className="configuration" disabled={locked}>
+          {field('分支名称', 'name', branch.name, {
+            maxLength: WORKBENCH_BRANCH_NAME_MAX_LENGTH,
+            branch: true,
+          })}
+          {field('原始需求', 'original_request', experimentTask?.input.requirements.original_request ?? branch.original_request, {
+            multiline: true,
+            short: true,
+            branch: true,
+          })}
+          <div className="agent-inputs">
+            {agentButton('生成提示词', 'prompt', locked)}
+            <small className="function-preset">
+              Agent 预设：{presetName(binding('prompt')?.preset_id)}
+            </small>
+            <small className="execution-model">
+              Agent 模型：{agentModel(binding('prompt'))}
+            </small>
+            {customActions(['prompt'], locked)}
+          </div>
+          <label className="field">
+            <span>ComfyUI 实例</span>
+            <select
+              aria-label="ComfyUI 实例"
+              value={inputs.generation_input.instance_id ?? ''}
+              onChange={(event) =>
+                void action('update-draft', {
+                  field: 'instance_id',
+                  value: event.target.value || null,
+                })
+              }
+            >
+              <option value="">请选择</option>
+              {props.instances?.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+              {inputs.generation_input.instance_id &&
+                !props.instances?.some(
+                  (item) => item.id === inputs.generation_input.instance_id,
+                ) && (
+                  <option value={inputs.generation_input.instance_id}>
+                    {inputs.generation_input.instance_id}
+                  </option>
+                )}
+            </select>
+          </label>
+          <section aria-label="已选资源" className="selected-resources">
+            <div className="row between">
+              <h3>已选资源</h3>
+              <Button
+                kind="small quiet"
+                icon="plus"
+                onClick={() => openCatalog('model')}
+              >
+                选择资源
+              </Button>
+            </div>
+            <div className="agent-field-action">
+              {agentButton('推荐资源', 'resources', locked)}
+            </div>
+            <div className="picked-item">
+              <span>生成模型 · {modelLabel(inputs)}</span>
+              <b>{inputs.generation_input.model?.file_name ?? '未选择'}</b>
+              <Button
+                kind="small quiet"
+                label="更换生成模型"
+                onClick={() => openCatalog('model')}
+              >
+                更换
+              </Button>
+            </div>
+            <div className="picked-item">
+              <span>Workflow 模板</span>
+              <b>{selectedTemplateId ? selectedTemplateName : '未选择'}</b>
+              <Button
+                kind="small quiet"
+                label="选择 Workflow 模板"
+                onClick={() => openCatalog('comfyui-template')}
+              >
+                {inputs.generation_input.template_id ? '更换' : '选择'}
+              </Button>
+            </div>
+            <div className="picked-loras">
+              <div className="row between">
+                <span>LoRA</span>
+                <Button
+                  kind="small quiet"
+                  icon="plus"
+                  label="添加 LoRA"
+                  onClick={() => openCatalog('lora')}
+                >
+                  添加
+                </Button>
+              </div>
+              {inputs.generation_input.loras.map((item) => (
+                <LoraSummary
+                  key={item.id}
+                  scope={{ workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId }}
+                  item={item}
+                  load={props.catalog?.details}
+                  locked={locked}
+                  onError={setMessage}
+                  save={(value, expectedValue) => saveField('lora-weight', { type: 'number' }, value, expectedValue, item.id)}
+                  onRemove={() => void action('resource-remove', { id: item.id, value: 'lora' })}
+                />
+              ))}
+              {!inputs.generation_input.loras.length && (
+                <p className="muted">未选择 LoRA</p>
+              )}
+            </div>
+          </section>
+          <section aria-label="参考上下文" className="selected-contexts">
+            <div className="row between">
+              <h3>参考上下文</h3>
+              <Button
+                kind="small quiet"
+                icon="plus"
+                label="添加参考上下文"
+                onClick={() => openCatalog('character')}
+              >
+                添加
+              </Button>
+            </div>
+            {inputs.context_refs.map((item) => (
+              <ContextSummary
+                key={workbenchContextKey(item)}
+                item={item}
+                load={props.catalog?.details}
+                onError={setMessage}
+                onDetail={() => openContextDetails(item)}
+                onRemove={() => {
+                  if (!locked) void action('resource-remove', { id: item.id, value: item.kind })
+                }}
+              />
+            ))}
+            {!inputs.context_refs.length && (
+              <p className="muted">未添加参考上下文</p>
+            )}
+          </section>
+          {customActions(['resources'], locked)}
+          <details className="config-section" open>
+            <summary>提示词与参考图路径</summary>
+            <div className="agent-field-action">
+              {agentButton('改写提示词', 'rewrite', locked)}
+              {customActions(['rewrite'], locked)}
+            </div>
+            {field(
+              inputOptions.parameterLabels.positive_prompt,
+              'positive_prompt',
+              inputs.prompt_input?.positive_prompt ?? null,
+              { multiline: true, saveOnChange: true },
+            )}
+            {field(
+              inputOptions.parameterLabels.negative_prompt,
+              'negative_prompt',
+              inputs.prompt_input?.negative_prompt ?? null,
+              { multiline: true, short: true, saveOnChange: true },
+            )}
+            {parameterField('reference_image')}
+          </details>
+          <details className="config-section" open>
+            <summary>生成参数</summary>
+            <div className="agent-field-action">
+              {agentButton('建议参数', 'parameters', locked)}
+              {customActions(['parameters'], locked)}
+            </div>
+            {(view.inspectRun || !!experiment) && !inputDescription ? <div className="fields2">
+              {Object.entries(inputs.generation_input.parameters).map(([id, value]) => field(id, id, typeof value === 'string' ? value : JSON.stringify(value)))}
+            </div> : <><div className="fields2">
+              {parameterField('steps')}
+              {parameterField('cfg')}
+            </div>
+            <div className="fields2">
+              {parameterField('seed')}
+              <RuntimeSizeField key={JSON.stringify([state.workspaceId, view.workId, branch?.branch_id, parameterScope, locked])}
+                sizes={sizes} value={currentSize} editor={parameterFieldEditor(JSON.stringify(['size']))} locked={locked}
+                save={size => saveGenerationInput({ field: 'size', value: { candidate_id: size.candidate_id, parameters: size.parameters } })} />
+            </div>
+            {additionalParameters.length > 0 && <div className="fields2">
+              {additionalParameters.map(parameter => renderParameter(
+                parameterLabel(parameter),
+                parameter.parameter_id, parameter))}
+            </div>}</>}
+          </details>
+        </fieldset>
+        {branch.source_experience_id && (
+          <div className="note">
+            <Button
+              kind="small quiet"
+              onClick={() => { setFocusExperienceId(branch.source_experience_id); changePage('experiences') }}
+            >
+              查看来源经验
+            </Button>
+          </div>
+        )}
+      </div>
+      <div className="inspector-foot execution-controls">
+        {!experiment && !view.inspectRun && (
+          <div className="preset-picker">
+            <label className="field">
+              <span>
+                {branch.execution.mode === 'continuous'
+                  ? '持续实验'
+                  : '运行任务'}{' '}
+                · 本次预设
+              </span>
+              <select
+                aria-label="本次执行预设"
+                value={view.presetOverride ?? ''}
+                onChange={(event) => {
+                  presetOverrideRevision.current++
+                  store.updateView({ presetOverride: event.target.value || null })
+                }}
+              >
+                <option value="">
+                  默认 ·{' '}
+                  {presetName(
+                    binding(
+                      branch.execution.mode === 'continuous'
+                        ? 'experiment'
+                        : 'run',
+                    )?.preset_id,
+                  )}
+                </option>
+                {props.presets?.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="execution-model">
+              Agent 模型：
+              {agentModel(
+                binding(
+                  branch.execution.mode === 'continuous' ? 'experiment' : 'run',
+                ),
+              )}
+            </p>
+            {executionProblem && <p className="preset-unavailable">{executionProblem}</p>}
+          </div>
+        )}
+        {experiment ? (
+          <div className="row">
+            <Button
+              kind="primary"
+              icon={experiment.control_state === 'paused' ? 'run' : 'history'}
+              onClick={() =>
+                void action(
+                  experiment.control_state === 'paused'
+                    ? 'resume-experiment'
+                    : 'pause-experiment',
+                  { taskId: experiment.task_id },
+                )
+              }
+            >
+              {experiment.control_state === 'paused' ? '继续实验' : '暂停实验'}
+            </Button>
+            <Button
+              kind="small"
+              onClick={() =>
+                void action('stop-experiment', { taskId: experiment.task_id })
+              }
+            >
+              结束实验
+            </Button>
+          </div>
+        ) : view.inspectRun ? (
+          <Button
+            kind="primary"
+            onClick={() => store.updateView({ inspectRun: false })}
+          >
+            编辑任务输入
+          </Button>
+        ) : (
+          <>
+            <fieldset className="configuration">
+              <legend>执行方式</legend>
+              <div className="execution-modes">
+                {[
+                  ['once', '运行一次'],
+                  ['continuous', '持续实验'],
+                ].map(([value, label]) => (
+                  <label key={value}>
+                    <input
+                      type="radio"
+                      name="execution-mode"
+                      value={value}
+                      aria-label={label}
+                      checked={branch.execution.mode === value}
+                      disabled={pending}
+                      onChange={() =>
+                        void action('update-execution', {
+                          field: 'mode',
+                          value,
+                        })
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {branch.execution.mode === 'continuous' && (
+              <div className="experiment-options">
+                <label className="row between">
+                  最多运行次数
+                  <select
+                    aria-label="最多运行次数"
+                    value={branch.execution.max_runs}
+                    onChange={(event) =>
+                      void action('update-execution', {
+                        field: 'max_runs',
+                        value: Number(event.target.value),
+                      })
+                    }
+                  >
+                    {[2, 3, 5].map((count) => (
+                      <option key={count} value={count}>
+                        {count} 次
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
+            <Button
+              kind="primary"
+              icon="run"
+              disabled={
+                pending || !!executionProblem
+              }
+              onClick={() => {
+                void action(
+                  branch.execution.mode === 'continuous' ? 'experiment' : 'run',
+                  { value: { preset_override: view.presetOverride } },
+                )
+              }}
+            >
+              {pending
+                ? '正在运行'
+                : branch.execution.mode === 'continuous'
+                  ? '开始实验'
+                  : '运行任务'}
+            </Button>
+            <div className="custom-run-actions">
+              {customActions(
+                [branch.execution.mode === 'continuous' ? 'experiment' : 'run'],
+                pending,
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </aside>
+  )
+
+  const settings = (
+    <ExperimentFunctionSettings
+      key={state.workspaceId}
+      workspaceId={state.workspaceId ?? ''}
+      workspaceName={workspace?.name}
+      functions={p?.functions.map(item => functionBindings.get(JSON.stringify([item.workspace_id, item.function_id])) ?? item) ?? []}
+      presets={props.presets ?? []}
+      models={props.agentModelGroups ?? []}
+      remote={props.remote}
+      onToast={setMessage}
+      onBack={() => changePage('workbench')}
+      onChange={async change => {
+        if (!state.workspaceId) return
+        const request: ExperimentWorkbenchAction = {
+          workspaceId: state.workspaceId,
+          ...(view.workId ? { workId: view.workId } : {}),
+          ...(view.branchId ? { branchId: view.branchId } : {}),
+          ...change,
+        }
+        const save = async () => { await props.onAction(request); await store.refresh() }
+        if (!('id' in change)) return save()
+        const key = JSON.stringify([request.workspaceId, change.id])
+        const currentBinding = functionBindings.get(key) ?? p?.functions.find(item => item.function_id === change.id)
+        const submittedBinding = change.type === 'function-edit' && currentBinding ? { ...currentBinding, ...change.value } : change.type === 'function-preset' && currentBinding ? { ...currentBinding, preset_id: change.value } : null
+        if (submittedBinding) setFunctionBindings(current => new Map(current).set(key, submittedBinding))
+        const pending = (functionWrites.current.get(key) ?? Promise.resolve()).then(save, save)
+        functionWrites.current.set(key, pending)
+        try { await pending }
+        finally {
+          if (functionWrites.current.get(key) === pending) functionWrites.current.delete(key)
+          if (submittedBinding) setFunctionBindings(current => {
+            if (current.get(key) !== submittedBinding) return current
+            const next = new Map(current)
+            next.delete(key)
+            return next
+          })
+        }
+      }}
+    />
+  )
+  const imageRun = p?.runs.find(item => item.run_id === imageRunId)
+  const ModalHeading = modal === 'image' ? 'header' : 'div'
+  const modalHeadingId = modal === 'image' ? 'image-title' : undefined
+  const modalTitle =
+    modal === 'new-work'
+      ? '新建工作'
+      : modal === 'new-workspace'
+        ? '添加工作区'
+        : modal === 'branch'
+          ? '创建子分支'
+          : `${imageRun?.run_id} · 图片 1`
+  return (
+    <div className="experiment-workbench" ref={host}>
+      <div className="experiment-workbench-content">
+        <header className="titlebar">
+          <span className="brandmark">h</span>
+          <span className="brand">
+            HARNESS{' '}
+            <span style={{ fontWeight: 400, color: '#8a958c' }}>/ COMFYUI</span>
+          </span>
+          <span className="divider" />
+          <div className="row workspace-switch">
+            <label className="muted" htmlFor="experiment-workspace-picker">
+              工作区
+            </label>
+            <select
+              id="experiment-workspace-picker"
+              aria-label="切换工作区"
+              title={workspace?.path}
+              value={state.workspaceId ?? ''}
+              onChange={(event) => {
+                selectWorkspace(event.target.value)
+                props.onWorkspaceChange(event.target.value)
+              }}
+            >
+              {!state.workspaceId && <option value="">请选择工作区</option>}
+              {props.workspaces.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <Button
+              kind="small quiet"
+              icon="plus"
+              onClick={() => setModal('new-workspace')}
+            >
+              添加工作区
+            </Button>
+            <small className="workspace-path">{workspace?.path}</small>
+          </div>
+          <span className="divider" />
+          <b>实验工作台</b>
+          <span className="spacer" />
+          <Button kind="small quiet" onClick={() => changePage('settings')}>
+            配置中心
+          </Button>
+        </header>
+        {work && (
+          <div className="workbar">
+            <div className="row">
+              <label className="muted" htmlFor="experiment-work-picker">
+                工作
+              </label>
+              <select
+                className="work-picker"
+                id="experiment-work-picker"
+                aria-label="切换工作"
+                value={view.workId ?? ''}
+                onChange={(event) => selectWork(event.target.value)}
+              >
+                {p?.works.map((item) => (
+                  <option key={item.work_id} value={item.work_id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                kind="small quiet"
+                icon="plus"
+                onClick={() => setModal('new-work')}
+              >
+                新建工作
+              </Button>
+            </div>
+            <nav className="nav" aria-label="工作导航">
+              {(
+                [
+                  ['workbench', '运行结果'],
+                  ['resources', '资源'],
+                  ['tasks', '任务'],
+                  ['experiences', '经验'],
+                  ['favorites', '收藏'],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-label={label}
+                  className={
+                    view.page === id ||
+                    (id === 'workbench' && view.page === 'graph')
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() => changePage(id)}
+                >
+                  {label}
+                  {['tasks', 'experiences', 'favorites'].includes(id) && (
+                    <span className="count">
+                      {id === 'tasks'
+                        ? p?.tasks.length
+                        : id === 'experiences'
+                          ? p?.experiences.length
+                          : p?.favorites.length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+            <span className="spacer" />
+            <Button
+              kind={
+                p?.runs.some(pendingRun) ? 'small running-link' : 'small quiet'
+              }
+              icon="history"
+              label="查看运行记录"
+              onClick={() => setSheet(true)}
+            >
+              {p?.runs.some(pendingRun)
+                ? `运行记录 · ${p.runs.filter(pendingRun).length} 项运行中`
+                : '运行记录'}
+            </Button>
+          </div>
+        )}
+        {state.error && !p ? (
+          <main className="empty workspace-empty">
+            <h1>工作台加载失败</h1>
+            <p role="alert">{state.error}</p>
+            <Button onClick={() => void store.refresh()}>重试</Button>
+          </main>
+        ) : view.page === 'settings' ? (
+          settings
+        ) : state.loading && !p ? (
+          <main className="empty workspace-empty" aria-label="加载工作台">
+            <span className="loading-ring" />
+          </main>
+        ) : !work ? (
+          <main className="empty workspace-empty">
+            <h1>{workspace?.name ?? '实验工作台'}</h1>
+            <p>{state.workspaceId ? '尚未创建工作' : '请选择工作区'}</p>
+            <Button
+              kind="primary"
+              icon="plus"
+              disabled={!state.workspaceId}
+              onClick={() => setModal('new-work')}
+            >
+              新建工作
+            </Button>
+          </main>
+        ) : (
+          <div className="layout">
+            {sidebar}
+            {view.page === 'resources' ? (
+              <ExperimentCatalog
+                catalog={props.catalog}
+                filters={view.catalogFilters}
+                detailRequest={view.catalogDetail}
+                gallery={view.catalogGallery}
+                onGallery={catalogGallery => navigate(() => store.updateView({ catalogGallery }))}
+                onDetail={catalogDetail => navigate(() => store.updateView({ catalogDetail, catalogGallery: null }))}
+                queryText={catalogQueryText}
+                onQueryChange={value => setCatalogQueryDraft({ workspaceId: state.workspaceId, value })}
+                onFilters={(patch) => {
+                  if (patch.query !== undefined) setCatalogQueryDraft({ workspaceId: state.workspaceId, value: patch.query })
+                  store.updateView({ catalogFilters: { ...store.getSnapshot().view.catalogFilters, ...patch }, ...(patch.query !== undefined ? { catalogDetail: null, catalogGallery: null } : {}) })
+                }}
+                back={back}
+                selected={inputs}
+                onSelect={(item) =>
+                  void selectResource(item)
+                }
+                onRemove={(item) =>
+                  void action('resource-remove', {
+                    id: item.context.id,
+                    value: item.context.kind,
+                  })
+                }
+                locked={locked}
+                scroll={(panel, ready) => scrollPanel(
+                  `${EXPERIMENT_CATALOG_SCROLL_PREFIX}${view.workId}:${JSON.stringify(view.catalogFilters)}:${panel}`, ready,
+                )}
+              />
+            ) : view.page === 'tasks' ? (
+              tasks
+            ) : view.page === 'graph' ? (
+              graph
+            ) : ['favorites', 'experiences'].includes(view.page) ? (
+              library
+            ) : (
+              results
+            )}
+            {inspector}
+          </div>
+        )}
+        {sheet && (
+          <div
+            className="sheet-backdrop"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setSheet(false)
+            }}
+          >
+            <section
+              className="sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label="运行记录"
+            >
+              <div className="sheet-head">
+                <h2>运行记录</h2>
+                <Button
+                  kind="small"
+                  label="关闭面板"
+                  onClick={() => setSheet(false)}
+                >
+                  关闭
+                </Button>
+              </div>
+              <div className="sheet-body">
+                {p?.runs
+                  .slice()
+                  .reverse()
+                  .map((item) => (
+                    <article className="run-row" key={item.run_id}>
+                      <div className="row between">
+                        <h3>
+                          <Identifier value={item.run_id} /> · {branchFor(item)?.name}
+                        </h3>
+                        <Status run={item} />
+                      </div>
+                      <p>
+                        任务 {item.workbench_task_id} · 发起者：
+                        {item.initiator === 'human' ? '人工' : 'Agent'} ·{' '}
+                        {runModelLabel(item)} · Seed{' '}
+                        {String(runParameter(item, 'seed') ?? taskPresentation.unrecorded)}
+                      </p>
+                      <p>
+                        执行预设：
+                        {presetName(taskFor(item)?.binding_snapshot.preset_id)}
+                      </p>
+                      <p>
+                        Agent 模型：
+                        {formatAgentModel(
+                          taskFor(item)?.binding_snapshot.agentModel,
+                        )}
+                      </p>
+                      {item.error && (
+                        <p style={{ color: 'var(--red)' }}>
+                          {item.error.message}
+                        </p>
+                      )}
+                      {item.review?.conclusion && <p>评价：{item.review.conclusion}</p>}
+                      {item.retry_of_run_id && (
+                        <p>重试来源：{item.retry_of_run_id}</p>
+                      )}
+                      <div className="detail-line"><span>{runTime(item)}</span></div>
+                      <Button
+                        kind="small"
+                        onClick={() => {
+                          selectRun(item.run_id)
+                          setSheet(false)
+                        }}
+                      >
+                        查看运行
+                      </Button>
+                    </article>
+                  ))}
+                {!p?.runs.length && <div className="empty">暂无运行记录</div>}
+              </div>
+            </section>
+          </div>
+        )}
+        {taskRequest && branch && taskRequest.navigation === store.getNavigationSequence() && <ExperimentTaskRequestDialog
+          editor={taskRequest.editor} binding={taskRequest.binding} branch={branch}
+          catalog={props.catalog} instances={props.instances ?? []}
+          presetName={presetName(taskRequest.binding.preset_id)} modelName={agentModel(taskRequest.binding)}
+          onClose={() => setTaskRequest(null)} onSubmit={async draft => {
+            const { functionId, ...scope } = taskRequest.editor.scope
+            const receipt = await props.onAction({ ...scope, type: 'agent-action', id: functionId, value: { draft: { ...draft } } })
+            const key = JSON.stringify(Object.values(taskRequest.editor.scope))
+            if (taskRequest.editor.getSnapshot().draft === draft) taskRequestEditors.delete(key)
+            setTaskRequest(current => current === taskRequest ? null : current)
+            if (taskRequest.navigation === store.getNavigationSequence()) {
+              if (receipt?.taskId) notifyTask(taskRequest.binding.name, receipt.taskId, scope.workId, 'submitted')
+              await store.refresh()
+            }
+          }} />}
+        {modal === 'evaluate' && reviewEditor && <ExperimentReviewDialog key={`${reviewEditor.scope.runId}:${modalInstance.current}`}
+          editor={reviewEditor} branchName={p?.branches.find(item => item.branch_id === reviewEditor.scope.branchId)?.name ?? ''}
+          actions={kind => <>
+            {[binding(kind), ...p?.functions.filter(item => !item.builtin && item.kind === kind) ?? []].filter((item): item is FunctionBinding => !!item).map(item =>
+              <Button key={item.function_id} kind="small agent-action" disabled={!!functionProblem(item) || !!p?.tasks.some(task => task.branch_id === reviewEditor.scope.branchId && busyTask(task))}
+                onClick={() => invokeAgentFunction(item, reviewEditor)}>
+                {item.builtin ? kind === 'review' ? reviewPresentation.analyze : reviewPresentation.organize : item.name}
+              </Button>)}
+          </>} onClose={() => setModal(null)} onSave={async saveExperience => {
+            const instance = modalInstance.current
+            await reviewEditor.submit(async value => {
+              await props.onAction({ ...reviewEditor.scope, type: 'evaluate', value: { ...value, saveExperience } })
+            })
+            if (store.getSnapshot().workspaceId === reviewEditor.scope.workspaceId) await store.refresh()
+            if (modalInstance.current === instance) {
+              setModal(null)
+              setMessage(saveExperience ? reviewPresentation.experienceSaved : reviewPresentation.saved)
+            }
+          }}
+        />}
+        {modal === 'reuse' && reuseExperience && <ExperimentReuseDialog key={modalInstance.current}
+          experience={reuseExperience} baseModels={props.baseModels} branchCount={p?.branches.length ?? 0}
+          onClose={() => setModal(null)} onSubmit={async value => {
+            const instance = modalInstance.current
+            if (formSubmissionPending.current === instance) return
+            const isCurrent = () => modalInstance.current === instance
+            formSubmissionPending.current = instance
+            try {
+              const saved = await action('reuse', { id: reuseExperience.experience_id, value }, isCurrent)
+              if (saved && isCurrent()) setModal(null)
+            } finally {
+              if (formSubmissionPending.current === instance) formSubmissionPending.current = null
+            }
+          }} />}
+        {modal && modal !== 'evaluate' && modal !== 'reuse' && (
+          <div
+            className="modal-backdrop"
+          >
+            <section
+              className={`modal ${modal === 'image' ? 'image-modal' : ''}`}
+              role="dialog"
+              aria-modal="true"
+              aria-label={modalHeadingId ? undefined : modalTitle}
+              aria-labelledby={modalHeadingId}
+              onKeyDown={trapDialogFocus}
+            >
+              <ModalHeading className={modal === 'image' ? 'row between' : 'modal-head'}>
+                <h2 id={modalHeadingId}>{modalTitle}</h2>
+                <Button
+                  kind={modal === 'image' ? 'small' : 'small quiet'}
+                  label={modal === 'image' ? '关闭原图' : '关闭对话框'}
+                  autoFocus={modal !== 'image'}
+                  onClick={() => setModal(null)}
+                >
+                  {modal === 'image' ? '关闭' : '×'}
+                </Button>
+              </ModalHeading>
+              {modal === 'image' ? (
+                <div className="original-image">
+                  {imageRun && media(imageRun) && <img src={media(imageRun)} alt={imageRun.title} />}
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (event) => {
+                    event.preventDefault()
+                    const instance = modalInstance.current
+                    if (formSubmissionPending.current === instance) return
+                    const isCurrent = () => modalInstance.current === instance
+                    clearTransientMessage()
+                    const data = new FormData(event.currentTarget),
+                      type = modal === 'branch' ? 'create-branch' : modal
+                    if (!type) return
+                    formSubmissionPending.current = instance
+                    setFormSubmitting(true)
+                    const saved = await action(type, {
+                      value: {
+                        name: data.get('name'),
+                        ...(modal === 'new-workspace'
+                          ? { path: data.get('path') }
+                          : modal === 'branch'
+                            ? { original_request: data.get('goal') }
+                            : { goal: data.get('goal') }),
+                      },
+                    }, isCurrent)
+                    if (formSubmissionPending.current === instance)
+                      formSubmissionPending.current = null
+                    if (isCurrent()) {
+                      setFormSubmitting(false)
+                      if (saved) setModal(null)
+                    }
+                  }}
+                >
+                  {modal === 'new-work' && <p>工作区：{workspace?.name}</p>}
+                  {modal === 'branch' && (
+                    <p>
+                      来源：{branch?.name} · {run ? <Identifier value={run.run_id} /> : '任务输入'}
+                    </p>
+                  )}
+                  <label className="field">
+                    <span>
+                      {modal === 'new-workspace'
+                        ? '工作区名称'
+                        : modal === 'new-work'
+                          ? '工作名称'
+                          : '分支名称'}
+                    </span>
+                    <input
+                      name="name"
+                      readOnly={formSubmitting}
+                      aria-label={
+                        modal === 'new-workspace'
+                          ? '工作区名称'
+                          : modal === 'new-work'
+                            ? '工作名称'
+                            : '分支名称'
+                      }
+                      maxLength={modal === 'branch' ? WORKBENCH_BRANCH_NAME_MAX_LENGTH : 40}
+                      required
+                      autoComplete={modal === 'new-workspace' ? 'off' : undefined}
+                      defaultValue={
+                        modal === 'branch'
+                          ? `探索 ${(p?.total_branch_count ?? 0) + 1}`
+                          : ''
+                      }
+                    />
+                  </label>
+                  {modal === 'new-workspace' ? (
+                    <label className="field">
+                      <span>项目目录</span>
+                      <input
+                        name="path"
+                        readOnly={formSubmitting}
+                        aria-label="项目目录"
+                        required
+                        placeholder="/Users/用户名/Projects/项目目录"
+                        autoComplete="off"
+                      />
+                    </label>
+                  ) : (
+                    <label className="field">
+                      <span>{modal === 'branch' ? '原始需求' : '总目标'}</span>
+                      <textarea
+                        name="goal"
+                        readOnly={formSubmitting}
+                        aria-label={modal === 'branch' ? '原始需求' : '总目标'}
+                        required
+                        defaultValue={
+                          modal === 'branch' ? branch?.original_request : ''
+                        }
+                      />
+                    </label>
+                  )}
+                  <div className="modal-actions">
+                    <Button kind="quiet" onClick={() => setModal(null)}>取消</Button>
+                    <button className="btn primary" type="submit" disabled={formSubmitting}>
+                      {modal === 'new-workspace'
+                        ? '添加工作区'
+                        : modal === 'branch'
+                          ? '创建分支'
+                          : '创建工作'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </section>
+          </div>
+        )}
+        {message && (
+          <div className="toast" role="alert">
+            <span>{message}</span>
+            {messageTask && <Button kind="small quiet" onClick={() => openTask(messageTask)}>{taskPresentation.notifications.open}</Button>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface ExperimentCatalogProps {
+  readonly catalog: ExperimentWorkbenchProps['catalog']
+  readonly detailRequest: CatalogDetailsRequest | null
+  readonly gallery: import('./experiment-contract.ts').ExperimentViewState['catalogGallery']
+  readonly onGallery: (gallery: import('./experiment-contract.ts').ExperimentViewState['catalogGallery']) => void
+  readonly onDetail: (request: CatalogDetailsRequest | null) => void
+  readonly filters: import('./experiment-contract.ts').ExperimentViewState['catalogFilters']
+  readonly onFilters: (
+    filters: Partial<import('./experiment-contract.ts').ExperimentViewState['catalogFilters']>,
+  ) => void
+  readonly queryText: string
+  readonly onQueryChange: (query: string) => void
+  readonly back: ReactNode
+  readonly selected?: Pick<TaskDraft, 'base_model_id' | 'generation_input' | 'context_refs'>
+  readonly locked: boolean
+  readonly onSelect: (item: CatalogItem) => void
+  readonly onRemove: (item: CatalogItem) => void
+  readonly scroll: (panel: string, ready: boolean) => {
+    readonly ref: (element: HTMLDivElement | null) => void
+    readonly onScroll: (event: React.UIEvent<HTMLDivElement>) => void
+  }
+}
+function ExperimentCatalog({
+  catalog,
+  detailRequest,
+  gallery,
+  onGallery,
+  onDetail,
+  filters,
+  onFilters,
+  queryText,
+  onQueryChange,
+  back,
+  selected,
+  locked,
+  onSelect,
+  onRemove,
+  scroll,
+}: ExperimentCatalogProps) {
+  const { definition: kind, page: result, baseModels, baseModelStatus, models, modelError, status, error: listError, baseModelError, retry } = useCatalogBrowser({
+    catalog,
+    query: { kind: filters.kind, query: filters.query, page: filters.page, baseModelId: filters.baseModelId || null, modelId: filters.modelId || null },
+    modelOptions: true,
+  })
+  const resourceRequest = gallery ?? detailRequest
+  const { details: loadedDetails, error: detailError, retry: retryDetails } = useCatalogDetails(resourceRequest, catalog?.details)
+  const details = loadedDetails?.kind === resourceRequest?.kind && loadedDetails?.id === resourceRequest?.id ? loadedDetails : null
+  const resourceItem = details?.item ?? (resourceRequest && result?.items.find(item => item.context.kind === resourceRequest.kind && item.context.id === resourceRequest.id)) ?? null
+  const detail = gallery === null ? resourceItem : null
+  const galleryItem = gallery ? resourceItem : null
+  const needsBaseModels = detailRequest ? !!detail?.baseModelId : (result?.items.some(item => item.baseModelId !== null) ?? false)
+  const error = detailRequest === null ? listError ?? baseModelError ?? (kind.baseModelScoped ? modelError : null) : detailError ?? (needsBaseModels ? baseModelError : null)
+  const retryError = detailRequest && detailError ? retryDetails : retry
+  const loading = status === 'loading'
+  const bases = baseModels?.items ?? []
+  const selection: CatalogReference[] = [
+    ...(selected?.generation_input.model ? [{ kind: 'model' as const, id: selected.generation_input.model.id }] : []),
+    ...(selected?.generation_input.template_id ? [{ kind: 'comfyui-template' as const, id: selected.generation_input.template_id }] : []),
+    ...(selected?.generation_input.loras.map(lora => ({ kind: 'lora' as const, id: lora.id })) ?? []),
+    ...(selected?.context_refs ?? []),
+  ]
+  const chosen = (item: CatalogItem) => selection.some(ref => workbenchContextKey(ref) === workbenchContextKey(item.context))
+  const selectButton = (item: CatalogItem, selected = chosen(item)) => {
+    const multiple = item.context.kind !== 'model' && item.context.kind !== 'comfyui-template'
+    const label = selected ? multiple ? '移除' : '已选择' : '选择'
+    return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || selected && !multiple}
+      label={`${label} ${item.label}`} pressed={selected} onClick={() => selected && multiple ? onRemove(item) : onSelect(item)}>{label}</Button>
+  }
+  const openGallery = (item: CatalogItem) => onGallery({ kind: item.context.kind, id: item.context.id, index: 0 })
+  const galleryImages = catalogImageUrls(galleryItem)
+  const galleryIndex = Math.min(gallery?.index ?? 0, Math.max(0, galleryImages.length - 1))
+  useEffect(() => {
+    if (!gallery || !details) return
+    if (galleryImages.length === 0) onGallery(null)
+    else if (gallery.index !== galleryIndex) onGallery({ ...gallery, index: galleryIndex })
+  }, [gallery, details, galleryImages.length, galleryIndex, onGallery])
+  const detailPreviewUrl = catalogImageUrls(detail)[0]
+  const panel = gallery ? `gallery:${workbenchContextKey(gallery)}:${detailRequest ? workbenchContextKey(detailRequest) : 'list'}` : detailRequest ? `detail:${workbenchContextKey(detailRequest)}` : 'list'
+  const baseModelsPending = needsBaseModels && (baseModelStatus === 'idle' || baseModelStatus === 'loading')
+  const contentReady = gallery ? galleryItem !== null && detailError === null : error === null && !baseModelsPending && (detailRequest ? details !== null : status === 'ready')
+  const pages = catalogPageCount(result?.totalCount ?? 0)
+  useEffect(() => {
+    if (result && result.kind === filters.kind && result.query === filters.query
+      && result.page === filters.page && result.page > pages) {
+      onFilters({ page: pages })
+    }
+  }, [result, filters, pages, onFilters])
+  const reset = () =>
+    onFilters({ ...filters, baseModelId: '', modelId: '', query: '', page: 1 })
+  return (
+    <main className="center">
+      <PanelHead title="资源目录">{back}</PanelHead>
+      <div className="catalog-browser">
+        <nav className="catalog-kinds" aria-label="资源类型">
+          <CatalogKinds selected={kind.kind}>{(item, selected) => (
+            <button
+              type="button"
+              key={item.kind}
+              aria-pressed={selected}
+              onClick={() =>
+                onFilters({ ...filters, kind: item.kind, query: '', page: 1 })
+              }
+            >
+              {item.label}
+            </button>
+          )}</CatalogKinds>
+        </nav>
+        <div key={panel} className="catalog-content" {...scroll(panel, contentReady)}>
+          {gallery ? (
+            <div className="catalog-gallery">
+              <div className="row between">
+                <Button kind="small quiet" onClick={() => onGallery(null)}>
+                  {detailRequest ? '返回详情' : '返回资源列表'}
+                </Button>
+                {galleryItem && <><h3>{galleryItem.label}</h3>
+                <span className="mono">
+                  {`${galleryIndex + 1} / ${galleryImages.length}`}
+                </span></>}
+              </div>
+              {detailError ? <div className="empty">
+                <p role="alert">{detailError}</p>
+                <Button kind="small" onClick={retryDetails}>重试</Button>
+              </div> : galleryItem ? <div className="gallery-stage">
+                <Button
+                  kind="quiet"
+                  label="上一张图片"
+                  disabled={galleryIndex === 0}
+                  onClick={() =>
+                    onGallery({ ...gallery, index: galleryIndex - 1 })
+                  }
+                >
+                  ‹
+                </Button>
+                <div className="artwork">
+                  <img
+                    src={galleryImages[galleryIndex]}
+                    alt={galleryItem.label}
+                  />
+                </div>
+                <Button
+                  kind="quiet"
+                  label="下一张图片"
+                  disabled={
+                    galleryIndex >= galleryImages.length - 1
+                  }
+                  onClick={() =>
+                    onGallery({ ...gallery, index: galleryIndex + 1 })
+                  }
+                >
+                  ›
+                </Button>
+              </div> : <div className="empty"><span className="loading-ring" /></div>}
+            </div>
+          ) : detailRequest ? (
+            <div className="catalog-detail">
+              <div className="row between">
+                <Button kind="small quiet" onClick={() => onDetail(null)}>
+                  <Icon name="arrow" />返回资源列表
+                </Button>
+                {detail && selectButton(detail)}
+              </div>
+              {detail && <h2>{detail.label}</h2>}
+              {detail && detailPreviewUrl !== undefined && (
+                <button
+                  className="detail-cover"
+                  type="button"
+                  aria-label={`预览图片 ${detail.label}`}
+                  onClick={() => openGallery(detail)}
+                >
+                  <img src={detailPreviewUrl} alt={detail.label} />
+                </button>
+              )}
+              {error ? (
+                <div className="empty">
+                  <p role="alert">{error}</p>
+                  <Button
+                    kind="small"
+                    onClick={retryError}
+                  >
+                    重试
+                  </Button>
+                </div>
+              ) : details ? (
+                <CatalogDetailFields details={details} presentation="resource" baseModels={bases} />
+              ) : (
+                <div className="empty">
+                  <span className="loading-ring" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="catalog-list-panel">
+              {kind.baseModelScoped && (
+                <div className="catalog-filters">
+                  <label>
+                    底模
+                    <select
+                      aria-label="筛选底模"
+                      value={filters.baseModelId}
+                      onChange={(event) =>
+                        onFilters({
+                          ...filters,
+                          baseModelId: event.target.value,
+                          query: queryText,
+                          modelId: '',
+                          page: 1,
+                        })
+                      }
+                    >
+                      <option value="">全部底模</option>
+                      {bases.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    生成模型
+                    <select
+                      aria-label="筛选生成模型"
+                      value={filters.modelId}
+                      onChange={(event) =>
+                        onFilters({
+                          ...filters,
+                          modelId: event.target.value,
+                          query: queryText,
+                          page: 1,
+                        })
+                      }
+                    >
+                      <option value="">全部生成模型</option>
+                      {models.map((item) => (
+                        <option key={item.context.id} value={item.context.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+              <form
+                className="catalog-search"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  onFilters({ ...filters, query: queryText.trim(), page: 1 })
+                }}
+              >
+                <input
+                  aria-label="搜索资源"
+                  placeholder={`搜索${kind.label}`}
+                  value={queryText}
+                  onChange={(event) => onQueryChange(event.target.value)}
+                />
+                <button className="btn" type="submit">
+                  搜索
+                </button>
+              </form>
+              <div className="row between catalog-results-head">
+                <b>{kind.label}</b>
+                <small>{`${result?.totalCount ?? 0} 项`}</small>
+              </div>
+              {error ? (
+                <div className="empty">
+                  <p role="alert">{error}</p>
+                  <Button
+                    kind="small"
+                    onClick={retryError}
+                  >
+                    重试
+                  </Button>
+                </div>
+              ) : loading ? (
+                <div className="empty">
+                  <span className="loading-ring" />
+                </div>
+              ) : (
+                <div className="catalog-grid">
+                  <CatalogItems items={result?.items ?? []} selection={selection}>{(item, selected, key) => {
+                    const previewUrl = catalogImageUrls(item)[0]
+                    return (
+                    <article key={key} className={`catalog-card ${selected ? 'chosen' : ''}`}>
+                      {previewUrl !== undefined ? <button type="button" className="catalog-cover"
+                        aria-label={`预览图片 ${item.label}`} onClick={() => openGallery(item)}>
+                        <img src={previewUrl} alt={item.label} />
+                      </button> : <div className="catalog-cover no-cover"><span><Icon name={item.context.kind === 'comfyui-template' ? 'grid' : 'book'} /></span></div>}
+                      <div className="catalog-card-body">
+                        <div className="row between"><small>{bases.find(base => base.id === item.baseModelId)?.label ?? kind.label}</small>{selected ? <span className="pill"><Icon name="check" />已选</span> : null}</div>
+                        <h3 title={item.label}>{item.label}</h3>
+                        <p>{item.subtitle}</p>
+                        <div className="row between">
+                          {selectButton(item, selected)}
+                          <Button kind="small quiet" label={`查看详情 ${item.label}`} onClick={() => onDetail({ kind: item.context.kind, id: item.context.id })}>查看详情</Button>
+                        </div>
+                      </div>
+                    </article>
+                  )}}</CatalogItems>
+                  {!result?.items.length && (
+                    <div className="empty">
+                      <h3>{catalog ? '没有匹配的资源' : '资源目录尚未连接'}</h3>
+                      <Button kind="small" onClick={reset}>
+                        清除筛选
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="catalog-pagination">
+                <Button
+                  kind="small"
+                  disabled={filters.page <= 1 || loading}
+                  onClick={() =>
+                    onFilters({ ...filters, query: queryText, page: filters.page - 1 })
+                  }
+                >
+                  上一页
+                </Button>
+                <span>{`${filters.page} / ${pages}`}</span>
+                <Button
+                  kind="small"
+                  disabled={filters.page >= pages || loading}
+                  onClick={() =>
+                    onFilters({ ...filters, query: queryText, page: filters.page + 1 })
+                  }
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  )
+}

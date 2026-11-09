@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { GenerationRequest } from '../../src/host/generation/generation-runtime.ts'
+import { GenerationRuntimeError, type GenerationRequest } from '../../src/host/generation/generation-runtime.ts'
 import {
   SourceGenerationPreparer,
   type ComfyInstanceSource,
@@ -62,6 +62,34 @@ function workflowCompiler(compile: WorkflowCompiler['compile']): WorkflowCompile
 }
 
 describe('SourceGenerationPreparer', () => {
+  it.each(['inspect', 'validate', 'prepare'])('keeps source failure identity and cancellation during %s', async (entry) => {
+    const generationSource = source(template())
+    const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({ inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: template().workflow, apiWorkflow: {}, activeOutputNodeIds: [] }))
+    const compiler = { ...workflowCompiler(compile), validateInput: vi.fn(async () => {}) }
+    const preparer = new SourceGenerationPreparer({ defaultInstanceId: 'default-instance', source: generationSource, compiler })
+    const call = (signal?: AbortSignal) => entry === 'inspect'
+      ? preparer.inspectRuntimeParameters({ templateId: '34', instanceId: '2' }, signal)
+      : entry === 'validate' ? preparer.validateInput(request, signal) : preparer.prepare(request, signal)
+    const failure = new GenerationRuntimeError('SOURCE_QUERY_FAILED', 'Selected instance is unavailable.')
+    vi.mocked(generationSource.readInstance).mockRejectedValueOnce(failure)
+    await expect(call()).rejects.toMatchObject({ code: failure.code, message: failure.message, inputPath: 'instance_id' })
+    const cancellation = new DOMException('Canceled', 'AbortError')
+    vi.mocked(generationSource.readInstance).mockRejectedValueOnce(cancellation)
+    await expect(call()).rejects.toBe(cancellation)
+    const controller = new AbortController()
+    vi.mocked(generationSource.readInstance).mockImplementationOnce(async () => { controller.abort(); throw failure })
+    await expect(call(controller.signal)).rejects.toBe(failure)
+    const templateFailure = new GenerationRuntimeError('SOURCE_QUERY_FAILED', 'Template is unavailable.')
+    vi.mocked(generationSource.readTemplate).mockRejectedValueOnce(templateFailure)
+    await expect(call()).rejects.toBe(templateFailure)
+    expect(generationSource.readTemplate).toHaveBeenCalledTimes(4)
+    expect(generationSource.readInstance).toHaveBeenCalledTimes(3)
+    expect(compiler.inspectRuntimeParameters).not.toHaveBeenCalled()
+    expect(compiler.validateInput).not.toHaveBeenCalled()
+    expect(compile).not.toHaveBeenCalled()
+  })
+
+
   it('inspects the explicit template and instance through the Workflow compiler without using the default instance', async () => {
     const generationSource = source(template())
     const inspectRuntimeParameters = vi.fn<WorkflowCompiler['inspectRuntimeParameters']>(async () => ({
@@ -96,7 +124,7 @@ describe('SourceGenerationPreparer', () => {
 
   it('passes request parameters directly to the compiler and excludes connection secrets from the source snapshot', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
-      actualWorkflow: input.workflow,
+      inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: input.workflow,
       apiWorkflow: {
         '3': { class_type: 'SaveImage', inputs: { source: '2' } },
         actual_prompt: Array.isArray(input.workflow.nodes[0]?.widgets_values)
@@ -143,7 +171,7 @@ describe('SourceGenerationPreparer', () => {
 
   it('uses the compiler active output nodes as the runtime output filter', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({
-      actualWorkflow: template().workflow,
+      inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: template().workflow,
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       activeOutputNodeIds: ['3'],
     }))
@@ -161,7 +189,7 @@ describe('SourceGenerationPreparer', () => {
 
   it('does not require request parameters to be declared by Source metadata', async () => {
     const compile = vi.fn<WorkflowCompiler['compile']>(async input => ({
-      actualWorkflow: input.workflow,
+      inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: input.workflow,
       apiWorkflow: { '3': { class_type: 'SaveImage', inputs: {} } },
       activeOutputNodeIds: ['3'],
     }))

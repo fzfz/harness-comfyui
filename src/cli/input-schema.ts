@@ -1,4 +1,5 @@
 import Schema from '@deepseek-ai/schemastery'
+import { taskGetRequestSchema, taskPublishRequestSchema, experimentEndRequestSchema } from '../workbench/schema.ts'
 import { cliParameterFiles, cliParameterFileKeySchema, registerCliRequestId } from './submission-fields.ts'
 import type { CliGenerationModel, CliGenerationLora, CliGenerationRequest, CliGenerationManifestItem } from './contract.ts'
 import { CATALOG_STABLE_ID_PATTERN } from '../catalog/contract.ts'
@@ -62,7 +63,10 @@ export const cliSubmissionItemsSchema = Schema.transform(Schema.array(cliManifes
   return items
 }, true).required()
 export const cliInputSchemas = {
-  'generation submit': cliInputObject({ items: cliSubmissionItemsSchema }).required(),
+  'workbench task get': taskGetRequestSchema,
+  'workbench task publish': taskPublishRequestSchema,
+  'workbench experiment end': experimentEndRequestSchema,
+  'generation submit': cliInputObject({ items: cliSubmissionItemsSchema, workbench_task_id: Schema.string().min(1).max(500).pattern(/^[^\s]+$/u).default(undefined as never) }).required(),
   'generation inspect-template-parameters': cliInputObject({ template_id: cliInspectionIdSchema, instance_id: cliInspectionIdSchema }).required(),
   'generation random-seeds': cliInputObject({ count: cliSeedCountSchema }).required(),
   'generation run-inputs': cliInputObject({ run_ids: cliRunIdsSchema }).required(),

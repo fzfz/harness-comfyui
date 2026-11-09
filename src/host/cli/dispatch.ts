@@ -30,12 +30,22 @@ export async function dispatch(
   signal: AbortSignal,
 ): Promise<unknown> {
   switch (request.command) {
+    case 'workbench.task.get':
+    case 'workbench.task.publish':
+    case 'workbench.experiment.end': {
+      if (!options.workbench) throw new Error('Workbench service is unavailable')
+      const owner = await generationIdentity(options, identity)
+      if (request.command === 'workbench.task.get') return options.workbench.getTask({ taskId: request.task_id }, owner)
+      if (request.command === 'workbench.task.publish') return options.workbench.publish({ taskId: request.task_id, artifact: request.artifact }, owner)
+      return options.workbench.endExperiment({ taskId: request.task_id, reason: request.reason }, owner)
+    }
     case 'generation.submit': {
       const owner = await generationIdentity(options, identity)
+      await options.workbench?.authorizeGeneration(request.workbench_task_id ?? null, owner)
       const accepted = await options.runtime.acceptGenerations(owner, request.items.map(item => ({
         requestId: item.request_id,
         request: toGenerationRequest(item.request),
-      })), signal)
+      })), signal, request.workbench_task_id)
       return Object.freeze({ items: Object.freeze(accepted.items.map(item => Object.freeze({
         request_id: item.requestId,
         run_id: item.runId,

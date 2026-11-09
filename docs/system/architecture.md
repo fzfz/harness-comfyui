@@ -103,11 +103,21 @@
 
 2. [workspaceSessionScopeForSession()](../../src/host/generation/workspace-access.ts) 使用官方 `subagents.listDescendants()` 查询后代会话。当前 Session 可读取自身结果，以及原始项目目录解析到同一 Workspace 的本地后代结果。后代会话查询返回分支错误，或缺少后代会话头信息时，接口报告对应分支不可读取。调用取消信号传给官方查询；应用重启后，持久化会话信息支持恢复相同的访问范围。
 
-3. Catalog 列表、详情与封面画廊由 [native-surfaces.tsx](../../src/client/workbench/native-surfaces.tsx) 和 [catalog-details.tsx](../../src/client/workbench/catalog-details.tsx) 展示。用户打开预览或详情后，Catalog 界面保留查询条件、选中项和返回位置。展示字段与详情接口定义分别由 [src/catalog/presentation.json](../../src/catalog/presentation.json) 和 [src/catalog/details-schema.ts](../../src/catalog/details-schema.ts) 定义；`coverUrl` 与 `sampleImageUrls` 属于 Client 展示投影。
+3. 聊天上下文弹窗和实验工作台共用 [catalog-browser.tsx](../../src/client/workbench/catalog-browser.tsx) 的目录组件。两个入口分别位于 [native-surfaces.tsx](../../src/client/workbench/native-surfaces.tsx) 和 [experiment-workbench.tsx](../../src/client/workbench/experiment-workbench.tsx)。用户打开预览或详情后，Catalog 界面保留查询条件、选中项和返回位置。展示字段与详情接口分别由 [src/catalog/presentation.json](../../src/catalog/presentation.json) 和 [src/catalog/details-schema.ts](../../src/catalog/details-schema.ts) 定义；`coverUrl` 与 `sampleImageUrls` 属于 Client 展示投影。
 
 4. [media-routes.ts](../../src/host/generation/media-routes.ts) 经官方 `webServer` 提供查看页、媒体内容、原文件下载与 Actual Workflow 路由。每次访问校验 HTTP 方法、Session、Workspace 和媒体归属。查看页的启动数据包含媒体展示字段、Run ID 与保存的正向 Prompt。
 
 5. [media-viewer-page.ts](../../src/host/generation/media-viewer-page.ts) 展示同一 Session 的媒体，按 Runtime 返回顺序切换并更新当前 URL。图片和视频按原始宽高比完整显示，像素尺寸来自媒体文件。承载查看页 iframe 的 Client 界面提供完整 Run ID、Run ID 复制与原文件下载。iframe 当前媒体消息的结构由 [src/generation/contract.ts](../../src/generation/contract.ts) 定义。[ProjectionMediaGallery](../../src/client/workbench/results-drawer.tsx)负责校验该消息的来源与媒体归属。
+
+## 实验工作台
+
+1. [ExperimentWorkbenchHost](../../src/client/workbench/experiment-host.tsx) 在官方主面板承载实验工作台。[ExperimentWorkbenchStore](../../src/client/workbench/experiment-store.ts) 管理工作区内的浏览选择、轮询和滚动位置；界面通过 [Workbench Remote](../../src/workbench-remote.ts) 读取工作范围内的数据。
+
+2. [WorkbenchService](../../src/workbench/service.ts) 处理任务输入、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。Agent 通过受管 CLI 的 `workbench task get` 与 `workbench task publish` 读写指定任务。
+
+3. [Core](../../src/host/core/plugin.ts) 管理 Generation Runtime 与 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 共用的数据库连接。产物文件保存在插件 Run 目录下的 `task-artifacts` 中。
+
+4. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 复用 Workflow 编译器的参数与资源校验。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID 和尺寸候选。
 
 ## 图片读取与 Prompt 对比职责
 

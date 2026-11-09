@@ -1,0 +1,13 @@
+{
+  "defaultKind": "rewrite",
+  "add": "添加功能",
+  "edit": "编辑功能",
+  "loadError": "功能配置加载失败，请重新打开功能窗口。",
+  "remove": "移除功能",
+  "removeDescription": "移除“{name}”后，已创建的任务和运行记录继续保留。",
+  "removeError": "功能移除失败，请重试。",
+  "cancel": "取消",
+  "unavailablePreset": "预设不可用",
+  "selectAvailablePreset": "所选 Agent 预设已不可用，请重新选择。",
+  "rowPresetUnavailable": "该功能的 Agent 预设已不可用，请编辑功能并重新选择预设。"
+}

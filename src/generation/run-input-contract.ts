@@ -1,9 +1,12 @@
 import Schema from '@deepseek-ai/schemastery'
 import { loraWeightSchema } from './lora-contract.ts'
-import { contractObject } from '../shared/field-contract.ts'
-import { jsonValueSchema, jsonObjectSchema, type JsonValue } from '../shared/json-contract.ts'
+import { contractObject, requiredNullable } from '../shared/field-contract.ts'
+import type { JsonValue } from '../shared/json-contract.ts'
+import { generationParametersSchema } from './json-contract.ts'
+export { GENERATION_JSON_CONTRACT, generationJsonValueSchema, generationParametersSchema } from './json-contract.ts'
 export type { JsonPrimitive, JsonValue } from '../shared/json-contract.ts'
 
+import { workflowRuntimeParameterInspectionSchema, type WorkflowRuntimeParameterInspection } from './inspection-contract.ts'
 export const MAX_RUN_INPUT_QUERY_IDS = 20
 export const MIN_RUN_INPUT_ID_PREFIX_LENGTH = 8
 
@@ -41,6 +44,7 @@ interface AvailableGenerationRunInputBase {
   readonly run_id: string
   readonly lookup_status: 'available'
   readonly arguments: GenerationRunInputArguments
+  readonly input_description: WorkflowRuntimeParameterInspection | null
 }
 
 export interface AvailableWorkflowGenerationRunInput extends AvailableGenerationRunInputBase {
@@ -69,9 +73,6 @@ export interface GenerationRunInputResult {
   readonly runs: readonly GenerationRunInput[]
 }
 
-export const GENERATION_JSON_CONTRACT = Object.freeze({ keySchema: Schema.string().required() })
-export const generationJsonValueSchema = jsonValueSchema(GENERATION_JSON_CONTRACT)
-export const generationParametersSchema = jsonObjectSchema(GENERATION_JSON_CONTRACT)
 export const generationRunErrorSchema = Schema.object({ code: Schema.string().required(), message: Schema.string().required() }).required()
 export const generationRunInputModelSchema = Schema.object({ id: Schema.string().required(), file_name: Schema.string().required() }).default(undefined as never)
 export const generationRunInputLoraSchema = Schema.object({
@@ -87,6 +88,7 @@ export const generationRunInputArgumentsSchema = contractObject({
 const availableRunInput = {
   run_id: Schema.string().required(), lookup_status: Schema.const('available').required(),
   arguments: generationRunInputArgumentsSchema,
+  input_description: requiredNullable(workflowRuntimeParameterInspectionSchema),
 }
 export const generationRunLookupErrorSchema = Schema.object({
   run_id: Schema.string().required(), lookup_status: Schema.const('error').required(), error: generationRunErrorSchema,

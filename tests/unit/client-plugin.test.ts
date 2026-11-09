@@ -18,6 +18,8 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
   Toast: () => null,
 }))
 
+import { SlotCore } from '@deepseek-ai/dsh-client-ui-slots'
+import type { PanelInfo } from '@deepseek-ai/dsh-client-ui-layout/client'
 import { apply, inject, name } from '../../src/client/index.tsx'
 import pluginPackage from '../../config/plugin-package.json' with { type: 'json' }
 import {
@@ -29,6 +31,9 @@ import type { ImageReaderSettingsApi } from '../../src/client/image-reader/image
 import type { SaveImageReaderProfileRequest } from '../../src/image-reader/contract.ts'
 import type { ImageReaderConfiguration } from '../../src/image-reader/settings.ts'
 import { BROWSER_SETTINGS_REMOTE_SERVICE } from '../../src/browser-settings-schema.ts'
+import { WORKBENCH_REMOTE_SERVICE } from '../../src/workbench-remote.ts'
+import { EXPERIMENT_PANEL_ID } from '../../src/client/workbench/experiment-host.tsx'
+import { createConnectionState } from './experiment-workbench-fixtures.ts'
 
 type Registration = {
   name: string
@@ -61,6 +66,11 @@ afterEach(() => {
 
 function installImmediateInject(context: Record<string, any>): void {
   context.sidebarRight ??= { openTab: vi.fn() }
+  context.layout ??= { selectPanel: vi.fn() }
+  context.layout.panelInfo ??= { getSnapshot: () => ({ activePanelId: null }), subscribe: () => () => {} }
+  context.shortcuts ??= { catalog: { getSnapshot: () => [], subscribe: () => () => {} } }
+  context.connection ??= { state: createConnectionState().source }
+  context.remote.harnessComfyuiWorkbenchRemote ??= { getEnvironment: vi.fn(), getProjection: vi.fn(), mutate: vi.fn() }
   context.sidebarRightTabs ??= { register: vi.fn(() => vi.fn()) }
   context.remote.harnessComfyuiCatalog.sourceAddress ??= vi.fn(async () => ({
     ok: true,
@@ -143,6 +153,7 @@ function installImmediateInject(context: Record<string, any>): void {
     if (service === 'remote.harnessComfyuiGeneration') return context.remote.harnessComfyuiGeneration
     if (service === 'remote.harnessComfyuiImageReader') return context.remote.harnessComfyuiImageReader
     if (service === BROWSER_SETTINGS_REMOTE_SERVICE) return context.remote.harnessComfyuiBrowserSettings
+    if (service === WORKBENCH_REMOTE_SERVICE) return context.remote.harnessComfyuiWorkbenchRemote
     return undefined
   })
   context.inject = vi.fn((_services: readonly string[], callback: (scope: unknown) => unknown) => {
@@ -167,7 +178,112 @@ function installImmediateInject(context: Record<string, any>): void {
 }
 
 describe('Harness Client plugin registration', () => {
-  it('registers only the supported additive native seats', async () => {
+  it.each([null, EXPERIMENT_PANEL_ID])('restores native leading controls after navigation and unloading (initial panel: %s)', async initialPanelId => {
+    const slots = new SlotCore()
+    slots.register({
+      name: 'root',
+      children: { 'shell.leading': { kind: 'single', scope: 'root' } },
+    } as never, () => null)
+    const NativeLeading = () => null
+    slots.register({ name: 'shell.leading' }, NativeLeading)
+    const nativeEntry = slots.entriesOfSlot('shell.leading')[0]
+    let panel: PanelInfo = { activePanelId: initialPanelId }
+    const listeners = new Set<() => void>()
+    const context = {
+      slots: {
+        inject: (_name: string, setup: () => () => void) => setup(),
+        register: (registration: Registration, component: any) => registration.name === 'shell.leading'
+          ? slots.register(registration as never, component)
+          : () => {},
+      },
+      sessions: { scope: vi.fn() },
+      conversation: { input: { for: vi.fn() } },
+      remote: {
+        $mount: vi.fn(async () => () => {}),
+        harnessComfyuiCatalog: { search: vi.fn(), baseModels: vi.fn() },
+        harnessComfyuiGeneration: { list: vi.fn() },
+      },
+      layout: {
+        panelInfo: {
+          getSnapshot: () => panel,
+          subscribe(listener: () => void) {
+            listeners.add(listener)
+            return () => { listeners.delete(listener) }
+          },
+        },
+        toggleSidebar: vi.fn(),
+      },
+    }
+    const select = (activePanelId: PanelInfo['activePanelId']) => {
+      panel = { activePanelId }
+      for (const listener of listeners) listener()
+    }
+    installImmediateInject(context)
+    const dispose = await apply(context as never)
+    expect(listeners.size).toBe(1)
+    if (initialPanelId === EXPERIMENT_PANEL_ID) expect(slots.entriesOfSlot('shell.leading')[0]).not.toBe(nativeEntry)
+    else expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    select(null)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+
+    select(EXPERIMENT_PANEL_ID)
+    const experimentEntry = slots.entriesOfSlot('shell.leading')[0]!
+    expect(experimentEntry).not.toBe(nativeEntry)
+    expect(experimentEntry.locale).toBe('sidebar')
+    const face = experimentEntry.inject!() as { toggleSidebar(): void; hooks: { shortcuts: unknown } }
+    expect(face.hooks.shortcuts).toBe((context as any).shortcuts.catalog)
+    face.toggleSidebar()
+    expect(context.layout.toggleSidebar).toHaveBeenCalledOnce()
+    expect(context.layout.toggleSidebar.mock.contexts[0]).toBe(context.layout)
+    select(EXPERIMENT_PANEL_ID)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([experimentEntry])
+
+    select('plugins' as PanelInfo['activePanelId'])
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    select(null)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    select(EXPERIMENT_PANEL_ID)
+    expect(slots.entriesOfSlot('shell.leading')[0]).not.toBe(nativeEntry)
+    await dispose()
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+    expect(listeners.size).toBe(0)
+    select(EXPERIMENT_PANEL_ID)
+    expect(slots.entriesOfSlot('shell.leading')).toEqual([nativeEntry])
+  })
+
+  it('releases the panel subscription and Remote mount when the leading registration fails', async () => {
+    const listeners = new Set<() => void>()
+    const remoteDispose = vi.fn()
+    const context = {
+      slots: {
+        inject: (_name: string, setup: () => () => void) => setup(),
+        register: () => { throw new Error('leading registration failed') },
+      },
+      sessions: { scope: vi.fn() },
+      conversation: { input: { for: vi.fn() } },
+      remote: {
+        $mount: vi.fn(async () => remoteDispose),
+        harnessComfyuiCatalog: { search: vi.fn(), baseModels: vi.fn() },
+        harnessComfyuiGeneration: { list: vi.fn() },
+      },
+      layout: {
+        panelInfo: {
+          getSnapshot: () => ({ activePanelId: EXPERIMENT_PANEL_ID }),
+          subscribe(listener: () => void) {
+            listeners.add(listener)
+            return () => { listeners.delete(listener) }
+          },
+        },
+        toggleSidebar: vi.fn(),
+      },
+    }
+    installImmediateInject(context)
+    await expect(apply(context as never)).rejects.toThrow('leading registration failed')
+    expect(listeners.size).toBe(0)
+    expect(remoteDispose).toHaveBeenCalledOnce()
+  })
+
+  it('registers the supported native seats without replacing the expanded sidebar', async () => {
     const registrationDisposers = new Map<string, ReturnType<typeof vi.fn>>()
     const injectionDisposers = new Map<string, ReturnType<typeof vi.fn>>()
     const registrations = new Map<string, Registration>()
@@ -214,7 +330,7 @@ describe('Harness Client plugin registration', () => {
       conversation: { input: { for: inputFor } },
       remote: {
         $mount: vi.fn(async () => remoteDispose),
-        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels, sourceAddress: vi.fn(async () => ({ ok: true, value: { ok: true, value: { url: 'http://127.0.0.1', port: 18093 } } })), details: vi.fn(async () => ({ ok: true, value: { ok: true, value: { kind: 'work', id: '1', fields: [] } } })) },
+        harnessComfyuiCatalog: { search: remoteSearch, baseModels: remoteBaseModels, sourceAddress: vi.fn(async () => ({ ok: true, value: { ok: true, value: { url: 'http://127.0.0.1', port: 18093 } } })), details: vi.fn(async () => ({ ok: true, value: { ok: true, value: { kind: 'work', id: '1', item: { modelId: null, context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] } } })) },
         harnessComfyuiGeneration: { list: remoteGenerationList },
       },
       sidebarRight: { openTab: vi.fn() },
@@ -226,13 +342,14 @@ describe('Harness Client plugin registration', () => {
     expect(name).toBe('harness-comfyui')
     expect(name).toBe(pluginPackage.packageName)
     expect(inject).toEqual([
-      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms',
+      'slots', 'sessions', 'conversation', 'remote', 'sidebarRight', 'sidebarRightTabs', 'configForms', 'layout', 'connection', 'shortcuts',
     ])
     expect((context as any).inject).toHaveBeenCalledWith([
       'remote.harnessComfyuiCatalog',
       'remote.harnessComfyuiGeneration',
       'remote.harnessComfyuiImageReader',
       BROWSER_SETTINGS_REMOTE_SERVICE,
+      WORKBENCH_REMOTE_SERVICE,
     ], expect.any(Function))
     expect(registerResultsTab).toHaveBeenCalledWith({
       id: WORKBENCH_RESULTS_TAB.id,
@@ -241,12 +358,25 @@ describe('Harness Client plugin registration', () => {
     })
     expect(registerResultsTab.mock.calls[0]![0].title()).toBe(WORKBENCH_RESULTS_TAB.title)
     expect([...registrations.keys()]).toEqual([
+      'main',
       'sidebar.footer.action',
       'conversation.input.dock',
       'conversation.session.header.actions',
       'sidebar.right.pane.tab',
       'plugins.bundle.config',
     ])
+    expect(registrations.get('main')).toMatchObject({ key: EXPERIMENT_PANEL_ID })
+    expect(registrations.get('main')!.inject()).toEqual({
+      remote: (context as any).remote.harnessComfyuiWorkbenchRemote,
+      connectionState: (context as any).connection.state,
+      catalog: expect.objectContaining({ search: expect.any(Function), details: expect.any(Function), baseModels: expect.any(Function) }),
+    })
+    const experimentEntry = register.mock.calls.find(([registration]) => registration.id === `${EXPERIMENT_PANEL_ID}-entry`)![0]
+    const experimentNavigation = experimentEntry.inject() as { selectPanel: (id: typeof EXPERIMENT_PANEL_ID | null) => void }
+    experimentNavigation.selectPanel(EXPERIMENT_PANEL_ID)
+    expect((context as any).layout.selectPanel).toHaveBeenLastCalledWith(EXPERIMENT_PANEL_ID)
+    experimentNavigation.selectPanel(null)
+    expect((context as any).layout.selectPanel).toHaveBeenLastCalledWith(null)
     expect(registrations.get('sidebar.footer.action')).toMatchObject({
       id: WORKBENCH_ENTRY_ID,
       order: 10,
@@ -504,12 +634,12 @@ describe('Harness Client plugin registration', () => {
     expect(sessionTwoDock.dialogNavigation.getSnapshot().state.currentPage).toBe(1)
     const catalog = (dockFace as { catalog: { search: Function; baseModels: Function; details: Function } }).catalog
     await expect(catalog.search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).resolves.toEqual({ kind: 'model', query: '', page: 1, items: [], totalCount: 0 })
     await expect(catalog.baseModels(new AbortController().signal))
       .resolves.toEqual({ items: [{ id: '2', label: 'wai' }] })
-    await expect(catalog.details({ kind: 'work', id: '1' }, new AbortController().signal)).resolves.toEqual({ kind: 'work', id: '1', fields: [] })
+    await expect(catalog.details({ kind: 'work', id: '1' }, new AbortController().signal)).resolves.toEqual({ kind: 'work', id: '1', item: { modelId: null, context: { kind: 'work', id: '1', name: '作品' }, baseModelId: null, label: '作品', subtitle: '', coverUrl: null, sampleImageUrls: [] }, fields: [{ key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: [] }, { key: 'category_name', value: null }, { key: 'character_names', value: [] }] })
     const generationStore = (detailsFace as { generationStore: { subscribe: Function; getSnapshot: Function } }).generationStore
     const stopGeneration = generationStore.subscribe('session-1', vi.fn())
     await vi.waitFor(() => expect(remoteGenerationList).toHaveBeenCalledOnce())
@@ -518,6 +648,8 @@ describe('Harness Client plugin registration', () => {
 
     await dispose()
 
+    expect(injectionDisposers.get('main')).toHaveBeenCalledOnce()
+    expect(registrationDisposers.get('main')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('conversation.input.dock')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('conversation.session.header.actions')).toHaveBeenCalledOnce()
     expect(injectionDisposers.get('sidebar.footer.action')).toHaveBeenCalledOnce()
@@ -642,7 +774,7 @@ describe('Harness Client plugin registration', () => {
       catalog: { search: Function; baseModels: Function; details: Function }
     }
     await expect(dock.catalog.search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     ))
       .rejects.toThrow('remote-failed')
@@ -652,7 +784,7 @@ describe('Harness Client plugin registration', () => {
     const controller = new AbortController()
     controller.abort()
     await expect(dock.catalog.search(
-      { kind: 'model', query: '', page: 1, baseModelId: null },
+      { kind: 'model', query: '', page: 1, baseModelId: null, modelId: null },
       controller.signal,
     ))
       .rejects.toMatchObject({ name: 'AbortError' })
@@ -692,7 +824,7 @@ describe('Harness Client plugin registration', () => {
     }
 
     await expect(dock.catalog.search(
-      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null },
+      { kind: 'comfyui-template', query: '', page: 1, baseModelId: null, modelId: null },
       new AbortController().signal,
     )).rejects.toMatchObject({
       code: 'CATALOG_PROTOCOL_ERROR',

@@ -2,6 +2,7 @@ import { parseCatalogDetailsRequest, parseCatalogDetailsResult, type CatalogDeta
 import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 import type { SourceAddress } from './source-settings.ts'
 
+import { WORKBENCH_REMOTE } from './workbench-remote.ts'
 import GENERATION_REMOTE from './generation/remote.ts'
 import IMAGE_READER_REMOTE from './image-reader/remote.ts'
 import { BROWSER_SETTINGS_REMOTE } from './browser-settings/remote.ts'
@@ -104,6 +105,7 @@ export const HARNESS_COMFYUI_REMOTE = Object.freeze({
   package: CATALOG_REMOTE.package,
   descriptors: Object.freeze([
     ...CATALOG_REMOTE.descriptors,
+    ...WORKBENCH_REMOTE.descriptors,
     ...GENERATION_REMOTE.descriptors,
     ...IMAGE_READER_REMOTE.descriptors,
     ...BROWSER_SETTINGS_REMOTE.descriptors,

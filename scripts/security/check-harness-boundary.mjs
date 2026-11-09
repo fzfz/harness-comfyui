@@ -9,7 +9,9 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
   ['@deepseek-ai/dsh-agent', 'value-or-type'],
+  ['@deepseek-ai/dsh-agent-preset-registry', 'type-only'],
   ['@deepseek-ai/dsh-api-remotes/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-connection/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-conversation/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-input-trigger/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-layout/client', 'type-only'],
@@ -17,6 +19,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-client-ui-sidebar/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-sidebar-right/client', 'type-only'],
   ['@deepseek-ai/dsh-client-ui-settings/client', 'type-only'],
+  ['@deepseek-ai/dsh-client-ui-slots', 'type-only'],
   ['@deepseek-ai/dsh-attachment', 'type-only'],
   ['@deepseek-ai/dsh-home-paths', 'type-only'],
   ['@deepseek-ai/dsh-jobs', 'type-only'],

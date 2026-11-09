@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
+import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { TypertRemoteNamespace } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
@@ -42,6 +43,9 @@ import { ContextDialogNavigationStore } from './workbench/context-dialog-navigat
 import { GenerationProjectionStore } from './workbench/generation-store.ts'
 import { WorkbenchDock, WorkbenchEntry } from './workbench/native-surfaces.tsx'
 import { WorkbenchDetails } from './workbench/results-drawer.tsx'
+import { WORKBENCH_REMOTE_SERVICE } from '../workbench-remote.ts'
+import { EXPERIMENT_PANEL_ID, ExperimentWorkbenchEntry, ExperimentWorkbenchHost } from './workbench/experiment-host.tsx'
+import { registerExperimentLeading, type ExperimentShortcuts } from './workbench/experiment-leading.tsx'
 
 export const name = pluginPackage.packageName
 export const inject = [
@@ -52,6 +56,9 @@ export const inject = [
   'sidebarRight',
   'sidebarRightTabs',
   'configForms',
+  'layout',
+  'connection',
+  'shortcuts',
 ] as const
 
 interface ClientSessions {
@@ -85,6 +92,8 @@ interface PluginBundleConfigSlotBoundary {
 type ClientContext = Context & {
   readonly sessions: ClientSessions
   readonly slots: ClientSlotRegistry
+  readonly connection: ConnectionHandle
+  readonly shortcuts: { readonly catalog: ExperimentShortcuts }
 }
 
 function getRemoteNamespace<Namespace extends string>(
@@ -127,6 +136,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const disposers: Array<() => void | Promise<void>> = [() => contextDialogNavigationStore.dispose()]
   try {
     disposers.push(await ctx.remote.$mount(HARNESS_COMFYUI_REMOTE))
+    disposers.push(ctx.slots.inject('shell.leading', () => registerExperimentLeading(ctx.slots, ctx.layout, ctx.shortcuts.catalog)))
     disposers.push(ctx.sidebarRightTabs.register({
       id: WORKBENCH_RESULTS_TAB.id,
       kind: WORKBENCH_RESULTS_TAB.kind,
@@ -137,8 +147,10 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
       GENERATION_REMOTE_SERVICE,
       IMAGE_READER_REMOTE_SERVICE,
       BROWSER_SETTINGS_REMOTE_SERVICE,
+      WORKBENCH_REMOTE_SERVICE,
     ], (remoteContext) => {
       const remoteCatalog = getRemoteNamespace(remoteContext, CATALOG_REMOTE_SERVICE)
+      const remoteWorkbench = getRemoteNamespace(remoteContext, WORKBENCH_REMOTE_SERVICE)
       const remoteGeneration = getRemoteNamespace(remoteContext, GENERATION_REMOTE_SERVICE)
       const remoteImageReader = getRemoteNamespace(remoteContext, IMAGE_READER_REMOTE_SERVICE)
       const remoteBrowserSettings = getRemoteNamespace(remoteContext, BROWSER_SETTINGS_REMOTE_SERVICE)
@@ -253,6 +265,17 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
         () => imageReaderForm.dispose(),
         () => sourceForm.dispose(),
         () => generationStore.dispose(),
+        ctx.slots.inject('main', () => ctx.slots.register({
+          name: 'main',
+          key: EXPERIMENT_PANEL_ID,
+          inject: () => ({ remote: remoteWorkbench, catalog, connectionState: ctx.connection.state }),
+        }, ExperimentWorkbenchHost)),
+        ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+          name: 'sidebar.footer.action',
+          id: `${EXPERIMENT_PANEL_ID}-entry`,
+          order: 11,
+          inject: () => ({ selectPanel: (panelId: Parameters<typeof ctx.layout.selectPanel>[0]) => ctx.layout.selectPanel(panelId) }),
+        }, ExperimentWorkbenchEntry)),
         ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
           name: 'sidebar.footer.action',
           id: WORKBENCH_ENTRY_ID,

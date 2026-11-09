@@ -51,7 +51,7 @@ describe('internal business consumers over HTTP', () => {
     const client = new CatalogClient({ settings: { get: () => ({ url: 'http://127.0.0.1', port: address.port }) } })
     try {
       const signal = new AbortController().signal
-      await expect(client.search({ kind: 'work', query: 'work', page: 1, baseModelId: null }, signal)).resolves.toMatchObject({ items: [{ label: 'work', context: { kind: 'work', id: '1', name: 'work' } }] })
+      await expect(client.search({ kind: 'work', query: 'work', page: 1, baseModelId: null, modelId: null }, signal)).resolves.toMatchObject({ items: [{ label: 'work', context: { kind: 'work', id: '1', name: 'work' } }] })
       await expect(client.details({ kind: 'work', id: '1' }, signal)).resolves.toMatchObject({ kind: 'work', id: '1' })
       await expect(client.baseModels(signal)).resolves.toEqual({ items: [{ id: '2', label: 'wai' }] })
       expect(requests).toEqual([{ mode: 'search', query: 'work', page: 1, page_size: 8 }, { mode: 'resolve', id: '1' }, { mode: 'search', query: '', page: 1, page_size: 20 }])

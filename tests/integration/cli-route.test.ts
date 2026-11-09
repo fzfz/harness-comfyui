@@ -108,6 +108,7 @@ describe('managed CLI manifest acceptance', () => {
           { requestId: secondId, request: { title: 'Batch', instanceId: '2', templateId: '39', model: null, parameters: request.parameters, loras: [] } },
         ],
         expect.any(AbortSignal),
+        undefined,
       )
     } finally { await server.close() }
   })
@@ -468,7 +469,7 @@ describe('Harness ComfyUI managed CLI route', () => {
           instanceId: request.instanceId ?? '2',
           instanceTitle: 'ComfyUI',
           templateTitle: 'Test template',
-          sourceSnapshot: { template_id: request.templateId },
+          inputDescription: { parameters: [], size_candidates: [] }, sourceSnapshot: { template_id: request.templateId },
           actualWorkflow: { version: 0.4 },
           apiWorkflow: {},
           expectedOutputNodeIds: ['10'],
@@ -528,6 +529,7 @@ describe('Harness ComfyUI managed CLI route', () => {
               parameters: { positive_prompt: '1girl' },
               loras: [],
             },
+            input_description: { parameters: [], size_candidates: [] },
             workflow_status: 'available',
             workflow: { version: 0.4 },
           },
@@ -549,6 +551,7 @@ describe('Harness ComfyUI managed CLI route', () => {
               parameters: { positive_prompt: '1girl' },
               loras: [],
             },
+            input_description: { parameters: [], size_candidates: [] },
             workflow_status: 'available',
             workflow: { version: 0.4 },
           },
@@ -584,7 +587,7 @@ describe('Harness ComfyUI managed CLI route', () => {
             instanceId: request.instanceId ?? '2',
             instanceTitle: 'ComfyUI',
             templateTitle: 'Test template',
-            sourceSnapshot: { template_id: request.templateId },
+            inputDescription: { parameters: [], size_candidates: [] }, sourceSnapshot: { template_id: request.templateId },
             actualWorkflow: { version: 0.4 },
             apiWorkflow: {},
             expectedOutputNodeIds: ['10'],

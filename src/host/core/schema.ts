@@ -4,12 +4,14 @@ import { configurationProfileNames, type ConfigurationProfileName } from '../../
 import type { ConfigurationProfile } from '../../../config/schema.ts'
 import { SOURCE_ADDRESS_SCHEMA, type SourceAddress } from '../../source-settings.ts'
 import type { CatalogClient } from '../catalog/catalog-client.ts'
+import type { WorkbenchStore } from '../storage/workbench-store.ts'
 import type { GenerationRuntime } from '../generation/generation-runtime.ts'
 import { PLUGIN_DATA_DIRECTORY_SCHEMA, type PluginStorageSettings } from '../../plugin-storage-schema.ts'
 import { BROWSER_EXECUTABLE_PATH_SCHEMA } from '../../browser-settings-schema.ts'
 export interface CoreServices {
   readonly catalog: CatalogClient
   readonly runtime: GenerationRuntime
+  readonly workbenchStore: WorkbenchStore
   readonly profile: ConfigurationProfile
   readonly sourceAddress: () => SourceAddress
 }

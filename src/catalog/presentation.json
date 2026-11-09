@@ -7,7 +7,14 @@
     "emptyValue": "未填写",
     "returnToDetails": "返回详情"
   },
+  "resourceDetails": ["resource_type", "base_model", "file_name", "file_format", "precision_or_quantization", "version", "description", "trigger_words_json", "weight", "prompt_text", "character_names", "template_type", "steps", "cfg"],
+  "resourceSources": { "style": { "description": "style_description" }, "artist-string": { "prompt_text": "artist_string" }, "prompt-term": { "prompt_text": "canonical_tag" } },
+  "templateTypes": { "text_to_image": "文生图", "image_to_image": "图生图" },
   "fields": {
+    "resource_type": { "label": "资源类型", "type": "text" },
+    "base_model": { "label": "底模", "type": "text" },
+    "steps": { "label": "采样步数", "type": "number" },
+    "cfg": { "label": "引导强度", "type": "number" },
     "id": {
       "label": "记录 ID",
       "type": "id"

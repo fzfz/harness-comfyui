@@ -1,7 +1,8 @@
 import Schema from '@deepseek-ai/schemastery'
 import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import { jsonArraySchema } from '../shared/json-contract.ts'
-import { GENERATION_JSON_CONTRACT, generationJsonValueSchema, type JsonValue } from './run-input-contract.ts'
+import { GENERATION_JSON_CONTRACT, generationJsonValueSchema } from './json-contract.ts'
+import type { JsonValue } from '../shared/json-contract.ts'
 
 export interface WorkflowRuntimeParameterInspectionParameter {
   readonly parameter_id: string
@@ -41,6 +42,18 @@ export interface WorkflowRuntimeParameterInspection {
   readonly parameters: readonly WorkflowRuntimeParameterInspectionParameter[]
   readonly size_candidates: readonly WorkflowRuntimeSizeCandidate[]
 }
+export function flattenWorkflowRuntimeParameters(description: WorkflowRuntimeParameterInspection): readonly WorkflowRuntimeParameterInspectionParameter[] {
+  const parameters = new Map<string, WorkflowRuntimeParameterInspectionParameter>()
+  for (const parameter of description.parameters) parameters.set(parameter.parameter_id, parameter)
+  for (const candidate of description.size_candidates) {
+    const fields = candidate.representation === 'width_height' ? [candidate.width, candidate.height]
+      : candidate.representation === 'aspect_ratio_megapixels' ? [candidate.aspect_ratio, candidate.megapixels]
+        : [candidate.parameter]
+    for (const parameter of fields) if (!parameters.has(parameter.parameter_id)) parameters.set(parameter.parameter_id, parameter)
+  }
+  return [...parameters.values()]
+}
+
 export const WORKFLOW_RUNTIME_PARAMETER_VALUE_TYPES = ['integer', 'number', 'string', 'boolean', 'choice'] as const
 
 export const STANDARD_RUNTIME_PARAMETER_KINDS = Object.freeze([

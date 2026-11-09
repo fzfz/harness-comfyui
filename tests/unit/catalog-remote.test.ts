@@ -14,6 +14,13 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiCatalog/sourceAddress',
       'harness-comfyui#harnessComfyuiCatalog/details',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/getRunInput',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/getProjection',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/getEnvironment',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/getInputDescription',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/getTaskDraft',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/saveTaskDraft',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/mutate',
       'harness-comfyui#harnessComfyuiGeneration/list',
       'harness-comfyui#harnessComfyuiImageReader/models',
       'harness-comfyui#harnessComfyuiImageReader/configuration',
@@ -171,16 +178,17 @@ describe('Catalog Remote contribution', () => {
     const descriptor = CATALOG_REMOTE.descriptors[0]!
     const request = descriptor.parameters[0]!.codec
     if (request.mode !== 'strict' || descriptor.result.mode !== 'strict') throw new Error('strict codecs required')
-    expect(request.create().parse({ kind: 'model', query: '', page: 1, baseModelId: null }))
-      .toEqual({ kind: 'model', query: '', page: 1, baseModelId: null })
+    expect(request.create().parse({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }))
+      .toEqual({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null })
     expect(descriptor.result.create().parse({
       ok: true,
       value: {
         kind: 'model',
         query: '',
         page: 1,
-        items: [{
+        items: [{ modelId: null,
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          baseModelId: '2',
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,
@@ -194,8 +202,9 @@ describe('Catalog Remote contribution', () => {
         kind: 'model',
         query: '',
         page: 1,
-        items: [{
+        items: [{ modelId: null,
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          baseModelId: '2',
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,
@@ -210,6 +219,28 @@ describe('Catalog Remote contribution', () => {
       .toEqual({ ok: true, value: { items: [{ id: '2', label: 'wai' }] } })
   })
 
+  it('rejects card responses that omit baseModelId', () => {
+    const descriptor = CATALOG_REMOTE.descriptors[0]!
+    const result = descriptor.result
+    if (result.mode !== 'strict') throw new Error('strict codec required')
+    expect(() => result.create().parse({
+      ok: true,
+      value: {
+        kind: 'model',
+        query: '',
+        page: 1,
+        items: [{
+          context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          label: 'model.safetensors',
+          subtitle: 'safetensors',
+          coverUrl: null,
+          sampleImageUrls: [],
+        }],
+        totalCount: 1,
+      },
+    })).toThrow('properties')
+  })
+
   it('rejects an old Host result that omits sampleImageUrls', () => {
     const descriptor = CATALOG_REMOTE.descriptors[0]!
     const result = descriptor.result
@@ -222,6 +253,7 @@ describe('Catalog Remote contribution', () => {
         page: 1,
         items: [{
           context: { kind: 'model', id: '1', file_name: 'model.safetensors' },
+          baseModelId: '2',
           label: 'model.safetensors',
           subtitle: 'safetensors',
           coverUrl: null,

@@ -10,6 +10,7 @@ import {
   CATALOG_PAGE_SIZE,
   CATALOG_QUERY_TIMEOUT_MS,
   catalogDefinition,
+  catalogResourceCompatible,
   parseBaseModelList,
   parseCatalogComfyuiInstancePage,
   parseCatalogComfyuiInstanceQueryRequest,
@@ -21,6 +22,7 @@ import {
   type BaseModelItem,
   type BaseModelList,
   type CatalogItem,
+  type CatalogKind,
   type CatalogComfyuiInstancePage,
   type CatalogComfyuiInstanceQueryRequest,
   type CatalogContext,
@@ -235,7 +237,7 @@ function normalizeResolvedGenerationModel(value: unknown): CatalogResolvedGenera
   })
 }
 
-function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): CatalogPage {
+function sourcePage(request: CatalogQueryRequest, value: unknown): { readonly records: readonly Record<string, unknown>[]; readonly totalCount: number } {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new CatalogError('CATALOG_PROTOCOL_ERROR', 'Catalog response must be an object.')
   }
@@ -252,25 +254,36 @@ function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): Catalo
   ) {
     throw new CatalogError('CATALOG_PROTOCOL_ERROR', 'Catalog response envelope is invalid.')
   }
-  const definition = catalogDefinition(request.kind)
-  const items: CatalogItem[] = envelope.results.map(value => {
-    const result = sourceRecord(value)
-    const id = sourceId(result.id)
-    return Object.freeze({
-      context: sourceContext(request.kind, id, result),
-      label: sourceLabel(result[definition.labelField]),
-      subtitle: sourceSubtitle(result, definition.subtitleFields, sourceLabel(result[definition.labelField])),
-      coverUrl: sourceCoverUrl(result.cover_url),
-      sampleImageUrls: sourceSampleImageUrls(result.sample_image_urls),
-    })
+  return { records: envelope.results.map(sourceRecord), totalCount: envelope.total_count as number }
+}
+
+
+function usesModelAssociation(kind: CatalogKind): boolean {
+  return kind === 'model' || kind === 'lora' || kind === 'comfyui-template'
+}
+
+function normalizeItem(kind: CatalogKind, result: Record<string, unknown>): CatalogItem {
+  const definition = catalogDefinition(kind)
+  const id = sourceId(result.id)
+  return Object.freeze({
+    context: sourceContext(kind, id, result),
+    baseModelId: definition.baseModelScoped ? sourceNullableId(result.base_model_id) : null,
+    modelId: kind === 'lora' || kind === 'comfyui-template' ? sourceNullableId(result.model_id) : null,
+    label: sourceLabel(result[definition.labelField]),
+    subtitle: sourceSubtitle(result, definition.subtitleFields, sourceLabel(result[definition.labelField])),
+    coverUrl: sourceCoverUrl(result.cover_url),
+    sampleImageUrls: sourceSampleImageUrls(result.sample_image_urls),
   })
+}
+function normalizePage(request: CatalogQueryRequest, records: readonly Record<string, unknown>[], totalCount: number): CatalogPage {
+  const items = records.map(result => normalizeItem(request.kind, result))
   try {
     return parseCatalogPage({
       kind: request.kind,
       query: request.query,
       page: request.page,
       items,
-      totalCount: envelope.total_count,
+      totalCount,
     })
   } catch (error) {
     if (error instanceof CatalogError) throw error
@@ -279,6 +292,11 @@ function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): Catalo
       error instanceof Error ? error.message : 'Catalog response is invalid.',
     )
   }
+}
+
+function normalizeEnvelope(request: CatalogQueryRequest, value: unknown): CatalogPage {
+  const page = sourcePage(request, value)
+  return normalizePage(request, page.records, page.totalCount)
 }
 
 function normalizeBaseModels(value: unknown): BaseModelList {
@@ -328,7 +346,7 @@ function normalizeComfyuiInstances(value: unknown): CatalogComfyuiInstancePage {
       message: null,
       results: envelope.results.map((value) => {
         const result = sourceRecord(value)
-        return { id: sourceId(result.id) }
+        return { id: sourceId(result.id), title: result.title }
       }),
       page: CATALOG_COMFYUI_INSTANCE_QUERY.page,
       page_size: CATALOG_COMFYUI_INSTANCE_QUERY.page_size,
@@ -367,13 +385,50 @@ export class CatalogClient {
     }
   }
 
+
+  private async searchInput(request: CatalogQueryRequest, signal: AbortSignal): Promise<Record<string, unknown> | null> {
+    let baseModelId = request.baseModelId
+    if (request.modelId !== null) {
+      const model = resolvedRecord(await this.run(catalogDefinition('model').path, { mode: 'resolve', id: request.modelId }, signal), 'generation model')
+      const resolvedModelId = sourceId(model.id)
+      if (resolvedModelId !== request.modelId) throw new CatalogError('CATALOG_PROTOCOL_ERROR', `Catalog returned generation model ID ${resolvedModelId}; the requested ID was ${request.modelId}. Check the Catalog response for the requested model.`)
+      const modelBaseId = sourceId(model.base_model_id)
+      if (baseModelId !== null && baseModelId !== modelBaseId) return null
+      baseModelId = modelBaseId
+    }
+    return {
+      mode: 'search', query: request.query, page: request.page, page_size: CATALOG_PAGE_SIZE,
+      ...(baseModelId === null ? {} : { base_model_id: baseModelId }),
+    }
+  }
+
+  private async collectMatchingRecords(request: CatalogQueryRequest, input: Record<string, unknown>, signal: AbortSignal): Promise<Record<string, unknown>[]> {
+    const matches: Record<string, unknown>[] = []
+    const target = { baseModelId: sourceId(input.base_model_id), modelId: request.modelId }
+    let pageCount = 1
+    for (let page = 1; page <= pageCount; page++) {
+      signal.throwIfAborted()
+      const source = sourcePage({ ...request, page }, await this.run(catalogDefinition(request.kind).path, { ...input, page }, signal))
+      pageCount = Math.ceil(source.totalCount / CATALOG_PAGE_SIZE)
+      for (const record of source.records) {
+        const item = normalizeItem(request.kind, record)
+        if (request.kind === 'model' && item.context.id !== request.modelId) continue
+        if (catalogResourceCompatible(item, target)) matches.push(record)
+      }
+    }
+    return matches
+  }
+
   async search(input: CatalogQueryRequest, signal: AbortSignal): Promise<CatalogPage> {
     const request = parseCatalogQueryRequest(input)
-    const result = await this.run(catalogDefinition(request.kind).path, {
-      mode: 'search', query: request.query, page: request.page, page_size: CATALOG_PAGE_SIZE,
-      ...(request.baseModelId === null ? {} : { base_model_id: request.baseModelId }),
-    }, signal)
-    return normalizeEnvelope(request, result)
+    const sourceInput = await this.searchInput(request, signal)
+    if (sourceInput === null) return parseCatalogPage({ kind: request.kind, query: request.query, page: request.page, items: [], totalCount: 0 })
+    if (request.modelId !== null && usesModelAssociation(request.kind)) {
+      const matches = await this.collectMatchingRecords(request, sourceInput, signal)
+      const start = (request.page - 1) * CATALOG_PAGE_SIZE
+      return normalizePage(request, matches.slice(start, start + CATALOG_PAGE_SIZE), matches.length)
+    }
+    return normalizeEnvelope(request, await this.run(catalogDefinition(request.kind).path, sourceInput, signal))
   }
 
   async details(input: CatalogDetailsRequest, signal: AbortSignal): Promise<CatalogDetails> {
@@ -382,6 +437,7 @@ export class CatalogClient {
     try {
       return parseCatalogDetails({
         ...request,
+        item: normalizeItem(request.kind, source),
         fields: CATALOG_PRESENTATION.kinds[request.kind].details.map(key => ({
           key, value: CATALOG_FIELDS[key]!.type === 'id' && source[key] !== null ? sourceId(source[key]) : source[key],
         })),

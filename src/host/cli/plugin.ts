@@ -1,4 +1,5 @@
 import type {} from '@deepseek-ai/dsh-workspace'
+import type {} from '../workbench/plugin.ts'
 import type {} from '@deepseek-ai/dsh-jobs'
 import { GenerationRunWaitService } from '../generation/run-wait-service.ts'
 import type { Context } from '@deepseek-ai/cordis'
@@ -13,7 +14,7 @@ import { startCliServer } from './server.ts'
 import { CLI_ENVIRONMENT_VARIABLES, CliShellCapabilityStore } from './shell-capability.ts'
 
 export const name = 'harness-comfyui-cli'
-export const inject = ['harnessComfyuiCore', 'imageReader', 'shellEnv', 'tools', 'workspaceRegistry', 'jobs'] as const
+export const inject = ['harnessComfyuiCore', 'imageReader', 'shellEnv', 'tools', 'workspaceRegistry', 'jobs', 'harnessComfyuiWorkbench'] as const
 
 export async function apply(ctx: Context): Promise<void> {
   const core = ctx.harnessComfyuiCore.services
@@ -25,7 +26,7 @@ export async function apply(ctx: Context): Promise<void> {
       nodeExecutable: process.execPath,
       apiUrl: `${origin}${CLI_ROUTE_PATH}`,
     })
-    return createCliHandler({ capabilities, runWait, runtime: core.runtime, imageReader: ctx.imageReader, workspaceRegistry: ctx.workspaceRegistry })
+    return createCliHandler({ capabilities, runWait, workbench: ctx.harnessComfyuiWorkbench.service, runtime: core.runtime, imageReader: ctx.imageReader, workspaceRegistry: ctx.workspaceRegistry })
   }, core.profile.cliServer)
   ctx.effect(() => async () => { capabilities.clear(); await Promise.all([server.close(), runWait.close()]) }, 'Managed CLI listener')
   ctx.effect(() => {
