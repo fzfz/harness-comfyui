@@ -1,5 +1,5 @@
 {
-  "defaultKind": "rewrite",
+  "defaultKind": "prompt",
   "leadingKind": "translate",
   "add": "添加功能",
   "edit": "编辑功能",

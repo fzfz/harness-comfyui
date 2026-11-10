@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+import { isDelegatable, type DelegateFunctionRequest, type DelegatedSessionRequest } from './delegation.ts'
 import type { AgentModel, ArtifactPayload, EvaluationInput, ExperienceReuseInput, ExecutionState, FunctionDescriptor, GenerationInput, GenerationInputBase, JsonValue, ReviewDraft, ReviewDraftUpdate, SkillReadRef, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRunInput } from './contract.ts'
 import experimentControlErrors from './experiment-control-errors.json' with { type: 'json' }
 import libraryConfig from './library-config.json' with { type: 'json' }
@@ -11,9 +13,10 @@ import { parameterMapping, readSavedPromptInput } from './prompt-input.ts'
 import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeParameterInspection } from '../generation/inspection-contract.ts'
 
 export interface WorkbenchSessionBoundary {
+  delegate?(input: DelegatedSessionRequest): Promise<void>
   authorize(input: { task: Task; identity: WorkbenchIdentity }): Promise<boolean>
   create(input: { task: Task; presetId: string; agentModel: AgentModel; requestedSkill: string | null }): Promise<{ sessionId: string; selectedModel: Record<string, JsonValue> }>
-  dispatch(input: { sessionId: string; text: string; taskId: string; signal: AbortSignal }): Promise<void>
+  dispatch(input: { sessionId: string; text: string; taskId: string; requestId?: string; signal: AbortSignal }): Promise<void>
   status?(input: { sessionId: string }): Promise<ExecutionState | null>
   control?(input: { sessionId: string; action: 'interrupt' | 'pause' | 'continue'; signal: AbortSignal }): Promise<void>
   skillReadRefs?(input: { sessionId: string }): Promise<SkillReadRef[]>
@@ -35,6 +38,9 @@ export interface WorkbenchServiceOptions {
   resolveRunModelBaseId?: (model: NonNullable<GenerationInput['model']>) => Promise<string | null>
   readRunInputDescription?: (workspaceId: string, runId: string) => Promise<WorkflowRuntimeParameterInspection | null>
   resolveImageSources?: (refs: import('./contract.ts').ImageRef[]) => Promise<import('./contract.ts').ImageSource[]>
+  preparePromptRequest?: (binding: import('./contract.ts').FunctionBinding, input: import('./contract.ts').TaskInput) => Promise<{ input: import('./request-template.ts').PromptRequestInput; requestText: string }>
+  attachPromptTask?: (task: Task, sessionId: string, prepared: { input: import('./request-template.ts').PromptRequestInput; requestText: string }, requestId: string, delegated: boolean) => void
+  refreshPromptTask?: (task: Task) => Promise<void>
   refreshAfterMs?: number
 }
 export interface CreateTaskRequest {
@@ -128,19 +134,22 @@ export class WorkbenchService {
       const draft = acceptedReview!
       const fields = binding.kind === 'experience' ? ['title', 'conditions', 'note', 'evidence_run_ids', 'experience_artifact_id'] : ['observation', 'conclusion', 'evidence_run_ids', 'review_artifact_id']
       for (const field of fields) target.expected[field] = jsonValue(draft[field as keyof typeof draft])
-    } else if (binding.kind === 'prompt' || binding.kind === 'rewrite') {
+    } else if (binding.kind === 'prompt') {
       target.expected = { 'prompt_input.positive_prompt': branch.draft.prompt_input.positive_prompt, 'prompt_input.negative_prompt': branch.draft.prompt_input.negative_prompt }
     } else if (binding.kind === 'parameters') {
       target.expected['generation_input.parameters'] = jsonValue(draft.generation_input.parameters)
     }
-    const task = this.store.createTask({ branchId: branch.branch_id, functionId: binding.function_id, title: request.title ?? `${binding.name} · ${branch.name}`, kind: binding.kind, input, outputContract: output, applyTarget: target, bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template }, initiator: request.initiator, retryOfRunId: request.retryOfRunId })
+    const prompt = binding.kind === 'prompt' ? await this.options.preparePromptRequest?.(binding, input) : undefined
+    const requestId = randomUUID()
+    const task = this.store.createTask({ ...(prompt ? { requestText: prompt.requestText } : {}), branchId: branch.branch_id, functionId: binding.function_id, title: request.title ?? `${binding.name} · ${branch.name}`, kind: binding.kind, input, outputContract: output, applyTarget: target, bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template, ...(binding.request_parts ? { request_parts: binding.request_parts } : {}) }, initiator: request.initiator, retryOfRunId: request.retryOfRunId })
     return this.withTaskOperation(task.task_id, async signal => {
       try {
         const session = await this.options.sessions.create({ task, presetId: task.binding_snapshot.preset_id, agentModel: task.binding_snapshot.agentModel, requestedSkill: task.binding_snapshot.requested_skill })
         this.store.bindSession(task.task_id, session.sessionId, session.selectedModel)
+        if (prompt) this.options.attachPromptTask?.(this.store.getTask(task.task_id), session.sessionId, prompt, requestId, false)
         if (signal.aborted) return
         if (!this.dispatchIsOpen(task.task_id)) return this.stopClosedDispatch(task.task_id, session.sessionId, signal)
-        await this.options.sessions.dispatch({ sessionId: session.sessionId, text: task.request_text, taskId: task.task_id, signal })
+        await this.options.sessions.dispatch({ sessionId: session.sessionId, text: task.request_text, taskId: task.task_id, requestId, signal })
         if (signal.aborted) return
         if (!this.dispatchIsOpen(task.task_id)) return this.stopClosedDispatch(task.task_id, session.sessionId, signal)
         this.store.completeTaskSubmission(task.task_id, taskDraft, binding.kind === 'parameters' ? { expected: branch.draft, draft } : undefined)
@@ -150,6 +159,91 @@ export class WorkbenchService {
         throw error
       }
     })
+  }
+
+  async listFunctions(request: { taskId: string }, identity: WorkbenchIdentity) {
+    const parent = await this.authorize(request.taskId, identity)
+    if (parent.kind !== 'experiment') throw new WorkbenchError('WORKBENCH_EXPERIMENT_REQUIRED', '请提供持续实验任务 ID。', 'task_id')
+    return {
+      task_id: parent.task_id,
+      functions: this.store.listFunctionBindings(this.store.taskWorkspace(parent.task_id)).filter(isDelegatable).map(binding => {
+        const descriptor = this.options.descriptors.find(item => item.kind === binding.kind)!
+        return { function_id: binding.function_id, name: binding.name, kind: binding.kind, purpose: descriptor.ui_result, artifact_types: descriptor.output_contract.artifact_types, preset_id: binding.preset_id, agent_model: binding.agent_model }
+      }),
+    }
+  }
+
+  async delegateFunction(request: DelegateFunctionRequest, identity: WorkbenchIdentity, callerSignal?: AbortSignal) {
+    const parent = await this.authorize(request.task_id, identity)
+    if (parent.kind !== 'experiment' || parent.parent_experiment_task_id) throw new WorkbenchError('WORKBENCH_EXPERIMENT_REQUIRED', '请提供持续实验任务 ID。', 'task_id')
+    if (!this.options.sessions.delegate) throw new WorkbenchError('WORKBENCH_DELEGATION_UNAVAILABLE', '当前宿主无法委派功能，请重新载入插件。', 'function_id')
+    const workspaceId = this.store.taskWorkspace(parent.task_id)
+    const binding = this.store.getFunctionBinding(workspaceId, request.function_id)
+    if (!isDelegatable(binding)) throw new WorkbenchError('WORKBENCH_FUNCTION_NOT_DELEGATABLE', '请选择功能清单中的业务功能。', 'function_id')
+    if (!this.dispatchIsOpen(parent.task_id, binding.kind)) throw new WorkbenchError('WORKBENCH_EXPERIMENT_CLOSED', '持续实验已暂停或结束，请在工作台查看实验状态。', 'task_id')
+    const input = structuredClone(parent.input)
+    input.delegation_source = request.source
+    input.requirements.instructions = request.instructions
+    input.requested_skill = binding.requested_skill
+    input.max_runs = binding.kind === 'run' ? 1 : 0
+    delete input.evaluation_input
+    if (request.source.type === 'candidate') {
+      const source = request.source
+      const candidate = this.store.listExperimentArtifacts(parent.task_id).find(item => item.artifact_id === source.artifact_id)
+      if (!candidate || candidate.artifact.type !== 'generation_input') throw new WorkbenchError('WORKBENCH_CANDIDATE_REQUIRED', '请选择此实验的候选输入产物。', 'source.artifact_id')
+      input.generation_input = structuredClone(candidate.artifact.generation_input)
+      input.image_refs = structuredClone(candidate.artifact.image_refs ?? [])
+      input.workflow_image_bindings = structuredClone(candidate.artifact.workflow_image_bindings ?? [])
+      const resolved = await this.options.resolveGenerationDraft?.(generationInputWithImages(input.generation_input, input))
+      input.parameter_mapping = resolved?.parameter_mapping ?? null
+      input.prompt_input = resolved?.prompt_input ?? { positive_prompt: null, negative_prompt: null }
+      input.base_model_id = resolved?.base_model_id ?? null
+    } else if (request.source.type === 'run') {
+      const run = this.store.getRun(request.source.run_id)
+      if (run.workbench_task_id !== parent.task_id) throw new WorkbenchError('WORKBENCH_RUN_SCOPE_MISMATCH', '请选择此实验中的运行。', 'source.run_id')
+      const historical = await this.getRunInput({ workspaceId, workId: this.store.getBranch(parent.branch_id).work_id, runId: run.run_id })
+      const { instructions: _instructions, ...fixed } = await this.mappedRunDraft(historical)
+      Object.assign(input, fixed, { reference_task_ids: parent.input.reference_task_ids, reference_experiences: parent.input.reference_experiences })
+      input.reference_run_ids = [...new Set([...parent.input.reference_run_ids, run.run_id])]
+      if (isRunReviewFunctionKind(binding.kind)) {
+        input.evaluation_input = { run_id: run.run_id, verdict: 'unrated', observation: '', conclusion: '', experience: { title: '', conditions: '', note: '' } }
+      }
+    }
+    if (isRunReviewFunctionKind(binding.kind) && !input.evaluation_input) throw new WorkbenchError('WORKBENCH_RUN_REQUIRED', '评价、诊断或整理经验时，请指定运行来源。', 'source')
+    input.reference_task_artifacts = [...parent.input.reference_task_artifacts, ...request.reference_artifact_ids.map(id => {
+      const stored = this.store.getArtifact(id)
+      return { task_id: stored.task_id, artifact_id: stored.artifact_id, artifact: stored.artifact }
+    })]
+    const descriptor = this.options.descriptors.find(item => item.kind === binding.kind)!
+    const output = { ...structuredClone(descriptor.output_contract), apply_mode: 'record' as const }
+    if (binding.kind === 'parameters') output.parameter_ids = await this.options.parameterIds?.(input.generation_input) ?? []
+    if (binding.kind === 'run') await this.options.validateGenerationInput?.(generationInputWithImages(input.generation_input, input), 'input.generation_input')
+    const prompt = binding.kind === 'prompt' ? await this.options.preparePromptRequest?.(binding, input) : undefined
+    const child = this.store.createTask({
+      ...(prompt ? { requestText: prompt.requestText } : {}),
+      branchId: parent.branch_id, parentExperimentTaskId: parent.task_id, functionId: binding.function_id,
+      kind: binding.kind, title: binding.name, input, outputContract: output,
+      applyTarget: { kind: 'branch', id: parent.branch_id, expected: {} },
+      bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template, ...(binding.request_parts ? { request_parts: binding.request_parts } : {}) },
+      initiator: 'agent',
+    })
+    const sessionId = randomUUID()
+    this.store.bindSession(child.task_id, sessionId, jsonValue(binding.agent_model) as Record<string, JsonValue>)
+    if (prompt) this.options.attachPromptTask?.(child, sessionId, prompt, randomUUID(), true)
+    const settled = await this.withTaskOperation(child.task_id, async operationSignal => {
+      const signal = callerSignal ? AbortSignal.any([operationSignal, callerSignal]) : operationSignal
+      try {
+        signal.throwIfAborted()
+        if (!this.dispatchIsOpen(child.task_id)) throw new WorkbenchError('WORKBENCH_EXPERIMENT_CLOSED', '持续实验已暂停或结束，请在工作台查看实验状态。', 'task_id')
+        await this.options.sessions.delegate!({ parentSessionId: identity.sessionId, sessionId, taskId: child.task_id, label: binding.name, text: child.request_text, presetId: binding.preset_id, agentModel: binding.agent_model, requestedSkill: binding.requested_skill, signal })
+        if (!this.dispatchIsOpen(child.task_id)) await this.options.sessions.control?.({ sessionId, action: 'interrupt', signal })
+        this.store.settleTaskDispatch(child.task_id)
+      } catch (error) {
+        this.store.settleTaskDispatch(child.task_id, this.dispatchError(error))
+        throw error
+      }
+    })
+    return { task_id: child.task_id, parent_experiment_task_id: parent.task_id, session_id: sessionId, function_id: binding.function_id, status: settled.status }
   }
   taskWorkspace(taskId: string): string { return this.store.taskWorkspace(taskId) }
   queryRecords(query: import('./contract.ts').WorkbenchRecordQuery): import('./contract.ts').WorkbenchRecord[] { return this.store.queryRecords(query) }
@@ -177,12 +271,14 @@ export class WorkbenchService {
 
   async getTask(request: { taskId: string }, identity: WorkbenchIdentity): Promise<TaskGetResult> {
     void identity
+    await this.options.refreshPromptTask?.(this.store.getTask(request.taskId))
     const task = this.store.refreshTask(request.taskId)
-    const artifacts = this.store.listArtifacts(task.task_id)
+    const artifacts = task.kind === 'experiment' ? this.store.listExperimentArtifacts(task.task_id) : this.store.listArtifacts(task.task_id)
     const { parameter_mapping, ...input } = task.input
-    const result = { task_id: task.task_id, status: task.status, ...input, image_sources: await this.options.resolveImageSources?.(input.image_refs) ?? [], output_contract: task.output_contract, artifacts: artifacts.map(a => ({ artifact_id: a.artifact_id, artifact: a.artifact, disposition: a.disposition })), iterations: this.store.listRuns(task.task_id).map(run => {
-      return { index: run.iteration_index ?? 1, run_id: run.run_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], review_artifact_id: run.review_artifact_id }
-    }), answers: task.answers }
+    const children = this.store.listChildTasks(task.task_id).map(child => this.store.refreshTask(child.task_id))
+    const result = { task_id: task.task_id, parent_experiment_task_id: task.parent_experiment_task_id, children: children.map(child => ({ task_id: child.task_id, function_id: child.function_id, kind: child.kind, title: child.title, status: child.status, session_id: child.session_id, execution_state: child.execution_state, preset_id: child.binding_snapshot.preset_id, agent_model: child.binding_snapshot.agentModel, error: child.error })), status: task.status, ...input, image_sources: await this.options.resolveImageSources?.(input.image_refs) ?? [], output_contract: task.output_contract, artifacts: artifacts.map(a => ({ artifact_id: a.artifact_id, task_id: a.task_id, artifact: a.artifact, disposition: a.disposition })), iterations: this.store.listRuns(task.task_id).map(run => {
+      return { index: run.iteration_index ?? 1, run_id: run.run_id, execution_task_id: run.execution_task_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], review_artifact_id: run.review_artifact_id }
+    }), answers: [...task.answers, ...children.flatMap(child => child.answers)] }
     if (!isBranchNonGenerationTaskKind(task.kind)) return { ...result, kind: task.kind }
     const parameters: [string, JsonValue][] = [], unresolved: [string, JsonValue][] = []
     for (const [id, value] of Object.entries(input.generation_input.parameters)) {
@@ -265,6 +361,7 @@ export class WorkbenchService {
     return this.store.createBranch({ workId: request.workId, parentBranchId: parent.branch_id, name: request.name, originalRequest: task.input.requirements.original_request, draft, sourceArtifactId: stored.artifact_id })
   }
   async getProjection(request: { workspaceId: string; workId?: string; branchId?: string }) {
+    await Promise.all(this.store.listTasks(request.workspaceId, request.workId, request.branchId).map(task => this.options.refreshPromptTask?.(task)))
     const tasks = this.store.listTasks(request.workspaceId, request.workId, request.branchId).map(task => this.store.refreshTask(task.task_id))
     if (this.options.sessions.status) await Promise.all(tasks.filter(task => shouldTrackExecution(task, this.store.getExperiment(task.task_id))).map(async task => {
       const status = await this.options.sessions.status!({ sessionId: task.session_id! })
@@ -298,10 +395,11 @@ export class WorkbenchService {
       this.store.settleTaskDispatch(task.task_id)
     })
   }
-  private dispatchIsOpen(taskId: string): boolean {
+  private dispatchIsOpen(taskId: string, functionKind?: Task['kind']): boolean {
     const task = this.store.refreshTask(taskId)
-    const experiment = this.store.getExperiment(taskId)
-    return task.execution_state !== 'interrupted' && (!experiment || experiment.control_state === 'running')
+    const experiment = this.store.getExperiment(task.parent_experiment_task_id ?? taskId)
+    const maySummarize = (functionKind ?? task.kind) === 'experience' && (experiment?.control_state === 'completed' || experiment?.end_reason === 'goal_met')
+    return task.execution_state !== 'interrupted' && (!experiment || experiment.control_state === 'running' || maySummarize)
   }
 
   private async stopClosedDispatch(taskId: string, sessionId: string, signal: AbortSignal): Promise<void> {

@@ -203,6 +203,7 @@ const signal = () => new AbortController().signal
 it('routes task get and file-backed publish through the mounted Host and saves complete result files', async () => {
   const { ctx, remote, run, variables, directory, official, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Portrait', goal: 'Paint a portrait' } }, signal())
+  await saveFixtureDraft(remote, selected, draft => { draft.base_model_id = '1' }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
   const execution = workbenchShellExecution(task.session_id!)
@@ -281,6 +282,7 @@ it('authorizes descendants, rejects unrelated sessions and returns retryable exp
 it('returns structured field errors without publishing artifacts or leaving a successful result file', async () => {
   const { remote, run, variables, directory, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
+  await saveFixtureDraft(remote, selected, draft => { draft.base_model_id = '1' }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
   const before = (await readdir(directory)).sort()

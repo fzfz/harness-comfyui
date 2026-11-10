@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 
 import { cliResultSchemas } from '../../src/cli/result-schema.ts'
 
-const branchKinds = ['prompt', 'rewrite', 'parameters', 'resources'] as const
+const branchKinds = ['prompt', 'parameters', 'resources'] as const
 const completeInputKinds = ['run', 'experiment', 'review', 'compare', 'diagnose', 'experience'] as const
 const allKinds = [...branchKinds, ...completeInputKinds]
 
 function taskResult(kind: string): Record<string, unknown> {
   return {
-    task_id: 'task_1', kind, status: 'running',
+    task_id: 'task_1', parent_experiment_task_id: null, children: [], kind, status: 'running',
     prompt_input: { positive_prompt: 'current prompt', negative_prompt: null },
     generation_input: { title: 'scene', instance_id: '2', template_id: '12', model: null, parameters: { steps_7: 28 }, loras: [] },
     reference_task_ids: [], reference_task_artifacts: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], image_sources: [], base_model_id: null,
@@ -23,6 +23,15 @@ function taskResult(kind: string): Record<string, unknown> {
 
 describe('workbench task result contract', () => {
   const schema = cliResultSchemas['workbench task get']
+
+  it('returns child discovery summaries and rejects full child task fields through the public CLI schema', () => {
+    const child = { task_id: 'child-1', function_id: 'prompt', kind: 'prompt', title: 'Prompt', status: 'failed', session_id: 'session-child', execution_state: 'failed', error: { code: 'AGENT_FAILED', message: 'Execution failed' }, preset_id: 'prompt-preset', agent_model: { provider: 'provider', model: 'model' } }
+    const result = { ...taskResult('experiment'), children: [child] }
+    expect(Schema.resolve(result, schema, {})[0]).toEqual(result)
+    for (const field of ['input', 'output_contract', 'artifacts', 'answers', 'binding_snapshot']) {
+      expect(() => Schema.resolve({ ...result, children: [{ ...child, [field]: {} }] }, schema, {})).toThrow()
+    }
+  })
 
   it.each(allKinds)('preserves the declared %s result through the public CLI schema', kind => {
     const result = taskResult(kind)

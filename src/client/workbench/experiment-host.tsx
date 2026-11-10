@@ -21,11 +21,12 @@ import type {
 } from './experiment-contract.ts'
 import { ExperimentWorkbench } from './experiment-workbench.tsx'
 import { experimentWorkbenchStyles } from './experiment-style.ts'
+import { promptEditingStyles } from './experiment-prompt-styles.ts'
 
 export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment' as MainPanelId
 type RemoteReply<T> = RemoteResult<T>
 export type ExperimentEnvironment = WorkbenchEnvironment
-export interface ExperimentHostRemote extends Pick<import('../../workbench-remote.ts').WorkbenchRemoteMethods, 'queryRecords' | 'importImages' | 'resolveImages' | 'translateStart' | 'translateGet' | 'translateCancel'> {
+export interface ExperimentHostRemote extends Pick<import('../../workbench-remote.ts').WorkbenchRemoteMethods, 'queryRecords' | 'importImages' | 'resolveImages' | 'translateStart' | 'translateGet' | 'translateCancel' | 'promptPreview' | 'promptStart' | 'promptGet' | 'promptList' | 'promptCancel' | 'promptAdopt'> {
   readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<RemoteReply<WorkbenchRunInput>>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft | null>>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft>>
@@ -80,7 +81,7 @@ function ExperimentWorkbenchSurface({ children }: { readonly children: ReactNode
   return (
     <div data-experiment-workbench-root="" ref={mount}>
       {root && createPortal(
-        <><style>{experimentWorkbenchStyles}</style>{children}</>,
+        <><style>{experimentWorkbenchStyles + promptEditingStyles}</style>{children}</>,
         root,
       )}
     </div>
@@ -125,6 +126,12 @@ export function ExperimentWorkbenchHost({
       queryRecords: async (request: import('../../workbench/contract.ts').WorkbenchRecordQuery) => unwrap(await remote.queryRecords(request)),
       importImages: async (request: import('../../workbench-remote.ts').WorkbenchImageImportRequest) => unwrap(await remote.importImages(request)),
       resolveImages: async (request: import('../../workbench-remote.ts').WorkbenchImageResolveRequest) => unwrap(await remote.resolveImages(request)),
+      promptPreview: async (request: import('../../workbench/prompt-edit.ts').PromptStartRequest) => unwrap(await remote.promptPreview(request)),
+      promptStart: async (request: import('../../workbench/prompt-edit.ts').PromptStartRequest) => unwrap(await remote.promptStart(request)),
+      promptGet: async (request: import('../../workbench/prompt-edit.ts').PromptLookupRequest) => unwrap(await remote.promptGet(request)),
+      promptList: async (request: import('../../workbench/prompt-edit.ts').PromptListRequest) => unwrap(await remote.promptList(request)),
+      promptCancel: async (request: import('../../workbench/prompt-edit.ts').PromptLookupRequest) => unwrap(await remote.promptCancel(request)),
+      promptAdopt: async (request: import('../../workbench/prompt-edit.ts').PromptAdoptRequest) => unwrap(await remote.promptAdopt(request)),
       translateStart: async (request: import('../../workbench/translation.ts').TranslationRequest) => unwrap(await remote.translateStart(request)),
       translateGet: async (request: import('../../workbench-remote.ts').WorkbenchTranslationLookup) => unwrap(await remote.translateGet(request)),
       translateCancel: async (request: import('../../workbench-remote.ts').WorkbenchTranslationLookup) => unwrap(await remote.translateCancel(request)),

@@ -2,6 +2,7 @@
   "title": "记录评价与经验",
   "run": "运行 {runId} · {branchName}",
   "review": "运行评价",
+  "manualReview": "人工评价",
   "experience": "经验（可选）",
   "analyze": "分析结果",
   "organize": "整理经验",

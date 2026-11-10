@@ -22,7 +22,7 @@
 
 1. Configuration Profile 的覆盖顺序为：基础配置、所选 Profile、已声明环境变量、官方插件配置中的数据目录与浏览器路径。加载与路径计算见 [loadProfile()](../../src/config/load-profile.ts) 和 [Core apply()](../../src/host/core/plugin.ts)。
 
-2. [config/environment-overrides.json](../../config/environment-overrides.json) 唯一定义环境变量名称、目标字段与值类型。`target` 声明把解析值写入指定字段，number 声明解析为数值，string 声明保留字符串；`passThrough` 声明接受调用环境值。`loadProfile()` 校验实际传入的 Host 环境，未声明的 `HARNESS_COMFYUI_*` 变量会触发配置错误；维护者依据报错变量与该配置文件修正 Host 环境。
+2. [config/environment-overrides.json](../../config/environment-overrides.json) 定义允许的环境变量及映射字段，解析入口见 [loadProfile()](../../src/config/load-profile.ts)。Host 报告未声明的 `HARNESS_COMFYUI_*` 变量时，维护者根据该配置文件修正环境变量。
 
 ## Configuration Profile 字段
 
@@ -100,7 +100,7 @@
 
 5. 包内资源范围由 [config/plugin-package.json](../../config/plugin-package.json) 定义。开发验收时，Profile patch 可将 `bundledSkillDir` 指向候选 checkout 的业务 Skill 目录。
 
-6. [src/workbench/functions.json](../../src/workbench/functions.json)定义功能及默认执行要求。用户在实验工作台配置中心保存各功能的预设、模型与执行要求；任务创建时固定本次执行配置。
+6. [src/workbench/functions.json](../../src/workbench/functions.json)定义功能及默认执行要求。[workbench-agent-roles.json](../../config/workbench-agent-roles.json)定义专用预设、功能默认映射及角色能力。用户在实验工作台配置中心保存各功能的预设、模型与执行要求；任务创建与功能委派均固定所选配置。提示词功能的区块模板和资料用途保存到 `request_parts`；可插入变量及区块条件由 [request-template.json](../../src/workbench/request-template.json) 定义。
 
 7. [config/workbench-translation.json](../../config/workbench-translation.json)定义翻译预设的 ID、名称与默认模型。[翻译组合](../../agent-presets/translation-composition.mjs)限定工具范围，[翻译预设](../../agent-presets/harness-comfyui-translation/agent.cordis.yml)配置独立 Skill 服务。模型必须由当前 Profile 的 Provider 配置提供。
 
@@ -129,7 +129,7 @@
    | `providers.<route>.models` | 保存模型 ID 与 `text`、`image` 输入能力。 |
    | `providers.<route>.apiKeyEnv` | 保存官方凭据引用；API Key 值由官方凭据服务保存。 |
 
-3. 设置页保留“系统 Provider”与“OpenAI 兼容接口”两类编辑方式。`connectionType`、完整 `endpoint` 与 `hasApiKey` 由宿主 Provider 和凭据状态派生，作为 Remote/UI 视图返回。图片读取统一使用宿主 Attachment 和 `llm.prepareCall()`，调用职责见[图片读取与 Prompt 对比职责](architecture.md#图片读取与-prompt-对比职责)。
+3. 设置页保留“系统 Provider”与“OpenAI 兼容接口”两类编辑方式。`connectionType`、完整 `endpoint` 与 `hasApiKey` 由宿主 Provider 和凭据状态派生，作为 Remote/UI 视图返回。图片读取的调用职责见[图片读取与 Prompt 对比职责](architecture.md#图片读取与-prompt-对比职责)。
 
 4. 自定义连接需要 API Key，由宿主凭据服务保存。迁移和保存时，插件通过该服务确认凭据是否已配置；缺少凭据时保留原配置，并提示用户保存 API Key。自定义地址必须是以 `/chat/completions` 结尾的完整 HTTP 或 HTTPS 地址。地址可包含服务路径前缀，例如 `https://example.com/vision/v1/chat/completions`。地址中的路径、query 或 fragment 无法映射时，插件返回 `IMAGE_READER_ENDPOINT_NATIVE_MAPPING_UNSUPPORTED`，并保留原配置。
 
@@ -143,7 +143,7 @@
 
 3. [ImageReaderConfigurationService](../../src/host/image-reader/configuration-service.ts)负责配置与凭据操作，[ImageReaderNativeSettings](../../src/host/image-reader/native-settings.ts)负责宿主 Provider 映射。删除图片配置时，仍被宿主 Provider 引用的凭据继续保留。保存结果不明或凭据清理失败时，Host 返回[错误目录](../../config/error-catalog.json)定义的 `IMAGE_READER_CREDENTIAL_*` 错误。
 
-4. 激活操作设置当前生效的配置；删除操作至少保留一份配置，并在删除活动配置时选择另一份配置生效。操作成功后，Host 返回完整的 `configuration`。配置写入与删除后的选择规则见 [ImageReaderConfigurationService](../../src/host/image-reader/configuration-service.ts)。
+4. 激活操作设置当前生效的配置。删除操作至少保留 1 份配置；删除当前生效的配置时，选择另一份配置生效。操作成功后，Host 返回完整的 `configuration`。配置写入与删除后的选择规则见 [ImageReaderConfigurationService](../../src/host/image-reader/configuration-service.ts)。
 
 5. Client 的配置选择和编辑草稿处理见 [image-reader-settings.tsx](../../src/client/image-reader/image-reader-settings.tsx)。
 
@@ -177,7 +177,7 @@
    | `provider` | 使用 `spawn` 创建独立子会话。 |
    | `maxDepth` | 使用 `1` 限定子 Agent 的派发深度。 |
 
-2. 派发组件省略 `agentPreset` 与 `agentOptions`，由宿主继承工作台组合与父 Agent 模型配置。
+2. 通用工作台的派发组件省略 `agentPreset` 与 `agentOptions`。持续实验使用各功能保存的预设与模型，配置入口见[工作台装配配置](#工作台装配配置)。
 
 3. 工具参数、返回值和使用说明以运行时官方工具声明为准。会话与生命周期职责见[系统架构](architecture.md#项目-presetskills-与目录访问)。
 

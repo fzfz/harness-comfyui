@@ -1,5 +1,108 @@
 {
-  "variables": { "task": "task_id", "translate": "source_text" },
+  "variables": {
+    "task": [
+      {
+        "name": "task_id",
+        "label": "工作台任务 ID"
+      }
+    ],
+    "translate": [
+      {
+        "name": "source_text",
+        "label": "待翻译的原文"
+      }
+    ],
+    "prompt": [
+      {
+        "name": "requirements_block",
+        "label": "底模与原始需求"
+      },
+      {
+        "name": "prompt_edit_block",
+        "label": "已有提示词与改动意见"
+      },
+      {
+        "name": "references_block",
+        "label": "参考资料"
+      }
+    ]
+  },
+  "blocks": {
+    "requirements_block": {
+      "label": "底模与原始需求",
+      "condition": "always",
+      "conditionLabel": "每次请求加入",
+      "variables": [
+        {
+          "name": "base_model_id",
+          "label": "图像底模 ID"
+        },
+        {
+          "name": "base_model_name",
+          "label": "图像底模名称"
+        },
+        {
+          "name": "original_request",
+          "label": "原始需求"
+        }
+      ],
+      "template": "图像底模：{{base_model_name}}\n底模 ID：{{base_model_id}}\n\n原始需求：\n{{original_request}}"
+    },
+    "prompt_edit_block": {
+      "label": "已有提示词与改动意见",
+      "condition": "has_prompt",
+      "conditionLabel": "已有提示词时加入",
+      "variables": [
+        {
+          "name": "change_request",
+          "label": "本轮改动意见"
+        },
+        {
+          "name": "positive_prompt",
+          "label": "本次改动前的正向提示词"
+        },
+        {
+          "name": "negative_prompt",
+          "label": "本次改动前的负向提示词"
+        }
+      ],
+      "template": "根据本轮改动意见，修改下面的提示词。本轮改动意见与原始需求冲突时，以本轮改动意见为准。保留已有提示词中未涉及本轮改动的内容。\n\n本轮改动意见：\n{{change_request}}\n\n本次改动前的正向提示词：\n{{positive_prompt}}\n\n本次改动前的负向提示词：\n{{negative_prompt}}"
+    },
+    "references_block": {
+      "label": "参考资料",
+      "condition": "has_references",
+      "conditionLabel": "已指定 Skill 或引用资料时加入",
+      "variables": [
+        {
+          "name": "reference_context",
+          "label": "已选参考资料及用途"
+        }
+      ],
+      "template": "参考资料：\n{{reference_context}}"
+    }
+  },
+  "references": {
+    "requested_skill": {
+      "label": "指定 Skill",
+      "description": "读取并执行指定的提示词 Skill。"
+    },
+    "experiences": {
+      "label": "经验",
+      "description": "按经验中的适用条件选择做法，并用于编写提示词。provenance 记录经验出处，核验依据时再查询。"
+    },
+    "task_artifacts": {
+      "label": "历史任务产物",
+      "description": "从用户选择的历史产物中提取适用于本次生成或改写要求的提示词写法。task_id 和 artifact_id 标识该产物的来源。"
+    },
+    "run_ids": {
+      "label": "参考 Run",
+      "description": "查询用户选择的 Run 的实际提示词与图片，提取本轮要求保留或改进的内容。"
+    },
+    "images": {
+      "label": "Agent 参考图片",
+      "description": "读取图片，按各图的 reference_requirement 提取要写入提示词的画面细节。"
+    }
+  },
   "errors": {
     "empty": "请填写本功能的执行要求。",
     "unsupported": "本功能支持的变量为 {placeholder}。请将其他变量改为具体文字。",

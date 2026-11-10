@@ -20,10 +20,18 @@
     "reference_experiences[].provenance": "该条经验的来源。created_by_task_id 是整理经验的任务；evidence 是支持记录或反例，其中 generation_task_id 是产生证据 Run 的任务。核验经验依据时再读取。",
     "evaluation_input": "被评价 Run 的编号，以及用户已有的观察、评价和经验草稿。分析与总结任务据此补充或修正内容。",
     "requested_skill": "指定执行的 Skill。值非空时读取并执行该 Skill；为空时根据功能目标和生成模型选择可用 Skill。",
-    "iterations": "本任务已提交的 Run、输入和评价产物编号。用于等待已提交运行、评价结果和确定下一轮输入。",
-    "artifacts": "本任务已提交的产物及采用状态。继续任务时据此确认已有成果。",
+    "iterations": "实验已提交的 Run、固定输入、评价产物和 execution_task_id。execution_task_id 标识实际执行生成的功能子任务。",
+    "artifacts": "任务产物及采用状态。实验同时汇总直属功能子任务的产物；每项 task_id 标识实际产出任务。",
     "max_runs": "本任务最多提交的生成 Run 总数。持续实验达到画面目标时可以提前结束。",
-    "origin": "创建任务时的工作区、工作和分支，也是生成 Run 与输入产物的归属。评价产物写入 evaluation_input 指定的 Run。"
+    "origin": "创建任务时的工作区、工作和分支，也是生成 Run 与输入产物的归属。评价产物写入 evaluation_input 指定的 Run。",
+    "parent_experiment_task_id": "功能子任务所属的持续实验任务 ID；独立任务为 null。",
+    "delegation_source": "创建此功能子任务时使用的 source。",
+    "children": "实验的功能子任务摘要，包含任务 ID、功能、状态、预设、模型、会话和错误。需要具体输入或产物时，按子任务 ID 读取任务。",
+    "source_run_id": "下一轮计划所针对的已评价 Run ID。",
+    "changes": "下一轮准备修改的具体提示词、参数或资源。",
+    "reason": "计划解决的画面问题或运行错误。",
+    "expected_result": "按计划修改后希望获得的画面效果或运行结果。",
+    "plan_artifact_id": "此候选输入采用的 iteration_plan 产物 ID。"
   },
   "publish": {
     "summary": "向指定工作台任务提交产物或补充问题。",
@@ -104,12 +112,12 @@
       "根据 workflow_image_bindings 核对选定图片与 Workflow 图片参数的对应关系。"
     ],
     "experiment": [
-      "根据 requirements.original_request 确定预期画面。结合 requirements.instructions 和 answers 确定改进重点和需要保留的条件。",
-      "首轮使用 generation_input。后续轮次根据前一轮的实际输入、图片和评价，确定要修改的内容。",
-      "reference_task_artifacts 中的历史产物与 reference_run_ids 对应的实际输入和图片，可用于后续轮次的调整。",
-      "根据 reference_experiences 的适用条件，选择可采用的提示词写法、参数设置或资源组合。",
-      "image_refs 中图片的用途为 agent 或 both 时，按 reference_requirement 读图。根据 workflow_image_bindings 核对选定图片与 Workflow 图片参数的对应关系。",
-      "结合 iterations 中的 Run 和 artifacts 中的评价，确定下一轮需要调整的输入。"
+      "根据 requirements 与 answers 确定预期画面、改进重点和需要保留的条件。",
+      "通过 workbench_function_list 读取功能配置。通过 workbench_function_delegate 委派运行、评价及所需业务功能。首轮输入来源为 initial，后续运行来源为已提交的候选输入产物。",
+      "运行结束后委派评价功能，source 使用 {\"type\":\"run\",\"run_id\":\"被评价的 Run ID\"}。读取子任务评价后决定继续改进或结束。",
+      "继续改进时先提交 iteration_plan，写明来源 Run、修改内容、原因和预期效果。根据计划中的修改内容委派提示词、参数或资源功能，并引用来源 Run 的评价产物和本次计划产物。",
+      "将选定子任务产物汇总为 generation_input，并用 plan_artifact_id 关联计划。下一次运行委派使用该候选产物。",
+      "根据 children 的状态和 artifacts 的 task_id 核对各功能结果。子任务提出问题时等待用户回答；达到目标或运行次数上限后结束实验。"
     ]
   },
   "end": {
@@ -122,7 +130,10 @@
     "answers",
     "output_contract",
     "origin",
-    "artifacts"
+    "artifacts",
+    "parent_experiment_task_id",
+    "delegation_source",
+    "children"
   ],
   "fields_by_kind": {
     "prompt": [

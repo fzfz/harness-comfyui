@@ -110,7 +110,7 @@ export const makeBinding = (
   preset_id: 'preset',
   agent_model: agentModel,
   requested_skill: 'comfyui-generate',
-  request_template: '{{task_id}}',
+  request_template: kind === 'prompt' ? '{{requirements_block}}' : '{{task_id}}',
 })
 export const makeTask = (
   id: string,
@@ -118,6 +118,7 @@ export const makeTask = (
   kind: TaskKind = 'run',
 ): Task => ({
   task_id: id,
+  parent_experiment_task_id: null,
   branch_id: branchId,
   function_id: kind,
   title: '任务 ' + id,
@@ -146,7 +147,7 @@ export const makeTask = (
     preset_id: 'preset',
     agentModel,
     requested_skill: null,
-    request_template: '{{task_id}}',
+    request_template: kind === 'prompt' ? '{{requirements_block}}' : '{{task_id}}',
   },
   session_id: 'session-' + id,
   request_text: '读取任务',
@@ -166,6 +167,7 @@ export const makeRun = (
 ): WorkbenchRun => ({
   run_id: id,
   workbench_task_id: taskId,
+  execution_task_id: null,
   iteration_index: null,
   status,
   title: '运行 ' + id,
@@ -285,7 +287,6 @@ export const fullProjection = (): WorkbenchProjection => ({
   functions: (
     [
       'prompt',
-      'rewrite',
       'parameters',
       'resources',
       'review',

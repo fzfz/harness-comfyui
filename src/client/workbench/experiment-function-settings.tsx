@@ -4,7 +4,8 @@ import type { AgentModel, FunctionBinding, FunctionBindingEditable, TaskKind } f
 import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
 import { agentModelProblem } from '../../workbench/agent-model.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
-import { requestTemplateProblem } from '../../workbench/request-template.ts'
+import { buildPromptRequest, DEFAULT_PROMPT_REQUEST_PARTS, PROMPT_BLOCKS, PROMPT_REFERENCES, requestTemplateProblem, type PromptBlockName, type PromptReferenceName, type PromptRequestInput } from '../../workbench/request-template.ts'
+import { ExperimentTemplateEditor } from './experiment-template-editor.tsx'
 import type { ExperimentRemote } from './experiment-contract.ts'
 import { Button, Modal } from './experiment-controls.tsx'
 import presentation from './experiment-function-presentation.json' with { type: 'json' }
@@ -66,7 +67,9 @@ function FunctionRemoval({ binding, onRemove, onClose }: {
   </Modal>
 }
 
-function FunctionEditor({ binding, create = false, functions, loadEnvironment, onSave, onClose, onToast }: {
+function FunctionEditor({ binding, create = false, functions, loadEnvironment, onSave, onClose, onToast, previewRequest, resolvePreview }: {
+  readonly previewRequest?: import('../../workbench/prompt-edit.ts').PromptStartRequest
+  readonly resolvePreview: ExperimentRemote['promptPreview']
   readonly binding: FunctionBinding
   readonly create?: boolean
   readonly functions: readonly FunctionBinding[]
@@ -105,6 +108,18 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
       })
     return () => { current = false }
   }, [loadEnvironment, draft.preset_id])
+  const [resolvedPreview, setResolvedPreview] = useState<PromptRequestInput | undefined>()
+  const [previewError, setPreviewError] = useState('')
+  const previewKey = JSON.stringify(previewRequest)
+  useEffect(() => {
+    let current = true
+    setResolvedPreview(undefined); setPreviewError('')
+    if (draft.kind !== 'prompt' || !previewRequest || !previewRequest.input.base_model_id) return
+    void resolvePreview({ ...previewRequest, function_id: binding.kind === 'prompt' && binding.function_id ? binding.function_id : 'prompt' })
+      .then(input => { if (current) setResolvedPreview(input) })
+      .catch(failure => { if (current) setPreviewError(failure instanceof Error ? failure.message : '请求预览失败，请关闭并重新打开功能编辑窗口。') })
+    return () => { current = false }
+  }, [previewKey, draft.kind, resolvePreview])
   const descriptor = WORKBENCH_FUNCTIONS.find(item => item.kind === draft.kind)!
   const skills = draft.kind === 'translate' ? [] : environment?.skills ?? []
   const groups = environment?.models.groups ?? []
@@ -113,7 +128,9 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
   const efforts = model?.reasoning?.efforts ?? []
   const presets = environment?.presets.filter(item => !item.broken) ?? []
   const preset = presets.find(item => item.id === draft.preset_id)
-  const problem = requestTemplateProblem(draft.request_template, draft.kind) || (environment
+  const parts = draft.request_parts ?? DEFAULT_PROMPT_REQUEST_PARTS
+  const problem = requestTemplateProblem(draft.request_template, draft.kind) || (draft.kind === 'prompt'
+    ? Object.entries(parts.block_templates).map(([name, template]) => requestTemplateProblem(template, 'prompt', name as PromptBlockName)).find(Boolean) : '') || (environment
     ? !preset ? presentation.selectAvailablePreset : agentModelProblem(draft.agent_model, groups, environment.models.routableProviders) : '')
   const update = (value: Partial<FunctionBinding>) => { setDraft(before => ({ ...before, ...value })); setError('') }
   const selectModel = (providerId: string, modelId?: string) => {
@@ -136,7 +153,8 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
         try {
           const { kind, agent_model, requested_skill, request_template } = draft
           const value: FunctionBindingEditable = { name: draft.name.trim(), kind, preset_id: preset.id,
-            agent_model, requested_skill: kind === 'translate' ? null : requested_skill, request_template }
+            agent_model, requested_skill: kind === 'translate' ? null : requested_skill, request_template,
+            ...(kind === 'prompt' ? { request_parts: parts } : {}) }
           await onSave(create ? { type: 'function-add', value } : { type: 'function-edit', id: binding.function_id, value })
           if (active.current) onClose()
         } catch (failure) {
@@ -178,8 +196,22 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
         <p className="preset-capabilities" id="preset-capabilities">{draft.preset_id === 'harness-comfyui-translation' ? '工具：无 · MCP：无 · Skill：无' : ''}</p>
         <div className="row between template-context"><span>功能位置：<output id="function-location">{descriptor.ui_location}</output></span><span>结果显示：<output id="function-result">{descriptor.ui_result}</output></span></div>
         <section className="template-edit">
-          <div className="row between"><label htmlFor="function-template">执行要求</label><Button kind="small quiet" disabled={saving} onClick={() => update({ request_template: descriptor.default_request_template })}>恢复默认要求</Button></div>
-          <div className="field"><textarea id="function-template" aria-label="执行要求" spellCheck={false} data-kind={draft.kind} style={{ height: 420 }} value={draft.request_template} readOnly={saving} onChange={event => update({ request_template: event.target.value })} /></div>
+          <div className="row between"><span>执行要求</span><Button kind="small quiet" disabled={saving} onClick={() => update({ request_template: descriptor.default_request_template, ...(draft.kind === 'prompt' ? { request_parts: DEFAULT_PROMPT_REQUEST_PARTS } : {}) })}>恢复默认要求</Button></div>
+          <ExperimentTemplateEditor label="执行要求" kind={draft.kind} value={draft.request_template} disabled={saving} onChange={request_template => update({ request_template })} />
+          {draft.kind === 'prompt' && <>
+            {(Object.entries(PROMPT_BLOCKS) as [PromptBlockName, typeof PROMPT_BLOCKS[PromptBlockName]][]).map(([name, block]) => <details key={name} className="request-block-editor"><summary>{block.label} · {block.conditionLabel}</summary>
+              <ExperimentTemplateEditor label={block.label} kind="prompt" block={name} value={parts.block_templates[name]} disabled={saving}
+                onChange={value => update({ request_parts: { ...parts, block_templates: { ...parts.block_templates, [name]: value } } })} />
+            </details>)}
+            <details className="request-reference-editor"><summary>参考资料用途</summary>
+              {(Object.entries(PROMPT_REFERENCES) as [PromptReferenceName, typeof PROMPT_REFERENCES[PromptReferenceName]][]).map(([name, reference]) => <label className="field" key={name}><span>{reference.label}</span>
+                <textarea aria-label={reference.label + '用途'} value={parts.reference_descriptions[name]} readOnly={saving}
+                  onChange={event => update({ request_parts: { ...parts, reference_descriptions: { ...parts.reference_descriptions, [name]: event.target.value } } })} /></label>)}
+            </details>
+            <details className="request-preview" open><summary>请求预览</summary>{resolvedPreview
+              ? <pre>{problem ? '' : buildPromptRequest(draft.request_template, { ...resolvedPreview, reference_context: { ...resolvedPreview.reference_context, requested_skill: draft.requested_skill } }, parts)}</pre>
+              : <p>{previewError || (previewRequest ? previewRequest.input.base_model_id ? '正在加载请求预览…' : '选择底模后可预览当前输入。' : '选择分支后可预览当前输入。')}</p>}</details>
+          </>}
           <p id="template-error" className="binding-problem" role="alert">{error || environmentError || problem}</p>
         </section>
         <div className="modal-actions"><Button kind="quiet" onClick={onClose}>取消</Button><button className="btn primary" type="submit" disabled={saving || loading || !!environmentError || !!problem || !preset}>保存功能</button></div>
@@ -188,7 +220,8 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
   )
 }
 
-export function ExperimentFunctionSettings({ workspaceId, workspaceName, functions, presets: initialPresets, models: initialModels, remote, onChange, onBack, onToast }: {
+export function ExperimentFunctionSettings({ workspaceId, workspaceName, functions, presets: initialPresets, models: initialModels, remote, onChange, onBack, onToast, previewRequest }: {
+  readonly previewRequest?: import('../../workbench/prompt-edit.ts').PromptStartRequest
   readonly workspaceId: string
   readonly workspaceName?: string
   readonly functions: readonly FunctionBinding[]
@@ -268,7 +301,7 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
       </main>
       {removal && <FunctionRemoval key={`${workspaceId}:${removal.function_id}`} binding={removal}
         onClose={() => setRemoval(null)} onRemove={() => onChange({ type: 'function-remove', id: removal.function_id })} />}
-      {editor && <FunctionEditor key={`${workspaceId}:${editor.binding.function_id}`} binding={editor.binding} create={editor.create} functions={functions} loadEnvironment={loadEnvironment} onSave={onChange} onClose={close} onToast={onToast} />}
+      {editor && <FunctionEditor key={`${workspaceId}:${editor.binding.function_id}`} binding={editor.binding} create={editor.create} previewRequest={previewRequest} resolvePreview={remote.promptPreview} functions={functions} loadEnvironment={loadEnvironment} onSave={onChange} onClose={close} onToast={onToast} />}
     </>
   )
 }

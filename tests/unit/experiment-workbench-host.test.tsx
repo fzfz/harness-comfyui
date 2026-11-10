@@ -57,6 +57,12 @@ const environment = {
   instances: [{ id: '2', name: 'win3080' }],
 }
 const remote = (): ExperimentHostRemote => ({
+  promptPreview: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
+  promptStart: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
+  promptGet: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
+  promptList: vi.fn(async () => ({ ok: true as const, value: [] })),
+  promptCancel: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
+  promptAdopt: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
   queryRecords: vi.fn(async () => ({ ok: true as const, value: [] })),
   resolveImages: vi.fn(async () => ({ ok: true as const, value: { images: [] } })),
   importImages: vi.fn(async () => ({ ok: true as const, value: { images: [] } })),
@@ -163,6 +169,12 @@ describe('official experiment workbench adapter', () => {
   it('forwards cross-workspace records, image bytes and temporary translation operations without changing their payloads or Remote failures', async () => {
     const api = remote(), renderer = await mount(api), shell = renderer.root.findByType(ExperimentWorkbench).props as ExperimentWorkbenchProps
     const requests = {
+      promptPreview: { workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', function_id: 'prompt', request_id: 'prompt-request', input: { original_request: '窗框', base_model_id: '1', positive_prompt: '', negative_prompt: '', change_request: '' } },
+      promptStart: { workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', function_id: 'prompt', request_id: 'prompt-request', input: { original_request: '窗框', base_model_id: '1', positive_prompt: '', negative_prompt: '', change_request: '' } },
+      promptGet: { workspace_id: 'workspace-a', request_id: 'prompt-request' },
+      promptList: { workspace_id: 'workspace-a', task_id: 'prompt-task' },
+      promptCancel: { workspace_id: 'workspace-a', request_id: 'prompt-request' },
+      promptAdopt: { workspace_id: 'workspace-a', request_id: 'prompt-request', positive_prompt: 'window', negative_prompt: '' },
       queryRecords: { type: 'run' as const, workspaceId: 'workspace-other', keyword: '窗框' },
       importImages: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [1, 2, 3] }] },
       resolveImages: { image_refs: [{ image_ref_id: 'ref', source: { kind: 'uploaded_file' as const, file_id: 'file' }, purpose: 'agent' as const, reference_requirement: '保留窗框' }] },
@@ -172,7 +184,9 @@ describe('official experiment workbench adapter', () => {
     }
     for (const name of Object.keys(requests) as (keyof typeof requests)[]) {
       const host = api[name] as (request: unknown) => Promise<unknown>, consumer = shell.remote[name] as (request: unknown) => Promise<unknown>
+      if (name.startsWith('prompt')) vi.mocked(host).mockResolvedValueOnce({ ok: true, value: name === 'promptList' ? [] : { request_id: 'prompt-request' } })
       const expected = await host(requests[name]) as { ok: true; value: unknown }
+      if (name.startsWith('prompt')) vi.mocked(host).mockResolvedValueOnce(expected)
       await expect(consumer(requests[name])).resolves.toEqual(expected.value)
       expect(host).toHaveBeenLastCalledWith(requests[name])
       const failure = new RemoteError('workbench/operation-failed', '请求失败，请重试。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] })

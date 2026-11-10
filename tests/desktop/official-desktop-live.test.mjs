@@ -2115,6 +2115,7 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   installedPluginSkillDirectory,
 }) {
   const expectedRepositorySkills = structuredClone(REPOSITORY_SKILL_CATALOG)
+  const roleConfiguration = JSON.parse(await readFile(resolve(installedPluginSkillDirectory, '../../config/workbench-agent-roles.json'), 'utf8'))
   const state = await page.evaluate(`new Promise((resolve, reject) => {
     window.__runPanelTestContext.inject(
       ['remote.agentPresets', 'remote.session', 'remote.skills'],
@@ -2194,7 +2195,8 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   expect(state.roster).toEqual(expect.objectContaining({ ok: true }))
   const presetIds = state.roster.value.presets.map(preset => preset.id)
   expect(presetIds).toContain('standard')
-  for (const presetId of [...PROJECT_PRESET_IDS, translationConfig.preset_id]) expect(presetIds).toContain(presetId)
+  for (const presetId of [...PROJECT_PRESET_IDS, translationConfig.preset_id, ...roleConfiguration.roles.map(role => role.id)]) expect(presetIds).toContain(presetId)
+  for (const role of roleConfiguration.roles) expect(state.roster.value.presets.find(preset => preset.id === role.id)?.broken).toBeUndefined()
   const defaultPresetId = state.roster.value.presets.find(preset => preset.isDefault)?.id
   expect(defaultPresetId).toBe('standard')
   const sessions = new Map(state.sessions.map(session => [session.key, session]))
@@ -2207,6 +2209,15 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
   const translationSession = sessions.get(translationConfig.preset_id)
   expect(translationSession.created.value.agentPreset).toBe(translationConfig.preset_id)
   expect(translationSession.skills.value.skills).toEqual([])
+  for (const role of roleConfiguration.roles) {
+    const session = sessions.get(role.id)
+    expect(session.created.value.agentPreset).toBe(role.id)
+    const visibleSkills = session.skills.value.skills
+    expect(visibleSkills.map(skill => skill.name).sort()).toEqual(role.skills.map(skill => skill.name).sort())
+    expect(visibleSkills.map(({ name, description }) => ({ name, description })).sort((a, b) => a.name.localeCompare(b.name)))
+      .toEqual(expectedRepositorySkills.filter(skill => role.skills.some(entry => entry.name === skill.name)).sort((a, b) => a.name.localeCompare(b.name)))
+    expect(visibleSkills.every(skill => classifySkillSource({ name: skill.name, pathFields: pathFields(skill) }, configuredRoots) === 'installed-project')).toBe(true)
+  }
 
   const expectedLinkedSkills = expectedRepositorySkills.filter(skill =>
     skill.name !== OFFICIAL_BUSINESS_FIXTURE.skills.workspaceName)

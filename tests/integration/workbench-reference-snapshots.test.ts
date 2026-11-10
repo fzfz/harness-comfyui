@@ -14,7 +14,7 @@ afterEach(() => { for (const cleanup of cleanups.splice(0).reverse()) cleanup() 
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), 'workbench-references-'))
   const database = new DatabaseSync(':memory:')
-  database.exec('CREATE TABLE generation_runs (run_id TEXT PRIMARY KEY, workspace_id TEXT, session_id TEXT, title TEXT, status TEXT, request_json TEXT, workbench_task_id TEXT, iteration_index INTEGER, initiator TEXT, candidate_artifact_id TEXT, review_artifact_id TEXT, retry_of_run_id TEXT, review_json TEXT, review_draft_json TEXT, error_code TEXT, error_message TEXT, created_at INTEGER, updated_at INTEGER)')
+  database.exec('CREATE TABLE generation_runs (run_id TEXT PRIMARY KEY, workspace_id TEXT, session_id TEXT, title TEXT, status TEXT, request_json TEXT, workbench_task_id TEXT, execution_task_id TEXT, iteration_index INTEGER, initiator TEXT, candidate_artifact_id TEXT, review_artifact_id TEXT, retry_of_run_id TEXT, review_json TEXT, review_draft_json TEXT, error_code TEXT, error_message TEXT, created_at INTEGER, updated_at INTEGER)')
   database.exec('CREATE TABLE generation_media (media_id TEXT, run_id TEXT, filename TEXT, media_type TEXT, media_kind TEXT, byte_size INTEGER)')
   const store = new WorkbenchStore({ database, artifactDirectory: directory })
   let count = 0
@@ -50,7 +50,7 @@ it('fixes cross-workspace task artifacts and independent experience contents whe
   const receipt = await f.service.publish({ taskId: sourceTask.task_id, artifact }, { workspaceId: source.workspaceId, sessionId: sourceTask.session_id!, turn: 1, callId: 'source' })
   const experience = f.store.saveExperience({ title: 'Glass details', conditions: 'Glasshouse scenes', note: 'Use rain on glass at 24 steps.' })
   const branch = f.store.getBranch(destination.branchId)
-  const draft = { ...branch.draft, reference_task_ids: [sourceTask.task_id], reference_experiences: [{ experience_id: experience.experience_id, title: '', conditions: '', note: '', provenance: { created_by_task_id: null, evidence: [] } }] }
+  const draft = { ...branch.draft, reference_task_ids: [sourceTask.task_id], reference_experiences: [{ experience_id: experience.experience_id, title: experience.title, conditions: experience.conditions, note: experience.note, provenance: experience.provenance }] }
   f.store.saveBranchDraft({ ...destination, expected: branch.draft, draft })
   const task = await f.service.createTask({ ...destination, functionId: 'prompt' })
   f.store.saveExperience({ experienceId: experience.experience_id, title: 'Changed', conditions: 'Changed', note: 'Changed' })

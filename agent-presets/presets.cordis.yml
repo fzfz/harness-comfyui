@@ -18,3 +18,31 @@
         name: cordis:include
         config:
           path: ./harness-comfyui-translation/agent.cordis.yml
+- id: preset-harness-comfyui-prompt
+  name: ./specialist-preset.mjs
+  config:
+    roleId: harness-comfyui-prompt
+- id: preset-harness-comfyui-parameters
+  name: ./specialist-preset.mjs
+  config:
+    roleId: harness-comfyui-parameters
+- id: preset-harness-comfyui-resources
+  name: ./specialist-preset.mjs
+  config:
+    roleId: harness-comfyui-resources
+- id: preset-harness-comfyui-run
+  name: ./specialist-preset.mjs
+  config:
+    roleId: harness-comfyui-run
+- id: preset-harness-comfyui-review
+  name: ./specialist-preset.mjs
+  config:
+    roleId: harness-comfyui-review
+- id: preset-harness-comfyui-experience
+  name: ./specialist-preset.mjs
+  config:
+    roleId: harness-comfyui-experience
+- id: preset-harness-comfyui-experiment
+  name: ./specialist-preset.mjs
+  config:
+    roleId: harness-comfyui-experiment

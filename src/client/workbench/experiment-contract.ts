@@ -4,6 +4,7 @@ import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { BaseModelItem } from '../../catalog/contract.ts'
 import type { ConnectionStateSource } from '@deepseek-ai/dsh-client-connection/client'
 import type { CatalogApi } from './catalog-browser.tsx'
+import type { PromptEditingRemote } from './experiment-prompt-editor.ts'
 import type { CatalogDetailsRequest } from '../../catalog/details-schema.ts'
 
 import type { WorkbenchProjection, TaskRequestDraft, WorkbenchRunInput } from '../../workbench/contract.ts'
@@ -28,7 +29,9 @@ export interface ExperimentScope {
   readonly workId?: string
   readonly branchId?: string
 }
-export interface ExperimentRemote {
+export interface ExperimentRemote extends PromptEditingRemote {
+  readonly promptPreview: (request: import('../../workbench/prompt-edit.ts').PromptStartRequest) => Promise<import('../../workbench/request-template.ts').PromptRequestInput>
+
   readonly queryRecords: (request: import('../../workbench/contract.ts').WorkbenchRecordQuery) => Promise<import('../../workbench/contract.ts').WorkbenchRecord[]>
   readonly resolveImages: (request: { image_refs: import('../../workbench/contract.ts').ImageRef[] }) => Promise<{ images: import('../../workbench/contract.ts').ImageSource[] }>
   readonly importImages: (request: { files: { name: string; media_type: string; bytes: number[] }[] }) => Promise<{ images: import('../../workbench/contract.ts').ImageRef[] }>

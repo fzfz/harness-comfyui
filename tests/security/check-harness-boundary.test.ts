@@ -326,10 +326,9 @@ describe('Harness source boundary', () => {
     }
   })
 
-  it('accepts the real Workbench native Tool component', () => {
+  it.each(['src/host/workbench/tools.ts', 'src/host/workbench/specialist-tools.ts'])('accepts the approved native Tool component %s', component => {
     const root = fixture()
     try {
-      const component = 'src/host/workbench/tools.ts'
       const destination = join(root, component)
       mkdirSync(dirname(destination), { recursive: true })
       writeFileSync(destination, readFileSync(join(repositoryRoot, component)))
@@ -340,7 +339,7 @@ describe('Harness source boundary', () => {
     }
   })
 
-  it.each(['src/other.ts', 'src/host/workbench/plugin.ts', 'src/host/workbench/tools-extra.ts', 'src/host/workbench/tools/index.ts'])('rejects Tool registration in %s', path => {
+  it.each(['src/other.ts', 'src/host/workbench/plugin.ts', 'src/host/workbench/tools-extra.ts', 'src/host/workbench/tools/index.ts', 'src/host/workbench/specialist-tools-extra.ts', 'src/host/workbench/specialist-tools/index.ts'])('rejects Tool registration in %s', path => {
     const root = fixture()
     try {
       const destination = join(root, path)
@@ -354,10 +353,10 @@ describe('Harness source boundary', () => {
     }
   })
 
-  it('keeps public import restrictions in the Workbench Tool component', () => {
+  it.each(['src/host/workbench/tools.ts', 'src/host/workbench/specialist-tools.ts'])('keeps public import restrictions in %s', component => {
     const root = fixture()
     try {
-      const destination = join(root, 'src/host/workbench/tools.ts')
+      const destination = join(root, component)
       mkdirSync(dirname(destination), { recursive: true })
       writeFileSync(destination, "import { hidden } from '@deepseek-ai/dsh-typert-protocol/internal'\nctx.tools.register(component)\n")
       const result = run(root)

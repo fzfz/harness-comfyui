@@ -75,7 +75,7 @@ it('forks a prompt artifact from its Task branch and fixed input while preservin
   expect(await branchAt(remote, selected)).toEqual(selectedBefore)
   expect(await service.getTask({ taskId: task.task_id }, identity)).toMatchObject({
     generation_input: baseline.generation_input,
-    artifacts: [{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }],
+    artifacts: [{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'candidate' }],
   })
 })
 
@@ -95,7 +95,7 @@ it('forks allowed parameter values into the fixed Task generation input and leav
   const fork = await remote.mutate({ ...source, type: 'task-branch', id: published.artifact_id, value: { name: 'Suggested parameters' } }, signal())
   expect((await branchAt(remote, fork)).draft).toEqual({ ...baseline, generation_input: { ...baseline.generation_input, parameters: { positive: '', negative: '', seed: 17, steps: 28, width: 512, height: 512 } } })
   expect(await branchAt(remote, source)).toEqual(parent)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
 })
 
 it('forks a review candidate with mixed catalog model scopes and preserves its full generation input', async () => {
@@ -124,7 +124,7 @@ it('forks a review candidate with mixed catalog model scopes and preserves its f
     prompt_input: { positive_prompt: 'Review candidate', negative_prompt: 'haze' }, base_model_id: '9', ...candidate,
   } })
   expect(await branchAt(remote, source)).toEqual(parent)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
   expect((await remote.getProjection(source, signal())).runs.map(run => run.run_id)).toEqual([runId])
   const acceptedId = await acceptRun(host, fork)
   expect((await remote.getProjection(fork, signal())).runs.find(run => run.run_id === acceptedId)!.generation_input).toEqual(candidate.generation_input)
@@ -149,7 +149,7 @@ it.each([
   const target = await branchAt(remote, source)
   await expect(remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: target.draft }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_MISMATCH' } })
   expect(await branchAt(remote, source)).toEqual(target)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
 })
 
 it('applies recommended resources from another base model to the Task branch', async () => {
@@ -172,7 +172,7 @@ it('applies recommended resources from another base model to the Task branch', a
     ...target.draft, generation_input: { ...target.draft.generation_input, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
   })
   expect(await branchAt(remote, selected)).toEqual(selectedBefore)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
 })
 
 it.each([false, true])('applies a model and LoRA recommendation in either order while retaining current resources: reversed=%s', async reversed => {
@@ -220,12 +220,13 @@ it.each([
   const before = (await remote.getProjection(source, signal())).branches
   await expect(remote.mutate({ ...source, type: 'task-branch', id: published.artifact_id, value: { name: 'Unsupported fork' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT' } })
   expect((await remote.getProjection(source, signal())).branches).toEqual(before)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
 })
 
 it.each(['workspace_1', 'workspace_2'])('creates a branch from a cross-work artifact in %s', async workspaceId => {
   const host = await fixture(), { remote, service } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Source', goal: 'Paint rain' } }, signal())
+  await saveFixtureDraft(remote, source, draft => { draft.base_model_id = '1' }, signal())
   const { task, identity } = await startTask(host, source, 'prompt')
   const published = await service.publish({ taskId: task.task_id, artifact: { type: 'prompt', positive_prompt: 'Rain', negative_prompt: '' } }, identity)
   const other = await remote.mutate({ type: 'new-work', workspaceId, value: { name: 'Other Work', goal: 'Paint sunshine' } }, signal())
@@ -267,7 +268,7 @@ it.each(['prompt', 'parameters', 'resources'])('uses the displayed Task target f
   else expected.editing_draft.generation_input.loras.push({ id: '7', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] })
   expect(await branchAt(remote, source)).toEqual(expected)
   expect(await branchAt(remote, selected)).toEqual(selectedBefore)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
 })
 
 it('preserves an already selected LoRA weight when adopting the same recommended resource', async () => {
@@ -338,5 +339,5 @@ it.each([
     image_refs: [], workflow_image_bindings: [],
     generation_input: { ...before.draft.generation_input, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
   })
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
 })

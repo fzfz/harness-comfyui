@@ -12,8 +12,8 @@ it('keeps questions and answers in their original task while continuing the same
   cleanups.push(host.dispose)
   const { remote, ctx, official } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Light', goal: 'Paint the glasshouse' } }, signal())
-  const first = await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
-  const second = await remote.mutate({ ...selected, type: 'agent-action', id: 'rewrite' }, signal())
+  const first = await remote.mutate({ ...selected, type: 'agent-action', id: 'resources' }, signal())
+  const second = await remote.mutate({ ...selected, type: 'agent-action', id: 'resources' }, signal())
   const initial = await remote.getProjection(selected, signal())
   const task = initial.tasks.find(item => item.task_id === first.taskId)!
   const other = initial.tasks.find(item => item.task_id === second.taskId)!
@@ -33,13 +33,13 @@ it('keeps questions and answers in their original task while continuing the same
   ])
   expect(taskInput.requirements).toEqual(task.input.requirements)
   expect(official.controller.prompt).toHaveBeenLastCalledWith(expect.objectContaining({ sessionId: task.session_id, content: [{ type: 'text', text: task.request_text }] }), expect.any(AbortSignal))
-  await service.publish({ taskId: task.task_id, artifact: { type: 'prompt', positive_prompt: 'glasshouse, moonlight, visible window frames and reflections', negative_prompt: 'blur' } }, { ...identity, turn: 3, callId: 'prompt' })
+  await service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'model', id: '2' }], reason: 'Preserve window frames and reflections in moonlight' } }, { ...identity, turn: 3, callId: 'prompt' })
   const completed = await remote.getProjection(selected, signal())
   expect(completed.tasks).toHaveLength(2)
   expect(completed.tasks.find(item => item.task_id === task.task_id)).toMatchObject({ session_id: task.session_id, status: 'succeeded', binding_snapshot: task.binding_snapshot, input: task.input })
   expect(completed.tasks.find(item => item.task_id === other.task_id)).toMatchObject({ status: 'waiting_input', answers: [] })
   expect(completed.artifacts.find(item => item.artifact_id === otherQuestion.artifact_id)?.artifact).toEqual({ type: 'question', question: 'Which colour?', options: [] })
-  expect(completed.branches[0]!.editing_draft?.prompt_input.positive_prompt).toBe('glasshouse, moonlight, visible window frames and reflections')
+  expect(completed.artifacts.find(item => item.task_id === task.task_id && item.artifact.type === 'resources')?.artifact).toEqual({ type: 'resources', refs: [{ kind: 'model', id: '2' }], reason: 'Preserve window frames and reflections in moonlight' })
 })
 
 it('interrupts and continues an Agent without cancelling or duplicating its accepted Run', async () => {

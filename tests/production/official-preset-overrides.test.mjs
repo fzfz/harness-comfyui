@@ -1,6 +1,9 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { cp, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import yaml from 'js-yaml'
 import { applyEntryPatches, entryListSchema } from '@deepseek-ai/cordis-plugin-include'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -41,10 +44,38 @@ async function resolvePatched(root, patch) {
     const originalMcp = await readRows(mcpPath)
     result.push({ row, originalComposition, composed, originalMcp, mcp: apply(originalMcp, mcpInclude.config.patches) })
   }
-  return { original, rows, result }
+  const specialists = []
+  for (const row of rows.filter(row => row.config?.roleId)) {
+    const { default: Factory } = await import(pathToFileURL(resolve(root, 'agent-presets', row.name)).href)
+    const before = original.find(entry => entry.id === row.id)
+    const originalComposition = Factory.Config(before.config).plugins
+    const composed = Factory.Config(row.config).plugins
+    const includes = composed.filter(entry => entry.name === 'cordis:include')
+    const services = []
+    for (const include of includes) {
+      const originalMcp = await readRows(include.config.path)
+      services.push({ originalMcp, mcp: apply(originalMcp, include.config.patches) })
+    }
+    specialists.push({ row, originalComposition, composed, services })
+  }
+  return { original, rows, result, specialists }
 }
 
 describe('installed Preset Profile overrides', () => {
+  it('creates overlays in ordinary Node for an isolated installation without SDK dependencies', async () => {
+    const root = await installedRoot()
+    await expect(stat(join(root, 'node_modules'))).rejects.toMatchObject({ code: 'ENOENT' })
+    const source = `const { createOfficialPresetProfilePatch } = await import(${JSON.stringify(pathToFileURL(resolve(repositoryRoot, 'tests/desktop/fixtures/official-preset-overrides.mjs')).href)});\nconst patch = await createOfficialPresetProfilePatch({ installedPackageRoot: ${JSON.stringify(root)}, mcpUrl: 'http://127.0.0.1:31234/mcp' });\nprocess.stdout.write(JSON.stringify(patch));`
+    const { stdout } = await promisify(execFile)(process.execPath, ['--input-type=module', '-e', source], { cwd: root, env: { ...process.env, NODE_PATH: '' }, encoding: 'utf8' })
+    expect(JSON.parse(stdout).config.patches.map(entry => entry.id)).toEqual(['preset-harness-comfyui-cli-candidate', 'preset-harness-comfyui-prompt', 'preset-harness-comfyui-resources', 'preset-harness-comfyui-review'])
+  })
+  it('applies standard composition patches to a specialist without changing its role identity', async () => {
+    const { default: SpecialistPreset } = await import('../../agent-presets/specialist-preset.mjs')
+    const defaults = SpecialistPreset.Config({ roleId: 'harness-comfyui-prompt' })
+    const overridden = SpecialistPreset.Config({ roleId: 'harness-comfyui-prompt', patches: [{ id: 'mcp-noobai', disabled: true }] })
+    expect(overridden).toMatchObject({ id: 'harness-comfyui-prompt', name: defaults.name, order: defaults.order })
+    expect(overridden.plugins).toEqual(defaults.plugins.map(entry => entry.id === 'mcp-noobai' ? { ...entry, disabled: true } : entry))
+  })
   it('writes explicit overlays into an existing Profile without replacing other entries, and retries safely', async () => {
     const root = await installedRoot()
     const path = join(root, 'profile.patch.yml')
@@ -70,6 +101,7 @@ describe('installed Preset Profile overrides', () => {
   it.each(['missing', 'duplicate'])('rejects %s target entries at each include layer', async kind => {
     for (const [relativePath, id] of [
       ['agent-presets/presets.cordis.yml', 'preset-harness-comfyui-cli-candidate'],
+      ['agent-presets/presets.cordis.yml', 'preset-harness-comfyui-prompt'],
       ['agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml', 'project-common'],
       ['agent-presets/shared/agent.cordis.yml', 'noobai-mcp'],
       ['agent-presets/noobai-mcp.cordis.yml', 'mcp-noobai'],
@@ -103,18 +135,33 @@ describe('installed Preset Profile overrides', () => {
     const root = await installedRoot()
     const patch = await createOfficialPresetProfilePatch({ installedPackageRoot: root, mcpUrl: 'http://127.0.0.1:31234/mcp' })
     expect(patch.id).toBe('harness-comfyui-presets')
-    const { original, rows, result } = await resolvePatched(root, patch)
-    const targetedIds = new Set(result.map(entry => entry.row.id))
+    const { original, rows, result, specialists } = await resolvePatched(root, patch)
+    const targetedIds = new Set([...result, ...specialists.filter(entry => entry.services.length > 0)].map(entry => entry.row.id))
     expect(patch.config.patches.map(entry => entry.id)).toEqual([...targetedIds])
     expect(rows.filter(row => !targetedIds.has(row.id))).toEqual(original.filter(row => !targetedIds.has(row.id)))
-    const pluginIdentities = entries => entries.map(row => row.config.plugins.map(({ id, name }) => ({ id, name })))
-    expect(pluginIdentities(rows)).toEqual(pluginIdentities(original))
+    const presetIdentities = entries => entries.map(row => Array.isArray(row.config.plugins)
+      ? { ...row, config: { ...row.config, plugins: row.config.plugins.map(({ id, name }) => ({ id, name })) } }
+      : { ...row, config: Object.fromEntries(Object.entries(row.config).filter(([key]) => key !== 'patches')) })
+    expect(presetIdentities(rows)).toEqual(presetIdentities(original))
     for (const entry of result) {
       expect(entry.mcp[0].config).toEqual({ ...entry.originalMcp[0].config, url: 'http://127.0.0.1:31234/mcp' })
       expect(entry.mcp[0].config.headers.Authorization).toEqual({ __jsExpr: '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`' })
       for (const composed of entry.composed.filter(row => row.id !== 'project-common')) {
         const before = entry.originalComposition.find(row => row.id === composed.id)
         expect(composed).toEqual(before)
+      }
+    }
+    expect(specialists).toHaveLength(7)
+    expect(specialists.filter(entry => entry.services.length > 0).map(entry => entry.row.config.roleId).sort()).toEqual(['harness-comfyui-prompt', 'harness-comfyui-resources', 'harness-comfyui-review'])
+    for (const entry of specialists) {
+      const includeIdentities = entries => entries.map(row => row.name === 'cordis:include'
+        ? { ...row, config: Object.fromEntries(Object.entries(row.config).filter(([key]) => key !== 'patches')) }
+        : row)
+      expect(includeIdentities(entry.composed)).toEqual(includeIdentities(entry.originalComposition))
+      expect(entry.row.config.patches ?? []).toHaveLength(entry.services.length)
+      for (const service of entry.services) {
+        expect(service.mcp).toEqual(service.originalMcp.map(client => ({ ...client, config: { ...client.config, url: 'http://127.0.0.1:31234/mcp' } })))
+        expect(service.mcp[0].config.headers.Authorization).toEqual({ __jsExpr: '`Bearer ${process.env.NOOBAI_MCP_TOKEN}`' })
       }
     }
     expect(await readRows(join(root, 'agent-presets/presets.cordis.yml'))).toEqual(original)

@@ -27,6 +27,10 @@
     "workbench-tools": {
       "sourceEntryRelativePath": "src/host/workbench/tools.ts",
       "outputEntryRelativePath": ".local/source-host/workbench-tools.js"
+    },
+    "specialist-tools": {
+      "sourceEntryRelativePath": "src/host/workbench/specialist-tools.ts",
+      "outputEntryRelativePath": ".local/source-host/specialist-tools.js"
     }
   },
   "client": {

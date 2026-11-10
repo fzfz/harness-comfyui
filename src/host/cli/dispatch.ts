@@ -4,6 +4,8 @@ import type { CliHandlerOptions } from './schema.ts'
 import type { CliExecutionIdentity } from './shell-capability.ts'
 import { RANDOM_SEED_MAX_EXCLUSIVE } from '../../generation/submission-contract.ts'
 
+type CliDispatchOptions = Omit<CliHandlerOptions, 'capabilities' | 'runWait'> & Partial<Pick<CliHandlerOptions, 'runWait'>>
+
 function ordinaryRandomSeeds(count: number): readonly number[] {
   const seeds = new Set<number>()
   while (seeds.size < count) seeds.add(Math.floor(Math.random() * RANDOM_SEED_MAX_EXCLUSIVE))
@@ -11,7 +13,7 @@ function ordinaryRandomSeeds(count: number): readonly number[] {
 }
 
 async function generationIdentity(
-  options: CliHandlerOptions,
+  options: CliDispatchOptions,
   identity: CliExecutionIdentity,
   taskId?: string,
 ) {
@@ -28,7 +30,7 @@ async function generationIdentity(
 }
 
 export async function dispatch(
-  options: CliHandlerOptions,
+  options: CliDispatchOptions,
   identity: CliExecutionIdentity,
   request: CliRequest,
   signal: AbortSignal,
@@ -64,6 +66,7 @@ export async function dispatch(
     case 'generation.random-seeds':
       return Object.freeze({ seeds: ordinaryRandomSeeds(request.count) })
     case 'generation.wait': {
+      if (!options.runWait) throw new Error('Run observation is unavailable. Use generation resolve-media to read the Run status.')
       return options.runWait.register({
         sessionId: identity.sessionId,
         callId: identity.callId,

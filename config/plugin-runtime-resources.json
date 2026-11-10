@@ -16,7 +16,10 @@
     "agent-presets/noobai-mcp.cordis.yml",
     "agent-presets/project-installed-presets.mjs",
     "agent-presets/harness-comfyui-cli-candidate/preset.yml",
-    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml"
+    "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+    "agent-presets/specialist-preset.mjs",
+    "agent-presets/specialist-composition.mjs",
+    "agent-presets/specialist-skills.mjs"
   ],
   "failureDetailsTemplate": "以下插件包运行资源缺失、不是普通文件或无法读取；本次激活在初始化业务数据前停止，现有配置和业务数据保持原样：\n{resources}"
 }

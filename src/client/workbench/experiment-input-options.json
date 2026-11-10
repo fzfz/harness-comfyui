@@ -1,6 +1,6 @@
 {
   "taskRequest": {
-    "kinds": ["prompt", "rewrite", "parameters", "resources"],
+    "kinds": ["parameters", "resources"],
     "close": "关闭对话框",
     "cancel": "取消",
     "submit": "交给 Agent",

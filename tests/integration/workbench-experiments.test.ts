@@ -52,9 +52,9 @@ async function setup(maxRuns = 3, preparer?: GenerationPreparationAdapter, trans
   return { ...host, selected }
 }
 
-it.each(['prompt', 'experiment'] as const)('retains the unfinished %s snapshot while its Agent is unloaded and observes it after reload', async kind => {
+it.each(['resources', 'experiment'] as const)('retains the unfinished %s snapshot while its Agent is unloaded and observes it after reload', async kind => {
   const f = await setup()
-  const receipt = await f.remote.mutate({ ...f.selected, ...(kind === 'prompt' ? { type: 'agent-action' as const, id: 'prompt' } : { type: 'experiment' as const }) }, signal())
+  const receipt = await f.remote.mutate({ ...f.selected, ...(kind === 'resources' ? { type: 'agent-action' as const, id: 'resources' } : { type: 'experiment' as const }) }, signal())
   const task = (await f.remote.getProjection(f.selected, signal())).tasks.find(task => task.task_id === receipt.taskId)!
   const agent = f.official.agents.get(task.session_id!)!
   agent.status = 'idle'
@@ -401,6 +401,31 @@ it.each([
   expect((await accept(f, f.task.input.generation_input, requestId)).items[0]).toMatchObject({ runId, acceptance: 'reused' })
   await expect(accept(f)).rejects.toMatchObject({ code: 'WORKBENCH_TASK_STOPPED' })
   expect((await f.remote.getRunInput({ workspaceId: f.selected.workspaceId, workId: f.selected.workId!, runId }, signal())).generation_input).toEqual(f.task.input.generation_input)
+})
+
+it('keeps an unfinished prompt request until its matching completion is read from the released session', async () => {
+  const f = await setup()
+  const receipt = await f.remote.mutate({ ...f.selected, type: 'agent-action', id: 'prompt' }, signal())
+  const task = f.store.getTask(receipt.taskId!)
+  const turn = f.store.listPromptTurns(task.task_id)[0]!
+  f.official.events.set(task.session_id!, [
+    { seq: 0, type: 'turn/start', data: { turn: 1 } },
+    { seq: 1, type: 'user/message', data: { source: { kind: 'user', rpcId: turn.request_id } } },
+  ] as unknown as import('@deepseek-ai/dsh-session').SessionEvent[])
+  f.official.agents.get(task.session_id!)!.status = 'idle'
+  const idle = await f.remote.getProjection(f.selected, signal())
+  expect(idle.tasks[0]).toMatchObject({ execution_state: 'idle', status: 'running' })
+  f.official.agents.delete(task.session_id!)
+  expect((await f.remote.getProjection(f.selected, signal())).tasks).toEqual(idle.tasks)
+  f.official.events.get(task.session_id!)!.push(...[
+    { seq: 2, type: 'assistant/message', data: { turn: 1, message: { content: [{ type: 'text', text: '{"type":"prompt","positive_prompt":"warm glass light","negative_prompt":""}' }] } } },
+    { seq: 3, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+  ] as unknown as import('@deepseek-ai/dsh-session').SessionEvent[])
+  const finished = await f.remote.getProjection(f.selected, signal())
+  expect(finished.tasks[0]).toMatchObject({ task_id: task.task_id, session_id: task.session_id, execution_state: 'idle', status: 'succeeded' })
+  expect(finished.artifacts).toContainEqual(expect.objectContaining({ task_id: task.task_id, artifact: { type: 'prompt', positive_prompt: 'warm glass light', negative_prompt: '' } }))
+  expect(f.official.controller.create).toHaveBeenCalledOnce()
+  expect(f.official.controller.prompt).toHaveBeenCalledOnce()
 })
 
 it('counts successful and failed rounds, requires each review and retains the manual review at budget completion', async () => {
