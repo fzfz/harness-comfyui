@@ -62,6 +62,43 @@ function workflowCompiler(compile: WorkflowCompiler['compile']): WorkflowCompile
 }
 
 describe('SourceGenerationPreparer', () => {
+  it('uploads Workflow images in binding order and keeps Agent references outside the Workflow', async () => {
+    const uploads: string[] = []
+    const compiler = workflowCompiler(async input => ({
+      inputDescription: null, actualWorkflow: input.workflow, apiWorkflow: { parameters: input.runtimeParameters ?? {} }, activeOutputNodeIds: ['3'],
+    }))
+    compiler.inspectRuntimeParameters = async () => ({ parameters: [
+      { parameter_id: 'reference_image_1', kind: 'reference_image', value_type: 'string', current_value: '', image_cardinality: 'one' },
+      { parameter_id: 'reference_image_2', kind: 'reference_image', value_type: 'choice', current_value: [], image_cardinality: 'many' },
+    ], size_candidates: [] })
+    const preparer = new SourceGenerationPreparer({
+      defaultInstanceId: '1', source: source(template()), compiler,
+      images: {
+        async resolve(ref) { return { filePath: '/images/' + ref.image_ref_id, filename: ref.image_ref_id + '.png', mediaType: 'image/png' } },
+        async upload(input) { uploads.push(input.imageRefId); return { name: input.filename, subfolder: 'workbench', type: 'input' } },
+      },
+    })
+    const imageRefs = [
+      { image_ref_id: 'first', source: { kind: 'uploaded_file', file_id: 'file-first' }, purpose: 'both', reference_requirement: '' },
+      { image_ref_id: 'second', source: { kind: 'run_media', run_id: 'run-source', media_id: 'media-source' }, purpose: 'workflow', reference_requirement: '' },
+      { image_ref_id: 'agent', source: { kind: 'uploaded_file', file_id: 'file-agent' }, purpose: 'agent', reference_requirement: 'look at lighting' },
+    ] as const
+    const prepared = await preparer.prepare({ ...request, imageRefs, workflowImageBindings: [
+      { parameter_id: 'reference_image_1', image_ref_ids: ['first'] },
+      { parameter_id: 'reference_image_2', image_ref_ids: ['second', 'first'] },
+    ] })
+    expect(prepared.effectiveInput?.parameters).toMatchObject({
+      reference_image_1: 'workbench/first.png',
+      reference_image_2: ['workbench/second.png', 'workbench/first.png'],
+    })
+    expect(uploads).toEqual(['first', 'second'])
+    expect(prepared.imageUploads).toEqual([
+      { image_ref_id: 'first', parameter_id: 'reference_image_1', instance_id: '2', name: 'first.png', subfolder: 'workbench', type: 'input' },
+      { image_ref_id: 'first', parameter_id: 'reference_image_2', instance_id: '2', name: 'first.png', subfolder: 'workbench', type: 'input' },
+      { image_ref_id: 'second', parameter_id: 'reference_image_2', instance_id: '2', name: 'second.png', subfolder: 'workbench', type: 'input' },
+    ])
+  })
+
   it.each(['inspect', 'validate', 'prepare'])('keeps source failure identity and cancellation during %s', async (entry) => {
     const generationSource = source(template())
     const compile = vi.fn<WorkflowCompiler['compile']>(async () => ({ inputDescription: { parameters: [], size_candidates: [] }, actualWorkflow: template().workflow, apiWorkflow: {}, activeOutputNodeIds: [] }))

@@ -1,3 +1,4 @@
+import descriptions from '../../config/workbench-tool-descriptions.json' with { type: 'json' }
 import { parseHelpDefinition } from './help-schema.mjs'
 
 export function presentationArguments(argv, valueOptions = []) {
@@ -27,11 +28,11 @@ export function renderHelp(definition, argv, values = {}, renderContract = () =>
   if (argv.at(-1) !== '--help' || !Object.hasOwn(help.nodes, key)) throw new TypeError(`Unknown help command. Next: ${help.invocation} --help`)
   const node = help.nodes[key]
   const children = Object.entries(help.nodes).filter(([name]) => name && name.split(' ').slice(0, -1).join(' ') === key)
-  const render = line => Object.entries({ cli: help.invocation, ...values }).reduce(
+  const render = line => Object.entries({ cli: help.invocation, workbench_summary: descriptions.summary, workbench_publish_summary: descriptions.publish.summary, workbench_end_summary: descriptions.end.summary, ...values }).reduce(
     (result, [name, value]) => result.replaceAll(`{${name}}`, String(value)), line,
   )
-  return [node.summary, '', `用法: ${help.invocation}${key ? ` ${key}` : ''} --help`, ...(key ? [`公共文件协议与 JSON 类型: ${help.invocation} --help`] : (help.commonDetails ?? [])).concat(node.details, renderContract(key)).map(render),
-    ...children.map(([name, child]) => `\n${name}: ${child.summary}\n  ${help.invocation} ${name} --help`),
+  return [render(node.summary), '', `用法: ${help.invocation}${key ? ` ${key}` : ''} --help`, ...(key ? [`公共文件协议与 JSON 类型: ${help.invocation} --help`] : (help.commonDetails ?? [])).concat(node.details, renderContract(key)).map(render),
+    ...children.map(([name, child]) => `\n${name}: ${render(child.summary)}\n  ${help.invocation} ${name} --help`),
     ''].join('\n')
 }
 

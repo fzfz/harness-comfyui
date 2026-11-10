@@ -29,6 +29,12 @@ export interface ExperimentScope {
   readonly branchId?: string
 }
 export interface ExperimentRemote {
+  readonly queryRecords: (request: import('../../workbench/contract.ts').WorkbenchRecordQuery) => Promise<import('../../workbench/contract.ts').WorkbenchRecord[]>
+  readonly resolveImages: (request: { image_refs: import('../../workbench/contract.ts').ImageRef[] }) => Promise<{ images: import('../../workbench/contract.ts').ImageSource[] }>
+  readonly importImages: (request: { files: { name: string; media_type: string; bytes: number[] }[] }) => Promise<{ images: import('../../workbench/contract.ts').ImageRef[] }>
+  readonly translateStart: (request: { request_id: string; workspace_id: string; source_text: string }) => Promise<{ request_id: string; status: 'running' | 'succeeded' | 'failed'; text?: string; error?: string }>
+  readonly translateGet: (request: { request_id: string }) => Promise<{ request_id: string; status: 'running' | 'succeeded' | 'failed'; text?: string; error?: string }>
+  readonly translateCancel: (request: { request_id: string }) => Promise<unknown>
   readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<WorkbenchRunInput>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<TaskRequestDraft | null>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<TaskRequestDraft>
@@ -85,5 +91,4 @@ export interface ExperimentViewState {
   readonly scrollPositions: Readonly<
     Record<string, { readonly top: number; readonly left: number }>
   >
-  readonly presetOverride: string | null
 }

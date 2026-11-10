@@ -64,6 +64,10 @@ export function reportFrontendAttemptDiagnostic(
 }
 
 /** Validate the selected Configuration Profile before Host startup completes. */
+import { WorkbenchInputFileService } from '../generation/input-file-service.ts'
+import type { GenerationImagePreparationPort } from '../generation/source-preparer.ts'
+import inputFileConfiguration from '../../workbench/input-files.json' with { type: 'json' }
+
 export async function apply(ctx: Context, config: Config): Promise<void> {
   const runtimeResources = assertPluginRuntimeResourcesAvailable()
   const {
@@ -114,9 +118,22 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const database = new DatabaseSync(effectiveProfile.paths.runRepositoryFile)
   ctx.effect(() => () => database.close(), 'Plugin SQLite repository')
   let workbenchStore: WorkbenchStore
+  const inputFiles = new WorkbenchInputFileService({ database, directory: join(effectiveProfile.paths.dataDir, inputFileConfiguration.directory), maxFileBytes: profile.media.maxFileBytes })
+  const transport = new ComfyHttpTransport({ source, maxMediaBytes: profile.media.maxFileBytes })
+  const images: GenerationImagePreparationPort = {
+    async resolve(ref, signal) {
+      signal?.throwIfAborted()
+      if (ref.source.kind === 'uploaded_file') return inputFiles.resolve(ref.source.file_id, signal)
+      const media = runtime.getMedia(ref.source.media_id)
+      if (media.runId !== ref.source.run_id) throw new Error('图片与所选运行记录不匹配，请重新选择图片。')
+      return { filePath: runtime.mediaContentPath(media.mediaId), filename: media.filename, mediaType: media.mediaType }
+    },
+    upload: input => transport.upload(input),
+  }
   const runtime = new GenerationRuntime({
     database,
     workbench: {
+      taskWorkspace: taskId => workbenchStore.taskWorkspace(taskId),
       assertGenerationAcceptance: input => workbenchStore.assertGenerationAcceptance(structuredClone(input)),
       registerGenerationRun: input => workbenchStore.registerGenerationRun(structuredClone(input)),
     },
@@ -125,13 +142,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     savedMediaDirectory: effectiveProfile.paths.savedMediaDirectory,
     preparer: new SourceGenerationPreparer({
       defaultInstanceId: effectiveProfile.comfyui.defaultInstanceId,
-      source,
+      source, images,
       compiler: new ComfyWorkflowCompiler({
         timeoutMs: effectiveProfile.comfyui.frontendCompiler.timeoutMs,
         officialApiWorkflowCompiler,
       }),
     }),
-    transport: new ComfyHttpTransport({ source, maxMediaBytes: profile.media.maxFileBytes }),
+    transport,
     missingObservationMs: effectiveProfile.jobs.missingObservationMs,
     reportRunInputLookupError: reportGenerationRunInputLookupError.bind(undefined, generationLogger),
   })
@@ -149,7 +166,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     }
   }, 'Generation coordinator')
   new ComfyuiCoreService(ctx, {
-    catalog, runtime, workbenchStore, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings),
+    catalog, runtime, workbenchStore, inputFiles, images, profile: effectiveProfile, sourceAddress: () => readSourceAddress(sourceSettings),
   })
   ctx.plugin(workbenchPlugin)
 }

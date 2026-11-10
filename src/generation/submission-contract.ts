@@ -25,6 +25,8 @@ export interface GenerationModelSelection {
 }
 
 export interface GenerationRequest {
+  readonly imageRefs?: readonly import('../workbench/contract.ts').ImageRef[]
+  readonly workflowImageBindings?: readonly import('../workbench/contract.ts').WorkflowImageBinding[]
   readonly title: string
   readonly instanceId: string | null
   readonly templateId: string
@@ -32,6 +34,8 @@ export interface GenerationRequest {
   readonly parameters: Readonly<Record<string, JsonValue>>
   readonly loras: readonly GenerationLoraSelection[]
 }
+
+export type GenerationImageUpload = import('../workbench/contract.ts').ImageUpload
 
 export interface GenerationSubmissionItem {
   readonly requestId: string

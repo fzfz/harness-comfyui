@@ -1,0 +1,10 @@
+{
+  "positive_prompt": ["text", "wildcard_text", "prompt", "positive"],
+  "negative_prompt": ["text", "wildcard_text", "prompt", "negative"],
+  "width": ["width", "width_override"],
+  "height": ["height", "height_override"],
+  "seed": ["seed", "noise_seed"],
+  "sampler_name": ["sampler_name", "sampler"],
+  "resolution_preset": ["resolution", "resolution_preset"],
+  "reference_image": ["image", "reference_image"]
+}

@@ -1,5 +1,6 @@
 {
   "defaultKind": "rewrite",
+  "leadingKind": "translate",
   "add": "添加功能",
   "edit": "编辑功能",
   "loadError": "功能配置加载失败，请重新打开功能窗口。",

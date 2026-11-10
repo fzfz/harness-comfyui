@@ -6,6 +6,7 @@ import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { CatalogRemoteService } from '../../src/host/catalog/catalog-service.ts'
 import { semanticDiscovery } from './fixtures/source-client-contract.mjs'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 
 type SourceInput = { mode: string; id?: string; query?: string; page?: number; page_size?: number; base_model_id?: string }
 type SourceRequest = { path: string; input: SourceInput }
@@ -87,17 +88,26 @@ it('resolves only the replacement model and preserves selected LoRAs across cata
       const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
       await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       for (const id of ['9', '17', '19']) await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'lora', id } }, signal)
+      await saveFixtureDraft(host.remote, scope, () => {}, signal)
       Object.assign(host.catalog, {
         search: source.search.bind(source), details: source.details.bind(source), resolveGenerationModel: source.resolveGenerationModel.bind(source),
       })
       const before = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
       await host.remote.mutate({ ...scope, type: 'resource-select', value: { kind: 'model', id: '25' } }, signal)
       expect(requests).toEqual([{ path: '/internal/semantic/generation-models', input: { mode: 'resolve', id: '25' } }])
-      const after = (await host.remote.getProjection(scope, signal)).branches[0]!.draft
-      expect(after).toEqual({
+      const editing = (await host.remote.getProjection(scope, signal)).branches[0]!
+      expect(before.generation_input.loras.map(lora => lora.id)).toEqual(['9', '17', '19'])
+      expect(editing.draft).toEqual(before)
+      const expected = {
         ...before, base_model_id: '4',
         generation_input: { ...before.generation_input, model: { id: '25', file_name: 'selected.safetensors' } },
-      })
+      }
+      expect(editing.editing_draft).toEqual(expected)
+      await saveFixtureDraft(host.remote, scope, () => {}, signal)
+      const saved = (await host.remote.getProjection(scope, signal)).branches[0]!
+      expect(saved.draft).toEqual(expected)
+      expect(saved.editing_draft).toBeNull()
+      expect(requests).toEqual([{ path: '/internal/semantic/generation-models', input: { mode: 'resolve', id: '25' } }])
     } finally { await host.dispose() }
   })
 })

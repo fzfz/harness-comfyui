@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { spawn } from 'node:child_process'
 import { readFile, readdir, writeFile } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
@@ -72,12 +73,13 @@ it('keeps fixed source inputs, context and base model when running a branch from
     }
   })
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '4' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Source rain on glass' }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'negative_prompt', value: 'Source blur' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Source rain on glass' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.negative_prompt = 'Source blur' }, signal())
   const startRun = async (scope: typeof selected) => {
     const before = new Set((await remote.getProjection(scope, signal())).tasks.map(task => task.task_id))
     await remote.mutate({ ...scope, type: 'run' }, signal())
@@ -91,28 +93,29 @@ it('keeps fixed source inputs, context and base model when running a branch from
   const review = store.getRunReviewDraft(source.actual.run_id)
   await remote.mutate({ ...selected, type: 'evaluate', runId: source.actual.run_id, value: { expected: review, draft: { ...review, title: 'Source setup', conditions: 'Rain on glass', note: 'Retain the source setup' }, saveExperience: true } }, signal())
   const experience = (await remote.getProjection(selected, signal())).experiences[0]!
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Current branch sunshine' }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'negative_prompt', value: 'Current branch darkness' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Current branch sunshine' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.negative_prompt = 'Current branch darkness' }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '3' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal())
-  await remote.mutate({ ...selected, type: 'resource-remove', id: '4', value: 'character' }, signal())
-  expect(store.getBranch(selected.branchId!).draft).toMatchObject({ base_model_id: '9', prompt_input: { positive_prompt: 'Current branch sunshine' }, context_refs: [] })
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  expect(store.getBranch(selected.branchId!).draft).toMatchObject({ base_model_id: '9', prompt_input: { positive_prompt: 'Current branch sunshine' }, image_refs: [], workflow_image_bindings: [] })
   const fromRun = await remote.mutate({ ...selected, type: 'create-branch', runId: source.actual.run_id, value: { name: 'From source Run', original_request: 'Repeat the source Run' } }, signal())
   const fromExperience = await remote.mutate({ ...selected, type: 'reuse', id: experience.experience_id, value: { name: 'Experience recheck', baseModelId: '1' } }, signal())
   for (const scope of [fromRun, fromExperience]) {
-    expect(store.getBranch(scope.branchId!).draft).toMatchObject({ base_model_id: '1', prompt_input: { positive_prompt: null, negative_prompt: null }, context_refs: [{ kind: 'character', id: '4' }], generation_input: source.actual.generation_input })
+    expect(store.getBranch(scope.branchId!).draft).toMatchObject({ base_model_id: '1', prompt_input: { positive_prompt: null, negative_prompt: null }, image_refs: [], workflow_image_bindings: [], generation_input: source.actual.generation_input })
     const started = await startRun(scope)
     expect(started.task.input.base_model_id).toBe('1')
-    expect(started.task.input.context_refs).toEqual([{ kind: 'character', id: '4' }])
+    expect(started.task.input.image_refs).toEqual([])
     expect(started.actual.generation_input).toEqual(source.actual.generation_input)
   }
   await remote.mutate({ ...selected, type: 'experiment' }, signal())
   const experiment = (await remote.getProjection(selected, signal())).tasks.find(task => task.kind === 'experiment')!
   const candidateInput = { ...source.actual.generation_input, parameters: { ...source.actual.generation_input.parameters, positive: 'Candidate evening rain', negative: 'Candidate fog' } }
-  const published = await run(['workbench', 'task', 'publish', '--stdin'], { task_id: experiment.task_id, artifact: { type: 'generation_input', generation_input: candidateInput, context_refs: [{ kind: 'character', id: '4' }] } }, variables(workbenchShellExecution(experiment.session_id!)))
+  const published = await run(['workbench', 'task', 'publish', '--stdin'], { task_id: experiment.task_id, artifact: { type: 'generation_input', generation_input: candidateInput, image_refs: [], workflow_image_bindings: [] } }, variables(workbenchShellExecution(experiment.session_id!)))
   expect(published.code, published.stderr).toBe(0)
   const fromCandidate = await remote.mutate({ ...selected, type: 'task-branch', id: published.data.artifact_id, value: { name: 'From candidate' } }, signal())
-  expect(store.getBranch(fromCandidate.branchId!).draft).toMatchObject({ base_model_id: '1', prompt_input: { positive_prompt: 'Candidate evening rain', negative_prompt: 'Candidate fog' }, context_refs: [{ kind: 'character', id: '4' }] })
+  expect(store.getBranch(fromCandidate.branchId!).draft).toMatchObject({ base_model_id: '1', prompt_input: { positive_prompt: 'Candidate evening rain', negative_prompt: 'Candidate fog' }, image_refs: [], workflow_image_bindings: [] })
   const started = await startRun(fromCandidate)
   expect(started.task.input.base_model_id).toBe('1')
   expect(started.actual.generation_input).toEqual(candidateInput)
@@ -121,12 +124,14 @@ it('keeps fixed source inputs, context and base model when running a branch from
 it('accepts a comparison with two Run references and rejects a single reference before creating a task', async () => {
   const { remote, runtime, run, variables } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Compare rain treatments' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   const runIds: string[] = []
   for (const prompt of ['Gentle rain', 'Heavy rain']) {
-    await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: prompt }, signal())
+    await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = prompt }, signal())
     const before = new Set((await remote.getProjection(selected, signal())).tasks.map(task => task.task_id))
     await remote.mutate({ ...selected, type: 'run' }, signal())
     const task = (await remote.getProjection(selected, signal())).tasks.find(task => !before.has(task.task_id))!
@@ -150,9 +155,11 @@ it('accepts a comparison with two Run references and rejects a single reference 
 it('publishes a terminal Run review without an optional generation candidate through the actual CLI', async () => {
   const { ctx, remote, run, variables, runtime, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'run' }, signal())
   const generationTask = (await remote.getProjection(selected, signal())).tasks[0]!
   const submitted = await run(['generation', 'submit', '--stdin'], { workbench_task_id: generationTask.task_id, items: [{ request_id: crypto.randomUUID(), request: generationTask.input.generation_input }] }, variables(workbenchShellExecution(generationTask.session_id!)))
@@ -207,7 +214,7 @@ it('routes task get and file-backed publish through the mounted Host and saves c
   expect(isAbsolute(first.resultPath)).toBe(true)
   expect(first.stderr).toContain('NEXT:')
   expect(first.data).toMatchObject({ task_id: task.task_id, kind: 'prompt', prompt_input: { positive_prompt: '', negative_prompt: '' }, requirements: { original_request: 'Paint a portrait' }, output_contract: { artifact_types: ['prompt'] } })
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Manual portrait' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Manual portrait' }, signal())
   const second = await run(['workbench', 'task', 'get', '--stdin'], { task_id: task.task_id }, environment)
   expect(second.resultPath).not.toBe(first.resultPath)
   expect(second.data.prompt_input.positive_prompt).toBe('')
@@ -240,13 +247,10 @@ it('routes task get and file-backed publish through the mounted Host and saves c
 it('authorizes descendants, rejects unrelated sessions and returns retryable experiment end receipts', async () => {
   const { ctx, remote, run, variables, official, descendants, cliFiber, unregister } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
-  for (const request of [
-    { type: 'update-draft', field: 'instance_id', value: '8' },
-    { type: 'resource-select', value: { kind: 'model', id: '2' } },
-    { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } },
-    { type: 'update-execution', field: 'max_runs', value: 2 },
-    { type: 'experiment' },
-  ] as const) await remote.mutate({ ...selected, ...request }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const request of [{ type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, { type: 'update-execution', field: 'max_runs', value: 2 }] as const) await remote.mutate({ ...selected, ...request }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await remote.mutate({ ...selected, type: 'experiment' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
   official.sessions.set('session-child', { header: { cwd: '/workspace/project' } })
   descendants.set(task.session_id!, [{ id: 'session-child', mode: 'internal' }])
@@ -254,12 +258,13 @@ it('authorizes descendants, rejects unrelated sessions and returns retryable exp
   const childResult = await run(['workbench', 'task', 'get', '--stdin'], { task_id: task.task_id }, childEnvironment)
   expect(childResult.code, childResult.stderr).toBe(0)
   const unrelated = variables(workbenchShellExecution('session-unrelated'))
-  const denied = await run(['workbench', 'task', 'get', '--stdin'], { task_id: task.task_id }, unrelated)
+  const denied = await run(['workbench', 'task', 'publish', '--stdin'], { task_id: task.task_id, artifact: { type: 'prompt', positive_prompt: 'Unauthorized', negative_prompt: '' } }, unrelated)
   expect(denied).toMatchObject({ code: 1, stdout: '' })
   expect(denied.stderr).toContain('WORKBENCH_ACCESS_DENIED')
   const otherWorkspace = variables(workbenchShellExecution('session-other', '/workspace/other'))
   const crossWorkspace = await run(['workbench', 'task', 'get', '--stdin'], { task_id: task.task_id }, otherWorkspace)
-  expect(crossWorkspace.stderr).toContain('WORKBENCH_ACCESS_DENIED')
+  expect(crossWorkspace.code, crossWorkspace.stderr).toBe(0)
+  expect(crossWorkspace.data.task_id).toBe(task.task_id)
   const environment = variables(workbenchShellExecution(task.session_id!))
   const ended = await run(['workbench', 'experiment', 'end', '--stdin'], { task_id: task.task_id, reason: 'user_ended' }, environment)
   expect(ended.code).toBe(0)

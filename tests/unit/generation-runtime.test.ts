@@ -71,6 +71,57 @@ function request(prompt: string): GenerationRequest {
 }
 
 describe('GenerationRuntime acceptance', () => {
+  it('reads the prepared image input after restart while preserving the submitted references', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'harness-effective-input-'))
+    temporaryDirectories.push(root)
+    const submitted: GenerationRequest = { ...request('portrait'), imageRefs: [{ image_ref_id: 'image-one', source: { kind: 'uploaded_file', file_id: 'file-one' }, purpose: 'workflow', reference_requirement: '' }], workflowImageBindings: [{ parameter_id: 'reference_image', image_ref_ids: ['image-one'] }] }
+    const preparer: TestGenerationPreparationAdapter = {
+      async prepare(input) { return {
+        instanceId: '2', instanceTitle: 'ComfyUI', templateTitle: 'Template',
+        inputDescription: null, sourceSnapshot: {}, actualWorkflow: { image: 'target/reference.png' }, apiWorkflow: {}, expectedOutputNodeIds: [],
+        connection: { url: 'http://127.0.0.1:8188', origin: 'http://127.0.0.1:8188', authorization: null },
+        effectiveInput: { ...input, instanceId: '2', parameters: { ...input.parameters, reference_image: 'target/reference.png' } },
+        imageUploads: [{ image_ref_id: 'image-one', parameter_id: 'reference_image', instance_id: '2', name: 'reference.png', subfolder: 'target', type: 'input' }],
+      } },
+    }
+    const runtime = createRuntimeAt(root, preparer)
+    const accepted = await acceptPrepared(runtime, { workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_1' }, submitted)
+    runtime.close()
+    const restored = createRuntimeAt(root, preparer)
+    const result = await restored.readGenerationRunInputs({ workspaceId: 'workspace_other', runIds: [accepted.runId] })
+    expect(result.runs[0]).toMatchObject({
+      submitted_input: { image_refs: submitted.imageRefs, workflow_image_bindings: submitted.workflowImageBindings, parameters: { positive_prompt: 'portrait' } },
+      effective_input: { instance_id: '2', parameters: { reference_image: 'target/reference.png' } },
+      arguments: { image_refs: submitted.imageRefs, parameters: { reference_image: 'target/reference.png' } },
+      image_uploads: [{ image_ref_id: 'image-one', parameter_id: 'reference_image', instance_id: '2', name: 'reference.png', subfolder: 'target', type: 'input' }],
+      workflow: { image: 'target/reference.png' },
+    })
+    restored.close()
+  })
+
+  it('keeps submitted image inputs and completed uploads when a later image fails', async () => {
+    const submitted: GenerationRequest = { ...request('portrait'), imageRefs: [
+      { image_ref_id: 'image-first', source: { kind: 'uploaded_file', file_id: 'file-first' }, purpose: 'workflow', reference_requirement: '' },
+      { image_ref_id: 'image-failed', source: { kind: 'uploaded_file', file_id: 'file-failed' }, purpose: 'workflow', reference_requirement: '' },
+    ], workflowImageBindings: [{ parameter_id: 'reference_image', image_ref_ids: ['image-first', 'image-failed'] }] }
+    const runtime = createRuntime({
+      async prepare(_request, _signal, context) {
+        context?.onImageUploaded({ image_ref_id: 'image-first', parameter_id: 'reference_image', instance_id: '2', name: 'first.png', subfolder: 'workbench', type: 'input' })
+        throw new GenerationRuntimeError('GENERATION_IMAGE_PREPARATION_FAILED', 'Image image-failed: file is missing.')
+      },
+    })
+    const accepted = await runtime.acceptGenerations({ workspaceId: 'workspace_1', sessionId: 'session_1', turn: 1, callId: 'call_1' }, [{ requestId: randomUUID(), request: submitted }])
+    await runtime.advance()
+    const result = await runtime.readGenerationRunInputs({ workspaceId: 'workspace_other', runIds: [accepted.items[0]!.runId] })
+    expect(result.runs[0]).toMatchObject({
+      lookup_status: 'available', submitted_input: { image_refs: submitted.imageRefs, workflow_image_bindings: submitted.workflowImageBindings },
+      effective_input: null,
+      image_uploads: [{ image_ref_id: 'image-first', parameter_id: 'reference_image', instance_id: '2', name: 'first.png', subfolder: 'workbench', type: 'input' }],
+      workflow_error: { code: 'GENERATION_IMAGE_PREPARATION_FAILED', message: 'Image image-failed: file is missing.' },
+    })
+    runtime.close()
+  })
+
   it('delegates template parameter inspection without creating a Generation Run', async () => {
     const inspectRuntimeParameters = vi.fn(async () => ({
       parameters: [],
@@ -407,7 +458,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
       ? { run_id: item.run_id, lookup_status: item.lookup_status }
       : { run_id: item.run_id, lookup_status: item.lookup_status, code: item.error.code }))
       .toEqual([
-        { run_id: runIds[0], lookup_status: 'available' },
+        { run_id: 'run_3c0ad3ed', lookup_status: 'error', code: 'GENERATION_RUN_ID_AMBIGUOUS' },
         { run_id: runIds[0], lookup_status: 'available' },
         { run_id: 'run_deadbeef', lookup_status: 'error', code: 'GENERATION_RUN_ID_AMBIGUOUS' },
         { run_id: 'run_ffffffff', lookup_status: 'error', code: 'GENERATION_RUN_NOT_FOUND' },
@@ -419,7 +470,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
         { run_id: 'not a valid run id', lookup_status: 'error', code: 'GENERATION_RUN_ID_INVALID' },
         { run_id: runIds[1], lookup_status: 'available' },
         { run_id: runIds[5], lookup_status: 'available' },
-        { run_id: runIds[6], lookup_status: 'error', code: 'GENERATION_RUN_NOT_FOUND' },
+        { run_id: runIds[6], lookup_status: 'available' },
       ])
     runtime.close()
   })
@@ -457,7 +508,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
     await expect(runtime.readGenerationRunInputs({
       workspaceId: 'workspace_1',
       runIds: [first.runId, 'run_missing', second.runId, first.runId],
-    })).resolves.toEqual({
+    })).resolves.toMatchObject({
       runs: [
         {
           run_id: first.runId,
@@ -477,7 +528,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
         {
           run_id: 'run_missing',
           lookup_status: 'error',
-          error: { code: 'GENERATION_RUN_NOT_FOUND', message: 'Generation Run was not found in the current Workspace.' },
+          error: { code: 'GENERATION_RUN_NOT_FOUND', message: 'Generation Run was not found.' },
         },
         {
           run_id: second.runId,
@@ -512,7 +563,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
     runtime.close()
   })
 
-  it('keeps querying after an invalid ID and hides Runs owned by another Workspace', async () => {
+  it('reads referenced Runs across Workspaces and keeps querying after an invalid ID', async () => {
     const runtime = createRuntime({
       async prepare(generationRequest) {
         return {
@@ -542,7 +593,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
     })
 
     expect(result.runs.map(item => item.lookup_status === 'error' ? item.error.code : item.arguments.parameters.positive_prompt))
-      .toEqual(['GENERATION_RUN_ID_INVALID', 'GENERATION_RUN_NOT_FOUND', 'visible prompt'])
+      .toEqual(['GENERATION_RUN_ID_INVALID', 'hidden prompt', 'visible prompt'])
     runtime.close()
   })
 
@@ -646,7 +697,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
     await expect(runtime.readGenerationRunInputs({
       workspaceId: 'workspace_1',
       runIds: [failedRun.runId],
-    })).resolves.toEqual({
+    })).resolves.toMatchObject({
       runs: [{
         run_id: failedRun.runId,
         lookup_status: 'available',

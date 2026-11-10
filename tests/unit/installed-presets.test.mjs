@@ -8,12 +8,12 @@ import { promisify } from 'node:util'
 import { describe, expect, it } from 'vitest'
 
 const requireFromModule = createRequire(import.meta.url)
-const yaml = requireFromModule('js-yaml')
+import { parsePresetYaml } from '../support/preset-yaml.mjs'
 const executeFile = promisify(execFile)
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 
 async function readYaml(path) {
-  return yaml.load(await readFile(path, 'utf8'))
+  return parsePresetYaml(await readFile(path, 'utf8'))
 }
 
 function findRow(rows, id) {
@@ -37,14 +37,14 @@ describe('official installed Preset declarations', () => {
 
   it('declares the workbench Preset using the Host Skills service', async () => {
     const entries = await readYaml(resolve(repositoryRoot, 'agent-presets/presets.cordis.yml'))
-    expect(entries.map(row => row.config.id)).toEqual(['harness-comfyui-cli-candidate'])
+    expect(entries.map(row => row.id)).toEqual(['preset-harness-comfyui-cli-candidate', 'preset-harness-comfyui-translation'])
     expect(findRow(entries, 'preset-harness-comfyui-cli-candidate').config)
       .toMatchObject({ name: 'ComfyUI工作台预设', order: 91 })
     for (const row of entries) {
-      expect(row.name).toBe('@deepseek-ai/dsh-agent-preset')
+      expect(row.name).toBe(row.id === 'preset-harness-comfyui-translation' ? './translation-preset.mjs' : '@deepseek-ai/dsh-agent-preset')
       expect(await entryListProblemFor(row.config.plugins)).toBeUndefined()
       expect(row.config.plugins).toEqual([{
-        id: 'composition', name: 'cordis:include', config: { path: `./${row.config.id}/agent.cordis.yml` },
+        id: 'composition', name: 'cordis:include', config: { path: `./${row.id.replace('preset-', '')}/agent.cordis.yml` },
       }])
     }
     expect(await entryListProblemFor([{ name: 'cordis:group', group: true, config: {} }]))
@@ -56,7 +56,7 @@ describe('official installed Preset declarations', () => {
       resolve(repositoryRoot, 'tests/unit/fixtures/installed-presets-runtime.mjs'),
     ], { cwd: repositoryRoot, env: { NODE_ENV: 'test' }, encoding: 'utf8' })
     expect(JSON.parse(stdout.trim())).toEqual({
-      defaultPresetIds: ['harness-comfyui-cli-candidate'],
+      defaultPresetIds: ['harness-comfyui-cli-candidate', 'harness-comfyui-translation'],
       patchedOrder: 193,
       nestedExpressionPreserved: true,
       reloadedOrder: 91,

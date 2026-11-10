@@ -34,6 +34,8 @@
   disabled: !!js process.platform !== 'win32'
   config:
     enableRunInBackground: false
+- id: workbench-tools
+  name: harness-comfyui/workbench-tools
 - id: tool-presentation
   name: '@deepseek-ai/dsh-agent-tool-presentation'
   config:

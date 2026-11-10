@@ -19,18 +19,17 @@ function parameterErrorMessage(failure: unknown, parameterIds: readonly string[]
 export function RuntimeParameterField({ label, id, parameter, value, editor, locked, save }: {
   readonly label: string
   readonly id: string
-  readonly parameter?: WorkflowRuntimeParameterInspectionParameter
   readonly value: JsonValue | undefined
   readonly editor: FieldEditor
   readonly locked: boolean
-  readonly save: (value: JsonValue) => Promise<void>
-}) {
+} & ({ readonly parameter: WorkflowRuntimeParameterInspectionParameter; readonly save: (value: JsonValue) => Promise<void> } | { readonly parameter?: undefined; readonly save?: never })) {
   const error = useSyncExternalStore(editor.subscribe, editor.getErrorSnapshot, editor.getErrorSnapshot)
-  const values = parameter?.kind === 'reference_image' ? undefined
-    : parameter?.allowed_values ?? (parameter?.value_type === 'boolean' ? [true, false] : undefined)
-  const numeric = parameter?.value_type === 'integer' || parameter?.value_type === 'number'
+  if (!parameter) return <label className="field"><span>{label}</span><input id={id} aria-label={label} value={value === undefined || value === null ? '' : String(value)} disabled readOnly /></label>
+  const values = parameter.kind === 'reference_image' ? undefined
+    : parameter.allowed_values ?? (parameter.value_type === 'boolean' ? [true, false] : undefined)
+  const numeric = parameter.value_type === 'integer' || parameter.value_type === 'number'
   const options: FieldOptions = {
-    disabled: !parameter, saveOnChange: true,
+    saveOnChange: true,
     ...(values ? { choices: values.map(item => ({
       value: JSON.stringify(item),
       label: typeof item === 'boolean' ? inputOptions.booleanLabels[item ? 'true' : 'false'] : typeof item === 'string' ? item : JSON.stringify(item),
@@ -45,7 +44,7 @@ export function RuntimeParameterField({ label, id, parameter, value, editor, loc
         editor.setError('')
         return true
       } catch (failure) {
-        editor.setError(parameterErrorMessage(failure, parameter ? [parameter.parameter_id] : [], '参数保存失败，请重试。'))
+        editor.setError(parameterErrorMessage(failure, [parameter.parameter_id], '参数保存失败，请重试。'))
         return false
       }
     }} />

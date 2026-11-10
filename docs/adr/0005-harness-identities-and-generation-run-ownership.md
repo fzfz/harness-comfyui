@@ -9,7 +9,8 @@ status: accepted
 ## 1. 调用身份与归属
 
 1. Host 从已验证的前台 Tool Call 取得原生 Session、数字 turn 和 `call_id`。Workspace 按原始项目目录解析，入口见[受管 CLI 身份](../system/architecture.md#host-node-与受管-cli-身份)。
-2. Runtime 接纳请求时创建 `run_id`，并保存调用来源。子会话创建的 Run 继续归属该子会话；父会话按现有后代访问范围查询结果。
+2. Runtime 接纳请求时创建 `run_id`，并保存调用来源。普通生成请求按调用会话所属 Workspace 记录归属。工作台生成请求按 `task_id` 取得创建任务时的 Workspace、工作与分支；执行会话、turn 和 `call_id` 记录实际调用来源。
+3. 当前 Profile 内的 Task、Run 与媒体查询按记录 ID 定位。跨 Workspace 读取使用来源记录的 Workspace；任务执行与产物提交的身份校验由 [WorkbenchService](../../src/workbench/service.ts) 负责。
 
 ## 2. 请求身份与重放
 

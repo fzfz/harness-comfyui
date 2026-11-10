@@ -13,8 +13,8 @@
         "run_ids 来自用户或已保存的提交结果。",
         "查询结果的复用条件：仅复用 lookup_status 为 available 的项。",
         "lookup_status 为 error 时，按本节错误指引处理该项，继续使用其他可用项。查询结果含逐项错误时，命令退出码仍为 0。",
-        "Run ID 可使用完整值，或 run_ 加至少 {min_run_id_prefix_length} 个 UUID 字符、且在当前 Workspace 内唯一的前缀。",
-        "GENERATION_RUN_ID_INVALID 或 GENERATION_RUN_ID_AMBIGUOUS：取得完整或更长 ID 后，只重新查询该项。GENERATION_RUN_NOT_FOUND：报告当前 Workspace 中缺少该 Run，等待用户更换 ID。其他错误按消息处理。"
+        "Run ID 可使用完整值，或 run_ 加至少 {min_run_id_prefix_length} 个 UUID 字符、且在当前 Profile 内唯一的前缀。",
+        "GENERATION_RUN_ID_INVALID 或 GENERATION_RUN_ID_AMBIGUOUS：取得完整或更长 ID 后，只重新查询该项。GENERATION_RUN_NOT_FOUND：报告当前 Profile 中缺少该 Run，等待用户更换 ID。其他错误按消息处理。"
       ]
     },
     "image": {
@@ -46,6 +46,7 @@
         "template_id 和 instance_id 来自当前会话的目录查询工具。工具入口见当前会话的工具声明和所用 Skill。",
         "输入示例：{\"template_id\":\"1\",\"instance_id\":\"2\"}。",
         "parameter_id 是提交参数名；kind 是参数用途；value_type 是取值类型。current_value 是模板当前值。minimum、maximum、allowed_values 存在时共同限制提交值。choice 的值必须来自 allowed_values。",
+        "图片参数的 image_cardinality 指定绑定数量：one 为单图，many 为有序多图。该字段由目标节点合同提供。",
         "size_candidates 中每项是一套可选尺寸表达。width_height 使用 width 与 height；aspect_ratio_megapixels 使用 aspect_ratio 与 megapixels；resolution_preset 使用 parameter。",
         "mapped_options 将预设值映射为像素宽高；unmapped_values 列出尚无宽高映射的预设值。",
         "构造单图请求前，确认 positive_prompt、seed、batch_size 各对应唯一参数。写入负向 Prompt 时，negative_prompt 也必须唯一。batch_size 必须接受整数 1，提交时写入 1。",
@@ -74,10 +75,10 @@
       "summary": "将已有 Run 登记为官方 Job，完成后通知当前 Agent。",
       "details": [
         "调用：{cli} generation wait --stdin [--quiet]。",
-        "run_ids 来自已保存的提交结果。Run ID 格式见 {cli} generation --help。Host 按当前会话原始项目目录校验 Workspace，任一 Run 无法读取时整次登记失败。",
+        "run_ids 来自已保存的提交结果。Run ID 格式见 {cli} generation --help。Host 按每条 Run 的实际工作区登记观察，任一 Run 无法读取时整次登记失败。",
         "输入示例：{\"run_ids\":[\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}。",
         "命令登记观察后立即返回。结果示例：{\"job_id\":\"generation-wait-0123456789abcdef\",\"run_ids\":[\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}。run_ids 是去重、排序后的完整 Run ID。job_id 表示观察已登记；Run 生成结果在观察结束后读取。",
-        "同一 Agent 在同一 Workspace 登记相同 Run 集合时，复用仍在活动的观察 Job。输入顺序、重复 ID 和唯一前缀不影响复用。已结束的观察可重新登记。",
+        "同一 Agent 登记相同 Run 集合时，复用仍在活动的观察 Job。输入顺序、重复 ID 和唯一前缀不影响复用。已结束的观察可重新登记。",
         "所有目标 Run 进入终态后，官方 Job 完成并通知拥有该 Job 的 Agent。主 Agent 必须使用自己的 CLI 调用登记子 Agent 返回的 Run。",
         "通过 job_output 读取 Job；需要等待时使用 wait: true。通过 job_list 找回当前 Agent 的 Job。工具参数与等待期限以当前会话的官方工具声明为准。",
         "Job 状态为 completed 时，job_output 的 text 包含本节所列 JSON 摘要；随后使用 {cli} generation resolve-media --help 读取图片和执行错误。",
@@ -99,6 +100,7 @@
         "Run ID 来源、格式与查询错误处理见 {cli} generation --help 的 Run ID 查询规则。",
         "输入示例：{\"run_ids\":[\"run_01234567-89ab-4cde-8fab-0123456789ab\"]}。",
         "runs 与输入等长同序。lookup_status 为 available 时返回 arguments。workflow_status 为 available 时返回 Actual Workflow；unavailable 时返回 workflow_error。",
+        "submitted_input 保存提交输入与图片标识；effective_input 保存准备完成后的实际输入，准备未完成时为 null。arguments 优先返回实际输入。image_uploads 保存图片、参数和目标实例的上传响应。再次生成时继续使用图片标识，由目标实例重新准备。",
         "arguments.model 省略时，历史请求没有显式模型覆盖。arguments.loras 为空时，历史请求没有显式选择 LoRA。实际活动模型与 LoRA 必须依据 Actual Workflow 判断。",
         "结果示例：{\"runs\":[{\"run_id\":\"run_01234567-89ab-4cde-8fab-0123456789ab\",\"lookup_status\":\"error\",\"error\":{\"code\":\"GENERATION_RUN_NOT_FOUND\",\"message\":\"Run not found\"}}]}。",
         "run_ids 内容和顺序相同时，按 Run ID 查询规则的复用条件使用已有结果。用户明确要求刷新时重新调用。"
@@ -137,13 +139,14 @@
       "summary": "提交生成清单，返回每项已接纳的 Run。",
       "details": [
         "调用：{cli} generation submit --file <清单路径> [--quiet]。\n或 {cli} generation submit --stdin [--quiet]。",
-        "从工作台任务发起时，在清单根级填写 workbench_task_id，值取任务 ID；普通聊天生成可省略。提交内容须符合任务输入要求，生成数量须在任务剩余运行次数内。",
+        "从工作台任务发起时，在清单根级填写 workbench_task_id，值取任务 ID；普通聊天生成可省略。提交内容须符合任务输入要求，生成数量须在任务剩余运行次数内。任务 Run 归入任务创建时的分支，调用会话保留为执行来源。",
         "\n准备清单：",
         "1. --file 与 --stdin 必选其一。清单文件必须为 UTF-8 普通文件。",
         "2. 首次提交前，为每项生成并保存 UUID request_id。request_id 在同一清单中必须互不重复。已就绪且在单次上限内的项必须合并提交。",
         "3. request 中的资源 ID 来自目录查询。model 为 null 时采用模板模型；指定模型时填写 id 与 file_name。未选择 LoRA 时填写空 loras。",
         "4. parameters 按模板 parameter_id 填值，约束入口：{cli} generation inspect-template-parameters --help。",
         "5. 长提示词通过 parameter_files 引用 UTF-8 普通文本文件。映射键为参数 ID，值为文件路径。同一参数只填写在 parameters 或 parameter_files 中。CLI 保留文件原文。",
+        "6. 带图请求同时保存 image_refs 与 workflow_image_bindings。Host 在 Run 准备阶段上传 Workflow 用途图片，并将上传返回值写入对应参数。",
         "--file 的相对引用按清单目录解析；--stdin 的引用必须使用绝对路径。清单文件最多 {max_request_bytes} 字节；展开后的请求限制见根帮助。",
         "\n调用示例：",
         "使用示例前，必须将参数名替换为当前模板查询所得的 parameter_id。",
@@ -179,29 +182,24 @@
       ]
     },
     "workbench task get": {
-      "summary": "读取执行会话有权访问的任务。",
+      "summary": "{workbench_summary}",
       "details": [
         "调用：{cli} workbench task get --stdin；也可使用 --file <task.json>。",
         "输入示例：{\"task_id\":\"本次执行要求中的任务 ID\"}。",
-        "prompt_input 保存本任务的正负提示词。字段值为 null 时，该提示词尚未解析。",
         "kind 为 prompt、rewrite、parameters 或 resources 时，generation_input.parameters 保存已识别类型的非提示词参数。",
         "这 4 类任务的 unresolved_parameters 保存未解析的原参数。其中包括类型未知的参数，以及 prompt_input 对应字段仍为 null 的提示词原值。",
-        "使用未解析的原参数时，先通过模板参数描述核对 parameter_id 和类型。当前提示词使用 prompt_input 中的非 null 值。",
-        "kind 为 run 或 experiment 时，generation_input 保存本任务首轮运行的固定输入。",
-        "kind 为 review、compare、diagnose 或 experience 时，generation_input 保存目标 Run 的原始输入。",
-        "使用 output_contract.artifact_types 选择产物类型。参数产物中的参数 ID 以 output_contract.parameter_ids 为准。"
+        "使用未解析的原参数时，先通过模板参数描述核对 parameter_id 和类型。当前提示词使用 prompt_input 中的非 null 值。"
       ],
       "after": [
         "读取产物提交结构：{cli} workbench task publish --help"
       ]
     },
     "workbench task publish": {
-      "summary": "向指定任务提交结构化产物或补充问题。",
+      "summary": "{workbench_publish_summary}",
       "details": [
         "调用：{cli} workbench task publish --file <artifact.json>；也可使用 --stdin。",
         "输入示例：{\"task_id\":\"本次执行要求中的任务 ID\",\"artifact\":{\"type\":\"prompt\",\"positive_prompt\":\"warm light\",\"negative_prompt\":\"\"}}。",
         "source_files 保存需要随产物保留的本地文件。使用 --file 时，相对路径以产物 JSON 文件所在目录为基准；使用 --stdin 时填写绝对路径。",
-        "返回 disposition：applied 表示已回填；candidate 表示保留为待采用候选；recorded 表示已保存；waiting_input 表示等待用户回答。",
         "同一前台 Tool Call 内，相同 task_id 和产物再次提交会返回原回执。更换 Tool Call 前先通过 get 核对已接纳产物。",
         "字段错误返回 error.issues，各项 path 指向需要修正的字段。修正后重新提交。"
       ],
@@ -216,7 +214,7 @@
       ]
     },
     "workbench experiment end": {
-      "summary": "结束已完成当前轮次评价的实验。",
+      "summary": "{workbench_end_summary}",
       "details": [
         "调用：{cli} workbench experiment end --stdin。",
         "输入示例：{\"task_id\":\"实验任务 ID\",\"reason\":\"goal_met\"}。",

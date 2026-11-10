@@ -16,12 +16,15 @@ type FunctionChange =
   | { readonly type: 'function-add'; readonly value: FunctionBindingEditable }
 type ModelGroups = WorkbenchEnvironment['models']['groups']
 
+const reasoningEffortLabels: Readonly<Record<string, string>> = { off: '关闭（off）', low: '低', medium: '中', high: '高', xhigh: '更高', max: '最高' }
+const reasoningEffortLabel = (id: string, fallback: string = id) => reasoningEffortLabels[id] ?? fallback
+
 export function formatExperimentAgentModel(selection: AgentModel | undefined, groups: ModelGroups) {
   if (!selection) return '未配置'
   const provider = groups.find(item => item.id === selection.provider)
   const model = provider?.models.find(item => item.id === selection.model)
   const effort = model?.reasoning?.efforts.find(item => item.id === selection.reasoningEffort)
-  return [provider?.name ?? selection.provider, model?.name ?? selection.model, effort?.name ?? selection.reasoningEffort].filter(Boolean).join(' · ')
+  return [provider?.name ?? selection.provider, model?.name ?? selection.model, selection.reasoningEffort ? reasoningEffortLabel(selection.reasoningEffort, effort?.name) : undefined].filter(Boolean).join(' · ')
 }
 
 export { agentModelProblem } from '../../workbench/agent-model.ts'
@@ -92,7 +95,7 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
       .then(value => {
         if (!current) return
         setEnvironment(value)
-        setDraft(before => ({ ...before, requested_skill: value.skills.some(skill => skill.name === before.requested_skill) ? before.requested_skill : null }))
+        setDraft(before => ({ ...before, requested_skill: before.kind !== 'translate' && value.skills.some(skill => skill.name === before.requested_skill) ? before.requested_skill : null }))
         setLoading(false)
       })
       .catch(failure => {
@@ -103,13 +106,14 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
     return () => { current = false }
   }, [loadEnvironment, draft.preset_id])
   const descriptor = WORKBENCH_FUNCTIONS.find(item => item.kind === draft.kind)!
+  const skills = draft.kind === 'translate' ? [] : environment?.skills ?? []
   const groups = environment?.models.groups ?? []
   const provider = groups.find(item => item.id === draft.agent_model.provider)
   const model = provider?.models.find(item => item.id === draft.agent_model.model)
   const efforts = model?.reasoning?.efforts ?? []
   const presets = environment?.presets.filter(item => !item.broken) ?? []
   const preset = presets.find(item => item.id === draft.preset_id)
-  const problem = requestTemplateProblem(draft.request_template) || (environment
+  const problem = requestTemplateProblem(draft.request_template, draft.kind) || (environment
     ? !preset ? presentation.selectAvailablePreset : agentModelProblem(draft.agent_model, groups, environment.models.routableProviders) : '')
   const update = (value: Partial<FunctionBinding>) => { setDraft(before => ({ ...before, ...value })); setError('') }
   const selectModel = (providerId: string, modelId?: string) => {
@@ -132,7 +136,7 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
         try {
           const { kind, agent_model, requested_skill, request_template } = draft
           const value: FunctionBindingEditable = { name: draft.name.trim(), kind, preset_id: preset.id,
-            agent_model, requested_skill, request_template }
+            agent_model, requested_skill: kind === 'translate' ? null : requested_skill, request_template }
           await onSave(create ? { type: 'function-add', value } : { type: 'function-edit', id: binding.function_id, value })
           if (active.current) onClose()
         } catch (failure) {
@@ -150,13 +154,13 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
             const kind = event.target.value as TaskKind
             const next = WORKBENCH_FUNCTIONS.find(item => item.kind === kind)!
             update({ kind, request_template: draft.request_template === descriptor.default_request_template ? next.default_request_template : draft.request_template })
-          }}>{WORKBENCH_FUNCTIONS.map(item => <option key={item.kind} value={item.kind}>{item.name}</option>)}</select></label>
+          }}>{WORKBENCH_FUNCTIONS.filter(item => item.kind !== 'translate' || draft.kind === 'translate').map(item => <option key={item.kind} value={item.kind}>{item.name}</option>)}</select></label>
           <label className="field"><span>Agent 预设</span><select id="function-preset" aria-label="Agent 预设" required value={draft.preset_id} disabled={saving} onChange={event => update({ preset_id: event.target.value })}>
             {!preset && <option value={draft.preset_id}>{presentation.unavailablePreset}</option>}
             {presets.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select></label>
-          <label className="field"><span>指定 Skill</span><select id="function-skill" aria-label="指定 Skill" value={draft.requested_skill ?? ''} disabled={loading || saving} onChange={event => update({ requested_skill: event.target.value || null })}>
-            <option value="">Agent 自选</option>{environment?.skills.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}
+          <label className="field"><span>指定 Skill</span><select id="function-skill" aria-label="指定 Skill" value={draft.requested_skill ?? ''} disabled={loading || saving || !skills.length} onChange={event => { if (draft.kind !== 'translate') update({ requested_skill: event.target.value || null }) }}>
+            <option value="">{skills.length ? 'Agent 自选' : '无'}</option>{skills.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}
           </select></label>
         </div>
         <div className="agent-model-fields">
@@ -168,9 +172,10 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
           </select></label>
           <label className="field"><span>推理等级</span><select id="function-effort" aria-label="推理等级" value={draft.agent_model.reasoningEffort ?? ''} disabled={!efforts.length || saving} onChange={event => update({ agent_model: { provider: draft.agent_model.provider, model: draft.agent_model.model, ...(event.target.value ? { reasoningEffort: event.target.value } : {}) } })}>
             {!efforts.length ? <option value="">该模型未提供推理等级</option> : !efforts.some(item => item.id === draft.agent_model.reasoningEffort) ? <option value={draft.agent_model.reasoningEffort ?? ''}>请选择推理等级</option> : null}
-            {efforts.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+            {efforts.map(item => <option key={item.id} value={item.id}>{reasoningEffortLabel(item.id, item.name)}</option>)}
           </select></label>
         </div>
+        <p className="preset-capabilities" id="preset-capabilities">{draft.preset_id === 'harness-comfyui-translation' ? '工具：无 · MCP：无 · Skill：无' : ''}</p>
         <div className="row between template-context"><span>功能位置：<output id="function-location">{descriptor.ui_location}</output></span><span>结果显示：<output id="function-result">{descriptor.ui_result}</output></span></div>
         <section className="template-edit">
           <div className="row between"><label htmlFor="function-template">执行要求</label><Button kind="small quiet" disabled={saving} onClick={() => update({ request_template: descriptor.default_request_template })}>恢复默认要求</Button></div>
@@ -234,6 +239,7 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
         onToast(failure instanceof Error ? failure.message : presentation.loadError)
     }
   }
+  const displayedFunctions = [...functions.filter(item => item.kind === presentation.leadingKind), ...functions.filter(item => item.kind !== presentation.leadingKind)]
   const presets = environment?.presets ?? initialPresets
   const models = environment?.models.groups ?? initialModels
   const change = async (value: FunctionChange) => {
@@ -246,7 +252,7 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
         <div className="settings-head"><div><h1>配置中心</h1><p>{workspaceName} · 功能默认配置</p></div><div className="row"><Button kind="primary" icon="plus" onClick={() => { void add() }}>{presentation.add}</Button><Button onClick={onBack}>返回工作台</Button></div></div>
         <div className="settings-table-wrap"><table className="settings-table">
           <thead><tr>{['功能', '功能位置', '默认 Agent 预设', 'Agent 模型', '指定 Skill', '配置'].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
-          <tbody>{functions.map(item => {
+          <tbody>{displayedFunctions.map(item => {
             const unavailable = !presets.some(preset => preset.id === item.preset_id && !preset.broken)
             return <tr key={item.function_id} data-function={item.function_id}>
             <td><strong>{item.name}</strong><small>{item.builtin ? '内置功能' : '自定义功能'}</small></td>
@@ -255,7 +261,7 @@ export function ExperimentFunctionSettings({ workspaceId, workspaceName, functio
               {unavailable && <option value={item.preset_id}>{presentation.unavailablePreset}</option>}
               {presets.filter(preset => !preset.broken).map(preset => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
             </select>{unavailable && <p className="binding-problem">{presentation.rowPresetUnavailable}</p>}</td>
-            <td className="agent-model-summary">{formatExperimentAgentModel(item.agent_model, models)}</td><td>{item.requested_skill || 'Agent 自选'}</td>
+            <td className="agent-model-summary">{formatExperimentAgentModel(item.agent_model, models)}</td><td>{item.kind === 'translate' ? '无' : item.requested_skill || (item.preset_id === 'harness-comfyui-translation' ? '无' : 'Agent 自选')}</td>
             <td><Button kind="small" label={`编辑${item.name}`} onClick={() => { editorSequence.current++; setEditor({ binding: item, create: false }) }}>编辑</Button>{!item.builtin && <Button kind="small quiet" label={`移除${item.name}`} onClick={() => { editorSequence.current++; setRemoval(item) }}>移除</Button>}</td>
           </tr>})}</tbody>
         </table></div>

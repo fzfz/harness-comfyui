@@ -25,7 +25,7 @@ import { experimentWorkbenchStyles } from './experiment-style.ts'
 export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment' as MainPanelId
 type RemoteReply<T> = RemoteResult<T>
 export type ExperimentEnvironment = WorkbenchEnvironment
-export interface ExperimentHostRemote {
+export interface ExperimentHostRemote extends Pick<import('../../workbench-remote.ts').WorkbenchRemoteMethods, 'queryRecords' | 'importImages' | 'resolveImages' | 'translateStart' | 'translateGet' | 'translateCancel'> {
   readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<RemoteReply<WorkbenchRunInput>>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft | null>>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft>>
@@ -122,6 +122,12 @@ export function ExperimentWorkbenchHost({
   const environmentLoaded = useRef(false)
   const api = useMemo(
     () => ({
+      queryRecords: async (request: import('../../workbench/contract.ts').WorkbenchRecordQuery) => unwrap(await remote.queryRecords(request)),
+      importImages: async (request: import('../../workbench-remote.ts').WorkbenchImageImportRequest) => unwrap(await remote.importImages(request)),
+      resolveImages: async (request: import('../../workbench-remote.ts').WorkbenchImageResolveRequest) => unwrap(await remote.resolveImages(request)),
+      translateStart: async (request: import('../../workbench/translation.ts').TranslationRequest) => unwrap(await remote.translateStart(request)),
+      translateGet: async (request: import('../../workbench-remote.ts').WorkbenchTranslationLookup) => unwrap(await remote.translateGet(request)),
+      translateCancel: async (request: import('../../workbench-remote.ts').WorkbenchTranslationLookup) => unwrap(await remote.translateCancel(request)),
       getRunInput: async (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => unwrap(await remote.getRunInput(request)),
       getTaskDraft: async (request: WorkbenchTaskDraftRequest) =>
         unwrap(await remote.getTaskDraft(request)),

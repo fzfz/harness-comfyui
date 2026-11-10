@@ -160,7 +160,7 @@ export class ExperimentInputDescriptionCache {
     const key = this.key(scope.workspaceId, input),
       existing = this.requests.get(key)
     if (existing) return existing
-    const request = this.describe(scope).catch((error) => {
+    const request = this.describe({ ...scope, generationInput: input }).catch((error) => {
       this.requests.delete(key)
       throw error
     })

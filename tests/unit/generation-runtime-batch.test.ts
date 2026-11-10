@@ -40,7 +40,7 @@ describe('GenerationRuntime persisted state lookup', () => {
     const result = await runtime.readGenerationRunMedia({ workspaceId: identity.workspaceId, runIds: [runId, 'run_missing'] })
 
     expect(result.runs).toEqual([{
-      run_id: runId, request_id: requestId, lookup_status: 'available', title: 'Batch fixture', status,
+      run_id: runId, request_id: requestId, workspace_id: identity.workspaceId, lookup_status: 'available', title: 'Batch fixture', status,
       revision: 7, updated_at: 1234, instance_id: '2', prompt_id: 'prompt_fixture',
       run_error: { code: 'OBSERVATION_FIXTURE', message: 'Observation failed.' }, images: [],
     }, {
@@ -61,7 +61,7 @@ describe('GenerationRuntime lightweight media lookup', () => {
     const lightweight = await runtime.readGenerationRunMedia({ workspaceId: identity.workspaceId, runIds: [runId] })
 
     expect(lightweight.runs).toEqual([{
-      run_id: runId, request_id: requestId, lookup_status: 'available', title: 'Batch fixture',
+      run_id: runId, request_id: requestId, workspace_id: identity.workspaceId, lookup_status: 'available', title: 'Batch fixture',
       status: 'created', revision: 0, updated_at: expect.any(Number), instance_id: null, prompt_id: null, run_error: null, images: [],
     }])
     const detailed = await runtime.readGenerationRunMedia({ workspaceId: identity.workspaceId, runIds: [runId], includeParameters: true })

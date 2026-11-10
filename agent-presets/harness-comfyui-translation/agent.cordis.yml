@@ -1,0 +1,25 @@
+- id: translation-composition
+  name: ../translation-composition.mjs
+- id: translation-model
+  name: '@deepseek-ai/dsh-agent-default-model'
+  isolate:
+    agentDefaultModel: true
+  config: !!js process.getBuiltinModule('node:module').createRequire(baseUrl)('../../config/workbench-translation.json').agent_model
+- id: tool-presentation
+  name: '@deepseek-ai/dsh-agent-tool-presentation'
+  config:
+    mode: native
+- id: translation-skills
+  name: cordis:group
+  group: true
+  isolate:
+    skills: true
+  config:
+    - id: skills
+      name: '@deepseek-ai/dsh-skill'
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    complete: true
+    includeRuntimeContext: false
+    prefix: 你是提示词翻译助手。按本次执行要求翻译用户提供的原文。

@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 
 import { describe, expect, it } from 'vitest'
@@ -326,7 +326,49 @@ describe('Harness source boundary', () => {
     }
   })
 
-  it('rejects duplicate Tool registration and non-public Harness imports', () => {
+  it('accepts the real Workbench native Tool component', () => {
+    const root = fixture()
+    try {
+      const component = 'src/host/workbench/tools.ts'
+      const destination = join(root, component)
+      mkdirSync(dirname(destination), { recursive: true })
+      writeFileSync(destination, readFileSync(join(repositoryRoot, component)))
+      const result = run(root)
+      expect(result.status, result.stderr).toBe(0)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each(['src/other.ts', 'src/host/workbench/plugin.ts', 'src/host/workbench/tools-extra.ts', 'src/host/workbench/tools/index.ts'])('rejects Tool registration in %s', path => {
+    const root = fixture()
+    try {
+      const destination = join(root, path)
+      mkdirSync(dirname(destination), { recursive: true })
+      writeFileSync(destination, 'ctx.tools.register(component)\n')
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('ctx.tools.register')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps public import restrictions in the Workbench Tool component', () => {
+    const root = fixture()
+    try {
+      const destination = join(root, 'src/host/workbench/tools.ts')
+      mkdirSync(dirname(destination), { recursive: true })
+      writeFileSync(destination, "import { hidden } from '@deepseek-ai/dsh-typert-protocol/internal'\nctx.tools.register(component)\n")
+      const result = run(root)
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('non-public Harness specifier')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects Tool registration outside the component and non-public Harness imports', () => {
     for (const source of [
       'ctx.tools.register(other)\n',
       "import { hidden } from '@deepseek-ai/dsh-typert-protocol/internal'\n",

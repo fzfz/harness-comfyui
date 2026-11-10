@@ -95,7 +95,7 @@ describe('workbench storage public boundary', () => {
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft })
     const experiment = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'experiment' })
     const candidate = { ...draft.generation_input, model: { id: '3', file_name: 'model.safetensors' }, parameters: { positive_prompt_9: 'candidate warm glass', negative_prompt_10: 'candidate clear' } }
-    const receipt = await f.service.publish({ taskId: experiment.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [{ kind: 'character', id: '7' }] } }, { workspaceId: 'workspace', sessionId: experiment.session_id!, turn: 1, callId: 'candidate' })
+    const receipt = await f.service.publish({ taskId: experiment.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { workspaceId: 'workspace', sessionId: experiment.session_id!, turn: 1, callId: 'candidate' })
     const baseline = f.store.getBranch(f.branch.branch_id).draft
     const manual = structuredClone(baseline); manual.prompt_input.positive_prompt = 'manual during task'
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: baseline, draft: manual })
@@ -105,7 +105,8 @@ describe('workbench storage public boundary', () => {
     await expect(f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manual) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })).rejects.toMatchObject({ code: 'WORKBENCH_EDIT_CONFLICT' })
     expect(f.store.getBranch(f.branch.branch_id).draft).toEqual(manualBase)
     await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manualBase) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })
-    expect(f.store.getBranch(f.branch.branch_id).draft).toEqual({ parameter_mapping: { positive_prompt_9: 'positive_prompt', negative_prompt_10: 'negative_prompt' }, generation_input: candidate, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'candidate clear' }, context_refs: [{ kind: 'character', id: '7' }], base_model_id: '5' })
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft).toEqual({ ...manualBase, parameter_mapping: { positive_prompt_9: 'positive_prompt', negative_prompt_10: 'negative_prompt' }, generation_input: candidate, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'candidate clear' }, image_refs: [], workflow_image_bindings: [], base_model_id: '5' })
+    f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.store.getBranch(f.branch.branch_id).draft, draft: f.store.getBranch(f.branch.branch_id).editing_draft! })
     const next = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
     expect(next.input.generation_input.parameters).toEqual(candidate.parameters)
     acceptRun(f, next.task_id, 'candidate-source', next.input.generation_input)
@@ -113,9 +114,10 @@ describe('workbench storage public boundary', () => {
     const reviewDraft = f.store.getRunReviewDraft('candidate-source')
     const review = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'review', referenceRunIds: ['candidate-source'], runId: 'candidate-source', evaluationDraft: { expected: reviewDraft, draft: reviewDraft } })
     const improved = { ...candidate, parameters: { positive_prompt_9: 'review cool glass', negative_prompt_10: 'review contrast' } }
-    const improvedReceipt = await f.service.publish({ taskId: review.task_id, artifact: { type: 'review', observation: 'warm', conclusion: 'cooler', run_ids: ['candidate-source'], candidate: { generation_input: improved, context_refs: [] } } }, { workspaceId: 'workspace', sessionId: review.session_id!, turn: 1, callId: 'review-candidate' })
+    const improvedReceipt = await f.service.publish({ taskId: review.task_id, artifact: { type: 'review', observation: 'warm', conclusion: 'cooler', run_ids: ['candidate-source'], candidate: { generation_input: improved, image_refs: [], workflow_image_bindings: [] } } }, { workspaceId: 'workspace', sessionId: review.session_id!, turn: 1, callId: 'review-candidate' })
     const reviewBaseline = f.store.getBranch(f.branch.branch_id).draft
     await f.service.adoptArtifact({ artifactId: improvedReceipt.artifact_id, candidate: true, expected: jsonValue(reviewBaseline) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })
+    f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.store.getBranch(f.branch.branch_id).draft, draft: f.store.getBranch(f.branch.branch_id).editing_draft! })
     const final = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
     expect(final.input.prompt_input).toEqual({ positive_prompt: 'review cool glass', negative_prompt: 'review contrast' })
     expect(final.input.generation_input.parameters).toEqual(improved.parameters)
@@ -178,30 +180,28 @@ describe('workbench storage public boundary', () => {
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: draft, draft: manual })
     const receipt = await f.service.publish({ taskId: task.task_id, artifact: { type: 'parameters', parameters: { width_6: 768, 'new.parameter': 3 } } }, identity)
     expect(receipt.disposition).toBe('applied')
-    expect(f.store.getBranch(f.branch.branch_id).draft.generation_input).toEqual({ ...draft.generation_input, parameters: { width_6: 768, seed: 9, 'new.parameter': 3 } })
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.generation_input).toEqual({ ...draft.generation_input, parameters: { width_6: 768, seed: 9, 'new.parameter': 3 } })
   })
 
   it('adopts resolved resource candidates after verifying the displayed generation input', async () => {
-    const f = fixture({ validateResourceRefs: async refs => { if (refs.some(ref => ref.id === '9')) throw new Error('resource missing') }, resolveResourceRefs: async (refs, draft) => ({ ...draft, base_model_id: '5', generation_input: { ...draft.generation_input, model: { id: refs[0]!.id, file_name: 'selected.safetensors' } }, context_refs: [{ kind: 'character', id: '2' }] }) })
+    const f = fixture({ validateResourceRefs: async refs => { if (refs.some(ref => ref.id === '9')) throw new Error('resource missing') }, resolveResourceRefs: async (refs, draft) => ({ ...draft, base_model_id: '5', generation_input: { ...draft.generation_input, model: { id: refs[0]!.id, file_name: 'selected.safetensors' } }, image_refs: [], workflow_image_bindings: [] }) })
     const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'resources' })
     const identity = { workspaceId: 'workspace', sessionId: task.session_id!, turn: 1, callId: 'resources' }
     await expect(f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'model', id: '9' }] } }, identity)).rejects.toThrow('resource missing')
     const receipt = await f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'model', id: '3' }] } }, identity)
     expect(receipt.disposition).toBe('candidate')
-    await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: { generation_input: f.branch.draft.generation_input as never, context_refs: [], base_model_id: null } })
-    expect(f.store.getBranch(f.branch.branch_id).draft.generation_input.model).toEqual({ id: '3', file_name: 'selected.safetensors' })
-    expect(f.store.getBranch(f.branch.branch_id).draft.base_model_id).toBe('5')
+    await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: { generation_input: f.branch.draft.generation_input as never, image_refs: [], workflow_image_bindings: [], base_model_id: null } })
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.generation_input.model).toEqual({ id: '3', file_name: 'selected.safetensors' })
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.base_model_id).toBe('5')
   })
 
-  it('adopts context references and retains unresolved generation resources as candidates', async () => {
+  it('rejects context resources and retains unresolved generation resources as candidates', async () => {
     const f = fixture()
     const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'resources' })
     const identity = { workspaceId: 'workspace', sessionId: task.session_id!, turn: 1, callId: 'resources' }
-    const context = await f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'character', id: '2' }] } }, identity)
-    await f.service.adoptArtifact({ artifactId: context.artifact_id, expected: { context_refs: [] } })
-    expect(f.store.getBranch(f.branch.branch_id).draft.context_refs).toEqual([{ kind: 'character', id: '2' }])
+    await expect(f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'character', id: '2' }] } }, identity)).rejects.toMatchObject({ code: 'WORKBENCH_INVALID_INPUT' })
     const model = await f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'model', id: '3' }] } }, identity)
-    await expect(f.service.adoptArtifact({ artifactId: model.artifact_id, expected: { context_refs: [] } })).rejects.toMatchObject({ code: 'WORKBENCH_RESOURCE_DETAILS_REQUIRED' })
+    await expect(f.service.adoptArtifact({ artifactId: model.artifact_id, expected: {} })).rejects.toMatchObject({ code: 'WORKBENCH_RESOURCE_DETAILS_REQUIRED' })
     expect(f.store.getArtifact(model.artifact_id).disposition).toBe('candidate')
   })
 
@@ -310,7 +310,7 @@ describe('workbench storage public boundary', () => {
     expect(f.store.listArtifacts(second.task_id).map(a => a.type)).toEqual(['prompt'])
     expect(() => f.store.adoptArtifact({ artifactId: candidate.artifact_id, expected: { 'prompt_input.positive_prompt': 'stale', 'prompt_input.negative_prompt': '' } })).toThrow()
     expect(f.store.adoptArtifact({ artifactId: candidate.artifact_id, expected: { 'prompt_input.positive_prompt': 'second', 'prompt_input.negative_prompt': '' } }).disposition).toBe('applied')
-    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input.positive_prompt).toBe('first')
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_input.positive_prompt).toBe('first')
     expect(await f.service.publish({ taskId: first.task_id, artifact: { type: 'prompt', positive_prompt: 'first', negative_prompt: '' } }, identity(first.session_id!, 'p'))).toEqual(candidate)
   })
 
@@ -346,7 +346,7 @@ describe('workbench storage public boundary', () => {
     const identity = { workspaceId: 'workspace', sessionId: experiment.session_id!, turn: 2, callId: 'review' }
     f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('round-1')
     await f.service.publish({ taskId: experiment.task_id, artifact: { type: 'review', observation: 'clear', conclusion: 'change seed', run_ids: ['round-1'] } }, identity)
-    await f.service.publish({ taskId: experiment.task_id, artifact: { type: 'generation_input', generation_input: next, context_refs: [] } }, { ...identity, callId: 'candidate' })
+    await f.service.publish({ taskId: experiment.task_id, artifact: { type: 'generation_input', generation_input: next, image_refs: [], workflow_image_bindings: [] } }, { ...identity, callId: 'candidate' })
     acceptRun(f, experiment.task_id, 'round-2', next)
     expect(f.store.listRuns(experiment.task_id).map(run => run.iteration_index)).toEqual([1, 2])
     expect(f.store.listRuns(experiment.task_id)[1]!.candidate_artifact_id).toBeTruthy()
@@ -428,6 +428,6 @@ describe('workbench storage public boundary', () => {
     expect((await service.getTask({ taskId: task.task_id }, identity)).prompt_input.positive_prompt).toBe('')
     expect(readdirSync(join(directory, task.task_id, receipt.artifact_id))).toEqual(['artifact.json'])
     expect(await service.publish({ taskId: task.task_id, artifact: { type: 'prompt', positive_prompt: 'agent', negative_prompt: 'bad' } }, identity)).toEqual(receipt)
-    await expect(service.getTask({ taskId: task.task_id }, { ...identity, sessionId: 'other' })).rejects.toMatchObject({ code: 'WORKBENCH_ACCESS_DENIED' })
+    expect((await service.getTask({ taskId: task.task_id }, { ...identity, sessionId: 'other' })).task_id).toBe(task.task_id)
   })
 })

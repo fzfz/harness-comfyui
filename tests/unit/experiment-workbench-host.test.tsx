@@ -57,10 +57,16 @@ const environment = {
   instances: [{ id: '2', name: 'win3080' }],
 }
 const remote = (): ExperimentHostRemote => ({
+  queryRecords: vi.fn(async () => ({ ok: true as const, value: [] })),
+  resolveImages: vi.fn(async () => ({ ok: true as const, value: { images: [] } })),
+  importImages: vi.fn(async () => ({ ok: true as const, value: { images: [] } })),
+  translateStart: vi.fn(async request => ({ ok: true as const, value: { request_id: request.request_id, status: 'running' as const } })),
+  translateGet: vi.fn(async request => ({ ok: true as const, value: { request_id: request.request_id, status: 'succeeded' as const, text: '中文译文' } })),
+  translateCancel: vi.fn(async request => ({ ok: true as const, value: { request_id: request.request_id, status: 'failed' as const, error: '翻译已取消。' } })),
   getRunInput: vi.fn(async request => {
     const data = fullProjection(), run = data.runs.find(run => run.run_id === request.runId)!, task = data.tasks.find(task => task.task_id === run.workbench_task_id)!
-    return { ok: true as const, value: { run_id: run.run_id, branch_id: task.branch_id, generation_input: run.generation_input,
-      context_refs: task.input.context_refs, input_description: runInputDescription(run.generation_input.parameters),
+    return { ok: true as const, value: { run_id: run.run_id, branch_id: task.branch_id, submitted_input: run.generation_input, effective_input: run.generation_input, image_uploads: [], parameter_mapping: task.input.parameter_mapping, base_model_id: task.input.base_model_id, generation_input: run.generation_input,
+      image_refs: task.input.image_refs, workflow_image_bindings: task.input.workflow_image_bindings, input_description: runInputDescription(run.generation_input.parameters),
       prompt_input: { positive_prompt: String(run.generation_input.parameters.positive_1 ?? ''), negative_prompt: String(run.generation_input.parameters.negative_1 ?? '') } } }
   }),
   getTaskDraft: vi.fn(async () => ({ ok: true as const, value: null })),
@@ -154,6 +160,27 @@ describe('official experiment workbench adapter', () => {
     expect(selectedPanels).toEqual(['harness-comfyui-experiment', null, 'harness-comfyui-experiment', 'harness-comfyui-experiment'])
   })
 
+  it('forwards cross-workspace records, image bytes and temporary translation operations without changing their payloads or Remote failures', async () => {
+    const api = remote(), renderer = await mount(api), shell = renderer.root.findByType(ExperimentWorkbench).props as ExperimentWorkbenchProps
+    const requests = {
+      queryRecords: { type: 'run' as const, workspaceId: 'workspace-other', keyword: '窗框' },
+      importImages: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [1, 2, 3] }] },
+      resolveImages: { image_refs: [{ image_ref_id: 'ref', source: { kind: 'uploaded_file' as const, file_id: 'file' }, purpose: 'agent' as const, reference_requirement: '保留窗框' }] },
+      translateStart: { request_id: 'temporary-translation', workspace_id: 'workspace-a', source_text: '(window:1.2)' },
+      translateGet: { request_id: 'temporary-translation' },
+      translateCancel: { request_id: 'temporary-translation' },
+    }
+    for (const name of Object.keys(requests) as (keyof typeof requests)[]) {
+      const host = api[name] as (request: unknown) => Promise<unknown>, consumer = shell.remote[name] as (request: unknown) => Promise<unknown>
+      const expected = await host(requests[name]) as { ok: true; value: unknown }
+      await expect(consumer(requests[name])).resolves.toEqual(expected.value)
+      expect(host).toHaveBeenLastCalledWith(requests[name])
+      const failure = new RemoteError('workbench/operation-failed', '请求失败，请重试。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] })
+      vi.mocked(host).mockResolvedValueOnce({ ok: false, error: failure })
+      await expect(consumer(requests[name])).rejects.toBe(failure)
+    }
+  })
+
   it('forwards task draft scope and payload and preserves Remote failures and accepted task identity', async () => {
     const api = remote(), renderer = await mount(api)
     const shell: ExperimentWorkbenchProps = renderer.root.findByType(ExperimentWorkbench).props
@@ -181,8 +208,8 @@ describe('official experiment workbench adapter', () => {
       issues: [{ path: 'generation_input.parameters.steps_42', message: '最大值为 100。' }],
     })
     vi.mocked(api.mutate).mockResolvedValueOnce({ ok: false, error: failure })
-    await expect(shell.onAction({ type: 'update-draft', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root',
-      field: 'parameter', id: 'steps_42', value: 101 })).rejects.toBe(failure)
+    await expect(shell.onAction({ type: 'save-draft', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root',
+      value: { expected: fullProjection().branches[0]!.draft, draft: { ...fullProjection().branches[0]!.draft, generation_input: { ...fullProjection().branches[0]!.draft.generation_input, parameters: { steps_42: 101 } } } } })).rejects.toBe(failure)
   })
 
   it('forwards generation model selection through the ordinary resource mutation', async () => {

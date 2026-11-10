@@ -8,7 +8,11 @@ import type { WorkbenchStore } from '../storage/workbench-store.ts'
 import type { GenerationRuntime } from '../generation/generation-runtime.ts'
 import { PLUGIN_DATA_DIRECTORY_SCHEMA, type PluginStorageSettings } from '../../plugin-storage-schema.ts'
 import { BROWSER_EXECUTABLE_PATH_SCHEMA } from '../../browser-settings-schema.ts'
+import type { WorkbenchInputFileService } from '../generation/input-file-service.ts'
+import type { GenerationImagePreparationPort } from '../generation/source-preparer.ts'
 export interface CoreServices {
+  readonly inputFiles: WorkbenchInputFileService
+  readonly images: GenerationImagePreparationPort
   readonly catalog: CatalogClient
   readonly runtime: GenerationRuntime
   readonly workbenchStore: WorkbenchStore

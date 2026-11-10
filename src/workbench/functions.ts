@@ -1,10 +1,6 @@
 import data from './functions.json' with { type: 'json' }
-import type { FunctionDescriptor } from './contract.ts'
+import type { FunctionDescriptor, TaskKind } from './contract.ts'
 
-type FunctionDefinition = Omit<FunctionDescriptor, 'default_request_template'> & { request_steps: readonly string[] }
-
-export const WORKBENCH_FUNCTIONS: readonly FunctionDescriptor[] = (data.functions as FunctionDefinition[]).map(({ request_steps, ...descriptor }) => ({
-  ...descriptor,
-  default_request_template: [...data.request_prefix, ...request_steps, ...data.request_suffix].join('\n\n'),
-}))
-export const TASK_KINDS = WORKBENCH_FUNCTIONS.map(descriptor => descriptor.kind)
+export const WORKBENCH_FUNCTIONS: readonly FunctionDescriptor[] = data.functions as FunctionDescriptor[]
+export const FUNCTION_KINDS = WORKBENCH_FUNCTIONS.map(descriptor => descriptor.kind)
+export const TASK_KINDS = WORKBENCH_FUNCTIONS.filter(descriptor => descriptor.execution_mode === 'task').map(descriptor => descriptor.kind as TaskKind)

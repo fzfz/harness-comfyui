@@ -1,13 +1,12 @@
 import { contractFields } from '../shared/field-contract.ts'
 import Schema from '@deepseek-ai/schemastery'
 import { STANDARD_RUNTIME_PARAMETER_KINDS } from '../generation/inspection-contract.ts'
-import { artifactSchemas, functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema } from './schema.ts'
-import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
+import { artifactSchemas, functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema, taskDraftSchema, inputReferencesSchema, generationInputBaseSchema, generationInputSchema } from './schema.ts'
 import { TASK_KINDS } from './functions.ts'
 import libraryConfig from './library-config.json' with { type: 'json' }
-import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, isRunReviewFunctionKind } from './contract.ts'
+import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, WORKBENCH_RESOURCE_KINDS, isRunReviewFunctionKind } from './contract.ts'
 import { requestTemplateProblem } from './request-template.ts'
-import type { ArtifactPayload, ContextRef, FavoriteUpdate, ExperienceReuseInput, FunctionBinding, FunctionBindingEditable, GenerationInput, JsonValue, ReviewDraft, ReviewDraftUpdate, TaskDraft, TaskRequestDraft, TaskInput, TaskKind } from './contract.ts'
+import type { ArtifactPayload, FavoriteUpdate, ExperienceReuseInput, FunctionBinding, FunctionBindingEditable, GenerationInput, GenerationInputBase, JsonValue, ReviewDraft, ReviewDraftUpdate, TaskDraft, TaskRequestDraft, TaskInput, TaskKind, Task, WorkbenchRun, WorkbenchRunInput } from './contract.ts'
 
 export interface FieldIssue { path: string; message: string }
 export class WorkbenchError extends Error {
@@ -48,19 +47,19 @@ class Validator {
     if (Array.isArray(value)) { value.forEach((v, i) => this.json(v, `${path}.${i}`)); return }
     if (this.object(value, path)) for (const [key, item] of Object.entries(value)) this.json(item, `${path}.${key}`)
   }
-  refs(value: unknown, path: string, resources = false): void {
+  refs(value: unknown, path: string): void {
     const found = new Set<string>()
     this.array(value, path, (item, p) => {
       if (!this.object(item, p, ['kind', 'id'])) return
-      if (!(resources ? CATALOG_KIND_DEFINITIONS.map(item => item.kind) : ['work', 'character', 'style', 'prompt-term', 'artist-string']).includes(String(item.kind))) this.issue(`${p}.kind`, '请选择作品、角色、画风、提示词条目或画师串。')
+      if (!(WORKBENCH_RESOURCE_KINDS as readonly string[]).includes(String(item.kind))) this.issue(`${p}.kind`, '请选择模型、LoRA 或 Workflow 模板。')
       this.id(item.id, `${p}.id`)
       const key = `${item.kind}:${item.id}`
       if (found.has(key)) this.issue(p, '请移除重复引用。')
       found.add(key)
     })
   }
-  generation(value: unknown, path: string, ready = false): void {
-    if (!this.object(value, path, ['title', 'instance_id', 'template_id', 'model', 'parameters', 'loras'])) return
+  generation(value: unknown, path: string, ready = false, images = false): void {
+    if (!this.object(value, path, Object.keys(contractFields(images ? generationInputSchema : generationInputBaseSchema) ?? {}))) return
     this.text(value.title, `${path}.title`)
     for (const key of ['instance_id', 'template_id']) if (value[key] !== null || ready) this.id(value[key], `${path}.${key}`)
     if (value.model !== null && this.object(value.model, `${path}.model`, ['id', 'file_name'])) { this.id(value.model.id, `${path}.model.id`); this.text(value.model.file_name, `${path}.model.file_name`, true) }
@@ -86,16 +85,17 @@ class Validator {
       }
     }
     this.generation(value.generation_input, `${path}.generation_input`, ready)
-    this.refs(value.context_refs, `${path}.context_refs`); this.id(value.base_model_id, `${path}.base_model_id`, true)
+    this.id(value.base_model_id, `${path}.base_model_id`, true)
   }
   finish<T>(value: unknown): T { if (this.issues.length) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', this.issues); return structuredClone(value) as T }
 }
 
 export function validateGenerationInput(value: unknown, path = 'generation_input', ready = false): GenerationInput {
-  const v = new Validator(); v.generation(value, path, ready); return v.finish(value)
+  const v = new Validator(); v.generation(value, path, ready, true); const input = v.finish<GenerationInput>(value); validateInputReferences(input, path); return input
 }
-export function validateContextRefs(value: unknown, path = 'context_refs'): ContextRef[] {
-  const v = new Validator(); v.refs(value, path); return v.finish(value)
+
+export function generationInputWithImages(input: GenerationInputBase, images: { image_refs?: import('./contract.ts').ImageRef[]; workflow_image_bindings?: import('./contract.ts').WorkflowImageBinding[] }): GenerationInput {
+  return { ...input, image_refs: images.image_refs ?? [], workflow_image_bindings: images.workflow_image_bindings ?? [] }
 }
 export function validateTaskRequestDraft(value: unknown): TaskRequestDraft {
   try { return Schema.resolve(value, taskRequestDraftSchema, {})[0] as TaskRequestDraft }
@@ -103,13 +103,63 @@ export function validateTaskRequestDraft(value: unknown): TaskRequestDraft {
 }
 
 export function validateTaskDraft(value: unknown, path = 'draft'): TaskDraft {
-  const v = new Validator()
-  if (v.object(value, path, ['prompt_input', 'generation_input', 'parameter_mapping', 'context_refs', 'base_model_id'])) v.draft(value, path)
-  return v.finish(value)
+  try {
+    const draft = structuredClone(Schema.resolve(value, taskDraftSchema, {})[0]) as TaskDraft
+    validateInputReferences(draft, path)
+    return draft
+  } catch (error) { if (error instanceof WorkbenchError) throw error; throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), path) }
+}
+
+export function generationInputForDraft(input: GenerationInput, imageParameterIds: Iterable<string>): GenerationInputBase {
+  const { image_refs: _images, workflow_image_bindings: _bindings, ...generation } = input
+  const images = new Set(imageParameterIds)
+  return { ...generation, parameters: Object.fromEntries(Object.entries(generation.parameters).filter(([id]) => !images.has(id))) }
+}
+
+export function taskDraftFromRunInput(input: WorkbenchRunInput, current?: TaskDraft): TaskDraft {
+  const imageParameterIds = new Set(input.image_uploads.map(upload => upload.parameter_id))
+  for (const [id, kind] of Object.entries(input.parameter_mapping ?? {})) if (kind === 'reference_image') imageParameterIds.add(id)
+  for (const binding of input.workflow_image_bindings) imageParameterIds.add(binding.parameter_id)
+  return validateTaskDraft({ ...current, generation_input: generationInputForDraft(input.generation_input, imageParameterIds), prompt_input: input.prompt_input,
+    parameter_mapping: input.parameter_mapping, base_model_id: input.base_model_id,
+    image_refs: input.image_refs, workflow_image_bindings: input.workflow_image_bindings,
+    reference_run_ids: [...new Set([...(current?.reference_run_ids ?? []), input.run_id])],
+  })
+}
+
+export function runBaseModelId(run: Pick<WorkbenchRun, 'generation_input'>, task: Pick<Task, 'input'>): string | null {
+  return run.generation_input.model?.id === task.input.generation_input.model?.id ? task.input.base_model_id : null
+}
+
+export function validateInputReferences(value: unknown, path = 'input'): import('./contract.ts').InputReferences {
+  const keys = ['reference_task_ids', 'reference_run_ids', 'reference_experiences', 'image_refs', 'workflow_image_bindings']
+  let refs: import('./contract.ts').InputReferences
+  try { refs = structuredClone(Schema.resolve(Object.fromEntries(Object.entries(value as object).filter(([key]) => keys.includes(key))), inputReferencesSchema, {})[0]) as import('./contract.ts').InputReferences }
+  catch (error) { throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), path) }
+  const images = new Map<string, import('./contract.ts').ImageRef>()
+  for (const image of refs.image_refs) {
+    if (images.has(image.image_ref_id)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请为每张图片填写不同的 image_ref_id。', `${path}.image_refs`)
+    images.set(image.image_ref_id, image)
+  }
+  const parameters = new Set<string>()
+  for (const binding of refs.workflow_image_bindings) {
+    if (parameters.has(binding.parameter_id)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请将同一参数的图片按顺序填入一个绑定。', `${path}.workflow_image_bindings`)
+    parameters.add(binding.parameter_id)
+    for (const id of binding.image_ref_ids) {
+      const image = images.get(id)
+      if (!image || image.purpose === 'agent') throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请绑定用途为 Workflow 输入的图片。', `${path}.workflow_image_bindings`)
+    }
+  }
+  return refs
 }
 export function validateTaskInput(kind: TaskKind, value: unknown): TaskInput {
   const v = new Validator()
-  if (!v.object(value, 'input', ['prompt_input', 'generation_input', 'parameter_mapping', 'context_refs', 'base_model_id', 'requirements', 'reference_run_ids', 'evaluation_input', 'requested_skill', 'max_runs'])) return v.finish(value)
+  if (!v.object(value, 'input', [...Object.keys(contractFields(taskDraftSchema) ?? {}).filter(key => key !== 'instructions'), 'requirements', 'reference_task_artifacts', 'evaluation_input', 'requested_skill', 'max_runs'])) return v.finish(value)
+  const draftFields = Object.keys(contractFields(taskDraftSchema) ?? {})
+  const draft = validateTaskDraft(Object.fromEntries(Object.entries(value).filter(([key]) => draftFields.includes(key))), 'input')
+  const { instructions: _draftInstructions, ...fixedDraft } = draft
+  value = { ...value, ...fixedDraft, reference_task_artifacts: value.reference_task_artifacts ?? [] }
+  if (!v.object(value, 'input')) return v.finish(value)
   v.draft(value, 'input', kind === 'run' || kind === 'experiment')
   if (v.object(value.requirements, 'input.requirements', ['original_request', 'instructions'])) { v.text(value.requirements.original_request, 'input.requirements.original_request', true); v.text(value.requirements.instructions, 'input.requirements.instructions') }
   v.strings(value.reference_run_ids, 'input.reference_run_ids')
@@ -144,12 +194,12 @@ export function validateArtifact(value: unknown): ArtifactPayload {
       if (value.negative_prompt !== null) v.text(value.negative_prompt, 'artifact.negative_prompt')
       break
     case 'parameters': if (v.object(value.parameters, 'artifact.parameters')) for (const [key, item] of Object.entries(value.parameters)) v.json(item, `artifact.parameters.${key}`); break
-    case 'generation_input': v.generation(value.generation_input, 'artifact.generation_input', true); v.refs(value.context_refs, 'artifact.context_refs'); break
-    case 'resources': v.refs(value.refs, 'artifact.refs', true); if (value.reason !== undefined) v.text(value.reason, 'artifact.reason'); break
+    case 'generation_input': v.generation(value.generation_input, 'artifact.generation_input', true); validateInputReferences(value, 'artifact'); break
+    case 'resources': v.refs(value.refs, 'artifact.refs'); if (value.reason !== undefined) v.text(value.reason, 'artifact.reason'); break
     case 'review':
       v.text(value.observation, 'artifact.observation'); v.text(value.conclusion, 'artifact.conclusion'); v.strings(value.run_ids, 'artifact.run_ids')
       if (!Array.isArray(value.run_ids) || value.run_ids.length === 0) v.issue('artifact.run_ids', '请填写评价引用的运行 ID。')
-      if (value.candidate !== undefined && v.object(value.candidate, 'artifact.candidate', ['generation_input', 'context_refs'])) { v.generation(value.candidate.generation_input, 'artifact.candidate.generation_input', true); v.refs(value.candidate.context_refs, 'artifact.candidate.context_refs') }
+      if (value.candidate !== undefined && v.object(value.candidate, 'artifact.candidate', ['generation_input', 'image_refs', 'workflow_image_bindings'])) { v.generation(value.candidate.generation_input, 'artifact.candidate.generation_input', true); validateInputReferences(value.candidate, 'artifact.candidate') }
       break
     case 'experience':
       for (const key of ['title', 'conditions', 'note']) v.text(value[key], `artifact.${key}`, true)
@@ -197,22 +247,15 @@ export function validateFunctionBinding(value: FunctionBinding): FunctionBinding
   for (const key of ['workspace_id', 'function_id', 'name', 'preset_id'] as const) v.text(value[key], `binding.${key}`, true)
   if (value.name.length > 30) v.issue('binding.name', '功能名称最多 30 字。')
   if (typeof value.builtin !== 'boolean') v.issue('binding.builtin', '请填写布尔值。')
-  if (!TASK_KINDS.includes(value.kind)) v.issue('binding.kind', '请选择功能类型。')
+  if (value.kind !== 'translate' && !TASK_KINDS.includes(value.kind)) v.issue('binding.kind', '请选择功能类型。')
   v.text(value.agent_model?.provider, 'binding.agent_model.provider', true); v.text(value.agent_model?.model, 'binding.agent_model.model', true)
   if (value.agent_model?.reasoningEffort !== undefined) v.text(value.agent_model.reasoningEffort, 'binding.agent_model.reasoningEffort', true)
   if (value.requested_skill !== null) v.text(value.requested_skill, 'binding.requested_skill', true)
   if (v.text(value.request_template, 'binding.request_template')) {
-    const problem = requestTemplateProblem(value.request_template)
+    const problem = requestTemplateProblem(value.request_template, value.kind)
     if (problem) v.issue('binding.request_template', problem)
   }
   return v.finish(value)
 }
 
-export function equalValue(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) return true
-  if (left === null || right === null || typeof left !== 'object' || typeof right !== 'object') return false
-  if (Array.isArray(left) || Array.isArray(right)) return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((v, i) => equalValue(v, right[i]))
-  const a = left as Record<string, unknown>; const b = right as Record<string, unknown>
-  return Object.keys(a).length === Object.keys(b).length && Object.keys(a).every(key => Object.hasOwn(b, key) && equalValue(a[key], b[key]))
-}
 export function jsonValue<T>(value: T): JsonValue { return structuredClone(value) as JsonValue }

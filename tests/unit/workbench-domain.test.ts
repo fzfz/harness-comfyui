@@ -1,11 +1,11 @@
 import Schema from '@deepseek-ai/schemastery'
-import { taskGetRequestSchema, taskGetResultSchema, taskPublishRequestSchema, taskPublishReceiptSchema } from '../../src/workbench/schema.js'
+import { taskGetRequestSchema, taskGetResultSchema, taskPublishRequestSchema, taskPublishReceiptSchema, taskDraftSchema } from '../../src/workbench/schema.js'
 import { WORKBENCH_FUNCTIONS } from '../../src/workbench/functions.js'
 import type { TaskKind } from '../../src/workbench/contract.js'
 import { describe, expect, it } from 'vitest'
-import { validateArtifact, validateTaskInput, validateGenerationInput, validateContextRefs, WorkbenchError } from '../../src/workbench/validation.js'
+import { validateArtifact, validateTaskDraft, validateTaskInput, validateGenerationInput, taskDraftFromRunInput, WorkbenchError } from '../../src/workbench/validation.js'
 
-const input = { parameter_mapping: null, prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: 'test', instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, context_refs: [], base_model_id: null, requirements: { original_request: 'a scene', instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 0 }
+const input = { parameter_mapping: null, prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: 'test', instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, reference_task_ids: [], reference_task_artifacts: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], base_model_id: null, requirements: { original_request: 'a scene', instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 0 }
 
 describe('workbench shared validation', () => {
   it.each(['prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'run', 'experiment'] as TaskKind[])('validates the %s task input contract', kind => {
@@ -37,11 +37,42 @@ describe('workbench shared validation', () => {
 
   it('validates nested JSON parameters and rejects malformed resource and generation fields', () => {
     expect(validateGenerationInput({ ...input.generation_input, parameters: { custom: { choices: ['rain', 1, true, null] } } }).parameters.custom).toEqual({ choices: ['rain', 1, true, null] })
-    expect(validateContextRefs([{ kind: 'character', id: '90071992547409931234' }])).toEqual([{ kind: 'character', id: '90071992547409931234' }])
+    expect(validateArtifact({ type: 'resources', refs: [{ kind: 'model', id: '90071992547409931234' }] })).toEqual({ type: 'resources', refs: [{ kind: 'model', id: '90071992547409931234' }] })
     for (const invalid of [null, [], { ...input.generation_input, model: { id: 3, file_name: '' } }, { ...input.generation_input, parameters: { seed: Number.NaN } }, { ...input.generation_input, loras: [{ id: '0', file_name: '', weight: Infinity, trigger_words: [1] }] }, { ...input.generation_input, surprise: true }]) expect(() => validateGenerationInput(invalid)).toThrow(WorkbenchError)
-    expect(() => validateContextRefs([{ kind: 'model', id: '1' }])).toThrow(WorkbenchError)
-    expect(() => validateContextRefs([{ kind: 'character', id: '1' }, { kind: 'character', id: '1' }])).toThrow(WorkbenchError)
+    expect(() => validateArtifact({ type: 'resources', refs: [{ kind: 'character', id: '1' }] })).toThrow(WorkbenchError)
+    expect(() => validateArtifact({ type: 'resources', refs: [{ kind: 'model', id: '1' }, { kind: 'model', id: '1' }] })).toThrow(WorkbenchError)
     expect(() => validateArtifact({ type: 'question', question: '', options: [] })).toThrow(WorkbenchError)
+  })
+
+  it.each(['image_refs', 'workflow_image_bindings'])('rejects nested %s in saved drafts, fixed inputs and published candidates', field => {
+    const nested = { ...input.generation_input, instance_id: '1', template_id: '2', [field]: [] }
+    const { requirements, reference_task_artifacts, requested_skill, max_runs, ...saved } = input
+    const draft = { ...saved, instructions: '', generation_input: nested }
+    expect(() => validateTaskDraft(draft)).toThrow(WorkbenchError)
+    expect(() => Schema.resolve(draft, taskDraftSchema, {})).toThrow()
+    expect(() => validateTaskInput('run', { ...input, generation_input: nested, max_runs: 1 })).toThrow(WorkbenchError)
+    for (const artifact of [
+      { type: 'generation_input', generation_input: nested, image_refs: [], workflow_image_bindings: [] },
+      { type: 'review', observation: 'Inspect result', conclusion: 'Try another image', run_ids: ['run-a'], candidate: { generation_input: nested, image_refs: [], workflow_image_bindings: [] } },
+    ]) {
+      expect(() => validateArtifact(artifact)).toThrow(WorkbenchError)
+      expect(() => Schema.resolve({ task_id: 'task-a', artifact }, taskPublishRequestSchema, {})).toThrow()
+    }
+    expect(validateGenerationInput(nested)).toEqual(nested)
+  })
+
+  it.each([null, { reference_image: 'reference_image' as const, width: 'width' as const }])('restores uploaded Run images without retaining instance filenames in editable parameters: %j', parameter_mapping => {
+    const image = { image_ref_id: 'image-a', source: { kind: 'uploaded_file' as const, file_id: 'file-a' }, purpose: 'both' as const, reference_requirement: 'Use the composition' }
+    const generation = { ...input.generation_input, instance_id: '1', template_id: '2', parameters: { reference_image: 'previous-upload.png', width: 768 } }
+    const restored = taskDraftFromRunInput({ run_id: 'run-image', branch_id: 'branch-image', submitted_input: { ...generation, parameters: { width: 768 } }, effective_input: generation, generation_input: generation,
+      image_uploads: [{ image_ref_id: 'image-a', parameter_id: 'reference_image', instance_id: '1', name: 'previous-upload.png', subfolder: '', type: 'input' }],
+      image_refs: [image], workflow_image_bindings: [{ parameter_id: 'reference_image', image_ref_ids: ['image-a'] }], parameter_mapping, base_model_id: '1', prompt_input: { positive_prompt: null, negative_prompt: null }, input_description: null,
+    })
+    expect(restored.generation_input.parameters).toEqual({ width: 768 })
+    expect(restored.image_refs).toEqual([image])
+    expect(restored.workflow_image_bindings).toEqual([{ parameter_id: 'reference_image', image_ref_ids: ['image-a'] }])
+    const removed = validateTaskDraft({ ...restored, image_refs: [], workflow_image_bindings: [] })
+    expect(removed.generation_input.parameters).toEqual({ width: 768 })
   })
 
   it('accepts prompt input with unselected generation resources and reports the exact invalid resource path', () => {

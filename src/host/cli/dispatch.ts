@@ -13,8 +13,12 @@ function ordinaryRandomSeeds(count: number): readonly number[] {
 async function generationIdentity(
   options: CliHandlerOptions,
   identity: CliExecutionIdentity,
+  taskId?: string,
 ) {
-  const workspaceId = await resolveGenerationWorkspaceId(options.workspaceRegistry, identity.cwd)
+  if (taskId !== undefined && !options.workbench) throw new Error('Workbench service is unavailable')
+  const workspaceId = taskId === undefined
+    ? await resolveGenerationWorkspaceId(options.workspaceRegistry, identity.cwd)
+    : options.workbench!.taskWorkspace(taskId)
   return Object.freeze({
     workspaceId,
     sessionId: identity.sessionId,
@@ -34,13 +38,13 @@ export async function dispatch(
     case 'workbench.task.publish':
     case 'workbench.experiment.end': {
       if (!options.workbench) throw new Error('Workbench service is unavailable')
-      const owner = await generationIdentity(options, identity)
+      const owner = await generationIdentity(options, identity, request.task_id)
       if (request.command === 'workbench.task.get') return options.workbench.getTask({ taskId: request.task_id }, owner)
       if (request.command === 'workbench.task.publish') return options.workbench.publish({ taskId: request.task_id, artifact: request.artifact }, owner)
       return options.workbench.endExperiment({ taskId: request.task_id, reason: request.reason }, owner)
     }
     case 'generation.submit': {
-      const owner = await generationIdentity(options, identity)
+      const owner = await generationIdentity(options, identity, request.workbench_task_id)
       await options.workbench?.authorizeGeneration(request.workbench_task_id ?? null, owner)
       const accepted = await options.runtime.acceptGenerations(owner, request.items.map(item => ({
         requestId: item.request_id,
@@ -60,25 +64,19 @@ export async function dispatch(
     case 'generation.random-seeds':
       return Object.freeze({ seeds: ordinaryRandomSeeds(request.count) })
     case 'generation.wait': {
-      const owner = await generationIdentity(options, identity)
       return options.runWait.register({
-        workspaceId: owner.workspaceId,
         sessionId: identity.sessionId,
         callId: identity.callId,
         rootCallId: identity.rootCallId,
       }, request.run_ids, signal)
     }
     case 'generation.run-inputs': {
-      const owner = await generationIdentity(options, identity)
       return options.runtime.readGenerationRunInputs({
-        workspaceId: owner.workspaceId,
         runIds: request.run_ids,
       }, signal)
     }
     case 'generation.resolve-media': {
-      const owner = await generationIdentity(options, identity)
       return options.runtime.readGenerationRunMedia({
-        workspaceId: owner.workspaceId,
         runIds: request.run_ids,
         includeParameters: request.include_parameters,
       }, signal)

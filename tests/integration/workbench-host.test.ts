@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { afterEach, expect, it, vi } from 'vitest'
 import { toGenerationRequest } from '../../src/cli/contract.ts'
 import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
@@ -40,56 +41,32 @@ function editableBinding(binding: import('../../src/workbench/contract.ts').Func
   return { name, kind, preset_id, agent_model, requested_skill, request_template }
 }
 
-it('runs a custom function with its own binding when a one-time preset is present', async () => {
+it('runs a custom function with its saved configuration binding', async () => {
   const { remote } = await fixture()
   const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Custom prompt', goal: 'Paint glass' } }, signal())
   const value = { name: 'Glass rewrite', kind: 'rewrite', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
   await remote.mutate({ ...selected, type: 'function-add', value }, signal())
   const binding = (await remote.getProjection(selected, signal())).functions.find(item => item.name === value.name)!
-  const receipt = await remote.mutate({ ...selected, type: 'agent-action', id: binding.function_id, value: { preset_override: 'preset-b' } }, signal())
+  const receipt = await remote.mutate({ ...selected, type: 'agent-action', id: binding.function_id }, signal())
   expect((await remote.getProjection(selected, signal())).tasks.find(task => task.task_id === receipt.taskId)).toMatchObject({ binding_snapshot: { function_id: binding.function_id, preset_id: 'preset-a' } })
 })
 
-it('fixes one-time presets in Run Task snapshots and retains input when the selected Skill is unavailable', async () => {
-  const { remote, official, runtime } = await fixture()
-  const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Preset runs', goal: 'Paint glass' } }, signal())
-  for (const request of [{ type: 'update-draft', field: 'instance_id', value: '8' }, { type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }] as const) await remote.mutate({ ...selected, ...request }, signal())
-  const original = (await remote.getProjection(selected, signal())).functions.find(binding => binding.function_id === 'run')!
-  const value = { ...editableBinding(original), preset_id: 'preset-a', requested_skill: 'prompt-builder' }
-  await remote.mutate({ ...selected, type: 'function-edit', id: original.function_id, value }, signal())
-  const fixedDraft = (await remote.getProjection(selected, signal())).branches[0]!.draft
-  for (const preset_override of ['preset-b', undefined]) {
-    const accepted = await remote.mutate({ ...selected, type: 'run', value: { ...(preset_override ? { preset_override } : {}) } }, signal())
-    const task = (await remote.getProjection(selected, signal())).tasks.find(task => task.task_id === accepted.taskId)!
-    expect(task.binding_snapshot.preset_id).toBe(preset_override ?? 'preset-a')
-    const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'preset-run' }
-    const run = await runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: { title: task.input.generation_input.title, instanceId: '8', templateId: '5', model: { id: '2', fileName: 'paint.safetensors' }, parameters: task.input.generation_input.parameters, loras: [] } }], undefined, task.task_id)
-    expect((await remote.getProjection(selected, signal())).runs.find(item => item.run_id === run.items[0]!.runId)!.workbench_task_id).toBe(task.task_id)
-  }
-  const createSession = official.controller.create.getMockImplementation()!
-  official.controller.create.mockImplementation(async input => {
-    const created = await createSession(input)
-    official.agents.get(created.sessionId)!.ctx.skills.list.mockResolvedValue([])
-    return created
-  })
-  await expect(remote.mutate({ ...selected, type: 'run', value: { preset_override: 'preset-b' } }, signal())).rejects.toThrow('prompt-builder')
-  const projection = await remote.getProjection(selected, signal())
-  expect(projection.branches[0]!.draft).toEqual(fixedDraft)
-  expect(projection.functions.find(binding => binding.function_id === 'run')).toMatchObject({ preset_id: 'preset-a', requested_skill: 'prompt-builder' })
-  expect(projection.tasks.find(task => task.status === 'failed')).toMatchObject({ binding_snapshot: { preset_id: 'preset-b' }, input: { generation_input: fixedDraft.generation_input } })
-})
 
 it('starts one experiment with fixed Task, Session, budget and first Run input', async () => {
   const { remote, runtime, official } = await fixture()
   const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Fixed experiment', goal: 'Compare glass light' } }, signal())
-  for (const request of [{ type: 'update-draft', field: 'instance_id', value: '8' }, { type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, { type: 'update-draft', field: 'positive_prompt', value: 'Initial glass' }, { type: 'update-execution', field: 'mode', value: 'continuous' }, { type: 'update-execution', field: 'max_runs', value: 3 }] as const) await remote.mutate({ ...selected, ...request }, signal())
-  const receipt = await remote.mutate({ ...selected, type: 'experiment', value: { preset_override: 'preset-a' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const request of [{ type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, { type: 'update-execution', field: 'mode', value: 'continuous' }, { type: 'update-execution', field: 'max_runs', value: 3 }] as const) await remote.mutate({ ...selected, ...request }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, selected, draft => { draft.prompt_input.positive_prompt = 'Initial glass' }, signal())
+  await remote.mutate({ ...selected, type: 'function-preset', id: 'experiment', value: 'preset-a' }, signal())
+  const receipt = await remote.mutate({ ...selected, type: 'experiment' }, signal())
   const initial = await remote.getProjection(selected, signal()), task = initial.tasks[0]!
   expect(initial.tasks).toHaveLength(1)
   expect(initial.experiments).toEqual([{ task_id: task.task_id, control_state: 'running', end_reason: null, submitted_count: 0, max_runs: 3 }])
   expect(receipt.taskId).toBe(task.task_id)
   expect(official.controller.create).toHaveBeenCalledExactlyOnceWith({ workspaceId: selected.workspaceId, agentPreset: 'preset-a' })
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Later glass' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Later glass' }, signal())
   await remote.mutate({ ...selected, type: 'update-execution', field: 'max_runs', value: 5 }, signal())
   const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'experiment-first' }
   const fixed = { ...task.input.generation_input, instance_id: '8', template_id: '5' }
@@ -107,7 +84,9 @@ it('starts one experiment with fixed Task, Session, budget and first Run input',
 it('changes a custom kind and removes its bindings while retaining Task, Run and artifact history', async () => {
   const { remote, runtime, ctx } = await fixture()
   const selected = await remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Function history', goal: 'Paint glass' } }, signal())
-  for (const request of [{ type: 'update-draft', field: 'instance_id', value: '8' }, { type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }] as const) await remote.mutate({ ...selected, ...request }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const request of [{ type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }] as const) await remote.mutate({ ...selected, ...request }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   const base = { preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
   await remote.mutate({ ...selected, type: 'function-add', value: { ...base, name: 'Custom run', kind: 'run' } }, signal())
   await remote.mutate({ ...selected, type: 'function-add', value: { ...base, name: 'Custom rewrite', kind: 'rewrite' } }, signal())
@@ -212,20 +191,16 @@ async function fixture() {
   return result
 }
 
-it('keeps both prompt fields in prompt_input and rejects retired parameter kind aliases', async () => {
+it('keeps both prompt slots and rejects unsupported prompt fields', async () => {
   const { remote } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Parameters', goal: 'Edit parameters' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
-  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) { await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal()) }
   const before = (await remote.getProjection(selected, signal())).branches[0]!.draft
-  for (const id of ['positive', 'negative']) {
-    await expect(remote.mutate({ ...selected, type: 'update-draft', field: 'parameter', id, value: 'Other prompt' }, signal())).rejects.toMatchObject({
-      code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: `generation_input.parameters.${id}` }] },
-    })
-  }
   for (const field of ['steps', 'cfg', 'seed', 'references']) {
-    await expect(remote.mutate({ ...selected, type: 'update-draft', field, value: 2 }, signal())).rejects.toMatchObject({
-      code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'field' }] },
+    await expect(saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input[field as 'positive_prompt' | 'negative_prompt'] = 2 as never }, signal())).rejects.toMatchObject({
+      code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'draft' }] },
     })
   }
   expect((await remote.getProjection(selected, signal())).branches[0]!.draft).toEqual(before)
@@ -293,18 +268,20 @@ it('uses the registered directory before checking workspace names and reports cr
     .rejects.toMatchObject({ details: { code: 'WORKBENCH_WORKSPACE_CREATE_FAILED', issues: [{ path: 'path', message: '无法添加工作区，请填写已存在且可访问的项目目录。' }] } })
 })
 
-it('applies native aspect-ratio and preset size values and rejects an unrelated size candidate', async () => {
+it('saves native aspect-ratio and preset size values and rejects invalid parameters', async () => {
   const { remote, inspect, store } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
   inspect.mockResolvedValue({ parameters: [], size_candidates: [{
     candidate_id: 'ratio-size', representation: 'aspect_ratio_megapixels',
     aspect_ratio: { parameter_id: 'ratio', kind: 'aspect_ratio', value_type: 'choice', current_value: '1:1', allowed_values: ['1:1', '3:4'] },
     megapixels: { parameter_id: 'pixels', kind: 'megapixels', value_type: 'number', current_value: 1, minimum: 0.5, maximum: 2 },
   }] })
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '6' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'size', value: { candidate_id: 'ratio-size', parameters: { ratio: '3:4', pixels: 1.2 } } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { Object.assign(draft.generation_input.parameters, ({ candidate_id: 'ratio-size', parameters: { ratio: '3:4', pixels: 1.2 } }).parameters) }, signal())
   expect(store.getBranch(selected.branchId!).draft.generation_input.parameters).toEqual({ ratio: '3:4', pixels: 1.2 })
   inspect.mockResolvedValue({ parameters: [], size_candidates: [{
     candidate_id: 'preset-size', representation: 'resolution_preset',
@@ -312,12 +289,11 @@ it('applies native aspect-ratio and preset size values and rejects an unrelated 
     mapped_options: [{ value: 'portrait', width: 768, height: 1024 }], unmapped_values: ['square'],
   }] })
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '7' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'size', value: { candidate_id: 'preset-size', parameters: { resolution: 'portrait' } } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { Object.assign(draft.generation_input.parameters, ({ candidate_id: 'preset-size', parameters: { resolution: 'portrait' } }).parameters) }, signal())
   expect(store.getBranch(selected.branchId!).draft.generation_input.parameters).toEqual({ resolution: 'portrait' })
-  for (const value of [
-    { candidate_id: 'other-template', parameters: { resolution: 'square' } },
-    { candidate_id: 'preset-size', parameters: { width: 512 } },
-  ]) await expect(remote.mutate({ ...selected, type: 'update-draft', field: 'size', value }, signal())).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT' } })
+  await expect(saveFixtureDraft(remote, selected, draft => { draft.generation_input.parameters.resolution = 'outside' }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT' } })
+  await expect(saveFixtureDraft(remote, selected, draft => { draft.generation_input.parameters.width = 512 }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_PARAMETER_NOT_ALLOWED' } })
   expect(store.getBranch(selected.branchId!).draft.generation_input.parameters).toEqual({ resolution: 'portrait' })
 })
 
@@ -559,11 +535,11 @@ it('keeps each dispatched template snapshot when requirements are edited for the
 
 it.each([
   { template: '', message: '请填写本功能的执行要求。' },
-  { template: 'Read task.', message: '请在执行要求中保留 {{task_id}}，用于定位工作台任务。' },
-  { template: 'Read {{task_id}} and {{branch_id}}.', message: '请将其他定位符替换为具体执行要求，并保留 {{task_id}}。' },
-  { template: 'Read {{task_id}} {{', message: 'Task ID 定位符格式不完整，请使用 {{task_id}}。' },
-  { template: 'Read {{task_id}} }}', message: 'Task ID 定位符格式不完整，请使用 {{task_id}}。' },
-  { template: 'Read {{task_id}} {{ task_id }', message: 'Task ID 定位符格式不完整，请使用 {{task_id}}。' },
+  { template: 'Read task.', message: '请在执行要求中保留 {{task_id}}。' },
+  { template: 'Read {{task_id}} and {{branch_id}}.', message: '本功能支持的变量为 {{task_id}}。请将其他变量改为具体文字。' },
+  { template: 'Read {{task_id}} {{', message: '变量格式不完整，请使用 {{task_id}}。' },
+  { template: 'Read {{task_id}} }}', message: '变量格式不完整，请使用 {{task_id}}。' },
+  { template: 'Read {{task_id}} {{ task_id }', message: '变量格式不完整，请使用 {{task_id}}。' },
 ])('rejects invalid request template "$template" while retaining the saved binding', async ({ template, message }) => {
   const { remote } = await fixture()
   const scope = { workspaceId: 'workspace_1' }
@@ -673,9 +649,11 @@ it('asks and answers a task question and pauses, continues and ends the same exp
   expect((await remote.getProjection(selected, signal())).tasks[0]!.status).toBe('waiting_input')
   await remote.mutate({ ...selected, type: 'task-answer', taskId: prompt.task_id, id: question.artifact_id, value: 'Moon' }, signal())
   expect((await remote.getProjection(selected, signal())).tasks[0]!.answers).toEqual([expect.objectContaining({ question_artifact_id: question.artifact_id, answer: 'Moon' })])
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   await remote.mutate({ ...selected, type: 'update-execution', field: 'mode', value: 'continuous' }, signal())
   await remote.mutate({ ...selected, type: 'update-execution', field: 'max_runs', value: 3 }, signal())
   await remote.mutate({ ...selected, type: 'experiment' }, signal())
@@ -694,11 +672,11 @@ const signal = () => new AbortController().signal
 
 it('lists default function bindings in prototype order across repeated workspace reads', async () => {
   const { remote, official } = await fixture()
-  const expectedOrder = ['run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment']
+  const expectedOrder = ['run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment', 'translate']
   const first = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())
   expect(first.functions.map(binding => binding.function_id)).toEqual(expectedOrder)
-  expect(first.functions).toHaveLength(10)
-  for (const binding of first.functions) expect(binding).toMatchObject({
+  expect(first.functions).toHaveLength(11)
+  for (const binding of first.functions.filter(binding => binding.kind !== 'translate')) expect(binding).toMatchObject({
     workspace_id: 'workspace_1', builtin: true, preset_id: 'harness-comfyui-cli-candidate',
     agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null,
   })
@@ -722,7 +700,7 @@ it('fills missing builtin bindings without replacing saved workspace configurati
   const custom = store.saveFunctionBinding({ ...saved, function_id: 'custom-rewrite', builtin: false, name: 'Rewrite glass' })
   const initialized = await remote.getProjection({ workspaceId: 'workspace_2' }, signal())
   expect(initialized.functions.map(binding => binding.function_id)).toEqual([
-    'run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment', 'custom-rewrite',
+    'run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment', 'translate', 'custom-rewrite',
   ])
   expect(initialized.functions.find(binding => binding.function_id === 'rewrite')).toEqual(saved)
   expect(initialized.functions.find(binding => binding.function_id === 'custom-rewrite')).toEqual(custom)
@@ -737,6 +715,7 @@ it('fills missing builtin bindings without replacing saved workspace configurati
 it('mounts Workbench Remotes, creates one main branch and isolates Workspace projections', async () => {
   const { ctx, remote, official, fiber, remoteFiber } = await fixture()
   expect(remoteMethods(remote)).toEqual([
+    ...['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel'].map(method => ({ method, invocation: { kind: 'direct' } })),
     { method: 'getRunInput', invocation: { kind: 'direct' } },
     { method: 'getEnvironment', invocation: { kind: 'direct' } },
     { method: 'getProjection', invocation: { kind: 'direct' } },
@@ -747,7 +726,7 @@ it('mounts Workbench Remotes, creates one main branch and isolates Workspace pro
   ])
   const empty = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())
   expect(empty).toMatchObject({ works: [], branches: [], tasks: [], refreshAfterMs: 777 })
-  expect(empty.functions).toHaveLength(10)
+  expect(empty.functions).toHaveLength(11)
   const created = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain study', goal: 'Rain on glass' } }, signal())
   const first = await remote.getProjection(created, signal())
   expect(first.works).toEqual([{ work_id: created.workId, workspace_id: 'workspace_1', name: 'Rain study', goal: 'Rain on glass' }])
@@ -810,28 +789,21 @@ it('reads official presets, models and invocable Skills and always releases the 
   expect((await remote.getEnvironment({ workspaceId: 'missing', presetId: 'preset-a' }, signal())).skills).toEqual([])
 })
 
-it('saves multiline prompts and concurrent field edits independently for each branch without a template', async () => {
+it('saves multiline prompt slots together while keeping branches independent without a template', async () => {
   const { remote } = await fixture()
   const parent = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '温室', goal: '雨后的玻璃温室' } }, signal())
-  await Promise.all([
-    remote.mutate({ ...parent, type: 'update-draft', field: 'positive_prompt', value: '雨后温室\n玻璃反光\r\n  暖色灯光  ' }, signal()),
-    remote.mutate({ ...parent, type: 'update-draft', field: 'negative_prompt', value: '模糊\n过曝，结构扭曲\n' }, signal()),
-  ])
-  const saved = await remote.getProjection(parent, signal())
-  expect(saved.branches.find(branch => branch.branch_id === parent.branchId)!.draft).toMatchObject({
-    prompt_input: { positive_prompt: '雨后温室\n玻璃反光\r\n  暖色灯光  ', negative_prompt: '模糊\n过曝，结构扭曲\n' },
-    generation_input: { instance_id: null, template_id: null, parameters: {} },
-  })
+  const prompts = { positive_prompt: '雨后温室\n玻璃反光\r\n  暖色灯光  ', negative_prompt: '模糊\n过曝，结构扭曲\n' }
+  await saveFixtureDraft(remote, parent, draft => { draft.prompt_input = prompts }, signal())
+  expect((await remote.getProjection(parent, signal())).branches[0]?.draft.prompt_input).toEqual(prompts)
   const child = await remote.mutate({ ...parent, type: 'create-branch', value: { name: '夜间温室', original_request: '比较夜间灯光' } }, signal())
+  const childPrompts = { positive_prompt: '夜间温室\n窗内暖光', negative_prompt: '强烈眩光\n玻璃变形' }
   await Promise.all([
-    remote.mutate({ ...parent, type: 'update-draft', field: 'positive_prompt', value: '' }, signal()),
-    remote.mutate({ ...parent, type: 'update-draft', field: 'negative_prompt', value: '' }, signal()),
-    remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: '夜间温室\n窗内暖光' }, signal()),
-    remote.mutate({ ...child, type: 'update-draft', field: 'negative_prompt', value: '强烈眩光\n玻璃变形' }, signal()),
+    saveFixtureDraft(remote, parent, draft => { draft.prompt_input = { positive_prompt: '', negative_prompt: '' } }, signal()),
+    saveFixtureDraft(remote, child, draft => { draft.prompt_input = childPrompts }, signal()),
   ])
-  const reloaded = await remote.getProjection(parent, signal())
-  expect(reloaded.branches.find(branch => branch.branch_id === parent.branchId)!.draft.prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
-  expect(reloaded.branches.find(branch => branch.branch_id === child.branchId)!.draft.prompt_input).toEqual({ positive_prompt: '夜间温室\n窗内暖光', negative_prompt: '强烈眩光\n玻璃变形' })
+  const result = await remote.getProjection(parent, signal())
+  expect(result.branches.find(branch => branch.branch_id === parent.branchId)?.draft.prompt_input).toEqual({ positive_prompt: '', negative_prompt: '' })
+  expect(result.branches.find(branch => branch.branch_id === child.branchId)?.draft.prompt_input).toEqual(childPrompts)
 })
 
 it('edits branch input through real actions, resolves catalog resources and dispatches the selected official Session', async () => {
@@ -841,27 +813,26 @@ it('edits branch input through real actions, resolves catalog resources and disp
   expect(createdWorkspace).toEqual({ workspaceId: 'workspace_3' })
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const action = (type: ExperimentWorkbenchAction['type'], value?: unknown, field?: string, id?: string) => remote.mutate({ ...selected, type, value, field, id }, signal())
-  await remote.mutate({ ...selected, type: 'update-branch', field: 'name', value: 'Wet glass', expectedValue: '主分支' }, signal())
-  await remote.mutate({ ...selected, type: 'update-branch', field: 'original_request', value: 'Paint rain at night', expectedValue: 'Paint rain' }, signal())
-  await action('update-draft', 'rain at night', 'positive_prompt')
-  await action('update-draft', 'blur', 'negative_prompt')
-  await action('update-draft', '8', 'instance_id')
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { name: 'Wet glass', expectedName: '主分支' })
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { originalRequest: 'Paint rain at night', expectedOriginalRequest: 'Paint rain' })
+  await saveFixtureDraft(remote, selected, draft => { draft.prompt_input = { positive_prompt: 'rain at night', negative_prompt: 'blur' }; draft.generation_input.instance_id = '8' }, signal())
   await action('resource-select', { kind: 'model', id: '2' })
   await action('resource-select', { kind: 'lora', id: '3' })
   await action('resource-select', { kind: 'lora', id: '3' })
-  await action('resource-select', { kind: 'character', id: '4' })
   await action('resource-select', { kind: 'comfyui-template', id: '5' })
-  await action('update-draft', { candidate_id: 'width_height:width:height', parameters: { width: 768, height: 1024 } }, 'size')
-  await action('update-draft', 42, 'parameter', 'seed')
-  await action('update-draft', '/reference.png', 'parameter', 'reference')
-  await action('update-draft', 0.8, 'lora-weight', '3')
+  await saveFixtureDraft(remote, selected, draft => {
+    Object.assign(draft.generation_input.parameters, { width: 768, height: 1024, seed: 42 })
+    draft.image_refs = [{ image_ref_id: 'image-reference', source: { kind: 'uploaded_file', file_id: 'file-reference' }, purpose: 'both', reference_requirement: 'Retain the reflections' }]
+    draft.workflow_image_bindings = [{ parameter_id: 'reference', image_ref_ids: ['image-reference'] }]
+    draft.generation_input.loras.find(lora => lora.id === '3')!.weight = 0.8
+  }, signal())
   const edited = await remote.getProjection(selected, signal())
   expect(edited.branches[0]).toMatchObject({ name: 'Wet glass', original_request: 'Paint rain at night', draft: {
-    base_model_id: '1', context_refs: [{ kind: 'character', id: '4' }],
-    generation_input: { model: { id: '2', file_name: 'paint.safetensors' }, template_id: '5', parameters: { width: 768, height: 1024, seed: 42, reference: '/reference.png' }, loras: [{ id: '3', weight: 0.8, trigger_words: ['rain'] }] },
+    base_model_id: '1', image_refs: [{ image_ref_id: 'image-reference', source: { kind: 'uploaded_file', file_id: 'file-reference' }, purpose: 'both', reference_requirement: 'Retain the reflections' }], workflow_image_bindings: [{ parameter_id: 'reference', image_ref_ids: ['image-reference'] }],
+    generation_input: { model: { id: '2', file_name: 'paint.safetensors' }, template_id: '5', parameters: { width: 768, height: 1024, seed: 42 }, loras: [{ id: '3', weight: 0.8, trigger_words: ['rain'] }] },
   } })
-  expect(catalog.details).toHaveBeenCalledWith({ kind: 'character', id: '4' }, expect.any(AbortSignal))
-  const accepted = await action('run', { instructions: 'Keep the reflections', preset_override: 'preset-a' })
+  await remote.mutate({ ...selected, type: 'function-preset', id: 'run', value: 'preset-a' }, signal())
+  const accepted = await action('run', { instructions: 'Keep the reflections' })
   const running = await remote.getProjection(selected, signal())
   const task = running.tasks[0]!
   expect(accepted).toEqual({ ...selected, taskId: task.task_id })
@@ -873,9 +844,8 @@ it('edits branch input through real actions, resolves catalog resources and disp
   expect((await remote.getProjection(branch, signal())).branches).toEqual(expect.arrayContaining([expect.objectContaining({ branch_id: branch.branchId, parent_branch_id: selected.branchId, original_request: 'Less rain' })]))
   await action('resource-remove', 'model')
   await action('resource-remove', 'lora', undefined, '3')
-  await action('resource-remove', 'character', undefined, '4')
   await action('resource-remove', 'comfyui-template')
-  expect(store.getBranch(selected.branchId!).draft).toMatchObject({ generation_input: { model: null, template_id: null, loras: [] }, context_refs: [] })
+  expect(store.getBranch(selected.branchId!).editing_draft).toMatchObject({ generation_input: { model: null, template_id: null, loras: [] }, image_refs: [{ image_ref_id: 'image-reference', purpose: 'both', reference_requirement: 'Retain the reflections' }], workflow_image_bindings: [] })
 })
 
 it('includes the total branch count across workspaces in each work projection', async () => {
@@ -894,21 +864,23 @@ it('copies a Run-free branch input through child and grandchild branches with in
   const { remote, official } = await fixture()
   const parent = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Glasshouse', goal: 'Keep the glass structure' } }, signal())
   for (const [field, value] of [['positive_prompt', 'glasshouse'], ['negative_prompt', 'blur'], ['instance_id', '8']] as const)
-    await remote.mutate({ ...parent, type: 'update-draft', field, value }, signal())
-  for (const [kind, id] of [['model', '2'], ['lora', '3'], ['character', '4'], ['comfyui-template', '5']] as const)
-    await remote.mutate({ ...parent, type: 'resource-select', value: { kind, id } }, signal())
-  await remote.mutate({ ...parent, type: 'update-draft', field: 'parameter', id: 'seed', value: 42 }, signal())
+    await saveFixtureDraft(remote, { ...parent }, draft => { if (field === 'instance_id') draft.generation_input.instance_id = value; else draft.prompt_input[field as 'positive_prompt' | 'negative_prompt'] = value as never }, signal())
+  for (const [kind, id] of [['model', '2'], ['lora', '3'], ['comfyui-template', '5']] as const)
+    { await remote.mutate({ ...parent, type: 'resource-select', value: { kind, id } }, signal())
+  await saveFixtureDraft(remote, { ...parent }, () => {}, signal()) }
+  await saveFixtureDraft(remote, { ...parent }, draft => { draft.generation_input.parameters['seed'] = 42 }, signal())
   const before = (await remote.getProjection(parent, signal())).branches[0]!
   const child = await remote.mutate({ ...parent, type: 'create-branch', value: { name: 'Warm light', original_request: before.original_request } }, signal())
   expect((await remote.getProjection(child, signal())).branches.find(item => item.branch_id === child.branchId)!.draft).toEqual(before.draft)
-  await remote.mutate({ ...child, type: 'update-draft', field: 'positive_prompt', value: 'warm glasshouse' }, signal())
+  await saveFixtureDraft(remote, { ...child }, draft => { draft.prompt_input.positive_prompt = 'warm glasshouse' }, signal())
   const childDraft = (await remote.getProjection(child, signal())).branches.find(item => item.branch_id === child.branchId)!.draft
   const grandchild = await remote.mutate({ ...child, type: 'create-branch', value: { name: 'Warm details', original_request: before.original_request } }, signal())
   const inherited = (await remote.getProjection(grandchild, signal())).branches.find(item => item.branch_id === grandchild.branchId)!
   expect(inherited.draft).toEqual(childDraft)
-  await remote.mutate({ ...grandchild, type: 'update-branch', field: 'original_request', value: 'Keep the warm reflections', expectedValue: before.original_request }, signal())
-  await remote.mutate({ ...grandchild, type: 'update-draft', field: 'parameter', id: 'seed', value: 99 }, signal())
+  await saveFixtureDraft(remote, { ...grandchild }, () => {}, signal(), { originalRequest: 'Keep the warm reflections', expectedOriginalRequest: before.original_request })
+  await saveFixtureDraft(remote, { ...grandchild }, draft => { draft.generation_input.parameters['seed'] = 99 }, signal())
   await remote.mutate({ ...grandchild, type: 'resource-remove', value: 'lora', id: '3' }, signal())
+  await saveFixtureDraft(remote, { ...grandchild }, () => {}, signal())
   const result = await remote.getProjection(grandchild, signal())
   expect(result.branches).toHaveLength(3)
   expect(result.branches.find(item => item.branch_id === parent.branchId)).toEqual(before)
@@ -926,11 +898,11 @@ it('preserves user edits as candidates and applies an explicitly selected prompt
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
   const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'publish' }
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Manual portrait' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Manual portrait' }, signal())
   const receipt = await ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'prompt', positive_prompt: 'Agent portrait', negative_prompt: 'blur' } }, identity)
   expect(receipt.disposition).toBe('candidate')
   await remote.mutate({ ...selected, type: 'task-apply', id: receipt.artifact_id, value: { 'prompt_input.positive_prompt': 'Manual portrait', 'prompt_input.negative_prompt': '' } }, signal())
-  expect(store.getBranch(selected.branchId!).draft.prompt_input).toEqual({ positive_prompt: 'Agent portrait', negative_prompt: 'blur' })
+  expect(store.getBranch(selected.branchId!).editing_draft?.prompt_input).toEqual({ positive_prompt: 'Agent portrait', negative_prompt: 'blur' })
   const fork = await remote.mutate({ ...selected, type: 'task-branch', id: receipt.artifact_id, value: { name: 'Agent version' } }, signal())
   expect(store.getBranch(fork.branchId!)).toMatchObject({ source_artifact_id: receipt.artifact_id, draft: { prompt_input: { positive_prompt: 'Agent portrait' } } })
   await remote.mutate({ ...selected, type: 'task-interrupt', taskId: task.task_id }, signal())
@@ -953,8 +925,8 @@ it.each([
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const windowA = (await remote.getProjection(selected, signal())).branches[0]!
   const windowB = (await remote.getProjection(selected, signal())).branches[0]!
-  await remote.mutate({ ...selected, type: 'update-branch', field, value: saved, expectedValue: windowB[field] }, signal())
-  await expect(remote.mutate({ ...selected, type: 'update-branch', field, value: stale, expectedValue: windowA[field] }, signal())).rejects.toMatchObject({
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [field === 'name' ? 'name' : 'originalRequest']: saved, [field === 'name' ? 'expectedName' : 'expectedOriginalRequest']: windowB[field] })
+  await expect(saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [field === 'name' ? 'name' : 'originalRequest']: stale, [field === 'name' ? 'expectedName' : 'expectedOriginalRequest']: windowA[field] })).rejects.toMatchObject({
     code: 'workbench/operation-failed',
     details: { code: 'WORKBENCH_EDIT_CONFLICT', issues: [{ path: field, message: expect.any(String) }] },
   })
@@ -962,15 +934,13 @@ it.each([
 })
 
 it.each([
-  { field: 'name', expectedValue: undefined, path: 'expectedValue' },
-  { field: 'original_request', expectedValue: undefined, path: 'expectedValue' },
-  { field: undefined, expectedValue: 'Paint rain', path: 'field' },
-  { field: 'goal', expectedValue: 'Paint rain', path: 'field' },
+  { field: 'name', expectedValue: undefined, path: 'expectedName' },
+  { field: 'original_request', expectedValue: undefined, path: 'expectedOriginalRequest' },
 ])('rejects branch edits with invalid request metadata: $field / $path', async ({ field, expectedValue, path }) => {
   const { remote } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const original = (await remote.getProjection(selected, signal())).branches[0]!
-  await expect(remote.mutate({ ...selected, type: 'update-branch', field, value: 'Changed text', expectedValue }, signal())).rejects.toMatchObject({
+  await expect(saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [field === 'name' ? 'name' : 'originalRequest']: 'Changed text', [field === 'name' ? 'expectedName' : 'expectedOriginalRequest']: expectedValue })).rejects.toMatchObject({
     code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path, message: expect.any(String) }] },
   })
   expect((await remote.getProjection(selected, signal())).branches[0]).toEqual(original)
@@ -985,8 +955,8 @@ it.each([
   const windowA = (await remote.getProjection(selected, signal())).branches[0]!
   const windowB = (await remote.getProjection(selected, signal())).branches[0]!
   const values = { name: '名'.repeat(40), original_request: '  Paint rain at night.\nKeep the reflections.  ' }
-  await remote.mutate({ ...selected, type: 'update-branch', field: first, value: values[first], expectedValue: windowA[first] }, signal())
-  await remote.mutate({ ...selected, type: 'update-branch', field: second, value: values[second], expectedValue: windowB[second] }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [first === 'name' ? 'name' : 'originalRequest']: values[first], [first === 'name' ? 'expectedName' : 'expectedOriginalRequest']: windowA[first] })
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [second === 'name' ? 'name' : 'originalRequest']: values[second], [second === 'name' ? 'expectedName' : 'expectedOriginalRequest']: windowB[second] })
   const refreshed = await remote.getProjection(selected, signal())
   expect(refreshed.branches[0]).toMatchObject(values)
   expect(refreshed.works[0]).toMatchObject({ name: 'Rain', goal: 'Paint rain' })
@@ -1002,8 +972,8 @@ it.each([
   const { remote } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const original = (await remote.getProjection(selected, signal())).branches[0]!
-  await expect(remote.mutate({ ...selected, type: 'update-branch', field, value, expectedValue: original[field] }, signal())).rejects.toMatchObject({
-    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: field, message: expect.any(String) }] },
+  await expect(saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [field === 'name' ? 'name' : 'originalRequest']: value, [field === 'name' ? 'expectedName' : 'expectedOriginalRequest']: original[field] })).rejects.toMatchObject({
+    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: field === 'original_request' ? 'originalRequest' : field, message: expect.any(String) }] },
   })
   expect((await remote.getProjection(selected, signal())).branches[0]).toEqual(original)
 })
@@ -1014,10 +984,10 @@ it('rejects invalid action input and cross-workspace targets before changing a b
   const original = store.getBranch(selected.branchId!)
   const invalid: ExperimentWorkbenchAction[] = [
     { ...selected, type: 'new-work', value: [] },
-    { ...selected, type: 'update-branch', field: 'name', value: '', expectedValue: original.name },
-    { ...selected, type: 'update-draft', field: 'parameter', id: 'seed', value: 10 },
-    { ...selected, type: 'update-draft', field: 'lora-weight', id: 'missing', value: 1 },
-    { ...selected, workspaceId: 'workspace_2', type: 'update-draft', field: 'positive_prompt', value: 'Wrong project' },
+    { ...selected, type: 'save-draft', value: { expected: original.draft, expectedEditingDraft: original.editing_draft, draft: original.draft, name: '', expectedName: original.name } },
+    { ...selected, type: 'save-draft', value: { expected: original.draft, expectedEditingDraft: original.editing_draft, draft: { ...original.draft, generation_input: { ...original.draft.generation_input, parameters: { seed: Number.NaN } } } } },
+    { ...selected, type: 'save-draft', value: { expected: original.draft, expectedEditingDraft: original.editing_draft, draft: { ...original.draft, generation_input: { ...original.draft.generation_input, loras: [{ id: '1', file_name: 'invalid', weight: 'heavy', trigger_words: [] }] } } } },
+    { ...selected, workspaceId: 'workspace_2', type: 'save-draft', value: { expected: original.draft, expectedEditingDraft: original.editing_draft, draft: original.draft } },
   ]
   for (const request of invalid) await expect(remote.mutate(request, signal())).rejects.toMatchObject({ code: 'workbench/operation-failed' })
   expect(store.getBranch(selected.branchId!)).toEqual(original)
@@ -1028,42 +998,7 @@ it('rejects invalid action input and cross-workspace targets before changing a b
   expect(store.getTask(foreignTask.task_id).execution_state).toBe('running')
 })
 
-it('selects a resource from another base model before a generation model is selected', async () => {
-  const { remote, store, catalog } = await fixture()
-  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Context', goal: 'Read references' } }, signal())
-  const before = store.getBranch(selected.branchId!).draft
-  const readDetails = catalog.details.getMockImplementation()!
-  catalog.details.mockImplementation(async (request, requestSignal) => {
-    const details = await readDetails(request, requestSignal)
-    return { ...details, item: { ...details.item, label: 'Other model style', baseModelId: '9', modelId: null } }
-  })
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'style', id: '7' } }, signal())
-  expect(store.getBranch(selected.branchId!).draft).toEqual({ ...before, context_refs: [{ kind: 'style', id: '7' }] })
-})
 
-it('persists all five context kinds with shared IDs and freezes the Task references before single-item removal', async () => {
-  const { remote, store, catalog } = await fixture()
-  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'References', goal: 'Read references' } }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
-  const refs = (['work', 'character', 'style', 'prompt-term', 'artist-string'] as const).map(kind => ({ kind, id: '90071992547409931234' }))
-  for (const ref of refs) {
-    catalog.details.mockClear()
-    await remote.mutate({ ...selected, type: 'resource-select', value: ref }, signal())
-    expect(catalog.details).toHaveBeenCalledExactlyOnceWith(ref, expect.any(AbortSignal))
-  }
-  await remote.mutate({ ...selected, type: 'resource-select', value: refs[4] }, signal())
-  const before = store.getBranch(selected.branchId!).draft
-  expect(before.context_refs).toEqual(refs)
-  await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
-  const task = (await remote.getProjection(selected, signal())).tasks[0]!
-  expect(store.getTask(task.task_id).input.context_refs).toEqual(refs)
-
-  await remote.mutate({ ...selected, type: 'resource-remove', value: 'style', id: refs[2]!.id }, signal())
-  expect(store.getBranch(selected.branchId!).draft).toEqual({ ...before, context_refs: [refs[0], refs[1], refs[3], refs[4]] })
-  expect(store.getTask(task.task_id).input.context_refs).toEqual(refs)
-  await remote.mutate({ ...selected, type: 'resource-select', value: refs[2] }, signal())
-  expect((await remote.getProjection(selected, signal())).branches[0]!.draft.context_refs).toEqual([refs[0], refs[1], refs[3], refs[4], refs[2]])
-})
 
 it.each([
   { baseModelId: '9', modelId: null },
@@ -1072,8 +1007,8 @@ it.each([
   const { remote, store, catalog } = await fixture()
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Constraints', goal: 'Keep input' } }, signal())
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
-  await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'character', id: '4' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Keep this prompt' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Keep this prompt' }, signal())
   const before = store.getBranch(selected.branchId!).draft
   const read = catalog.details.getMockImplementation()!
   catalog.details.mockImplementation(async (request, requestSignal) => {
@@ -1081,16 +1016,8 @@ it.each([
     return { ...details, item: { ...details.item, ...constraints } }
   })
   await remote.mutate({ ...selected, type: 'resource-select', value: { kind: 'lora', id: '7' } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal())
   expect(store.getBranch(selected.branchId!).draft).toEqual({
     ...before, generation_input: { ...before.generation_input, loras: [{ id: '7', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
   })
-})
-
-it('accepts unconstrained contexts before a generation model is selected', async () => {
-  const { remote, store } = await fixture()
-  const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Global references', goal: 'Read references' } }, signal())
-  const before = store.getBranch(selected.branchId!).draft
-  const refs = [{ kind: 'work', id: '7' }, { kind: 'character', id: '7' }, { kind: 'prompt-term', id: '7' }] as const
-  for (const ref of refs) await remote.mutate({ ...selected, type: 'resource-select', value: ref }, signal())
-  expect(store.getBranch(selected.branchId!).draft).toEqual({ ...before, context_refs: refs })
 })

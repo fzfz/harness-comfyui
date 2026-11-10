@@ -15,6 +15,7 @@ export interface GenerationRunMediaImage {
 }
 
 export interface AvailableGenerationRunMedia {
+  readonly workspace_id: string
   readonly run_id: string
   readonly request_id: string
   readonly lookup_status: 'available'
@@ -47,7 +48,7 @@ export const generationRunMediaImageSchema = Schema.object({
 }).required()
 export const generationRunMediaSchema = Schema.union([
   contractObject({
-    run_id: Schema.string().required(), request_id: Schema.string().required(), lookup_status: Schema.const('available').required(),
+    workspace_id: Schema.string().required(), run_id: Schema.string().required(), request_id: Schema.string().required(), lookup_status: Schema.const('available').required(),
     title: Schema.string().required(), status: Schema.union(GENERATION_RUN_STATUSES).required(), revision: Schema.natural().required(), updated_at: Schema.number().required(),
     instance_id: requiredNullable(Schema.string().required()),
     prompt_id: requiredNullable(Schema.string().required()),

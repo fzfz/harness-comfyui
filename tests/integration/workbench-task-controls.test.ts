@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it } from 'vitest'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
@@ -38,7 +39,7 @@ it('keeps questions and answers in their original task while continuing the same
   expect(completed.tasks.find(item => item.task_id === task.task_id)).toMatchObject({ session_id: task.session_id, status: 'succeeded', binding_snapshot: task.binding_snapshot, input: task.input })
   expect(completed.tasks.find(item => item.task_id === other.task_id)).toMatchObject({ status: 'waiting_input', answers: [] })
   expect(completed.artifacts.find(item => item.artifact_id === otherQuestion.artifact_id)?.artifact).toEqual({ type: 'question', question: 'Which colour?', options: [] })
-  expect(completed.branches[0]!.draft.prompt_input.positive_prompt).toBe('glasshouse, moonlight, visible window frames and reflections')
+  expect(completed.branches[0]!.editing_draft?.prompt_input.positive_prompt).toBe('glasshouse, moonlight, visible window frames and reflections')
 })
 
 it('interrupts and continues an Agent without cancelling or duplicating its accepted Run', async () => {
@@ -46,8 +47,9 @@ it('interrupts and continues an Agent without cancelling or duplicating its acce
   cleanups.push(host.dispose)
   const { remote, ctx, official, runtime } = host
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Run control', goal: 'Paint rain' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
-  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) { await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal()) }
   const acceptedTask = await remote.mutate({ ...selected, type: 'run' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks.find(item => item.task_id === acceptedTask.taskId)!
   const input = task.input.generation_input

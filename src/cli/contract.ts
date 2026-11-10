@@ -34,7 +34,11 @@ export interface CliGenerationLora {
   readonly trigger_words: readonly string[]
 }
 
+import type { ImageRef, WorkflowImageBinding } from '../workbench/contract.ts'
+
 export interface CliGenerationRequest {
+  readonly image_refs?: readonly ImageRef[]
+  readonly workflow_image_bindings?: readonly WorkflowImageBinding[]
   readonly title: string
   readonly instance_id: string
   readonly template_id: string
@@ -154,7 +158,7 @@ function generationLora(value: unknown, index: number): CliGenerationLora {
 
 export function parseCliGenerationRequest(value: unknown): CliGenerationRequest {
   const source = record(value, 'Generation request')
-  exactKeys(source, Object.keys(cliGenerationRequestSchema.dict!), 'Generation request')
+  exactKeys(source, Object.keys(cliGenerationRequestSchema.dict!).filter(key => fieldIsRequired(cliGenerationRequestSchema.dict![key]!) || Object.hasOwn(source, key)), 'Generation request')
   const parameters = parseJsonValue(source.parameters, CLI_JSON_CONTRACT, 'Generation request parameters')
   if (parameters === null || Array.isArray(parameters) || typeof parameters !== 'object') {
     throw new TypeError('Generation request parameters must be an object')
@@ -169,6 +173,8 @@ export function parseCliGenerationRequest(value: unknown): CliGenerationRequest 
     model: generationModel(source.model),
     parameters: parameters as Readonly<Record<string, JsonValue>>,
     loras: Object.freeze(source.loras.map(generationLora)),
+    ...(source.image_refs === undefined ? {} : { image_refs: Schema.resolve(source.image_refs, cliGenerationRequestSchema.dict!.image_refs!, {})[0] as ImageRef[] }),
+    ...(source.workflow_image_bindings === undefined ? {} : { workflow_image_bindings: Schema.resolve(source.workflow_image_bindings, cliGenerationRequestSchema.dict!.workflow_image_bindings!, {})[0] as WorkflowImageBinding[] }),
   })
 }
 
@@ -335,6 +341,8 @@ export function toGenerationRequest(request: CliGenerationRequest): GenerationRe
     title: request.title,
     instanceId: request.instance_id,
     templateId: request.template_id,
+    ...(request.image_refs ? { imageRefs: request.image_refs } : {}),
+    ...(request.workflow_image_bindings ? { workflowImageBindings: request.workflow_image_bindings } : {}),
     model: request.model === null ? null : Object.freeze({
       id: request.model.id,
       fileName: request.model.file_name,

@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { afterEach, expect, it } from 'vitest'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 
@@ -13,12 +14,14 @@ it.each([
   const { remote, ctx, dispose } = await createWorkbenchHostFixture()
   cleanups.push(dispose)
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint a glasshouse' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
-  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) { await remote.mutate({ ...selected, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal()) }
   const submission = await remote.mutate({ ...selected, type: 'agent-action', id: functionId }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks.find(item => item.task_id === submission.taskId)!
-  if (field === 'instance_id') await remote.mutate({ ...selected, type: 'update-draft', field, value: replacement }, signal())
-  else await remote.mutate({ ...selected, type: 'resource-select', value: { kind: field, id: replacement } }, signal())
+  if (field === 'instance_id') await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = replacement }, signal())
+  else { await remote.mutate({ ...selected, type: 'resource-select', value: { kind: field, id: replacement } }, signal())
+  await saveFixtureDraft(remote, { ...selected }, () => {}, signal()) }
   const before = (await remote.getProjection(selected, signal())).branches[0]!
   const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'publish' }
   const published = await ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact }, identity)

@@ -1,14 +1,19 @@
-const TASK_ID_TOKEN = /\{\{\s*task_id\s*\}\}/g
+import configuration from './request-template.json' with { type: 'json' }
 
-export function requestTemplateProblem(template: string): string {
-  if (!template.trim()) return '请填写本功能的执行要求。'
-  const tokens = [...template.matchAll(/\{\{([^{}]*)\}\}/g)]
-  if (tokens.some(match => match[1].trim() !== 'task_id')) return '请将其他定位符替换为具体执行要求，并保留 {{task_id}}。'
-  if (!tokens.some(match => match[1].trim() === 'task_id')) return '请在执行要求中保留 {{task_id}}，用于定位工作台任务。'
-  if (/\{\{|\}\}/.test(template.replace(TASK_ID_TOKEN, ''))) return 'Task ID 定位符格式不完整，请使用 {{task_id}}。'
-  return ''
+function variable(kind: string): string {
+  return configuration.variables[kind === 'translate' ? 'translate' : 'task']
 }
 
-export function renderRequestTemplate(template: string, taskId: string): string {
-  return template.replace(TASK_ID_TOKEN, () => taskId)
+export function requestTemplateProblem(template: string, kind = 'run'): string {
+  if (!template.trim()) return configuration.errors.empty
+  const name = variable(kind), placeholder = `{{${name}}}`
+  const tokens = [...template.matchAll(/\{\{([^{}]*)\}\}/g)]
+  const problem = tokens.some(match => match[1].trim() !== name) ? 'unsupported'
+    : !tokens.some(match => match[1].trim() === name) ? 'missing'
+    : /\{\{|\}\}/.test(template.replace(/\{\{[^{}]*\}\}/g, '')) ? 'incomplete' : null
+  return problem ? configuration.errors[problem].replace('{placeholder}', placeholder) : ''
+}
+
+export function renderRequestTemplate(template: string, value: string, kind = 'run'): string {
+  return template.replace(/\{\{\s*([^{}]*?)\s*\}\}/g, (token, name: string) => name.trim() === variable(kind) ? value : token)
 }

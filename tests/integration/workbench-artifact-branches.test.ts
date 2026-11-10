@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it } from 'vitest'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
@@ -28,9 +29,10 @@ async function startTask(host: Fixture, scope: WorkbenchScope, functionId: strin
 }
 
 async function selectGeneration(host: Fixture, scope: WorkbenchScope) {
-  await host.remote.mutate({ ...scope, type: 'update-draft', field: 'instance_id', value: '8' }, signal())
+  await saveFixtureDraft(host.remote, { ...scope }, draft => { draft.generation_input.instance_id = '8' }, signal())
   for (const value of [{ kind: 'model', id: '2' }, { kind: 'comfyui-template', id: '5' }]) {
     await host.remote.mutate({ ...scope, type: 'resource-select', value }, signal())
+  await saveFixtureDraft(host.remote, { ...scope }, () => {}, signal())
   }
 }
 
@@ -48,16 +50,17 @@ async function acceptRun(host: Fixture, scope: WorkbenchScope) {
 it('forks a prompt artifact from its Task branch and fixed input while preserving later manual edits', async () => {
   const host = await fixture(), { remote, service } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint the original garden' } }, signal())
-  await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Original garden' }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Original garden' }, signal())
   await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal())
   const baseline = (await branchAt(remote, source)).draft
   const { task, identity } = await startTask(host, source, 'prompt')
-  await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Manual parent prompt' }, signal())
-  await remote.mutate({ ...source, type: 'update-draft', field: 'instance_id', value: '9' }, signal())
-  await remote.mutate({ ...source, type: 'update-branch', field: 'original_request', value: 'Later parent requirements', expectedValue: 'Paint the original garden' }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Manual parent prompt' }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.instance_id = '9' }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal(), { originalRequest: 'Later parent requirements', expectedOriginalRequest: 'Paint the original garden' })
   const parent = await branchAt(remote, source)
   const selected = await remote.mutate({ ...source, type: 'create-branch', value: { name: 'Other branch', original_request: 'Other requirements' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'instance_id', value: '10' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '10' }, signal())
   const selectedBefore = await branchAt(remote, selected)
   const artifact = { type: 'prompt' as const, positive_prompt: 'Candidate garden', negative_prompt: 'blur' }
   const published = await service.publish({ taskId: task.task_id, artifact }, identity)
@@ -80,17 +83,17 @@ it('forks allowed parameter values into the fixed Task generation input and leav
   const host = await fixture(), { remote, service } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Parameters', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
-  await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Fixed prompt' }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Fixed prompt' }, signal())
   const baseline = (await branchAt(remote, source)).draft
   const { task, identity } = await startTask(host, source, 'parameters')
-  await remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'steps', value: 35 }, signal())
-  await remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'seed', value: 99 }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.parameters['steps'] = 35 }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.parameters['seed'] = 99 }, signal())
   const parent = await branchAt(remote, source)
   const artifact = { type: 'parameters' as const, parameters: { steps: 28 } }
   const published = await service.publish({ taskId: task.task_id, artifact }, identity)
   expect(published.disposition).toBe('candidate')
   const fork = await remote.mutate({ ...source, type: 'task-branch', id: published.artifact_id, value: { name: 'Suggested parameters' } }, signal())
-  expect((await branchAt(remote, fork)).draft).toEqual({ ...baseline, generation_input: { ...baseline.generation_input, parameters: { positive: '', negative: '', seed: 17, steps: 28, reference: '', width: 512, height: 512 } } })
+  expect((await branchAt(remote, fork)).draft).toEqual({ ...baseline, generation_input: { ...baseline.generation_input, parameters: { positive: '', negative: '', seed: 17, steps: 28, width: 512, height: 512 } } })
   expect(await branchAt(remote, source)).toEqual(parent)
   expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'candidate' }])
 })
@@ -109,11 +112,11 @@ it('forks a review candidate with mixed catalog model scopes and preserves its f
   catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: 'paint.safetensors', base_model_id: id === '4' ? '9' : '1' }))
   const candidate = {
     generation_input: { ...task.input.generation_input, model: { id: '4', file_name: 'paint.safetensors' }, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] }], parameters: { positive: 'Review candidate', negative: 'haze', seed: 31, steps: 29 } },
-    context_refs: [{ kind: 'character' as const, id: '7' }],
+    image_refs: [], workflow_image_bindings: [],
   }
   const artifact = { type: 'review' as const, observation: 'Visible rain', conclusion: 'Try closer framing', run_ids: [runId], candidate }
   const published = await service.publish({ taskId: task.task_id, artifact }, identity)
-  await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Later parent prompt' }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Later parent prompt' }, signal())
   const parent = await branchAt(remote, source)
   const selected = await remote.mutate({ ...source, type: 'create-branch', value: { name: 'Other review', original_request: 'Other view' } }, signal())
   const fork = await remote.mutate({ ...selected, type: 'task-branch', id: published.artifact_id, value: { name: 'Review candidate' } }, signal())
@@ -137,11 +140,12 @@ it.each([
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Resource boundary', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   const { task, identity } = await startTask(host, source, functionId)
-  if (functionId === 'prompt') await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Manual prompt' }, signal())
-  else await remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'steps', value: 35 }, signal())
+  if (functionId === 'prompt') await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Manual prompt' }, signal())
+  else await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.parameters['steps'] = 35 }, signal())
   const published = await service.publish({ taskId: task.task_id, artifact }, identity)
-  if (field === 'instance_id') await remote.mutate({ ...source, type: 'update-draft', field, value: replacement }, signal())
-  else await remote.mutate({ ...source, type: 'resource-select', value: { kind: field, id: replacement } }, signal())
+  if (field === 'instance_id') await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.instance_id = replacement }, signal())
+  else { await remote.mutate({ ...source, type: 'resource-select', value: { kind: field, id: replacement } }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal()) }
   const target = await branchAt(remote, source)
   await expect(remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: target.draft }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_RESOURCE_MISMATCH' } })
   expect(await branchAt(remote, source)).toEqual(target)
@@ -164,7 +168,7 @@ it('applies recommended resources from another base model to the Task branch', a
   const selected = await remote.mutate({ ...source, type: 'create-branch', value: { name: 'Selected resources', original_request: 'Other requirements' } }, signal())
   const selectedBefore = await branchAt(remote, selected)
   await remote.mutate({ ...selected, type: 'task-apply', id: published.artifact_id, value: target.draft }, signal())
-  expect((await branchAt(remote, source)).draft).toEqual({
+  expect((await branchAt(remote, source)).editing_draft).toEqual({
     ...target.draft, generation_input: { ...target.draft.generation_input, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
   })
   expect(await branchAt(remote, selected)).toEqual(selectedBefore)
@@ -176,7 +180,7 @@ it.each([false, true])('applies a model and LoRA recommendation in either order 
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Model bundle', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal())
-  await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'style', id: '7' } }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal())
   const { task, identity } = await startTask(host, source, 'resources')
   const readDetails = catalog.details.getMockImplementation()!
   catalog.details.mockImplementation(async (ref, signal) => {
@@ -191,7 +195,7 @@ it.each([false, true])('applies a model and LoRA recommendation in either order 
   const before = (await branchAt(remote, source)).draft
   expect(before.generation_input.model?.id).toBe('2')
   await remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: before }, signal())
-  expect((await branchAt(remote, source)).draft).toEqual({
+  expect((await branchAt(remote, source)).editing_draft).toEqual({
     ...before, base_model_id: '9', generation_input: {
       ...before.generation_input, model: { id: '4', file_name: 'paint.safetensors' },
       loras: [...before.generation_input.loras, { id: '4', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }],
@@ -219,16 +223,16 @@ it.each([
   expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
 })
 
-it.each(['workspace_1', 'workspace_2'])('rejects an artifact from another Work when viewing %s before writing a branch', async workspaceId => {
+it.each(['workspace_1', 'workspace_2'])('creates a branch from a cross-work artifact in %s', async workspaceId => {
   const host = await fixture(), { remote, service } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Source', goal: 'Paint rain' } }, signal())
   const { task, identity } = await startTask(host, source, 'prompt')
   const published = await service.publish({ taskId: task.task_id, artifact: { type: 'prompt', positive_prompt: 'Rain', negative_prompt: '' } }, identity)
   const other = await remote.mutate({ type: 'new-work', workspaceId, value: { name: 'Other Work', goal: 'Paint sunshine' } }, signal())
-  const before = (await remote.getProjection(other, signal())).branches
-  await expect(remote.mutate({ ...other, type: 'task-branch', id: published.artifact_id, value: { name: 'Foreign artifact' } }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
-  await expect(service.createBranchFromArtifact({ workspaceId, workId: other.workId!, artifactId: published.artifact_id, name: 'Foreign service artifact' })).rejects.toMatchObject({ code: 'WORKBENCH_SCOPE_MISMATCH' })
-  expect((await remote.getProjection(other, signal())).branches).toEqual(before)
+  const created = await remote.mutate({ ...other, type: 'task-branch', id: published.artifact_id, value: { name: 'Referenced artifact' } }, signal())
+  const branch = await branchAt(remote, created)
+  expect(branch).toMatchObject({ work_id: other.workId, parent_branch_id: other.branchId, source_artifact_id: published.artifact_id, draft: { prompt_input: { positive_prompt: 'Rain', negative_prompt: '' } } })
+  expect((await branchAt(remote, source)).draft.prompt_input.positive_prompt).toBe('')
 })
 
 it.each(['prompt', 'parameters', 'resources'])('uses the displayed Task target for $0 adoption and rejects a second-window edit', async functionId => {
@@ -236,29 +240,31 @@ it.each(['prompt', 'parameters', 'resources'])('uses the displayed Task target f
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Task target', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   const { task, identity } = await startTask(host, source, functionId)
-  if (functionId === 'prompt') await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Manual prompt' }, signal())
-  else if (functionId === 'parameters') await remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'steps', value: 35 }, signal())
+  if (functionId === 'prompt') await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Manual prompt' }, signal())
+  else if (functionId === 'parameters') await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.parameters['steps'] = 35 }, signal())
   const artifact: ArtifactPayload = functionId === 'prompt'
     ? { type: 'prompt', positive_prompt: 'Candidate prompt', negative_prompt: 'blur' }
     : functionId === 'parameters' ? { type: 'parameters', parameters: { steps: 28 } }
-      : { type: 'resources', refs: [{ kind: 'style', id: '7' }], reason: 'Use a rain style' }
+      : { type: 'resources', refs: [{ kind: 'lora', id: '7' }], reason: 'Use a rain style' }
   const published = await service.publish({ taskId: task.task_id, artifact }, identity)
   const displayed = await branchAt(remote, source)
   const selected = await remote.mutate({ ...source, type: 'create-branch', value: { name: 'Other selected branch', original_request: 'Other requirements' } }, signal())
-  await remote.mutate({ ...selected, type: 'update-draft', field: 'positive_prompt', value: 'Selected prompt' }, signal())
+  await saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input.positive_prompt = 'Selected prompt' }, signal())
   const selectedBefore = await branchAt(remote, selected)
-  if (functionId === 'prompt') await remote.mutate({ ...source, type: 'update-draft', field: 'positive_prompt', value: 'Second-window prompt' }, signal())
-  else if (functionId === 'parameters') await remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'steps', value: 45 }, signal())
-  else await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'style', id: '8' } }, signal())
+  if (functionId === 'prompt') await saveFixtureDraft(remote, { ...source }, draft => { draft.prompt_input.positive_prompt = 'Second-window prompt' }, signal())
+  else if (functionId === 'parameters') await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.parameters['steps'] = 45 }, signal())
+  else { await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'lora', id: '8' } }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal()) }
   const latest = await branchAt(remote, source)
   await expect(remote.mutate({ ...selected, type: 'task-apply', id: published.artifact_id, value: displayed.draft }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_EDIT_CONFLICT' } })
   expect(await branchAt(remote, source)).toEqual(latest)
   expect(await branchAt(remote, selected)).toEqual(selectedBefore)
   await remote.mutate({ ...selected, type: 'task-apply', id: published.artifact_id, value: latest.draft }, signal())
   const expected = structuredClone(latest)
-  if (functionId === 'prompt') expected.draft.prompt_input = { positive_prompt: 'Candidate prompt', negative_prompt: 'blur' }
-  else if (functionId === 'parameters') expected.draft.generation_input.parameters.steps = 28
-  else expected.draft.context_refs.push({ kind: 'style', id: '7' })
+  expected.editing_draft = structuredClone(latest.draft)
+  if (functionId === 'prompt') expected.editing_draft.prompt_input = { positive_prompt: 'Candidate prompt', negative_prompt: 'blur' }
+  else if (functionId === 'parameters') expected.editing_draft.generation_input.parameters.steps = 28
+  else expected.editing_draft.generation_input.loras.push({ id: '7', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] })
   expect(await branchAt(remote, source)).toEqual(expected)
   expect(await branchAt(remote, selected)).toEqual(selectedBefore)
   expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
@@ -269,24 +275,25 @@ it('preserves an already selected LoRA weight when adopting the same recommended
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'LoRA weight', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal())
-  await remote.mutate({ ...source, type: 'update-draft', field: 'lora-weight', id: '3', value: 0.9 }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.loras.find(lora => lora.id === '3')!.weight = 0.9 }, signal())
   const { task, identity } = await startTask(host, source, 'resources')
   const published = await service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'lora', id: '3' }] } }, identity)
   const before = await branchAt(remote, source)
   await remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: before.draft }, signal())
-  expect(await branchAt(remote, source)).toEqual(before)
+  expect(await branchAt(remote, source)).toEqual({ ...before, editing_draft: before.draft })
 })
 
 it('preserves edited parameters when adopting an already selected template recommendation', async () => {
   const host = await fixture(), { remote, service } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Template selection', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
-  await remote.mutate({ ...source, type: 'update-draft', field: 'parameter', id: 'steps', value: 35 }, signal())
+  await saveFixtureDraft(remote, { ...source }, draft => { draft.generation_input.parameters['steps'] = 35 }, signal())
   const { task, identity } = await startTask(host, source, 'resources')
   const published = await service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'comfyui-template', id: '5' }] } }, identity)
   const before = await branchAt(remote, source)
   await remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: before.draft }, signal())
-  expect(await branchAt(remote, source)).toEqual(before)
+  expect(await branchAt(remote, source)).toEqual({ ...before, editing_draft: before.draft })
 })
 
 it('changes the model without reading the selected LoRAs again', async () => {
@@ -294,9 +301,11 @@ it('changes the model without reading the selected LoRAs again', async () => {
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Selected resources', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
   await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'lora', id: '3' } }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal())
   const before = await branchAt(remote, source)
   catalog.details.mockClear().mockRejectedValue(new Error('Selected resource catalog is unavailable'))
   await remote.mutate({ ...source, type: 'resource-select', value: { kind: 'model', id: '4' } }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal())
   expect((await branchAt(remote, source)).draft).toEqual({
     ...before.draft, generation_input: { ...before.draft.generation_input, model: { id: '4', file_name: 'paint.safetensors' } },
   })
@@ -312,20 +321,21 @@ it.each([
   const host = await fixture(), { remote, service, catalog } = host
   const source = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Resource conflict', goal: 'Paint rain' } }, signal())
   await selectGeneration(host, source)
-  if (removeModel) await remote.mutate({ ...source, type: 'resource-remove', value: 'model' }, signal())
+  if (removeModel) { await remote.mutate({ ...source, type: 'resource-remove', value: 'model' }, signal())
+  await saveFixtureDraft(remote, { ...source }, () => {}, signal()) }
   const { task, identity } = await startTask(host, source, 'resources')
   const readDetails = catalog.details.getMockImplementation()!
   catalog.details.mockImplementation(async (ref, signal) => {
     const details = await readDetails(ref, signal)
     return ref.kind === 'lora' ? { ...details, item: { ...details.item, label: 'Fine rain LoRA', baseModelId, modelId } } : details
   })
-  const artifact = { type: 'resources' as const, refs: [{ kind: 'character' as const, id: '7' }, { kind: 'lora' as const, id: '3' }] }
+  const artifact = { type: 'resources' as const, refs: [{ kind: 'lora' as const, id: '3' }] }
   const published = await service.publish({ taskId: task.task_id, artifact }, identity)
   const before = await branchAt(remote, source)
   await remote.mutate({ ...source, type: 'task-apply', id: published.artifact_id, value: before.draft }, signal())
-  expect((await branchAt(remote, source)).draft).toEqual({
+  expect((await branchAt(remote, source)).editing_draft).toEqual({
     ...before.draft,
-    context_refs: [{ kind: 'character', id: '7' }],
+    image_refs: [], workflow_image_bindings: [],
     generation_input: { ...before.draft.generation_input, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.65, trigger_words: ['rain'] }] },
   })
   expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ artifact_id: published.artifact_id, artifact, disposition: 'applied' }])

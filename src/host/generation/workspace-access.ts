@@ -31,6 +31,21 @@ export async function resolveGenerationWorkspaceId(
   return String(workspace.id)
 }
 
+export async function generationSessionForId(
+  sessionPersistence: SessionPersistenceProjection,
+  sessionId: string,
+  signal: AbortSignal,
+) {
+  signal.throwIfAborted()
+  const session = await sessionPersistence.stat(SessionId(sessionId), { signal })
+  signal.throwIfAborted()
+  if (session === undefined) {
+    const error = ERROR_CATALOG.GENERATION_SESSION_NOT_FOUND
+    throw new GenerationRuntimeError(error.code, `${error.reason} ${error.next_step}`)
+  }
+  return session
+}
+
 function sessionUnavailable(sessionId: string, reason: string): never {
   const error = ERROR_CATALOG.GENERATION_SESSION_UNAVAILABLE
   throw new GenerationRuntimeError(error.code, error.diagnostic_template
@@ -44,13 +59,7 @@ export async function workspaceSessionScopeForSession(
   sessionId: string,
   signal: AbortSignal,
 ): Promise<WorkspaceSessionScope> {
-  signal.throwIfAborted()
-  const root = await sessionPersistence.stat(SessionId(sessionId), { signal })
-  signal.throwIfAborted()
-  if (root === undefined) {
-    const error = ERROR_CATALOG.GENERATION_SESSION_NOT_FOUND
-    throw new GenerationRuntimeError(error.code, `${error.reason} ${error.next_step}`)
-  }
+  const root = await generationSessionForId(sessionPersistence, sessionId, signal)
   const workspaceId = await resolveGenerationWorkspaceId(workspaceRegistry, root.header.cwd)
   signal.throwIfAborted()
   const descendants = await subagents.listDescendants(SessionId(sessionId), signal)

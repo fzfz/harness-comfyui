@@ -111,13 +111,13 @@ it('creates the selected preset in the task workspace and selects its exact mode
   expect(controller.prompt).toHaveBeenCalledWith(expect.objectContaining({ sessionId: 'session-task', mode: 'queue', content: [{ type: 'text', text: 'Read task-a.' }] }), expect.any(AbortSignal))
 })
 
-it('authorizes only the task session and its official descendants in the same workspace', async () => {
+it('authorizes the task session and its official descendants after workspace changes', async () => {
   const { adapter } = fixture()
   const task = { task_id: 'task-a', session_id: 'session-task' }
   const identity = { workspaceId: 'workspace-a', sessionId: 'session-child', turn: 1, callId: 'call-a' }
   expect(await adapter.authorize({ task, identity })).toBe(true)
   expect(await adapter.authorize({ task, identity: { ...identity, sessionId: 'unrelated' } })).toBe(false)
-  expect(await adapter.authorize({ task, identity: { ...identity, workspaceId: 'workspace-b' } })).toBe(false)
+  expect(await adapter.authorize({ task, identity: { ...identity, workspaceId: 'workspace-b' } })).toBe(true)
 })
 
 it('observes active descendants and refuses an unavailable requested Skill', async () => {

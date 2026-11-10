@@ -1,3 +1,4 @@
+import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it, vi } from 'vitest'
 import { toGenerationRequest } from '../../src/cli/contract.ts'
@@ -45,12 +46,9 @@ async function setup(maxRuns = 3, preparer?: GenerationPreparationAdapter, trans
   const host = await createWorkbenchHostFixture(preparer, transport)
   cleanups.push(host.dispose)
   const selected = await host.remote.mutate({ workspaceId: 'workspace_1', type: 'new-work', value: { name: 'Experiment controls', goal: 'Compare light on glass' } }, signal())
-  for (const request of [
-    { type: 'update-draft', field: 'instance_id', value: '8' },
-    { type: 'resource-select', value: { kind: 'model', id: '2' } },
-    { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } },
-    { type: 'update-execution', field: 'max_runs', value: maxRuns },
-  ] as const) await host.remote.mutate({ ...selected, ...request }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())
+  for (const request of [{ type: 'resource-select', value: { kind: 'model', id: '2' } }, { type: 'resource-select', value: { kind: 'comfyui-template', id: '5' } }, { type: 'update-execution', field: 'max_runs', value: maxRuns }] as const) await host.remote.mutate({ ...selected, ...request }, signal())
+  await saveFixtureDraft(host.remote, { ...selected }, () => {}, signal())
   return { ...host, selected }
 }
 
@@ -297,7 +295,7 @@ it('keeps a failed continue paused with its error and retries the same Task and 
   expect(after.tasks[0]).toMatchObject({ task_id: f.task.task_id, session_id: f.task.session_id, binding_snapshot: f.task.binding_snapshot, selected_model: f.task.selected_model, request_text: f.task.request_text, input: f.task.input, error: null })
   const fixed = await f.service.getTask({ taskId: f.task.task_id }, f.identity)
   expect(fixed.iterations.map(iteration => iteration.run_id)).toEqual(after.runs.map(run => run.run_id))
-  expect(fixed.artifacts).toEqual(expect.arrayContaining([expect.objectContaining({ artifact: { type: 'generation_input', generation_input: candidate, context_refs: [] } })]))
+  expect(fixed.artifacts).toEqual(expect.arrayContaining([expect.objectContaining({ artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } })]))
   expect(after.runs.find(run => run.run_id === accepted.items[0]!.runId)).toMatchObject({ workbench_task_id: f.task.task_id, iteration_index: 2 })
   expect(f.official.controller.create).toHaveBeenCalledOnce()
 })
@@ -415,11 +413,11 @@ it('counts successful and failed rounds, requires each review and retains the ma
   const draft = (await f.remote.getProjection(f.selected, signal())).runs.find(run => run.run_id === first)!.review_draft!
   await f.remote.mutate({ ...f.selected, type: 'evaluate', runId: first, value: { expected: draft, draft: { ...draft, verdict: 'met', observation: 'User saved reflection', conclusion: 'User saved judgment' }, saveExperience: false } }, signal())
   const manual = (await f.remote.getProjection(f.selected, signal())).runs.find(run => run.run_id === first)!.review
-  await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [] } }, { ...f.identity, callId: 'early-candidate' })
+  await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...f.identity, callId: 'early-candidate' })
   await expect(accept(f, candidate)).rejects.toMatchObject({ code: 'WORKBENCH_ITERATION_INCOMPLETE' })
   const review1 = await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'review', observation: 'Agent first observation', conclusion: 'Try another seed', run_ids: [first] } }, { ...f.identity, callId: 'review-1' })
   await expect(accept(f, candidate)).rejects.toMatchObject({ code: 'WORKBENCH_CANDIDATE_REQUIRED' })
-  const published = await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [] } }, { ...f.identity, callId: 'fresh-candidate' })
+  const published = await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...f.identity, callId: 'fresh-candidate' })
   await expect(accept(f, { ...candidate, parameters: { ...candidate.parameters, seed: 74 } })).rejects.toMatchObject({ code: 'WORKBENCH_CANDIDATE_REQUIRED' })
   const second = (await accept(f, candidate)).items[0]!.runId
   fails = true
@@ -460,7 +458,7 @@ async function nextRound(f: Fixture) {
   await f.runtime.advance()
   await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'review', observation: 'The first preparation failed', conclusion: 'Change the seed', run_ids: [runId] } }, { ...f.identity, callId: 'review-1' })
   const candidate = { ...f.task.input.generation_input, parameters: { ...f.task.input.generation_input.parameters, seed: 41 } }
-  await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, context_refs: [] } }, { ...f.identity, callId: 'candidate-2' })
+  await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...f.identity, callId: 'candidate-2' })
   return { runId, candidate }
 }
 

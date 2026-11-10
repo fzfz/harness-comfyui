@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
-import { WORKBENCH_BRANCH_EDIT_FIELDS, type ExperimentWorkbenchAction } from '../../workbench-remote.ts'
+import { type ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import type { WorkbenchActionReceipt } from '../../workbench-remote.ts'
 import { isRunReviewFunctionKind, type JsonValue, type ResourceRef } from '../../workbench/contract.ts'
-import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
-import { equalValue, jsonValue, validateFavoriteUpdate, validateExperienceReuseInput, validateFunctionBindingEditable, validateReviewDraftUpdate, validateTaskDraft, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
+import { equalValue } from '../../shared/json-contract.ts'
+import { jsonValue, validateFavoriteUpdate, validateExperienceReuseInput, validateFunctionBindingEditable, validateReviewDraftUpdate, validateTaskDraft, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
@@ -67,13 +67,37 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     }
     return { workspaceId: request.workspaceId, ...(request.workId ? { workId: request.workId } : {}), ...(request.branchId ? { branchId: request.branchId } : {}) }
   }
+  if (request.type === 'favorite') {
+    const value = validateFavoriteUpdate(request.value)
+    store.setFavorite({ workspaceId: request.workspaceId, workId: request.workId, targetType: value.targetType, targetId: text(request.id, 'target_id'), favorite: value.favorite })
+    return { workspaceId: request.workspaceId, ...(request.workId ? { workId: request.workId } : {}), ...(request.branchId ? { branchId: request.branchId } : {}) }
+  }
   const workId = text(request.workId, 'work_id'), branchId = text(request.branchId, 'branch_id')
   store.assertScope(request.workspaceId, workId, branchId)
   const branch = store.getBranch(branchId)
   const selection = { workspaceId: request.workspaceId, workId, branchId }
-  if (request.runId) store.assertRunInWork(request.runId, workId)
+  if (request.runId) store.getRun(request.runId)
   if (request.taskId && store.getBranch(store.getTask(request.taskId).branch_id).work_id !== workId) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的任务。', 'task_id')
   switch (request.type) {
+    case 'save-draft': {
+      const value = fields(request.value)
+      const draft = validateTaskDraft(value.draft)
+      await ctx.harnessComfyuiWorkbench.validateDraft(draft, signal)
+      signal.throwIfAborted()
+      store.saveBranchDraft({ ...selection, expected: validateTaskDraft(value.expected), draft,
+        expectedEditingDraft: value.expectedEditingDraft === null ? null : validateTaskDraft(value.expectedEditingDraft),
+        ...(value.name !== undefined ? { name: text(value.name, 'name'), expectedName: text(value.expectedName, 'expectedName') } : {}),
+        ...(value.originalRequest !== undefined ? { originalRequest: text(value.originalRequest, 'originalRequest'), expectedOriginalRequest: text(value.expectedOriginalRequest, 'expectedOriginalRequest') } : {}),
+      })
+      break
+    }
+    case 'edit-draft': {
+      const value = fields(request.value)
+      const expected = value.expected === null ? null : validateTaskDraft(value.expected)
+      const draft = value.draft === null ? null : validateTaskDraft(value.draft)
+      const updated = store.saveEditingDraft({ ...selection, expected, draft })
+      return { ...selection, editingDraft: updated.editing_draft }
+    }
     case 'create-branch': {
       const value = fields(request.value)
       const name = text(value.name, 'name'), originalRequest = text(value.original_request, 'original_request')
@@ -82,84 +106,27 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
         : store.createBranch({ workId, parentBranchId: branchId, name, originalRequest, draft: branch.draft })
       return { ...selection, branchId: created.branch_id }
     }
-    case 'update-branch': {
-      if (!WORKBENCH_BRANCH_EDIT_FIELDS.some(field => field === request.field)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择要编辑的内容：分支名称或原始需求。', 'field')
-      if (typeof request.expectedValue !== 'string') throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '缺少编辑前的内容，请刷新页面后保存。', 'expectedValue')
-      store.saveBranchDraft({ ...selection, expected: branch.draft, draft: branch.draft, ...(request.field === 'name' ? { name: text(request.value, 'name'), expectedName: request.expectedValue } : { originalRequest: text(request.value, 'original_request'), expectedOriginalRequest: request.expectedValue }) })
-      break
-    }
     case 'update-execution': {
       const execution = { ...branch.execution, ...(request.field === 'mode' ? { mode: request.value as 'once' | 'continuous' } : { max_runs: Number(request.value) }) }
-      store.saveBranchDraft({ ...selection, expected: branch.draft, draft: branch.draft, execution })
-      break
-    }
-    case 'update-draft': {
-      const draft = structuredClone(branch.draft)
-      const field = text(request.field, 'field')
-      if (field === 'positive_prompt' || field === 'negative_prompt') draft.prompt_input[field] = request.value as string | null
-      else if (field === 'instance_id') draft.generation_input.instance_id = request.value ? String(request.value) : null
-      else if (field === 'lora-weight') {
-        const lora = draft.generation_input.loras.find(item => item.id === request.id)
-        if (!lora) throw new WorkbenchError('WORKBENCH_NOT_FOUND', '请选择已添加的 LoRA。', 'id')
-        lora.weight = Number(request.value)
-      } else {
-        const input = draft.generation_input
-        if (!input.template_id || !input.instance_id) throw new WorkbenchError('WORKBENCH_TEMPLATE_REQUIRED', '请先选择实例和 Workflow 模板，再填写生成参数。', 'generation_input')
-        const description = await runtime.inspectTemplateRuntimeParameters({ templateId: input.template_id, instanceId: input.instance_id }, signal)
-        let parameters: Record<string, JsonValue>
-        if (field === 'size') {
-          const selection = fields(request.value), values = fields(selection.parameters)
-          const candidate = description.size_candidates.find(item => item.candidate_id === selection.candidate_id)
-          if (!candidate) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请重新选择当前模板的画面尺寸。', 'value.candidate_id')
-          const allowed = flattenWorkflowRuntimeParameters({ parameters: [], size_candidates: [candidate] })
-          const ids = allowed.map(parameter => parameter.parameter_id)
-          if (Object.keys(values).length !== ids.length || Object.keys(values).some(id => !ids.includes(id))) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '画面尺寸参数与所选尺寸选项不匹配。请重新选择画面尺寸。', 'value.parameters')
-          parameters = values as Record<string, JsonValue>
-        } else if (field === 'parameter') {
-          const id = text(request.id, 'id')
-          const parameter = description.parameters.find(item => item.parameter_id === id)
-          if (parameter?.kind === 'positive_prompt' || parameter?.kind === 'negative_prompt') throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请在提示词区域编辑此参数。', `generation_input.parameters.${id}`)
-          parameters = { [id]: request.value as JsonValue }
-        } else throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择生成参数或画面尺寸后保存。', 'field')
-        const { parameters: originalParameters, ...originalContext } = input
-        const ids = Object.keys(parameters)
-        const assertCurrent = (current: typeof input) => {
-          const { parameters: currentParameters, ...currentContext } = current
-          if (!equalValue(originalContext, currentContext) || ids.some(id => !equalValue(originalParameters[id], currentParameters[id]))) {
-            throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '生成参数或资源已改变，请核对当前值后重新保存。', 'expected')
-          }
-        }
-        for (;;) {
-          signal.throwIfAborted()
-          const current = store.getBranch(branchId).draft.generation_input
-          assertCurrent(current)
-          await ctx.harnessComfyuiWorkbench.validateParameters(current, parameters, 'generation_input.parameters', signal)
-          signal.throwIfAborted()
-          const latest = store.getBranch(branchId).draft
-          assertCurrent(latest.generation_input)
-          if (!equalValue(current.parameters, latest.generation_input.parameters)) continue
-          const updated = structuredClone(latest)
-          Object.assign(updated.generation_input.parameters, parameters)
-          store.saveBranchDraft({ ...selection, expected: latest, draft: updated })
-          return selection
-        }
-      }
-      store.saveBranchDraft({ ...selection, expected: branch.draft, draft })
+      store.saveBranchExecution({ ...selection, execution })
       break
     }
     case 'resource-select': {
       const ref = fields(request.value)
       const resource = { kind: text(ref.kind, 'kind'), id: text(ref.id, 'id') } as ResourceRef
-      const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.draft)
-      store.saveBranchDraft({ ...selection, expected: branch.draft, draft }); break
+      const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.editing_draft ?? branch.draft)
+      const latest = store.getBranch(branchId)
+      if (!equalValue(branch.editing_draft ?? branch.draft, latest.editing_draft ?? latest.draft)) throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新选择资源。', 'expected')
+      store.saveEditingDraft({ ...selection, draft }); break
     }
     case 'resource-remove': {
-      const draft = structuredClone(branch.draft)
+      const draft = structuredClone(branch.editing_draft ?? branch.draft)
       if (request.value === 'model') draft.generation_input.model = null
-      else if (request.value === 'comfyui-template') draft.generation_input.template_id = null
+      else if (request.value === 'comfyui-template') { draft.generation_input.template_id = null; draft.workflow_image_bindings = [] }
       else if (request.value === 'lora') draft.generation_input.loras = draft.generation_input.loras.filter(item => item.id !== request.id)
-      else draft.context_refs = draft.context_refs.filter(item => item.id !== request.id || item.kind !== request.value)
-      store.saveBranchDraft({ ...selection, expected: branch.draft, draft }); break
+      const latest = store.getBranch(branchId)
+      if (!equalValue(branch.editing_draft ?? branch.draft, latest.editing_draft ?? latest.draft)) throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新选择资源。', 'expected')
+      store.saveEditingDraft({ ...selection, draft }); break
     }
     case 'run': case 'experiment': case 'retry': case 'agent-action': {
       const kind = request.type === 'retry' ? 'run' : request.type
@@ -167,9 +134,9 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       const value = request.value && typeof request.value === 'object' ? fields(request.value) : {}
       const selectedFunctionId = text(functionId, 'function_id')
       const selectedKind = store.getFunctionBinding(request.workspaceId, selectedFunctionId).kind
-      const evaluation = isRunReviewFunctionKind(selectedKind)
+      const evaluation = selectedKind !== 'translate' && isRunReviewFunctionKind(selectedKind)
         ? { runId: text(request.runId, 'run_id'), evaluationDraft: validateReviewDraftUpdate(value.evaluationDraft) } : {}
-      const task = await service.createTask({ ...selection, functionId: selectedFunctionId, ...evaluation, ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(request.type !== 'agent-action' && typeof value.preset_override === 'string' && value.preset_override ? { presetOverride: value.preset_override } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
+      const task = await service.createTask({ ...selection, functionId: selectedFunctionId, ...evaluation, ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
       return { ...selection, taskId: task.task_id }
     }
     case 'task-interrupt': case 'task-resume': case 'pause-experiment': case 'resume-experiment': {
@@ -180,10 +147,6 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     }
     case 'task-answer': {
       await service.replyTask({ taskId: text(request.taskId, 'task_id'), questionArtifactId: text(request.id, 'question_artifact_id'), answer: text(request.value, 'answer') }); break
-    }
-    case 'favorite': {
-      const value = validateFavoriteUpdate(request.value)
-      store.setFavorite({ workspaceId: request.workspaceId, workId, targetType: value.targetType, targetId: text(request.id, 'target_id'), favorite: value.favorite }); break
     }
     case 'update-review-draft': {
       const runId = text(request.runId, 'run_id'), update = validateReviewDraftUpdate(request.value)

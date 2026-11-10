@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { WorkbenchRun, WorkbenchRunInput } from '../../workbench/contract.ts'
+import type { JsonValue, WorkbenchRun, WorkbenchRunInput } from '../../workbench/contract.ts'
 import type { ExperimentRemote } from './experiment-contract.ts'
+import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
 
 const empty = new Map<string, WorkbenchRunInput>()
+
+export function readRunParameterValues(input: WorkbenchRunInput | undefined, fallback: Readonly<Record<string, JsonValue>> = {}) {
+  return input?.input_description
+    ? Object.fromEntries(flattenWorkflowRuntimeParameters(input.input_description).map(parameter => [parameter.parameter_id, parameter.current_value]))
+    : input?.generation_input.parameters ?? fallback
+}
 
 export function useRunInputs(load: ExperimentRemote['getRunInput'], workspaceId: string | null, workId: string | null,
   runs: readonly WorkbenchRun[], onError: (message: string) => void) {

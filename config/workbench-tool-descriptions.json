@@ -1,0 +1,211 @@
+{
+  "summary": "读取指定任务的要求、当前输入、参考资料和执行记录。",
+  "fields": {
+    "task_id": "传入 workbench_task_get 的工作台任务编号。提交产物或生成请求时使用同一个编号。",
+    "requirements.original_request": "用户希望得到的画面或创作结果，是本次任务的总目标。",
+    "requirements.instructions": "用户对本次功能提出的具体要求，包括改进重点和需要保留的条件。",
+    "answers": "用户针对本任务问题的补充回答，用于补全要求或资料。",
+    "prompt_input": "当前正向和负向提示词。空字符串表示当前没有提示词内容；null 表示尚未解析。",
+    "generation_input": "创建任务时保存的实例、Workflow、模型、LoRA 和模板参数。资源以目录 ID 标识，parameters 以真实模板参数 ID 为键。提交生成时，将同级 image_refs 和 workflow_image_bindings 一并放入生成请求。",
+    "base_model_id": "生成底模的目录 ID，用于查询模型类别和选择对应的提示词 Skill。",
+    "image_refs": "图片引用及用途。source 保存来源标识；purpose 指定 Workflow 输入、Agent 看图参考或两者。reference_requirement 说明 Agent 需要参考什么。",
+    "workflow_image_bindings": "图片引用与模板图片参数的对应关系。Host 准备实例可读的图片名，再填入对应参数。Agent 看图参考仍需调用读图工具。",
+    "template_image_parameters": "所选模板声明的图片参数 ID、名称和单图或多图类型。",
+    "input_source": "记录创建任务时采用的输入来源：分支已保存输入、分支编辑内容或被评价 Run。",
+    "output_contract": "本任务允许及必须提交的产物类型、可写参数 ID 和采用方式。完整 JSON 结构由 workbench_task_publish 的参数声明提供。",
+    "reference_task_ids": "用户直接选择的历史任务，用于读取旧需求、执行过程与产物。历史要求提供背景；本次执行遵循 requirements。",
+    "reference_task_artifacts": "所选历史任务的产物内容。每项保留 task_id、artifact_id 和 artifact，可提供已有提示词、参数或分析。",
+    "reference_run_ids": "用户直接选择的参考 Run。查询实际输入与图片后，可用于继承做法、比较或评价。",
+    "reference_experiences": "用户引用的多条独立经验。每项包含经验编号、标题、适用条件、结论和可选出处。先判断条件，再采用具体做法。",
+    "reference_experiences[].provenance": "该条经验的来源。created_by_task_id 是整理经验的任务；evidence 是支持记录或反例，其中 generation_task_id 是产生证据 Run 的任务。核验经验依据时再读取。",
+    "evaluation_input": "被评价 Run 的编号，以及用户已有的观察、评价和经验草稿。分析与总结任务据此补充或修正内容。",
+    "requested_skill": "指定执行的 Skill。值非空时读取并执行该 Skill；为空时根据功能目标和生成模型选择可用 Skill。",
+    "iterations": "本任务已提交的 Run、输入和评价产物编号。用于等待已提交运行、评价结果和确定下一轮输入。",
+    "artifacts": "本任务已提交的产物及采用状态。继续任务时据此确认已有成果。",
+    "max_runs": "本任务最多提交的生成 Run 总数。持续实验达到画面目标时可以提前结束。",
+    "origin": "创建任务时的工作区、工作和分支，也是生成 Run 与输入产物的归属。评价产物写入 evaluation_input 指定的 Run。"
+  },
+  "publish": {
+    "summary": "向指定工作台任务提交产物或补充问题。",
+    "steps": [
+      "请求包含 task_id 和 artifact。task_id 使用本次任务编号。",
+      "artifact.type 按 output_contract.artifact_types 选择；缺少必需信息时可提交 question。",
+      "工具返回的 disposition 表示采用状态：applied 为已回填，candidate 为保留候选，recorded 为已保存，waiting_input 为等待用户回答。",
+      "参数与候选输入使用资源目录 ID 和 Workflow 声明的参数 ID、类型；可写范围由 workbench_task_get 返回的 output_contract 指定。",
+      "Skill 生成的文件路径写入 source_files。"
+    ],
+    "artifact_fields": {
+      "prompt": "positive_prompt 与 negative_prompt 分别保存完整正向和负向提示词。",
+      "parameters": "parameters 保存模板参数 ID 与选定值。",
+      "resources": "refs 保存资源类型与真实目录 ID；reason 说明各资源的选择依据。",
+      "review": "observation 保存图片观察或失败事实；conclusion 保存评价或诊断。run_ids 覆盖实际分析、比较或诊断的 Run；candidate 可保存下一轮候选生成输入。",
+      "experience": "title 保存具体经验标题；conditions 保存适用模型、场景和条件；note 保存做法、效果及局限。base_model_id 与 model_id 分别指定底模与生成模型；run_ids 只包含总结时实际采用的证据 Run。",
+      "generation_input": "generation_input 保存下一轮生成输入。",
+      "question": "question 说明缺少什么信息；options 保存可供用户选择的回答。"
+    }
+  },
+  "usage_by_kind": {
+    "prompt": [
+      "结合 requirements.original_request、requirements.instructions 和 answers，确定要描写的画面内容。",
+      "prompt_input 中已有提示词时，按本次要求决定保留和改写的内容。",
+      "引用历史任务时，从 reference_task_artifacts 中选用符合本次需求的提示词。引用历史运行时，按 reference_run_ids 查看提示词和图片，确定要保留或改进的内容。",
+      "从 reference_experiences 中选择适用于当前图像模型和场景的做法，用于本次提示词。",
+      "image_refs 中的图片用途为 agent 或 both 时，调用读图工具，按 reference_requirement 观察图片。将用户要求参考的细节写入提示词。",
+      "未指定 Skill 时，按 base_model_id 查询底模，选择适用的 Prompt Builder Skill。未选择 Workflow 模板时，也可根据需求和底模编写提示词。"
+    ],
+    "rewrite": [
+      "按 requirements.instructions 和 answers 确定修改内容。根据 requirements.original_request 判断需要保留的画面内容。",
+      "以 prompt_input 中的正向与负向提示词为改写基础。",
+      "用户引用历史任务时，从 reference_task_artifacts 读取历史提示词。用户引用历史运行时，按 reference_run_ids 查看实际提示词和图片，确定要保留或修改的内容。",
+      "根据 reference_experiences 中的适用条件，选用符合当前模型和场景的提示词写法。",
+      "image_refs 中图片的用途为 agent 或 both 时，按 reference_requirement 读图并提取用户要求的细节。",
+      "未指定 Skill 时，按 base_model_id 查询底模，选择适用的 Prompt Builder Skill。"
+    ],
+    "parameters": [
+      "结合 requirements.original_request、requirements.instructions 和 answers，确定要调整的画面特征。",
+      "按 generation_input 查询所选 Workflow 的参数说明，取得实际参数 ID、类型和可选值。",
+      "以 generation_input.parameters 中的当前值为调整基础。用户要求保持不变的参数继续使用当前值。",
+      "用户引用历史运行时，按 reference_run_ids 比较实际参数和图片，判断哪些设置符合本次画面需求。",
+      "按 reference_experiences 中的适用条件，选用适合当前模型和场景的参数设置。"
+    ],
+    "resources": [
+      "根据 requirements.original_request、requirements.instructions 和 answers，确定本次要查找的资源及画面要求。",
+      "根据 generation_input 核对已选资源，按用户要求补充或替换资源。",
+      "reference_task_artifacts 中的历史资源推荐，以及 reference_run_ids 对应的实际输入和图片，可用于选择本次候选资源。",
+      "根据 reference_experiences 中的适用条件和已观察效果，判断经验中提到的资源是否符合本次需求。",
+      "查询资源目录中的真实 ID 和详情，核对资源的画风、人物或 Workflow 功能。"
+    ],
+    "review": [
+      "按 evaluation_input.run_id 读取被评价 Run，保留或修正 evaluation_input 中的评价草稿。",
+      "根据 requirements.original_request 确定预期画面。结合 requirements.instructions 和 answers 确定评价的关注点。",
+      "调用读图工具查看被评价 Run 的图片，记录用户关注的主体、构图、光线或其他细节。",
+      "对照实际提示词、Workflow 参数和图片，分析哪些要求已经达到，哪些问题需要改进。",
+      "根据 reference_experiences 中的适用条件，判断经验中的做法能否解决图片中的问题。"
+    ],
+    "compare": [
+      "按 reference_run_ids 逐个读取比较对象的实际输入，并用读图工具查看图片。",
+      "根据 requirements.original_request 确定预期画面。结合 requirements.instructions 和 answers 确定比较的关注点。",
+      "对照各 Run 的模型、Workflow、提示词、Seed 和其他参数，分析图片中对应的差异。"
+    ],
+    "diagnose": [
+      "按 evaluation_input.run_id 读取失败运行的实际输入、状态和错误，确定失败发生的位置。",
+      "结合 requirements.instructions 和 answers 核对故障现象与处理要求。",
+      "错误指向实例、模型文件或 Workflow 节点时，查询对应资源和状态，核对错误原因。",
+      "核对 reference_experiences 中的适用条件，选择适合处理已确认错误的做法。"
+    ],
+    "experience": [
+      "按 reference_run_ids 读取实际输入，并用读图工具查看图片，核对模型、提示词、Workflow 参数和实际效果。",
+      "根据 requirements.instructions 和 answers 整理经验，保留或修正 evaluation_input 中已有的评价和草稿。",
+      "将图片观察与 reference_experiences 对照，决定沿用、补充或修正引用的经验。",
+      "引用的经验与本次观察矛盾时，沿该经验的 provenance 核对证据 Run。provenance 为空时，记录矛盾和待验证条件。"
+    ],
+    "run": [
+      "按 generation_input 指定的 ComfyUI 实例、Workflow、图像模型、LoRA 和参数执行生成。",
+      "根据 workflow_image_bindings 核对选定图片与 Workflow 图片参数的对应关系。"
+    ],
+    "experiment": [
+      "根据 requirements.original_request 确定预期画面。结合 requirements.instructions 和 answers 确定改进重点和需要保留的条件。",
+      "首轮使用 generation_input。后续轮次根据前一轮的实际输入、图片和评价，确定要修改的内容。",
+      "reference_task_artifacts 中的历史产物与 reference_run_ids 对应的实际输入和图片，可用于后续轮次的调整。",
+      "根据 reference_experiences 的适用条件，选择可采用的提示词写法、参数设置或资源组合。",
+      "image_refs 中图片的用途为 agent 或 both 时，按 reference_requirement 读图。根据 workflow_image_bindings 核对选定图片与 Workflow 图片参数的对应关系。",
+      "结合 iterations 中的 Run 和 artifacts 中的评价，确定下一轮需要调整的输入。"
+    ]
+  },
+  "end": {
+    "summary": "结束指定任务的持续实验，并记录结束原因。"
+  },
+  "common_fields": [
+    "task_id",
+    "requirements.original_request",
+    "requirements.instructions",
+    "answers",
+    "output_contract",
+    "origin",
+    "artifacts"
+  ],
+  "fields_by_kind": {
+    "prompt": [
+      "prompt_input",
+      "base_model_id",
+      "generation_input",
+      "reference_task_ids",
+      "reference_task_artifacts",
+      "reference_run_ids",
+      "reference_experiences",
+      "reference_experiences[].provenance",
+      "image_refs",
+      "requested_skill"
+    ],
+    "rewrite": [
+      "prompt_input",
+      "base_model_id",
+      "reference_task_ids",
+      "reference_task_artifacts",
+      "reference_run_ids",
+      "reference_experiences",
+      "reference_experiences[].provenance",
+      "image_refs",
+      "requested_skill"
+    ],
+    "parameters": [
+      "generation_input",
+      "reference_run_ids",
+      "reference_experiences",
+      "image_refs",
+      "workflow_image_bindings"
+    ],
+    "resources": [
+      "generation_input",
+      "base_model_id",
+      "reference_task_ids",
+      "reference_task_artifacts",
+      "reference_run_ids",
+      "reference_experiences"
+    ],
+    "review": [
+      "evaluation_input",
+      "reference_run_ids",
+      "reference_experiences",
+      "image_refs"
+    ],
+    "compare": [
+      "reference_run_ids",
+      "reference_experiences",
+      "image_refs"
+    ],
+    "diagnose": [
+      "evaluation_input",
+      "reference_run_ids"
+    ],
+    "experience": [
+      "evaluation_input",
+      "reference_run_ids",
+      "reference_experiences",
+      "reference_experiences[].provenance",
+      "base_model_id"
+    ],
+    "run": [
+      "generation_input",
+      "image_refs",
+      "workflow_image_bindings",
+      "iterations",
+      "max_runs"
+    ],
+    "experiment": [
+      "generation_input",
+      "prompt_input",
+      "base_model_id",
+      "reference_task_ids",
+      "reference_task_artifacts",
+      "reference_run_ids",
+      "reference_experiences",
+      "reference_experiences[].provenance",
+      "image_refs",
+      "workflow_image_bindings",
+      "iterations",
+      "max_runs",
+      "requested_skill"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "preset_id": "harness-comfyui-translation",
+  "preset_name": "翻译预设",
+  "agent_model": { "provider": "lan-gpt", "model": "gpt-6-luna", "reasoningEffort": "off" },
+  "errors": {
+    "missing": "翻译请求已结束，请重新打开翻译弹窗。",
+    "conflict": "翻译请求编号已用于其他原文，请重新发起翻译。",
+    "empty": "请先填写提示词，再翻译。",
+    "binding": "请在配置中心设置“翻译提示词”。",
+    "model": "翻译会话采用的模型与配置不一致，请重新选择模型。",
+    "cancelled": "翻译已取消。",
+    "incomplete": "翻译未完成，请重试。",
+    "emptyReply": "翻译未返回文本，请重试。"
+  }
+}

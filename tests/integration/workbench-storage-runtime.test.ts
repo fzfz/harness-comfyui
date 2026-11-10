@@ -23,7 +23,7 @@ it('uses the real shared acceptance transaction and retries the saved actual inp
   const database = new DatabaseSync(':memory:')
   dispose.push(() => database.close())
   let store: WorkbenchStore
-  const runtime = new GenerationRuntime({ database, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media'), preparer: { inspectRuntimeParameters: async () => ({ parameters: [], size_candidates: [] }), prepare: async () => { throw new Error('Acceptance must not start generation') } }, workbench: { assertGenerationAcceptance: input => store.assertGenerationAcceptance(input), registerGenerationRun: input => store.registerGenerationRun(input) } })
+  const runtime = new GenerationRuntime({ database, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media'), preparer: { inspectRuntimeParameters: async () => ({ parameters: [], size_candidates: [] }), prepare: async () => { throw new Error('Acceptance must not start generation') } }, workbench: { taskWorkspace: taskId => store.taskWorkspace(taskId), assertGenerationAcceptance: input => store.assertGenerationAcceptance(input), registerGenerationRun: input => store.registerGenerationRun(input) } })
   dispose.push(() => runtime.close())
   store = new WorkbenchStore({ database, artifactDirectory: join(directory, 'artifacts') })
   const { work, branch } = store.createWork({ workspaceId: 'workspace', name: 'Rain', goal: 'rain on glass' })
@@ -31,7 +31,6 @@ it('uses the real shared acceptance transaction and retries the saved actual inp
   let preparations = 0
   const service = new WorkbenchService({ store, descriptors: WORKBENCH_FUNCTIONS, prepareGenerationInput: async draft => { preparations++; return { ...draft.generation_input, parameters: { ...draft.generation_input.parameters, seed: 42 } } }, sessions: { authorize: async ({ task, identity }) => task.session_id === identity.sessionId, create: async () => ({ sessionId: randomUUID(), selectedModel: {} }), dispatch: async () => {} } })
   const draft = structuredClone(branch.draft)
-  draft.context_refs = [{ kind: 'character', id: '90071992547409931234' }]
   draft.generation_input = { title: 'rain', instance_id: '1', template_id: '2', model: { id: '3', file_name: 'model.safetensors' }, parameters: { seed: 7, custom: ['a', { value: 1 }] }, loras: [{ id: '4', file_name: 'glass.safetensors', weight: 0.7, trigger_words: ['glass'] }] }
   store.saveBranchDraft({ workspaceId: 'workspace', workId: work.work_id, branchId: branch.branch_id, expected: branch.draft, draft })
   const task = await service.createTask({ workspaceId: 'workspace', workId: work.work_id, branchId: branch.branch_id, functionId: 'run' })
@@ -54,7 +53,7 @@ it('uses the real shared acceptance transaction and retries the saved actual inp
   const retry = await service.createTask({ workspaceId: 'workspace', workId: work.work_id, branchId: branch.branch_id, functionId: 'run', retryOfRunId: saved.run_id })
   expect(preparations).toBe(1)
   expect(retry.input.generation_input).toEqual(saved.generation_input)
-  expect(retry.input.context_refs).toEqual([{ kind: 'character', id: '90071992547409931234' }])
+  expect(retry.input.reference_run_ids).toContain(saved.run_id)
   expect(retry.retry_of_run_id).toBe(saved.run_id)
   expect(store.getBranch(branch.branch_id).draft).toEqual(changed)
   runtime.close()

@@ -6,12 +6,14 @@ import { pathToFileURL } from 'node:url'
 
 const repositoryRoot = resolve(import.meta.dirname, '../../..')
 const localRequire = createRequire(import.meta.url)
-const yaml = localRequire('js-yaml')
-const presetRows = yaml.load(await readFile(resolve(repositoryRoot, 'agent-presets/presets.cordis.yml'), 'utf8'))
+import { parsePresetYaml } from '../../support/preset-yaml.mjs'
+const presetRows = parsePresetYaml(await readFile(resolve(repositoryRoot, 'agent-presets/presets.cordis.yml'), 'utf8'))
 
 const installedRoot = await mkdtemp(resolve(repositoryRoot, '.local/installed presets with spaces-'))
 await mkdir(resolve(installedRoot, 'agent-presets'))
-for (const name of ['project-installed-presets.mjs', 'presets.cordis.yml']) {
+await mkdir(resolve(installedRoot, 'config'))
+await cp(resolve(repositoryRoot, 'config/workbench-translation.json'), resolve(installedRoot, 'config/workbench-translation.json'))
+for (const name of ['project-installed-presets.mjs', 'presets.cordis.yml', 'translation-preset.mjs']) {
   await cp(resolve(repositoryRoot, 'agent-presets', name), resolve(installedRoot, 'agent-presets', name))
 }
 const { default: InstalledPresets } = await import(pathToFileURL(resolve(installedRoot, 'agent-presets/project-installed-presets.mjs')).href)
@@ -27,8 +29,11 @@ const loader = ctx.plugin(runtimeLoader.Loader, {
 await loader
 loader.ctx.loader.internal = {
   async import(name) {
-    assert.equal(name, '@deepseek-ai/dsh-agent-preset')
+    const component = name === '@deepseek-ai/dsh-agent-preset'
+      ? await import(pathToFileURL(localRequire.resolve(name)).href)
+      : await import(pathToFileURL(resolve(installedRoot, 'agent-presets/translation-preset.mjs')).href)
     return class PresetCapture {
+      static Config = component.default.Config
       static [runtimeLoader.EntryGroup.key] = true
       constructor(child, config) {
         snapshots.set(config.id, config)

@@ -1,0 +1,9 @@
+{
+  "variables": { "task": "task_id", "translate": "source_text" },
+  "errors": {
+    "empty": "请填写本功能的执行要求。",
+    "unsupported": "本功能支持的变量为 {placeholder}。请将其他变量改为具体文字。",
+    "missing": "请在执行要求中保留 {placeholder}。",
+    "incomplete": "变量格式不完整，请使用 {placeholder}。"
+  }
+}

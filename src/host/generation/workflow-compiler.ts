@@ -693,11 +693,17 @@ interface RuntimeParameterAssignment {
   readonly value: JsonValue
 }
 
+interface OmittedImageInput {
+  readonly nodeId: string
+  readonly inputName: string
+}
+
 interface RuntimeParameterPlan {
   readonly workflow: UiWorkflow
   readonly nodeDefinitions: UnknownRecord
   readonly numericSources: NumericSourceIndex
   readonly targets: readonly ParameterTarget[]
+  readonly omittedImageInputs: readonly OmittedImageInput[]
 }
 
 function createRuntimeParameterPlan(
@@ -710,6 +716,7 @@ function createRuntimeParameterPlan(
     nodeDefinitions,
     numericSources,
     targets: parameterTargets(workflow, nodeDefinitions, numericSources),
+    omittedImageInputs: [],
   }
 }
 
@@ -1657,12 +1664,14 @@ function inspectParameter(
       value_type: 'choice',
       current_value: structuredClone(currentValue),
       allowed_values: Object.freeze(structuredClone(contract.values)),
+      ...(kind === 'reference_image' ? { image_cardinality: contract.multiselect ? 'many' as const : 'one' as const } : {}),
     })
   }
   return Object.freeze({
     parameter_id: parameterId,
     kind,
     value_type: contract.kind,
+    ...(kind === 'reference_image' && contract.kind === 'string' ? { image_cardinality: 'one' as const } : {}),
     current_value: structuredClone(currentValue),
   })
 }
@@ -1852,16 +1861,33 @@ function terminalSizeCandidates(
   }).map(value => value.candidate)
 }
 
-function inspectRuntimeParameterPlan(plan: RuntimeParameterPlan): WorkflowRuntimeParameterInspection {
+function activeRuntimeNodeIds(plan: RuntimeParameterPlan): ReadonlySet<string> {
+  const api = projectRuntimeApiWorkflow(plan.workflow, plan.nodeDefinitions)
+  const pending = [...projectRuntimeOutputNodes(api, plan.nodeDefinitions).active]
+  const active = new Set<string>()
+  while (pending.length > 0) {
+    const nodeId = pending.pop()!
+    if (active.has(nodeId)) continue
+    active.add(nodeId)
+    const node = api[nodeId] as Readonly<Record<string, JsonValue>>
+    for (const value of Object.values(node.inputs as Readonly<Record<string, JsonValue>>)) {
+      if (Array.isArray(value) && value.length === 2 && typeof value[0] === 'string'
+        && typeof value[1] === 'number' && Object.hasOwn(api, value[0])) pending.push(value[0])
+    }
+  }
+  return active
+}
+
+function inspectRuntimeParameterPlan(plan: RuntimeParameterPlan, kinds: readonly StandardRuntimeParameterKind[] = STANDARD_RUNTIME_PARAMETER_KINDS): WorkflowRuntimeParameterInspection {
   const discovered = new Map<StandardRuntimeParameterKind, readonly {
     readonly parameterId: string
     readonly target: ParameterTarget
   }[]>()
-  for (const kind of STANDARD_RUNTIME_PARAMETER_KINDS) {
+  for (const kind of kinds) {
     discovered.set(kind, inspectionTargetsForKind(plan, kind))
   }
   const uniquePlanned = new Map<string, PlannedRuntimeParameter>()
-  for (const kind of STANDARD_RUNTIME_PARAMETER_KINDS) {
+  for (const kind of kinds) {
     for (const { parameterId, target } of discovered.get(kind) ?? []) {
       if (uniquePlanned.has(target.key)) continue
       uniquePlanned.set(target.key, {
@@ -1881,22 +1907,25 @@ function inspectRuntimeParameterPlan(plan: RuntimeParameterPlan): WorkflowRuntim
     plan.targets,
     [...uniquePlanned.values()],
   )
+  const activeNodes = (discovered.get('reference_image')?.length ?? 0) > 0 ? activeRuntimeNodeIds(plan) : new Set<string>()
   const inspected = new Map<StandardRuntimeParameterKind, readonly InspectedRuntimeParameter[]>()
-  for (const kind of STANDARD_RUNTIME_PARAMETER_KINDS) {
+  for (const kind of kinds) {
     inspected.set(kind, (discovered.get(kind) ?? []).map(({ parameterId, target }) => ({
       target,
       pairingNodeIds: parameterPairingNodeIds(plan.workflow, target, kind),
-      parameter: inspectParameter(
-        kind,
-        parameterId,
-        target,
-        dynamicValidation.contracts.get(target.key) ?? target.contract,
-        dynamicValidation.canonicalValues.get(target.key)
-          ?? array(target.node.widgets_values)[target.mapping.index] as JsonValue,
-      ),
+      parameter: Object.freeze({
+        ...inspectParameter(
+          kind, parameterId, target,
+          dynamicValidation.contracts.get(target.key) ?? target.contract,
+          dynamicValidation.canonicalValues.get(target.key)
+            ?? array(target.node.widgets_values)[target.mapping.index] as JsonValue,
+        ),
+        ...(kind === 'reference_image' ? { image_required: activeNodes.has(target.nodeId)
+          && isRequiredInput(nodeDefinition(plan.nodeDefinitions, target.nodeType), target.nodeType, target.mapping.name) } : {}),
+      }),
     })))
   }
-  const parameters = STANDARD_RUNTIME_PARAMETER_KINDS
+  const parameters = kinds
     .filter(kind => !SIZE_PARAMETER_KINDS.has(kind))
     .flatMap(kind => inspected.get(kind) ?? [])
     .map(value => value.parameter)
@@ -2179,11 +2208,25 @@ function projectRuntimeOutputNodes(
   })
 }
 
+function omitImageInputs(
+  apiWorkflow: Readonly<Record<string, JsonValue>>,
+  inputs: readonly OmittedImageInput[],
+): Record<string, JsonValue> {
+  const result = structuredClone(apiWorkflow)
+  for (const { nodeId, inputName } of inputs) {
+    const node = result[nodeId]
+    if (node === undefined) continue
+    delete record(record(node, 'Workflow node').inputs, 'Workflow node inputs')[inputName]
+  }
+  return result
+}
+
 function compile(
   workflow: UiWorkflow,
   nodeDefinitions: UnknownRecord,
+  omittedImageInputs: readonly OmittedImageInput[] = [],
 ): Pick<WorkflowCompilerResult, 'apiWorkflow' | 'activeOutputNodeIds'> {
-  const apiWorkflow = projectRuntimeApiWorkflow(workflow, nodeDefinitions)
+  const apiWorkflow = omitImageInputs(projectRuntimeApiWorkflow(workflow, nodeDefinitions), omittedImageInputs)
   const outputProjection = projectRuntimeOutputNodes(apiWorkflow, nodeDefinitions)
   const activeOutputNodeIds = [...outputProjection.active]
   if (activeOutputNodeIds.length === 0) fail('Workflow does not contain an active output node.')
@@ -2289,7 +2332,9 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
     try {
       let snapshot: NodeDefinitionsSnapshot
       try {
-        snapshot = await this.nodeDefinitions(
+        snapshot = input.refreshNodeDefinitions
+          ? await waitForPromise(this.fetchNodeDefinitions(baseUrl, input.connection.authorization), signal)
+          : await this.nodeDefinitions(
           input.instanceId,
           baseUrl,
           input.connection.authorization,
@@ -2311,18 +2356,28 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
   async inspectRuntimeParameters(
     input: WorkflowRuntimeParameterInspectionInput,
   ): Promise<WorkflowRuntimeParameterInspection> {
-    return inspectRuntimeParameterPlan(await this.runtimeParameterPlan(input))
+    const plan = await this.runtimeParameterPlan({ ...input, workflow: structuredClone(input.workflow) as UiWorkflow })
+    applyRuntimeParameters(plan, input.runtimeParameters ?? {})
+    return inspectRuntimeParameterPlan(plan, input.parameterKinds)
   }
 
   private async prepareRuntimeInput(input: WorkflowCompilerInput): Promise<RuntimeParameterPlan> {
     if (input.instanceId.trim().length === 0) throw new TypeError('ComfyUI instance id is required for Workflow compilation.')
     const workflow = structuredClone(input.workflow) as UiWorkflow
     const plan = await this.runtimeParameterPlan({
-      instanceId: input.instanceId, workflow, connection: input.connection,
+      instanceId: input.instanceId, workflow, connection: input.connection, refreshNodeDefinitions: input.refreshNodeDefinitions,
       ...(input.signal === undefined ? {} : { signal: input.signal }),
     })
     applyRuntimeParameters(plan, input.runtimeParameters ?? {})
-    return plan
+    if (input.boundImageParameterIds === undefined) return plan
+    const selected = new Set(input.boundImageParameterIds)
+    const omittedImageInputs: OmittedImageInput[] = []
+    for (const { parameterId, target } of inspectionTargetsForKind(plan, 'reference_image')) {
+      if (selected.has(parameterId)) continue
+      setParameterWidget(target, null, parameterId)
+      omittedImageInputs.push({ nodeId: target.nodeId, inputName: target.mapping.name })
+    }
+    return { ...plan, omittedImageInputs }
   }
 
   private applyResourceSelections(plan: RuntimeParameterPlan, input: WorkflowCompilerInput): void {
@@ -2333,14 +2388,14 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
   async validateInput(input: WorkflowCompilerInput): Promise<void> {
     const plan = await this.prepareRuntimeInput(input)
     this.applyResourceSelections(plan, input)
-    compile(plan.workflow, plan.nodeDefinitions)
+    compile(plan.workflow, plan.nodeDefinitions, plan.omittedImageInputs)
   }
 
   async compile(input: WorkflowCompilerInput): Promise<WorkflowCompilerResult> {
     const plan = await this.prepareRuntimeInput(input)
     materializeRgthreeRandomSeeds(plan.workflow, plan.nodeDefinitions, this.createRandomSeed)
     this.applyResourceSelections(plan, input)
-    const compiled = compile(plan.workflow, plan.nodeDefinitions)
+    const compiled = compile(plan.workflow, plan.nodeDefinitions, plan.omittedImageInputs)
     const finalized = await this.officialApiWorkflowCompiler.compile({
       instanceId: input.instanceId,
       connection: input.connection,
@@ -2355,6 +2410,6 @@ export class ComfyWorkflowCompiler implements WorkflowCompiler {
       if (!(error instanceof GenerationInputValidationError) || error.code !== 'GENERATION_PARAMETER_CONTRACT_UNSUPPORTED') throw error
       inputDescription = null
     }
-    return Object.freeze({ apiWorkflow: finalized.apiWorkflow, activeOutputNodeIds: compiled.activeOutputNodeIds, actualWorkflow: plan.workflow, inputDescription })
+    return Object.freeze({ apiWorkflow: Object.freeze(omitImageInputs(finalized.apiWorkflow, plan.omittedImageInputs)), activeOutputNodeIds: compiled.activeOutputNodeIds, actualWorkflow: plan.workflow, inputDescription })
   }
 }
