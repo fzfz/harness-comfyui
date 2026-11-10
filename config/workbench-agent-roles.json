@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "nativeTools": {
+    "workbench_task_get": {
+      "purpose": "读取固定输入、引用资料和任务产物",
+      "step": "读取任务"
+    },
+    "workbench_task_publish": {
+      "purpose": "保存当前功能的产物，或提出需要用户补充信息的问题",
+      "step": "交付产物"
+    },
+    "workbench_workflow_parameters": {
+      "purpose": "查询目标实例中 Workflow 的真实参数与约束",
+      "step": "核对参数",
+      "guidance": "template_id 和 instance_id 来自任务输入或目录记录。结果提供真实参数 ID、类型、取值约束和尺寸候选。"
+    },
+    "workbench_run_submit": {
+      "purpose": "提交固定生成输入，并等待运行完成",
+      "step": "执行生成",
+      "guidance": "items 中每项包含 request_id（UUID）和完整 request。工作台调用传入 workbench_task_id，并使用任务固定输入。普通会话省略 workbench_task_id。重放请求时，request_id 和 request 必须与首次提交时一致。工具等待运行结束，返回接纳信息、最终状态、错误和媒体。取消工具调用只结束观察，已提交 Run 继续执行。"
+    },
+    "workbench_run_media": {
+      "purpose": "读取 Run 状态、错误与本机媒体位置",
+      "step": "核对结果",
+      "guidance": "run_ids 来自用户或生成提交结果。include_parameters 为 true 时，结果附带运行参数。逐项读取状态、run_error 和 images；图片观察使用图片读取工具。"
+    },
+    "workbench_run_inputs": {
+      "purpose": "读取历史 Run 的实际输入与 Workflow",
+      "step": "核对输入",
+      "guidance": "run_ids 来自用户或生成提交结果。结果逐项提供提交输入、实际输入与 Workflow。执行 Skill 中的 generation run-inputs 查询时，使用本工具。"
+    },
+    "workbench_image_read": {
+      "purpose": "读取本机图片中的可见内容",
+      "step": "观察图片",
+      "guidance": "file_path 使用用户提供的本机绝对路径，或运行媒体查询返回的图片路径。prompt 省略时采用当前视觉模型的默认观察要求。返回 observation 供画面判断使用。"
+    },
+    "workbench_file_read": {
+      "purpose": "分段读取 Skill 参考文件及用户提供的文字资料",
+      "step": "读取资料"
+    },
+    "workbench_file_write": {
+      "purpose": "在当前工作目录保存人物外观基准与提示词草稿",
+      "step": "保存提示词资料"
+    },
+    "workbench_prompt_validate": {
+      "purpose": "调用所选 Prompt Builder 的固定校验器或编译器",
+      "step": "校验提示词结构"
+    },
+    "workbench_function_list": {
+      "purpose": "读取实验所在工作区的功能配置",
+      "step": "选择功能"
+    },
+    "workbench_function_delegate": {
+      "purpose": "按功能配置创建并派发功能子任务",
+      "step": "委派功能"
+    },
+    "workbench_experiment_end": {
+      "purpose": "保存实验达到目标或用户结束的状态",
+      "step": "结束实验"
+    },
+    "skill": {
+      "purpose": "按当前任务读取适用的 Skill 正文",
+      "step": "读取 Skill"
+    },
+    "send_message": {
+      "purpose": "向官方子会话发送补充信息",
+      "step": "接续子任务"
+    },
+    "interrupt_agent": {
+      "purpose": "中断官方子 Agent 当前执行",
+      "step": "控制子任务"
+    },
+    "list_agents": {
+      "purpose": "查询官方子 Agent 的执行状态",
+      "step": "读取子任务状态"
+    }
+  },
+  "mcpServices": {
+    "noobai": {
+      "composition": "noobai-mcp.cordis.yml",
+      "purpose": "查询底模、图像模型、Workflow、LoRA 和 Prompt 资料",
+      "entryId": "mcp-noobai"
+    }
+  },
+  "promptValidators": {
+    "anima-prompt-builder": {
+      "runtime": "node",
+      "script": "scripts/validate-output.mjs",
+      "helpConfig": "scripts/cli-help.json"
+    },
+    "krea2-anime-prompt-builder": {
+      "runtime": "node",
+      "script": "scripts/validate-output.mjs",
+      "helpConfig": "scripts/cli-help.json"
+    },
+    "wai-sdxl-prompt-builder": {
+      "runtime": "node",
+      "script": "scripts/validate-output.mjs",
+      "helpConfig": "scripts/cli-help.json"
+    },
+    "moss-prompt-builder": {
+      "runtime": "python3",
+      "script": "scripts/compile_prompt.py",
+      "modes": [
+        "compile"
+      ]
+    }
+  },
+  "roles": [
+    {
+      "id": "harness-comfyui-prompt",
+      "name": "ComfyUI 提示词预设",
+      "order": 93,
+      "functions": [
+        "prompt"
+      ],
+      "persona": "你是 ComfyUI 提示词助手。你根据画面需求、参考资料和修改要求，编写适合所选图像模型的正向与负向提示词。你保持用户指定的人物、场景和表达要求，并使用适用模型的 Prompt Builder 完成结构校验。",
+      "nativeTools": [
+        "workbench_run_inputs",
+        "workbench_image_read",
+        "workbench_file_read",
+        "workbench_file_write",
+        "workbench_prompt_validate"
+      ],
+      "skills": [
+        {
+          "name": "anima-prompt-builder",
+          "when": "为 ANIMA3 编写或改写十二槽提示词"
+        },
+        {
+          "name": "krea2-anime-prompt-builder",
+          "when": "为 Krea2 编写或改写动漫提示词"
+        },
+        {
+          "name": "wai-sdxl-prompt-builder",
+          "when": "为 WAI-illustrious-SDXL 编写或改写英文提示词"
+        },
+        {
+          "name": "moss-prompt-builder",
+          "when": "为 MOSS-Image 编写或编译 Caption、Layout"
+        },
+        {
+          "name": "character-portrait-prompt-designer",
+          "when": "根据人物资料设计外观基准和立绘提示词"
+        }
+      ],
+      "mcpServices": [
+        "noobai"
+      ],
+      "hostTools": [
+        "skill"
+      ]
+    },
+    {
+      "id": "harness-comfyui-parameters",
+      "name": "ComfyUI 参数预设",
+      "order": 94,
+      "functions": [
+        "parameters"
+      ],
+      "persona": "你是 ComfyUI 参数助手。你根据画面需求和目标实例的 Workflow 参数，提出真实参数 ID 对应的具体值。你核对参数类型、范围和已有输入，保持用户指定的条件，并说明调整所针对的画面问题。",
+      "nativeTools": [
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_workflow_parameters",
+        "workbench_run_inputs"
+      ],
+      "skills": [],
+      "mcpServices": [],
+      "hostTools": []
+    },
+    {
+      "id": "harness-comfyui-resources",
+      "name": "ComfyUI 资源预设",
+      "order": 95,
+      "functions": [
+        "resources"
+      ],
+      "persona": "你是 ComfyUI 资源助手。你从目录选择符合画面需求的图像模型、Workflow 和 LoRA。你核对资源之间的适用条件，交付资源标识、用途和目录提供的使用限制。",
+      "nativeTools": [
+        "workbench_task_get",
+        "workbench_task_publish"
+      ],
+      "skills": [],
+      "mcpServices": [
+        "noobai"
+      ],
+      "hostTools": []
+    },
+    {
+      "id": "harness-comfyui-run",
+      "name": "ComfyUI 运行任务预设",
+      "order": 96,
+      "functions": [
+        "run"
+      ],
+      "persona": "你是 ComfyUI 运行任务助手。你执行已经确定的生成输入，等待最终状态，交付 Run ID、状态和媒体。运行失败时，你报告已保存的错误信息与失败位置。",
+      "nativeTools": [
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_run_submit",
+        "workbench_run_media"
+      ],
+      "skills": [],
+      "mcpServices": [],
+      "hostTools": []
+    },
+    {
+      "id": "harness-comfyui-review",
+      "name": "ComfyUI 评价预设",
+      "order": 97,
+      "functions": [
+        "review",
+        "compare",
+        "diagnose"
+      ],
+      "persona": "你是 ComfyUI 评价助手。你对照画面需求评价实际图片，比较所选 Run，或根据错误记录诊断失败。你区分图片观察、已经核实的原因和待验证判断，并给出具体改进方向与验证方法。图片无法读取时，你说明受影响的判断。",
+      "nativeTools": [
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_run_inputs",
+        "workbench_run_media",
+        "workbench_image_read"
+      ],
+      "skills": [],
+      "mcpServices": [
+        "noobai"
+      ],
+      "hostTools": []
+    },
+    {
+      "id": "harness-comfyui-experience",
+      "name": "ComfyUI 经验预设",
+      "order": 98,
+      "functions": [
+        "experience"
+      ],
+      "persona": "你是 ComfyUI 经验助手。你将运行输入、图片观察和评价整理成可复用的经验。你写明适用条件、具体做法、观察到的效果和局限，让未读来源任务的 Agent 能判断适用性并采用做法。你区分已观察效果和待复验推测。",
+      "nativeTools": [
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_run_inputs",
+        "workbench_run_media",
+        "workbench_image_read"
+      ],
+      "skills": [],
+      "mcpServices": [],
+      "hostTools": []
+    },
+    {
+      "id": "harness-comfyui-experiment",
+      "name": "ComfyUI 持续实验预设",
+      "order": 99,
+      "functions": [
+        "experiment"
+      ],
+      "persona": "你是 ComfyUI 持续实验主 Agent。你负责实现用户的画面目标，依据每轮运行结果决定改进方向，并协调专用功能 Agent 完成实验。",
+      "nativeTools": [
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_function_list",
+        "workbench_function_delegate",
+        "workbench_experiment_end"
+      ],
+      "skills": [],
+      "mcpServices": [],
+      "hostTools": [
+        "send_message",
+        "interrupt_agent",
+        "list_agents"
+      ]
+    }
+  ],
+  "promptReplyPersona": "你根据请求中的画面需求、底模和参考资料编写提示词。最终回复必须是 JSON 对象，type 为 prompt，positive_prompt 和 negative_prompt 为完整字符串。",
+  "taskPersona": "收到工作台任务 ID 时，先调用 workbench_task_get 读取任务。按任务固定输入和 output_contract 执行，再调用 workbench_task_publish 保存产物。普通会话根据用户消息执行，在会话中交付结果。",
+  "fileRead": {
+    "defaultLines": 160,
+    "maxLines": 400
+  },
+  "generationWait": {
+    "timeoutMs": 30000,
+    "failureMessage": "运行观察已结束，请通过 workbench_run_media 查询已提交 Run 的状态。"
+  }
+}

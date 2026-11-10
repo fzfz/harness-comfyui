@@ -11,5 +11,17 @@
   "active": "{runId} 正在运行",
   "round": "第 {index} 轮 · {runId}",
   "openRound": "查看本轮结果",
-  "progress": "已完成 {completed} / {max} 次"
+  "progress": "已完成 {completed} / {max} 次",
+  "agentReview": "Agent 评价",
+  "changes": "本轮改动",
+  "initialRun": "初次运行",
+  "unrecorded": "未记录",
+  "observation": "图片观察",
+  "errorReview": "运行失败记录",
+  "conclusion": "评价结论",
+  "nextPlan": "下一轮计划",
+  "reason": "修改原因",
+  "expectedResult": "预期效果",
+  "openNextRound": "查看下一轮结果",
+  "currentFunction": "当前功能：{name}"
 }

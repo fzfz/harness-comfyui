@@ -1,4 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
+import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import type { SubagentPromptRequest } from '@deepseek-ai/dsh-subagent'
+import { randomUUID } from 'node:crypto'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-preset-registry'
@@ -21,6 +24,8 @@ import type {} from '../core/plugin.ts'
 
 import { resolveInputImages } from './input-images.ts'
 import { WorkbenchTranslations } from './translation-service.ts'
+import { WorkbenchPrompts } from './prompt-service.ts'
+import promptEditConfig from '../../workbench/prompt-edit-config.json' with { type: 'json' }
 
 import { CatalogError } from '../catalog/catalog-client.ts'
 
@@ -30,6 +35,7 @@ interface SkillCatalog {
 function skillsFor(ctx: Context): SkillCatalog { return ctx.get('skills') as SkillCatalog }
 interface WorkbenchHost {
   readonly service: WorkbenchService
+  readonly prompts: WorkbenchPrompts
   readonly signal: AbortSignal
   readonly validateDraft: ReturnType<typeof createWorkbenchInputAdapter>['validateDraft']
   readonly validateParameters: ReturnType<typeof createWorkbenchInputAdapter>['validateParameters']
@@ -55,7 +61,41 @@ export function apply(ctx: Context): void {
   ctx.effect(() => () => lifecycle.abort(), 'Workbench requests')
   const sessions = new HarnessWorkbenchSessions({
     controller,
-    events: sessionId => ctx.agents.get(SessionId(sessionId))?.session.snapshotEvents() ?? [],
+    delegation: {
+      async start(request) {
+        const parent = ctx.agents.get(SessionId(request.parentSessionId))
+        if (!parent) throw new WorkbenchError('WORKBENCH_PARENT_UNAVAILABLE', '实验主会话当前不可用，请在工作台查看实验状态。', 'task_id')
+        return ctx.subagents.startActivation({
+          provider: 'spawn', childId: SessionId(request.sessionId), label: request.label, delivery: 'parent', signal: request.signal,
+          request: { parent, agentPreset: request.presetId, agentOptions: { ...request.agentModel, reasoningEffort: request.agentModel.reasoningEffort === undefined ? undefined : ReasoningEffortId(request.agentModel.reasoningEffort) }, prompt: [{ type: 'text', text: request.text }], maxDepth: ctx.subagents.resolveMaxDepth() },
+        })
+      },
+      async resume(request) {
+        const task = store.getTask(request.taskId)
+        if (!task.parent_experiment_task_id) return false
+        const parent = store.getTask(task.parent_experiment_task_id)
+        if (!parent.session_id) throw new WorkbenchError('WORKBENCH_PARENT_UNAVAILABLE', '实验主会话当前不可用，请在工作台查看实验状态。', 'task_id')
+        await ctx.subagents.prompt({ requestId: randomUUID() as SubagentPromptRequest['requestId'], parentSessionId: SessionId(parent.session_id), childSessionId: SessionId(request.sessionId), mode: 'continuable', delivery: 'queue', content: [{ type: 'text', text: request.text }] }, request.signal)
+        return true
+      },
+      async skills(taskId, presetId) { return (await presetSkills(store.taskWorkspace(taskId), presetId)).map(skill => ({ ...skill, invocation: { modelInvocable: true } })) },
+      async interrupt(parentId, childId) {
+        const parent = ctx.agents.get(SessionId(parentId))
+        if (parent) ctx.subagents.interrupt(SessionId(childId), { kind: 'ancestor', agent: parent })
+      },
+      async disposeDescendants(parentId) {
+        const parent = ctx.agents.get(SessionId(parentId))
+        if (parent) await ctx.subagents.drainDescendants([parent])
+      },
+    },
+    async events(sessionId) {
+      const resident = ctx.agents.get(SessionId(sessionId))
+      if (resident) return resident.session.snapshotEvents()
+      if (!await ctx.sessionPersistence.stat(SessionId(sessionId))) return []
+      const handle = await ctx.sessionPersistence.open(SessionId(sessionId), 'read', { signal })
+      try { return (await handle.read(undefined, undefined, { signal })).events }
+      finally { await handle.close() }
+    },
     workspaceForTask: taskId => store.taskWorkspace(taskId),
     scopeForSession: sessionId => workspaceSessionScopeForSession(ctx.workspaceRegistry, ctx.sessionPersistence, ctx.subagents, sessionId, signal),
     agent: id => {
@@ -76,6 +116,9 @@ export function apply(ctx: Context): void {
   }
   const service = new WorkbenchService({
     store, sessions, descriptors: defaults,
+    preparePromptRequest: (binding, input) => prompts.prepareTask(binding, input),
+    attachPromptTask: (task, sessionId, prepared, requestId, delegated) => prompts.attachTask(task, sessionId, prepared, requestId, delegated),
+    refreshPromptTask: task => prompts.refreshTask(task),
     resolveImageSources: refs => resolveInputImages(ctx.harnessComfyuiCore.services, refs, signal),
     refreshAfterMs: profile.client.runRefreshIntervalMs,
     prepareGenerationInput: input.prepareGenerationInput, resolveResourceRefs: input.resolveResourceRefs, resolveResourceSelection: input.resolveResourceSelection,
@@ -112,11 +155,31 @@ export function apply(ctx: Context): void {
       return result.input_description
     },
   })
+  const prompts = new WorkbenchPrompts({
+    store, sessions, controller, descriptors: defaults, events: id => sessions.events(id),
+    images: refs => resolveInputImages(ctx.harnessComfyuiCore.services, refs, signal),
+    async baseModel(draft, baseModelId) {
+      let id: string | null = baseModelId
+      if (draft.generation_input.model) {
+        const model = await catalog.resolveGenerationModel(draft.generation_input.model.id, signal)
+        id = model.base_model_id
+      }
+      const base = (await catalog.baseModels(signal)).items.find(item => item.id === id)
+      if (!base) throw new WorkbenchError(promptEditConfig.errors.baseModelMissing.code, promptEditConfig.errors.baseModelMissing.message, 'input.base_model_id')
+      return { id: base.id, name: base.label }
+    },
+  })
+  ctx.effect(() => () => prompts.dispose(), 'Workbench prompt editing')
   const translations = new WorkbenchTranslations({ controller, binding: workspaceId => store.getFunctionBinding(workspaceId, 'translate'), events: sessionId => ctx.agents.get(SessionId(sessionId))?.session.snapshotEvents() ?? [] })
   ctx.effect(() => () => translations.dispose(), 'Workbench translations')
   ctx.on('agent/error', ({ agent }) => { sessions.recordFailure(String(agent.id)) })
+  ctx.on('subagent/end', info => {
+    const state = sessions.recordCompletion(String(info.id), info.stopReason)
+    const task = store.taskForSession(String(info.id))
+    if (task?.parent_experiment_task_id) store.markExecution(task.task_id, state)
+  })
   ctx.provide('harnessComfyuiWorkbench', {
-    service, signal, translations, validateDraft: input.validateDraft, validateParameters: input.validateParameters, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
+    service, signal, translations, prompts, validateDraft: input.validateDraft, validateParameters: input.validateParameters, resolveResourceSelection: input.resolveResourceSelection, resolveGenerationDraft: input.resolveGenerationDraft, presetSkills,
     async validateFunctionAgentModel(selection) {
       const models = await controller.modelCatalog().catch(cause => {
         const failure = agentModelSelection.catalogUnavailable

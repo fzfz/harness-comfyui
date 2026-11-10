@@ -12,6 +12,7 @@ async function fixture() {
   cleanups.push(host.dispose)
   const selected = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Drafts', goal: 'Paint the rain' } }, signal())
   const scope = { workspaceId: selected.workspaceId, workId: selected.workId!, branchId: selected.branchId! }
+  await saveFixtureDraft(host.remote, scope, draft => { draft.base_model_id = '1' }, signal())
   return { ...host, scope }
 }
 
@@ -24,7 +25,7 @@ it('persists task requirements and resource overrides independently for each bra
   await remote.saveTaskDraft({ ...scope, functionId: 'prompt', draft: { instructions: '', resources: {} } }, signal())
   const child = await remote.mutate({ ...scope, type: 'create-branch', value: { name: 'Second', original_request: 'Paint another scene' } }, signal())
   expect(await remote.getTaskDraft({ ...request, branchId: child.branchId! }, signal())).toBeNull()
-  expect(await remote.getTaskDraft({ ...scope, functionId: 'rewrite' }, signal())).toBeNull()
+  expect(await remote.getTaskDraft({ ...scope, functionId: 'resources' }, signal())).toBeNull()
   expect(await remote.getTaskDraft(request, signal())).toEqual(draft)
   expect(await remote.getTaskDraft({ ...scope, functionId: 'prompt' }, signal())).toEqual({ instructions: '', resources: {} })
   const reopened = new WorkbenchStore({ database, artifactDirectory: directory })
@@ -34,10 +35,10 @@ it('persists task requirements and resource overrides independently for each bra
   await expect(remote.saveTaskDraft({ ...request, functionId: 'missing', draft }, signal())).rejects.toMatchObject({ details: { code: 'WORKBENCH_FUNCTION_NOT_FOUND' } })
 })
 
-it.each(['prompt', 'rewrite', 'resources'])('returns the accepted %s task ID, freezes its requirement and clears only its submitted branch-function draft', async functionId => {
+it.each(['prompt', 'resources'])('returns the accepted %s task ID, freezes its requirement and clears only its submitted branch-function draft', async functionId => {
   const { remote, scope, official } = await fixture()
   await remote.saveTaskDraft({ ...scope, functionId, draft: { instructions: 'Rain on glass', resources: {} } }, signal())
-  const siblingId = functionId === 'prompt' ? 'rewrite' : 'prompt'
+  const siblingId = functionId === 'prompt' ? 'resources' : 'prompt'
   const sibling = { instructions: 'Retain the reflection', resources: {} }
   await remote.saveTaskDraft({ ...scope, functionId: siblingId, draft: sibling }, signal())
   const accepted = await remote.mutate({ ...scope, type: 'agent-action', id: functionId }, signal())

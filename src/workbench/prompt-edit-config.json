@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "baseModel": { "code": "WORKBENCH_BASE_MODEL_REQUIRED", "message": "请先选择底模。" },
+    "baseModelMissing": { "code": "WORKBENCH_BASE_MODEL_UNAVAILABLE", "message": "底模当前无法读取，请重新选择底模。" },
+    "requirements": { "code": "WORKBENCH_PROMPT_REQUIREMENTS_REQUIRED", "message": "请先填写原始需求。" },
+    "binding": { "code": "WORKBENCH_PROMPT_CONFIGURATION", "message": "请选择生成提示词功能。" },
+    "busy": { "code": "WORKBENCH_PROMPT_BUSY", "message": "提示词正在生成，请等待完成或停止当前请求。" },
+    "missing": { "code": "WORKBENCH_PROMPT_NOT_FOUND", "message": "提示词请求不存在，请重新打开来源分支。" },
+    "scope": { "code": "WORKBENCH_SCOPE_MISMATCH", "message": "请在提示词请求所属的工作区和分支中继续编辑。" },
+    "conflict": { "code": "WORKBENCH_PROMPT_REQUEST_CONFLICT", "message": "请求编号已被使用，请重新发起提示词请求。" },
+    "session": { "code": "WORKBENCH_PROMPT_SESSION", "message": "提示词会话未按功能配置创建，请核对预设和模型。" },
+    "reply": { "code": "WORKBENCH_PROMPT_REPLY_INVALID", "message": "Agent 回复格式不符合要求。请重试；回复须为 JSON 对象，包含 type（值为 prompt）、positive_prompt 和 negative_prompt 字段。" },
+    "incomplete": { "code": "WORKBENCH_PROMPT_INCOMPLETE", "message": "提示词生成未完成，请查看执行会话后重试。" },
+    "stopped": { "code": "WORKBENCH_PROMPT_INTERRUPTED", "message": "提示词生成已停止。" },
+    "adopt": { "code": "WORKBENCH_PROMPT_NOT_READY", "message": "请等待提示词生成完成后采用结果。" }
+  }
+}

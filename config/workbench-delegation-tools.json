@@ -1,0 +1,13 @@
+{
+  "list": "查询持续实验可以调用的业务功能及其预设、模型与产物类型。功能配置来自实验所在工作区。",
+  "delegate": "委派一个业务功能。工作台创建独立功能子任务，并按功能配置启动子 Agent。返回的 task_id 用于读取子任务结果，session_id 用于查询子 Agent 会话和向子 Agent 发送消息。Harness 在子 Agent 结束后通知主 Agent。",
+  "fields": {
+    "task_id": "持续实验任务 ID。",
+    "function_id": "workbench_function_list 返回的功能 ID。",
+    "instructions": "交给此功能的具体要求，例如保留构图、调整窗外光线。",
+    "source": "子任务使用的生成输入来源：initial 使用实验初始输入；candidate 使用指定候选输入产物；run 使用指定实验 Run 的实际输入。评价、诊断和经验功能使用 run。",
+    "artifact_id": "此实验中 generation_input 产物的 ID。",
+    "run_id": "此实验中需要参考或评价的 Run ID。",
+    "reference_artifact_ids": "子任务需要阅读的补充产物 ID，例如上一轮评价或下一轮计划。"
+  }
+}

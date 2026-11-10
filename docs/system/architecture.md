@@ -23,19 +23,19 @@
 
 ## 项目 Preset、Skills 与目录访问
 
-1. 项目预设由 [Preset registry](../../agent-presets/presets.cordis.yml) 注册，包括 ComfyUI工作台预设与翻译预设；官方内置 Preset 由宿主管理。
+1. 项目预设由 [Preset registry](../../agent-presets/presets.cordis.yml) 注册。通用工作台、翻译和各专用预设的身份与能力分别由包内组合定义；专用角色清单见[角色配置](../../config/workbench-agent-roles.json)。官方内置 Preset 由宿主管理。
 
 2. ComfyUI工作台预设通过[共享组合](../../agent-presets/shared/agent.cordis.yml)加载 NoobAI MCP、前台 shell、会话目录、Skill 访问和 compaction。[工作台配置](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml)定义绘图任务目标与 MCP、CLI、Skill 的分工，并装配官方子 Agent 组件。
 
 3. 工作台保留宿主提供的当前目录、沙箱、审批、剩余派发深度和委派信息。[workbench-composition.mjs](../../agent-presets/workbench-composition.mjs)通过宿主原生上下文与工具 API 应用工作台范围的配置。字段与来源见[工作台装配配置](configuration.md#工作台装配配置)。
 
-4. 官方 `subagent` 接纳任务后返回子会话 ID。子会话继承派发时的工作台组合、模型配置和当前工作目录，并独立开始对话。父 Agent 使用 `send_message` 续派，使用 `interrupt_agent` 中断，使用 `list_agents` 查询子会话。调度、深度限制、结束通知和恢复由宿主管理。组件来源与字段见[子 Agent 派发配置](configuration.md#子-agent-派发配置)。
+4. 通用工作台的官方 `subagent` 接纳任务后返回子会话 ID。子会话继承派发时的工作台组合、模型配置和当前工作目录，并独立开始对话。父 Agent 使用 `send_message` 续派，使用 `interrupt_agent` 中断，使用 `list_agents` 查询子会话。调度、深度限制、结束通知和恢复由宿主管理。组件来源与字段见[子 Agent 派发配置](configuration.md#子-agent-派发配置)。
 
 5. 工作台在原生 Cordis group 中隔离 `skills` 服务。组内的官方 filesystem Skill provider 发现包内业务 Skill，以及明确配置的额外目录。官方 Skill 工具负责摘要与正文读取。其他预设使用各自的 Skill 来源。资源入口见[目录结构](directory-structure.md#preset-与-skill-资源)，来源字段见[工作台装配配置](configuration.md#工作台装配配置)。
 
 6. 工作台 Agent 通过宿主原生 MCP 客户端访问 NoobAI MCP 服务，查询目录记录及业务资源。Host 内部数据源客户端读取 Catalog 展示与 Generation Workflow 准备所需的数据；入口为 [queryCatalog()](../../src/host/source-client/catalog-client.ts) 与 [readSourceRecord()](../../src/host/source-client/source-client.ts)。协议路径与请求限制由 [config/source-client.json](../../config/source-client.json) 定义。两条访问路径连接同一目录数据；地址与凭据配置见[NoobAI MCP 服务](configuration.md#noobai-mcp-服务)。
 
-7. Agent 通过受管 CLI 检查生成输入、提交生成、查询 Run、取得媒体和读取图片。CLI 与 Remote 复用常驻业务服务；Core 和 Image Reader 的职责是服务装配与生命周期管理。开发约束见[项目预设与 Skill 开发规范](../agents/comfyui-workbench-preset-and-skill-development.md)。
+7. 通用工作台 Agent 通过受管 CLI 检查生成输入、提交生成、查询 Run、取得媒体和读取图片。专用预设使用 [角色配置](../../config/workbench-agent-roles.json) 声明的工具。CLI 与 Remote 复用常驻业务服务；Core 和 Image Reader 的职责是服务装配与生命周期管理。开发约束见[项目预设与 Skill 开发规范](../agents/comfyui-workbench-preset-and-skill-development.md)。
 
 ## Host Node 与受管 CLI 身份
 
@@ -55,7 +55,7 @@
 
 1. [GenerationRuntime.acceptGenerations()](../../src/host/generation/generation-runtime.ts) 在同一事务内接纳整份清单。接纳成功后，调用方按输入顺序取得 `request_id`、`run_id` 与 `accepted` 或 `reused`。接纳校验失败时，本次新增 Run 数为零。
 
-2. 请求身份、Run 归属和重放规则见 [ADR 0005](../adr/0005-harness-identities-and-generation-run-ownership.md)。提交清单中的标识用于复用请求。
+2. 请求身份、Run 归属和重放规则见 [ADR 0005](../adr/0005-harness-identities-and-generation-run-ownership.md)。
 
 3. 接纳事务提交后，[GenerationCoordinator](../../src/host/generation/generation-coordinator.ts) 通过 [SourceGenerationPreparer](../../src/host/generation/source-preparer.ts) 准备 Workflow，再推进远端提交、观察、下载与媒体登记。各 Run 独立保存状态与错误。调用结束和应用重启后的执行规则见 [ADR 0002](../adr/0002-generation-runs-are-durable-and-asynchronous.md)。
 
@@ -68,8 +68,9 @@
 ## Generation Run 等待通知
 
 1. [Generation Run Wait](../../CONTEXT.md#生成记录与媒体) 由受管 CLI 登记。[GenerationRunWaitService](../../src/host/generation/run-wait-service.ts)按 Run ID 定位记录，并使用宿主 Tool Call 身份确定等待所有者。调用合同由 `generation wait --help` 提供。
-2. 观察任务由官方 jobs 服务管理。官方 Job 工具向所有者投递完成通知，Agent 随后查询媒体并继续用户请求。工具装配见[共享组合](../../agent-presets/shared/agent.cordis.yml)，生图执行职责见“Generation Run 生命周期与历史查询”。
-3. 取消 Generation Run Wait 只停止观察。取消生成沿用 [Generation Run 取消规则](../adr/0002-generation-runs-are-durable-and-asynchronous.md#2-恢复与取消)。官方 Job 随应用进程和所有者生命周期释放；应用重启后，Agent 查询持久 Run 并重新登记仍需等待的 Run。
+2. [专用运行工具](../../src/host/workbench/specialist-tools.ts)提交 Run 后，在同一次工具调用中等待官方 Job 结束，再返回状态与媒体。Harness 在等待期间保留运行子 Agent。
+3. 受管 CLI 的观察任务由官方 jobs 服务管理。官方 Job 工具向所有者投递完成通知，Agent 随后查询媒体并继续用户请求。工具装配见[共享组合](../../agent-presets/shared/agent.cordis.yml)，生图执行职责见“Generation Run 生命周期与历史查询”。
+4. 取消 Generation Run Wait 只停止观察。取消生成沿用 [Generation Run 取消规则](../adr/0002-generation-runs-are-durable-and-asynchronous.md#2-恢复与取消)。应用进程或等待所有者结束时，官方 jobs 服务释放对应的 Job；应用重启后，Agent 查询持久 Run 并重新登记仍需等待的 Run。
 
 ## Workflow 参数化与官方导出
 
@@ -115,13 +116,17 @@
 
 2. [WorkbenchService](../../src/workbench/service.ts) 处理任务固定输入、引用快照、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。[工作台原生 Tool](../../src/host/workbench/tools.ts) 与受管 CLI 共用领域服务、[schema](../../src/workbench/schema.ts)及[字段说明](../../config/workbench-tool-descriptions.json)。
 
-3. [Core](../../src/host/core/plugin.ts) 管理 Generation Runtime 与 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 共用的数据库连接。产物文件保存在插件 Run 目录下的 `task-artifacts` 中。
+3. 持续实验通过 [功能发现与委派工具](../../src/host/workbench/tools.ts) 读取功能配置并创建功能子任务。[会话适配器](../../src/host/workbench/harness-adapter.ts) 按配置调用官方子会话接口；[任务存储](../../src/host/storage/workbench-store.ts) 保存父子任务、Run 执行者、逐轮评价与计划。字段合同见 [contract.ts](../../src/workbench/contract.ts)。
 
-4. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 校验准备输入与模板参数。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID、类型、单图或多图类型和尺寸候选。分支的编辑输入与已保存输入分别持久化，产物回填由 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 写入所属分支。
+4. [Core](../../src/host/core/plugin.ts) 管理 Generation Runtime 与 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 共用的数据库连接。产物文件保存在插件 Run 目录下的 `task-artifacts` 中。
 
-5. [WorkbenchInputFileService](../../src/host/generation/input-file-service.ts) 保存本机导入图片。[输入图片解析](../../src/host/workbench/input-images.ts)提供 Run 媒体与导入文件的本地路径及预览地址。[SourceGenerationPreparer](../../src/host/generation/source-preparer.ts)向所选实例上传 Workflow 用途图片，保存上传响应并生成实际输入；Run 同时保留提交输入。
+5. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 校验准备输入与模板参数。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID、类型、单图或多图类型和尺寸候选。分支的编辑输入与已保存输入分别持久化，产物回填由 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 写入所属分支。
 
-6. [WorkbenchTranslations](../../src/host/workbench/translation-service.ts) 使用独立官方会话执行翻译，按请求 ID 查询结果及取消。翻译预设的配置入口见[工作台装配配置](configuration.md#工作台装配配置)。
+6. [WorkbenchInputFileService](../../src/host/generation/input-file-service.ts) 保存本机导入图片。[输入图片解析](../../src/host/workbench/input-images.ts)提供 Run 媒体与导入文件的本地路径及预览地址。[SourceGenerationPreparer](../../src/host/generation/source-preparer.ts)向所选实例上传 Workflow 用途图片，保存上传响应并生成实际输入；Run 同时保留提交输入。
+
+7. [WorkbenchTranslations](../../src/host/workbench/translation-service.ts) 使用独立官方会话执行翻译，按请求 ID 查询结果及取消。翻译预设的配置入口见[工作台装配配置](configuration.md#工作台装配配置)。
+
+8. [WorkbenchPrompts](../../src/host/workbench/prompt-service.ts) 管理提示词编辑任务、连续会话和每轮回复。[请求模板](../../src/workbench/request-template.ts) 供 Host 与页面预览共用；[提示词请求合同](../../src/workbench/prompt-edit.ts) 定义查询、停止和采用接口。
 
 ## 图片读取与 Prompt 对比职责
 

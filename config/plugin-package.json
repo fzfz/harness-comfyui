@@ -32,7 +32,9 @@
     "config/source-client.json",
     "locales",
     "config/workbench-tool-descriptions.json",
-    "config/workbench-translation.json"
+    "config/workbench-translation.json",
+    "config/workbench-agent-roles.json",
+    "config/workbench-delegation-tools.json"
   ],
   "artifacts": [
     ".local/source-host",

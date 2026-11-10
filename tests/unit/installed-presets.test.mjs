@@ -37,10 +37,18 @@ describe('official installed Preset declarations', () => {
 
   it('declares the workbench Preset using the Host Skills service', async () => {
     const entries = await readYaml(resolve(repositoryRoot, 'agent-presets/presets.cordis.yml'))
-    expect(entries.map(row => row.id)).toEqual(['preset-harness-comfyui-cli-candidate', 'preset-harness-comfyui-translation'])
+    expect(entries.map(row => row.id)).toEqual(['preset-harness-comfyui-cli-candidate', 'preset-harness-comfyui-translation', 'preset-harness-comfyui-prompt', 'preset-harness-comfyui-parameters', 'preset-harness-comfyui-resources', 'preset-harness-comfyui-run', 'preset-harness-comfyui-review', 'preset-harness-comfyui-experience', 'preset-harness-comfyui-experiment'])
     expect(findRow(entries, 'preset-harness-comfyui-cli-candidate').config)
       .toMatchObject({ name: 'ComfyUI工作台预设', order: 91 })
     for (const row of entries) {
+      if (row.config.roleId) {
+        const { default: SpecialistPreset } = await import('../../agent-presets/specialist-preset.mjs')
+        const config = SpecialistPreset.Config(row.config)
+        expect(row.name).toBe('./specialist-preset.mjs')
+        expect(config.id).toBe(row.config.roleId)
+        expect(await entryListProblemFor(config.plugins)).toBeUndefined()
+        continue
+      }
       expect(row.name).toBe(row.id === 'preset-harness-comfyui-translation' ? './translation-preset.mjs' : '@deepseek-ai/dsh-agent-preset')
       expect(await entryListProblemFor(row.config.plugins)).toBeUndefined()
       expect(row.config.plugins).toEqual([{
@@ -56,7 +64,7 @@ describe('official installed Preset declarations', () => {
       resolve(repositoryRoot, 'tests/unit/fixtures/installed-presets-runtime.mjs'),
     ], { cwd: repositoryRoot, env: { NODE_ENV: 'test' }, encoding: 'utf8' })
     expect(JSON.parse(stdout.trim())).toEqual({
-      defaultPresetIds: ['harness-comfyui-cli-candidate', 'harness-comfyui-translation'],
+      defaultPresetIds: ['harness-comfyui-cli-candidate', 'harness-comfyui-experience', 'harness-comfyui-experiment', 'harness-comfyui-parameters', 'harness-comfyui-prompt', 'harness-comfyui-resources', 'harness-comfyui-review', 'harness-comfyui-run', 'harness-comfyui-translation'],
       patchedOrder: 193,
       nestedExpressionPreserved: true,
       reloadedOrder: 91,

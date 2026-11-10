@@ -13,7 +13,8 @@ const installedRoot = await mkdtemp(resolve(repositoryRoot, '.local/installed pr
 await mkdir(resolve(installedRoot, 'agent-presets'))
 await mkdir(resolve(installedRoot, 'config'))
 await cp(resolve(repositoryRoot, 'config/workbench-translation.json'), resolve(installedRoot, 'config/workbench-translation.json'))
-for (const name of ['project-installed-presets.mjs', 'presets.cordis.yml', 'translation-preset.mjs']) {
+await cp(resolve(repositoryRoot, 'config/workbench-agent-roles.json'), resolve(installedRoot, 'config/workbench-agent-roles.json'))
+for (const name of ['project-installed-presets.mjs', 'presets.cordis.yml', 'translation-preset.mjs', 'specialist-preset.mjs', 'specialist-composition.mjs', 'specialist-skills.mjs']) {
   await cp(resolve(repositoryRoot, 'agent-presets', name), resolve(installedRoot, 'agent-presets', name))
 }
 const { default: InstalledPresets } = await import(pathToFileURL(resolve(installedRoot, 'agent-presets/project-installed-presets.mjs')).href)
@@ -31,7 +32,7 @@ loader.ctx.loader.internal = {
   async import(name) {
     const component = name === '@deepseek-ai/dsh-agent-preset'
       ? await import(pathToFileURL(localRequire.resolve(name)).href)
-      : await import(pathToFileURL(resolve(installedRoot, 'agent-presets/translation-preset.mjs')).href)
+      : await import(pathToFileURL(resolve(installedRoot, 'agent-presets', name)).href)
     return class PresetCapture {
       static Config = component.default.Config
       static [runtimeLoader.EntryGroup.key] = true

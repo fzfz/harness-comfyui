@@ -20,6 +20,9 @@ describe('managed CLI help discovery', () => {
     expect(output).toMatch(/^unresolved_parameters:/mu)
     expect(output).toMatch(/^generation_input\.parameters:/mu)
     expect(output).not.toMatch(/^parameter_mapping:/mu)
+    expect(output).toMatch(/^children\[\]\.preset_id:/mu)
+    expect(output).not.toMatch(/^children\[\]\.(?:input|output_contract|artifacts|answers)(?:\.|:)/mu)
+    expect(output).not.toContain('parameter_mapping')
   })
   it('keeps the public file protocol at the root and links child help to it', async () => {
     const root = await help()

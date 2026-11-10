@@ -55,7 +55,7 @@ function projection(): WorkbenchProjection {
   return {
     workspace_id: 'workspace_1', reference_destinations: [], total_branch_count: 0, work_id: 'work_1', works: [], branches: [], tasks: [], artifacts: [], experiments: [], experiences: [], favorites: [], functions: [], refreshAfterMs: 777,
     runs: [{
-      run_id: 'run_1', session_id: 'session_1', workbench_task_id: 'task_1', iteration_index: 1, status: 'succeeded', title: 'Rain', created_at: 1, updated_at: 2,
+      run_id: 'run_1', session_id: 'session_1', workbench_task_id: 'task_1', execution_task_id: null, iteration_index: 1, status: 'succeeded', title: 'Rain', created_at: 1, updated_at: 2,
       generation_input: { title: 'Rain', instance_id: '8', template_id: '5', model: null, parameters: {}, loras: [] },
       candidate_artifact_id: null, review_artifact_id: null, retry_of_run_id: null, initiator: 'human', review: null, review_draft: null, error: null,
       media: [{ media_id: 'media_1', run_id: 'run_1', filename: 'rain.png', media_type: 'image/png', media_kind: 'image', byte_size: 123 }],
@@ -100,7 +100,7 @@ it('requires explicit favorite states and complete experience reuse choices thro
 
 it('validates editable function inputs and explicit editing identities through the Remote codec', () => {
   const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
-  const value = { name: 'Glass rewrite', kind: 'rewrite', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  const value = { name: 'Glass rewrite', kind: 'prompt', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
   expect(codec.parse({ workspaceId: 'workspace_1', type: 'function-add', value })).toMatchObject({ value })
   expect(codec.parse({ workspaceId: 'workspace_1', type: 'function-edit', id: 'custom-a', value })).toMatchObject({ id: 'custom-a', value })
   for (const extra of [{ function_id: 'custom-a' }, { workspace_id: 'other' }, { builtin: true }]) {
@@ -405,7 +405,7 @@ it('validates each RPC request from JSON with exact field names and identifier c
 it('round trips a complete projection through the declared result codec and rejects non-object results', () => {
   for (const descriptor of WORKBENCH_REMOTE.descriptors) {
     const codec = descriptor.result.create()
-    if (['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel'].includes(descriptor.method)) continue
+    if (['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt'].includes(descriptor.method)) continue
     if (descriptor.method === 'getTaskDraft' || descriptor.method === 'saveTaskDraft') {
       const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
       expect(codec.parse(draft)).toEqual(draft)

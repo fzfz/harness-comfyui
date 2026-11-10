@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { WorkbenchImageImportRequest, WorkbenchImageResolveRequest, WorkbenchTranslationLookup } from '../../workbench-remote.ts'
 import type { WorkbenchRecordQuery, WorkbenchRun, ImageRef } from '../../workbench/contract.ts'
+import type { PromptStartRequest, PromptLookupRequest, PromptListRequest, PromptAdoptRequest } from '../../workbench/prompt-edit.ts'
 import type { TranslationRequest } from '../../workbench/translation.ts'
 import { resolveInputImages } from './input-images.ts'
 import type { Context } from '@deepseek-ai/cordis'
@@ -43,6 +44,33 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   }
   async resolveImages(request: WorkbenchImageResolveRequest, signal: AbortSignal) {
     return report(async () => ({ images: await resolveInputImages(this.host.harnessComfyuiCore.services, request.image_refs, signal) }))
+  }
+  async promptPreview(request: PromptStartRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(() => this.host.harnessComfyuiWorkbench.prompts.preview(request))
+  }
+  async promptStart(request: PromptStartRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => {
+      await this.host.harnessComfyuiWorkbench.initializeWorkspace(request.workspace_id)
+      return this.host.harnessComfyuiWorkbench.prompts.start(request)
+    })
+  }
+  async promptGet(request: PromptLookupRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(() => this.host.harnessComfyuiWorkbench.prompts.get(request))
+  }
+  async promptList(request: PromptListRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(() => this.host.harnessComfyuiWorkbench.prompts.list(request))
+  }
+  async promptCancel(request: PromptLookupRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => this.host.harnessComfyuiWorkbench.prompts.cancel(request))
+  }
+  async promptAdopt(request: PromptAdoptRequest, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return report(async () => this.host.harnessComfyuiWorkbench.prompts.adopt(request))
   }
   async translateStart(request: TranslationRequest, signal: AbortSignal) {
     signal.throwIfAborted()
@@ -114,7 +142,7 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []
-for (const name of ['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel', 'getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
+for (const name of ['queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'translateStart', 'translateGet', 'translateCancel', 'getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
   Remote(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
     addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
   } as never)

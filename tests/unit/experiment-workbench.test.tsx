@@ -26,6 +26,8 @@ import type {
 } from '../../src/workbench/contract.ts'
 
 import type { WorkbenchEnvironment } from '../../src/workbench-remote.ts'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { PromptReply, PromptTurn } from '../../src/workbench/prompt-edit.ts'
 import approvedInstructions from '../../docs/plans/experiment-workbench-iteration-20261109.instructions.json' with { type: 'json' }
 
 interface RenderNode {
@@ -130,6 +132,12 @@ const mount = async (
         return request.draft
       }),
       getEnvironment: async () => functionEnvironment,
+      promptPreview: vi.fn(async (request: import('../../src/workbench/prompt-edit.ts').PromptStartRequest) => ({ ...request.input, base_model_name: 'SDXL', reference_context: {} })),
+      promptStart: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptStartRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
+      promptGet: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptLookupRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
+      promptList: vi.fn(async () => []),
+      promptCancel: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptLookupRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
+      promptAdopt: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptAdoptRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
       queryRecords: vi.fn(async () => []),
       resolveImages: vi.fn(async () => ({ images: [] })),
       importImages: vi.fn(async () => ({ images: [] })),
@@ -215,7 +223,29 @@ async function saveHostInput(host: Awaited<ReturnType<typeof import('../support/
   if (branch?.editing_draft) await host.remote.mutate({ ...scope, type: 'save-draft', value: { expected: branch.draft, expectedEditingDraft: branch.editing_draft, draft: branch.editing_draft } }, new AbortController().signal)
 }
 
-it.each(['生成提示词', '改写提示词', '建议参数', '推荐资源'])('shows the current preparation references read-only inside the %s dialog and preserves it when inspecting a source', async label => {
+function promptRemote(host: Awaited<ReturnType<typeof import('../support/workbench-host.ts').createWorkbenchHostFixture>>, signal: AbortSignal) {
+  return {
+    promptPreview: (request: import('../../src/workbench/prompt-edit.ts').PromptStartRequest) => host.remote.promptPreview(request, signal),
+    promptStart: (request: import('../../src/workbench/prompt-edit.ts').PromptStartRequest) => host.remote.promptStart(request, signal),
+    promptGet: (request: import('../../src/workbench/prompt-edit.ts').PromptLookupRequest) => host.remote.promptGet(request, signal),
+    promptList: (request: import('../../src/workbench/prompt-edit.ts').PromptListRequest) => host.remote.promptList(request, signal),
+    promptCancel: (request: import('../../src/workbench/prompt-edit.ts').PromptLookupRequest) => host.remote.promptCancel(request, signal),
+    promptAdopt: (request: import('../../src/workbench/prompt-edit.ts').PromptAdoptRequest) => host.remote.promptAdopt(request, signal),
+  }
+}
+function completePrompt(host: Awaited<ReturnType<typeof import('../support/workbench-host.ts').createWorkbenchHostFixture>>, turn: PromptTurn, result: PromptReply) {
+  const events = host.official.events.get(turn.session_id) ?? [], seq = events.length, index = turn.turn_index
+  events.push(...[
+    { type: 'turn/start', seq, data: { turn: index } },
+    { type: 'user/message', seq: seq + 1, data: { id: turn.request_id, role: 'user', source: { kind: 'user', rpcId: turn.request_id }, content: [{ type: 'text', text: turn.request_text }] } },
+    { type: 'assistant/message', seq: seq + 2, data: { turn: index, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: JSON.stringify(result) }] } } },
+    { type: 'turn/end', seq: seq + 3, data: { turn: index, reason: { kind: 'completed' } } },
+  ] as unknown as SessionEvent[])
+  host.official.events.set(turn.session_id, events)
+  host.official.agents.get(turn.session_id)!.status = 'idle'
+}
+
+it.each(['建议参数', '推荐资源'])('shows the current preparation references read-only inside the %s dialog and preserves it when inspecting a source', async label => {
   const data = fullProjection(), run = data.runs[0]!, task = data.tasks[0]!, experience = data.experiences[0]!
   data.branches[0]!.draft.reference_run_ids = [run.run_id]
   data.branches[0]!.draft.reference_task_ids = [task.task_id]
@@ -281,7 +311,7 @@ it('places translation first in the prototype settings order while retaining all
   const original = structuredClone(data.functions)
   const { renderer } = await mountReady(data)
   await click(renderer, '配置中心')
-  expect(renderer.root.findByProps({ className: 'settings-table' }).findAllByType('tr').slice(1).map(row => row.props['data-function'])).toEqual(['translate', 'run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment'])
+  expect(renderer.root.findByProps({ className: 'settings-table' }).findAllByType('tr').slice(1).map(row => row.props['data-function'])).toEqual(['translate', 'run', 'prompt', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment'])
   expect(data.functions).toEqual(original)
 })
 
@@ -402,7 +432,7 @@ it.each([false, true])('adds a historical Run without writing its ID as a task r
     const runId = generated.items[0]!.runId
     for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
     const target = await host.remote.mutate({ type: 'new-work', workspaceId: source.workspaceId, value: { name: '引用目标', goal: '参考已有运行' } }, signal)
-    await host.remote.mutate({ ...target, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal)
+    await host.remote.mutate({ ...target, type: 'function-preset', id: 'parameters', value: 'preset-a' }, signal)
     const environment = await host.remote.getEnvironment({ workspaceId: target.workspaceId }, signal)
     const { renderer } = await mount(await host.remote.getProjection(target, signal), { storage: { getItem: () => JSON.stringify({ workId: target.workId, branchId: target.branchId }), setItem: vi.fn() }, workspaceId: target.workspaceId, workspaces: environment.workspaces, presets: environment.presets, instances: environment.instances, agentModelGroups: environment.models.groups, routableProviders: environment.models.routableProviders,
       onAction: request => host.remote.mutate(request, signal), remote: { getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal), queryRecords: async request => { const records = await host.remote.queryRecords(request, signal); return retainedTask && request.type === 'run' ? records.map(record => ({ ...record, task: sourceTask })) : records }, getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
@@ -414,9 +444,11 @@ it.each([false, true])('adds a historical Run without writing its ID as a task r
     await vi.waitFor(async () => expect((await host.remote.getProjection(target, signal)).branches.find(branch => branch.branch_id === target.branchId)!.draft.reference_run_ids, renderer.root.findAllByProps({ className: 'toast' }).map(nodeText).join(' ')).toEqual([runId]))
     const saved = (await host.remote.getProjection(target, signal)).branches.find(branch => branch.branch_id === target.branchId)!
     expect(saved.draft.reference_task_ids).toEqual([])
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
+    await change(renderer, '任务 ComfyUI 实例', '8')
+    await change(renderer, '任务 Workflow 模板', '5')
     await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
-    const created = (await host.remote.getProjection(target, signal)).tasks.find(task => task.kind === 'prompt')!
+    const created = (await host.remote.getProjection(target, signal)).tasks.find(task => task.kind === 'parameters')!
     expect(created.input.reference_run_ids).toEqual([runId])
     expect(created.input.reference_task_ids).toEqual([])
   } finally { await host.dispose() }
@@ -1191,27 +1223,27 @@ describe('experiment workbench task request drafts', () => {
       })).mockImplementation(async (request: { draft: TaskRequestDraft }) => { saved = structuredClone(request.draft); return request.draft }),
     }
     const { renderer, onAction } = await mount(fullProjection(), { remote })
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await change(renderer, '任务要求', '点击时的要求')
     let pending: Promise<void> | undefined
     await act(async () => { pending = renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }) })
     await change(renderer, '任务要求', '下一份要求')
     await act(async () => { finishSave(); await pending })
-    expect(onAction.mock.calls.filter(([request]) => request.type === 'agent-action').map(([request]) => request)).toEqual([{ type: 'agent-action', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '点击时的要求', resources: {} } } }])
-    await click(renderer, '生成提示词')
+    expect(onAction.mock.calls.filter(([request]) => request.type === 'agent-action').map(([request]) => request)).toEqual([{ type: 'agent-action', id: 'parameters', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '点击时的要求', resources: {} } } }])
+    await click(renderer, '建议参数')
     expect(readField(renderer.root, '任务要求')).toBe('下一份要求')
   })
 
   it('uses the current branch request when reopening without a saved draft', async () => {
     const data = fullProjection()
     const { renderer } = await mount(data)
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     expect(readField(renderer.root, '任务要求')).toBe('玻璃花房')
     await click(renderer, '取消')
     data.branches[0]!.original_request = '调整后的原始需求'
     await click(renderer, '切换分支 暖光探索')
     await click(renderer, '切换分支 主分支')
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     expect(readField(renderer.root, '任务要求')).toBe('调整后的原始需求')
   })
 
@@ -1236,23 +1268,23 @@ describe('experiment workbench task request drafts', () => {
       saveTaskDraft: vi.fn().mockRejectedValueOnce(new Error('草稿保存失败，请重试。')).mockImplementation(async request => request.draft),
     }
     const { renderer, onAction } = await mount(fullProjection(), { remote })
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await change(renderer, '任务要求', '重试时保留原文')
     expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('草稿保存失败，请重试。')
     await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
     expect(remote.saveTaskDraft).toHaveBeenCalledTimes(2)
     expect(remote.saveTaskDraft.mock.calls[1]![0]).toEqual(remote.saveTaskDraft.mock.calls[0]![0])
-    expect(onAction.mock.calls.filter(([request]) => request.type === 'agent-action').map(([request]) => request)).toEqual([{ type: 'agent-action', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '重试时保留原文', resources: {} } } }])
+    expect(onAction.mock.calls.filter(([request]) => request.type === 'agent-action').map(([request]) => request)).toEqual([{ type: 'agent-action', id: 'parameters', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '重试时保留原文', resources: {} } } }])
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
   })
 
   it('closes the task request with Escape and keeps its edited text when reopened', async () => {
     const { renderer, onAction } = await mount(fullProjection())
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await change(renderer, '任务要求', '键盘关闭后保留')
     await act(async () => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     expect(readField(renderer.root, '任务要求')).toBe('键盘关闭后保留')
     expect(onAction).not.toHaveBeenCalled()
   })
@@ -1263,22 +1295,22 @@ describe('experiment workbench task request drafts', () => {
       saveTaskDraft: vi.fn().mockRejectedValueOnce(new Error('草稿保存失败，请重试。')).mockRejectedValueOnce(new Error('草稿保存失败，请重试。')).mockImplementation(async request => request.draft),
     }
     const { renderer, onAction } = await mount(fullProjection(), { remote })
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('草稿读取失败，请重新打开弹窗。')
     expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.disabled).toBe(true)
     await click(renderer, '取消')
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     expect(readField(renderer.root, '任务要求')).toBe('')
     await change(renderer, '任务要求', '第一次输入')
     await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
     expect(nodeText(renderer.root.findByProps({ id: 'task-error' }))).toBe('草稿保存失败，请重试。')
     expect(onAction).not.toHaveBeenCalled()
     await click(renderer, '取消')
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     expect(readField(renderer.root, '任务要求')).toBe('第一次输入')
     await change(renderer, '任务要求', '  修正后的要求  ')
     await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
-    expect(onAction.mock.calls.filter(([request]) => request.type === 'agent-action').map(([request]) => request)).toEqual([{ type: 'agent-action', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '  修正后的要求  ', resources: {} } } }])
+    expect(onAction.mock.calls.filter(([request]) => request.type === 'agent-action').map(([request]) => request)).toEqual([{ type: 'agent-action', id: 'parameters', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', value: { draft: { instructions: '  修正后的要求  ', resources: {} } } }])
   })
 
   it('keeps pending edits scoped to their branch and preserves a reopened dialog when the prior request finishes', async () => {
@@ -1290,10 +1322,10 @@ describe('experiment workbench task request drafts', () => {
     }
     const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => request.type === 'agent-action' ? new Promise<{ workspaceId: string; taskId: string }>(resolve => { finishTask = resolve }) : undefined)
     const { renderer } = await mount(fullProjection(), { remote, onAction })
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await change(renderer, '任务要求', '保存中的要求')
     await click(renderer, '取消')
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     expect(readField(renderer.root, '任务要求')).toBe('保存中的要求')
     await change(renderer, '任务要求', '最后的要求')
     let pending: Promise<void> | undefined
@@ -1303,7 +1335,7 @@ describe('experiment workbench task request drafts', () => {
     expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ branchId: 'root', value: { draft: { instructions: '最后的要求', resources: {} } } }))
     await click(renderer, '取消')
     await click(renderer, '切换分支 暖光探索')
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await change(renderer, '任务要求', '另一分支的要求')
     await act(async () => { finishTask({ workspaceId: 'workspace-a', taskId: 'pending-task' }); await pending })
     expect(readField(renderer.root, '任务要求')).toBe('另一分支的要求')
@@ -1323,7 +1355,7 @@ describe('experiment workbench task request drafts', () => {
       }),
     }
     const { renderer, onAction } = await mount(data, { remote, catalog: makeCatalog() })
-    for (const [label, functionId] of [['生成提示词', 'prompt'], ['改写提示词', 'rewrite'], ['建议参数', 'parameters'], ['推荐资源', 'resources']]) {
+    for (const [label, functionId] of [['建议参数', 'parameters'], ['推荐资源', 'resources']]) {
       await click(renderer, label!)
       expect(readField(renderer.root, '任务要求')).toBe('玻璃花房')
       await change(renderer, '任务要求', `  ${label}\n保留原文  `)
@@ -1333,21 +1365,21 @@ describe('experiment workbench task request drafts', () => {
       expect(onAction).not.toHaveBeenCalled()
     }
     await click(renderer, '切换分支 暖光探索')
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await change(renderer, '任务要求', '另一分支的要求')
     await click(renderer, '关闭对话框')
     await click(renderer, '切换分支 主分支')
-    await click(renderer, '生成提示词')
-    expect(readField(renderer.root, '任务要求')).toBe('  生成提示词\n保留原文  ')
+    await click(renderer, '建议参数')
+    expect(readField(renderer.root, '任务要求')).toBe('  建议参数\n保留原文  ')
     await act(async () => renderer.unmount())
     const next = await mount(data, { remote, catalog: makeCatalog() })
-    for (const label of ['生成提示词', '改写提示词', '建议参数', '推荐资源']) {
+    for (const label of ['建议参数', '推荐资源']) {
       await click(next.renderer, label)
       expect(readField(next.renderer.root, '任务要求')).toBe(`  ${label}\n保留原文  `)
       await click(next.renderer, '取消')
     }
     expect(next.onAction).not.toHaveBeenCalled()
-    expect(drafts.get('child:prompt')?.instructions).toBe('另一分支的要求')
+    expect(drafts.get('child:parameters')?.instructions).toBe('另一分支的要求')
   })
   it('keeps a parameter request inside its modal while correcting resources and retrying a failed submission', async () => {
     const data = fullProjection()
@@ -1574,7 +1606,7 @@ const click = async (renderer: ReturnType<typeof create>, label: string) => {
     .find(
       (node) => nodeText(node) === label || node.props['aria-label'] === label,
     )
-  if (!button && ['生成提示词', '改写提示词', '建议参数', '推荐资源'].includes(label)) {
+  if (!button && ['生成提示词', '对比提示词', '建议参数', '推荐资源'].includes(label)) {
     const edit = renderer.root.findAllByType('button').find(item => nodeText(item) === '编辑参数')
     if (edit) { await act(async () => edit.props.onClick()); return click(renderer, label) }
   }
@@ -1727,10 +1759,10 @@ describe('experiment workbench public interactions', () => {
 
   it('shows the prototype function locations and saved bindings when settings reopen', async () => {
     const data = fullProjection()
-    data.functions.find(binding => binding.function_id === 'rewrite')!.requested_skill = null
+    data.functions.find(binding => binding.function_id === 'parameters')!.requested_skill = null
     const { renderer, onAction } = await mount(data)
     const locations = {
-      run: '任务输入', prompt: '原始需求', rewrite: '提示词',
+      run: '任务输入', prompt: '原始需求、提示词对比弹窗',
       parameters: '生成参数', resources: '资源', review: '评价与经验',
       compare: '结果比较', diagnose: '失败结果', experience: '评价与经验',
       experiment: '任务输入',
@@ -1747,10 +1779,10 @@ describe('experiment workbench public interactions', () => {
         expect(nodeText(cells[1]!)).toBe(location)
         expect(readField(row, `${kind}的默认预设`)).toBe('preset')
         expect(nodeText(cells[3]!)).toBe('提供商 · 模型 · 高')
-        expect(nodeText(cells[4]!)).toBe(kind === 'rewrite' ? 'Agent 自选' : 'comfyui-generate')
+        expect(nodeText(cells[4]!)).toBe(kind === 'parameters' ? 'Agent 自选' : 'comfyui-generate')
         expect(row.findByProps({ 'aria-label': `编辑${kind}` })).toBeDefined()
       }
-      expect(nodeText(table.findByProps({ 'data-function': 'custom-prompt' }).findAllByType('td')[1]!)).toBe('原始需求')
+      expect(nodeText(table.findByProps({ 'data-function': 'custom-prompt' }).findAllByType('td')[1]!)).toBe('原始需求、提示词对比弹窗')
       await click(renderer, '返回工作台')
     }
     expect(onAction).not.toHaveBeenCalled()
@@ -2196,7 +2228,7 @@ describe('experiment workbench forms and task results', () => {
       },
     ]
     data.tasks.push(...artifacts.slice(1).map((artifact, index) => makeTask('artifact-' + (index + 1), 'child',
-      artifact.type === 'generation_input' || artifact.type === 'question' ? 'run' : artifact.type)))
+      artifact.type === 'generation_input' || artifact.type === 'question' ? 'run' : artifact.type === 'iteration_plan' ? 'experiment' : artifact.type)))
     data.artifacts = artifacts.map((artifact, i) => ({
       artifact_id: 'a' + i,
       task_id: i === 0 ? 'question' : 'artifact-' + i,
@@ -4324,6 +4356,12 @@ describe('experiment workbench overlay and loading lifecycle', () => {
   it('shows a projection failure and retries the current workspace', async () => {
     const remote = {
       getEnvironment: async () => functionEnvironment,
+      promptPreview: vi.fn(async (request: import('../../src/workbench/prompt-edit.ts').PromptStartRequest) => ({ ...request.input, base_model_name: 'SDXL', reference_context: {} })),
+      promptStart: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptStartRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
+      promptGet: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptLookupRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
+      promptList: vi.fn(async () => []),
+      promptCancel: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptLookupRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
+      promptAdopt: vi.fn(async (_request: import('../../src/workbench/prompt-edit.ts').PromptAdoptRequest): Promise<import('../../src/workbench/prompt-edit.ts').PromptTurn> => { throw new Error('prompt fixture not configured') }),
       queryRecords: vi.fn(async () => []),
       resolveImages: vi.fn(async () => ({ images: [] })),
       importImages: vi.fn(async () => ({ images: [] })),
@@ -4687,7 +4725,7 @@ describe('experiment workbench comparison evidence', () => {
 describe('experiment workbench function defaults', () => {
   it('saves each function preset and preserves the literal requirements after reopening and projection reload', async () => {
     const data = fullProjection()
-    const template = '  绘图要求 {{task_id}}。\n\n\t保留 {branch_id}、${session_id} 与原始标点。  \n'
+    const template = '  绘图要求 {{requirements_block}}。\n\n\t保留 {branch_id}、${session_id} 与原始标点。  \n'
     const onAction = vi.fn(async (request) => {
       if (request.type === 'function-edit') Object.assign(data.functions.find(item => item.function_id === request.id)!, request.value)
       if (request.type === 'function-preset') data.functions.find(item => item.function_id === request.id)!.preset_id = request.value
@@ -4738,19 +4776,19 @@ describe('experiment workbench function editor lifecycle', () => {
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
     await change(renderer, 'Agent 预设', 'preset-other')
-    await change(renderer, '执行要求', '保留输入 {{task_id}}')
+    await change(renderer, '执行要求', '保留输入 {{requirements_block}}')
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
     expect(readField(renderer.root, 'Agent 预设')).toBe('preset-other')
-    expect(readField(renderer.root, '执行要求')).toBe('保留输入 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('保留输入 {{requirements_block}}')
     expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('保存失败，请重试。')
     await click(renderer, '取消')
     await click(renderer, '编辑prompt')
-    expect(readField(renderer.root, '执行要求')).toBe('{{task_id}}')
-    await change(renderer, '执行要求', '关闭后丢弃 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('{{requirements_block}}')
+    await change(renderer, '执行要求', '关闭后丢弃 {{requirements_block}}')
     await click(renderer, '关闭对话框')
     await click(renderer, '编辑prompt')
-    expect(readField(renderer.root, '执行要求')).toBe('{{task_id}}')
-    await change(renderer, '执行要求', 'Escape 后丢弃 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('{{requirements_block}}')
+    await change(renderer, '执行要求', 'Escape 后丢弃 {{requirements_block}}')
     await act(() => { document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })) })
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
     expect(onAction).toHaveBeenCalledOnce()
@@ -4798,13 +4836,13 @@ describe('experiment workbench function editor lifecycle', () => {
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
     await change(renderer, 'Agent 预设', 'preset-other')
-    await change(renderer, '执行要求', '读取失败后保留 {{task_id}}')
+    await change(renderer, '执行要求', '读取失败后保留 {{requirements_block}}')
     const save = renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!
     expect(save.props.disabled).toBe(true)
     expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('Skill 目录读取失败，请重试。')
     expect(onAction).not.toHaveBeenCalled()
     await change(renderer, 'Agent 预设', 'preset')
-    expect(readField(renderer.root, '执行要求')).toBe('读取失败后保留 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('读取失败后保留 {{requirements_block}}')
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
   })
 })
@@ -4966,10 +5004,10 @@ describe('experiment workbench function editor controls', () => {
     await change(renderer, 'Agent 模型', 'deep')
     expect(readField(renderer.root, '推理等级')).toBe('medium')
     await change(renderer, '推理等级', 'high')
-    await change(renderer, '执行要求', '当前要求 {{task_id}}')
+    await change(renderer, '执行要求', '当前要求 {{requirements_block}}')
     await click(renderer, '恢复默认要求')
     const restored = readField(renderer.root, '执行要求')
-    expect(restored).toBe(approvedInstructions.functions.find(item => item.kind === 'prompt')!.requestTemplate)
+    expect(restored).toBe(WORKBENCH_FUNCTIONS.find(item => item.kind === 'prompt')!.default_request_template)
     await change(renderer, '任务类型', 'parameters')
     const parameterTemplate = readField(renderer.root, '执行要求')
     expect(parameterTemplate).toBe(approvedInstructions.functions.find(item => item.kind === 'parameters')!.requestTemplate)
@@ -4992,9 +5030,9 @@ describe('experiment workbench function editor controls', () => {
     await click(renderer, '编辑prompt')
     const samples = [
       ['', '请填写本功能的执行要求。'],
-      ['  读取任务。\n\n\t保留这一行。  \n', '请在执行要求中保留 {{task_id}}。'],
-      ['  读取 {{task_id}}。\n\n保留 {{branch_id}} 与尾部。  \n', '本功能支持的变量为 {{task_id}}。请将其他变量改为具体文字。'],
-      ['读取 {{task_id}} {{', '变量格式不完整，请使用 {{task_id}}。'],
+      ['  读取任务。\n\n\t保留这一行。  \n', '请在执行要求中保留 {{requirements_block}}、{{prompt_edit_block}}、{{references_block}}。'],
+      ['  读取 {{requirements_block}}。\n\n保留 {{branch_id}} 与尾部。  \n', '本功能支持的变量为 {{requirements_block}}、{{prompt_edit_block}}、{{references_block}}。请将其他变量改为具体文字。'],
+      ['读取 {{requirements_block}} {{', '变量格式不完整，请使用 {{requirements_block}}、{{prompt_edit_block}}、{{references_block}}。'],
     ]
     for (const [value, message] of samples) {
       await change(renderer, '执行要求', value)
@@ -5009,7 +5047,7 @@ describe('experiment workbench function editor controls', () => {
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
     await click(renderer, '取消')
     await click(renderer, '编辑prompt')
-    expect(readField(renderer.root, '执行要求')).toBe('{{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('{{requirements_block}}')
     expect(onAction).not.toHaveBeenCalled()
   })
 
@@ -5032,7 +5070,7 @@ describe('experiment workbench function editor controls', () => {
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(true)
     await change(renderer, 'Agent 预设', 'preset-other')
     await change(renderer, '指定 Skill', '')
-    await change(renderer, '执行要求', '修复模型后保留 {{task_id}}')
+    await change(renderer, '执行要求', '修复模型后保留 {{requirements_block}}')
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
     expect(onAction).not.toHaveBeenCalled()
     await change(renderer, 'Agent 提供商', 'provider')
@@ -5040,12 +5078,12 @@ describe('experiment workbench function editor controls', () => {
     expect(renderer.root.findAllByType('button').find(node => nodeText(node) === '保存功能')!.props.disabled).toBe(false)
     expect(readField(renderer.root, 'Agent 预设')).toBe('preset-other')
     expect(readField(renderer.root, '指定 Skill')).toBe('')
-    expect(readField(renderer.root, '执行要求')).toBe('修复模型后保留 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('修复模型后保留 {{requirements_block}}')
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
     expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
       type: 'function-edit', id: 'prompt',
       value: expect.objectContaining({
-        preset_id: 'preset-other', requested_skill: null, request_template: '修复模型后保留 {{task_id}}',
+        preset_id: 'preset-other', requested_skill: null, request_template: '修复模型后保留 {{requirements_block}}',
         agent_model: { provider: 'provider', model: 'model', reasoningEffort: 'high' },
       }),
     }))
@@ -5128,23 +5166,23 @@ describe('experiment workbench function directory lifecycle', () => {
     const { renderer } = await mount(data, { onAction, remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
-    await change(renderer, '执行要求', '取消前编辑 {{task_id}}')
+    await change(renderer, '执行要求', '取消前编辑 {{requirements_block}}')
     environment = { ...functionEnvironment, presets: [...functionEnvironment.presets, { id: 'added-preset', name: '关闭前新增预设' }] }
-    expect(readField(renderer.root, '执行要求')).toBe('取消前编辑 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('取消前编辑 {{requirements_block}}')
     await click(renderer, '取消')
     expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a' })
     expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('关闭前新增预设')
-    expect(data.functions.find(item => item.function_id === 'prompt')!.request_template).toBe('{{task_id}}')
+    expect(data.functions.find(item => item.function_id === 'prompt')!.request_template).toBe('{{requirements_block}}')
     await click(renderer, '编辑prompt')
     expect(nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }))).toContain('关闭前新增预设')
-    await change(renderer, '执行要求', '保存时保留 {{task_id}}')
+    await change(renderer, '执行要求', '保存时保留 {{requirements_block}}')
     await change(renderer, 'Agent 预设', 'preset-other')
-    expect(readField(renderer.root, '执行要求')).toBe('保存时保留 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('保存时保留 {{requirements_block}}')
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
     expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a' })
     expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toBe('绘图预设保存后新增预设')
-    expect(data.functions.find(item => item.function_id === 'prompt')!.request_template).toBe('保存时保留 {{task_id}}')
+    expect(data.functions.find(item => item.function_id === 'prompt')!.request_template).toBe('保存时保留 {{requirements_block}}')
   })
 
   it('uses the latest selected preset directory when earlier table and editor requests arrive later', async () => {
@@ -5164,13 +5202,13 @@ describe('experiment workbench function directory lifecycle', () => {
     const { renderer } = await mount(data, { remote: { getEnvironment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
-    await change(renderer, '执行要求', '等待目录期间保留 {{task_id}}')
+    await change(renderer, '执行要求', '等待目录期间保留 {{requirements_block}}')
     await change(renderer, 'Agent 预设', 'preset-other')
     await act(async () => { finishTable({ ...functionEnvironment, presets: [] }); finishEditor(functionEnvironment) })
     expect(nodeText(renderer.root.findByProps({ 'aria-label': 'prompt的默认预设' }))).toContain('当前目录预设')
     expect(nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 预设' }))).toContain('当前目录预设')
     expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选latest-skill')
-    expect(readField(renderer.root, '执行要求')).toBe('等待目录期间保留 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('等待目录期间保留 {{requirements_block}}')
   })
 
   it('discards an editor directory response that arrives after closing the editor', async () => {
@@ -5231,17 +5269,17 @@ describe('experiment workbench function names', () => {
     await click(renderer, '编辑自定义prompt')
     await change(renderer, '功能名称', name)
     await change(renderer, 'Agent 预设', 'preset-other')
-    await change(renderer, '执行要求', '保留其余输入 {{task_id}}')
+    await change(renderer, '执行要求', '保留其余输入 {{requirements_block}}')
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
     expect(onAction).not.toHaveBeenCalled()
     expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toBe('请填写与已有功能不同的名称。')
     expect(renderer.root.findByProps({ role: 'dialog' }).findAllByProps({ className: 'toast' })).toHaveLength(0)
     expect(readField(renderer.root, '功能名称')).toBe(name)
     expect(readField(renderer.root, 'Agent 预设')).toBe('preset-other')
-    expect(readField(renderer.root, '执行要求')).toBe('保留其余输入 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('保留其余输入 {{requirements_block}}')
     await change(renderer, '功能名称', '  自定义prompt  ')
     await act(async () => renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }))
-    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'function-edit', value: expect.objectContaining({ name: '自定义prompt', preset_id: 'preset-other', request_template: '保留其余输入 {{task_id}}' }) }))
+    expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'function-edit', value: expect.objectContaining({ name: '自定义prompt', preset_id: 'preset-other', request_template: '保留其余输入 {{requirements_block}}' }) }))
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
   })
 })
@@ -5370,7 +5408,7 @@ describe('experiment workbench function write lifecycle', () => {
     await click(renderer, '编辑prompt')
     expect(readField(renderer.root, 'Agent 预设')).toBe('preset-other')
     await change(renderer, 'Agent 预设', 'preset-last')
-    await change(renderer, '执行要求', '排队期间保留 {{task_id}}')
+    await change(renderer, '执行要求', '排队期间保留 {{requirements_block}}')
     let saving!: Promise<void>
     await act(() => { saving = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
     expect(onAction).toHaveBeenCalledOnce()
@@ -5379,7 +5417,7 @@ describe('experiment workbench function write lifecycle', () => {
     await change(renderer, '切换工作', 'work-b')
     await act(async () => { finishFirst(); await saving })
     expect(onAction.mock.calls[1]![0]).toMatchObject({ type: 'function-edit', id: 'prompt', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root' })
-    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ preset_id: 'preset-last', request_template: '排队期间保留 {{task_id}}' })
+    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ preset_id: 'preset-last', request_template: '排队期间保留 {{requirements_block}}' })
     expect(readField(renderer.root, '切换工作')).toBe('work-b')
   })
 
@@ -5398,7 +5436,7 @@ describe('experiment workbench function write lifecycle', () => {
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
     await change(renderer, 'Agent 预设', 'preset-other')
-    await change(renderer, '执行要求', '先保存的完整配置 {{task_id}}')
+    await change(renderer, '执行要求', '先保存的完整配置 {{requirements_block}}')
     let saving!: Promise<void>
     await act(() => { saving = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
     await click(renderer, '取消')
@@ -5406,12 +5444,12 @@ describe('experiment workbench function write lifecycle', () => {
     expect(onAction).toHaveBeenCalledOnce()
     expect(readField(renderer.root, 'prompt的默认预设')).toBe('preset-last')
     await click(renderer, '编辑prompt')
-    expect(readField(renderer.root, '执行要求')).toBe('先保存的完整配置 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('先保存的完整配置 {{requirements_block}}')
     expect(readField(renderer.root, 'Agent 预设')).toBe('preset-last')
     await click(renderer, '取消')
     await act(async () => { finishEditor(); await saving })
     expect(writes).toEqual(['editor', 'inline'])
-    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ preset_id: 'preset-last', request_template: '先保存的完整配置 {{task_id}}' })
+    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ preset_id: 'preset-last', request_template: '先保存的完整配置 {{requirements_block}}' })
     expect(readField(renderer.root, 'prompt的默认预设')).toBe('preset-last')
   })
 })
@@ -5430,7 +5468,7 @@ describe('experiment workbench complete pending function input', () => {
     const { renderer } = await mount(data, { onAction, remote: { getEnvironment: async () => environment, getProjection: async () => data, getInputDescription: async () => inputDescription } })
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
-    await change(renderer, '执行要求', 'first saved {{task_id}}')
+    await change(renderer, '执行要求', 'first saved {{requirements_block}}')
     let savingFirst!: Promise<void>
     await act(() => { savingFirst = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
     await click(renderer, '取消')
@@ -5440,8 +5478,8 @@ describe('experiment workbench complete pending function input', () => {
     let savingSecond!: Promise<void>
     await act(() => { savingSecond = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
     await act(async () => { finishFirst(); await savingFirst; await savingSecond })
-    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ request_template: 'first saved {{task_id}}', agent_model: { provider: 'provider', model: 'fast' } })
-    expect(reopenedRequirements).toBe('first saved {{task_id}}')
+    expect(data.functions.find(item => item.function_id === 'prompt')).toMatchObject({ request_template: 'first saved {{requirements_block}}', agent_model: { provider: 'provider', model: 'fast' } })
+    expect(reopenedRequirements).toBe('first saved {{requirements_block}}')
     expect(onAction).toHaveBeenCalledTimes(2)
   })
 })
@@ -5505,7 +5543,7 @@ describe('experiment workbench delayed function save errors', () => {
     const { renderer } = await mount(fullProjection(), { onAction })
     await click(renderer, '配置中心')
     await click(renderer, '编辑prompt')
-    await change(renderer, '执行要求', '失败时保留 {{task_id}}')
+    await change(renderer, '执行要求', '失败时保留 {{requirements_block}}')
     await change(renderer, 'Agent 预设', 'preset-other')
     let saving!: Promise<void>
     await act(() => { saving = renderer.root.findAllByType('form').find(node => node.props.id === 'modal-form')!.props.onSubmit({ preventDefault() {} }) })
@@ -5515,7 +5553,7 @@ describe('experiment workbench delayed function save errors', () => {
     if (view === 'open') {
       expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
       expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toBe('功能保存失败，请重试。')
-      expect(readField(renderer.root, '执行要求')).toBe('失败时保留 {{task_id}}')
+      expect(readField(renderer.root, '执行要求')).toBe('失败时保留 {{requirements_block}}')
       expect(readField(renderer.root, 'Agent 预设')).toBe('preset-other')
       expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(1)
     } else {
@@ -5531,7 +5569,7 @@ describe('experiment workbench unavailable preset editor', () => {
     const data = fullProjection()
     const storedId = state === 'missing' ? 'removed-preset' : 'broken-preset'
     const binding = data.functions.find(item => item.function_id === 'prompt')!
-    Object.assign(binding, { preset_id: storedId, requested_skill: 'comfyui-generate', request_template: '保留原有执行要求 {{task_id}}' })
+    Object.assign(binding, { preset_id: storedId, requested_skill: 'comfyui-generate', request_template: '保留原有执行要求 {{requirements_block}}' })
     const original = structuredClone(binding)
     const environment: WorkbenchEnvironment = {
       ...functionEnvironment,
@@ -5565,7 +5603,7 @@ describe('experiment workbench unavailable preset editor', () => {
     expect(binding).toEqual(original)
     await change(renderer, 'Agent 预设', 'preset')
     await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
-    expect(binding).toEqual({ ...original, preset_id: 'preset', requested_skill: null })
+    expect(binding).toMatchObject({ ...original, preset_id: 'preset', requested_skill: null })
     await click(renderer, '编辑prompt')
     expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset' })
     expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选comfyui-generate')
@@ -5600,7 +5638,7 @@ describe('experiment workbench unavailable preset choices', () => {
     const data = fullProjection()
     const binding = data.functions.find(item => item.function_id === 'prompt')!
     binding.preset_id = 'removed-preset'
-    binding.request_template = '手工切换后保留 {{task_id}}'
+    binding.request_template = '手工切换后保留 {{requirements_block}}'
     const getEnvironment = vi.fn(async ({ presetId }: { presetId?: string }) => ({
       ...functionEnvironment,
       skills: presetId === 'preset' ? functionEnvironment.skills : presetId === 'preset-other' ? [{ name: 'other-skill', description: '其他预设 Skill' }] : [],
@@ -5619,7 +5657,7 @@ describe('experiment workbench unavailable preset choices', () => {
     expect(getEnvironment).toHaveBeenLastCalledWith({ workspaceId: 'workspace-a', presetId: 'preset' })
     expect(nodeText(renderer.root.findByProps({ 'aria-label': '指定 Skill' }))).toBe('Agent 自选comfyui-generate')
     expect(readField(renderer.root, '指定 Skill')).toBe('')
-    expect(readField(renderer.root, '执行要求')).toBe('手工切换后保留 {{task_id}}')
+    expect(readField(renderer.root, '执行要求')).toBe('手工切换后保留 {{requirements_block}}')
   })
 })
 
@@ -5627,8 +5665,8 @@ describe('experiment workbench unavailable preset choices', () => {
 describe('experiment workbench task notifications', () => {
   it('keeps the submitted request on its page and opens its exact task card only from the toast', async () => {
     let data = fullProjection()
-    data.functions.find(binding => binding.function_id === 'prompt')!.name = '生成提示词'
-    const accepted = { ...makeTask('accepted-task', 'child', 'prompt'), title: '生成提示词', status: 'running' as const }
+    data.functions.find(binding => binding.function_id === 'parameters')!.name = '建议参数'
+    const accepted = { ...makeTask('accepted-task', 'child', 'parameters'), title: '建议参数', status: 'running' as const }
     const onAction = vi.fn(async () => {
       data = { ...data, tasks: [...data.tasks, accepted] }
       return { workspaceId: 'workspace-a', workId: 'work-a', branchId: 'child', taskId: accepted.task_id }
@@ -5639,12 +5677,12 @@ describe('experiment workbench task notifications', () => {
       remote: { getProjection: async () => structuredClone(data) },
     }, { createNodeMock: element => element.props['data-task'] === accepted.task_id ? target : null })
     await click(renderer, '资源')
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
     expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
     expect(readField(renderer.root, '分支名称')).toBe('主分支')
     const toast = renderer.root.findByProps({ className: 'toast' })
-    expect(nodeText(toast)).toContain('生成提示词任务已提交 · accepted-task')
+    expect(nodeText(toast)).toContain('建议参数任务已提交 · accepted-task')
     expect(target.scrollIntoView).not.toHaveBeenCalled()
     await click(renderer, '查看任务')
     expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
@@ -5662,7 +5700,7 @@ describe('experiment workbench task status notifications', () => {
     ['conflict', '的结果待采用'],
   ] as const)('announces %s on the current page with the Task ID and preserves scrolling', async (outcome, label) => {
     vi.useFakeTimers()
-    const task = { ...makeTask('observed-task', 'child', 'prompt'), title: '光线生成', status: 'running' as const }
+    const task = { ...makeTask('observed-task', 'child', 'parameters'), title: '光线生成', status: 'running' as const }
     task.output_contract.apply_mode = 'automatic'
     let data: WorkbenchProjection = { ...fullProjection(), tasks: [task], refreshAfterMs: 100 }
     const inspector = { scrollTop: 172, scrollLeft: 0, dataset: {} }
@@ -5718,7 +5756,7 @@ describe('experiment workbench task controls preserve navigation', () => {
   })
 
   it('continues the original interrupted task without leaving the task page', async () => {
-    const task = { ...makeTask('resume-task', 'child', 'prompt'), status: 'interrupted' as const }
+    const task = { ...makeTask('resume-task', 'child', 'parameters'), status: 'interrupted' as const }
     let data: WorkbenchProjection = { ...fullProjection(), tasks: [task] }
     const onAction = vi.fn(async () => {
       data = { ...data, tasks: [{ ...task, status: 'running' }] }
@@ -5762,7 +5800,7 @@ describe('experiment workbench all task submission receipts', () => {
 describe('experiment workbench task notification lifecycle', () => {
   it('ignores historical completions and lets an unchanged task notification expire during polling', async () => {
     vi.useFakeTimers()
-    const task = { ...makeTask('lifecycle-task', 'root', 'prompt'), title: '光线生成', status: 'running' as const }
+    const task = { ...makeTask('lifecycle-task', 'root', 'parameters'), title: '光线生成', status: 'running' as const }
     let data: WorkbenchProjection = { ...fullProjection(), tasks: [makeTask('historical-task'), task], refreshAfterMs: 100 }
     const { renderer } = await mount(data, { remote: { getProjection: async () => structuredClone(data) } })
     expect(renderer.root.findAllByProps({ className: 'toast' })).toHaveLength(0)
@@ -5778,12 +5816,12 @@ describe('experiment workbench task notification lifecycle', () => {
 describe('experiment workbench recorded task details', () => {
   it('shows the fixed task input, delivered request, actual model and accepted artifact independently from the current draft', async () => {
     const data = fullProjection()
-    const task = makeTask('recorded-task', 'root', 'prompt')
+    const task = makeTask('recorded-task', 'root', 'parameters')
     task.input.prompt_input.positive_prompt = '任务接纳时的提示词'
     task.request_text = '实际投递文本 recorded-task'
     task.selected_model = { provider: 'actual-provider', model: 'actual-model', reasoningEffort: 'high' }
     task.binding_snapshot = { ...task.binding_snapshot, preset_id: 'recorded-preset', agentModel: { provider: 'requested-provider', model: 'requested-model', reasoningEffort: 'medium' } }
-    data.functions = data.functions.map(binding => binding.function_id === 'prompt'
+    data.functions = data.functions.map(binding => binding.function_id === 'parameters'
       ? { ...binding, preset_id: 'later-preset', agent_model: { provider: 'later-provider', model: 'later-model', reasoningEffort: 'low' } } : binding)
     task.input.reference_run_ids = ['recorded-evidence']
     data.runs = [makeRun('recorded-evidence', task.task_id)]
@@ -5835,8 +5873,8 @@ describe('experiment workbench continuous task control ownership', () => {
 describe('experiment workbench task reply isolation', () => {
   it('replies to the displayed question on its original task while preserving the other question and task page', async () => {
     let data: WorkbenchProjection = { ...fullProjection(), tasks: [
-      { ...makeTask('first-question', 'root', 'prompt'), status: 'waiting_input' },
-      { ...makeTask('second-question', 'child', 'prompt'), status: 'waiting_input' },
+      { ...makeTask('first-question', 'root', 'parameters'), status: 'waiting_input' },
+      { ...makeTask('second-question', 'child', 'parameters'), status: 'waiting_input' },
     ] }
     data.artifacts = data.tasks.map((task, index) => ({
       artifact_id: 'question-' + index, task_id: task.task_id, type: 'question',
@@ -5874,7 +5912,7 @@ describe('experiment workbench task notification workspace scope', () => {
       workspaces: [{ id: 'workspace-a', name: '工作区 A', path: '/projects/a' }, { id: 'workspace-b', name: '工作区 B', path: '/projects/b' }],
       remote: { getProjection: async scope => structuredClone(scope.workspaceId === 'workspace-b' ? second : data) },
     })
-    await click(renderer, '生成提示词')
+    await click(renderer, '建议参数')
     await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
     expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('workspace-a-task')
     await change(renderer, '切换工作区', 'workspace-b')
@@ -6168,6 +6206,7 @@ describe('experiment workbench artifact adoption through Remote', () => {
       const root = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '候选采用', goal: '保留玻璃花房' } }, signal)
       const otherWork = await host.remote.mutate({ type: 'new-work', workspaceId: root.workspaceId, value: { name: '其他工作', goal: '验证工作隔离' } }, signal)
       const child = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '来源分支', original_request: '保留玻璃花房' } }, signal)
+      await host.remote.mutate({ ...child, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       await setHostField(host, { ...child, field: 'positive_prompt', value: '任务创建时文本' }, signal)
       const accepted = await host.remote.mutate({ ...child, type: 'agent-action', id: 'prompt' }, signal)
       const workScope = { workspaceId: root.workspaceId, workId: root.workId }
@@ -6256,7 +6295,7 @@ describe('experiment workbench generation artifact presentation', () => {
 
 
 describe('experiment workbench Agent result delivery through Remote', () => {
-  it.each(['prompt', 'rewrite', 'parameters'] as const)('submits %s from its visible dialog and displays the actual published result', async kind => {
+  it.each(['parameters'] as const)('submits %s from its visible dialog and displays the actual published result', async kind => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
     const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
     try {
@@ -6265,11 +6304,7 @@ describe('experiment workbench Agent result delivery through Remote', () => {
       await host.remote.mutate({ workspaceId: root.workspaceId, type: 'function-preset', id: kind, value: 'preset-a' }, signal)
       const other = await host.remote.mutate({ type: 'new-work', workspaceId: root.workspaceId, value: { name: '刷新来源', goal: '验证结果刷新' } }, signal)
       await host.remote.mutate({ ...root, type: 'resource-select', id: '2', value: { kind: 'model', id: '2' } }, signal)
-      if (kind === 'rewrite') {
-        await setHostField(host, { ...root, field: 'instance_id', value: '8' }, signal)
-        await host.remote.mutate({ ...root, type: 'resource-select', id: '5', value: { kind: 'comfyui-template', id: '5' } }, signal)
-        await host.remote.mutate({ ...root, type: 'resource-select', id: '3', value: { kind: 'lora', id: '3' } }, signal)
-      }
+
       await setHostField(host, { ...root, field: 'positive_prompt', value: '保留的正向词' }, signal)
       const child = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '另一分支', original_request: '独立场景' } }, signal)
       await setHostField(host, { ...child, field: 'positive_prompt', value: '另一分支原文' }, signal)
@@ -6294,9 +6329,7 @@ describe('experiment workbench Agent result delivery through Remote', () => {
       expect(onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'agent-action', id: kind, branchId: root.branchId }))
       const accepted = await host.remote.getProjection(workScope, signal), task = accepted.tasks[0]!
       expect(task.input.requirements.instructions).toBe('保留窗框\n调整自然光')
-      if (kind === 'prompt') expect(task.input.generation_input).toMatchObject({ instance_id: null, template_id: null })
       const acceptedDraft = accepted.branches.find(branch => branch.branch_id === root.branchId)!.draft
-      if (kind === 'rewrite') await click(renderer, '切换分支 另一分支')
       const artifact: ArtifactPayload = kind === 'parameters'
         ? { type: 'parameters', parameters: { steps: 35 } }
         : { type: 'prompt', positive_prompt: '  Agent 正向词\n保留换行  ', negative_prompt: 'Agent 负向词' }
@@ -6304,11 +6337,7 @@ describe('experiment workbench Agent result delivery through Remote', () => {
         { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'result-' + kind })
       await change(renderer, '切换工作', other.workId!)
       await change(renderer, '切换工作', root.workId!)
-      if (kind === 'rewrite') {
-        await click(renderer, '切换分支 另一分支')
-        expect(readField(renderer.root, '正向提示词')).toBe('另一分支原文')
-        await click(renderer, '切换分支 主分支')
-      }
+
       if (kind === 'parameters') {
         expect(readField(renderer.root, '采样步数')).toBe('35')
         expect(readField(renderer.root, '正向提示词')).toBe('保留的正向词')
@@ -6325,6 +6354,149 @@ describe('experiment workbench Agent result delivery through Remote', () => {
   })
 })
 
+
+describe('prompt editing through the visible workbench', () => {
+  it('shows a failed configuration preview without losing editable requirements', async () => {
+    const { renderer } = await mount(fullProjection(), { remote: { promptPreview: async () => { throw new Error('引用资料读取失败，请重新打开功能编辑窗口。') } } })
+    await click(renderer, '配置中心'); await click(renderer, '编辑prompt')
+    expect(nodeText(renderer.root.findByProps({ className: 'request-preview' }))).toContain('引用资料读取失败，请重新打开功能编辑窗口。')
+    expect(readField(renderer.root, '执行要求')).toBe('{{requirements_block}}')
+    await click(renderer, '取消')
+  })
+
+  it('saves block and reference-purpose edits and sends the exact request displayed in the configuration preview', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const root = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '模板预览', goal: '保留 {{references_block}} 原文' } }, signal)
+      await host.remote.mutate({ ...root, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal)
+      await host.remote.mutate({ ...root, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), {
+        workspaceId: root.workspaceId, workspaces: environment.workspaces, presets: environment.presets,
+        agentModelGroups: environment.models.groups, routableProviders: environment.models.routableProviders,
+        onAction: request => host.remote.mutate(request, signal),
+        remote: { ...promptRemote(host, signal),
+          getProjection: request => host.remote.getProjection(request, signal), getEnvironment: request => host.remote.getEnvironment(request, signal),
+          getInputDescription: request => host.remote.getInputDescription(request, signal),
+        },
+      })
+      await click(renderer, '配置中心')
+      await click(renderer, '编辑生成提示词')
+      await change(renderer, '执行要求', '提示词请求\n{{requirements_block}}\n{{prompt_edit_block}}\n{{references_block}}')
+      await change(renderer, '底模与原始需求', '底模：{{base_model_name}}\n目标：{{original_request}}')
+      await change(renderer, '指定 Skill', 'prompt-builder')
+      await change(renderer, '指定 Skill用途', '采用指定的提示词写法。')
+      await vi.waitFor(() => expect(renderer.root.findByProps({ className: 'request-preview' }).findAllByType('pre')).toHaveLength(1))
+      const preview = nodeText(renderer.root.findByProps({ className: 'request-preview' }).findAllByType('pre')[0]!)
+      expect(preview).toContain('采用指定的提示词写法。')
+      expect(preview).toContain('保留 {{references_block}} 原文')
+      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+      await click(renderer, '编辑生成提示词')
+      expect(readField(renderer.root, '底模与原始需求')).toBe('底模：{{base_model_name}}\n目标：{{original_request}}')
+      expect(readField(renderer.root, '指定 Skill用途')).toBe('采用指定的提示词写法。')
+      await click(renderer, '取消')
+      const branch = host.store.getBranch(root.branchId!)
+      const sent = await host.remote.promptStart({ workspace_id: root.workspaceId, work_id: root.workId!, branch_id: root.branchId!, function_id: 'prompt', request_id: 'preview-actual', draft: branch.editing_draft ?? branch.draft,
+        input: { original_request: branch.original_request, base_model_id: '1', positive_prompt: '', negative_prompt: '', change_request: '' } }, signal)
+      expect(sent.request_text).toBe(preview)
+    } finally { await host.dispose() }
+  })
+
+  it('uses unsaved input, keeps three requests in one session and records manually adopted text after close and refresh', async () => {
+    const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
+    const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
+    try {
+      const root = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '提示词编辑', goal: '保存前的需求' } }, signal)
+      await host.remote.mutate({ ...root, type: 'function-preset', id: 'prompt', value: 'preset-a' }, signal)
+      await host.remote.mutate({ ...root, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
+      const environment = await host.remote.getEnvironment({ workspaceId: root.workspaceId }, signal)
+      const options = { workspaceId: root.workspaceId, workspaces: environment.workspaces, presets: environment.presets,
+        agentModelGroups: environment.models.groups, routableProviders: environment.models.routableProviders,
+        storage: { getItem: () => JSON.stringify({ workId: root.workId, branchId: root.branchId }), setItem: vi.fn() },
+        onAction: (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal),
+        remote: { ...promptRemote(host, signal),
+          getProjection: (request: import('../../src/client/workbench/experiment-contract.ts').ExperimentScope) => host.remote.getProjection(request, signal),
+          getInputDescription: (request: import('../../src/workbench-remote.ts').WorkbenchInputDescriptionRequest) => host.remote.getInputDescription(request, signal),
+        },
+      }
+      const { renderer } = await mount(await host.remote.getProjection(root, signal), options)
+      await change(renderer, '原始需求', '尚未保存的侧光肖像')
+      await click(renderer, '生成提示词')
+      const first = (await host.remote.getProjection(root, signal)).tasks.find(task => task.kind === 'prompt')!
+      const firstTurn = (await host.remote.promptList({ workspace_id: root.workspaceId, task_id: first.task_id }, signal))[0]!
+      expect(firstTurn.input.original_request).toBe('尚未保存的侧光肖像')
+      expect(host.store.getBranch(root.branchId!).original_request).toBe('保存前的需求')
+      completePrompt(host, firstTurn, { type: 'prompt', positive_prompt: 'portrait, side lighting', negative_prompt: 'blur' })
+      await vi.waitFor(() => expect(readField(renderer.root, '正向提示词')).toBe('portrait, side lighting'), { timeout: 3000 })
+      const inputBefore = host.store.getBranch(root.branchId!).editing_draft!.generation_input
+      await click(renderer, '对比提示词')
+      await change(renderer, '改动意见', '增加雨景')
+      await click(renderer, '改写提示词')
+      await click(renderer, '关闭')
+      const second = (await host.remote.promptList({ workspace_id: root.workspaceId, task_id: first.task_id }, signal))[1]!
+      expect(second).toMatchObject({ session_id: firstTurn.session_id, input: { positive_prompt: 'portrait, side lighting', change_request: '增加雨景' } })
+      completePrompt(host, second, { type: 'prompt', positive_prompt: 'portrait, rain', negative_prompt: 'blur' })
+      await vi.waitFor(() => expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, rain'), { timeout: 3000 })
+      await change(renderer, '生成的正向提示词', 'portrait, rain, manual detail')
+      await change(renderer, '改动意见', '保留手改并增加反射')
+      await click(renderer, '关闭')
+      await click(renderer, '对比提示词')
+      expect(readField(renderer.root, '改动意见')).toBe('保留手改并增加反射')
+      expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, rain, manual detail')
+      await click(renderer, '改写提示词')
+      const third = (await host.remote.promptList({ workspace_id: root.workspaceId, task_id: first.task_id }, signal))[2]!
+      expect(third).toMatchObject({ session_id: firstTurn.session_id, input: { positive_prompt: 'portrait, rain, manual detail', change_request: '保留手改并增加反射' } })
+      completePrompt(host, third, { type: 'prompt', positive_prompt: 'portrait, reflections', negative_prompt: 'fog' })
+      await vi.waitFor(() => expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, reflections'), { timeout: 3000 })
+      await change(renderer, '生成的正向提示词', 'portrait, reflections, adopted edit')
+      await click(renderer, '采用生成结果')
+      expect(readField(renderer.root, '正向提示词')).toBe('portrait, reflections, adopted edit')
+      expect(host.store.getBranch(root.branchId!).editing_draft!.generation_input).toEqual(inputBefore)
+      const saved = await host.remote.promptList({ workspace_id: root.workspaceId, task_id: first.task_id }, signal)
+      expect(saved[2]).toMatchObject({ result: { positive_prompt: 'portrait, reflections' }, adopted: { positive_prompt: 'portrait, reflections, adopted edit' } })
+      await click(renderer, '任务')
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'prompt-task-turns' }))).toContain('实际采用内容'), { timeout: 3000 })
+      expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(1)
+      await click(renderer, '编辑提示词')
+      expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, reflections, adopted edit')
+      await click(renderer, '关闭')
+      await act(() => renderer.unmount())
+      const refreshed = await mount(await host.remote.getProjection(root, signal), options)
+      await click(refreshed.renderer, '对比提示词')
+      await vi.waitFor(() => expect(readField(refreshed.renderer.root, '生成的正向提示词')).toBe('portrait, reflections, adopted edit'))
+      await click(refreshed.renderer, '关闭')
+    } finally { await host.dispose() }
+  })
+
+  it('blocks generation without a base model and shows a comparison instead of replacing in-flight manual edits', async () => {
+    const data = fullProjection()
+    data.branches[0]!.draft.prompt_input = { positive_prompt: '', negative_prompt: '' }
+    data.branches[0]!.draft.base_model_id = null
+    let finish!: (value: PromptTurn) => void
+    const start = vi.fn((request: import('../../src/workbench/prompt-edit.ts').PromptStartRequest) => new Promise<PromptTurn>(resolve => {
+      finish = resolve
+    }))
+    const { renderer } = await mount(data, { remote: { promptStart: start } })
+    await click(renderer, '生成提示词')
+    expect(start).not.toHaveBeenCalled()
+    expect(nodeText(renderer.root)).toContain('请先选择底模。')
+    expect(renderer.root.findByProps({ 'aria-label': '图像底模' }).props.disabled).toBe(false)
+    await change(renderer, '图像底模', '1')
+    expect(renderer.root.findByProps({ 'aria-label': '图像底模' }).props.disabled).toBe(true)
+    await click(renderer, '生成提示词')
+    await change(renderer, '正向提示词', '途中手工输入')
+    const request = start.mock.calls[0]![0]
+    await act(() => finish({ request_id: request.request_id, task_id: 'manual-task', turn_index: 1, function_id: 'prompt', kind: 'prompt', session_id: 'session', harness_turn: 1,
+      preset_id: 'preset', agent_model: data.functions[0]!.agent_model, input: { ...request.input, base_model_name: 'SDXL', reference_context: {} },
+      request_template: '', request_parts: { block_templates: { requirements_block: '', prompt_edit_block: '', references_block: '' }, reference_descriptions: { requested_skill: '', experiences: '', task_artifacts: '', run_ids: '', images: '' } },
+      request_text: '', status: 'succeeded', error: null, result: { type: 'prompt', positive_prompt: 'Agent result', negative_prompt: '' }, artifact_id: 'artifact', adopted: null, applied_at: null, created_at: 1, finished_at: 2, start_seq: 0,
+    }))
+    expect(readField(renderer.root, '正向提示词')).toBe('途中手工输入')
+    expect(readField(renderer.root, '生成的正向提示词')).toBe('Agent result')
+    await click(renderer, '关闭')
+  })
+})
 
 describe('experiment workbench current artifact conflict state', () => {
   it('shows the latest applied result without carrying an earlier candidate conflict into the card', async () => {
@@ -6494,6 +6666,7 @@ describe('experiment workbench long artifact branch name', () => {
       const source = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '长名称来源', goal: '保留完整自动名称' } }, signal)
       const scope = { workspaceId: source.workspaceId, workId: source.workId! }, parentName = '长父分支'.repeat(10)
       await setHostField(host, { ...source, field: 'name', value: parentName, expectedValue: '主分支' }, signal)
+      await host.remote.mutate({ ...source, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
       await setHostField(host, { ...source, field: 'positive_prompt', value: '固定输入' }, signal)
       const accepted = await host.remote.mutate({ ...source, type: 'agent-action', id: 'prompt' }, signal)
       const task = (await host.remote.getProjection(scope, signal)).tasks.find(task => task.task_id === accepted.taskId)!
@@ -6980,6 +7153,173 @@ describe('experiment workbench preparing historical Run input', () => {
 })
 
 
+describe('experiment workbench experiment round presentation', () => {
+  it.each(['succeeded', 'failed'] as const)('switches Agent reviews and adopted plans with the selected Run while keeping manual review separate (%s)', async status => {
+    const data = fullProjection(), experiment = makeTask('experiment', 'root', 'experiment')
+    const generation = makeTask('generation', 'root'), reviewTask = makeTask('evaluation', 'root', 'review')
+    generation.parent_experiment_task_id = experiment.task_id
+    reviewTask.parent_experiment_task_id = experiment.task_id
+    const first = makeRun('first-round', experiment.task_id, status), second = makeRun('second-round', experiment.task_id)
+    first.iteration_index = 1
+    first.execution_task_id = generation.task_id
+    first.review_artifact_id = 'review-first'
+    second.iteration_index = 2
+    second.execution_task_id = generation.task_id
+    second.candidate_artifact_id = 'input-second'
+    second.review_artifact_id = 'review-second'
+    data.tasks = [experiment, generation, reviewTask]
+    data.runs = [first, second]
+    data.experiments = [{ task_id: experiment.task_id, control_state: 'running', end_reason: null, submitted_count: 2, max_runs: 3 }]
+    const stored = (id: string, taskId: string, artifact: ArtifactPayload): WorkbenchProjection['artifacts'][number] => ({
+      artifact_id: id, task_id: taskId, type: artifact.type, artifact, source_files: [], session_id: 'session-' + taskId,
+      turn: 1, call_id: id, skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1000,
+    })
+    data.artifacts = [
+      stored('review-first', reviewTask.task_id, { type: 'review', observation: '窗框断开', conclusion: '需要保留结构', run_ids: [first.run_id] }),
+      stored('plan-first', experiment.task_id, { type: 'iteration_plan', source_run_id: first.run_id, changes: ['降低引导强度'], reason: '保留窗框结构', expected_result: '窗框连续' }),
+      stored('input-second', experiment.task_id, { type: 'generation_input', generation_input: second.generation_input, plan_artifact_id: 'plan-first' }),
+      stored('review-second', reviewTask.task_id, { type: 'review', observation: '窗框连续', conclusion: '已达到目标', run_ids: [second.run_id] }),
+    ]
+    const { renderer } = await mountReady(data)
+    await click(renderer, '查看运行 ' + first.run_id)
+    const firstReview = nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 评价' }))
+    expect(firstReview).toContain('初次运行')
+    expect(firstReview).toContain(status === 'failed' ? '运行失败记录' : '图片观察')
+    expect(firstReview).toContain('窗框断开')
+    expect(firstReview).toContain('需要保留结构')
+    const plan = renderer.root.findByProps({ 'aria-label': '下一轮计划' })
+    expect(nodeText(plan)).toContain('降低引导强度')
+    expect(nodeText(plan)).toContain('保留窗框结构')
+    expect(nodeText(plan)).toContain('窗框连续')
+    expect(nodeText(renderer.root.findByProps({ className: 'saved-review' }))).toContain('人工评价')
+    expect(nodeText(renderer.root.findByProps({ className: 'saved-review' }))).toContain('光线自然')
+    await click(renderer, '查看下一轮结果')
+    const secondReview = nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 评价' }))
+    expect(secondReview).toContain('降低引导强度')
+    expect(secondReview).toContain('已达到目标')
+    expect(secondReview).not.toContain('窗框断开')
+    expect(renderer.root.findAllByProps({ 'aria-label': '下一轮计划' })).toHaveLength(0)
+  })
+
+  it.each(['running', 'waiting_input'] as const)('shows the active function executor and nests functional tasks inside their experiment (%s)', async status => {
+    const data = fullProjection(), experiment = makeTask('experiment', 'root', 'experiment')
+    const child = makeTask('evaluation', 'root', 'review'), independent = makeTask('independent', 'root', 'prompt')
+    child.parent_experiment_task_id = experiment.task_id
+    child.status = status
+    child.binding_snapshot.name = '图片评价'
+    child.binding_snapshot.preset_id = 'preset-other'
+    child.execution_state = 'running'
+    child.updated_at = 2000
+    data.tasks = [experiment, child, independent]
+    const result = makeRun('child-run', experiment.task_id)
+    result.execution_task_id = child.task_id
+    result.iteration_index = 1
+    data.runs = [result]
+    data.experiments = [{ task_id: experiment.task_id, control_state: 'running', end_reason: null, submitted_count: 0, max_runs: 3 }]
+    const { renderer } = await mountReady(data, { presets: [{ id: 'preset', name: '工作台预设' }, { id: 'preset-other', name: '评价预设' }] })
+    const progress = nodeText(renderer.root.findByProps({ className: 'taskbox' }))
+    expect(progress).toContain('当前功能：图片评价')
+    expect(progress).toContain('执行预设：评价预设')
+    expect(progress).toContain(status === 'running' ? 'Agent 执行中' : '等待输入')
+    await click(renderer, '查看运行 ' + result.run_id)
+    expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain('执行预设：评价预设')
+    await click(renderer, '任务')
+    const parent = renderer.root.findByProps({ 'data-task': experiment.task_id })
+    expect(parent.findAllByProps({ 'data-task': child.task_id })).toHaveLength(1)
+    expect(nodeText(parent.findByProps({ 'data-task': child.task_id }))).toContain('查看运行 ' + result.run_id)
+    expect(parent.findAllByProps({ 'data-task': independent.task_id })).toHaveLength(0)
+    expect(nodeText(parent)).toContain('图片评价')
+    expect(nodeText(parent)).toContain('评价预设')
+    expect(nodeText(parent)).toContain('提供商 · 模型 · 高')
+    expect(renderer.root.findAllByProps({ 'data-task': child.task_id })).toHaveLength(1)
+    expect(renderer.root.findAllByProps({ 'data-task': independent.task_id })).toHaveLength(1)
+  })
+
+  it('shows the latest active function of the selected experiment when switching branches', async () => {
+    const data = fullProjection()
+    const rootExperiment = makeTask('root-experiment', 'root', 'experiment')
+    const rootExecution = makeTask('root-execution', 'root', 'run')
+    rootExecution.parent_experiment_task_id = rootExperiment.task_id
+    rootExecution.status = 'running'
+    rootExecution.binding_snapshot.name = '运行任务'
+    rootExecution.updated_at = 9000
+    const childExperiment = makeTask('child-experiment', 'child', 'experiment')
+    const earlier = makeTask('earlier-evaluation', 'child', 'review')
+    earlier.parent_experiment_task_id = childExperiment.task_id
+    earlier.status = 'running'
+    earlier.binding_snapshot.name = '图片评价'
+    earlier.updated_at = 1000
+    const latest = makeTask('latest-resources', 'child', 'resources')
+    latest.parent_experiment_task_id = childExperiment.task_id
+    latest.status = 'waiting_input'
+    latest.binding_snapshot.name = '推荐资源'
+    latest.binding_snapshot.preset_id = 'preset-other'
+    latest.updated_at = 2000
+    const completed = makeTask('completed-prompt', 'child', 'prompt')
+    completed.parent_experiment_task_id = childExperiment.task_id
+    completed.binding_snapshot.name = '生成提示词'
+    completed.updated_at = 10000
+    data.tasks = [rootExperiment, rootExecution, childExperiment, earlier, latest, completed]
+    data.runs = []
+    data.experiments = [rootExperiment, childExperiment].map(task => ({
+      task_id: task.task_id, control_state: 'running' as const, end_reason: null, submitted_count: 0, max_runs: 3,
+    }))
+    const { renderer } = await mountReady(data, {
+      presets: [{ id: 'preset', name: '工作台预设' }, { id: 'preset-other', name: '资源预设' }],
+    })
+    const progress = () => nodeText(renderer.root.findByProps({ className: 'taskbox' }))
+    expect(progress()).toContain('当前功能：运行任务')
+    await click(renderer, '切换分支 暖光探索')
+    expect(progress()).toContain('当前功能：推荐资源')
+    expect(progress()).toContain('执行预设：资源预设')
+    expect(progress()).toContain('等待输入')
+    expect(progress()).not.toContain('当前功能：图片评价')
+    expect(progress()).not.toContain('当前功能：生成提示词')
+    await click(renderer, '切换分支 主分支')
+    expect(progress()).toContain('当前功能：运行任务')
+    expect(progress()).toContain('执行预设：工作台预设')
+    expect(progress()).toContain('Agent 执行中')
+  })
+
+  it('opens a completed experience subtask in the existing review dialog and saves only on human confirmation', async () => {
+    const data = fullProjection(), experiment = makeTask('experiment', 'root', 'experiment')
+    const child = makeTask('experience-child', 'root', 'experience'), result = makeRun('experience-run', experiment.task_id)
+    child.parent_experiment_task_id = experiment.task_id
+    result.review_draft!.title = ''
+    result.review_draft!.conditions = ''
+    result.review_draft!.note = ''
+    data.tasks = [experiment, child]
+    data.runs = [result]
+    data.artifacts = [{
+      artifact_id: 'experience-artifact', task_id: child.task_id, type: 'experience',
+      artifact: { type: 'experience', title: '窗框经验', conditions: '玻璃建筑', note: '降低引导强度', base_model_id: '1', model_id: '11', run_ids: [result.run_id] },
+      source_files: [], session_id: child.session_id!, turn: 1, call_id: 'experience', skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1000,
+    }]
+    const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
+      if (request.type === 'update-review-draft') result.review_draft = structuredClone((request.value as unknown as { draft: NonNullable<typeof result.review_draft> }).draft)
+    })
+    const { renderer } = await mountReady(data, { onAction })
+    await click(renderer, '任务')
+    const childCard = renderer.root.findByProps({ 'data-task': child.task_id })
+    const open = childCard.findAllByType('button').find(button => nodeText(button) === '查看评价与经验')!
+    expect(open).toBeDefined()
+    await act(async () => open.props.onClick())
+    expect(readField(renderer.root, '经验标题')).toBe('窗框经验')
+    expect(readField(renderer.root, '适用条件')).toBe('玻璃建筑')
+    expect(readField(renderer.root, '经验结论')).toBe('降低引导强度')
+    expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'evaluate' }))
+    expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'task-apply' }))
+    await change(renderer, '经验结论', '人工确认的窗框结论')
+    await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'evaluate', runId: result.run_id, value: expect.objectContaining({
+        saveExperience: true,
+        draft: expect.objectContaining({ title: '窗框经验', conditions: '玻璃建筑', note: '人工确认的窗框结论', experience_artifact_id: 'experience-artifact' }),
+      }),
+    }))
+  })
+})
+
 describe('experiment workbench Run review through Remote', () => {
   const signal = new AbortController().signal
   type Host = Awaited<ReturnType<typeof import('../support/workbench-host.ts').createWorkbenchHostFixture>>
@@ -7058,9 +7398,11 @@ describe('experiment workbench Run review through Remote', () => {
       await host.remote.mutate({ ...root, runId, type: 'evaluate', value: { expected: baseline,
         draft: { ...baseline, conclusion: '保留人工保存评价' }, saveExperience: false } }, signal)
       const promptBranch = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '提示词目标', original_request: '提示词目标需求' } }, signal)
+      await host.remote.mutate({ ...promptBranch, type: 'resource-select', value: { kind: 'model', id: '2' } }, signal)
+      await setHostField(host, { ...promptBranch, field: 'positive_prompt', value: '本轮改写原文' }, signal)
       const browsing = await host.remote.mutate({ ...root, type: 'create-branch', value: { name: '当前浏览分支', original_request: '当前浏览需求' } }, signal)
       await setHostField(host, { ...browsing, field: 'positive_prompt', value: '浏览分支原文' }, signal)
-      const { renderer } = await mountReady(await host.remote.getProjection(root, signal), { ...options, remote: { ...options.remote,
+      const { renderer } = await mountReady(await host.remote.getProjection(root, signal), { ...options, remote: { ...options.remote, ...promptRemote(host, signal),
         getTaskDraft: request => host.remote.getTaskDraft(request, signal),
         saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
       await click(renderer, '查看运行 ' + runId)
@@ -7069,11 +7411,10 @@ describe('experiment workbench Run review through Remote', () => {
       await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).tasks.some(task => task.kind === 'review')).toBe(true))
       await click(renderer, '取消')
       await click(renderer, '切换分支 提示词目标')
-      await click(renderer, '生成提示词')
-      await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '任务要求' }).props.disabled).toBe(false))
-      await change(renderer, '任务要求', '独立提示词任务')
-      await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
-      expect(renderer.root.findAllByProps({ role: 'dialog' }), renderer.root.findAllByProps({ id: 'task-error' }).map(nodeText).join(' ')).toHaveLength(0)
+      await click(renderer, '对比提示词')
+      await change(renderer, '改动意见', '独立提示词任务')
+      await click(renderer, '改写提示词')
+      await click(renderer, '关闭')
       await click(renderer, '切换分支 当前浏览分支')
       const accepted = await host.remote.getProjection({ workspaceId: root.workspaceId, workId: root.workId }, signal)
       const review = accepted.tasks.find(task => task.kind === 'review')!
@@ -7086,17 +7427,22 @@ describe('experiment workbench Run review through Remote', () => {
       }
       for (const kind of order === 'prompt-first' ? ['prompt', 'review'] as const : ['review', 'prompt'] as const) {
         const publication = publications[kind]
-        await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: publication.task.task_id, artifact: publication.artifact },
+        if (kind === 'prompt') {
+          const turn = (await host.remote.promptList({ workspace_id: root.workspaceId, task_id: prompt.task_id }, signal))[0]!
+          completePrompt(host, turn, publication.artifact as PromptReply)
+        } else await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: publication.task.task_id, artifact: publication.artifact },
           { workspaceId: root.workspaceId, sessionId: publication.task.session_id!, turn: 1, callId: crypto.randomUUID() })
       }
       expect(readField(renderer.root, '正向提示词')).toBe('浏览分支原文')
       expect(nodeText(renderer.root.findByProps({ className: 'config-head' }))).toContain('当前浏览分支')
       await click(renderer, '切换分支 提示词目标')
-      await vi.waitFor(() => expect(readField(renderer.root, '正向提示词')).toBe('固定分支的新提示词'), { timeout: 3000 })
+      await vi.waitFor(() => expect(readField(renderer.root, '生成的正向提示词')).toBe('固定分支的新提示词'), { timeout: 3000 })
+      await click(renderer, '采用生成结果')
+      expect(readField(renderer.root, '正向提示词')).toBe('固定分支的新提示词')
       await click(renderer, '切换分支 主分支')
       await click(renderer, '查看运行 ' + runId)
       await click(renderer, '记录评价与经验')
-      expect(readField(renderer.root, '观察')).toBe('固定运行的观察')
+      await vi.waitFor(() => expect(readField(renderer.root, '观察')).toBe('固定运行的观察'), { timeout: 3000 })
       expect(readField(renderer.root, '评价结论')).toBe('固定运行的新评价')
       const after = await host.remote.getProjection(root, signal)
       expect(after.runs.find(run => run.run_id === runId)!.review!.conclusion).toBe('保留人工保存评价')
@@ -7314,7 +7660,7 @@ describe('experiment workbench Run review through Remote', () => {
       await click(renderer, '任务')
       await click(renderer, '结束实验')
       await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).experiments[0]!.control_state).toBe('ended'))
-      expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('实验已结束')
+      await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'taskbox' }))).toContain('实验已结束'))
       expect(renderer.root.findByProps({ 'aria-label': '任务' }).props.className).toBe('active')
       expect(renderer.root.findAllByType('button').map(nodeText)).not.toContain('暂停实验')
       await finish()
@@ -7415,10 +7761,10 @@ describe('experiment workbench Run review through Remote', () => {
       await click(renderer, '配置中心')
       await click(renderer, '添加功能')
       await change(renderer, '功能名称', '延迟创建的功能')
-      await change(renderer, '执行要求', '保留要求 {{task_id}}')
+      await change(renderer, '执行要求', '保留要求 {{requirements_block}}')
       await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
       expect(readField(renderer.root, '功能名称')).toBe('延迟创建的功能')
-      expect(readField(renderer.root, '执行要求')).toBe('保留要求 {{task_id}}')
+      expect(readField(renderer.root, '执行要求')).toBe('保留要求 {{requirements_block}}')
       expect(nodeText(renderer.root.findByProps({ id: 'template-error' }))).toContain('功能保存失败：连接已中断，请重试。')
       addMode = 'delay'
       await act(() => {
@@ -7458,7 +7804,7 @@ describe('experiment workbench Run review through Remote', () => {
     }
   })
 
-  it.each(['run', 'prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment'] as const)(
+  it.each(['run', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'experiment'] as const)(
     'creates %s through the shared editor and invokes the configured kind at its real UI entry', async kind => {
       const { host, root, runId, createRun, options } = await setup(kind !== 'diagnose')
       try {
@@ -7491,9 +7837,9 @@ describe('experiment workbench Run review through Remote', () => {
           await vi.waitFor(() => expect(renderer.root.findAllByType('button').some(button => nodeText(button) === name)).toBe(true))
           await change(renderer, '最多运行次数', '2')
         }
-        if (['prompt', 'rewrite', 'parameters', 'resources'].includes(kind)) await click(renderer, '编辑参数')
+        if (['parameters', 'resources'].includes(kind)) await click(renderer, '编辑参数')
         await click(renderer, name)
-        if (['prompt', 'rewrite', 'parameters', 'resources'].includes(kind)) {
+        if (['parameters', 'resources'].includes(kind)) {
           expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain(name)
           await change(renderer, '任务要求', '按独立配置执行')
           await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
@@ -7577,40 +7923,40 @@ describe('experiment workbench Run review through Remote', () => {
       host.official.agents.get(originalTask.session_id!)!.status = 'idle'
       await click(renderer, '配置中心')
       await click(renderer, '编辑独立运行')
-      await change(renderer, '功能名称', '独立改写')
-      await change(renderer, '任务类型', 'rewrite')
-      expect(nodeText(renderer.root.findByProps({ id: 'function-location' }))).toBe('提示词')
-      const defaultRewrite = readField(renderer.root, '执行要求')
-      expect(defaultRewrite).toBe(approvedInstructions.functions.find(item => item.kind === 'rewrite')!.requestTemplate)
+      await change(renderer, '功能名称', '独立资源')
+      await change(renderer, '任务类型', 'resources')
+      expect(nodeText(renderer.root.findByProps({ id: 'function-location' }))).toBe('资源')
+      const defaultResources = readField(renderer.root, '执行要求')
+      expect(defaultResources).toBe(approvedInstructions.functions.find(item => item.kind === 'resources')!.requestTemplate)
       await change(renderer, '执行要求', '自定义执行要求 {{task_id}}')
       await change(renderer, '任务类型', 'parameters')
       expect(readField(renderer.root, '执行要求')).toBe('自定义执行要求 {{task_id}}')
-      await change(renderer, '任务类型', 'rewrite')
+      await change(renderer, '任务类型', 'resources')
       await click(renderer, '恢复默认要求')
-      expect(readField(renderer.root, '执行要求')).toBe(defaultRewrite)
+      expect(readField(renderer.root, '执行要求')).toBe(defaultResources)
       await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
       await click(renderer, '返回工作台')
       expect(renderer.root.findAllByType('button').filter(button => nodeText(button) === '独立运行')).toHaveLength(0)
       await click(renderer, '编辑参数')
-      await click(renderer, '独立改写')
+      await click(renderer, '独立资源')
       await change(renderer, '任务要求', '历史产物要求')
       await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
-      const changedTask = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id && item.kind === 'rewrite')!
-      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: changedTask.task_id, artifact: { type: 'prompt', positive_prompt: '保留的历史产物', negative_prompt: '' } },
+      const changedTask = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id && item.kind === 'resources')!
+      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: changedTask.task_id, artifact: { type: 'resources', refs: [{ kind: 'lora', id: '3' }], reason: '保留的历史产物' } },
         { workspaceId: root.workspaceId, sessionId: changedTask.session_id!, turn: 1, callId: 'custom-artifact' })
       host.official.agents.get(changedTask.session_id!)!.status = 'idle'
       await click(renderer, '配置中心')
-      await click(renderer, '移除独立改写')
+      await click(renderer, '移除独立资源')
       expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain('已创建的任务和运行记录继续保留')
       expect((await host.remote.getProjection(root, signal)).functions.some(item => item.function_id === added.function_id)).toBe(true)
       await click(renderer, '取消')
       expect(renderer.root.findByProps({ 'data-function': added.function_id })).toBeDefined()
-      await click(renderer, '移除独立改写')
+      await click(renderer, '移除独立资源')
       await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
       await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
       expect((await host.remote.getProjection(root, signal)).functions.some(item => item.function_id === added.function_id)).toBe(false)
       await click(renderer, '返回工作台')
-      expect(renderer.root.findAllByType('button').filter(button => nodeText(button) === '独立改写')).toHaveLength(0)
+      expect(renderer.root.findAllByType('button').filter(button => nodeText(button) === '独立资源')).toHaveLength(0)
       await click(renderer, '任务')
       const cards = renderer.root.findAllByProps({ className: 'agent-task-card' })
       expect(nodeText(cards.find(card => card.props['data-task'] === originalTask.task_id)!)).toContain('独立运行')
@@ -7636,7 +7982,7 @@ describe('experiment workbench Run review through Remote', () => {
       await click(renderer, '添加功能')
       expect(nodeText(renderer.root.findByProps({ role: 'dialog' }))).toContain('添加功能')
       expect(readField(renderer.root, '功能名称')).toBe('')
-      expect(readField(renderer.root, '任务类型')).toBe('rewrite')
+      expect(readField(renderer.root, '任务类型')).toBe('prompt')
       await vi.waitFor(() => expect(readField(renderer.root, 'Agent 预设')).toBe(environment.defaultPresetId))
       expect(readField(renderer.root, 'Agent 提供商')).toBe(environment.models.default.provider)
       expect(readField(renderer.root, 'Agent 模型')).toBe(environment.models.default.model)
@@ -7649,25 +7995,26 @@ describe('experiment workbench Run review through Remote', () => {
       await act(() => { document.dispatchEvent(escape) })
       expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0)
       await click(renderer, '添加功能')
-      await change(renderer, '功能名称', '额外改写')
+      await change(renderer, '功能名称', '额外资源')
+      await change(renderer, '任务类型', 'resources')
       await change(renderer, '指定 Skill', 'prompt-builder')
       await change(renderer, '执行要求', '执行独立改写 {{task_id}}')
       await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
       await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
-      const added = (await host.remote.getProjection(root, signal)).functions.find(item => item.name === '额外改写')!
-      expect(added).toMatchObject({ builtin: false, kind: 'rewrite', preset_id: environment.defaultPresetId,
+      const added = (await host.remote.getProjection(root, signal)).functions.find(item => item.name === '额外资源')!
+      expect(added).toMatchObject({ builtin: false, kind: 'resources', preset_id: environment.defaultPresetId,
         agent_model: environment.models.default, requested_skill: 'prompt-builder', request_template: '执行独立改写 {{task_id}}' })
       expect(options.onAction).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'function-add', value: {
-        name: '额外改写', kind: 'rewrite', preset_id: environment.defaultPresetId, agent_model: environment.models.default,
+        name: '额外资源', kind: 'resources', preset_id: environment.defaultPresetId, agent_model: environment.models.default,
         requested_skill: 'prompt-builder', request_template: '执行独立改写 {{task_id}}',
       } }))
       await click(renderer, '返回工作台')
       await click(renderer, '编辑参数')
-      await click(renderer, '额外改写')
+      await click(renderer, '额外资源')
       await change(renderer, '任务要求', '保留窗框')
       await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
       const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id)!
-      expect(task).toMatchObject({ kind: 'rewrite', binding_snapshot: { name: '额外改写', preset_id: environment.defaultPresetId, requested_skill: 'prompt-builder' } })
+      expect(task).toMatchObject({ kind: 'resources', binding_snapshot: { name: '额外资源', preset_id: environment.defaultPresetId, requested_skill: 'prompt-builder' } })
     } finally { await host.dispose() }
   })
 

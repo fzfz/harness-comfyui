@@ -6,7 +6,10 @@ import ts from 'typescript'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
-const workbenchToolComponent = 'src/host/workbench/tools.ts'
+const nativeToolComponents = new Set([
+  'src/host/workbench/tools.ts',
+  'src/host/workbench/specialist-tools.ts',
+])
 
 const allowedHarnessImports = new Map([
   ['@deepseek-ai/cordis', 'value-or-type'],
@@ -386,7 +389,6 @@ function validateStructuredHarnessBoundary(root) {
 
 function scan(root) {
   const sourceRoot = resolve(root, 'src')
-  const componentPath = resolve(root, workbenchToolComponent)
   const sourceFiles = collectSourceFiles(sourceRoot)
 
   for (const filePath of sourceFiles) {
@@ -396,8 +398,8 @@ function scan(root) {
     const relativePath = relative(root, filePath).replaceAll('\\', '/')
     scanImportDeclarations(sourceFile, filePath, root)
     function visit(node) {
-      if (isDirectRegisterCall(node) && filePath !== componentPath) {
-        throw new Error(`${relativePath} calls ctx.tools.register; register native Tools in ${workbenchToolComponent}`)
+      if (isDirectRegisterCall(node) && !nativeToolComponents.has(relativePath)) {
+        throw new Error(`${relativePath} calls ctx.tools.register; register native Tools in ${[...nativeToolComponents].join(' or ')}`)
       }
       ts.forEachChild(node, visit)
     }

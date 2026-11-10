@@ -63,8 +63,10 @@ import { RunReviewEditor } from './experiment-review-editor.ts'
 import { ExperimentReviewDialog } from './experiment-review-dialog.tsx'
 import reviewPresentation from './experiment-review-presentation.json' with { type: 'json' }
 import libraryPresentation from './experiment-library-presentation.json' with { type: 'json' }
-import { ExperimentStatus, ExperimentTaskRounds } from './experiment-status.tsx'
+import { ExperimentStatus, ExperimentTaskRounds, ExperimentRunReview } from './experiment-status.tsx'
 import { ExperimentTranslationDialog } from './experiment-translation-dialog.tsx'
+import { PromptEditingController } from './experiment-prompt-editor.ts'
+import { ExperimentPromptDialog, PromptTaskTurns } from './experiment-prompt-dialog.tsx'
 import { ExperimentImages, mergeImagePurpose } from './experiment-images.tsx'
 import { taskDraftFromRunInput } from '../../workbench/validation.ts'
 import { Identifier, shortId } from './experiment-identifier.tsx'
@@ -272,6 +274,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const [sheet, setSheet] = useState(false)
   const taskRequestEditors = useMemo(() => new Map<string, TaskRequestEditor>(), [props.remote])
   const reviewEditors = useMemo(() => new Map<string, RunReviewEditor>(), [props.remote])
+  const [promptTaskToOpen, setPromptTaskToOpen] = useState<{ taskId: string; branchId: string; functionId: string } | null>(null)
+  const promptEditors = useMemo(() => new Map<string, PromptEditingController>(), [props.remote])
+  useEffect(() => () => { for (const editor of promptEditors.values()) editor.dispose() }, [promptEditors])
   const reviewAction = useRef(props.onAction)
   reviewAction.current = props.onAction
   const [reviewEditor, setReviewEditor] = useState<RunReviewEditor | null>(null)
@@ -420,6 +425,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const run = p?.runs.find((item) => item.run_id === view.selectedRunId)
   const taskFor = (item: WorkbenchRun) =>
     p?.tasks.find((task) => task.task_id === item.workbench_task_id)
+  const executionTaskFor = (item: WorkbenchRun) => p?.tasks.find(task => task.task_id === (item.execution_task_id ?? item.workbench_task_id))
   const branchFor = (item: WorkbenchRun) =>
     p?.branches.find((branch) => branch.branch_id === taskFor(item)?.branch_id)
   const branchExperiments = p?.experiments.filter(
@@ -428,6 +434,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const experiment = branchExperiments.find(item => ['running', 'paused'].includes(item.control_state))
   const displayedExperiment = experiment ?? branchExperiments.at(-1)
   const displayedExperimentTask = p?.tasks.find(task => task.task_id === displayedExperiment?.task_id)
+  const displayedActiveTask = p?.tasks.filter(task => task.parent_experiment_task_id === displayedExperiment?.task_id && busyTask(task)).sort((a, b) => b.updated_at - a.updated_at)[0]
   const displayedExperimentRuns = p?.runs.filter(item => item.workbench_task_id === displayedExperiment?.task_id) ?? []
   const experimentTask = p?.tasks.find(task => task.task_id === experiment?.task_id)
   const experimentRuns = p?.runs.filter(item => item.workbench_task_id === experiment?.task_id) ?? []
@@ -647,6 +654,18 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     const editor = editorForReview(runId)
     if (editor) { setReviewEditor(editor); setModal('evaluate') }
   }
+  const openExperience = (artifact: StoredArtifact) => {
+    if (artifact.artifact.type !== 'experience') return
+    const runId = artifact.artifact.run_ids[0]
+    const editor = runId ? editorForReview(runId) : null
+    if (!editor) return
+    editor.changeFields({
+      title: artifact.artifact.title, conditions: artifact.artifact.conditions, note: artifact.artifact.note,
+      evidence_run_ids: artifact.artifact.run_ids, experience_artifact_id: artifact.artifact_id,
+    })
+    setReviewEditor(editor)
+    setModal('evaluate')
+  }
   useEffect(() => {
     if (!p) return
     for (const editor of reviewEditors.values()) {
@@ -661,6 +680,14 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     if (!selected || selected.kind === 'translate') return
     const problem = functionProblem(selected)
     if (problem) { setMessage(problem); return }
+    if (selected.kind === 'prompt') {
+      if (!promptEditor) return
+      const draft = preparationEditor?.getSnapshot().draft
+      if (!draft?.base_model_id) { setMessage('请先选择底模。'); return }
+      if (draft.prompt_input.positive_prompt?.trim() || draft.prompt_input.negative_prompt?.trim()) promptEditor.open(selected)
+      else void promptEditor.start(selected)
+      return
+    }
     if (isRunReviewFunctionKind(selected.kind)) {
       const editor = evaluationEditor ?? (run ? editorForReview(run.run_id) : null)
       if (!editor) return
@@ -1025,11 +1052,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               {String(runParameter(run, 'steps') ?? taskPresentation.unrecorded)} 步
             </small>
             <small className="preset-provenance">
-              执行预设：{presetName(taskFor(run)?.binding_snapshot.preset_id)}
+              执行预设：{presetName(executionTaskFor(run)?.binding_snapshot.preset_id)}
             </small>
             <small className="run-agent-model">
               Agent 模型：
-              {formatAgentModel(taskFor(run)?.binding_snapshot.agentModel)}
+              {formatAgentModel(executionTaskFor(run)?.binding_snapshot.agentModel)}
             </small>
           </div>
           <div className="actions">
@@ -1058,9 +1085,10 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
           </div>
         </div>
       )}
+      {run && <ExperimentRunReview run={run} runs={p?.runs ?? []} artifacts={p?.artifacts ?? []} onRun={selectRun} />}
       {run?.review && (
         <details className="saved-review">
-          <summary>运行评价</summary>
+          <summary>{reviewPresentation.manualReview}</summary>
           {run.review.observation && <p>观察：{run.review.observation}</p>}
           <p>评价：{run.review.conclusion}</p>
         </details>
@@ -1270,15 +1298,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     </main>
   )
   const taskStatus: Record<Task['status'], string> = taskPresentation.statusLabels
-  const tasks = (
-    <main className="center">
-      <PanelHead title="任务">{back}</PanelHead>
-      <div className="agent-task-list" {...scrollPanel(`tasks:${view.workId}`)}>
-        {p?.tasks
-          .slice()
-          .reverse()
-          .map((item) => {
-            const artifacts = p.artifacts.filter(
+  const renderTask = (item: Task): ReactNode => {
+    if (!p) return null
+    const artifacts = p.artifacts.filter(
                 (artifact) => artifact.task_id === item.task_id,
               ),
               question = artifacts
@@ -1293,7 +1315,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               ),
               taskExperiment = p.experiments.find(experiment => experiment.task_id === item.task_id),
               taskRuns = p.runs.filter(
-                (run) => run.workbench_task_id === item.task_id,
+                (run) => run.workbench_task_id === item.task_id || run.execution_task_id === item.task_id,
               ),
               targetDraft = item.apply_target.kind === 'branch'
                 ? p.branches.find(branch => branch.branch_id === item.apply_target.id)?.draft
@@ -1335,6 +1357,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     }
                   </Button>
                 </div>
+                {item.kind === 'prompt' && !item.parent_experiment_task_id && <PromptTaskTurns workspaceId={state.workspaceId ?? ''} taskId={item.task_id} remote={props.remote} pollIntervalMs={p.refreshAfterMs} onEdit={() => {
+                  selectBranch(item.branch_id); changePage('workbench')
+                  setPromptTaskToOpen({ taskId: item.task_id, branchId: item.branch_id, functionId: item.function_id })
+                }} />}
+                <p className="task-function">{taskPresentation.function.replace('{name}', item.binding_snapshot.name)}</p>
                 <p className="task-preset">
                   Agent 预设：{presetName(item.binding_snapshot.preset_id)}
                 </p>
@@ -1435,7 +1462,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       )}
                     </div>
                 )}
-                {taskExperiment ? <ExperimentTaskRounds experiment={taskExperiment} runs={taskRuns} artifacts={artifacts} onRun={selectRun} /> : taskRuns.map((run) => (
+                {taskExperiment ? <ExperimentTaskRounds experiment={taskExperiment} runs={taskRuns} artifacts={p.artifacts} onRun={selectRun} /> : taskRuns.map((run) => (
                   <div className="task-output" key={run.run_id}>
                     <Button
                       kind="small"
@@ -1471,7 +1498,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   </div>}
                 </details>
                 <div className="row task-actions">
-                  {item.kind !== 'experiment' && (item.status === 'running' || (item.status === 'waiting_generation' && item.execution_state === 'running')) && (
+                  {item.kind !== 'experiment' && !(item.kind === 'prompt' && !item.parent_experiment_task_id) && (item.status === 'running' || (item.status === 'waiting_generation' && item.execution_state === 'running')) && (
                     <Button
                       kind="small"
                       onClick={() =>
@@ -1481,7 +1508,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                       中断任务
                     </Button>
                   )}
-                  {item.kind !== 'experiment' && item.status === 'interrupted' && (
+                  {item.kind !== 'experiment' && !(item.kind === 'prompt' && !item.parent_experiment_task_id) && item.status === 'interrupted' && (
                     <Button
                       kind="small primary"
                       onClick={() =>
@@ -1514,13 +1541,24 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   )}
                   {artifact?.disposition === 'applied' && item.input.evaluation_input && <Button kind="small"
                     onClick={() => openReview(item.input.evaluation_input!.run_id)}>{reviewPresentation.open}</Button>}
+                  {item.parent_experiment_task_id && artifact?.artifact.type === 'experience' && <Button kind="small"
+                    disabled={!artifact.artifact.run_ids.some(id => p.runs.some(run => run.run_id === id && !!run.review_draft))}
+                    onClick={() => openExperience(artifact)}>{reviewPresentation.open}</Button>}
                   {sourceBranch && artifact?.artifact.type === 'review' && artifact.artifact.candidate && <Button kind="small" onClick={() => void action('task-generation-apply', {
                     taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id, value: structuredClone(sourceBranch.draft),
                   })}>{reviewPresentation.candidate}</Button>}
                 </div>
+                {item.kind === 'experiment' && <div className="experiment-subtasks">
+                  {p.tasks.filter(child => child.parent_experiment_task_id === item.task_id).map(renderTask)}
+                </div>}
               </article>
             )
-          })}
+  }
+  const tasks = (
+    <main className="center">
+      <PanelHead title="任务">{back}</PanelHead>
+      <div className="agent-task-list" {...scrollPanel(`tasks:${view.workId}`)}>
+        {p?.tasks.filter(item => !item.parent_experiment_task_id).slice().reverse().map(renderTask)}
         {!p?.tasks.length && (
           <div className="empty">
             <h3>暂无任务</h3>
@@ -1552,6 +1590,22 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     void Promise.all(types.map(type => props.remote.queryRecords({ type }))).then(groups => { if (active) setSourceRecords(before => { const next = new Map(before); for (const record of groups.flat()) next.set(`${record.type}:${record.id}`, record); return next }) }).catch(error => { if (active) setMessage(error instanceof Error ? error.message : '来源读取失败，请重试。') })
     return () => { active = false }
   }, [inputs?.reference_run_ids, inputs?.reference_task_ids, props.remote])
+  const promptEditorKey = state.workspaceId && view.workId && branch ? JSON.stringify([state.workspaceId, view.workId, branch.branch_id]) : null
+  let promptEditor = promptEditorKey ? promptEditors.get(promptEditorKey) : undefined
+  if (!promptEditor && promptEditorKey && state.workspaceId && view.workId && branch && preparationEditor) {
+    promptEditor = new PromptEditingController({ workspace_id: state.workspaceId, work_id: view.workId, branch_id: branch.branch_id }, props.remote, preparationEditor, p?.refreshAfterMs ?? 0)
+    promptEditors.set(promptEditorKey, promptEditor)
+  }
+  const promptEditing = useSyncExternalStore(promptEditor?.subscribe ?? noPreparationSubscription, promptEditor?.getSnapshot ?? emptyPreparation, promptEditor?.getSnapshot ?? emptyPreparation)
+  useEffect(() => { void promptEditor?.restore() }, [promptEditor, preparedDraft?.prompt_edit_task_id])
+  useEffect(() => {
+    if (!promptTaskToOpen || !promptEditor || branch?.branch_id !== promptTaskToOpen.branchId) return
+    const selected = p?.functions.find(item => item.function_id === promptTaskToOpen.functionId) ?? binding('prompt')
+    if (!selected) return
+    preparationEditor?.begin()
+    promptEditor.open(selected, promptTaskToOpen.taskId)
+    setPromptTaskToOpen(null)
+  }, [promptTaskToOpen, promptEditor, branch?.branch_id])
   const locked = !editing
   const pending = branchRuns(branch?.branch_id ?? '').some(pendingRun)
   const beginPreparation = () => { preparationEditor?.begin(); store.updateView({ inspectRun: false }) }
@@ -1639,7 +1693,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const prompt = (id: 'positive_prompt' | 'negative_prompt') => {
     const value = inputs?.prompt_input[id] ?? '', label = inputOptions.parameterLabels[id]
     return <div className={editing ? 'field prompt-field' : 'input-readout prompt-readout'} aria-label={editing ? undefined : label} key={id}>
-      <div className="row between">{editing ? <label htmlFor={id}>{label}</label> : <span>{label}</span>}<Button kind="small quiet" disabled={!value.trim()} onClick={() => openTranslation(id)}>翻译</Button></div>
+      <div className="row between">{editing ? <label htmlFor={id}>{label}</label> : <span>{label}</span>}{editing && promptEditing?.busy && <span role="status">正在生成提示词…</span>}<Button kind="small quiet" disabled={!value.trim()} onClick={() => openTranslation(id)}>翻译</Button></div>
       {editing ? <textarea id={id} aria-label={label} placeholder={inputs?.prompt_input[id] === null ? inputOptions.unresolved : undefined} className={id === 'negative_prompt' ? 'short' : ''} value={value}
         onChange={event => updatePreparation({ prompt_input: { ...preparedDraft!.prompt_input, [id]: event.target.value } })} /> : <div>{inputs?.prompt_input[id] === null ? inputOptions.unresolved : value || '未填写'}</div>}
     </div>
@@ -1706,16 +1760,19 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     <div className="inspector-body" {...scrollPanel(`inspector:${view.workId}:${view.branchId}`)}>
       <div className="preparation-heading"><h3>{view.inspectRun ? `运行 ${run?.run_id}` : experiment ? '实验初始输入' : editing ? '编辑下次运行' : '下次运行'}</h3><span className={`input-state ${editing ? 'editing' : ''}`} id="preparation-state">{view.inspectRun || experiment ? '只读' : editing ? JSON.stringify(preparedDraft) === JSON.stringify(branch.draft) ? '编辑中' : '未保存' : '已保存的参数'}</span></div>
       {view.inspectRun && run && <div className="run-input-identity"><span>任务 {run.workbench_task_id}</span><Status run={run} /><span>{runTime(run)}</span></div>}
-      {displayedExperiment && displayedExperimentTask && <ExperimentStatus experiment={displayedExperiment} task={displayedExperimentTask} runs={displayedExperimentRuns} presetName={presetName(displayedExperimentTask.binding_snapshot.preset_id)} modelName={formatAgentModel(displayedExperimentTask.binding_snapshot.agentModel)} onRun={selectRun} />}
+      {displayedExperiment && displayedExperimentTask && <ExperimentStatus experiment={displayedExperiment} task={displayedExperimentTask} activeTask={displayedActiveTask} runs={displayedExperimentRuns} presetName={presetName((displayedActiveTask ?? displayedExperimentTask).binding_snapshot.preset_id)} modelName={formatAgentModel((displayedActiveTask ?? displayedExperimentTask).binding_snapshot.agentModel)} onRun={selectRun} />}
       {referenceInputs(inputs, editing)}
       {view.inspectRun && !historical ? <div className="empty" aria-label="加载运行输入"><span className="loading-ring" /></div> : editing ? <fieldset className="configuration">
         {field('分支名称', 'name', preparation?.name ?? branch.name, { maxLength: WORKBENCH_BRANCH_NAME_MAX_LENGTH })}
         {field('原始需求', 'original_request', preparation?.originalRequest ?? branch.original_request, { multiline: true, short: true })}
         {!!inputs.reference_run_ids.length && field('本次改进要求', 'instructions', inputs.instructions, { multiline: true, short: true })}
-        <div className="agent-inputs">{agentButton('生成提示词', 'prompt', false)}<small className="function-preset">Agent 预设：{presetName(binding('prompt')?.preset_id)}</small><small className="execution-model">Agent 模型：{agentModel(binding('prompt'))}</small>{customActions(['prompt'], false)}</div>
+        <label className="field"><span>图像底模</span><select aria-label="图像底模" value={inputs.base_model_id ?? ''} disabled={!!inputs.generation_input.model && !!inputs.base_model_id} onChange={event => updatePreparation({ base_model_id: event.target.value || null })}><option value="">请选择底模</option>{props.baseModels?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+        <div className="agent-inputs">{agentButton(promptEditing?.busy ? '正在生成提示词…' : inputs.prompt_input.positive_prompt?.trim() || inputs.prompt_input.negative_prompt?.trim() ? '对比提示词' : '生成提示词', 'prompt', !!promptEditing?.busy)}<small className="function-preset">Agent 预设：{presetName(binding('prompt')?.preset_id)}</small><small className="execution-model">Agent 模型：{agentModel(binding('prompt'))}</small>{customActions(['prompt'], !!promptEditing?.busy)}</div>
+        {promptEditing?.error && <p className="binding-problem" role="alert">{promptEditing.error}</p>}
+        {prompt('positive_prompt')}{prompt('negative_prompt')}
         <label className="field"><span>ComfyUI 实例</span><select aria-label="ComfyUI 实例" value={inputs.generation_input.instance_id ?? ''} onChange={event => updatePreparation({ generation_input: { ...preparedDraft!.generation_input, instance_id: event.target.value || null } })}><option value="">请选择</option>{props.instances?.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         {resources}{customActions(['resources'], false)}
-        <details className="config-section" open><summary>提示词与图片</summary><div className="agent-field-action">{agentButton('改写提示词', 'rewrite', false)}{customActions(['rewrite'], false)}</div>{prompt('positive_prompt')}{prompt('negative_prompt')}{imageInputs}</details>
+        <details className="config-section" open><summary>输入图片</summary>{imageInputs}</details>
         <details className="config-section" open><summary>生成参数</summary><div className="agent-field-action">{agentButton('建议参数', 'parameters', false)}{customActions(['parameters'], false)}</div>
           <div className="fields2">{parameterField('steps')}{parameterField('cfg')}</div>
           <div className="fields2">{parameterField('seed')}<RuntimeSizeField sizes={sizes} value={currentSize} editor={parameterFieldEditor('size')} locked={false} save={size => saveGenerationInput({ field: 'size', value: { candidate_id: size.candidate_id, parameters: size.parameters } })} /></div>
@@ -1744,6 +1801,11 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       workspaceId={state.workspaceId ?? ''}
       workspaceName={workspace?.name}
       functions={p?.functions.map(item => functionBindings.get(JSON.stringify([item.workspace_id, item.function_id])) ?? item) ?? []}
+      previewRequest={preparedDraft && branch && state.workspaceId && view.workId ? {
+        workspace_id: state.workspaceId, work_id: view.workId, branch_id: branch.branch_id, function_id: 'prompt', request_id: 'preview', draft: preparedDraft,
+        input: { original_request: preparation?.originalRequest ?? branch.original_request, base_model_id: preparedDraft.base_model_id ?? '',
+          positive_prompt: preparedDraft.prompt_input.positive_prompt ?? '', negative_prompt: preparedDraft.prompt_input.negative_prompt ?? '', change_request: preparedDraft.prompt_change_request ?? '' },
+      } : undefined}
       presets={props.presets ?? []}
       models={props.agentModelGroups ?? []}
       remote={props.remote}
@@ -2264,6 +2326,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             {referenceDetail.runs?.map(item => <Button key={item.run_id} kind="small quiet" onClick={() => void inspectReference('run', item.run_id)}>查看运行 {item.run_id}</Button>)}</>}
           <div className="modal-actions"><Button kind="quiet" onClick={() => setReferenceDetail(null)}>取消</Button></div>
         </section></div>}
+        {promptEditor && promptEditing?.open && !view.inspectRun && <ExperimentPromptDialog pollIntervalMs={state.projection?.refreshAfterMs ?? 0} controller={promptEditor} state={promptEditing} workspaceId={state.workspaceId ?? ''}
+          originalRequest={preparation?.originalRequest ?? branch?.original_request ?? ''} baseModelName={preparedDraft ? modelLabel(preparedDraft) : ''} remote={props.remote} />}
         {translation && <ExperimentTranslationDialog workspaceId={state.workspaceId ?? ''} initialField={translation.field} prompts={translation.prompts}
           remote={props.remote} modelLabel={`${presetName(binding('translate')?.preset_id)} · ${agentModel(binding('translate'))}`} onClose={() => {
             const target = translation.returnFocus

@@ -28,6 +28,6 @@ it.each([
   expect(published.disposition).toBe('candidate')
   expect((await remote.getProjection(selected, signal())).branches[0]).toEqual(before)
   expect((await ctx.harnessComfyuiWorkbench.service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([
-    { artifact_id: published.artifact_id, artifact, disposition: 'candidate' },
+    { task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'candidate' },
   ])
 })

@@ -2,12 +2,23 @@ import { expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import { apply } from '../../src/host/workbench/tools.ts'
+import { apply, Config } from '../../src/host/workbench/tools.ts'
+import Schema from '@deepseek-ai/schemastery'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { assertSupportedJsonSchema, validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import { taskPublishRequestSchema } from '../../src/workbench/schema.ts'
 import { nativeToolSchema } from '../../src/host/workbench/tool-schema.ts'
+
+it.each([
+  { input: {}, expected: ['workbench_task_get', 'workbench_task_publish', 'workbench_experiment_end'] },
+  { input: { tools: [] }, expected: [] },
+])('honors the configured native tool selection after official schema resolution: $input', ({ input, expected }) => {
+  const names: string[] = []
+  const ctx = { tools: { register: (tool: ToolDefinition) => names.push(tool.name) }, harnessComfyuiWorkbench: { service: {} } } as unknown as Context
+  apply(ctx, Schema.resolve(input, Config, {})[0])
+  expect(names).toEqual(expected)
+})
 
 it('exposes the publication contract as the host-supported native tool schema', () => {
   const schema = nativeToolSchema(taskPublishRequestSchema)
@@ -41,6 +52,7 @@ it('reads a task and publishes its prompt through the registered native tools', 
   try {
     await fixture.ctx.harnessComfyuiWorkbench.initializeWorkspace('workspace_1')
     const { work, branch } = fixture.store.createWork({ workspaceId: 'workspace_1', name: 'Garden', goal: 'A garden' })
+    await saveFixtureDraft(fixture.remote, { workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id }, draft => { draft.base_model_id = '1' }, new AbortController().signal)
     const task = await fixture.ctx.harnessComfyuiWorkbench.service.createTask({ workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id, functionId: 'prompt', instructions: '' })
     const tools = new Map<string, ToolDefinition>()
     apply({ tools: { register: (tool: ToolDefinition) => tools.set(tool.name, tool) }, harnessComfyuiWorkbench: fixture.ctx.harnessComfyuiWorkbench, workspaceRegistry: { resolveByPath: async () => undefined } } as unknown as Context)

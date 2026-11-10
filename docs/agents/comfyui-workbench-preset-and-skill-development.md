@@ -7,46 +7,46 @@
 
 ## 适用范围
 
-1. Agent 创建或修改项目 Preset、[项目 Skill 源码目录](</Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills>)中的 Skill 或受管 CLI 帮助时，必须遵守本规范。项目 Preset 的身份与入口见[系统架构](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#项目-presetskills-与目录访问>)。
+1. Agent 创建或修改项目 Preset、[项目 Skill 源码目录](<../../.agents/skills>)中的 Skill 或受管 CLI 帮助时，必须遵守本规范。项目 Preset 的身份与入口见[系统架构](<../../docs/system/architecture.md#项目-presetskills-与目录访问>)。
 
 2. Agent 修改现有项目 Skill 目录中的脚本或程序前，必须获得用户明确授权。
 
 ## 插件包资源与预设身份
 
-1. [config/product-agent.json](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/product-agent.json>)保存工作台 Preset ID 与资源根目录。开发者修改配置时，必须同步核对 [config/product-agent-schema.mjs](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/product-agent-schema.mjs>) 的约束。
+1. [config/product-agent.json](<../../config/product-agent.json>)保存工作台 Preset ID 与资源根目录。开发者修改配置时，必须同步核对 [config/product-agent-schema.mjs](<../../config/product-agent-schema.mjs>) 的约束。
 
-2. 插件的 [Preset registry](../../agent-presets/presets.cordis.yml)注册工作台预设与翻译预设。开发者修改插件预设注册时，必须保留宿主提供的官方内置预设。各预设通过包内相对路径加载资源，入口见[目录结构](../system/directory-structure.md#preset-与-skill-资源)。
+2. 插件的 [Preset registry](../../agent-presets/presets.cordis.yml) 注册通用工作台、翻译和各专用预设。开发者修改插件预设注册时，必须保留宿主提供的官方内置预设。各预设通过包内相对路径加载资源，入口见[目录结构](../system/directory-structure.md#preset-与-skill-资源)。
 
-3. 插件安装包必须交付[包清单](</Volumes/4Tdisk/work/AI2/harness-comfyui/config/plugin-package.json>)声明的预设资源及业务 Skill 正文、参考文档和脚本。
+3. 插件安装包必须交付[包清单](<../../config/plugin-package.json>)声明的预设资源及业务 Skill 正文、参考文档和脚本。
 
-4. 开发者修改预设注册时，工作台身份采用产品配置，翻译预设身份采用 [config/workbench-translation.json](../../config/workbench-translation.json)；注册表声明各预设的排序与源码入口。
+4. 翻译预设身份由 [config/workbench-translation.json](../../config/workbench-translation.json) 定义；注册表声明各预设的排序与源码入口。
 
 5. 官方全局默认 Preset 和默认对话模型由用户选择。
 
 ## 项目 Skill 来源与作用域
 
-1. [项目 Skill 源码目录](</Volumes/4Tdisk/work/AI2/harness-comfyui/.agents/skills>)是业务 Skill 的唯一源码入口。开发者必须在该目录创建或修改业务 Skill。
+1. [项目 Skill 源码目录](<../../.agents/skills>)是业务 Skill 的唯一源码入口。开发者必须在该目录创建或修改业务 Skill。
 
-2. 开发者修改 Skill 来源时，必须遵循[工作台装配配置](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/configuration.md#工作台装配配置>)。服务隔离与读取职责见[系统架构](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#项目-presetskills-与目录访问>)。
+2. 开发者修改 Skill 来源时，必须遵循[工作台装配配置](<../../docs/system/configuration.md#工作台装配配置>)。服务隔离与读取职责见[系统架构](<../../docs/system/architecture.md#项目-presetskills-与目录访问>)。
 
 ## 工具作用域与注册
 
-1. 工作台必须通过 NoobAI MCP 查询目录，通过受管 CLI 执行生成任务、查询 Run、访问媒体和读取图片。CLI 与 Remote 的业务服务边界遵循 [ADR 0016](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/adr/0016-official-desktop-plugin-delivery.md#插件与宿主边界>)。
-2. 开发者修改工具限制时，必须使用宿主原生工具服务，并按[测试规范](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/testing.md#preset-与子-agent-合同>)验证声明、实际调用与释放。配置入口见[工作台装配配置](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/configuration.md#工作台装配配置>)。
+1. 开发者修改通用工作台工具配置时，必须遵循[系统架构的工具分工](../system/architecture.md#项目-presetskills-与目录访问)。专用预设的工具范围见 [角色配置](../../config/workbench-agent-roles.json)。CLI 与 Remote 的业务服务边界遵循 [ADR 0016](<../../docs/adr/0016-official-desktop-plugin-delivery.md#插件与宿主边界>)。
+2. 开发者修改工具限制时，必须使用宿主原生工具服务，并按[测试规范](<../../docs/system/testing.md#preset-与子-agent-合同>)验证声明、实际调用与释放。配置入口见[工作台装配配置](<../../docs/system/configuration.md#工作台装配配置>)。
 3. 宿主升级或插件增减后，开发者必须逐项核对实际工具清单与业务用途。工具清单或业务用途发生变化时，开发者必须据此更新工具限制和验收预期。
 
 ## 系统提示词
 
-1. 工作台 persona 保存工作台身份、跨任务授权、子任务协作和交付约束。Skill 摘要只描述任务匹配条件；Skill 正文负责业务步骤。开发者不得在 persona 中复写 Skill 加载规则与 CLI 操作步骤。
-2. 主会话与子会话必须共用工作台组合。运行时上下文由宿主管理，字段与覆盖项见[工作台装配配置](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/configuration.md#工作台装配配置>)。
+1. 通用工作台预设的 persona 保存工作台身份、跨任务授权、子任务协作和交付约束。Skill 摘要只描述任务匹配条件；Skill 正文负责业务步骤。开发者不得在 persona 中复写 Skill 加载规则与 CLI 操作步骤。
+2. 专用预设的独立会话与子会话使用同一份角色能力配置，入口为 [workbench-agent-roles.json](../../config/workbench-agent-roles.json)。运行时上下文由宿主管理，字段与覆盖项见[工作台装配配置](<../../docs/system/configuration.md#工作台装配配置>)。
 3. 共享组合必须加载官方 `@deepseek-ai/dsh-agent-instructions` 组件，使主会话与子会话读取当前工作区适用的 `AGENTS.md`。指令发现、作用域和更新行为沿用宿主组件；不得将插件源码仓库的开发规范作为固定内容注入用户工作区。
 4. 工作台必须保留官方 `skill` 工具的目录与正文追加路径。persona 必须在会话开始前确定；业务步骤推进时，不得改写既有 persona 或消息前缀。
 
 ## 官方子 Agent 与业务身份
 
-1. 工作台必须使用官方子 Agent 工具处理派发、续派、中断和查询。调用合同见[系统架构](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#项目-presetskills-与目录访问>)，组件字段见[配置规范](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/configuration.md#子-agent-派发配置>)。
-2. 开发者修改业务身份读取时，必须遵循[Host Node 与受管 CLI 身份](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#host-node-与受管-cli-身份>)。Workspace 分组状态不得作为业务调用的前置条件。
-3. 开发者修改后代结果访问时，必须保留访问范围、分支诊断与取消行为。具体合同见[Client 工作台、结果与媒体访问](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/architecture.md#client-工作台结果与媒体访问>)。
+1. 工作台通过官方子 Agent 服务与工具处理派发、续派、中断和查询。持续实验按功能配置选用独立预设，入口为 [Harness 工作台适配器](../../src/host/workbench/harness-adapter.ts)。调用合同见[系统架构](<../../docs/system/architecture.md#项目-presetskills-与目录访问>)，组件字段见[配置规范](<../../docs/system/configuration.md#子-agent-派发配置>)。
+2. 开发者修改业务身份读取时，必须遵循[Host Node 与受管 CLI 身份](<../../docs/system/architecture.md#host-node-与受管-cli-身份>)。Workspace 分组状态不得作为业务调用的前置条件。
+3. 开发者修改后代结果访问时，必须保留访问范围、分支诊断与取消行为。具体合同见[Client 工作台、结果与媒体访问](<../../docs/system/architecture.md#client-工作台结果与媒体访问>)。
 
 ## CLI 帮助与 Skill 的内容职责
 
@@ -75,15 +75,15 @@
 
 ### 自动化与黑盒检查
 
-1. 开发者修改项目 Preset、注册组件或 Host Tool scope 时，必须运行对应的正常、异常和边界测试。测试选择与通过条件见[测试规范](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/testing.md>)。
-2. 开发者新增或修改项目 Skill、业务参考或 CLI 帮助时，必须按[测试规范](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/testing.md>)验证 Skill 的目录发现与读取。开发者再按[官方应用与真实模型验收](<#官方应用与真实模型验收>)完成真实模型验收。
+1. 开发者修改项目 Preset、注册组件或 Host Tool scope 时，必须运行对应的正常、异常和边界测试。测试选择与通过条件见[测试规范](<../../docs/system/testing.md>)。
+2. 开发者新增或修改项目 Skill、业务参考或 CLI 帮助时，必须按[测试规范](<../../docs/system/testing.md>)验证 Skill 的目录发现与读取。开发者再按[官方应用与真实模型验收](<#官方应用与真实模型验收>)完成真实模型验收。
 
 ### 官方应用与真实模型验收
 
 1. 修改工作台组合或宿主接入后，开发者必须按获准任务的真实模型验收矩阵验证对应行为。验证范围包括工具范围、系统提示词、Skill 读取、受管 CLI、子 Agent 和业务身份。
-2. 开发者先按[测试规范](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/system/testing.md>)运行 `pnpm test:desktop`，再通过独立 worktree 的 development probe 完成真实模型验收。启动、状态检查和停止命令见[worktree 开发规范](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/agents/worktree-development.md>)。Agent 必须在官方应用中显式选择工作台 Preset。
+2. 开发者先按[测试规范](<../../docs/system/testing.md>)运行 `pnpm test:desktop`，再通过独立 worktree 的 development probe 完成真实模型验收。启动、状态检查和停止命令见[worktree 开发规范](<../../docs/agents/worktree-development.md>)。Agent 必须在官方应用中显式选择工作台 Preset。
 
-3. 开发者必须在当前获准任务指定的 [docs/verification/](</Volumes/4Tdisk/work/AI2/harness-comfyui/docs/verification>) 子目录保存验收记录。记录包含以下内容。
+3. 开发者必须在当前获准任务指定的 [docs/verification/](<../../docs/verification>) 子目录保存验收记录。记录包含以下内容。
 
    1. 应用与插件版本、被测 Preset、模型和 Workspace。
    2. Skill 和参考文档路径、用户请求。
@@ -93,7 +93,7 @@
 
 ### 语义审查
 
-1. 修改本规范、项目 `SKILL.md`、业务参考或 CLI 帮助后，开发者必须派发独立语义 Reviewer。审计输入仅包含目标文件、本节审计标准，以及仓库 [AGENTS.md](</Volumes/4Tdisk/work/AI2/harness-comfyui/AGENTS.md>) 的文字规范。审阅 `SKILL.md` 或业务参考时，还须提供仓库的 Skill 开发规范。Reviewer 独立阅读目标文件，并逐项判断语义质量。
+1. 修改本规范、项目 `SKILL.md`、业务参考或 CLI 帮助后，开发者必须派发独立语义 Reviewer。审计输入仅包含目标文件、本节审计标准，以及仓库 [AGENTS.md](<../../AGENTS.md>) 的文字规范。审阅 `SKILL.md` 或业务参考时，还须提供仓库的 Skill 开发规范。Reviewer 独立阅读目标文件，并逐项判断语义质量。
 
 2. Reviewer 必须按第 1 项指定的仓库规范逐句审阅，并遵守以下补充要求：
 

@@ -6,7 +6,7 @@ import type { JsonValue } from '../shared/json-contract.ts'
 export type { JsonValue }
 const RUN_REVIEW_FUNCTION_KINDS = ['review', 'compare', 'diagnose', 'experience'] as const
 export type RunReviewFunctionKind = typeof RUN_REVIEW_FUNCTION_KINDS[number]
-const BRANCH_NON_GENERATION_TASK_KINDS = ['prompt', 'rewrite', 'parameters', 'resources'] as const
+const BRANCH_NON_GENERATION_TASK_KINDS = ['prompt', 'parameters', 'resources'] as const
 export type BranchNonGenerationTaskKind = typeof BRANCH_NON_GENERATION_TASK_KINDS[number]
 export type TaskKind = BranchNonGenerationTaskKind | RunReviewFunctionKind | 'run' | 'experiment'
 export function isRunReviewFunctionKind(kind: TaskKind): kind is RunReviewFunctionKind { return RUN_REVIEW_FUNCTION_KINDS.some(reviewKind => reviewKind === kind) }
@@ -59,7 +59,7 @@ export function isBranchNonGenerationTaskKind(kind: TaskKind): kind is BranchNon
 
 export interface WorkbenchRecordQuery { type: 'task' | 'run' | 'experience' | 'favorite'; workspaceId?: string; workId?: string; taskId?: string; keyword?: string }
 export interface WorkbenchRecord { type: 'task' | 'run' | 'experience'; id: string; workspace_id: string | null; work_id: string | null; branch_id: string | null; task_id: string | null; title: string; base_model_id?: string | null; task?: Task; artifacts?: StoredArtifact[]; runs?: WorkbenchRun[]; run?: WorkbenchRun; experience?: Experience }
-export interface TaskDraft extends InputReferences { prompt_input: PromptInput; generation_input: GenerationInputBase; parameter_mapping: ParameterMapping; base_model_id: string | null; instructions: string }
+export interface TaskDraft extends InputReferences { prompt_edit_task_id?: string | null; prompt_change_request?: string; prompt_input: PromptInput; generation_input: GenerationInputBase; parameter_mapping: ParameterMapping; base_model_id: string | null; instructions: string }
 
 export interface TaskRequestDraft {
   instructions: string
@@ -91,7 +91,9 @@ export interface ReviewDraft {
 export interface ReviewDraftUpdate { expected: ReviewDraft; draft: ReviewDraft }
 export interface SavedReview { verdict: ReviewDraft['verdict']; observation: string; conclusion: string; source_artifact_id: string | null }
 export interface EvaluationInput { run_id: string; verdict: ReviewDraft['verdict']; observation: string; conclusion: string; experience: { title: string; conditions: string; note: string } }
+export type ExperimentInputSource = { type: 'initial' } | { type: 'candidate'; artifact_id: string } | { type: 'run'; run_id: string }
 export interface TaskInput extends Omit<TaskDraft, 'instructions'> {
+  delegation_source?: ExperimentInputSource
   requirements: { original_request: string; instructions: string }
   reference_task_artifacts: ReferenceTaskArtifact[]
   evaluation_input?: EvaluationInput
@@ -113,13 +115,14 @@ export interface FunctionBindingEditable {
   agent_model: AgentModel
   requested_skill: string | null
   request_template: string
+  request_parts?: import('./request-template.ts').PromptRequestParts
 }
 export interface FunctionBinding extends FunctionBindingEditable {
   workspace_id: string
   function_id: string
   builtin: boolean
 }
-export interface BindingSnapshot { function_id: string; name: string; kind: FunctionKind; preset_id: string; agentModel: AgentModel; requested_skill: string | null; request_template: string }
+export interface BindingSnapshot { function_id: string; name: string; kind: FunctionKind | 'rewrite'; preset_id: string; agentModel: AgentModel; requested_skill: string | null; request_template: string; request_parts?: import('./request-template.ts').PromptRequestParts }
 export interface ApplyTarget { kind: 'branch' | 'run_review'; id: string; expected: Record<string, JsonValue> }
 export interface Work { work_id: string; workspace_id: string; name: string; goal: string }
 export interface Branch {
@@ -138,6 +141,7 @@ export interface Branch {
 export interface TaskAnswer { question_artifact_id: string; answer: string }
 export interface Task {
   task_id: string
+  parent_experiment_task_id: string | null
   branch_id: string
   function_id: string
   title: string
@@ -158,10 +162,16 @@ export interface Task {
   initiator: 'human' | 'agent'
   retry_of_run_id: string | null
 }
+
+export interface TaskChildSummary extends Pick<Task, 'task_id' | 'function_id' | 'kind' | 'title' | 'status' | 'session_id' | 'execution_state' | 'error'> {
+  preset_id: string
+  agent_model: AgentModel
+}
 export type ArtifactPayload = (
   | ({ type: 'prompt' } & PromptInput)
   | { type: 'parameters'; parameters: Record<string, JsonValue> }
-  | { type: 'generation_input'; generation_input: GenerationInputBase; image_refs?: ImageRef[]; workflow_image_bindings?: WorkflowImageBinding[] }
+  | { type: 'generation_input'; generation_input: GenerationInputBase; image_refs?: ImageRef[]; workflow_image_bindings?: WorkflowImageBinding[]; plan_artifact_id?: string | null }
+  | { type: 'iteration_plan'; source_run_id: string; changes: string[]; reason: string; expected_result: string }
   | { type: 'resources'; refs: ResourceRef[]; reason?: string }
   | { type: 'review'; observation: string; conclusion: string; run_ids: string[]; candidate?: { generation_input: GenerationInputBase; image_refs?: ImageRef[]; workflow_image_bindings?: WorkflowImageBinding[] } }
   | { type: 'experience'; title: string; conditions: string; note: string; base_model_id: string | null; model_id: string | null; run_ids: string[] }
@@ -192,6 +202,7 @@ export interface WorkbenchRun {
   media: WorkbenchRunMedia[]
   run_id: string
   workbench_task_id: string
+  execution_task_id: string | null
   iteration_index: number | null
   status: import('../generation/run-status.ts').GenerationRunStatus
   title: string
@@ -252,9 +263,9 @@ export interface WorkbenchProjection {
 }
 export interface TaskGetCommon extends Omit<TaskInput, 'generation_input' | 'parameter_mapping'> {
   image_sources: ImageSource[]
-  task_id: string; status: TaskStatus; output_contract: OutputContract
-  artifacts: { artifact_id: string; artifact: ArtifactPayload; disposition: ArtifactDisposition }[]
-  iterations: { index: number; run_id: string; generation_input: GenerationInput; image_refs: ImageRef[]; workflow_image_bindings: WorkflowImageBinding[]; review_artifact_id: string | null }[]
+  task_id: string; parent_experiment_task_id: string | null; children: TaskChildSummary[]; status: TaskStatus; output_contract: OutputContract
+  artifacts: { task_id: string; artifact_id: string; artifact: ArtifactPayload; disposition: ArtifactDisposition }[]
+  iterations: { index: number; run_id: string; execution_task_id: string | null; generation_input: GenerationInput; image_refs: ImageRef[]; workflow_image_bindings: WorkflowImageBinding[]; review_artifact_id: string | null }[]
   answers: TaskAnswer[]
 }
 

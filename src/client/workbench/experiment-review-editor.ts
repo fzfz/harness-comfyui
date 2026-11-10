@@ -71,8 +71,12 @@ export class RunReviewEditor {
     return result
   }
   change<K extends keyof ReviewDraft>(field: K, value: ReviewDraft[K]) {
-    const draft = { ...this.state.draft, [field]: value }
-    this.edited.set(field, { value: structuredClone(value) })
+    this.changeFields({ [field]: value } as Partial<ReviewDraft>)
+  }
+  changeFields(fields: Partial<ReviewDraft>) {
+    const draft = { ...this.state.draft, ...fields }
+    for (const field of Object.keys(fields) as (keyof ReviewDraft)[])
+      this.edited.set(field, { value: structuredClone(draft[field]) })
     this.update(draft)
     void this.enqueue(draft, this.save).catch(() => {})
   }

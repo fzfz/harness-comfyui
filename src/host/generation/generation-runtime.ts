@@ -242,6 +242,7 @@ interface RunRow {
   effective_input_json: string | null
   image_uploads_json: string | null
   workbench_task_id: string | null
+  execution_task_id: string | null
   source_snapshot_path: string | null
   api_workflow_path: string | null
   actual_workflow_path: string | null
@@ -667,7 +668,7 @@ export class GenerationRuntime {
       this.migrateRequestIdentity()
       for (const [name, type] of Object.entries({
         effective_input_json: 'TEXT', image_uploads_json: 'TEXT',
-        workbench_task_id: 'TEXT', iteration_index: 'INTEGER', initiator: 'TEXT',
+        workbench_task_id: 'TEXT', execution_task_id: 'TEXT', iteration_index: 'INTEGER', initiator: 'TEXT',
         candidate_artifact_id: 'TEXT', retry_of_run_id: 'TEXT', review_artifact_id: 'TEXT',
         review_json: 'TEXT', review_draft_json: 'TEXT',
       })) {
@@ -676,6 +677,7 @@ export class GenerationRuntime {
         }
       }
       this.database.exec('CREATE INDEX IF NOT EXISTS generation_runs_workbench_task ON generation_runs(workbench_task_id)')
+      this.database.exec('CREATE INDEX IF NOT EXISTS generation_runs_execution_task ON generation_runs(execution_task_id)')
       const violations = this.database.prepare('PRAGMA foreign_key_check').all()
       if (violations.length > 0) throw new Error('Generation repository migration failed foreign key validation.')
       this.database.exec('COMMIT')
@@ -789,7 +791,7 @@ export class GenerationRuntime {
           },
         }
         if (row !== undefined) {
-          if (row.workbench_task_id !== (workbenchTaskId ?? null)) {
+          if ((row.execution_task_id ?? row.workbench_task_id) !== (workbenchTaskId ?? null)) {
             throw new GenerationRuntimeError('RUN_REQUEST_CONFLICT', `Request ${item.requestId} belongs to a different workbench task.`)
           }
           if (row.request_json !== item.requestJson) {

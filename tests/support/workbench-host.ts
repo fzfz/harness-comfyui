@@ -44,7 +44,7 @@ export function provideWorkbenchOfficialServices(ctx: Context, workspaces = [
       selected: { provider: input.provider, model: input.model, ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}) },
     })),
     prompt: vi.fn(async () => ({ accepted: true as const })),
-    cancel: vi.fn(() => ({ accepted: true as const })),
+    cancel: vi.fn((_input: { sessionId: string }) => ({ accepted: true as const })),
   }
   const disposeScope = vi.fn(async () => {})
   const acquireScope = vi.fn(async () => ({ key: 'preset-scope', [Symbol.asyncDispose]: disposeScope }))
@@ -110,8 +110,17 @@ export async function createWorkbenchHostFixture(preparer?: GenerationPreparatio
         resolveByPath: async (path: string) => workspaces.find(workspace => workspace.path === path),
         create: createWorkspace,
       } as never)
-      context.provide('sessionPersistence' as never, { stat: async (id: string) => official.sessions.get(id) } as never)
-      context.provide('subagents' as never, { listDescendants: async (id: string) => descendants.get(id) ?? [] } as never)
+      context.provide('sessionPersistence' as never, {
+        stat: async (id: string) => official.sessions.get(id),
+        open: async (id: string) => ({ read: async () => ({ events: official.events.get(id) ?? [] }), close: async () => {} }),
+      } as never)
+      context.provide('subagents' as never, {
+        listDescendants: async (id: string) => descendants.get(id) ?? [],
+        drainDescendants: async (parents: { session: { header: { cwd: string } } }[]) => {
+          for (const [id, agent] of official.agents) if (parents.includes(agent)) for (const child of descendants.get(id) ?? []) if (official.agents.has(child.id)) official.controller.cancel({ sessionId: child.id })
+        },
+        interrupt: (id: string) => { if (official.agents.has(id)) official.controller.cancel({ sessionId: id }) },
+      } as never)
     },
   })
   const search = vi.fn<CatalogClient['search']>(async input => {

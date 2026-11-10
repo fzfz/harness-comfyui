@@ -1,14 +1,21 @@
 import Schema from '@deepseek-ai/schemastery'
 import { taskGetRequestSchema, taskGetResultSchema, taskPublishRequestSchema, taskPublishReceiptSchema, taskDraftSchema } from '../../src/workbench/schema.js'
-import { WORKBENCH_FUNCTIONS } from '../../src/workbench/functions.js'
-import type { TaskKind } from '../../src/workbench/contract.js'
+import { WORKBENCH_FUNCTIONS, TASK_KINDS } from '../../src/workbench/functions.js'
 import { describe, expect, it } from 'vitest'
 import { validateArtifact, validateTaskDraft, validateTaskInput, validateGenerationInput, taskDraftFromRunInput, WorkbenchError } from '../../src/workbench/validation.js'
 
 const input = { parameter_mapping: null, prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: 'test', instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, reference_task_ids: [], reference_task_artifacts: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], base_model_id: null, requirements: { original_request: 'a scene', instructions: '' }, reference_run_ids: [], requested_skill: null, max_runs: 0 }
 
 describe('workbench shared validation', () => {
-  it.each(['prompt', 'rewrite', 'parameters', 'resources', 'review', 'compare', 'diagnose', 'experience', 'run', 'experiment'] as TaskKind[])('validates the %s task input contract', kind => {
+  it('accepts a generation input artifact without a plan reference and preserves explicit plan references', () => {
+    const generationInput = { ...input.generation_input, instance_id: '1', template_id: '2' }
+    const request = { task_id: 'task-a', artifact: { type: 'generation_input', generation_input: generationInput } }
+    expect(Schema.resolve(request, taskPublishRequestSchema, {})[0].artifact).not.toHaveProperty('plan_artifact_id')
+    for (const plan_artifact_id of [null, 'plan-a']) {
+      expect(Schema.resolve({ ...request, artifact: { ...request.artifact, plan_artifact_id } }, taskPublishRequestSchema, {})[0].artifact).toHaveProperty('plan_artifact_id', plan_artifact_id)
+    }
+  })
+  it.each(TASK_KINDS)('validates the %s task input contract', kind => {
     const evaluation = ['review', 'compare', 'diagnose', 'experience'].includes(kind)
     const value = { ...input, generation_input: { ...input.generation_input, instance_id: '1', template_id: '2' }, max_runs: kind === 'run' ? 1 : kind === 'experiment' ? 3 : 0, reference_run_ids: evaluation ? ['run-a', 'run-b'] : [], ...(evaluation ? { evaluation_input: { run_id: 'run-a', verdict: 'unrated', observation: '', conclusion: '', experience: { title: '', conditions: '', note: '' } } } : {}) }
     expect(validateTaskInput(kind, value)).toEqual(value)
@@ -27,7 +34,7 @@ describe('workbench shared validation', () => {
 
   it('returns task inputs without evaluation fields and accepts reviews without candidate inputs', () => {
     const { parameter_mapping, ...publicInput } = input
-    const task = { task_id: 'task-a', kind: 'prompt', status: 'running', ...publicInput, unresolved_parameters: {}, output_contract: { artifact_types: ['prompt'], required_artifact_types: ['prompt'], parameter_ids: [], apply_mode: 'automatic', requires_finished_runs: false }, artifacts: [], iterations: [], answers: [] }
+    const task = { task_id: 'task-a', parent_experiment_task_id: null, children: [], kind: 'prompt', status: 'running', ...publicInput, unresolved_parameters: {}, output_contract: { artifact_types: ['prompt'], required_artifact_types: ['prompt'], parameter_ids: [], apply_mode: 'automatic', requires_finished_runs: false }, artifacts: [], iterations: [], answers: [] }
     const result = Schema.resolve(task, taskGetResultSchema, {})[0]
     expect(result).toMatchObject({ task_id: 'task-a', kind: 'prompt', max_runs: 0 })
     expect(result.evaluation_input).toBeUndefined()

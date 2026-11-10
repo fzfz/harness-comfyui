@@ -1,3 +1,4 @@
+import type { DelegatedSessionRequest } from '../../workbench/delegation.ts'
 import { randomUUID } from 'node:crypto'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -21,8 +22,15 @@ function skillName(argumentsValue: unknown): string | null {
 }
 
 export interface HarnessWorkbenchPorts {
+  readonly delegation?: {
+    resume?(input: { taskId: string; sessionId: string; text: string; signal: AbortSignal }): Promise<boolean>
+    start(input: DelegatedSessionRequest): Promise<{ result: Promise<{ stopReason: string }>; dispose(): Promise<void> }>
+    skills(taskId: string, presetId: string): Promise<readonly { name: string; invocation: { modelInvocable: boolean } }[]>
+    interrupt(parentSessionId: string, childSessionId: string): Promise<void>
+    disposeDescendants(parentSessionId: string): Promise<void>
+  }
   readonly controller: OfficialSessionController
-  readonly events: (sessionId: string) => readonly SessionEvent[]
+  readonly events: (sessionId: string) => readonly SessionEvent[] | Promise<readonly SessionEvent[]>
   readonly workspaceForTask: (taskId: string) => string
   readonly scopeForSession: (sessionId: string) => Promise<{ workspaceId: string; sessionIds: readonly string[] }>
   readonly agent: (sessionId: string) => {
@@ -34,6 +42,7 @@ export interface HarnessWorkbenchPorts {
 /** Uses the official Session command boundary and its live Agent scope. */
 export class HarnessWorkbenchSessions {
   private readonly failedSessions = new Set<string>()
+  private readonly delegatedStates = new Map<string, ExecutionState>()
   constructor(private readonly host: HarnessWorkbenchPorts) {}
 
   async create(input: { task: { task_id: string }; presetId: string; agentModel: AgentModel; requestedSkill: string | null }) {
@@ -50,11 +59,30 @@ export class HarnessWorkbenchSessions {
     return { sessionId: created.sessionId, selectedModel: { ...selected } }
   }
 
-  async dispatch(input: { sessionId: string; taskId: string; text: string; signal: AbortSignal }): Promise<void> {
+  async delegate(input: DelegatedSessionRequest): Promise<void> {
+    const delegation = this.host.delegation
+    if (!delegation) throw new Error('当前宿主无法委派功能，请重新载入插件。')
+    input.signal.throwIfAborted()
+    if (input.requestedSkill !== null) {
+      const skills = await delegation.skills(input.taskId, input.presetId)
+      if (!skills.some(skill => skill.name === input.requestedSkill && skill.invocation.modelInvocable)) throw new Error(`当前预设无法调用 Skill ${input.requestedSkill}。请在功能配置中选择可用 Skill。`)
+    }
+    const activation = await delegation.start(input)
+    this.delegatedStates.set(input.sessionId, 'running')
+    void activation.result.then(result => {
+      this.recordCompletion(input.sessionId, result.stopReason)
+    }, () => { this.delegatedStates.set(input.sessionId, 'failed') })
+  }
+
+  async dispatch(input: { sessionId: string; taskId: string; text: string; requestId?: string; signal: AbortSignal }): Promise<void> {
     const scope = await this.host.scopeForSession(input.sessionId)
     if (input.signal.aborted) return
     for (const sessionId of scope.sessionIds) this.failedSessions.delete(sessionId)
-    await this.host.controller.prompt({ requestId: randomUUID(), sessionId: input.sessionId, mode: 'queue', content: [{ type: 'text', text: input.text }] }, input.signal)
+    if (await this.host.delegation?.resume?.(input)) {
+      this.delegatedStates.set(input.sessionId, 'running')
+      return
+    }
+    await this.host.controller.prompt({ requestId: input.requestId ?? randomUUID(), sessionId: input.sessionId, mode: 'queue', content: [{ type: 'text', text: input.text }] }, input.signal)
   }
 
   async authorize(input: { task: { task_id: string; session_id: string | null }; identity: WorkbenchIdentity }): Promise<boolean> {
@@ -63,21 +91,35 @@ export class HarnessWorkbenchSessions {
     return scope.sessionIds.includes(input.identity.sessionId)
   }
 
+  async events(sessionId: string): Promise<readonly SessionEvent[]> { return this.host.events(sessionId) }
+
   async status(input: { sessionId: string }): Promise<ExecutionState | null> {
     const scope = await this.host.scopeForSession(input.sessionId)
     if (scope.sessionIds.some(id => this.failedSessions.has(id))) return 'failed'
     if (scope.sessionIds.some(id => this.host.agent(id)?.status === 'running')) return 'running'
-    return this.host.agent(input.sessionId)?.status ?? null
+    const live = this.host.agent(input.sessionId)?.status ?? this.delegatedStates.get(input.sessionId)
+    if (live) return live
+    const events = await this.host.events(input.sessionId)
+    for (const event of [...events].reverse()) {
+      if (event.type === 'turn/start') return null
+      if (event.type === 'turn/end') return ['error', 'max-tokens', 'blocked'].includes(event.data.reason.kind) ? 'failed' : 'idle'
+    }
+    return null
   }
 
   recordFailure(sessionId: string): void { this.failedSessions.add(sessionId) }
+  recordCompletion(sessionId: string, stopReason: string): ExecutionState {
+    const state = stopReason === 'completed' || stopReason === 'aborted' ? 'idle' : 'failed'
+    this.delegatedStates.set(sessionId, state)
+    return state
+  }
 
   async skillReadRefs(input: { sessionId: string }): Promise<SkillReadRef[]> {
     const scope = await this.host.scopeForSession(input.sessionId)
     const refs: SkillReadRef[] = []
     for (const sessionId of scope.sessionIds) {
       const calls = new Map<string, SessionEvent<'tool/call'>['data']>()
-      for (const event of this.host.events(sessionId)) {
+      for (const event of await this.host.events(sessionId)) {
         if (event.type === 'tool/call') calls.set(event.data.callId, event.data)
         else if (event.type === 'tool/result') {
           if (event.data.message.isError) continue
@@ -99,6 +141,12 @@ export class HarnessWorkbenchSessions {
     if (input.action === 'continue') return
     const scope = await this.host.scopeForSession(input.sessionId)
     if (input.signal.aborted) return
+    if (this.host.delegation) {
+      if (input.action === 'interrupt') await this.host.delegation.disposeDescendants(input.sessionId)
+      else for (const childId of scope.sessionIds.filter(id => id !== input.sessionId)) await this.host.delegation.interrupt(input.sessionId, childId)
+      if (this.host.agent(input.sessionId) !== undefined) this.host.controller.cancel({ sessionId: input.sessionId })
+      return
+    }
     for (const sessionId of scope.sessionIds) {
       if (this.host.agent(sessionId) !== undefined) this.host.controller.cancel({ sessionId })
     }

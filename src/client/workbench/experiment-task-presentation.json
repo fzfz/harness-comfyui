@@ -1,6 +1,7 @@
 {
   "unrecorded": "未记录",
-  "artifactLabels": { "prompt": "提示词", "parameters": "生成参数", "generation_input": "生成输入", "resources": "推荐资源", "review": "运行评价", "experience": "经验", "question": "问题" },
+  "function": "功能：{name}",
+  "artifactLabels": { "prompt": "提示词", "parameters": "生成参数", "generation_input": "生成输入", "resources": "推荐资源", "review": "运行评价", "experience": "经验", "question": "问题", "iteration_plan": "下一轮计划" },
   "inputs": "查看任务输入",
   "branch": "从产物创建分支",
   "branchName": "{parent} · {task}",

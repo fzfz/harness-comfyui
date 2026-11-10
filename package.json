@@ -245,6 +245,10 @@
     "./workbench-tools": {
       "types": "./src/host/workbench/tools.ts",
       "default": "./.local/source-host/workbench-tools.js"
+    },
+    "./specialist-tools": {
+      "types": "./src/host/workbench/specialist-tools.ts",
+      "default": "./.local/source-host/specialist-tools.js"
     }
   }
 }

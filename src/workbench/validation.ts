@@ -154,7 +154,7 @@ export function validateInputReferences(value: unknown, path = 'input'): import(
 }
 export function validateTaskInput(kind: TaskKind, value: unknown): TaskInput {
   const v = new Validator()
-  if (!v.object(value, 'input', [...Object.keys(contractFields(taskDraftSchema) ?? {}).filter(key => key !== 'instructions'), 'requirements', 'reference_task_artifacts', 'evaluation_input', 'requested_skill', 'max_runs'])) return v.finish(value)
+  if (!v.object(value, 'input', [...Object.keys(contractFields(taskDraftSchema) ?? {}).filter(key => key !== 'instructions'), 'requirements', 'reference_task_artifacts', 'evaluation_input', 'requested_skill', 'max_runs', 'delegation_source'])) return v.finish(value)
   const draftFields = Object.keys(contractFields(taskDraftSchema) ?? {})
   const draft = validateTaskDraft(Object.fromEntries(Object.entries(value).filter(([key]) => draftFields.includes(key))), 'input')
   const { instructions: _draftInstructions, ...fixedDraft } = draft
@@ -162,6 +162,13 @@ export function validateTaskInput(kind: TaskKind, value: unknown): TaskInput {
   if (!v.object(value, 'input')) return v.finish(value)
   v.draft(value, 'input', kind === 'run' || kind === 'experiment')
   if (v.object(value.requirements, 'input.requirements', ['original_request', 'instructions'])) { v.text(value.requirements.original_request, 'input.requirements.original_request', true); v.text(value.requirements.instructions, 'input.requirements.instructions') }
+  if (value.delegation_source !== undefined && v.object(value.delegation_source, 'input.delegation_source')) {
+    const source = value.delegation_source
+    if (source.type === 'initial') v.object(source, 'input.delegation_source', ['type'])
+    else if (source.type === 'candidate') { v.object(source, 'input.delegation_source', ['type', 'artifact_id']); v.text(source.artifact_id, 'input.delegation_source.artifact_id', true) }
+    else if (source.type === 'run') { v.object(source, 'input.delegation_source', ['type', 'run_id']); v.text(source.run_id, 'input.delegation_source.run_id', true) }
+    else v.issue('input.delegation_source.type', '请选择 initial、candidate 或 run。')
+  }
   v.strings(value.reference_run_ids, 'input.reference_run_ids')
   if (value.requested_skill !== null) v.text(value.requested_skill, 'input.requested_skill', true)
   if (!Number.isSafeInteger(value.max_runs) || (kind === 'run' ? value.max_runs !== 1 : kind === 'experiment' ? Number(value.max_runs) < 1 : value.max_runs !== 0)) v.issue('input.max_runs', '运行任务填写 1，持续实验填写正整数，其他任务填写 0。')
@@ -185,7 +192,7 @@ export function validateArtifact(value: unknown): ArtifactPayload {
   if (!v.object(value, 'artifact')) return v.finish(value)
   const schema = artifactSchemas[value.type as keyof typeof artifactSchemas]
   const keys = schema ? Object.keys(contractFields(schema) ?? {}) : undefined
-  if (!keys) { v.issue('artifact.type', '请选择 prompt、parameters、generation_input、resources、review、experience 或 question。'); return v.finish(value) }
+  if (!keys) { v.issue('artifact.type', '请选择 prompt、parameters、generation_input、iteration_plan、resources、review、experience 或 question。'); return v.finish(value) }
   v.object(value, 'artifact', ['type', 'source_files', ...keys])
   if (value.source_files !== undefined) v.strings(value.source_files, 'artifact.source_files')
   switch (value.type) {
@@ -194,7 +201,16 @@ export function validateArtifact(value: unknown): ArtifactPayload {
       if (value.negative_prompt !== null) v.text(value.negative_prompt, 'artifact.negative_prompt')
       break
     case 'parameters': if (v.object(value.parameters, 'artifact.parameters')) for (const [key, item] of Object.entries(value.parameters)) v.json(item, `artifact.parameters.${key}`); break
-    case 'generation_input': v.generation(value.generation_input, 'artifact.generation_input', true); validateInputReferences(value, 'artifact'); break
+    case 'generation_input':
+      v.generation(value.generation_input, 'artifact.generation_input', true); validateInputReferences(value, 'artifact')
+      if (value.plan_artifact_id !== undefined && value.plan_artifact_id !== null) v.text(value.plan_artifact_id, 'artifact.plan_artifact_id', true)
+      break
+    case 'iteration_plan':
+      v.text(value.source_run_id, 'artifact.source_run_id', true); v.strings(value.changes, 'artifact.changes')
+      if (!Array.isArray(value.changes) || value.changes.length === 0) v.issue('artifact.changes', '请填写至少 1 项拟修改内容。')
+      else for (const [index, change] of value.changes.entries()) v.text(change, `artifact.changes.${index}`, true)
+      v.text(value.reason, 'artifact.reason', true); v.text(value.expected_result, 'artifact.expected_result', true)
+      break
     case 'resources': v.refs(value.refs, 'artifact.refs'); if (value.reason !== undefined) v.text(value.reason, 'artifact.reason'); break
     case 'review':
       v.text(value.observation, 'artifact.observation'); v.text(value.conclusion, 'artifact.conclusion'); v.strings(value.run_ids, 'artifact.run_ids')
@@ -254,6 +270,12 @@ export function validateFunctionBinding(value: FunctionBinding): FunctionBinding
   if (v.text(value.request_template, 'binding.request_template')) {
     const problem = requestTemplateProblem(value.request_template, value.kind)
     if (problem) v.issue('binding.request_template', problem)
+  }
+  if (value.kind === 'prompt' && value.request_parts) {
+    for (const [name, template] of Object.entries(value.request_parts.block_templates)) {
+      const problem = requestTemplateProblem(template, 'prompt', name as import('./request-template.ts').PromptBlockName)
+      if (problem) v.issue(`binding.request_parts.block_templates.${name}`, problem)
+    }
   }
   return v.finish(value)
 }
