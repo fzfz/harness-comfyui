@@ -4,7 +4,7 @@
 ---
 # Harness ComfyUI
 
-1. Harness ComfyUI 通过预构建插件包安装到官方 DeepSeek Harness Desktop。宿主提供窗口、会话、模型设置和插件管理。插件提供 ComfyUI 工作台、“ComfyUI工作台预设”和“翻译预设”。
+1. Harness ComfyUI 通过预构建插件包安装到官方 DeepSeek Harness Desktop。宿主提供窗口、会话、模型设置和插件管理。插件提供 ComfyUI 工作台、按任务分工的 Agent 预设和“翻译预设”。
 
 2. Harness ComfyUI 的 Agent（对话中的 AI 助手）调用 Skills（技能），帮助用户查找绘图素材、设计提示词并调用 ComfyUI 生成图片。
 
@@ -29,7 +29,7 @@
 2. 选择工作区，通过“新建工作”填写名称和目标。工作台创建提示词为空的主分支。
 3. 在右栏的“准备运行”中点击“编辑参数”。
 4. 填写原始需求，选择生成所需资源。资源包括 ComfyUI 实例、生成模型、Workflow 模板和 LoRA。模板参数随所选模板加载。
-5. 手动填写提示词，或点击“生成提示词”。Agent 产物回填后，用户可继续编辑。
+5. 手动填写提示词，或点击“生成提示词”。在对比弹窗中提出改写要求、查看各轮结果，并编辑或采纳提示词。
 6. 点击“保存参数”。后续任务使用已保存的输入；“取消”恢复此前保存的内容。
 7. 查看历史运行、来源记录或图片时，工作台保留未保存的编辑。
 
@@ -57,7 +57,7 @@
 
 ### 配置 Agent 与翻译提示词
 
-1. 在“配置中心”为各项功能设置 Agent 执行配置。配置包括预设、提供商、模型、推理等级和执行要求。任务型功能还可指定 Skill。
+1. 在“配置中心”为各项功能设置 Agent 执行配置。配置包括预设、提供商、模型、推理等级和执行要求。任务型功能还可指定 Skill。提示词功能支持按块编辑请求模板、插入变量和预览实际请求。
 2. 点击正向或负向提示词旁的“翻译”，查看原文与中文译文。弹窗支持切换提示词页签、失败重试和复制译文。
 3. 编辑中的提示词、已保存的提示词和历史运行提示词均可翻译。翻译结果保留在弹窗中，原提示词保持原值。
 4. 首次使用前，按[配置提示词翻译](docs/user/install-update.md#配置提示词翻译)设置模型。复制译文用于生图前，按[翻译输出限制](docs/releasenotes.md#翻译输出限制)核对标记。
@@ -73,7 +73,7 @@
 
 ## 适用版本
 
-1. 插件 `0.52.0` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0520>)。
+1. 插件 `0.53.0` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0530>)。
 
 ## CLI 帮助与图片读取
 
