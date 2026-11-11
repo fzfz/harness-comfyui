@@ -1,0 +1,31 @@
+{
+  "layout": {
+    "rowHeight": 158,
+    "nodeTop": 42,
+    "nodeLeft": 8,
+    "nodeWidth": 148,
+    "nodeHeight": 108,
+    "columnWidth": 180,
+    "connectionTop": 48,
+    "curveOffset": 22,
+    "minimumWidth": 680,
+    "bottomPadding": 15
+  },
+  "labels": {
+    "description": "从起点追踪每次运行，选择运行查看输入与结果。",
+    "connections": "运行来源连线",
+    "enterBranch": "进入分支",
+    "openRun": "查看运行 {id}",
+    "root": "基准起点",
+    "runSource": "从 {run} 分出",
+    "parentSource": "来源：{parent} · {source}",
+    "artifact": "产物 {id}",
+    "experience": "经验 {id}",
+    "experienceRun": "经验 {experience} · 运行 {run}",
+    "taskInput": "任务输入",
+    "emptyBranch": "暂无运行记录",
+    "emptyImage": "暂无图片",
+    "human": "人工",
+    "agent": "Agent"
+  }
+}

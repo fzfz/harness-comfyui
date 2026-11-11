@@ -4384,8 +4384,9 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     ).toBe('主分支')
   })
 
-  it('renders graph ancestry, Run and artifact sources and each branch own run states', async () => {
+  it('renders horizontal Run ancestry with thumbnails and each Branch source', async () => {
     const data = treeProjection()
+    for (const branch of data.branches) branch.source_experience_id = null
     data.branches.find(branch => branch.branch_id === 'detail')!.source_run_id = null
     data.branches.find(branch => branch.branch_id === 'detail')!.source_artifact_id = 'artifact-detail'
     data.branches.find(branch => branch.branch_id === 'cool')!.source_run_id = null
@@ -4396,19 +4397,31 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     await click(renderer, '收起主分支')
     await click(renderer, '查看分支图')
     const graph = renderer.root.findByProps({ className: 'branch-graph' })
-    expect(graph.findAllByType('ul').map(list => list.findAllByType('h3').map(nodeText))).toEqual([
-      ['主分支', '暖光', '暖光细节', '冷光'], ['暖光', '暖光细节', '冷光'], ['暖光细节'],
-    ])
     const cards = graph.findAllByProps({ className: 'branch-graph-node' })
+    expect(cards.map(card => nodeText(card.findAllByType('h3')[0]!))).toEqual(['主分支', '暖光', '暖光细节', '冷光'])
     expect(cards.map(card => nodeText(card.findAllByType('p')[0]!))).toEqual([
-      '主分支', '来源：主分支 · root-r1', '来源：暖光 · artifact-detail', '来源：主分支 · 任务输入',
+      '基准起点', '从 root-r1 分出', '来源：暖光 · 产物 artifact-detail', '来源：主分支 · 任务输入',
     ])
-    expect(cards[2]!.findAllByType('p')[0]!.props.title).toBe('artifact-detail')
-    expect(cards.map(card => card.findByProps({ className: 'branch-graph-runs' }).findAllByType('button').map(nodeText))).toEqual([
-      ['root-r1 · 成功'], ['warm-r1 · 运行失败', 'warm-r2 · 运行中'],
-      ['detail-r1 · 成功', 'detail-r2 · 成功', 'detail-r3 · 成功', 'detail-r4 · 成功'], [],
+    expect(cards[2]!.findAllByType('p')[0]!.props.title).toBe('来源：暖光 · 产物 artifact-detail')
+    const runGroups = cards.map(card => card.findByProps({ className: 'branch-graph-runs' }))
+    expect(runGroups.map(group => group.findAllByType('button').map(node => node.props['aria-label']))).toEqual([
+      ['查看运行 root-r1'], ['查看运行 warm-r1', '查看运行 warm-r2'],
+      ['查看运行 detail-r1', '查看运行 detail-r2', '查看运行 detail-r3', '查看运行 detail-r4'], [],
     ])
-    expect(nodeText(cards[3]!.findByProps({ className: 'branch-graph-runs' }))).toBe('暂无运行记录')
+    expect(nodeText(runGroups[3]!)).toBe('暂无运行记录')
+    const rootRun = runGroups[0]!.findAllByType('button')[0]!
+    expect(rootRun.props['aria-pressed']).toBe(true)
+    expect(rootRun.findAllByType('img')[0]!.props.src).toBe('/image.png')
+    expect(runGroups[1]!.findAllByType('button')[0]!.findAllByType('img')).toHaveLength(0)
+    expect(nodeText(runGroups[1]!)).toContain('运行失败')
+    expect(nodeText(runGroups[1]!)).toContain('生成中')
+    expect(cards.map(card => card.props.style.top)).toEqual([0, 158, 316, 474])
+    expect(runGroups.map(group => group.findAllByType('button').map(node => node.props.style.left))).toEqual([
+      [8], [188, 368], [368, 548, 728, 908], [],
+    ])
+    expect(graph.findAllByType('path').map(edge => nodeText(edge.findAllByType('title')[0]!))).toEqual([
+      'root-r1 → warm-r1', 'warm-r1 → warm-r2', 'detail-r1 → detail-r2', 'detail-r2 → detail-r3', 'detail-r3 → detail-r4',
+    ])
     expect(onAction).not.toHaveBeenCalled()
   })
 
@@ -4462,7 +4475,7 @@ describe('experiment workbench overlay and loading lifecycle', () => {
     await click(renderer, '比较运行')
     expect(renderer.root.findAllByProps({ className: 'compare-grid' })).toHaveLength(1)
     await click(renderer, '查看分支图')
-    await click(renderer, `${runId} · 成功`)
+    await click(renderer, `查看运行 ${runId}`)
     expect(renderer.root.findAllByProps({ className: 'compare-grid' })).toHaveLength(0)
     expect(renderer.root.findByProps({ 'aria-label': `查看运行 ${runId}` }).props['aria-pressed']).toBe(true)
     expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props['aria-pressed']).toBe(true)
@@ -6891,7 +6904,7 @@ describe('experiment workbench Run actions through Remote', () => {
       expect(after.runs.find(run => run.run_id === runId)!.status).toBe('failed')
       await click(renderer, '查看分支图')
       const graph = renderer.root.findByProps({ className: 'branch-graph' })
-      expect(nodeText(graph)).toContain('来源：来源子分支 · ')
+      expect(nodeText(graph.findAllByType('p').find(source => source.props.title === `从 ${runId} 分出`)!)).toMatch(/^从 .+ 分出$/)
       expect(graph.findAllByProps({ title: runId })).not.toHaveLength(0)
       await act(async () => { graph.findAllByProps({ className: 'branch-graph-node' }).find(node => nodeText(node).includes('运行孙分支'))!.findAllByType('button').find(node => nodeText(node) === '进入分支')!.props.onClick() })
       expect(readField(renderer.root, '分支名称')).toBe('运行孙分支')
