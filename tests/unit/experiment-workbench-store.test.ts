@@ -22,7 +22,6 @@ const projection = (
   experiences: [],
   favorites: [],
   functions: [],
-  refreshAfterMs: 1000,
 })
 const flush = async () => {
   await Promise.resolve()
@@ -189,7 +188,6 @@ describe('experiment workbench browsing', () => {
       ...projection('workspace-a', 'work-b'),
       works: first.works,
       branches: [{ ...first.branches[0]!, work_id: 'work-b', branch_id: 'second-root' }],
-      refreshAfterMs: 0,
     }
     const remote = {
       getProjection: vi.fn(async ({ workId }: { workspaceId: string; workId?: string }) =>
@@ -226,102 +224,6 @@ describe('experiment workbench browsing', () => {
       inspectRun: true, collapsedBranches: ['cool'],
     })
     store.dispose()
-  })
-
-  it('keeps the last projection and browsing selection while retrying failures at the last server interval', async () => {
-    vi.useFakeTimers()
-    const first = { ...fullProjection(), refreshAfterMs: 37 }
-    const recovered = { ...first, refreshAfterMs: 71, favorites: [{ target_type: 'run' as const, target_id: 'r1' }] }
-    const remote = { getProjection: vi.fn()
-      .mockResolvedValueOnce(first).mockRejectedValueOnce(new Error('Connection interrupted'))
-      .mockRejectedValueOnce('Connection interrupted').mockResolvedValue(recovered) }
-    const store = new ExperimentWorkbenchStore(remote)
-    store.setWorkspace('workspace-a')
-    await flush()
-    store.selectRun('r1')
-    store.updateView({ page: 'favorites', catalogFilters: { ...store.getSnapshot().view.catalogFilters, query: 'glass' } })
-    const view = store.getSnapshot().view
-    await vi.advanceTimersByTimeAsync(37)
-    expect(store.getSnapshot()).toMatchObject({ projection: first, view, error: 'Connection interrupted', loading: false })
-    await vi.advanceTimersByTimeAsync(36)
-    expect(remote.getProjection).toHaveBeenCalledTimes(2)
-    await vi.advanceTimersByTimeAsync(1)
-    expect(remote.getProjection).toHaveBeenCalledTimes(3)
-    expect(store.getSnapshot().projection).toBe(first)
-    await vi.advanceTimersByTimeAsync(37)
-    expect(remote.getProjection).toHaveBeenCalledTimes(4)
-    expect(store.getSnapshot()).toMatchObject({ projection: recovered, view, error: null })
-    await vi.advanceTimersByTimeAsync(70)
-    expect(remote.getProjection).toHaveBeenCalledTimes(4)
-    store.dispose()
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(remote.getProjection).toHaveBeenCalledTimes(4)
-  })
-
-  it.each(['success', 'failure'] as const)('ignores a late %s after hiding or disposal and resumes a failed connection immediately when visible', async outcome => {
-    vi.useFakeTimers()
-    const data = projection('a', 'wa')
-    let resolveHidden!: (value: WorkbenchProjection) => void
-    let rejectHidden!: (error: unknown) => void
-    const hidden = new Promise<WorkbenchProjection>((resolve, reject) => { resolveHidden = resolve; rejectHidden = reject })
-    let resolveDisposed!: (value: WorkbenchProjection) => void
-    let rejectDisposed!: (error: unknown) => void
-    const disposed = new Promise<WorkbenchProjection>((resolve, reject) => { resolveDisposed = resolve; rejectDisposed = reject })
-    const remote = { getProjection: vi.fn().mockResolvedValueOnce(data).mockRejectedValueOnce(new Error('Connection interrupted'))
-      .mockReturnValueOnce(hidden).mockResolvedValueOnce(data).mockReturnValueOnce(disposed) }
-    const store = new ExperimentWorkbenchStore(remote)
-    store.setWorkspace('a')
-    await flush()
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(store.getSnapshot().error).toBe('Connection interrupted')
-    store.setVisible(false)
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(remote.getProjection).toHaveBeenCalledTimes(2)
-    store.setVisible(true)
-    expect(remote.getProjection).toHaveBeenCalledTimes(3)
-    store.setVisible(false)
-    if (outcome === 'success') resolveHidden({ ...data, works: [{ ...data.works[0]!, name: 'Hidden late result' }] })
-    else rejectHidden(new Error('Hidden late error'))
-    await flush()
-    expect(store.getSnapshot().projection).toBe(data)
-    expect(store.getSnapshot().error).toBe('Connection interrupted')
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(remote.getProjection).toHaveBeenCalledTimes(3)
-    store.setVisible(true)
-    await flush()
-    expect(store.getSnapshot().error).toBeNull()
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(remote.getProjection).toHaveBeenCalledTimes(5)
-    const before = store.getSnapshot()
-    store.dispose()
-    if (outcome === 'success') resolveDisposed({ ...data, works: [] })
-    else rejectDisposed(new Error('Disposed late error'))
-    await flush()
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(store.getSnapshot()).toBe(before)
-    expect(remote.getProjection).toHaveBeenCalledTimes(5)
-  })
-
-  it('follows the server refresh interval and stops in a hidden page', async () => {
-    vi.useFakeTimers()
-    const remote = { getProjection: vi.fn(async () => projection('a', 'wa')) }
-    const store = new ExperimentWorkbenchStore(remote)
-    store.setWorkspace('a')
-    await flush()
-    expect(remote.getProjection).toHaveBeenCalledTimes(1)
-    await vi.advanceTimersByTimeAsync(999)
-    expect(remote.getProjection).toHaveBeenCalledTimes(1)
-    await vi.advanceTimersByTimeAsync(1)
-    expect(remote.getProjection).toHaveBeenCalledTimes(2)
-    store.setVisible(false)
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(remote.getProjection).toHaveBeenCalledTimes(2)
-    store.setVisible(true)
-    await flush()
-    expect(remote.getProjection).toHaveBeenCalledTimes(3)
-    store.dispose()
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(remote.getProjection).toHaveBeenCalledTimes(3)
   })
 
   it('keeps pending navigation valid through a projection refresh and expires it after user navigation', async () => {

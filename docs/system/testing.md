@@ -93,3 +93,10 @@
 4. managed CLI 的[进程测试](../../tests/integration/cli-command.test.ts)验证业务命令的结果文件与错误报告；[独立包测试](../../tests/production/plugin-package.test.mjs)验证安装入口返回的路径及对应文件内容。官方 Desktop 测试通过前台 Bash Tool Call 核对[短期调用凭证](architecture.md#host-node-与受管-cli-身份)、请求身份、返回路径与后续文件读取结果。
 
 5. Workflow 验证使用已经部署的数据源服务和目标 ComfyUI 实例。验收记录包含服务地址、端口、实例 ID 和结果 JSON 路径。验收者还须记录参数支持、官方前端导出及缓存命中前后的结果比较。
+
+## 工作台异步结果交付
+
+1. [订阅验收](../../tests/integration/workbench-subscription.test.ts)覆盖提交顺序、来源范围、连接释放及会话事件交付。
+2. [存储验收](../../tests/integration/workbench-storage.test.ts)覆盖默认生成提示词的保存、候选采用及查询返回的持久记录。
+3. [事务验收](../../tests/unit/storage-transaction.test.ts)覆盖嵌套事务提交与回滚后的通知。
+4. [Client 交付验收](../../tests/unit/experiment-delivery-boundaries.test.tsx)覆盖历史加载、订阅通知及页面关闭。[输入编辑验收](../../tests/unit/experiment-preparation.test.ts)覆盖保存期间的本地修改。

@@ -11,7 +11,8 @@ it.each([
   { functionId: 'parameters', field: 'comfyui-template', replacement: '6', artifact: { type: 'parameters', parameters: { steps: 28 } } },
   { functionId: 'parameters', field: 'instance_id', replacement: '9', artifact: { type: 'parameters', parameters: { steps: 28 } } },
 ])('keeps automatic $functionId output as a candidate when its $field changes', async ({ functionId, field, replacement, artifact }) => {
-  const { remote, ctx, dispose } = await createWorkbenchHostFixture()
+  const { remote, ctx, dispose, official } = await createWorkbenchHostFixture()
+  official.controller.prompt.mockImplementation(official.acceptPrompt)
   cleanups.push(dispose)
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint a glasshouse' } }, signal())
   await saveFixtureDraft(remote, { ...selected }, draft => { draft.generation_input.instance_id = '8' }, signal())

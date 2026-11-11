@@ -15,6 +15,7 @@ const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup() })
 async function fixture() {
   const host = await createWorkbenchHostFixture()
+  host.official.controller.prompt.mockImplementation(host.official.acceptPrompt)
   cleanups.push(host.dispose)
   const cliPath = join(host.directory, 'installed-cli', 'harness-comfyui.mjs')
   await materializeManagedCliModule({ entry: resolve('scripts/cli/harness-comfyui.mjs'), output: cliPath })
@@ -206,7 +207,7 @@ it('routes task get and file-backed publish through the mounted Host and saves c
   await saveFixtureDraft(remote, selected, draft => { draft.base_model_id = '1' }, signal())
   await remote.mutate({ ...selected, type: 'agent-action', id: 'prompt' }, signal())
   const task = (await remote.getProjection(selected, signal())).tasks[0]!
-  const execution = workbenchShellExecution(task.session_id!)
+  const execution = workbenchShellExecution(task.session_id!, '/workspace/project', 1)
   const environment = variables(execution)
   expect(environment[CLI_ENVIRONMENT_NAMES.capability]).toEqual(expect.any(String))
   const first = await run(['workbench', 'task', 'get', '--stdin'], { task_id: task.task_id }, environment)
@@ -221,9 +222,9 @@ it('routes task get and file-backed publish through the mounted Host and saves c
   expect(second.data.prompt_input.positive_prompt).toBe('')
   const nativeText = 'native output\nwith a full prompt\n'
   await writeFile(join(directory, 'native.txt'), nativeText)
-  official.events.set(task.session_id!, [
-    { type: 'tool/call', seq: 1, time: 1, data: { turn: 1, step: 1, callId: 'skill-portrait', name: 'skill', arguments: '{"name":"prompt-builder"}' } },
-    { type: 'tool/result', seq: 2, time: 2, data: { turn: 1, step: 1, message: createToolResultMessage({ callId: 'skill-portrait' as never, isError: false, content: [] }) } },
+  official.events.get(task.session_id!)!.push(...[
+    { type: 'tool/call', seq: 2, time: 1, data: { turn: 1, step: 1, callId: 'skill-portrait', name: 'skill', arguments: '{"name":"prompt-builder"}' } },
+    { type: 'tool/result', seq: 3, time: 2, data: { turn: 1, step: 1, message: createToolResultMessage({ callId: 'skill-portrait' as never, isError: false, content: [] }) } },
   ] as SessionEvent[])
   const artifactFile = join(directory, 'artifact.json')
   await writeFile(artifactFile, JSON.stringify({ task_id: task.task_id, artifact: { type: 'prompt', positive_prompt: 'Agent portrait', negative_prompt: 'blur', source_files: ['native.txt'] } }))
@@ -234,7 +235,7 @@ it('routes task get and file-backed publish through the mounted Host and saves c
   expect(again.data).toEqual(published.data)
   const projection = await remote.getProjection(selected, signal())
   expect(projection.artifacts).toHaveLength(1)
-  expect(projection.artifacts[0]).toMatchObject({ session_id: task.session_id, turn: 2, call_id: execution.callId, skill_refs: [{ name: 'prompt-builder', session_id: task.session_id, turn: 1, call_id: 'skill-portrait', source_file: null }] })
+  expect(projection.artifacts[0]).toMatchObject({ session_id: task.session_id, turn: 1, call_id: execution.callId, skill_refs: [{ name: 'prompt-builder', session_id: task.session_id, turn: 1, call_id: 'skill-portrait', source_file: null }] })
   expect(await readFile(projection.artifacts[0]!.source_files[0]!, 'utf8')).toBe(nativeText)
   expect(store.getBranch(selected.branchId!).draft.prompt_input.positive_prompt).toBe('Manual portrait')
   official.agents.get(task.session_id!)!.status = 'idle'

@@ -14,6 +14,8 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiCatalog/sourceAddress',
       'harness-comfyui#harnessComfyuiCatalog/details',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/promptSaveCandidate',
+      'harness-comfyui#harnessComfyuiWorkbenchRemote/subscribe',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/queryRecords',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/importImages',
       'harness-comfyui#harnessComfyuiWorkbenchRemote/resolveImages',

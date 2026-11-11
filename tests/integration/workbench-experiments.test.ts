@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { toGenerationRequest } from '../../src/cli/contract.ts'
 import type { GenerationPreparationAdapter, GenerationTransport } from '../../src/host/generation/generation-runtime.ts'
 import type { GenerationInput } from '../../src/workbench/contract.ts'
+import * as workbenchPlugin from '../../src/host/workbench/plugin.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 
 const cleanups: (() => Promise<void>)[] = []
@@ -42,6 +43,90 @@ function controlledGeneration(fails: () => boolean = () => false): { preparer: G
 
 async function finishRuns(f: Fixture) { for (let step = 0; step < 5; step += 1) await f.runtime.advance() }
 
+it('reuses one accepted function request across concurrent submissions and rejects changed explicit input', async () => {
+  const f = await setup()
+  const request = { ...f.selected, workspaceId: 'workspace_1', workId: f.selected.workId!, branchId: f.selected.branchId!, functionId: 'parameters', requestId: randomUUID(), taskDraft: { instructions: 'Use low steps', resources: { instance_id: '8', template_id: '5' } } }
+  const service = f.ctx.harnessComfyuiWorkbench.service
+  const first = service.createTask(request)
+  const retry = service.createTask(request)
+  const [accepted, repeated] = await Promise.all([first, retry])
+  expect(accepted.task_id).toBe(request.requestId)
+  expect(repeated.task_id).toBe(request.requestId)
+  expect(f.official.controller.create).toHaveBeenCalledOnce()
+  expect(f.official.controller.prompt).toHaveBeenCalledOnce()
+  await expect(service.createTask({ ...request, taskDraft: { ...request.taskDraft, instructions: 'Use high steps' } })).rejects.toMatchObject({ code: 'WORKBENCH_REQUEST_CONFLICT' })
+})
+
+it.each([
+  { reason: { kind: 'completed' }, execution: 'idle', status: 'needs_attention' },
+  { reason: { kind: 'error', error: { message: 'Model ended before acceptance' } }, execution: 'failed', status: 'failed' },
+] as const)('retains $execution delivered before the task submission response', async ({ reason, execution, status }) => {
+  const f = await setup()
+  f.official.controller.prompt.mockImplementationOnce(async () => {
+    const task = f.store.listTasks('workspace_1').at(-1)!
+    const event = { type: 'turn/end', seq: 1, data: { turn: 1, reason } }
+    f.official.events.set(task.session_id!, [{ type: 'turn/start', seq: 0, data: { turn: 1 } }, event] as never)
+    f.ctx.emit('session/event', { id: task.session_id } as never, event as never)
+    await vi.waitFor(() => expect(f.store.getTask(task.task_id).execution_state).toBe(execution))
+    return { accepted: true }
+  })
+  const task = await f.ctx.harnessComfyuiWorkbench.service.createTask({ workspaceId: 'workspace_1', workId: f.selected.workId!, branchId: f.selected.branchId!, functionId: 'resources', requestId: randomUUID() })
+  expect(task).toMatchObject({ execution_state: execution, status })
+  expect((await f.remote.getProjection(f.selected, signal())).tasks[0]).toMatchObject({ execution_state: execution, status })
+})
+
+it.each([
+  { active: false, accepted: false, expected: 'failed' },
+  { active: true, accepted: false, expected: 'pending' },
+  { active: false, accepted: true, expected: 'interrupted' },
+  { active: false, accepted: 'unrelated', expected: 'failed' },
+] as const)('recovers an ordinary function after Session association (active=$active, accepted=$accepted)', async ({ active, accepted, expected }) => {
+  const f = await setup()
+  const task = await f.ctx.harnessComfyuiWorkbench.service.createTask({ workspaceId: 'workspace_1', workId: f.selected.workId!, branchId: f.selected.branchId!, functionId: 'resources' })
+  f.store.markExecution(task.task_id, 'pending')
+  if (!active) f.official.agents.delete(task.session_id!)
+  if (accepted) f.official.events.set(task.session_id!, [
+    { type: 'turn/start', seq: 0, data: { turn: 1 } },
+    { type: 'user/message', seq: 1, data: { source: { kind: 'user', rpcId: accepted === 'unrelated' ? 'another-request' : task.task_id } } },
+  ] as never)
+  await f.remoteFiber.dispose()
+  await f.fiber.dispose()
+  const restarted = await f.ctx.plugin(workbenchPlugin)
+  try {
+    await vi.waitFor(() => expect(f.store.getTask(task.task_id).status).toBe(expected))
+    if (expected === 'failed') expect(f.store.getTask(task.task_id).error).toMatchObject({ code: 'WORKBENCH_DISPATCH_INCOMPLETE', message: expect.any(String) })
+    expect(f.official.controller.create).toHaveBeenCalledOnce()
+    expect(f.official.controller.prompt).toHaveBeenCalledOnce()
+  } finally { await restarted.dispose() }
+})
+
+it('preserves accepted generation while the experiment Agent is absent after Host restart', async () => {
+  const f = await fixture()
+  const runId = (await accept(f)).items[0]!.runId
+  f.official.agents.delete(f.task.session_id!)
+  await f.remoteFiber.dispose()
+  await f.fiber.dispose()
+  const restarted = await f.ctx.plugin(workbenchPlugin)
+  try {
+    await vi.waitFor(() => expect(f.store.getTask(f.task.task_id).status).toBe('waiting_generation'))
+    expect(f.store.getRun(runId).status).toBe('created')
+    expect(f.official.controller.create).toHaveBeenCalledOnce()
+    expect(f.official.controller.prompt).toHaveBeenCalledOnce()
+  } finally { await restarted.dispose() }
+})
+
+async function sessionState(f: Awaited<ReturnType<typeof setup>>, sessionId: string, state: 'idle' | 'running') {
+  const events = f.official.events.get(sessionId) ?? []
+  const turn = events.filter(event => event.type === 'turn/start').length + 1
+  const event = state === 'running'
+    ? { type: 'turn/start', seq: events.length, data: { turn } }
+    : { type: 'turn/end', seq: events.length, data: { turn, reason: { kind: 'completed' } } }
+  events.push(event as never)
+  f.official.events.set(sessionId, events)
+  f.ctx.emit('session/event', { id: sessionId } as never, event as never)
+  await vi.waitFor(() => expect(f.store.taskForSession(sessionId)?.execution_state).toBe(state))
+}
+
 async function setup(maxRuns = 3, preparer?: GenerationPreparationAdapter, transport?: GenerationTransport) {
   const host = await createWorkbenchHostFixture(preparer, transport)
   cleanups.push(host.dispose)
@@ -58,11 +143,13 @@ it.each(['resources', 'experiment'] as const)('retains the unfinished %s snapsho
   const task = (await f.remote.getProjection(f.selected, signal())).tasks.find(task => task.task_id === receipt.taskId)!
   const agent = f.official.agents.get(task.session_id!)!
   agent.status = 'idle'
+  await sessionState(f, task.session_id!, 'idle')
   const idle = await f.remote.getProjection(f.selected, signal())
   expect(idle.tasks[0]).toMatchObject({ execution_state: 'idle', status: 'needs_attention' })
   f.official.agents.delete(task.session_id!)
   expect((await f.remote.getProjection(f.selected, signal())).tasks).toEqual(idle.tasks)
   agent.status = 'running'
+  await sessionState(f, task.session_id!, 'running')
   f.official.agents.set(task.session_id!, agent)
   const awake = await f.remote.getProjection(f.selected, signal())
   expect(awake.tasks[0]).toMatchObject({ task_id: task.task_id, session_id: task.session_id, execution_state: 'running', status: 'running' })
@@ -74,11 +161,14 @@ it.each(['needs_attention', 'waiting_generation', 'waiting_input'] as const)('ob
   const f = await fixture()
   if (status === 'waiting_generation') await accept(f)
   if (status === 'waiting_input') await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'question', question: 'Which light?', options: [] } }, { ...f.identity, callId: 'question-while-idle' })
-  const agent = f.official.agents.get(f.task.session_id!)!
+  const task = f.task
+  const agent = f.official.agents.get(task.session_id!)!
   agent.status = 'idle'
+  await sessionState(f, task.session_id!, 'idle')
   const idle = await f.remote.getProjection(f.selected, signal())
   expect(idle.tasks[0]).toMatchObject({ execution_state: 'idle', status })
   agent.status = 'running'
+  await sessionState(f, task.session_id!, 'running')
   const awake = await f.remote.getProjection(f.selected, signal())
   expect(awake.tasks[0]).toMatchObject({ task_id: f.task.task_id, session_id: f.task.session_id, execution_state: 'running', status: status === 'needs_attention' ? 'running' : status })
   expect(awake.runs).toEqual(idle.runs)
@@ -87,32 +177,21 @@ it.each(['needs_attention', 'waiting_generation', 'waiting_input'] as const)('ob
   expect(f.official.controller.prompt).toHaveBeenCalledOnce()
 })
 
-it.each(['paused', 'ended', 'completed', 'failed', 'interrupted'] as const)('keeps the %s experiment snapshot when an official status query returns late', async terminal => {
+it.each(['paused', 'ended', 'completed', 'failed', 'interrupted'] as const)('reads the persisted %s experiment snapshot without querying Session state', async terminal => {
   const f = await fixture(terminal === 'completed' ? 1 : 3)
   let runId = ''
   if (terminal === 'completed') { runId = (await accept(f)).items[0]!.runId; await f.runtime.advance() }
-  const started = deferred<void>(), release = deferred<void>()
-  const lookup = f.ctx.subagents.listDescendants.bind(f.ctx.subagents)
-  const reads = vi.spyOn(f.ctx.subagents, 'listDescendants').mockImplementationOnce(async (...args) => {
-    started.resolve(); await release.promise; return lookup(...args)
-  })
-  const querying = f.remote.getProjection(f.selected, signal())
-  let before!: Awaited<ReturnType<typeof f.remote.getProjection>>, readCount = 0
-  try {
-    await started.promise
-    if (terminal === 'completed') await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'review', observation: 'The Run failed preparation', conclusion: 'The budget is used', run_ids: [runId] } }, { ...f.identity, callId: 'finish-before-status' })
-    else if (terminal === 'failed') f.ctx.emit('agent/error', { agent: { id: f.task.session_id } } as never)
-    else await f.remote.mutate({ ...f.selected, taskId: f.task.task_id, type: terminal === 'paused' ? 'pause-experiment' : terminal === 'ended' ? 'stop-experiment' : 'task-interrupt' }, signal())
-    before = await f.remote.getProjection(f.selected, signal())
-    readCount = reads.mock.calls.length
-  } finally { release.resolve() }
-  const after = await querying
+  if (terminal === 'completed') await f.service.publish({ taskId: f.task.task_id, artifact: { type: 'review', observation: 'The Run failed preparation', conclusion: 'The budget is used', run_ids: [runId] } }, { ...f.identity, callId: 'finish-before-status' })
+  else if (terminal === 'failed') f.ctx.emit('agent/error', { agent: { id: f.task.session_id } } as never)
+  else await f.remote.mutate({ ...f.selected, taskId: f.task.task_id, type: terminal === 'paused' ? 'pause-experiment' : terminal === 'ended' ? 'stop-experiment' : 'task-interrupt' }, signal())
+  const reads = vi.spyOn(f.ctx.subagents, 'listDescendants')
+  const before = await f.remote.getProjection(f.selected, signal())
+  const after = await f.remote.getProjection(f.selected, signal())
   expect(after.tasks).toEqual(before.tasks)
   expect(after.experiments).toEqual(before.experiments)
   if (terminal === 'failed' || terminal === 'interrupted') expect(after.tasks[0]).toMatchObject({ execution_state: terminal, status: terminal })
   expect(after.experiments[0]!.control_state).toBe(terminal === 'failed' ? 'running' : terminal === 'interrupted' ? 'ended' : terminal)
-  await f.remote.getProjection(f.selected, signal())
-  expect(reads).toHaveBeenCalledTimes(readCount)
+  expect(reads).not.toHaveBeenCalled()
 })
 
 it.each(['success', 'failure'] as const)('keeps the newer continue when an older dispatch reports %s', async outcome => {
@@ -392,7 +471,6 @@ it.each([
   await finishRuns(f)
   const after = await f.remote.getProjection(f.selected, signal()), run = after.runs.find(item => item.run_id === runId)!
   expect(after.experiments[0]).toMatchObject({ control_state: type === 'pause-experiment' ? 'paused' : 'ended', submitted_count: 1 })
-  expect(after.refreshAfterMs).toBe(777)
   expect(run).toMatchObject({ status: fails ? 'failed' : 'succeeded', generation_input: f.task.input.generation_input })
   if (fails) expect(run.error).toMatchObject({ message: 'Controlled iteration failure' })
   else expect(run.media).toHaveLength(1)
@@ -413,6 +491,8 @@ it('keeps an unfinished prompt request until its matching completion is read fro
     { seq: 1, type: 'user/message', data: { source: { kind: 'user', rpcId: turn.request_id } } },
   ] as unknown as import('@deepseek-ai/dsh-session').SessionEvent[])
   f.official.agents.get(task.session_id!)!.status = 'idle'
+  await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(task.session_id!)
+  f.store.markExecution(task.task_id, 'idle')
   const idle = await f.remote.getProjection(f.selected, signal())
   expect(idle.tasks[0]).toMatchObject({ execution_state: 'idle', status: 'running' })
   f.official.agents.delete(task.session_id!)
@@ -421,6 +501,7 @@ it('keeps an unfinished prompt request until its matching completion is read fro
     { seq: 2, type: 'assistant/message', data: { turn: 1, message: { content: [{ type: 'text', text: '{"type":"prompt","positive_prompt":"warm glass light","negative_prompt":""}' }] } } },
     { seq: 3, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
   ] as unknown as import('@deepseek-ai/dsh-session').SessionEvent[])
+  await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(task.session_id!)
   const finished = await f.remote.getProjection(f.selected, signal())
   expect(finished.tasks[0]).toMatchObject({ task_id: task.task_id, session_id: task.session_id, execution_state: 'idle', status: 'succeeded' })
   expect(finished.artifacts).toContainEqual(expect.objectContaining({ task_id: task.task_id, artifact: { type: 'prompt', positive_prompt: 'warm glass light', negative_prompt: '' } }))

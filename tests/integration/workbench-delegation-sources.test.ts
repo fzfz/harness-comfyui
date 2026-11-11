@@ -137,6 +137,7 @@ it('records the prompt child reply in the parent experiment after the official c
     { seq: 2, type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
   ] as unknown as import('@deepseek-ai/dsh-session').SessionEvent[])
   f.official.agents.delete(delegated.session_id)
+  await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(delegated.session_id)
   const parent = await f.service.getTask({ taskId: f.parent.task_id }, f.identity)
   expect(parent.children).toContainEqual(expect.objectContaining({ task_id: child.task_id, status: 'succeeded', session_id: delegated.session_id }))
   expect(parent.artifacts).toContainEqual(expect.objectContaining({ task_id: child.task_id, disposition: 'recorded', artifact: { type: 'prompt', positive_prompt: 'warm glass, reflected light', negative_prompt: '' } }))

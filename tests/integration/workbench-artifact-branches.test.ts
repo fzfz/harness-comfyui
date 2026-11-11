@@ -11,6 +11,7 @@ afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) awai
 
 async function fixture() {
   const result = await createWorkbenchHostFixture()
+  result.official.controller.prompt.mockImplementation(result.official.acceptPrompt)
   cleanups.push(result.dispose)
   return { ...result, service: result.ctx.harnessComfyuiWorkbench.service }
 }
@@ -233,7 +234,7 @@ it.each(['workspace_1', 'workspace_2'])('creates a branch from a cross-work arti
   const created = await remote.mutate({ ...other, type: 'task-branch', id: published.artifact_id, value: { name: 'Referenced artifact' } }, signal())
   const branch = await branchAt(remote, created)
   expect(branch).toMatchObject({ work_id: other.workId, parent_branch_id: other.branchId, source_artifact_id: published.artifact_id, draft: { prompt_input: { positive_prompt: 'Rain', negative_prompt: '' } } })
-  expect((await branchAt(remote, source)).draft.prompt_input.positive_prompt).toBe('')
+  expect((await branchAt(remote, source)).draft.prompt_input.positive_prompt).toBe('Rain')
 })
 
 it.each(['prompt', 'parameters', 'resources'])('uses the displayed Task target for $0 adoption and rejects a second-window edit', async functionId => {

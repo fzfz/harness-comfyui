@@ -112,7 +112,7 @@
 
 ## 实验工作台
 
-1. [ExperimentWorkbenchHost](../../src/client/workbench/experiment-host.tsx) 在官方主面板承载实验工作台。[ExperimentWorkbenchStore](../../src/client/workbench/experiment-store.ts) 管理浏览选择、轮询和滚动位置；界面通过 [Workbench Remote](../../src/workbench-remote.ts) 读取工作数据及当前 Profile 的经验、收藏与引用记录。
+1. [ExperimentWorkbenchHost](../../src/client/workbench/experiment-host.tsx) 在官方主面板承载实验工作台。[ExperimentWorkbenchStore](../../src/client/workbench/experiment-store.ts) 管理浏览选择、业务订阅和滚动位置；界面通过 [Workbench Remote](../../src/workbench-remote.ts) 读取工作数据及当前 Profile 的经验、收藏与引用记录。
 
 2. [WorkbenchService](../../src/workbench/service.ts) 处理任务固定输入、引用快照、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。[工作台原生 Tool](../../src/host/workbench/tools.ts) 与受管 CLI 共用领域服务、[schema](../../src/workbench/schema.ts)及[字段说明](../../config/workbench-tool-descriptions.json)。
 
@@ -124,9 +124,13 @@
 
 6. [WorkbenchInputFileService](../../src/host/generation/input-file-service.ts) 保存本机导入图片。[输入图片解析](../../src/host/workbench/input-images.ts)提供 Run 媒体与导入文件的本地路径及预览地址。[SourceGenerationPreparer](../../src/host/generation/source-preparer.ts)向所选实例上传 Workflow 用途图片，保存上传响应并生成实际输入；Run 同时保留提交输入。
 
-7. [WorkbenchTranslations](../../src/host/workbench/translation-service.ts) 使用独立官方会话执行翻译，按请求 ID 查询结果及取消。翻译预设的配置入口见[工作台装配配置](configuration.md#工作台装配配置)。
+7. [WorkbenchTranslations](../../src/host/workbench/translation-service.ts) 使用独立官方会话执行翻译，并按请求 ID 持久保存原文、译文及来源字段。翻译预设的配置入口见[工作台装配配置](configuration.md#工作台装配配置)。
 
-8. [WorkbenchPrompts](../../src/host/workbench/prompt-service.ts) 管理提示词编辑任务、连续会话和每轮回复。[请求模板](../../src/workbench/request-template.ts) 供 Host 与页面预览共用；[提示词请求合同](../../src/workbench/prompt-edit.ts) 定义查询、停止和采用接口。
+8. [WorkbenchPrompts](../../src/host/workbench/prompt-service.ts) 管理提示词编辑任务、连续会话和每轮回复。[请求模板](../../src/workbench/request-template.ts) 供 Host 与页面预览共用；[提示词请求合同](../../src/workbench/prompt-edit.ts) 定义请求意图、候选编辑、停止和采用接口。
+
+9. [工作台插件](../../src/host/workbench/plugin.ts)接收会话事件，并恢复未完成请求。[事务组件](../../src/host/storage/transaction.ts)在最外层事务提交后通知订阅者；[Remote 订阅](../../src/host/workbench/remote-service.ts)返回请求指定范围的历史快照与后续变化；范围字段见 [WorkbenchSubscription](../../src/workbench-remote.ts)。
+
+10. [PreparationEditor](../../src/client/workbench/experiment-preparation.ts)管理分支输入的保存基线与操作队列。[提示词编辑控制器](../../src/client/workbench/experiment-prompt-editor.ts)展示已保存的提示词结果，并提交结果修改和采用请求。
 
 ## 图片读取与 Prompt 对比职责
 

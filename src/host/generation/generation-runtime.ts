@@ -190,6 +190,8 @@ export interface WorkbenchGenerationAcceptance {
   readonly reused: boolean
 }
 
+import { transaction } from '../storage/transaction.ts'
+
 export interface WorkbenchGenerationPort {
   taskWorkspace(taskId: string): string
   assertGenerationAcceptance(input: WorkbenchGenerationAcceptance): {
@@ -199,6 +201,8 @@ export interface WorkbenchGenerationPort {
     readonly retryOfRunId: string | null
   }
   registerGenerationRun(input: WorkbenchGenerationAcceptance & { readonly runId: string }): void
+  generationRunChanged(runId: string): void
+  reportError(error: unknown): void
 }
 
 export interface GenerationRuntimeOptions {
@@ -549,6 +553,8 @@ const GENERATION_RUN_TABLE_DEFINITION = `(
   UNIQUE(workspace_id, session_id, request_id)
 )`
 
+class GenerationRunWriteError extends Error {}
+
 export class GenerationRuntime {
   private readonly options: GenerationRuntimeOptions
   private readonly database: DatabaseSync
@@ -765,8 +771,7 @@ export class GenerationRuntime {
       return { requestId, request, requestJson: canonicalJson(request as unknown as JsonValue) }
     })
     const accepted: GenerationSubmissionResult['items'][number][] = []
-    this.database.exec('BEGIN IMMEDIATE')
-    try {
+    transaction(this.database, () => {
       const find = this.database.prepare(`
         SELECT * FROM generation_runs WHERE workspace_id = ? AND session_id = ? AND request_id = ?
       `)
@@ -812,11 +817,7 @@ export class GenerationRuntime {
         if (workbenchTaskId !== undefined) this.options.workbench!.registerGenerationRun({ ...acceptance, runId })
         accepted.push(Object.freeze({ requestId: item.requestId, runId, acceptance: 'accepted' }))
       }
-      this.database.exec('COMMIT')
-    } catch (error) {
-      this.database.exec('ROLLBACK')
-      throw error
-    }
+      })
     return Object.freeze({ items: Object.freeze(accepted) })
   }
 
@@ -1154,15 +1155,32 @@ export class GenerationRuntime {
     return row
   }
 
+  private commitRunChange(runId: string, write: () => boolean): boolean {
+    try {
+      return transaction(this.database, () => {
+        const changed = write()
+        if (changed) this.options.workbench?.generationRunChanged(runId)
+        return changed
+      })
+    } catch (cause) {
+      throw new GenerationRunWriteError(cause instanceof Error ? cause.message : String(cause), { cause })
+    }
+  }
+
   private async advanceOnce(signal?: AbortSignal): Promise<void> {
     const rows = this.database.prepare(`
       SELECT * FROM generation_runs
-      WHERE status IN ('created', 'prepared', 'remote_pending', 'remote_running', 'downloading')
+      WHERE status IN ('created', 'prepared', 'submitting', 'remote_pending', 'remote_running', 'downloading')
       ORDER BY created_at, rowid
     `).all() as unknown as RunRow[]
     for (const row of rows) {
       if (signal?.aborted === true) throw new DOMException('Generation worker was cancelled.', 'AbortError')
-      await this.advanceRun(row, signal)
+      try {
+        await this.advanceRun(row, signal)
+      } catch (error) {
+        if (!(error instanceof GenerationRunWriteError) || !this.options.workbench) throw error
+        this.options.workbench.reportError(error.cause)
+      }
     }
   }
 
@@ -1176,12 +1194,17 @@ export class GenerationRuntime {
         await this.submitRun(row, signal)
         return
       }
+      if (row.status === 'submitting') {
+        this.markSubmissionUnknown(row.run_id)
+        return
+      }
       if (row.status === 'remote_pending' || row.status === 'remote_running') {
         await this.observeRun(row, signal)
         return
       }
       if (row.status === 'downloading') await this.downloadRun(row, signal)
     } catch (error) {
+      if (error instanceof GenerationRunWriteError) throw error
       if (signal?.aborted === true || (error instanceof DOMException && error.name === 'AbortError')) {
         throw new DOMException('Generation worker was cancelled.', 'AbortError')
       }
@@ -1205,13 +1228,7 @@ export class GenerationRuntime {
         && facts.code !== 'COMFYUI_PROMPT_REJECTED'
         && !(error instanceof GenerationSubmissionNotSentError)
       ) {
-        const changed = this.database.prepare(`
-          UPDATE generation_runs SET status = 'submission_unknown', revision = revision + 1,
-            prompt_id = NULL, error_code = 'COMFYUI_SUBMISSION_RESULT_UNKNOWN',
-            error_message = 'ComfyUI submission result could not be confirmed.', updated_at = ?
-          WHERE run_id = ? AND status = 'submitting'
-        `).run(this.now(), row.run_id)
-        if (changed.changes === 1) return
+        if (this.markSubmissionUnknown(row.run_id)) return
       }
       this.markFailed(row.run_id, facts)
     }
@@ -1248,11 +1265,10 @@ export class GenerationRuntime {
       actualWorkflow,
       onRequestStart: () => {
         if (signal?.aborted === true) return false
-        const changed = this.database.prepare(`
+        requestStarted = this.commitRunChange(row.run_id, () => this.database.prepare(`
           UPDATE generation_runs SET status = 'submitting', prompt_id = ?, revision = revision + 1, updated_at = ?
           WHERE run_id = ? AND status = 'prepared'
-        `).run(promptId, this.now(), row.run_id)
-        requestStarted = changed.changes === 1
+        `).run(promptId, this.now(), row.run_id).changes === 1)
         return requestStarted
       },
       signal,
@@ -1263,11 +1279,11 @@ export class GenerationRuntime {
     if (submitted.promptId !== promptId) {
       throw new GenerationRuntimeError('COMFYUI_PROTOCOL_ERROR', 'ComfyUI returned a different prompt identity.')
     }
-    this.database.prepare(`
+    this.commitRunChange(row.run_id, () => this.database.prepare(`
       UPDATE generation_runs SET status = 'remote_pending', revision = revision + 1,
         error_code = NULL, error_message = NULL, updated_at = ?
       WHERE run_id = ? AND status = 'submitting' AND prompt_id = ?
-    `).run(this.now(), row.run_id, promptId)
+    `).run(this.now(), row.run_id, promptId).changes === 1)
   }
 
   private async observeRun(row: RunRow, signal?: AbortSignal): Promise<void> {
@@ -1291,11 +1307,11 @@ export class GenerationRuntime {
       return
     }
     if (observation.status === 'pending' || observation.status === 'running') {
-      this.database.prepare(`
+      this.commitRunChange(row.run_id, () => this.database.prepare(`
         UPDATE generation_runs SET status = ?, revision = revision + 1,
           missing_observed_at = NULL, updated_at = ?
         WHERE run_id = ? AND status IN ('remote_pending', 'remote_running')
-      `).run(observation.status === 'pending' ? 'remote_pending' : 'remote_running', this.now(), row.run_id)
+      `).run(observation.status === 'pending' ? 'remote_pending' : 'remote_running', this.now(), row.run_id).changes === 1)
       return
     }
     if (observation.status === 'error') {
@@ -1306,24 +1322,27 @@ export class GenerationRuntime {
       this.markFailed(row.run_id, { code: 'COMFYUI_OUTPUT_MISSING', message: 'ComfyUI completed without a saved media output.' })
       return
     }
-    const insert = this.database.prepare(`
-      INSERT OR IGNORE INTO generation_run_outputs(
-        run_id, node_id, output_index, media_kind, filename, subfolder, output_type
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `)
-    for (const output of observation.outputs) {
-      insert.run(row.run_id, output.nodeId, output.outputIndex, output.mediaKind, output.filename, output.subfolder, output.type)
-    }
-    this.database.prepare(`
-      UPDATE generation_runs SET status = 'downloading', revision = revision + 1,
-        missing_observed_at = NULL, updated_at = ?
-      WHERE run_id = ? AND status IN ('remote_pending', 'remote_running')
-    `).run(this.now(), row.run_id)
+    this.commitRunChange(row.run_id, () => {
+      const insert = this.database.prepare(`
+        INSERT OR IGNORE INTO generation_run_outputs(
+          run_id, node_id, output_index, media_kind, filename, subfolder, output_type
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `)
+      for (const output of observation.outputs) {
+        insert.run(row.run_id, output.nodeId, output.outputIndex, output.mediaKind, output.filename, output.subfolder, output.type)
+      }
+      return this.database.prepare(`
+        UPDATE generation_runs SET status = 'downloading', revision = revision + 1,
+          missing_observed_at = NULL, updated_at = ?
+        WHERE run_id = ? AND status IN ('remote_pending', 'remote_running')
+      `).run(this.now(), row.run_id).changes === 1
+    })
   }
 
   private async downloadRun(row: RunRow, signal?: AbortSignal): Promise<void> {
     const transport = this.requireTransport()
     if (row.instance_id === null || row.instance_origin === null) throw new GenerationRuntimeError('GENERATION_ARTIFACT_NOT_READY', 'Generation Run instance is missing.')
+    this.commitRunChange(row.run_id, () => this.recoverStagedMedia(row.run_id))
     const outputs = this.database.prepare(`
       SELECT output.* FROM generation_run_outputs output
       LEFT JOIN generation_media media
@@ -1357,10 +1376,10 @@ export class GenerationRuntime {
       WHERE output.run_id = ? AND media.media_id IS NULL
     `).get(row.run_id) as unknown as { count: number }
     if (remaining.count === 0) {
-      this.database.prepare(`
+      this.commitRunChange(row.run_id, () => this.database.prepare(`
         UPDATE generation_runs SET status = 'succeeded', revision = revision + 1, updated_at = ?
         WHERE run_id = ? AND status = 'downloading'
-      `).run(this.now(), row.run_id)
+      `).run(this.now(), row.run_id).changes === 1)
     }
   }
 
@@ -1385,36 +1404,35 @@ export class GenerationRuntime {
     const temporaryRelativePath = `${relativePath}.${randomUUID()}.tmp`
     const temporary = join(this.options.savedMediaDirectory, temporaryRelativePath)
     const createdAt = this.now()
-    this.database.prepare(`
-      INSERT INTO generation_media_staging(
-        media_id, run_id, workspace_id, session_id, turn, node_id, output_index,
-        media_kind, filename, relative_path, temporary_relative_path, media_type, byte_size, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      mediaId, row.run_id, row.workspace_id, row.session_id, row.turn, output.nodeId,
-      output.outputIndex, output.mediaKind, output.filename, relativePath,
-      temporaryRelativePath, mediaType, bytes.byteLength, createdAt,
-    )
+    this.commitRunChange(row.run_id, () => {
+      this.database.prepare(`
+        INSERT INTO generation_media_staging(
+          media_id, run_id, workspace_id, session_id, turn, node_id, output_index,
+          media_kind, filename, relative_path, temporary_relative_path, media_type, byte_size, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        mediaId, row.run_id, row.workspace_id, row.session_id, row.turn, output.nodeId,
+        output.outputIndex, output.mediaKind, output.filename, relativePath,
+        temporaryRelativePath, mediaType, bytes.byteLength, createdAt,
+      )
+      return false
+    })
     await writeFile(temporary, bytes, { flag: 'wx' })
     await rename(temporary, absolutePath)
-    this.database.exec('BEGIN IMMEDIATE')
-    try {
+    this.commitRunChange(row.run_id, () => {
       this.database.prepare(`
         INSERT INTO generation_media(
-        media_id, run_id, workspace_id, session_id, turn, node_id, output_index,
-        media_kind, filename, relative_path, media_type, byte_size, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          media_id, run_id, workspace_id, session_id, turn, node_id, output_index,
+          media_kind, filename, relative_path, media_type, byte_size, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         mediaId, row.run_id, row.workspace_id, row.session_id, row.turn, output.nodeId,
         output.outputIndex, output.mediaKind, output.filename, relativePath,
         mediaType, bytes.byteLength, createdAt,
       )
       this.database.prepare('DELETE FROM generation_media_staging WHERE media_id = ?').run(mediaId)
-      this.database.exec('COMMIT')
-    } catch (error) {
-      this.database.exec('ROLLBACK')
-      throw error
-    }
+      return true
+    })
   }
 
   private mediaExtension(filename: string, mediaType: string): string {
@@ -1432,12 +1450,21 @@ export class GenerationRuntime {
     return resolved
   }
 
+  private markSubmissionUnknown(runId: string): boolean {
+    return this.commitRunChange(runId, () => this.database.prepare(`
+      UPDATE generation_runs SET status = 'submission_unknown', revision = revision + 1,
+        prompt_id = NULL, error_code = 'COMFYUI_SUBMISSION_RESULT_UNKNOWN',
+        error_message = 'ComfyUI submission result could not be confirmed.', updated_at = ?
+      WHERE run_id = ? AND status = 'submitting'
+    `).run(this.now(), runId).changes === 1)
+  }
+
   private markFailed(runId: string, facts: { readonly code: string; readonly message: string }): void {
-    this.database.prepare(`
+    this.commitRunChange(runId, () => this.database.prepare(`
       UPDATE generation_runs SET status = 'failed', revision = revision + 1,
         error_code = ?, error_message = ?, updated_at = ?
       WHERE run_id = ? AND status NOT IN ('succeeded', 'failed', 'cancelled')
-    `).run(facts.code, facts.message, this.now(), runId)
+    `).run(facts.code, facts.message, this.now(), runId).changes === 1)
   }
 
   private recordObservationGap(
@@ -1479,7 +1506,7 @@ export class GenerationRuntime {
         this.writeAtomic(join(this.options.runDirectory, files.api), prepared.apiWorkflow),
       ])
       const updatedAt = this.now()
-      this.database.prepare(`
+      this.commitRunChange(runId, () => this.database.prepare(`
         UPDATE generation_runs SET
           instance_id = ?, instance_title = ?, instance_origin = ?, template_title = ?, status = 'prepared',
           revision = revision + 1, source_snapshot_path = ?, actual_workflow_path = ?,
@@ -1498,17 +1525,13 @@ export class GenerationRuntime {
         canonicalJson((prepared.imageUploads ?? imageUploads) as unknown as JsonValue),
         updatedAt,
         runId,
-      )
+      ).changes === 1)
     } catch (error) {
       if (signal?.aborted === true || (error instanceof DOMException && error.name === 'AbortError')) {
         throw new DOMException('Generation preparation was cancelled.', 'AbortError')
       }
+      if (error instanceof GenerationRunWriteError) throw error
       const facts = errorFacts(error)
-      this.database.prepare(`
-        UPDATE generation_runs SET status = 'failed', revision = revision + 1,
-          error_code = ?, error_message = ?, updated_at = ?
-        WHERE run_id = ? AND status = 'created'
-      `).run(facts.code, facts.message, this.now(), runId)
       if (error instanceof GenerationRuntimeError) throw error
       throw new GenerationRuntimeError(facts.code, facts.message)
     }
@@ -1521,16 +1544,18 @@ export class GenerationRuntime {
     return this.options.transport
   }
 
-  private recoverStagedMedia(): void {
-    const staged = this.database.prepare('SELECT * FROM generation_media_staging ORDER BY created_at, media_id')
-      .all() as unknown as MediaStagingRow[]
+  private recoverStagedMedia(runId?: string): boolean {
+    const staged = (runId === undefined
+      ? this.database.prepare('SELECT * FROM generation_media_staging ORDER BY created_at, media_id').all()
+      : this.database.prepare('SELECT * FROM generation_media_staging WHERE run_id = ? ORDER BY created_at, media_id').all(runId)
+    ) as unknown as MediaStagingRow[]
+    let recovered = false
     for (const row of staged) {
       const finalPath = join(this.options.savedMediaDirectory, row.relative_path)
       const temporaryPath = join(this.options.savedMediaDirectory, row.temporary_relative_path)
       const finalReady = existsSync(finalPath) && statSync(finalPath).isFile() && statSync(finalPath).size === row.byte_size
       if (finalReady) {
-        this.database.exec('BEGIN IMMEDIATE')
-        try {
+        transaction(this.database, () => {
           this.database.prepare(`
             INSERT OR IGNORE INTO generation_media(
               media_id, run_id, workspace_id, session_id, turn, node_id, output_index,
@@ -1542,17 +1567,15 @@ export class GenerationRuntime {
             row.relative_path, row.media_type, row.byte_size, row.created_at,
           )
           this.database.prepare('DELETE FROM generation_media_staging WHERE media_id = ?').run(row.media_id)
-          this.database.exec('COMMIT')
-        } catch (error) {
-          this.database.exec('ROLLBACK')
-          throw error
-        }
+        })
+        recovered = true
       } else {
         if (existsSync(finalPath)) unlinkSync(finalPath)
         this.database.prepare('DELETE FROM generation_media_staging WHERE media_id = ?').run(row.media_id)
       }
       if (existsSync(temporaryPath)) unlinkSync(temporaryPath)
     }
+    return recovered
   }
 
   private async writeAtomic(path: string, value: JsonValue): Promise<void> {

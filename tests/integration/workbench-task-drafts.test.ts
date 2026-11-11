@@ -167,7 +167,7 @@ it.each([null, {}, { instructions: 5, resources: {} }, { instructions: 'Invalid 
   expect(official.controller.create).not.toHaveBeenCalled()
 })
 
-it('retains a newer draft saved while an explicit Remote submission waits for Workspace initialization', async () => {
+it('retains a newer draft saved while an explicit Remote submission waits for Session creation', async () => {
   const { remote, store, official, ctx } = await fixture()
   const created = store.createWork({ workspaceId: 'workspace_2', name: 'Delayed scope', goal: 'Keep the selected task input' })
   const scope = { workspaceId: 'workspace_2', workId: created.work.work_id, branchId: created.branch.branch_id }
@@ -176,14 +176,14 @@ it('retains a newer draft saved while an explicit Remote submission waits for Wo
   const first = { instructions: '  Clicked requirement\n', resources: { instance_id: '8', template_id: '5' } }
   const later = { instructions: 'Saved while the request waits', resources: { instance_id: '9', template_id: '6' } }
   ctx.harnessComfyuiWorkbench.service.saveTaskDraft({ ...scope, functionId: 'parameters', draft: first })
-  const models = await official.controller.modelCatalog()
+  const create = official.controller.create.getMockImplementation()!
   let enter!: () => void, release!: () => void
   const entered = new Promise<void>(resolve => { enter = resolve })
   const waiting = new Promise<void>(resolve => { release = resolve })
-  official.controller.modelCatalog.mockImplementationOnce(async () => { enter(); await waiting; return models })
+  official.controller.create.mockImplementationOnce(async input => { enter(); await waiting; return create(input) })
   const submitting = remote.mutate({ ...scope, type: 'agent-action', id: 'parameters', value: { draft: structuredClone(first) } }, signal())
   try {
-    await Promise.race([entered, submitting.then(() => { throw new Error('Submission completed before the official model catalog gate') })])
+    await Promise.race([entered, submitting.then(() => { throw new Error('Submission completed before the Session creation gate') })])
     ctx.harnessComfyuiWorkbench.service.saveTaskDraft({ ...scope, functionId: 'parameters', draft: later })
   } finally { release() }
   const accepted = await submitting

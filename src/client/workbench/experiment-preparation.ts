@@ -1,5 +1,4 @@
 import type { Branch, TaskDraft } from '../../workbench/contract.ts'
-import { mergeTaskDraft } from '../../workbench/state.ts'
 
 export interface PreparationSnapshot {
   readonly draft: TaskDraft
@@ -25,6 +24,21 @@ interface PreparationApi {
   readonly onError: (message: string) => void
 }
 const equal = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right)
+
+function mergeLocalDraft(before: TaskDraft, current: TaskDraft, persisted: TaskDraft): TaskDraft {
+  const merge = (baseline: unknown, local: unknown, saved: unknown): unknown => {
+    if (equal(baseline, local)) return saved
+    if (baseline && local && saved && typeof baseline === 'object' && typeof local === 'object' && typeof saved === 'object'
+      && !Array.isArray(baseline) && !Array.isArray(local) && !Array.isArray(saved)) {
+      const previous = baseline as Record<string, unknown>, edits = local as Record<string, unknown>, values = saved as Record<string, unknown>
+      return Object.fromEntries([...new Set([...Object.keys(edits), ...Object.keys(values)])]
+        .filter(key => Object.hasOwn(edits, key) || equal(previous[key], edits[key]))
+        .map(key => [key, merge(previous[key], edits[key], values[key])]))
+    }
+    return local
+  }
+  return merge(before, current, persisted) as TaskDraft
+}
 
 export class PreparationEditor {
   private state: PreparationSnapshot
@@ -52,25 +66,24 @@ export class PreparationEditor {
       saving: false, pending: false, error: '' }
   }
   getSnapshot = () => this.state
+  hasUnpersistedChanges = () => this.state.pending || !equal(this.state.draft, this.serverEditing ?? this.branch.draft) || this.state.name !== this.branch.name || this.state.originalRequest !== this.branch.original_request
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
   private update(change: Partial<PreparationSnapshot>) {
     this.state = { ...this.state, ...change }
     for (const listener of this.listeners) listener()
   }
   sync(branch: Branch) {
-    this.branch = branch
-    if (this.operations || this.queued) return
-    this.serverEditing = branch.editing_draft
-    if (this.state.error) return
-    const editing = this.state.editing || !!branch.editing_draft
-    const draft = branch.editing_draft ?? branch.draft
+    const baseline = this.serverEditing ?? this.branch.draft
+    const savedChanged = !equal(this.branch.draft, branch.draft) || this.branch.name !== branch.name || this.branch.original_request !== branch.original_request
+    const draft = mergeLocalDraft(baseline, this.state.draft, branch.editing_draft ?? branch.draft)
     const name = this.state.name === this.expectedName ? branch.name : this.state.name
     const originalRequest = this.state.originalRequest === this.expectedOriginalRequest ? branch.original_request : this.state.originalRequest
-    if (!editing) {
-      this.expected = branch.draft
-      this.expectedName = branch.name
-      this.expectedOriginalRequest = branch.original_request
-    }
+    this.branch = branch
+    this.expected = branch.draft
+    this.expectedName = branch.name
+    this.expectedOriginalRequest = branch.original_request
+    this.serverEditing = branch.editing_draft
+    const editing = (this.state.editing && !savedChanged) || !!branch.editing_draft || !equal(draft, branch.draft) || name !== branch.name || originalRequest !== branch.original_request
     if (!equal(this.state.draft, draft) || this.state.name !== name || this.state.originalRequest !== originalRequest || this.state.editing !== editing)
       this.update({ draft, name, originalRequest, editing })
   }
@@ -117,11 +130,21 @@ export class PreparationEditor {
           const submitted = this.state.draft
           const accepted = await this.api.edit(this.serverEditing ?? this.branch.draft, submitted)
           this.serverEditing = accepted
-          this.update({ draft: mergeTaskDraft(submitted, this.state.draft, accepted ?? this.branch.draft), error: '' })
+          this.update({ draft: mergeLocalDraft(submitted, this.state.draft, accepted ?? this.branch.draft), error: '' })
         }
       } catch (error) { this.queued = false; this.fail(error) }
       finally { this.flushing = false }
     })
+  }
+  applyPrompts(prompts: { positive_prompt: string; negative_prompt: string }, persist: () => Promise<unknown>): Promise<void> {
+    return this.enqueue(async () => {
+      if (this.state.error) throw new Error(this.state.error)
+      const submitted = this.state.draft
+      await persist()
+      const accepted = { ...(this.serverEditing ?? this.branch.draft), prompt_input: { ...prompts } }
+      this.serverEditing = accepted
+      this.update({ draft: mergeLocalDraft(submitted, this.state.draft, accepted), editing: true, error: '' })
+    }).catch(error => { this.fail(error); throw error })
   }
   async flush() {
     await this.tail
@@ -141,7 +164,7 @@ export class PreparationEditor {
       this.expectedOriginalRequest = submitted.originalRequest
       this.branch = { ...this.branch, draft: submitted.draft, name: submitted.name, original_request: submitted.originalRequest, editing_draft: null }
       this.serverEditing = null
-      const changed = this.state.draft !== submitted.draft || this.state.name !== submitted.name || this.state.originalRequest !== submitted.originalRequest
+      const changed = !equal(this.state.draft, submitted.draft) || this.state.name !== submitted.name || this.state.originalRequest !== submitted.originalRequest
       this.update({ editing: changed, error: '' })
     }).catch(error => { this.fail(error); throw error }).finally(() => { this.saveOperation = null; this.update({ saving: false }) })
     return this.saveOperation
@@ -156,7 +179,7 @@ export class PreparationEditor {
         this.expected = this.branch.draft
         this.expectedName = this.branch.name
         this.expectedOriginalRequest = this.branch.original_request
-        const draft = mergeTaskDraft(submitted.draft, this.state.draft, this.branch.draft)
+        const draft = mergeLocalDraft(submitted.draft, this.state.draft, this.branch.draft)
         const changed = !equal(draft, this.branch.draft)
         this.update({ draft, name: this.state.name === submitted.name ? this.branch.name : this.state.name,
           originalRequest: this.state.originalRequest === submitted.originalRequest ? this.branch.original_request : this.state.originalRequest, editing: changed, error: '' })

@@ -53,9 +53,18 @@ it('merges a delayed real Remote edit with an Agent prompt artifact before savin
     editor.begin()
     editor.change({ instructions: '保留本次手工要求' })
     await Promise.resolve()
-    const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'prompt', positive_prompt: 'Agent glass', negative_prompt: 'Agent blur' } },
-      { workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'parallel-prompt' })
-    expect(published.disposition).toBe('applied')
+    const turn = (await host.remote.promptList({ workspace_id: scope.workspaceId, task_id: task.task_id }, signal))[0]!
+    const events = [
+      { type: 'turn/start', seq: 0, data: { turn: 1 } },
+      { type: 'user/message', seq: 1, data: { id: turn.request_id, role: 'user', source: { kind: 'user', rpcId: turn.request_id }, content: [{ type: 'text', text: turn.request_text }] } },
+      { type: 'assistant/message', seq: 2, data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: JSON.stringify({ type: 'prompt', positive_prompt: 'Agent glass', negative_prompt: 'Agent blur' }) }] } } },
+      { type: 'turn/end', seq: 3, data: { turn: 1, reason: { kind: 'completed' } } },
+    ] as unknown as import('@deepseek-ai/dsh-session').SessionEvent[]
+    host.official.events.set(turn.session_id, events)
+    host.official.agents.get(turn.session_id)!.status = 'idle'
+    host.ctx.emit('session/event', { id: turn.session_id } as import('@deepseek-ai/dsh-session').Session, events.at(-1)!)
+    await vi.waitFor(() => expect(host.store.getBranch(scope.branchId!).draft.prompt_input.positive_prompt).toBe('Agent glass'))
+    editor.sync((await host.remote.getProjection(scope, signal)).branches[0]!)
     release()
     await editor.flush()
     expect(editor.getSnapshot().draft).toMatchObject({ instructions: '保留本次手工要求', prompt_input: { positive_prompt: 'Agent glass', negative_prompt: 'Agent blur' } })
@@ -97,11 +106,11 @@ it.each([false, true])('preserves rapid original requirement metadata through a 
   } finally { release(); await host.dispose() }
 })
 
-it('retains an unsent prompt and reports a conflict when the accepted snapshot changed the same slot', async () => {
+it('preserves a later local prompt when the accepted snapshot changed the same slot', async () => {
   const branch = makeBranch('root', null)
   let release!: () => void
   const gate = new Promise<void>(resolve => { release = resolve })
-  const edit = vi.fn(async (_expected, draft) => { await gate; return { ...draft, prompt_input: { ...draft.prompt_input, positive_prompt: 'Agent prompt' } } })
+  const edit = vi.fn(async (_expected, draft) => { await gate; return edit.mock.calls.length === 1 ? { ...draft, prompt_input: { ...draft.prompt_input, positive_prompt: 'Agent prompt' } } : draft })
   const save = vi.fn(async (_input: unknown) => undefined), onError = vi.fn()
   const editor = new PreparationEditor(branch, { edit, save, onError })
   editor.begin()
@@ -110,9 +119,9 @@ it('retains an unsent prompt and reports a conflict when the accepted snapshot c
   editor.change({ prompt_input: { ...editor.getSnapshot().draft.prompt_input, positive_prompt: 'unsent user prompt' } })
   const saving = editor.save()
   release()
-  await expect(saving).rejects.toThrow()
+  await saving
   expect(editor.getSnapshot().draft.prompt_input.positive_prompt).toBe('unsent user prompt')
-  expect(editor.getSnapshot().error).not.toBe('')
-  expect(save).not.toHaveBeenCalled()
-  expect(edit).toHaveBeenCalledTimes(1)
+  expect(editor.getSnapshot().error).toBe('')
+  expect(save).toHaveBeenCalledOnce()
+  expect(edit).toHaveBeenCalledTimes(2)
 })

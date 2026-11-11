@@ -136,7 +136,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       const selectedKind = store.getFunctionBinding(request.workspaceId, selectedFunctionId).kind
       const evaluation = selectedKind !== 'translate' && isRunReviewFunctionKind(selectedKind)
         ? { runId: text(request.runId, 'run_id'), evaluationDraft: validateReviewDraftUpdate(value.evaluationDraft) } : {}
-      const task = await service.createTask({ ...selection, functionId: selectedFunctionId, ...evaluation, ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
+      const task = await service.createTask({ ...selection, requestId: request.requestId, functionId: selectedFunctionId, ...evaluation, ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
       return { ...selection, taskId: task.task_id }
     }
     case 'task-interrupt': case 'task-resume': case 'pause-experiment': case 'resume-experiment': {

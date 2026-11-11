@@ -136,6 +136,8 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       taskWorkspace: taskId => workbenchStore.taskWorkspace(taskId),
       assertGenerationAcceptance: input => workbenchStore.assertGenerationAcceptance(structuredClone(input)),
       registerGenerationRun: input => workbenchStore.registerGenerationRun(structuredClone(input)),
+      generationRunChanged: runId => workbenchStore.generationRunChanged(runId),
+      reportError: error => { ctx.logger('harness-comfyui').error('Workbench Run delivery failed: %s', error instanceof Error ? error.message : String(error)); workbenchStore.reportError(error) },
     },
     runRepositoryFile: effectiveProfile.paths.runRepositoryFile,
     runDirectory: effectiveProfile.paths.runDirectory,

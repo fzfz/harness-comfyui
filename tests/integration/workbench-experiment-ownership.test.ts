@@ -20,7 +20,7 @@ function fixture() {
   const runtime = new GenerationRuntime({
     database, runRepositoryFile: join(directory, 'runs.sqlite'), runDirectory: join(directory, 'runs'), savedMediaDirectory: join(directory, 'media'),
     preparer: { inspectRuntimeParameters: async () => ({ parameters: [], size_candidates: [] }), validateInput: async () => {}, prepare: async () => { throw new Error('Explicit advancement required') } },
-    workbench: { taskWorkspace: id => store.taskWorkspace(id), assertGenerationAcceptance: input => store.assertGenerationAcceptance(input), registerGenerationRun: input => store.registerGenerationRun(input) },
+    workbench: { taskWorkspace: id => store.taskWorkspace(id), assertGenerationAcceptance: input => store.assertGenerationAcceptance(input), registerGenerationRun: input => store.registerGenerationRun(input), generationRunChanged: id => store.generationRunChanged(id), reportError: error => store.reportError(error) },
   })
   store = new WorkbenchStore({ database, artifactDirectory: join(directory, 'artifacts') })
   const { branch } = store.createWork({ workspaceId: 'workspace', name: 'Glass', goal: 'Light through glass' })

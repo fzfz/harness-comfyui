@@ -28,7 +28,7 @@ async function fixture() {
   const start = (parent: Task) => {
     const task = create('prompt', parent)
     return store.beginPromptTurn({
-      request_id: randomUUID(), task_id: task.task_id, function_id: 'prompt', kind: 'prompt', session_id: randomUUID(), harness_turn: 1,
+      request_id: randomUUID(), task_id: task.task_id, function_id: 'prompt', kind: 'prompt', intent: 'generate', candidate: null, session_id: randomUUID(), harness_turn: 1,
       preset_id: task.binding_snapshot.preset_id, agent_model: task.binding_snapshot.agentModel,
       input: { original_request: branch.original_request, base_model_id: '1', base_model_name: 'SDXL', positive_prompt: '', negative_prompt: '', change_request: '', reference_context: {} },
       request_template: task.binding_snapshot.request_template, request_parts: DEFAULT_PROMPT_REQUEST_PARTS, request_text: task.request_text,
