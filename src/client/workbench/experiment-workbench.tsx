@@ -74,6 +74,8 @@ import { Identifier, shortId } from './experiment-identifier.tsx'
 import { ExperimentReferencePicker } from './experiment-reference-picker.tsx'
 import { PreparationEditor } from './experiment-preparation.ts'
 import { ExperienceKnowledge, ExperienceProvenance } from './experiment-experience.tsx'
+import { ExperimentBranchGraph } from './experiment-branch-graph.tsx'
+import branchGraphPresentation from './experiment-branch-graph.json' with { type: 'json' }
 const emptyPreparation = () => null
 const noPreparationSubscription = () => () => undefined
 
@@ -1126,60 +1128,22 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     </main>
   )
 
-  const graphNode = (item: Branch): ReactNode => {
-    const children = p!.branches.filter(
-      (child) => child.parent_branch_id === item.branch_id,
-    )
-    return (
-      <li key={item.branch_id}>
-        <article className="branch-graph-node">
-          <div className="row between">
-            <h3>{item.name}</h3>
-            <Button
-              kind="small"
-              onClick={() => {
-                selectBranch(item.branch_id)
-                changePage('workbench')
-              }}
-            >
-              进入分支
-            </Button>
-          </div>
-          <p title={item.source_run_id ?? item.source_artifact_id ?? undefined}>
-            {item.parent_branch_id
-              ? `来源：${p!.branches.find((parent) => parent.branch_id === item.parent_branch_id)?.name} · ${shortId(item.source_run_id || item.source_artifact_id || '任务输入')}`
-              : '主分支'}
-          </p>
-          <div className="branch-graph-runs">
-            {branchRuns(item.branch_id).map((item) => (
-              <Button
-                key={item.run_id}
-                kind="small"
-                onClick={() => selectRun(item.run_id)}
-              >
-                <span title={item.run_id}>
-                  {`${shortId(item.run_id)} · ${item.status === 'succeeded'
-                    ? '成功'
-                    : item.status === 'failed'
-                      ? '运行失败'
-                      : '运行中'}`}
-                </span>
-              </Button>
-            ))}
-            {!branchRuns(item.branch_id).length && <small>暂无运行记录</small>}
-          </div>
-        </article>
-        {children.length > 0 && <ul>{children.map(graphNode)}</ul>}
-      </li>
-    )
-  }
   const graph = (
     <main className="center">
-      <PanelHead title="分支图">{back}</PanelHead>
+      <PanelHead title="分支图" description={branchGraphPresentation.labels.description}>{back}</PanelHead>
       <div className="graph" {...scrollPanel(`graph:${view.workId}`)}>
-        <ul className="branch-graph">
-          {p?.branches.filter((item) => !item.parent_branch_id).map(graphNode)}
-        </ul>
+        <ExperimentBranchGraph
+          branches={p?.branches ?? []}
+          tasks={p?.tasks ?? []}
+          runs={p?.runs ?? []}
+          selectedRunId={view.selectedRunId}
+          baseModels={props.baseModels}
+          onRun={selectRun}
+          onBranch={(branchId) => {
+            selectBranch(branchId)
+            changePage('workbench')
+          }}
+        />
       </div>
     </main>
   )
