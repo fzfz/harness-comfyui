@@ -247,7 +247,9 @@ describe('official experiment workbench adapter', () => {
     const scrollbarSelectors = String(style.props.children).match(/[^{}]+(?=\{[^{}]*\})/g)!
       .filter(selector => selector.includes('::-webkit-scrollbar'))
     expect(scrollbarSelectors.length).toBeGreaterThan(0)
-    expect(scrollbarSelectors.every(selector => selector.split(',').every(part => part.includes('.run-cards')))).toBe(true)
+    expect(scrollbarSelectors.every(selector => selector.split(',').every(part =>
+      /^\s*\.experiment-workbench \.(?:run-cards|review-scroll|review-content)::-webkit-scrollbar(?:-track|-thumb(?::hover)?)?\s*$/.test(part),
+    ))).toBe(true)
     await act(async () => {
       await renderer.root.findByType(ExperimentWorkbench).props.onAction({
         type: 'new-workspace', workspaceId: 'workspace-a', value: { name: '画面项目', path: '/art' },

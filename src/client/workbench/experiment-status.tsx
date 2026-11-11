@@ -41,6 +41,7 @@ export function ExperimentRunReview({ run, runs, artifacts, onRun }: {
   readonly artifacts: readonly StoredArtifact[]
   readonly onRun: (runId: string) => void
 }) {
+  const [expanded, setExpanded] = React.useState<Readonly<Record<string, boolean>>>({})
   const review = artifacts.find(artifact => artifact.artifact_id === run.review_artifact_id)?.artifact
   const candidate = artifacts.find(artifact => artifact.artifact_id === run.candidate_artifact_id)?.artifact
   const adoptedPlan = candidate?.type === 'generation_input'
@@ -51,9 +52,22 @@ export function ExperimentRunReview({ run, runs, artifacts, onRun }: {
     const input = artifacts.find(artifact => artifact.artifact_id === next.candidate_artifact_id)?.artifact
     return input?.type === 'generation_input' && input.plan_artifact_id === plan.artifact_id
   }) : []
+  const disclosure = (kind: 'agent-review' | 'iteration-plan', title: string, content: React.ReactNode) => {
+    const key = `${run.run_id}:${kind}`
+    const open = expanded[key] ?? false
+    return <details key={key} className={`${kind} review-fold`} aria-label={title} open={open}
+      onToggle={event => {
+        const next = event.currentTarget.open
+        setExpanded(current => current[key] === next ? current : { ...current, [key]: next })
+      }}>
+      <summary><strong>{title}</strong><span>{open ? presentation.collapse : presentation.expand}</span></summary>
+      <div className="review-content" tabIndex={0} role="region" aria-label={format(presentation.body, { title })}>
+        {content}
+      </div>
+    </details>
+  }
   return <>
-    {review?.type === 'review' && <section className="agent-review" aria-label={presentation.agentReview}>
-      <h3>{presentation.agentReview}</h3>
+    {review?.type === 'review' && disclosure('agent-review', presentation.agentReview, <>
       <h4>{presentation.changes}</h4>
       {adoptedPlan?.type === 'iteration_plan' ? <ul>{adoptedPlan.changes.map((change, index) => <li key={index}>{change}</li>)}</ul>
         : <p>{run.iteration_index === 1 ? presentation.initialRun : presentation.unrecorded}</p>}
@@ -61,9 +75,8 @@ export function ExperimentRunReview({ run, runs, artifacts, onRun }: {
       <p>{review.observation}</p>
       <h4>{presentation.conclusion}</h4>
       <p>{review.conclusion}</p>
-    </section>}
-    {plan?.artifact.type === 'iteration_plan' && <section className="iteration-plan" aria-label={presentation.nextPlan}>
-      <h3>{presentation.nextPlan}</h3>
+    </>)}
+    {plan?.artifact.type === 'iteration_plan' && disclosure('iteration-plan', presentation.nextPlan, <>
       <ul>{plan.artifact.changes.map((change, index) => <li key={index}>{change}</li>)}</ul>
       <h4>{presentation.reason}</h4>
       <p>{plan.artifact.reason}</p>
@@ -72,7 +85,7 @@ export function ExperimentRunReview({ run, runs, artifacts, onRun }: {
       {nextRuns.map(next => <Button key={next.run_id} kind="small quiet" label={presentation.openNextRound} onClick={() => onRun(next.run_id)}>
         {presentation.openNextRound} · {next.run_id}
       </Button>)}
-    </section>}
+    </>)}
   </>
 }
 

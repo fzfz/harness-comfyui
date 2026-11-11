@@ -7154,6 +7154,40 @@ describe('experiment workbench preparing historical Run input', () => {
 
 
 describe('experiment workbench experiment round presentation', () => {
+  it('keeps long review content and the complete Run list inside the focusable result area', async () => {
+    const data = fullProjection()
+    const run = data.runs[0]!
+    run.review_artifact_id = 'long-review'
+    const observation = Array.from({ length: 100 }, (_, index) => `观察段落 ${index + 1}：玻璃窗框连续，光线自然。`).join('\n')
+    const changes = Array.from({ length: 100 }, (_, index) => `计划改动 ${index + 1}：保留构图并调整光线。`)
+    const artifacts: ArtifactPayload[] = [
+      { type: 'review', observation, conclusion: '保留完整评价结论', run_ids: [run.run_id] },
+      { type: 'iteration_plan', source_run_id: run.run_id, changes, reason: '保留完整修改原因', expected_result: '保留完整预期效果' },
+    ]
+    data.artifacts = artifacts.map((artifact, index) => ({
+      artifact_id: index === 0 ? 'long-review' : 'long-plan', task_id: run.workbench_task_id, type: artifact.type, artifact,
+      source_files: [], session_id: 'session-t1', turn: 1, call_id: `long-${index}`, skill_refs: [],
+      disposition: 'recorded', applied_target: null, created_at: 1000,
+    }))
+    const { renderer } = await mountReady(data)
+    await click(renderer, '查看运行 ' + run.run_id)
+    const result = renderer.root.findByProps({ 'aria-label': '运行结果内容' })
+    expect(result.props.tabIndex).toBe(0)
+    const review = result.findByProps({ role: 'region', 'aria-label': 'Agent 评价正文' })
+    const plan = result.findByProps({ role: 'region', 'aria-label': '下一轮计划正文' })
+    expect(nodeText(review)).toContain('观察段落 100：玻璃窗框连续，光线自然。')
+    expect(nodeText(review)).toContain('保留完整评价结论')
+    expect(nodeText(plan)).toContain('计划改动 100：保留构图并调整光线。')
+    expect(nodeText(plan)).toContain('保留完整预期效果')
+    const runList = result.findByProps({ 'aria-label': '当前分支的运行' })
+    expect(runList.findAllByType('button').some(item => item.props['aria-label'] === '查看运行 ' + run.run_id)).toBe(true)
+    for (const page of ['资源', '任务', '经验']) {
+      await click(renderer, page)
+      expect(renderer.root.findAllByProps({ 'aria-label': '运行结果内容' })).toHaveLength(0)
+      expect(renderer.root.findAllByType('main')[0]!.props.className).toBe('center')
+    }
+  })
+
   it.each(['succeeded', 'failed'] as const)('switches Agent reviews and adopted plans with the selected Run while keeping manual review separate (%s)', async status => {
     const data = fullProjection(), experiment = makeTask('experiment', 'root', 'experiment')
     const generation = makeTask('generation', 'root'), reviewTask = makeTask('evaluation', 'root', 'review')
@@ -7180,8 +7214,31 @@ describe('experiment workbench experiment round presentation', () => {
       stored('input-second', experiment.task_id, { type: 'generation_input', generation_input: second.generation_input, plan_artifact_id: 'plan-first' }),
       stored('review-second', reviewTask.task_id, { type: 'review', observation: '窗框连续', conclusion: '已达到目标', run_ids: [second.run_id] }),
     ]
-    const { renderer } = await mountReady(data)
+    vi.useFakeTimers()
+    data.refreshAfterMs = 100
+    const getProjection = vi.fn(async () => structuredClone(data))
+    const { renderer } = await mountReady(data, { remote: { getProjection } })
     await click(renderer, '查看运行 ' + first.run_id)
+    const disclosure = (label: string) => renderer.root.findAllByType('details').find(item => item.props['aria-label'] === label)!
+    expect(disclosure('Agent 评价')?.props.open).toBe(false)
+    expect(disclosure('下一轮计划')?.props.open).toBe(false)
+    expect(nodeText(disclosure('Agent 评价').findAllByType('summary')[0]!)).toBe('Agent 评价展开')
+    const reviewBody = renderer.root.findByProps({ role: 'region', 'aria-label': 'Agent 评价正文' })
+    expect(reviewBody.props.tabIndex).toBe(0)
+    expect(renderer.root.findByProps({ role: 'region', 'aria-label': '下一轮计划正文' }).props.tabIndex).toBe(0)
+    await act(() => disclosure('Agent 评价').props.onToggle({ currentTarget: { open: true } }))
+    expect(disclosure('Agent 评价').props.open).toBe(true)
+    expect(disclosure('下一轮计划').props.open).toBe(false)
+    expect(nodeText(disclosure('Agent 评价').findAllByType('summary')[0]!)).toBe('Agent 评价收起')
+    await act(() => disclosure('下一轮计划').props.onToggle({ currentTarget: { open: true } }))
+    await act(() => disclosure('Agent 评价').props.onToggle({ currentTarget: { open: false } }))
+    expect(disclosure('Agent 评价').props.open).toBe(false)
+    expect(disclosure('下一轮计划').props.open).toBe(true)
+    await act(() => disclosure('Agent 评价').props.onToggle({ currentTarget: { open: true } }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+    expect(getProjection).toHaveBeenCalledTimes(2)
+    expect(disclosure('Agent 评价').props.open).toBe(true)
+    expect(disclosure('下一轮计划').props.open).toBe(true)
     const firstReview = nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 评价' }))
     expect(firstReview).toContain('初次运行')
     expect(firstReview).toContain(status === 'failed' ? '运行失败记录' : '图片观察')
@@ -7194,11 +7251,17 @@ describe('experiment workbench experiment round presentation', () => {
     expect(nodeText(renderer.root.findByProps({ className: 'saved-review' }))).toContain('人工评价')
     expect(nodeText(renderer.root.findByProps({ className: 'saved-review' }))).toContain('光线自然')
     await click(renderer, '查看下一轮结果')
+    expect(disclosure('Agent 评价').props.open).toBe(false)
     const secondReview = nodeText(renderer.root.findByProps({ 'aria-label': 'Agent 评价' }))
     expect(secondReview).toContain('降低引导强度')
     expect(secondReview).toContain('已达到目标')
     expect(secondReview).not.toContain('窗框断开')
     expect(renderer.root.findAllByProps({ 'aria-label': '下一轮计划' })).toHaveLength(0)
+    await act(() => disclosure('Agent 评价').props.onToggle({ currentTarget: { open: true } }))
+    await act(() => disclosure('Agent 评价').props.onToggle({ currentTarget: { open: false } }))
+    await click(renderer, '查看运行 ' + first.run_id)
+    expect(disclosure('Agent 评价').props.open).toBe(true)
+    expect(disclosure('下一轮计划').props.open).toBe(true)
   })
 
   it.each(['running', 'waiting_input'] as const)('shows the active function executor and nests functional tasks inside their experiment (%s)', async status => {
