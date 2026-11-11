@@ -1,6 +1,11 @@
 import sharp from 'sharp'
+import type { Context } from '@deepseek-ai/cordis'
+import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import { apply as applyNativeWorkbenchTools } from '../../src/host/workbench/tools.ts'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import { buildPromptRequest } from '../../src/workbench/request-template.ts'
+import * as workbenchPlugin from '../../src/host/workbench/plugin.ts'
+import { WORKBENCH_FUNCTIONS } from '../../src/workbench/functions.ts'
 import { WORKBENCH_REMOTE } from '../../src/workbench-remote.ts'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +19,7 @@ async function setup() {
   await fixture.ctx.harnessComfyuiWorkbench.initializeWorkspace('workspace_1')
   const binding = fixture.store.getFunctionBinding('workspace_1', 'prompt')
   fixture.store.saveFunctionBinding({ ...binding, preset_id: 'preset-a' })
-  return { ...fixture, ...created, request: { workspace_id: 'workspace_1', work_id: created.work.work_id, branch_id: created.branch.branch_id, function_id: 'prompt', request_id: 'request-1', input: { original_request: 'Unsaved rain at night', base_model_id: '1', positive_prompt: '', negative_prompt: '', change_request: '' } } }
+  return { ...fixture, ...created, request: { workspace_id: 'workspace_1', work_id: created.work.work_id, branch_id: created.branch.branch_id, function_id: 'prompt', intent: 'rewrite' as const, request_id: 'request-1', input: { original_request: 'Unsaved rain at night', base_model_id: '1', positive_prompt: '', negative_prompt: '', change_request: '' } } }
 }
 
 function complete(f: Awaited<ReturnType<typeof setup>>, sessionId: string, requestId: string, turn: number, reply: unknown) {
@@ -31,6 +36,188 @@ function complete(f: Awaited<ReturnType<typeof setup>>, sessionId: string, reque
 }
 
 describe('prompt editing through the workbench remote', () => {
+  it.each([
+    { changed: 'model', draftIncluded: false }, { changed: 'model', draftIncluded: true },
+    { changed: 'prompt', draftIncluded: false }, { changed: 'prompt', draftIncluded: true },
+  ] as const)('saves generation against the reused Task current-round $changed snapshot (draft supplied: $draftIncluded)', async ({ changed, draftIncluded }) => {
+    const f = await setup(), signal = new AbortController().signal
+    const initial = { ...f.branch.draft, base_model_id: '1', generation_input: { ...f.branch.draft.generation_input, model: { id: '2', file_name: 'paint.safetensors' } } }
+    f.store.saveBranchDraft({ workspaceId: 'workspace_1', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft: initial })
+    const task = await f.ctx.harnessComfyuiWorkbench.service.createTask({ workspaceId: 'workspace_1', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'prompt' })
+    const first = f.store.listPromptTurns(task.task_id)[0]!
+    complete(f, first.session_id, first.request_id, 1, { type: 'prompt', positive_prompt: 'first round', negative_prompt: 'first negative' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
+    const saved = f.store.getBranch(f.branch.branch_id).draft
+    const updated = { ...saved, generation_input: changed === 'model' ? { ...saved.generation_input, model: { id: '4', file_name: 'other.safetensors' } } : saved.generation_input, prompt_input: changed === 'model' ? { positive_prompt: '', negative_prompt: '' } : { positive_prompt: 'new source', negative_prompt: 'new negative' } }
+    f.store.saveBranchDraft({ workspaceId: 'workspace_1', workId: f.work.work_id, branchId: f.branch.branch_id, expected: saved, draft: updated })
+    const next = await f.remote.promptStart({ ...f.request, request_id: 'second-default-generation', task_id: first.task_id, intent: 'generate', ...(draftIncluded ? { draft: updated } : {}), input: { ...f.request.input, ...updated.prompt_input } }, signal)
+    expect(next.task_id).toBe(first.task_id)
+    complete(f, next.session_id, next.request_id, 2, { type: 'prompt', positive_prompt: 'second round', negative_prompt: 'second negative' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(next.session_id)
+    expect(f.store.getPromptTurn(next.request_id)?.candidate).toBeNull()
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input).toEqual({ positive_prompt: 'second round', negative_prompt: 'second negative' })
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft).toBeNull()
+  })
+
+  it('saves default prompts and their task association without leaving a metadata-only editing draft', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    const turn = await f.remote.promptStart({ ...f.request, intent: 'generate' }, signal)
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_edit_task_id).toBe(turn.task_id)
+    complete(f, turn.session_id, turn.request_id, 1, { type: 'prompt', positive_prompt: 'saved rain', negative_prompt: 'fog' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(turn.session_id)
+    const branch = f.store.getBranch(f.branch.branch_id)
+    expect(branch.draft.prompt_input).toEqual({ positive_prompt: 'saved rain', negative_prompt: 'fog' })
+    expect(branch.draft.prompt_edit_task_id).toBe(turn.task_id)
+    expect(branch.editing_draft).toBeNull()
+  })
+
+  it.each(['generate', 'rewrite'] as const)('associates a later %s result after an earlier unbound turn was cancelled', async intent => {
+    const f = await setup(), signal = new AbortController().signal
+    const first = await f.remote.promptStart(f.request, signal)
+    await f.remote.promptCancel({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
+    const next = await f.remote.promptStart({ ...f.request, task_id: first.task_id, request_id: 'next-result', intent }, signal)
+    expect(next.session_id).toBe(first.session_id)
+    complete(f, next.session_id, next.request_id, 2, { type: 'prompt', positive_prompt: 'next rain', negative_prompt: 'fog' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(next.session_id)
+    expect(f.store.getPromptTurn(first.request_id)).toMatchObject({ status: 'interrupted', harness_turn: null, result: null })
+    expect(f.store.getPromptTurn(next.request_id)).toMatchObject({ status: 'succeeded', harness_turn: 2, result: { positive_prompt: 'next rain' }, candidate: intent === 'generate' ? null : { positive_prompt: 'next rain', negative_prompt: 'fog' } })
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input.positive_prompt).toBe(intent === 'generate' ? 'next rain' : '')
+  })
+  it('keeps a late native publication from a cancelled unbound turn separate from the next request', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    const first = await f.remote.promptStart(f.request, signal)
+    f.official.events.set(first.session_id, [
+      { type: 'turn/start', seq: 0, data: { turn: 1 } },
+      { type: 'user/message', seq: 1, data: { source: { kind: 'user', rpcId: first.request_id } } },
+    ] as never)
+    await f.remote.promptCancel({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
+    const next = await f.remote.promptStart({ ...f.request, task_id: first.task_id, request_id: 'next-native-result', intent: 'generate' }, signal)
+    f.official.events.get(first.session_id)!.push(...[
+      { type: 'turn/start', seq: 2, data: { turn: 2 } },
+      { type: 'user/message', seq: 3, data: { source: { kind: 'user', rpcId: next.request_id } } },
+    ] as never[])
+    const tools = new Map<string, ToolDefinition>()
+    applyNativeWorkbenchTools({ tools: { register: (tool: ToolDefinition) => tools.set(tool.name, tool) }, harnessComfyuiWorkbench: f.ctx.harnessComfyuiWorkbench, workspaceRegistry: { resolveByPath: async () => undefined } } as unknown as Context)
+    const publish = tools.get('workbench_task_publish')!
+    const execution = (turn: number): ToolRunContext => ({
+      callId: `publication-${turn}`, rootCallId: `publication-${turn}`, signal,
+      agent: { session: { id: first.session_id, header: { cwd: '/workspace/project' }, snapshotEvents: () => [...f.official.events.get(first.session_id)!, { type: 'tool/call', data: { callId: `publication-${turn}`, turn } }] } },
+    } as unknown as ToolRunContext)
+    await publish.execute({ task_id: first.task_id, artifact: { type: 'prompt', positive_prompt: 'late cancelled output', negative_prompt: '' } }, execution(1))
+    expect(f.store.getPromptTurn(next.request_id)).toMatchObject({ status: 'running', harness_turn: null, result: null, candidate: null })
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input.positive_prompt).toBe('')
+    await publish.execute({ task_id: next.task_id, artifact: { type: 'prompt', positive_prompt: 'current native output', negative_prompt: '' } }, execution(2))
+    expect(f.store.getPromptTurn(next.request_id)).toMatchObject({ status: 'succeeded', harness_turn: 2, result: { positive_prompt: 'current native output' } })
+    expect(f.store.getPromptTurn(first.request_id)).toMatchObject({ status: 'interrupted', harness_turn: null, result: null })
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input.positive_prompt).toBe('current native output')
+  })
+
+  it.each([false, true])('settles a prompt Task interrupted before its PromptTurn was created (session associated: %s)', async associated => {
+    const f = await setup()
+    const binding = f.store.getFunctionBinding('workspace_1', 'prompt')
+    const { instructions, ...draft } = f.branch.draft
+    const task = f.store.createTask({
+      branchId: f.branch.branch_id, functionId: 'prompt', title: binding.name, kind: 'prompt',
+      input: { ...draft, base_model_id: '1', requirements: { original_request: f.branch.original_request, instructions }, reference_task_artifacts: [], requested_skill: null, max_runs: 0 },
+      outputContract: WORKBENCH_FUNCTIONS.find(item => item.kind === 'prompt')!.output_contract,
+      applyTarget: { kind: 'branch', id: f.branch.branch_id, expected: {} },
+      bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template },
+    })
+    if (associated) f.store.bindSession(task.task_id, 'prepared-prompt-session', { ...binding.agent_model })
+    expect(f.store.listPromptTurns(task.task_id)).toEqual([])
+    await f.remoteFiber.dispose()
+    await f.fiber.dispose()
+    const restarted = await f.ctx.plugin(workbenchPlugin)
+    try {
+      await vi.waitFor(() => expect(f.store.getTask(task.task_id).status).toBe('failed'))
+      expect(f.store.getTask(task.task_id).error).toMatchObject({ code: 'WORKBENCH_DISPATCH_INCOMPLETE' })
+      expect(f.store.listPromptTurns(task.task_id)).toEqual([])
+      expect(f.official.controller.prompt).not.toHaveBeenCalled()
+      expect(f.official.controller.create).not.toHaveBeenCalled()
+    } finally { await restarted.dispose() }
+  })
+  it.each([
+    { kind: 'prompt', active: false, expected: 'interrupted' },
+    { kind: 'prompt', active: true, expected: 'running' },
+    { kind: 'translation', active: false, expected: 'failed' },
+    { kind: 'translation', active: true, expected: 'running' },
+  ] as const)('recovers a $kind accepted before Host restart (active=$active)', async ({ kind, active, expected }) => {
+    const f = await setup(), signal = new AbortController().signal
+    const requestId = f.request.request_id
+    const sessionId = kind === 'prompt'
+      ? (await f.remote.promptStart(f.request, signal)).session_id
+      : (await f.remote.translateStart({ request_id: requestId, workspace_id: 'workspace_1', work_id: f.work.work_id, branch_id: f.branch.branch_id, field: 'positive_prompt', source_text: 'rain' }, signal), f.store.getTranslation(requestId)!.session_id)
+    f.official.events.set(sessionId, [
+      { type: 'turn/start', seq: 0, data: { turn: 1 } },
+      { type: 'user/message', seq: 1, data: { source: { kind: 'user', rpcId: requestId } } },
+    ] as never)
+    if (!active) f.official.agents.delete(sessionId)
+    await f.remoteFiber.dispose()
+    await f.fiber.dispose()
+    const restarted = await f.ctx.plugin(workbenchPlugin)
+    try {
+      await vi.waitFor(() => expect(kind === 'prompt' ? f.store.getPromptTurn(requestId)?.status : f.store.getTranslation(requestId)?.status).toBe(expected))
+      expect(f.official.controller.create).toHaveBeenCalledOnce()
+      expect(f.official.controller.prompt).toHaveBeenCalledOnce()
+    } finally { await restarted.dispose() }
+  })
+
+  it('persists the created prompt session before selecting its model', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    let entered!: () => void, release!: () => void
+    const selecting = new Promise<void>(resolve => { entered = resolve })
+    const suspended = new Promise<void>(resolve => { release = resolve })
+    const select = f.official.controller.selectModel.getMockImplementation()!
+    f.official.controller.selectModel.mockImplementationOnce(async request => { entered(); await suspended; return select(request) })
+    const dispatch = f.remote.promptStart(f.request, signal)
+    await selecting
+    try {
+      const created = await f.official.controller.create.mock.results[0]!.value
+      expect(f.store.getPromptTurn(f.request.request_id)?.session_id).toBe(created.sessionId)
+      expect(f.official.controller.prompt).not.toHaveBeenCalled()
+    } finally { release(); await dispatch }
+  })
+
+  it('fails a prompt session prepared before an abandoned dispatch without sending another prompt', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    const started = await f.remote.promptStart(f.request, signal)
+    f.ctx.harnessComfyuiWorkbench.prompts.dispose()
+    f.official.agents.delete(started.session_id)
+    await f.ctx.harnessComfyuiWorkbench.prompts.recover()
+    expect(f.store.getPromptTurn(started.request_id)).toMatchObject({ status: 'failed', error: { code: 'WORKBENCH_PROMPT_INCOMPLETE' } })
+    expect(f.official.controller.prompt).toHaveBeenCalledOnce()
+    expect(f.official.controller.create).toHaveBeenCalledOnce()
+  })
+
+  it('retries an accepted prompt from its original submission while Catalog is unavailable', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    const [first, repeated] = await Promise.all([f.remote.promptStart(f.request, signal), f.remote.promptStart(f.request, signal)])
+    expect(first.request_id).toBe(repeated.request_id)
+    expect(f.official.controller.prompt).toHaveBeenCalledOnce()
+    f.catalog.baseModels.mockRejectedValueOnce(new Error('Catalog unavailable'))
+    expect(await f.remote.promptStart(f.request, signal)).toEqual(first)
+    await expect(f.remote.promptStart({ ...f.request, input: { ...f.request.input, change_request: 'Changed input' } }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_PROMPT_REQUEST_CONFLICT' } })
+  })
+
+  it('saves the matching completed request when session events arrive without a page query', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    const started = await f.remote.promptStart({ ...f.request, intent: 'generate' }, signal)
+    complete(f, started.session_id, started.request_id, 1, { type: 'prompt', positive_prompt: 'night rain', negative_prompt: 'fog' })
+    const end = f.official.events.get(started.session_id)!.at(-1)!
+    f.ctx.emit('session/event', { id: started.session_id } as never, end)
+    await vi.waitFor(() => expect(f.store.getPromptTurn(started.request_id)?.status).toBe('succeeded'))
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(started.session_id)
+    expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: started.request_id }, signal)).toMatchObject({ status: 'succeeded', harness_turn: 1, result: { positive_prompt: 'night rain', negative_prompt: 'fog' } })
+    expect(f.store.listArtifacts(started.task_id)).toHaveLength(1)
+  })
+  it('reads persisted prompt requests without consuming completed session events', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    const started = await f.remote.promptStart(f.request, signal)
+    complete(f, started.session_id, started.request_id, 1, { type: 'prompt', positive_prompt: 'saved by events', negative_prompt: '' })
+    expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: started.request_id }, signal)).toMatchObject({ status: 'running', result: null, harness_turn: null })
+    expect(await f.remote.promptList({ workspace_id: 'workspace_1', task_id: started.task_id }, signal)).toEqual([expect.objectContaining({ status: 'running', result: null })])
+    expect(f.store.listArtifacts(started.task_id)).toHaveLength(0)
+  })
   it('reuses the editing task and session across requests while preserving each input and adopted result', async () => {
     const f = await setup(), signal = new AbortController().signal
     const first = await f.remote.promptStart(f.request, signal)
@@ -38,12 +225,14 @@ describe('prompt editing through the workbench remote', () => {
     expect(first.request_text).toContain('Unsaved rain at night')
     expect(f.store.getBranch(f.branch.branch_id).original_request).toBe('A rainy street')
     complete(f, first.session_id, first.request_id, 1, { type: 'prompt', positive_prompt: 'rain, night', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     const finished = await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
     expect(finished).toMatchObject({ status: 'succeeded', harness_turn: 1, result: { type: 'prompt', positive_prompt: 'rain, night', negative_prompt: '' } })
     const second = await f.remote.promptStart({ ...f.request, task_id: first.task_id, request_id: 'request-2', input: { ...f.request.input, positive_prompt: 'rain, night, manual', change_request: 'Add reflections' } }, signal)
     expect(second).toMatchObject({ task_id: first.task_id, session_id: first.session_id, turn_index: 2, status: 'running', harness_turn: null })
     expect(second.input).toMatchObject({ positive_prompt: 'rain, night, manual', change_request: 'Add reflections' })
     complete(f, second.session_id, second.request_id, 2, { type: 'prompt', positive_prompt: 'reflections in rain', negative_prompt: 'fog' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(second.session_id)
     const result = await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: second.request_id }, signal)
     const adopted = await f.remote.promptAdopt({ workspace_id: 'workspace_1', request_id: second.request_id, positive_prompt: 'reflections, user edit', negative_prompt: '' }, signal)
     expect(result.status).toBe('succeeded')
@@ -58,14 +247,17 @@ describe('prompt editing through the workbench remote', () => {
     await expect(f.remote.promptStart({ ...f.request, task_id: first.task_id, request_id: 'request-busy' }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_PROMPT_BUSY' } })
     expect(await f.remote.promptStart(f.request, signal)).toEqual(first)
     complete(f, first.session_id, 'another-request', 1, { type: 'prompt', positive_prompt: 'unrelated', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)).toMatchObject({ status: 'running', harness_turn: null })
     const stopped = await f.remote.promptCancel({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
     expect(stopped.status).toBe('interrupted')
     complete(f, first.session_id, first.request_id, 2, { type: 'prompt', positive_prompt: 'late reply', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)).toMatchObject({ status: 'interrupted', result: null })
     expect(f.store.listArtifacts(first.task_id)).toHaveLength(0)
     const next = await f.remote.promptStart({ ...f.request, task_id: first.task_id, request_id: 'request-resume' }, signal)
     complete(f, next.session_id, next.request_id, 3, { type: 'prompt', positive_prompt: 'resumed', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(next.session_id)
     expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: next.request_id }, signal)).toMatchObject({ status: 'succeeded', harness_turn: 3, result: { positive_prompt: 'resumed' } })
     await expect(f.remote.promptGet({ workspace_id: 'workspace_2', request_id: next.request_id }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
     await expect(f.remote.promptList({ workspace_id: 'workspace_2', task_id: first.task_id }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
@@ -75,6 +267,7 @@ describe('prompt editing through the workbench remote', () => {
     const f = await setup(), signal = new AbortController().signal
     const first = await f.remote.promptStart(f.request, signal)
     complete(f, first.session_id, first.request_id, 1, { type: 'prompt', positive_prompt: 'first', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
     f.official.listPresets.mockResolvedValue([{ id: 'preset-a' }, { id: 'preset-b' }])
     const binding = f.store.getFunctionBinding('workspace_1', 'prompt')
@@ -97,6 +290,7 @@ describe('prompt editing through the workbench remote', () => {
     expect(rejected).toMatchObject({ status: 'failed', error: { message: 'Provider unavailable' }, result: null })
     const second = await f.remote.promptStart({ ...f.request, task_id: rejected.task_id, request_id: 'request-retry' }, signal)
     complete(f, second.session_id, second.request_id, 1, { type: 'prompt', positive_prompt: null, negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(second.session_id)
     expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: second.request_id }, signal)).toMatchObject({ status: 'failed', error: { code: 'WORKBENCH_PROMPT_REPLY_INVALID' } })
     await expect(f.remote.promptAdopt({ workspace_id: 'workspace_1', request_id: second.request_id, positive_prompt: 'manual', negative_prompt: '' }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_PROMPT_NOT_READY' } })
     await expect(f.remote.promptGet({ workspace_id: 'workspace_1', request_id: 'missing' }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_PROMPT_NOT_FOUND' } })
@@ -142,6 +336,7 @@ describe('prompt editing through the workbench remote', () => {
     const task = await f.ctx.harnessComfyuiWorkbench.service.createTask({ workspaceId: 'workspace_1', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'prompt' })
     const request = (f.official.controller.prompt.mock.calls[0] as unknown as [{ requestId: string }])[0]
     complete(f, task.session_id!, request.requestId, 1, { type: 'prompt', positive_prompt: 'A rainy street in watercolor', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(task.session_id!)
     const result = await f.ctx.harnessComfyuiWorkbench.service.getTask({ taskId: task.task_id }, { workspaceId: 'workspace_1', sessionId: task.session_id!, turn: 1, callId: 'read' })
     expect(result.artifacts).toContainEqual(expect.objectContaining({ task_id: task.task_id, artifact: { type: 'prompt', positive_prompt: 'A rainy street in watercolor', negative_prompt: '' } }))
     expect(result.status).toBe('succeeded')
@@ -195,8 +390,10 @@ describe('prompt editing through the workbench remote', () => {
       { seq: 0, type: 'turn/start', data: { turn: 1 } },
       { seq: 1, type: 'user/message', data: { source: { kind: 'user', rpcId: first.request_id } } },
     ] as unknown as SessionEvent[])
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)).toMatchObject({ harness_turn: 1, status: 'running' })
     f.official.events.get(first.session_id)!.push({ seq: 2, type: 'turn/end', data: { turn: 1, reason } } as unknown as SessionEvent)
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     expect(await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)).toMatchObject({ status, error: { code }, artifact_id: null })
   })
   it.each([false, true])('keeps cancellation when a suspended event read returns completion (next turn: %s)', async nextTurn => {
@@ -218,13 +415,14 @@ describe('prompt editing through the workbench remote', () => {
       }
       return handle
     })
-    const pending = f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
+    const pending = f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     await reading
     const stopped = await f.remote.promptCancel({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
     expect(stopped.status).toBe('interrupted')
     const next = nextTurn ? await f.remote.promptStart({ ...f.request, task_id: first.task_id, request_id: 'request-after-cancel' }, signal) : null
     release()
-    const late = await pending
+    await pending
+    const late = await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
     expect(late).toMatchObject({ status: 'interrupted', artifact_id: null, result: null })
     expect(f.store.getPromptTurn(first.request_id)).toMatchObject({ status: 'interrupted', artifact_id: null })
     expect(f.store.updatePromptTurn(first.request_id, { harness_turn: 1, status: 'succeeded', result: { type: 'prompt', positive_prompt: 'stale transaction', negative_prompt: '' } })).toEqual(stopped)
@@ -259,6 +457,7 @@ describe('prompt editing through the workbench remote', () => {
     const f = await setup(), signal = new AbortController().signal
     const first = await f.remote.promptStart(f.request, signal)
     complete(f, first.session_id, first.request_id, 1, { type: 'prompt', positive_prompt: 'first reply', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
     await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)
     let entered!: () => void, release!: () => void
     const selecting = new Promise<void>(resolve => { entered = resolve })

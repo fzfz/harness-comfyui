@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { Context } from '@deepseek-ai/cordis'
+import type { OfficialSessionController } from '../../src/host/workbench/harness-adapter.ts'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { vi } from 'vitest'
@@ -43,8 +44,19 @@ export function provideWorkbenchOfficialServices(ctx: Context, workspaces = [
     selectModel: vi.fn(async (input: { provider: string; model: string; reasoningEffort?: string }) => ({
       selected: { provider: input.provider, model: input.model, ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}) },
     })),
-    prompt: vi.fn(async () => ({ accepted: true as const })),
+    prompt: vi.fn<OfficialSessionController['prompt']>(async () => ({ accepted: true as const })),
     cancel: vi.fn((_input: { sessionId: string }) => ({ accepted: true as const })),
+  }
+  const acceptPrompt: OfficialSessionController['prompt'] = async request => {
+    const history = events.get(request.sessionId) ?? []
+    const turn = history.reduce((last, event) => event.type === 'turn/start' ? Math.max(last, event.data.turn) : last, 0) + 1
+    const seq = (history.at(-1)?.seq ?? -1) + 1
+    history.push(...[
+      { type: 'turn/start', seq, data: { turn } },
+      { type: 'user/message', seq: seq + 1, data: { id: randomUUID(), role: 'user', source: { kind: 'user', rpcId: request.requestId }, content: request.content } },
+    ] as unknown as SessionEvent[])
+    events.set(request.sessionId, history)
+    return { accepted: true }
   }
   const disposeScope = vi.fn(async () => {})
   const acquireScope = vi.fn(async () => ({ key: 'preset-scope', [Symbol.asyncDispose]: disposeScope }))
@@ -57,7 +69,7 @@ export function provideWorkbenchOfficialServices(ctx: Context, workspaces = [
     acquireScope,
   } as never)
   ctx.provide('skills' as never, { list: listSkills } as never)
-  return { sessions, events, agents, controller, acquireScope, disposeScope, listSkills, listPresets }
+  return { sessions, events, agents, controller, acceptPrompt, acquireScope, disposeScope, listSkills, listPresets }
 }
 
 export async function createWorkbenchHostFixture(preparer?: GenerationPreparationAdapter, transport?: GenerationTransport) {
@@ -85,7 +97,7 @@ export async function createWorkbenchHostFixture(preparer?: GenerationPreparatio
     workbench: {
       taskWorkspace: taskId => store.taskWorkspace(taskId),
       assertGenerationAcceptance: input => store.assertGenerationAcceptance(input),
-      registerGenerationRun: input => store.registerGenerationRun(input),
+      registerGenerationRun: input => store.registerGenerationRun(input), generationRunChanged: id => store.generationRunChanged(id), reportError: error => store.reportError(error),
     },
   })
   store = new WorkbenchStore({ database, artifactDirectory: join(directory, 'artifacts') })
@@ -182,10 +194,10 @@ export async function createWorkbenchHostFixture(preparer?: GenerationPreparatio
   }
 }
 
-export function workbenchShellExecution(sessionId: string, cwd = '/workspace/project'): ToolExecution {
+export function workbenchShellExecution(sessionId: string, cwd = '/workspace/project', turn = 2): ToolExecution {
   const callId = `shell-${randomUUID()}`
   return {
     callId, rootCallId: 'shell-root', name: 'bash', arguments: {}, token: Symbol('shell-execution'), signal: new AbortController().signal,
-    agent: { session: { id: sessionId, header: { cwd }, snapshotEvents: () => [{ type: 'tool/call', data: { callId, name: 'bash', turn: 2 } }] } },
+    agent: { session: { id: sessionId, header: { cwd }, snapshotEvents: () => [{ type: 'tool/call', data: { callId, name: 'bash', turn } }] } },
   } as unknown as ToolExecution
 }

@@ -28,6 +28,12 @@ function fixture(options: Partial<WorkbenchServiceOptions> = {}) {
   return { ...created, directory, database, store, service }
 }
 
+async function beginPrompt(f: ReturnType<typeof fixture>, intent: 'generate' | 'rewrite') {
+  const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'prompt' })
+  const binding = f.store.getFunctionBinding('workspace', 'prompt')
+  return f.store.beginPromptTurn({ request_id: `${intent}-request`, task_id: task.task_id, function_id: task.function_id, kind: 'prompt', intent, candidate: null, session_id: task.session_id!, harness_turn: 1, preset_id: binding.preset_id, agent_model: binding.agent_model, input: { original_request: 'paint rain', base_model_id: 'base', base_model_name: 'Base', positive_prompt: '', negative_prompt: '', change_request: '', reference_context: {} }, request_template: binding.request_template, request_parts: binding.request_parts!, request_text: 'generate', status: 'running', error: null, artifact_id: null, result: null, adopted: null, applied_at: null, created_at: Date.now(), finished_at: null, start_seq: 0 })
+}
+
 function acceptRun(f: ReturnType<typeof fixture>, taskId: string, runId: string, input: GenerationInput): void {
   transaction(f.database, () => {
     f.store.assertGenerationAcceptance({ taskId, workspaceId: 'workspace', input, reused: false })
@@ -37,6 +43,199 @@ function acceptRun(f: ReturnType<typeof fixture>, taskId: string, runId: string,
 }
 
 describe('workbench storage public boundary', () => {
+  it.each(['positive_prompt', 'negative_prompt'] as const)('applies only the resolved %s output and preserves edits in the null slot', async field => {
+    const f = fixture()
+    const turn = await beginPrompt(f, 'generate')
+    const other = field === 'positive_prompt' ? 'negative_prompt' : 'positive_prompt'
+    const editing = structuredClone(f.branch.draft)
+    editing.prompt_input[other] = 'user retained input'
+    f.store.saveEditingDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, draft: editing })
+    const artifact = { type: 'prompt' as const, positive_prompt: null, negative_prompt: null, [field]: 'generated field' }
+    const published = f.store.publish(turn.task_id, artifact, { workspaceId: 'workspace', sessionId: turn.session_id, turn: 1, callId: 'partial' })
+    expect(published.disposition).toBe('applied')
+    const branch = f.store.getBranch(f.branch.branch_id)
+    expect(branch.draft.prompt_input[field]).toBe('generated field')
+    expect(branch.draft.prompt_input[other]).toBe('')
+    expect(branch.editing_draft?.prompt_input[other]).toBe('user retained input')
+    expect(f.store.getArtifact(published.artifact_id).artifact).toEqual(artifact)
+  })
+  it.each(['positive_prompt', 'negative_prompt'] as const)('keeps partial %s output as a candidate when its target was edited', async field => {
+    const f = fixture()
+    const turn = await beginPrompt(f, 'generate')
+    const editing = structuredClone(f.branch.draft)
+    editing.prompt_input[field] = 'user protected input'
+    f.store.saveEditingDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, draft: editing })
+    const other = field === 'positive_prompt' ? 'negative_prompt' : 'positive_prompt'
+    editing.prompt_input[other] = 'retain the null slot'
+    f.store.saveEditingDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, draft: editing })
+    const artifact = { type: 'prompt' as const, positive_prompt: null, negative_prompt: null, [field]: 'generated field' }
+    const published = f.store.publish(turn.task_id, artifact, { workspaceId: 'workspace', sessionId: turn.session_id, turn: 1, callId: 'partial-conflict' })
+    expect(published.disposition).toBe('candidate')
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input[field]).toBe('')
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_input[field]).toBe('user protected input')
+    expect(f.store.getArtifact(published.artifact_id).artifact).toEqual(artifact)
+    const adopted = f.store.adoptArtifact({ artifactId: published.artifact_id, expected: { [`prompt_input.${field}`]: 'user protected input' } })
+    expect(adopted.disposition).toBe('applied')
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_input).toEqual({ [field]: 'generated field', [other]: 'retain the null slot' })
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input[field]).toBe('')
+  })
+
+  it('retains the accepted task submission separately from the task projection for request retries', async () => {
+    const f = fixture()
+    const original = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'prompt' })
+    const submission = { workspaceId: 'workspace', functionId: 'prompt', instructions: 'generate rain' }
+    const task = f.store.createTask({ taskId: 'recorded-request', branchId: original.branch_id, functionId: original.function_id, title: original.title, kind: original.kind, input: original.input, outputContract: original.output_contract, applyTarget: original.apply_target, bindingSnapshot: original.binding_snapshot, submissionInput: submission })
+    expect(new WorkbenchStore({ database: f.database, artifactDirectory: f.directory }).getTaskSubmission(task.task_id)).toEqual(submission)
+    expect(f.store.getTask(task.task_id)).not.toHaveProperty('submission_input_json')
+    expect(f.store.getTaskSubmission('unknown-request')).toBeNull()
+  })
+
+  it('keeps later publications for a completed rewrite as candidates without applying them', async () => {
+    const f = fixture()
+    const turn = await beginPrompt(f, 'rewrite')
+    const result = { type: 'prompt' as const, positive_prompt: 'first result', negative_prompt: '' }
+    f.store.updatePromptTurn(turn.request_id, { status: 'succeeded', result })
+    const receipt = f.store.publish(turn.task_id, { ...result, positive_prompt: 'late result' }, { workspaceId: 'workspace', sessionId: turn.session_id, turn: 1, callId: 'late-publication' })
+    expect(receipt.disposition).toBe('candidate')
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_input.positive_prompt).toBe('')
+    expect(f.store.getPromptTurn(turn.request_id)?.result).toEqual(result)
+    expect(f.store.getPromptTurn(turn.request_id)?.candidate?.positive_prompt).toBe('first result')
+  })
+
+  it('keeps a generated result as a complete candidate when the user changes the target prompt', async () => {
+    const f = fixture()
+    const turn = await beginPrompt(f, 'generate')
+    const draft = structuredClone(f.branch.draft)
+    draft.prompt_input.positive_prompt = 'user edit'
+    f.store.saveEditingDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, draft })
+    const result = { type: 'prompt' as const, positive_prompt: 'p'.repeat(4496), negative_prompt: 'n'.repeat(731) }
+    const completed = f.store.updatePromptTurn(turn.request_id, { status: 'succeeded', result })
+    expect(completed.result).toEqual(result)
+    expect(completed.candidate).toEqual({ positive_prompt: result.positive_prompt, negative_prompt: result.negative_prompt })
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_input.positive_prompt).toBe('user edit')
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input.positive_prompt).toBe('')
+    expect(f.store.getArtifact(completed.artifact_id!).disposition).toBe('candidate')
+  })
+
+  it('retains edited rewrite candidates and adopts their input with the receipt in one transaction', async () => {
+    const f = fixture()
+    const turn = await beginPrompt(f, 'rewrite')
+    const result = { type: 'prompt' as const, positive_prompt: 'agent rain', negative_prompt: 'blur' }
+    const completed = f.store.updatePromptTurn(turn.request_id, { status: 'succeeded', result })
+    expect(completed.candidate).toEqual({ positive_prompt: 'agent rain', negative_prompt: 'blur' })
+    expect(f.store.getBranch(f.branch.branch_id).draft.prompt_input.positive_prompt).toBe('')
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_input.positive_prompt).toBe('')
+    const candidate = { positive_prompt: 'edited rain', negative_prompt: 'blur' }
+    f.store.updatePromptTurn(turn.request_id, { candidate })
+    expect(new WorkbenchStore({ database: f.database, artifactDirectory: f.directory }).getPromptTurn(turn.request_id)?.candidate).toEqual(candidate)
+    f.database.exec("CREATE TRIGGER reject_adoption BEFORE UPDATE OF adopted_json ON workbench_prompt_turns WHEN NEW.adopted_json IS NOT NULL BEGIN SELECT RAISE(ABORT,'reject adoption'); END")
+    expect(() => f.store.adoptPrompt(turn.request_id, candidate)).toThrow('reject adoption')
+    expect(f.store.getBranch(f.branch.branch_id).editing_draft?.prompt_input.positive_prompt).toBe('')
+    expect(f.store.getPromptTurn(turn.request_id)?.adopted).toBeNull()
+    f.database.exec('DROP TRIGGER reject_adoption')
+    const adopted = f.store.adoptPrompt(turn.request_id, candidate)
+    expect(adopted.adopted).toEqual(candidate)
+    const branch = f.store.getBranch(f.branch.branch_id)
+    expect(branch.editing_draft?.prompt_input.positive_prompt).toBe('edited rain')
+    expect(branch.draft.prompt_input.positive_prompt).toBe('')
+    expect(adopted.result).toEqual(result)
+    f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: branch.branch_id, expected: branch.draft, draft: branch.editing_draft! })
+    expect(f.store.getBranch(branch.branch_id).draft.prompt_input.positive_prompt).toBe('edited rain')
+  })
+
+  it('saves generated prompt fields while retaining unrelated persisted parameter edits', async () => {
+    const f = fixture()
+    const turn = await beginPrompt(f, 'generate')
+    const edited = structuredClone(f.branch.draft)
+    edited.generation_input.parameters.steps = 35
+    edited.prompt_change_request = 'Later user instructions'
+    f.store.saveEditingDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, draft: edited })
+    const completed = f.store.updatePromptTurn(turn.request_id, { status: 'succeeded', result: { type: 'prompt', positive_prompt: 'rain light', negative_prompt: 'blur' } })
+    const branch = f.store.getBranch(f.branch.branch_id)
+    expect(branch.draft.prompt_input).toMatchObject({ positive_prompt: 'rain light', negative_prompt: 'blur' })
+    expect(branch.editing_draft?.prompt_input).toMatchObject({ positive_prompt: 'rain light', negative_prompt: 'blur' })
+    expect(branch.editing_draft?.generation_input.parameters.steps).toBe(35)
+    expect(branch.draft.generation_input.parameters.steps).not.toBe(35)
+    expect(branch.draft.prompt_edit_task_id).toBe(turn.task_id)
+    expect(branch.editing_draft?.prompt_edit_task_id).toBe(turn.task_id)
+    expect(branch.editing_draft?.prompt_change_request).toBe('Later user instructions')
+    expect(branch.draft.prompt_change_request ?? '').toBe('')
+    expect(completed.intent).toBe('generate')
+    expect(completed.candidate).toBeNull()
+  })
+
+  it('persists translation origins and terminal replies across store recreation without reopening completed requests', () => {
+    const f = fixture()
+    const pending = { request_id: 'translation-durable', workspace_id: 'workspace', work_id: f.work.work_id, branch_id: f.branch.branch_id, field: 'positive_prompt' as const, source_text: 'rain', session_id: 'translation-session', harness_turn: 4, start_seq: 7, created_at: 100, finished_at: null, status: 'running' as const }
+    f.store.saveTranslation(pending)
+    expect(f.store.listPendingTranslations()).toEqual([pending])
+    const completed = { ...pending, status: 'succeeded' as const, text: '雨', finished_at: 200 }
+    f.store.saveTranslation(completed)
+    const restored = new WorkbenchStore({ database: f.database, artifactDirectory: f.directory })
+    expect(restored.getTranslation(pending.request_id)).toEqual(completed)
+    expect(restored.listTranslations({ workspaceId: 'workspace', workId: f.work.work_id })).toEqual([completed])
+    expect(restored.listTranslations({ workspaceId: 'other-workspace' })).toEqual([])
+    expect(restored.listPendingTranslations()).toEqual([])
+    expect(restored.saveTranslation(pending)).toEqual(completed)
+  })
+
+  it('settles generation at the committed Run change and delivers its saved task with the media change', async () => {
+    const f = fixture()
+    const draft = structuredClone(f.branch.draft)
+    draft.generation_input.instance_id = '1'
+    draft.generation_input.template_id = '2'
+    f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft })
+    const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
+    acceptRun(f, task.task_id, 'event-run', task.input.generation_input)
+    const delivered: string[] = []
+    f.store.subscribe(() => delivered.push(f.store.getTask(task.task_id).status))
+    transaction(f.database, () => {
+      f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('event-run')
+      f.store.generationRunChanged('event-run')
+      expect(delivered).toEqual([])
+    })
+    expect(delivered).toEqual(['succeeded'])
+    f.store.generationRunChanged('event-run')
+    expect(delivered).toEqual(['succeeded', 'succeeded'])
+    expect(f.store.getProjection({ workspaceId: 'workspace' }).tasks[0]?.status).toBe('succeeded')
+  })
+
+  it('notifies one committed workbench change and discards nested changes when the outer transaction rolls back', () => {
+    const f = fixture()
+    const changes: number[] = []
+    const unsubscribe = f.store.subscribe(sequence => changes.push(sequence))
+    const initial = f.store.revision
+    transaction(f.database, () => {
+      f.store.createBranch({ workId: f.work.work_id, parentBranchId: f.branch.branch_id, name: 'committed', originalRequest: 'paint', draft: f.branch.draft, execution: f.branch.execution })
+      f.store.saveBranchExecution({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, execution: { mode: 'once', max_runs: 4 } })
+      expect(changes).toEqual([])
+    })
+    expect(changes).toEqual([initial + 1])
+    expect(() => transaction(f.database, () => {
+      f.store.createBranch({ workId: f.work.work_id, parentBranchId: f.branch.branch_id, name: 'rolled back', originalRequest: 'paint', draft: f.branch.draft, execution: f.branch.execution })
+      throw new Error('rollback outer')
+    })).toThrow('rollback outer')
+    expect(changes).toEqual([initial + 1])
+    unsubscribe()
+    f.store.saveBranchExecution({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, execution: { mode: 'once', max_runs: 5 } })
+    expect(changes).toEqual([initial + 1])
+  })
+
+  it('returns saved task state without settling generation during projection reads', async () => {
+    const f = fixture()
+    const draft = structuredClone(f.branch.draft)
+    draft.generation_input.instance_id = '1'
+    draft.generation_input.template_id = '2'
+    f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft })
+    const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
+    acceptRun(f, task.task_id, 'projection-read-run', task.input.generation_input)
+    const before = f.store.getTask(task.task_id)
+    f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('projection-read-run')
+    expect(f.store.getProjection({ workspaceId: 'workspace' }).tasks[0]).toEqual(before)
+    expect(f.store.getTask(task.task_id)).toEqual(before)
+    expect(f.store.getProjection({ workspaceId: 'workspace' })).not.toHaveProperty('refreshAfterMs')
+  })
+
   it.each(['name', 'original_request'] as const)('preserves the saved %s when another caller submits its original value', field => {
     const f = fixture()
     const scope = { workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id }
@@ -138,6 +337,7 @@ describe('workbench storage public boundary', () => {
     await f.service.endExperiment({ taskId: experiment.task_id, reason: 'user_ended' }, { workspaceId: 'workspace', sessionId: experiment.session_id!, turn: 1, callId: 'end-run' })
     expect(f.store.getTask(experiment.task_id).status).toBe('waiting_generation')
     f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('ended-run')
+    f.store.generationRunChanged('ended-run')
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks.find(task => task.task_id === experiment.task_id)?.status).toBe('needs_attention')
     await f.service.publish({ taskId: experiment.task_id, artifact: { type: 'review', observation: 'rain visible', conclusion: 'goal met', run_ids: ['ended-run'] } }, { workspaceId: 'workspace', sessionId: experiment.session_id!, turn: 2, callId: 'review-ended' })
     expect(f.store.getTask(experiment.task_id).status).toBe('succeeded')
@@ -205,7 +405,7 @@ describe('workbench storage public boundary', () => {
     expect(f.store.getArtifact(model.artifact_id).disposition).toBe('candidate')
   })
 
-  it('preserves completed snapshots and observes unfinished idle tasks after official Sessions reload', async () => {
+  it('preserves completed snapshots and returns persisted execution changes after official Sessions reload', async () => {
     const sessions = new Map<string, import('../../src/workbench/contract.ts').ExecutionState>()
     const statusCalls: string[] = []
     let sequence = 0
@@ -220,55 +420,58 @@ describe('workbench storage public boundary', () => {
     expect(statusCalls).toEqual([])
     const unfinished = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'prompt' })
     sessions.set(unfinished.session_id!, 'idle')
+    f.store.markExecution(unfinished.task_id, 'idle')
     const idle = (await f.service.getProjection({ workspaceId: 'workspace', workId: f.work.work_id })).tasks.find(task => task.task_id === unfinished.task_id)!
     expect(idle).toMatchObject({ status: 'needs_attention', execution_state: 'idle' })
     sessions.delete(unfinished.session_id!)
     expect((await f.service.getProjection({ workspaceId: 'workspace', workId: f.work.work_id })).tasks.find(task => task.task_id === unfinished.task_id)).toEqual(idle)
     sessions.set(unfinished.session_id!, 'running')
+    f.store.markExecution(unfinished.task_id, 'running')
     expect((await f.service.getProjection({ workspaceId: 'workspace', workId: f.work.work_id })).tasks.find(task => task.task_id === unfinished.task_id)).toMatchObject({ task_id: unfinished.task_id, status: 'running', execution_state: 'running' })
-    expect(statusCalls).toEqual([unfinished.session_id, unfinished.session_id, unfinished.session_id])
+    expect(statusCalls).toEqual([])
   })
 
   it('tracks active official execution and finishes background Runs after their session unloads', async () => {
-    let official: import('../../src/workbench/contract.ts').ExecutionState | null = 'pending'
     let statusCalls = 0
-    const f = fixture({ sessions: { authorize: async () => true, create: async () => ({ sessionId: 'active-official', selectedModel: {} }), dispatch: async () => {}, status: async () => { statusCalls++; return official } } })
+    const f = fixture({ sessions: { authorize: async () => true, create: async () => ({ sessionId: 'active-official', selectedModel: {} }), dispatch: async () => {}, status: async () => { statusCalls++; return null } } })
     const draft = structuredClone(f.branch.draft); draft.generation_input.instance_id = '1'; draft.generation_input.template_id = '2'
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft })
     const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
+    f.store.markExecution(task.task_id, 'pending')
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'pending', execution_state: 'pending' })
-    official = 'running'
+    f.store.markExecution(task.task_id, 'running')
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'running', execution_state: 'running' })
     acceptRun(f, task.task_id, 'background-run', task.input.generation_input)
-    official = 'idle'
-    expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'waiting_generation', execution_state: 'idle' })
-    official = null
+    f.store.markExecution(task.task_id, 'idle')
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'waiting_generation', execution_state: 'idle' })
     f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('background-run')
+    f.store.generationRunChanged('background-run')
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'succeeded', execution_state: 'idle' })
-    expect(statusCalls).toBe(4)
+    expect(statusCalls).toBe(0)
   })
 
-  it('retains Run completion when it arrives during an official status query', async () => {
-    let f: ReturnType<typeof fixture>
+  it('reads committed Run completion without querying an interrupted official Session', async () => {
     let statusCalls = 0
-    f = fixture({ sessions: { authorize: async () => true, create: async () => ({ sessionId: 'unloading-official', selectedModel: {} }), dispatch: async () => {}, status: async () => { statusCalls++; f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('completing-run'); return 'interrupted' } } })
+    const f = fixture({ sessions: { authorize: async () => true, create: async () => ({ sessionId: 'unloading-official', selectedModel: {} }), dispatch: async () => {}, status: async () => { statusCalls++; return 'interrupted' } } })
     const draft = structuredClone(f.branch.draft); draft.generation_input.instance_id = '1'; draft.generation_input.template_id = '2'
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft })
     const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
     acceptRun(f, task.task_id, 'completing-run', task.input.generation_input)
+    f.database.prepare("UPDATE generation_runs SET status='succeeded' WHERE run_id=?").run('completing-run')
+    f.store.generationRunChanged('completing-run')
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0]).toMatchObject({ status: 'succeeded', execution_state: 'running' })
     expect((await f.service.getProjection({ workspaceId: 'workspace' })).tasks[0].status).toBe('succeeded')
-    expect(statusCalls).toBe(1)
+    expect(statusCalls).toBe(0)
   })
 
-  it('queries official execution status and preserves an ended experiment after continuing its paused Session', async () => {
+  it('preserves an ended experiment after continuing its persisted paused Session', async () => {
     let status: import('../../src/workbench/contract.js').ExecutionState = 'idle'
     const controls: string[] = []
     const f = fixture({ sessions: { authorize: async () => true, create: async () => ({ sessionId: 'official-session', selectedModel: {} }), dispatch: async () => {}, status: async () => status, control: async input => { controls.push(`${input.sessionId}:${input.action}`) }, skillReadRefs: async () => [{ name: 'builder', session_id: 'official-session', turn: 1, call_id: 'read', source_file: null }] } })
     const draft = structuredClone(f.branch.draft); draft.generation_input.instance_id = '1'; draft.generation_input.template_id = '2'
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft })
     const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'experiment', maxRuns: 3 })
+    f.store.markExecution(task.task_id, 'idle')
     expect((await f.service.getProjection({ workspaceId: 'workspace', workId: f.work.work_id })).tasks[0]!.status).toBe('needs_attention')
     status = 'running'
     await f.service.controlTask({ taskId: task.task_id, action: 'continue' })

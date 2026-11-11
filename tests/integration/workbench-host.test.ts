@@ -197,6 +197,7 @@ async function startConfiguredTask(remote: import('../../src/host/workbench/remo
 
 async function fixture() {
   const result = await createWorkbenchHostFixture()
+  result.official.controller.prompt.mockImplementation(result.official.acceptPrompt)
   cleanups.push(result.dispose)
   return result
 }
@@ -701,7 +702,7 @@ it('lists default function bindings in prototype order across repeated workspace
   expect(second.functions.every(binding => binding.workspace_id === 'workspace_2')).toBe(true)
   expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions).toEqual(first.functions)
   expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions).toEqual(first.functions)
-  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(2)
+  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(1)
   expect(official.controller.create).not.toHaveBeenCalled()
 })
 
@@ -725,13 +726,13 @@ it('fills missing builtin bindings without replacing saved workspace configurati
   })
   expect((await remote.getProjection({ workspaceId: 'workspace_2' }, signal())).functions).toEqual(initialized.functions)
   expect((await remote.getProjection({ workspaceId: 'workspace_1' }, signal())).functions).toEqual(functions)
-  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(2)
+  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(1)
 })
 
 it('mounts Workbench Remotes, creates one main branch and isolates Workspace projections', async () => {
   const { ctx, remote, official, fiber, remoteFiber } = await fixture()
   expect(remoteMethods(remote)).toEqual([
-    ...['queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'translateStart', 'translateGet', 'translateCancel'].map(method => ({ method, invocation: { kind: 'direct' } })),
+    ...['promptSaveCandidate', 'queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'translateStart', 'translateGet', 'translateCancel'].map(method => ({ method, invocation: { kind: 'direct' } })),
     { method: 'getRunInput', invocation: { kind: 'direct' } },
     { method: 'getEnvironment', invocation: { kind: 'direct' } },
     { method: 'getProjection', invocation: { kind: 'direct' } },
@@ -739,9 +740,10 @@ it('mounts Workbench Remotes, creates one main branch and isolates Workspace pro
     { method: 'getTaskDraft', invocation: { kind: 'direct' } },
     { method: 'saveTaskDraft', invocation: { kind: 'direct' } },
     { method: 'mutate', invocation: { kind: 'direct' } },
+    { method: 'subscribe', invocation: { kind: 'direct' }, mode: 'stream' },
   ])
   const empty = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())
-  expect(empty).toMatchObject({ works: [], branches: [], tasks: [], refreshAfterMs: 777 })
+  expect(empty).toMatchObject({ works: [], branches: [], tasks: [] })
   expect(empty.functions).toHaveLength(10)
   const created = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain study', goal: 'Rain on glass' } }, signal())
   const first = await remote.getProjection(created, signal())
@@ -754,7 +756,7 @@ it('mounts Workbench Remotes, creates one main branch and isolates Workspace pro
   expect((await remote.getProjection({ workspaceId: 'workspace_2' }, signal())).works).toEqual([])
   await expect(remote.getProjection({ ...created, workspaceId: 'workspace_2' }, signal())).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_SCOPE_MISMATCH' } })
   await expect(remote.getProjection({ workspaceId: 'missing' }, signal())).rejects.toMatchObject({ code: 'workbench/operation-failed', details: { code: 'WORKBENCH_NOT_FOUND', issues: [{ path: 'workspace_id', message: expect.any(String) }] } })
-  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(2)
+  expect(official.controller.modelCatalog).toHaveBeenCalledTimes(1)
   await remoteFiber.dispose()
   expect(ctx.reflect.get('harnessComfyuiWorkbenchRemote')).toBeUndefined()
   await fiber.dispose()

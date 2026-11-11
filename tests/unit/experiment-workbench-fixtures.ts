@@ -297,7 +297,6 @@ export const fullProjection = (): WorkbenchProjection => ({
       'experiment',
     ] as const
   ).flatMap((kind) => [makeBinding(kind), makeBinding(kind, false)]),
-  refreshAfterMs: 0,
 })
 
 export function runInputDescription(parameters: WorkbenchRun['generation_input']['parameters']): WorkflowRuntimeParameterInspection {

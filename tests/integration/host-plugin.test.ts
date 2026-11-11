@@ -132,6 +132,7 @@ function provideHostServices(ctx: Context) {
     replace: replaceSettings,
   } as never)
   ctx.provide('workspaceRegistry', {
+    list: vi.fn(() => [{ id: 'workspace_1', title: 'Project', path: '/workspace/project' }]),
     resolveByPath: vi.fn(async () => ({ id: 'workspace_1', sessionIds: ['session_1'] })),
   })
   ctx.provide('sessionPersistence' as never, { stat: vi.fn(async () => undefined) } as never)
@@ -147,6 +148,25 @@ function provideHostServices(ctx: Context) {
     registerTool,
     prepareCall,
     saveImage,
+  }
+}
+
+async function mountPackagedHost(
+  ctx: Context,
+  plugin: Awaited<ReturnType<typeof harnessComfyui.packagedProduct>>,
+  config: Parameters<typeof harnessComfyui.apply>[1],
+) {
+  const fiber = await ctx.plugin(plugin, config)
+  try {
+    for (const runtime of ctx.registry.values()) {
+      for (const child of runtime.fibers) {
+        await child.await()
+      }
+    }
+    return fiber
+  } catch (error) {
+    await fiber.dispose()
+    throw error
   }
 }
 
@@ -244,6 +264,18 @@ it('associates accepted Runs with Workbench tasks through the mounted Core trans
     expect(replay.items).toEqual([{ requestId: item.requestId, runId: accepted.items[0]!.runId, acceptance: 'reused' }])
     await expect(runtime.acceptGenerations(identity, [{ ...item, requestId: crypto.randomUUID() }], undefined, task.task_id)).rejects.toMatchObject({ code: 'WORKBENCH_BUDGET_EXHAUSTED' })
     expect(store.getProjection({ workspaceId: 'workspace_1', workId: work.work_id }).runs).toHaveLength(1)
+    const failures: unknown[] = []
+    const release = store.subscribe(() => {}, error => failures.push(error))
+    const fault = new Error('Workbench projection temporarily unavailable')
+    const update = vi.spyOn(store, 'generationRunChanged').mockImplementationOnce(() => { throw fault })
+    const prepare = vi.spyOn(SourceGenerationPreparer.prototype, 'prepare').mockRejectedValueOnce(new Error('Controlled source preparation failure'))
+    try {
+      await runtime.advance()
+      expect(failures).toContain(fault)
+      await runtime.advance()
+      expect(store.getRun(accepted.items[0]!.runId).status).toBe('failed')
+      expect(store.getTask(task.task_id).status).toBe('failed')
+    } finally { release(); update.mockRestore(); prepare.mockRestore() }
   } finally { await ctx.fiber.dispose() }
 })
 
@@ -315,7 +347,7 @@ describe('Harness ComfyUI Host plugin', () => {
     const ctx = new Context()
     provideHostServices(ctx)
     const browserExecutablePath = process.execPath
-    const fiber = await ctx.plugin(packaged, { configurationProfile: 'production', browserExecutablePath })
+    const fiber = await mountPackagedHost(ctx, packaged, { configurationProfile: 'production', browserExecutablePath })
     try {
       expect(ctx.harnessComfyuiCore.services.profile.comfyui.frontendCompiler.browserExecutablePath)
         .toBe(browserExecutablePath)
@@ -514,7 +546,7 @@ describe('Harness ComfyUI Host plugin', () => {
       registerShellEnvironment,
       registerTool,
     } = provideHostServices(ctx)
-    const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
+    const fiber = await mountPackagedHost(ctx, packaged, { configurationProfile: 'production' })
 
     expect(registerTool).not.toHaveBeenCalled()
     expect(registerRoute).toHaveBeenCalledWith(expect.objectContaining({
@@ -565,7 +597,7 @@ describe('Harness ComfyUI Host plugin', () => {
     const ctx = new Context()
     provideHostServices(ctx)
 
-    const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
+    const fiber = await mountPackagedHost(ctx, packaged, { configurationProfile: 'production' })
     const imageReader = ctx.reflect.get('harnessComfyuiImageReader')
 
     expect(remoteMethods(imageReader)).toEqual([
@@ -594,7 +626,7 @@ describe('Harness ComfyUI Host plugin', () => {
     }] as never)
     saveImage.mockImplementation(failureFixture.saveImage)
     prepareCall.mockImplementation(failureFixture.prepareCall)
-    const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
+    const fiber = await mountPackagedHost(ctx, packaged, { configurationProfile: 'production' })
     try {
       const contributor = registerShellEnvironment.mock.calls[0]![0]
       const variables = contributor.resolve({
@@ -629,7 +661,7 @@ describe('Harness ComfyUI Host plugin', () => {
     const packaged = await harnessComfyui.packagedProduct(output)
     const ctx = new Context()
     provideHostServices(ctx)
-    const fiber = await ctx.plugin(packaged, { configurationProfile: 'production' })
+    const fiber = await mountPackagedHost(ctx, packaged, { configurationProfile: 'production' })
     const imageReader = ctx.reflect.get('harnessComfyuiImageReader') as {
       saveProfile(request: unknown, signal: AbortSignal): Promise<unknown>
     }
@@ -669,7 +701,7 @@ describe('Harness ComfyUI Host plugin', () => {
     const ctx = new Context()
     provideHostServices(ctx)
 
-    const fiber = await ctx.plugin(packaged, {
+    const fiber = await mountPackagedHost(ctx, packaged, {
       configurationProfile: 'production',
       imageReaderDefaultModel: {
         provider: 'opencode-go',

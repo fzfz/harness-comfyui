@@ -5,7 +5,6 @@ import experimentControlErrors from './experiment-control-errors.json' with { ty
 import libraryConfig from './library-config.json' with { type: 'json' }
 import { isBranchNonGenerationTaskKind, isRunReviewFunctionKind } from './contract.ts'
 import type { WorkbenchStore } from '../host/storage/workbench-store.ts'
-import { shouldTrackExecution } from './state.ts'
 import { equalValue } from '../shared/json-contract.ts'
 import { jsonValue, validateArtifact, validateReviewDraftUpdate, validateTaskDraft, validateTaskInput, validateTaskRequestDraft, generationInputWithImages, taskDraftFromRunInput, runBaseModelId, WorkbenchError } from './validation.ts'
 
@@ -15,7 +14,7 @@ import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeParameterInspecti
 export interface WorkbenchSessionBoundary {
   delegate?(input: DelegatedSessionRequest): Promise<void>
   authorize(input: { task: Task; identity: WorkbenchIdentity }): Promise<boolean>
-  create(input: { task: Task; presetId: string; agentModel: AgentModel; requestedSkill: string | null }): Promise<{ sessionId: string; selectedModel: Record<string, JsonValue> }>
+  create(input: { task: Task; presetId: string; agentModel: AgentModel; requestedSkill: string | null; onCreated?: (sessionId: string) => void }): Promise<{ sessionId: string; selectedModel: Record<string, JsonValue> }>
   dispatch(input: { sessionId: string; text: string; taskId: string; requestId?: string; signal: AbortSignal }): Promise<void>
   status?(input: { sessionId: string }): Promise<ExecutionState | null>
   control?(input: { sessionId: string; action: 'interrupt' | 'pause' | 'continue'; signal: AbortSignal }): Promise<void>
@@ -38,13 +37,12 @@ export interface WorkbenchServiceOptions {
   resolveRunModelBaseId?: (model: NonNullable<GenerationInput['model']>) => Promise<string | null>
   readRunInputDescription?: (workspaceId: string, runId: string) => Promise<WorkflowRuntimeParameterInspection | null>
   resolveImageSources?: (refs: import('./contract.ts').ImageRef[]) => Promise<import('./contract.ts').ImageSource[]>
+  associatePromptPublication?: (task: Task, identity: WorkbenchIdentity) => Promise<void>
   preparePromptRequest?: (binding: import('./contract.ts').FunctionBinding, input: import('./contract.ts').TaskInput) => Promise<{ input: import('./request-template.ts').PromptRequestInput; requestText: string }>
   attachPromptTask?: (task: Task, sessionId: string, prepared: { input: import('./request-template.ts').PromptRequestInput; requestText: string }, requestId: string, delegated: boolean) => void
-  refreshPromptTask?: (task: Task) => Promise<void>
-  refreshAfterMs?: number
 }
 export interface CreateTaskRequest {
-  workspaceId: string; workId: string; branchId: string; functionId: string; taskDraft?: TaskRequestDraft; instructions?: string; referenceRunIds?: string[]
+  requestId?: string; workspaceId: string; workId: string; branchId: string; functionId: string; taskDraft?: TaskRequestDraft; instructions?: string; referenceRunIds?: string[]
   runId?: string; evaluationDraft?: ReviewDraftUpdate; maxRuns?: number; title?: string; initiator?: 'human' | 'agent'; retryOfRunId?: string
 }
 
@@ -70,8 +68,19 @@ export class WorkbenchService {
     return this.store.saveTaskDraft(request.branchId, request.functionId, request.draft)
   }
 
+  private existingRequest(request: CreateTaskRequest, requestId: string): Task | null {
+    const previous = this.store.findTask(requestId)
+    if (!previous) return null
+    const submitted = JSON.parse(JSON.stringify(request)) as JsonValue
+    if (!equalValue(this.store.getTaskSubmission(requestId), submitted)) throw new WorkbenchError('WORKBENCH_REQUEST_CONFLICT', '请求 ID 已用于其他输入，请为本次调用生成新的请求 ID。', 'requestId')
+    return previous
+  }
+
   async createTask(request: CreateTaskRequest): Promise<Task> {
     this.store.assertScope(request.workspaceId, request.workId, request.branchId)
+    const requestId = request.requestId ?? randomUUID()
+    const previous = this.existingRequest(request, requestId)
+    if (previous) return previous
     const branch = this.store.getBranch(request.branchId)
     const { instructions: _branchInstructions, ...branchDraft } = branch.draft
     const binding = this.store.getFunctionBinding(request.workspaceId, request.functionId)
@@ -140,11 +149,12 @@ export class WorkbenchService {
       target.expected['generation_input.parameters'] = jsonValue(draft.generation_input.parameters)
     }
     const prompt = binding.kind === 'prompt' ? await this.options.preparePromptRequest?.(binding, input) : undefined
-    const requestId = randomUUID()
-    const task = this.store.createTask({ ...(prompt ? { requestText: prompt.requestText } : {}), branchId: branch.branch_id, functionId: binding.function_id, title: request.title ?? `${binding.name} · ${branch.name}`, kind: binding.kind, input, outputContract: output, applyTarget: target, bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template, ...(binding.request_parts ? { request_parts: binding.request_parts } : {}) }, initiator: request.initiator, retryOfRunId: request.retryOfRunId })
+    const accepted = this.existingRequest(request, requestId)
+    if (accepted) return accepted
+    const task = this.store.createTask({ taskId: requestId, submissionInput: JSON.parse(JSON.stringify(request)) as JsonValue, ...(prompt ? { requestText: prompt.requestText } : {}), branchId: branch.branch_id, functionId: binding.function_id, title: request.title ?? `${binding.name} · ${branch.name}`, kind: binding.kind, input, outputContract: output, applyTarget: target, bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template, ...(binding.request_parts ? { request_parts: binding.request_parts } : {}) }, initiator: request.initiator, retryOfRunId: request.retryOfRunId })
     return this.withTaskOperation(task.task_id, async signal => {
       try {
-        const session = await this.options.sessions.create({ task, presetId: task.binding_snapshot.preset_id, agentModel: task.binding_snapshot.agentModel, requestedSkill: task.binding_snapshot.requested_skill })
+        const session = await this.options.sessions.create({ task, presetId: task.binding_snapshot.preset_id, agentModel: task.binding_snapshot.agentModel, requestedSkill: task.binding_snapshot.requested_skill, onCreated: sessionId => { this.store.bindSession(task.task_id, sessionId, jsonValue(task.binding_snapshot.agentModel) as Record<string, JsonValue>) } })
         this.store.bindSession(task.task_id, session.sessionId, session.selectedModel)
         if (prompt) this.options.attachPromptTask?.(this.store.getTask(task.task_id), session.sessionId, prompt, requestId, false)
         if (signal.aborted) return
@@ -271,11 +281,10 @@ export class WorkbenchService {
 
   async getTask(request: { taskId: string }, identity: WorkbenchIdentity): Promise<TaskGetResult> {
     void identity
-    await this.options.refreshPromptTask?.(this.store.getTask(request.taskId))
-    const task = this.store.refreshTask(request.taskId)
+    const task = this.store.getTask(request.taskId)
     const artifacts = task.kind === 'experiment' ? this.store.listExperimentArtifacts(task.task_id) : this.store.listArtifacts(task.task_id)
     const { parameter_mapping, ...input } = task.input
-    const children = this.store.listChildTasks(task.task_id).map(child => this.store.refreshTask(child.task_id))
+    const children = this.store.listChildTasks(task.task_id)
     const result = { task_id: task.task_id, parent_experiment_task_id: task.parent_experiment_task_id, children: children.map(child => ({ task_id: child.task_id, function_id: child.function_id, kind: child.kind, title: child.title, status: child.status, session_id: child.session_id, execution_state: child.execution_state, preset_id: child.binding_snapshot.preset_id, agent_model: child.binding_snapshot.agentModel, error: child.error })), status: task.status, ...input, image_sources: await this.options.resolveImageSources?.(input.image_refs) ?? [], output_contract: task.output_contract, artifacts: artifacts.map(a => ({ artifact_id: a.artifact_id, task_id: a.task_id, artifact: a.artifact, disposition: a.disposition })), iterations: this.store.listRuns(task.task_id).map(run => {
       return { index: run.iteration_index ?? 1, run_id: run.run_id, execution_task_id: run.execution_task_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], review_artifact_id: run.review_artifact_id }
     }), answers: [...task.answers, ...children.flatMap(child => child.answers)] }
@@ -299,6 +308,7 @@ export class WorkbenchService {
     if (artifact.type === 'parameters') await this.options.validateParameters?.(task.input.generation_input, artifact.parameters, 'artifact.parameters')
     if (artifact.type === 'resources') await this.options.validateResourceRefs?.(artifact.refs, 'artifact.refs')
     const refs = await this.options.sessions.skillReadRefs?.({ sessionId: identity.sessionId }) ?? []
+    if (artifact.type === 'prompt') await this.options.associatePromptPublication?.(task, identity)
     return this.store.publish(task.task_id, artifact, identity, refs)
   }
   async adoptArtifact(request: { artifactId: string; expected: Record<string, JsonValue>; candidate?: boolean }) {
@@ -360,15 +370,8 @@ export class WorkbenchService {
     const parent = source.work_id === request.workId ? source : this.store.listBranches(request.workId).find(branch => branch.parent_branch_id === null)!
     return this.store.createBranch({ workId: request.workId, parentBranchId: parent.branch_id, name: request.name, originalRequest: task.input.requirements.original_request, draft, sourceArtifactId: stored.artifact_id })
   }
-  async getProjection(request: { workspaceId: string; workId?: string; branchId?: string }) {
-    await Promise.all(this.store.listTasks(request.workspaceId, request.workId, request.branchId).map(task => this.options.refreshPromptTask?.(task)))
-    const tasks = this.store.listTasks(request.workspaceId, request.workId, request.branchId).map(task => this.store.refreshTask(task.task_id))
-    if (this.options.sessions.status) await Promise.all(tasks.filter(task => shouldTrackExecution(task, this.store.getExperiment(task.task_id))).map(async task => {
-      const status = await this.options.sessions.status!({ sessionId: task.session_id! })
-      const current = this.store.refreshTask(task.task_id)
-      if (status !== null && shouldTrackExecution(current, this.store.getExperiment(task.task_id)) && status !== current.execution_state) this.store.markExecution(task.task_id, status)
-    }))
-    const projection = this.store.getProjection({ ...request, refreshAfterMs: this.options.refreshAfterMs })
+  getProjection(request: { workspaceId: string; workId?: string; branchId?: string }) {
+    const projection = this.store.getProjection(request)
     const order = new Map(this.options.descriptors.map((descriptor, index) => [descriptor.kind, index]))
     const position = (binding: typeof projection.functions[number]) => binding.builtin ? order.get(binding.kind) ?? order.size : order.size
     projection.functions.sort((a, b) => position(a) - position(b))

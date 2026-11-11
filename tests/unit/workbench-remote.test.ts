@@ -29,7 +29,8 @@ it('starts, reads and cancels isolated translations through the mounted Remote',
   const host = await createWorkbenchHostFixture()
   try {
     const signal = new AbortController().signal
-    const request = { request_id: 'translate-positive', workspace_id: 'workspace_1', source_text: '(light:1.2)\n<lora:portrait:0.7>' }
+    const { work, branch } = host.store.createWork({ workspaceId: 'workspace_1', name: 'Translation', goal: 'Translate prompts' })
+    const request = { request_id: 'translate-positive', workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, field: 'positive_prompt' as const, source_text: '(light:1.2)\n<lora:portrait:0.7>' }
     expect(await host.remote.translateStart(request, signal)).toEqual({ request_id: request.request_id, status: 'running' })
     const created = await host.official.controller.create.mock.results.at(-1)!.value
     const binding = host.store.getFunctionBinding('workspace_1', 'translate')
@@ -37,23 +38,26 @@ it('starts, reads and cancels isolated translations through the mounted Remote',
     expect(host.official.controller.selectModel).toHaveBeenLastCalledWith({ sessionId: created.sessionId, ...binding.agent_model })
     expect(host.official.controller.prompt).toHaveBeenLastCalledWith(expect.objectContaining({ sessionId: created.sessionId, content: [{ type: 'text', text: expect.stringContaining(request.source_text) }] }), expect.any(AbortSignal))
     host.official.events.set(created.sessionId, [
-      { type: 'assistant/message', data: { turn: 1, message: { content: [{ type: 'text', text: '(光线:1.2)\n<lora:portrait:0.7>' }] } } },
-      { type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } },
+      { type: 'turn/start', seq: 0, data: { turn: 1 } },
+      { type: 'user/message', seq: 1, data: { source: { kind: 'user', rpcId: request.request_id } } },
+      { type: 'assistant/message', seq: 2, data: { turn: 1, message: { content: [{ type: 'text', text: '(光线:1.2)\n<lora:portrait:0.7>' }] } } },
+      { type: 'turn/end', seq: 3, data: { turn: 1, reason: { kind: 'completed' } } },
     ] as SessionEvent[])
+    await host.ctx.harnessComfyuiWorkbench.translations.handleSessionEvents(created.sessionId)
     expect(await host.remote.translateGet({ request_id: request.request_id }, signal)).toEqual({ request_id: request.request_id, status: 'succeeded', text: '(光线:1.2)\n<lora:portrait:0.7>' })
     await host.remote.translateStart({ ...request, request_id: 'translate-cancelled', source_text: 'blur' }, signal)
     const cancelled = await host.official.controller.create.mock.results.at(-1)!.value
     expect(cancelled.sessionId).not.toBe(created.sessionId)
     expect(await host.remote.translateCancel({ request_id: 'translate-cancelled' }, signal)).toMatchObject({ request_id: 'translate-cancelled', status: 'failed' })
     expect(host.official.controller.cancel).toHaveBeenLastCalledWith({ sessionId: cancelled.sessionId })
-    await expect(host.remote.translateGet({ request_id: 'translate-cancelled' }, signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_TRANSLATION_NOT_FOUND' } })
+    expect(await host.remote.translateGet({ request_id: 'translate-cancelled' }, signal)).toMatchObject({ request_id: 'translate-cancelled', status: 'failed' })
     expect(host.store.getProjection({ workspaceId: 'workspace_1' }).tasks).toEqual([])
   } finally { await host.dispose() }
 })
 
 function projection(): WorkbenchProjection {
   return {
-    workspace_id: 'workspace_1', reference_destinations: [], total_branch_count: 0, work_id: 'work_1', works: [], branches: [], tasks: [], artifacts: [], experiments: [], experiences: [], favorites: [], functions: [], refreshAfterMs: 777,
+    workspace_id: 'workspace_1', reference_destinations: [], total_branch_count: 0, work_id: 'work_1', works: [], branches: [], tasks: [], artifacts: [], experiments: [], experiences: [], favorites: [], functions: [],
     runs: [{
       run_id: 'run_1', session_id: 'session_1', workbench_task_id: 'task_1', execution_task_id: null, iteration_index: 1, status: 'succeeded', title: 'Rain', created_at: 1, updated_at: 2,
       generation_input: { title: 'Rain', instance_id: '8', template_id: '5', model: null, parameters: {}, loras: [] },
@@ -120,7 +124,7 @@ function fixture() {
   const initializeWorkspace = vi.fn(async () => {})
   const getProjection = vi.fn(async () => projection())
   const environment = vi.fn(async () => ({ workspaces: [], presets: [], defaultPresetId: 'preset-default', models: { default: { provider: 'p', model: 'm' }, groups: [], failures: [], routableProviders: [] }, skills: [], instances: [] }))
-  context.provide('harnessComfyuiWorkbench' as never, { initializeWorkspace, service: { getProjection }, environment } as never)
+  context.provide('harnessComfyuiWorkbench' as never, { initializeWorkspace, assertWorkspace: vi.fn(), service: { getProjection }, environment } as never)
   return { remote: new WorkbenchRemoteService(context), initializeWorkspace, getProjection, environment }
 }
 
@@ -130,7 +134,7 @@ it('validates record, image and translation request and result codecs by operati
     { method: 'queryRecords', request: { type: 'run', workspaceId: 'workspace_1', keyword: 'Rain' }, result: [{ type: 'run', id: 'run_1', workspace_id: 'workspace_1', work_id: 'work_1', branch_id: 'branch_1', task_id: null, title: 'Rain', run: projection().runs[0] }], badRequest: { type: 'image' }, badResult: [{}] },
     { method: 'importImages', request: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [0, 255] }] }, result: { images: [image] }, badRequest: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [256] }] }, badResult: { images: [{ ...image, purpose: 'unknown' }] } },
     { method: 'resolveImages', request: { image_refs: [image] }, result: { images: [{ image_ref_id: 'image-1', file_path: '/images/reference.png', name: 'reference.png', url: '/api/reference.png' }] }, badRequest: { image_refs: [{ ...image, source: { kind: 'uploaded_file' } }] }, badResult: { images: [{ image_ref_id: 'image-1', file_path: 7 }] } },
-    { method: 'translateStart', request: { request_id: 'translation-1', workspace_id: 'workspace_1', source_text: '(warm light:1.2)' }, result: { request_id: 'translation-1', status: 'running' }, badRequest: { request_id: 'translation-1', workspace_id: 'workspace_1', source_text: '' }, badResult: { request_id: 'translation-1', status: 'unknown' } },
+    { method: 'translateStart', request: { request_id: 'translation-1', workspace_id: 'workspace_1', work_id: 'work_1', branch_id: 'branch_1', field: 'positive_prompt', source_text: '(warm light:1.2)' }, result: { request_id: 'translation-1', status: 'running' }, badRequest: { request_id: 'translation-1', workspace_id: 'workspace_1', source_text: '' }, badResult: { request_id: 'translation-1', status: 'unknown' } },
     { method: 'translateGet', request: { request_id: 'translation-1' }, result: { request_id: 'translation-1', status: 'succeeded', text: '（暖光：1.2）' }, badRequest: {}, badResult: { request_id: 'translation-1', status: 'succeeded', text: 7 } },
     { method: 'translateCancel', request: { request_id: 'translation-1' }, result: { request_id: 'translation-1', status: 'failed', error: 'Translation was cancelled.' }, badRequest: { request_id: '' }, badResult: { request_id: 'translation-1', status: 'failed', error: 7 } },
   ]
@@ -325,7 +329,7 @@ it('projects media through the shared content and download routes without changi
   getProjection.mockResolvedValue(snapshot)
   const request = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
   const result = await remote.getProjection(request, new AbortController().signal)
-  expect(initializeWorkspace).toHaveBeenCalledWith('workspace_1')
+  expect(initializeWorkspace).not.toHaveBeenCalled()
   expect(getProjection).toHaveBeenCalledWith(request)
   expect(result.runs[0]!.media[0]).toEqual({
     media_id: 'media_1', run_id: 'run_1', filename: 'rain.png', media_type: 'image/png', media_kind: 'image', byte_size: 123,
@@ -333,12 +337,11 @@ it('projects media through the shared content and download routes without changi
     download_url: '/api/harness-comfyui/media/media_1/download?session_id=session_1',
   })
   expect(snapshot.runs[0]!.media[0]).not.toHaveProperty('url')
-  expect(result.refreshAfterMs).toBe(777)
 })
 
 it('reports Workbench error identities and field paths while preserving unexpected failures', async () => {
-  const { remote, initializeWorkspace, environment } = fixture()
-  initializeWorkspace.mockRejectedValueOnce(new WorkbenchError('WORKBENCH_NOT_FOUND', 'Choose an existing Workspace', 'workspace_id'))
+  const { remote, getProjection, environment } = fixture()
+  getProjection.mockRejectedValueOnce(new WorkbenchError('WORKBENCH_NOT_FOUND', 'Choose an existing Workspace', 'workspace_id'))
   await expect(remote.getProjection({ workspaceId: 'missing' }, new AbortController().signal)).rejects.toMatchObject({
     name: 'RemoteError', code: 'workbench/operation-failed', details: { code: 'WORKBENCH_NOT_FOUND', issues: [{ path: 'workspace_id', message: 'Choose an existing Workspace' }] },
   })
@@ -405,7 +408,7 @@ it('validates each RPC request from JSON with exact field names and identifier c
 it('round trips a complete projection through the declared result codec and rejects non-object results', () => {
   for (const descriptor of WORKBENCH_REMOTE.descriptors) {
     const codec = descriptor.result.create()
-    if (['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt'].includes(descriptor.method)) continue
+    if (['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'promptSaveCandidate', 'subscribe'].includes(descriptor.method)) continue
     if (descriptor.method === 'getTaskDraft' || descriptor.method === 'saveTaskDraft') {
       const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
       expect(codec.parse(draft)).toEqual(draft)

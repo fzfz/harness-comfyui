@@ -45,8 +45,9 @@ export class HarnessWorkbenchSessions {
   private readonly delegatedStates = new Map<string, ExecutionState>()
   constructor(private readonly host: HarnessWorkbenchPorts) {}
 
-  async create(input: { task: { task_id: string }; presetId: string; agentModel: AgentModel; requestedSkill: string | null }) {
+  async create(input: { task: { task_id: string }; presetId: string; agentModel: AgentModel; requestedSkill: string | null; onCreated?: (sessionId: string) => void }) {
     const created = await this.host.controller.create({ workspaceId: this.host.workspaceForTask(input.task.task_id), agentPreset: input.presetId })
+    input.onCreated?.(created.sessionId)
     if (created.agentPreset !== input.presetId) throw new Error(`Agent 预设未按要求载入：${input.presetId}。请核对功能配置中选择的 Agent 预设。`)
     const { selected } = await this.host.controller.selectModel({ sessionId: created.sessionId, ...input.agentModel })
     if (input.requestedSkill !== null) {

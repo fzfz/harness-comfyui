@@ -1,5 +1,13 @@
 {
   "dispatchFailureCode": "WORKBENCH_DISPATCH_FAILED",
+  "incompleteDispatch": {
+    "code": "WORKBENCH_DISPATCH_INCOMPLETE",
+    "message": "任务启动失败，请重新发起任务。"
+  },
+  "interruptedExecution": {
+    "code": "WORKBENCH_EXECUTION_INTERRUPTED",
+    "message": "本次请求已中断，请重新发起请求。"
+  },
   "closed": {
     "code": "WORKBENCH_EXPERIMENT_CLOSED",
     "message": "实验已结束，请查看已有轮次或创建新的实验。",

@@ -259,7 +259,6 @@ export interface WorkbenchProjection {
   experiences: Experience[]
   favorites: Favorite[]
   functions: FunctionBinding[]
-  refreshAfterMs: number
 }
 export interface TaskGetCommon extends Omit<TaskInput, 'generation_input' | 'parameter_mapping'> {
   image_sources: ImageSource[]

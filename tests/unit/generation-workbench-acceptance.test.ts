@@ -25,6 +25,8 @@ function fixture(taskWorkspace = identity.workspaceId) {
     preparer: { prepare: async () => { throw new Error('Acceptance must not prepare a workflow') }, inspectRuntimeParameters: async () => ({ parameters: [], size_candidates: [] }) },
     workbench: {
       taskWorkspace: () => taskWorkspace,
+      generationRunChanged: () => {},
+      reportError: () => {},
       assertGenerationAcceptance: input => {
         calls.push(`check:${input.taskId}:${input.reused}`)
         if (reject) throw new Error('Task Run budget exhausted')

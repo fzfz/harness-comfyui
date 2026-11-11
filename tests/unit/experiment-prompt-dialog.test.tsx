@@ -5,6 +5,7 @@ import { PromptEditingController, type PromptEditingRemote } from '../../src/cli
 import { PreparationEditor } from '../../src/client/workbench/experiment-preparation.ts'
 import { makeBranch, makeBinding } from './experiment-workbench-fixtures.ts'
 import { DEFAULT_PROMPT_REQUEST_PARTS } from '../../src/workbench/request-template.ts'
+import { WorkbenchDeliveryContext } from '../../src/client/workbench/experiment-delivery.tsx'
 import type { PromptTurn } from '../../src/workbench/prompt-edit.ts'
 
 const { act, create } = await vi.importActual<any>('react-test-renderer')
@@ -13,7 +14,7 @@ afterEach(async () => { await act(() => { for (const renderer of mounts.splice(0
 const nodeText = (node: any): string => node.children.map((child: any) => typeof child === 'string' ? child : nodeText(child)).join('')
 const click = async (renderer: any, label: string) => act(() => { renderer.root.findAllByType('button').find((button: any) => nodeText(button) === label).props.onClick() })
 const turn: PromptTurn = {
-  request_id: 'request-1', task_id: 'task-1', turn_index: 1, function_id: 'prompt', kind: 'prompt', session_id: 'session-1', harness_turn: 1,
+  request_id: 'request-1', task_id: 'task-1', turn_index: 1, function_id: 'prompt', kind: 'prompt', intent: 'rewrite', candidate: null, session_id: 'session-1', harness_turn: 1,
   preset_id: 'preset', agent_model: { provider: 'lan-gpt', model: 'gpt-6.1-terra', reasoningEffort: 'low' },
   input: { original_request: '侧光肖像', base_model_id: '1', base_model_name: 'SDXL', positive_prompt: 'old positive', negative_prompt: 'old negative', change_request: '增加侧光', reference_context: {} },
   request_template: '{{requirements_block}}', request_parts: DEFAULT_PROMPT_REQUEST_PARTS, request_text: '侧光肖像', status: 'succeeded', error: null,
@@ -21,100 +22,90 @@ const turn: PromptTurn = {
   created_at: 1000, finished_at: 2000, start_seq: 0,
 }
 
-it('translates all four regions, retries one failure and rejects a late translation after manual source edits', async () => {
+async function comparisonFixture(status: 'running' | 'succeeded') {
   vi.stubGlobal('document', new EventTarget())
-  const branch = makeBranch('source', null)
-  branch.draft.prompt_input = { positive_prompt: 'old positive', negative_prompt: 'old negative' }
-  const editor = new PreparationEditor(branch, { edit: async (_before, draft) => draft, save: async () => {}, onError: () => {} })
-  const api: PromptEditingRemote = { promptStart: vi.fn(async () => turn), promptGet: vi.fn(async () => turn), promptList: vi.fn(async () => [turn]), promptCancel: vi.fn(async () => ({ ...turn, status: 'interrupted' as const })), promptAdopt: vi.fn(async request => ({ ...turn, adopted: { positive_prompt: request.positive_prompt, negative_prompt: request.negative_prompt } })) }
-  const controller = new PromptEditingController({ workspace_id: 'workspace', work_id: 'work', branch_id: 'source' }, api, editor, 500)
-  controller.open(makeBinding('prompt')); controller.setChangeRequest('增加侧光'); await controller.start()
-  let release!: (value: any) => void
-  const remote = {
-    translateStart: vi.fn(async (request: { request_id: string; source_text: string }) => {
-      if (request.source_text === 'new positive') return new Promise<any>(resolve => { release = resolve })
-      if (request.source_text === 'old negative') throw new Error('负向翻译连接失败，请重试。')
-      return { request_id: request.request_id, status: 'succeeded' as const, text: '译文：' + request.source_text }
-    }),
-    translateGet: vi.fn(), translateCancel: vi.fn(async () => { throw new Error('已结束的翻译无法取消。') }),
-  }
+  const current: PromptTurn = { ...turn, status, result: status === 'succeeded' ? turn.result : null,
+    candidate: status === 'succeeded' ? { positive_prompt: 'new positive', negative_prompt: 'new negative' } : null }
+  const editor = new PreparationEditor(makeBranch('source', null), { edit: async (_expected, draft) => draft, save: async () => {}, onError: vi.fn() })
+  const api: PromptEditingRemote = { promptStart: vi.fn(), promptGet: vi.fn(), promptList: vi.fn(async () => [current]),
+    promptCancel: vi.fn(async () => ({ ...current, status: 'interrupted' as const, result: null })),
+    promptSaveCandidate: vi.fn(async request => ({ ...current, candidate: { positive_prompt: request.positive_prompt, negative_prompt: request.negative_prompt } })), promptAdopt: vi.fn() }
+  const controller = new PromptEditingController({ workspace_id: 'workspace', work_id: 'work', branch_id: 'source' }, api, editor)
+  editor.change({ prompt_edit_task_id: current.task_id })
+  await controller.restore()
+  controller.open(makeBinding('prompt'))
+  const translations = { translateStart: vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'running' as const })), translateGet: vi.fn(), translateCancel: vi.fn() }
   function Dialog() {
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
-    return state.open ? <ExperimentPromptDialog pollIntervalMs={750} controller={controller} state={state} workspaceId="workspace" originalRequest="侧光肖像" baseModelName="SDXL" remote={remote} /> : null
+    return state.open ? <ExperimentPromptDialog controller={controller} state={state} workspaceId="workspace" workId="work" branchId="source" originalRequest="肖像" baseModelName="SDXL" remote={translations} /> : null
   }
   let renderer: any
   await act(() => { renderer = create(<Dialog />) }); mounts.push(renderer)
-  expect(remote.translateStart.mock.calls.map(([request]) => request.source_text)).toEqual(['old positive', 'new positive', 'old negative', 'new negative'])
-  expect(nodeText(renderer.root)).toContain('负向翻译连接失败，请重试。')
-  await click(renderer, '重试翻译')
-  expect(remote.translateStart.mock.calls.filter(([request]) => request.source_text === 'old negative')).toHaveLength(2)
-  await act(() => renderer.root.findByProps({ 'aria-label': '生成的正向提示词' }).props.onChange({ target: { value: 'manual positive' } }))
-  const late = remote.translateStart.mock.calls.find(([request]) => request.source_text === 'new positive')![0]
-  await act(() => release({ request_id: late.request_id, status: 'succeeded', text: '迟到的旧译文' }))
-  expect(nodeText(renderer.root)).not.toContain('迟到的旧译文')
-  const positiveRegion = renderer.root.findAllByProps({ className: 'prompt-comparison-field' })[0]
-  await act(() => positiveRegion.findAllByType('button').find((button: any) => nodeText(button) === '翻译').props.onClick())
-  expect(remote.translateStart).toHaveBeenLastCalledWith(expect.objectContaining({ source_text: 'manual positive' }))
-  expect(nodeText(renderer.root)).toContain('译文：manual positive')
-  await act(() => renderer.root.findByProps({ 'aria-label': '改动意见' }).props.onChange({ target: { value: '保留手改' } }))
-  await click(renderer, '采用生成结果')
-  expect(api.promptAdopt).toHaveBeenCalledWith({ workspace_id: 'workspace', request_id: 'request-1', positive_prompt: 'manual positive', negative_prompt: 'new negative' })
-  expect(editor.getSnapshot().draft.prompt_input).toEqual({ positive_prompt: 'manual positive', negative_prompt: 'new negative' })
-  controller.dispose()
-})
+  return { controller, renderer, api, current }
+}
 
-it('polls all four translation sources at the supplied interval', async () => {
-  vi.useFakeTimers(); vi.stubGlobal('document', new EventTarget())
-  const branch = makeBranch('source', null), editor = new PreparationEditor(branch, { edit: async (_before, draft) => draft, save: async () => {}, onError: () => {} })
-  const api: PromptEditingRemote = { promptStart: vi.fn(async () => turn), promptGet: vi.fn(async () => turn), promptList: vi.fn(async () => [turn]), promptCancel: vi.fn(async () => turn), promptAdopt: vi.fn(async () => turn) }
-  const controller = new PromptEditingController({ workspace_id: 'workspace', work_id: 'work', branch_id: 'source' }, api, editor, 750)
-  controller.open(makeBinding('prompt')); controller.setChangeRequest('增加侧光'); await controller.start()
-  const sources = new Map<string, string>()
-  const remote = {
-    translateStart: vi.fn(async request => { sources.set(request.request_id, request.source_text); return { request_id: request.request_id, status: 'running' as const } }),
-    translateGet: vi.fn(async request => ({ request_id: request.request_id, status: 'succeeded' as const, text: '译文：' + sources.get(request.request_id) })),
-    translateCancel: vi.fn(async () => undefined),
-  }
-  let renderer: any
-  await act(() => { renderer = create(<ExperimentPromptDialog pollIntervalMs={750} controller={controller} state={controller.getSnapshot()} workspaceId="workspace" originalRequest="侧光肖像" baseModelName="SDXL" remote={remote} />) }); mounts.push(renderer)
-  expect(remote.translateStart.mock.calls.map(([request]) => request.source_text)).toEqual(['old positive', 'new positive', 'old negative', 'new negative'])
-  await act(() => vi.advanceTimersByTimeAsync(749))
-  expect(remote.translateGet).not.toHaveBeenCalled()
-  await act(() => vi.advanceTimersByTimeAsync(1))
-  expect(remote.translateGet).toHaveBeenCalledTimes(4)
-  for (const source of ['old positive', 'new positive', 'old negative', 'new negative']) expect(nodeText(renderer.root)).toContain('译文：' + source)
-  controller.dispose()
-})
-
-it('keeps translation polling and failures local to each prompt region and cancels requests when closed', async () => {
-  vi.useFakeTimers(); vi.stubGlobal('document', new EventTarget())
-  const branch = makeBranch('source', null), editor = new PreparationEditor(branch, { edit: async (_before, draft) => draft, save: async () => {}, onError: () => {} })
-  const api = { promptStart: vi.fn(async () => ({ ...turn, status: 'running' as const, result: null })), promptGet: vi.fn(async () => turn), promptList: vi.fn(async () => []), promptCancel: vi.fn(async () => ({ ...turn, status: 'interrupted' as const, result: null })), promptAdopt: vi.fn(async () => turn) }
-  const controller = new PromptEditingController({ workspace_id: 'workspace', work_id: 'work', branch_id: 'source' }, api, editor, 500)
-  controller.open(makeBinding('prompt')); controller.setChangeRequest('修改构图'); await controller.start()
-  const remote = { translateStart: vi.fn(async request => ({ request_id: request.request_id, status: 'running' as const })), translateGet: vi.fn(async request => ({ request_id: request.request_id, status: 'succeeded' as const, text: '中文译文' })), translateCancel: vi.fn(async () => undefined) }
-  function Dialog() { const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot); return state.open ? <ExperimentPromptDialog pollIntervalMs={750} controller={controller} state={state} workspaceId="workspace" originalRequest="肖像" baseModelName="SDXL" remote={remote} /> : null }
-  let renderer: any
-  await act(() => { renderer = create(<Dialog />) }); mounts.push(renderer)
-  expect(nodeText(renderer.root)).toContain('正在改写提示词…')
-  await click(renderer, '停止')
-  expect(nodeText(renderer.root)).toContain('提示词请求已停止。')
-  await act(() => vi.advanceTimersByTimeAsync(749))
-  expect(remote.translateGet).not.toHaveBeenCalled()
-  await act(() => vi.advanceTimersByTimeAsync(1))
-  expect(remote.translateGet).toHaveBeenCalledTimes(2)
-  expect(nodeText(renderer.root)).toContain('中文译文')
+it('saves failed local result edits from the close confirmation before closing', async () => {
+  const { controller, renderer, api } = await comparisonFixture('succeeded')
+  vi.mocked(api.promptSaveCandidate).mockRejectedValueOnce(new Error('生成结果保存失败'))
+  await act(() => renderer.root.findByProps({ 'aria-label': '生成的正向提示词' }).props.onChange({ target: { value: 'manual result to save' } }))
+  await vi.waitFor(() => expect(controller.getSnapshot().error).toBe('生成结果保存失败'))
   await click(renderer, '关闭')
-  expect(remote.translateCancel).toHaveBeenCalledTimes(2)
+  expect(renderer.root.findByProps({ role: 'alertdialog' })).toBeDefined()
+  await click(renderer, '保存生成结果')
+  await vi.waitFor(() => expect(controller.getSnapshot().open).toBe(false))
+  expect(api.promptSaveCandidate).toHaveBeenCalledTimes(2)
+  expect(api.promptSaveCandidate).toHaveBeenLastCalledWith({ workspace_id: 'workspace', request_id: turn.request_id, positive_prompt: 'manual result to save', negative_prompt: 'new negative' })
+  expect(api.promptAdopt).not.toHaveBeenCalled()
+  controller.dispose()
+})
+
+it('stops the displayed running request and renders its persisted interruption notification', async () => {
+  const { controller, renderer, api, current } = await comparisonFixture('running')
+  await click(renderer, '停止')
+  expect(api.promptCancel).toHaveBeenCalledExactlyOnceWith({ workspace_id: 'workspace', request_id: current.request_id })
+  expect(controller.getSnapshot().busy).toBe(true)
+  await act(() => controller.receiveRecords([{ ...current, status: 'interrupted' }], new Set([current.task_id])))
+  expect(nodeText(renderer.root)).toContain('提示词请求已停止。')
+  expect(controller.getSnapshot().busy).toBe(false)
+  controller.dispose()
+})
+
+it('keeps a previous translation visible after the comparison result changes', async () => {
+  vi.stubGlobal('document', new EventTarget())
+  const branch = makeBranch('source', null)
+  const editor = new PreparationEditor(branch, { edit: async (_expected, draft) => draft, save: async () => {}, onError: vi.fn() })
+  const completed = { ...turn, input: { ...turn.input, negative_prompt: '' }, result: { ...turn.result!, negative_prompt: '' } }
+  const api: PromptEditingRemote = { promptStart: vi.fn(), promptGet: vi.fn(), promptList: vi.fn(async () => [completed]), promptCancel: vi.fn(), promptSaveCandidate: vi.fn(), promptAdopt: vi.fn() }
+  const controller = new PromptEditingController({ workspace_id: 'workspace', work_id: 'work', branch_id: 'source' }, api, editor)
+  editor.change({ prompt_edit_task_id: completed.task_id })
+  await controller.restore()
+  controller.open(makeBinding('prompt'))
+  const record = { request_id: 'translation-a', workspace_id: 'workspace', work_id: 'work', branch_id: 'source', field: 'positive_prompt' as const, source_text: 'old positive', text: '原提示词译文', status: 'succeeded' as const, session_id: 'translation-session', harness_turn: 1, start_seq: 0, created_at: 1, finished_at: 2 }
+  const failed = { ...record, request_id: 'failed-translation', status: 'failed' as const, text: undefined, error: '翻译连接失败', created_at: 0 }
+  const remote = { translateStart: vi.fn(async (request: import('../../src/workbench/translation.ts').TranslationRequest) => ({ request_id: request.request_id, status: 'running' as const })), translateGet: vi.fn(), translateCancel: vi.fn() }
+  let renderer: any
+  await act(() => { renderer = create(<WorkbenchDeliveryContext.Provider value={{ promptTurns: [], translations: [failed, record] }}>
+    <ExperimentPromptDialog controller={controller} state={controller.getSnapshot()} workspaceId="workspace" workId="work" branchId="source" originalRequest="肖像" baseModelName="SDXL" remote={remote} />
+  </WorkbenchDeliveryContext.Provider>) }); mounts.push(renderer)
+  expect(remote.translateStart).not.toHaveBeenCalled()
+  const after = renderer.root.findAllByProps({ className: 'prompt-translation' })[1]
+  expect(nodeText(after)).toContain('old positive')
+  expect(nodeText(after)).toContain('原提示词译文')
+  await act(() => after.findByProps({ 'aria-label': '翻译记录' }).props.onChange({ target: { value: failed.request_id } }))
+  expect(nodeText(after)).toContain('翻译连接失败')
+  await act(() => after.findAllByType('button').find((button: any) => nodeText(button) === '重试翻译').props.onClick())
+  expect(remote.translateStart).toHaveBeenCalledWith(expect.objectContaining({ source_text: 'old positive' }))
+  await act(() => after.findAllByType('button').find((button: any) => nodeText(button) === '翻译当前提示词').props.onClick())
+  expect(remote.translateStart).toHaveBeenCalledWith(expect.objectContaining({ source_text: 'new positive' }))
   controller.dispose()
 })
 
 it('shows persisted request input, reply and adopted text across task refreshes', async () => {
   vi.useFakeTimers(); vi.stubGlobal('document', new EventTarget())
-  const remote = { promptCancel: vi.fn(async () => ({ ...turn, status: 'interrupted' as const })), promptList: vi.fn().mockResolvedValueOnce([{ ...turn, status: 'running', result: null }]).mockResolvedValue([{ ...turn, adopted: { positive_prompt: 'manual', negative_prompt: '' } }]) }
+  const remote = { promptCancel: vi.fn(async () => ({ ...turn, status: 'interrupted' as const })), promptList: vi.fn().mockResolvedValue([{ ...turn, adopted: { positive_prompt: 'manual', negative_prompt: '' } }]) }
   let renderer: any
-  await act(() => { renderer = create(<PromptTaskTurns pollIntervalMs={750} workspaceId="workspace" taskId="task-1" remote={remote} />) }); mounts.push(renderer)
-  expect(nodeText(renderer.root)).toContain('正在执行')
+  await act(() => { renderer = create(<PromptTaskTurns workspaceId="workspace" taskId="task-1" remote={remote} />) }); mounts.push(renderer)
+  expect(nodeText(renderer.root)).toContain('已完成')
   await act(() => vi.advanceTimersByTimeAsync(749))
   expect(remote.promptList).toHaveBeenCalledTimes(1)
   await act(() => vi.advanceTimersByTimeAsync(1))
@@ -123,7 +114,7 @@ it('shows persisted request input, reply and adopted text across task refreshes'
   expect(nodeText(renderer.root)).toContain('Agent 回复正向提示词new positive负向提示词new negative')
   expect(nodeText(renderer.root)).toContain('实际采用内容正向提示词manual负向提示词未填写')
   remote.promptList.mockRejectedValueOnce(new Error('读取记录失败，请刷新。'))
-  await act(() => renderer.update(<PromptTaskTurns pollIntervalMs={750} workspaceId="workspace" taskId="task-2" remote={remote} />))
+  await act(() => renderer.update(<PromptTaskTurns workspaceId="workspace" taskId="task-2" remote={remote} />))
   expect(nodeText(renderer.root)).toContain('读取记录失败，请刷新。')
 })
 
@@ -135,7 +126,7 @@ it('stops the active prompt request from its task card and preserves earlier tur
     promptCancel: vi.fn().mockRejectedValueOnce(new Error('停止请求失败，请重试。')).mockResolvedValue({ ...active, status: 'interrupted' }),
   }, edit = vi.fn()
   let renderer: any
-  await act(() => { renderer = create(<PromptTaskTurns pollIntervalMs={750} workspaceId="workspace" taskId="task-1" remote={remote} onEdit={edit} />) }); mounts.push(renderer)
+  await act(() => { renderer = create(<PromptTaskTurns workspaceId="workspace" taskId="task-1" remote={remote} onEdit={edit} />) }); mounts.push(renderer)
   await click(renderer, '编辑提示词'); expect(edit).toHaveBeenCalledOnce()
   await click(renderer, '停止')
   expect(nodeText(renderer.root)).toContain('停止请求失败，请重试。')

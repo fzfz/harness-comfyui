@@ -48,7 +48,12 @@ const initialView = (): ExperimentViewState => ({
   },
   scrollPositions: {},
 })
+import type { WorkbenchUpdate, WorkbenchSubscription } from '../../workbench-remote.ts'
+
 export interface ExperimentSnapshot {
+  readonly promptTurns: WorkbenchUpdate['promptTurns']
+  readonly translations: WorkbenchUpdate['translations']
+  readonly connection: 'connected' | 'disconnected'
   readonly workspaceId: string | null
   readonly projection: WorkbenchProjection | null
   readonly view: ExperimentViewState
@@ -58,6 +63,7 @@ export interface ExperimentSnapshot {
 
 export class ExperimentWorkbenchStore {
   private snapshot: ExperimentSnapshot = {
+    promptTurns: [], translations: [], connection: 'disconnected',
     workspaceId: null,
     projection: null,
     view: initialView(),
@@ -67,8 +73,12 @@ export class ExperimentWorkbenchStore {
   private readonly listeners = new Set<() => void>()
   private readonly restoredWorkspaces = new Set<string>()
   private sequence = 0
+  private connectionAbort: AbortController | null = null
+  private deliverySequence = -1
+  private deliveredProjection: WorkbenchProjection | null = null
+  private pendingBranchReveal: string | null = null
+  private pendingWorkId: string | null = null
   private navigationSequence = 0
-  private timer: ReturnType<typeof setTimeout> | undefined
   private visible = true
   private disposed = false
   constructor(
@@ -76,6 +86,7 @@ export class ExperimentWorkbenchStore {
     private readonly storage?: Pick<Storage, 'getItem' | 'setItem'>,
   ) {}
   readonly getSnapshot = (): ExperimentSnapshot => this.snapshot
+  readonly getDeliveredProjection = () => this.deliveredProjection
   readonly getNavigationSequence = (): number => this.navigationSequence
   readonly subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener)
@@ -143,12 +154,15 @@ export class ExperimentWorkbenchStore {
     if (this.disposed || workspaceId === this.snapshot.workspaceId) return
     this.navigationSequence++
     this.save()
+    this.disconnect()
+    this.deliveredProjection = null
+    this.pendingWorkId = null
+    this.pendingBranchReveal = null
     this.sequence++
-    clearTimeout(this.timer)
     const view = workspaceId ? this.restore(workspaceId) : initialView()
     this.emit({
       workspaceId,
-      projection: null,
+      projection: null, promptTurns: [], translations: [],
       view: this.snapshot.view.page === 'settings' ? { ...view, page: 'settings' } : view,
       loading: !!workspaceId,
       error: null,
@@ -176,7 +190,7 @@ export class ExperimentWorkbenchStore {
   selectWork(workId: string): void {
     if (workId === this.snapshot.view.workId) return
     this.sequence++
-    clearTimeout(this.timer)
+    this.pendingWorkId = workId
     this.updateView({
       workId,
       page: 'workbench',
@@ -186,7 +200,8 @@ export class ExperimentWorkbenchStore {
       compareRunId: null,
     })
     this.emit({ projection: null, loading: true, error: null })
-    if (this.visible) void this.refresh()
+    if (this.deliveredProjection) this.applyProjection(this.deliveredProjection)
+    else if (this.visible) void this.refresh()
   }
   private revealBranch(branchId: string): readonly string[] {
     const projection = this.snapshot.projection
@@ -199,6 +214,7 @@ export class ExperimentWorkbenchStore {
     return [...collapsed]
   }
   selectBranch(branchId: string): void {
+    this.pendingBranchReveal = branchId
     const projection = this.snapshot.projection
     const taskIds = new Set(
       projection?.tasks
@@ -234,8 +250,8 @@ export class ExperimentWorkbenchStore {
   setVisible(visible: boolean): void {
     if (this.visible === visible) return
     this.visible = visible
+    if (!visible) this.disconnect()
     this.sequence++
-    clearTimeout(this.timer)
     if (visible && this.snapshot.workspaceId) void this.refresh()
   }
   readonly refresh = async (restoreWork = false): Promise<void> => {
@@ -243,7 +259,6 @@ export class ExperimentWorkbenchStore {
     if (!workspaceId || !this.visible || this.disposed) return
     const sequence = ++this.sequence,
       requestedWork = this.snapshot.view.workId
-    clearTimeout(this.timer)
     try {
       const projection = await this.remote.getProjection({
         workspaceId,
@@ -270,48 +285,7 @@ export class ExperimentWorkbenchStore {
         await this.refresh()
         return
       }
-      const previous = this.snapshot.view,
-        workId = projection.work_id
-      const branches = projection.branches.filter(
-        (branch) => branch.work_id === workId,
-      )
-      const branchId = branches.some(
-        (branch) => branch.branch_id === previous.branchId,
-      )
-        ? previous.branchId
-        : (branches.find((branch) => branch.parent_branch_id === null)
-            ?.branch_id ??
-          branches[0]?.branch_id ??
-          null)
-      const taskIds = new Set(
-          projection.tasks
-            .filter((task) => task.branch_id === branchId)
-            .map((task) => task.task_id),
-        ),
-        runs = projection.runs.filter((run) =>
-          taskIds.has(run.workbench_task_id),
-        )
-      const selectedRunId = runs.some(
-        (run) => run.run_id === previous.selectedRunId,
-      )
-        ? previous.selectedRunId
-        : (runs.at(-1)?.run_id ?? null)
-      const view = {
-        ...previous,
-        workId,
-        branchId,
-        selectedRunId,
-        inspectRun: !!selectedRunId && previous.inspectRun,
-        compareRunId: projection.runs.some(
-          (run) =>
-            run.run_id === previous.compareRunId &&
-            run.run_id !== selectedRunId,
-        )
-          ? previous.compareRunId
-          : null,
-      }
-      this.emit({ projection, view, loading: false, error: null })
-      this.save()
+      this.applyProjection(projection)
     } catch (error) {
       if (this.disposed || !this.visible || sequence !== this.sequence) return
       this.emit({
@@ -320,17 +294,75 @@ export class ExperimentWorkbenchStore {
           error instanceof Error ? error.message : '工作台加载失败，请重试。',
       })
     }
-    const interval = this.snapshot.projection?.refreshAfterMs ?? 0
-    if (interval > 0)
-      this.timer = setTimeout(() => {
-        void this.refresh()
-      }, interval)
+  }
+  private applyProjection(source: WorkbenchProjection): void {
+    const previous = this.snapshot.view
+    if (this.pendingWorkId && !source.works.some(work => work.work_id === this.pendingWorkId)) return
+    this.pendingWorkId = null
+    const workId = source.works.find(work => work.work_id === previous.workId)?.work_id
+      ?? source.work_id ?? source.works[0]?.work_id ?? null
+    const branches = source.branches.filter(branch => branch.work_id === workId)
+    const branchIds = new Set(branches.map(branch => branch.branch_id))
+    const tasks = source.tasks.filter(task => branchIds.has(task.branch_id))
+    const taskIds = new Set(tasks.map(task => task.task_id))
+    const projection = { ...source, work_id: workId, branches, tasks,
+      runs: source.runs.filter(run => taskIds.has(run.workbench_task_id)),
+      artifacts: source.artifacts.filter(artifact => taskIds.has(artifact.task_id)),
+      experiments: source.experiments.filter(experiment => taskIds.has(experiment.task_id)) }
+    const branchId = branches.some(branch => branch.branch_id === previous.branchId)
+      ? previous.branchId : branches.find(branch => branch.parent_branch_id === null)?.branch_id ?? branches[0]?.branch_id ?? null
+    const branchTasks = new Set(tasks.filter(task => task.branch_id === branchId).map(task => task.task_id))
+    const runs = projection.runs.filter(run => branchTasks.has(run.workbench_task_id))
+    const selectedRunId = runs.some(run => run.run_id === previous.selectedRunId)
+      ? previous.selectedRunId : runs.at(-1)?.run_id ?? null
+    const collapsedBranches = new Set(previous.collapsedBranches)
+    if (this.pendingBranchReveal && branches.some(branch => branch.branch_id === this.pendingBranchReveal)) {
+      for (let branch = branches.find(branch => branch.branch_id === this.pendingBranchReveal); branch; branch = branches.find(parent => parent.branch_id === branch?.parent_branch_id)) collapsedBranches.delete(branch.branch_id)
+      this.pendingBranchReveal = null
+    }
+    const view = { ...previous, workId, branchId, selectedRunId, collapsedBranches: [...collapsedBranches],
+      inspectRun: !!selectedRunId && previous.inspectRun,
+      compareRunId: projection.runs.some(run => run.run_id === previous.compareRunId && run.run_id !== selectedRunId) ? previous.compareRunId : null }
+    this.emit({ projection, view, loading: false, error: null })
+    this.save()
+  }
+  receive(update: WorkbenchUpdate): void {
+    if (this.disposed || update.projection.workspace_id !== this.snapshot.workspaceId || update.sequence <= this.deliverySequence) return
+    this.deliverySequence = update.sequence
+    this.sequence++
+    this.deliveredProjection = update.projection
+    this.emit({ promptTurns: update.promptTurns, translations: update.translations, connection: 'connected' })
+    this.applyProjection(update.projection)
+  }
+  connect(source: (request: WorkbenchSubscription, signal: AbortSignal) => AsyncIterable<WorkbenchUpdate>): void {
+    this.disconnect()
+    const workspaceId = this.snapshot.workspaceId
+    if (!workspaceId || this.disposed) return
+    const abort = new AbortController()
+    this.connectionAbort = abort
+    this.deliverySequence = -1
+    void (async () => {
+      try {
+        for await (const update of source({ workspaceId }, abort.signal)) {
+          if (abort.signal.aborted || this.connectionAbort !== abort) return
+          this.receive(update)
+        }
+        if (!abort.signal.aborted && this.connectionAbort === abort) this.emit({ connection: 'disconnected' })
+      } catch (error) {
+        if (!abort.signal.aborted && this.connectionAbort === abort) this.emit({ connection: 'disconnected', error: error instanceof Error ? error.message : '工作台连接已断开，请重新连接。' })
+      }
+    })()
+  }
+  disconnect(): void {
+    this.connectionAbort?.abort()
+    this.connectionAbort = null
+    this.emit({ connection: 'disconnected' })
   }
   dispose(): void {
     this.save()
+    this.disconnect()
     this.disposed = true
     this.sequence++
-    clearTimeout(this.timer)
     this.listeners.clear()
   }
 }

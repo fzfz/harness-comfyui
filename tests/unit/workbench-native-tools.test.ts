@@ -54,6 +54,10 @@ it('reads a task and publishes its prompt through the registered native tools', 
     const { work, branch } = fixture.store.createWork({ workspaceId: 'workspace_1', name: 'Garden', goal: 'A garden' })
     await saveFixtureDraft(fixture.remote, { workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id }, draft => { draft.base_model_id = '1' }, new AbortController().signal)
     const task = await fixture.ctx.harnessComfyuiWorkbench.service.createTask({ workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id, functionId: 'prompt', instructions: '' })
+    fixture.official.events.set(task.session_id!, [
+      { type: 'turn/start', seq: 0, data: { turn: 1 } },
+      { type: 'user/message', seq: 1, data: { source: { kind: 'user', rpcId: task.task_id } } },
+    ] as SessionEvent[])
     const tools = new Map<string, ToolDefinition>()
     apply({ tools: { register: (tool: ToolDefinition) => tools.set(tool.name, tool) }, harnessComfyuiWorkbench: fixture.ctx.harnessComfyuiWorkbench, workspaceRegistry: { resolveByPath: async () => undefined } } as unknown as Context)
     const execution = { callId: 'get-call', rootCallId: 'get-call', signal: new AbortController().signal, agent: { session: { id: task.session_id!, header: { cwd: '/unregistered/other-project' }, snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'get-call', turn: 1 } }] as SessionEvent[] } } } as unknown as ToolRunContext
@@ -65,7 +69,7 @@ it('reads a task and publishes its prompt through the registered native tools', 
     const receipt = await publish.execute({ task_id: task.task_id, artifact: { type: 'prompt', positive_prompt: 'a quiet garden', negative_prompt: '' } }, execution)
     expect(receipt).toMatchObject({ task_id: task.task_id, disposition: 'applied' })
     expect(publish.output.render({}, receipt as never)[0]).toMatchObject({ type: 'text', text: expect.stringContaining('"disposition":"applied"') })
-    expect(fixture.store.getBranch(branch.branch_id).draft.prompt_input.positive_prompt).toBe('')
-    expect(fixture.store.getBranch(branch.branch_id).editing_draft?.prompt_input.positive_prompt).toBe('a quiet garden')
+    expect(fixture.store.getBranch(branch.branch_id).draft.prompt_input.positive_prompt).toBe('a quiet garden')
+    expect(fixture.store.getBranch(branch.branch_id).editing_draft).toBeNull()
   } finally { await fixture.dispose() }
 })

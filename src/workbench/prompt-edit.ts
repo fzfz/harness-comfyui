@@ -11,6 +11,7 @@ export interface PromptStartRequest {
   branch_id: string
   function_id: string
   request_id: string
+  intent: 'generate' | 'rewrite'
   task_id?: string
   draft?: TaskDraft
   input: Omit<PromptRequestInput, 'base_model_name' | 'reference_context'>
@@ -25,6 +26,8 @@ export interface PromptTurn {
   turn_index: number
   function_id: string
   kind: 'prompt'
+  intent: 'generate' | 'rewrite'
+  candidate: { positive_prompt: string; negative_prompt: string } | null
   session_id: string
   harness_turn: number | null
   preset_id: string
@@ -53,14 +56,14 @@ export const promptRequestPartsSchema = object({
   reference_descriptions: object({ requested_skill: text(), experiences: text(), task_artifacts: text(), run_ids: text(), images: text() }),
 })
 const inputFields = { original_request: text(), base_model_id: text(), positive_prompt: text(), negative_prompt: text(), change_request: text() }
-export const promptStartFields = { workspace_id: id(), work_id: id(), branch_id: id(), function_id: id(), request_id: id(), task_id: id().required(false), input: object(inputFields) }
+export const promptStartFields = { workspace_id: id(), work_id: id(), branch_id: id(), function_id: id(), request_id: id(), intent: Schema.union(['generate', 'rewrite']).required(), task_id: id().required(false), input: object(inputFields) }
 export const promptLookupSchema = object({ workspace_id: id(), request_id: id() })
 export const promptListSchema = object({ workspace_id: id(), task_id: id() })
 export const promptAdoptSchema = object({ workspace_id: id(), request_id: id(), positive_prompt: text(), negative_prompt: text() })
 const reply = object({ type: Schema.const('prompt').required(), positive_prompt: text(), negative_prompt: text() })
 export const promptRequestInputSchema = object({ ...inputFields, base_model_name: text(), reference_context: json() })
 export const promptTurnSchema = object({
-  request_id: id(), task_id: id(), turn_index: Schema.natural().required(), function_id: id(), kind: Schema.const('prompt').required(),
+  request_id: id(), task_id: id(), turn_index: Schema.natural().required(), function_id: id(), kind: Schema.const('prompt').required(), intent: Schema.union(['generate', 'rewrite']).required(), candidate: requiredNullable(object({ positive_prompt: text(), negative_prompt: text() })),
   session_id: text(), harness_turn: requiredNullable(Schema.natural().required()), preset_id: text(),
   agent_model: agentModelSchema,
   input: promptRequestInputSchema, request_template: text(), request_parts: promptRequestPartsSchema,

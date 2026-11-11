@@ -3,7 +3,7 @@ import { basename, join } from 'node:path'
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import type { GenerationRequest } from '../../generation/submission-contract.ts'
-import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PublishReceipt, ReviewDraft, ReviewDraftUpdate, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
+import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PromptInput, PublishReceipt, ReviewDraft, ReviewDraftUpdate, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
 import { equalValue } from '../../shared/json-contract.ts'
 import { jsonValue, validateArtifact, validateFunctionBinding, validateTaskDraft, validateTaskRequestDraft, validateTaskInput, validateReviewDraft, validateInputReferences, generationInputWithImages, runBaseModelId, WorkbenchError } from '../../workbench/validation.ts'
 import { deriveTaskStatus, isFinishedRun, mergeTaskDraft } from '../../workbench/state.ts'
@@ -11,6 +11,7 @@ import { functionNameProblem } from '../../workbench/function-name.ts'
 import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
 import { defaultPresetForFunction } from '../../workbench/agent-roles.ts'
 import type { PromptTurn, PromptReply } from '../../workbench/prompt-edit.ts'
+import type { TranslationRecord } from '../../workbench/translation.ts'
 import promptEditConfig from '../../workbench/prompt-edit-config.json' with { type: 'json' }
 import { DEFAULT_PROMPT_REQUEST_PARTS } from '../../workbench/request-template.ts'
 import { renderRequestTemplate } from '../../workbench/request-template.ts'
@@ -19,9 +20,10 @@ import experimentControlErrors from '../../workbench/experiment-control-errors.j
 import libraryConfig from '../../workbench/library-config.json' with { type: 'json' }
 import translationConfig from '../../../config/workbench-translation.json' with { type: 'json' }
 import artifactAdoptionErrors from '../../workbench/artifact-adoption-errors.json' with { type: 'json' }
-import { transaction } from './transaction.ts'
+import { afterCommit, transaction } from './transaction.ts'
 
 type Row = Record<string, unknown>
+interface PromptTargetInput { model_id: string | null; prompt_input: PromptInput }
 const parse = <T>(value: unknown): T => JSON.parse(String(value)) as T
 const fail = (code: string, message: string, path = ''): never => { throw new WorkbenchError(code, message, path) }
 export interface GenerationAcceptance {
@@ -29,7 +31,7 @@ export interface GenerationAcceptance {
 }
 export interface GenerationAssociation { workbenchTaskId: string | null; executionTaskId: string | null; iterationIndex: number | null; candidateArtifactId: string | null; initiator: 'human' | 'agent' | null; retryOfRunId: string | null }
 export interface NewTask {
-  branchId: string; functionId: string; title: string; kind: Task['kind']; input: TaskInput; outputContract: OutputContract; requestText?: string
+  taskId?: string; submissionInput?: JsonValue; branchId: string; functionId: string; title: string; kind: Task['kind']; input: TaskInput; outputContract: OutputContract; requestText?: string
   applyTarget: ApplyTarget; bindingSnapshot: BindingSnapshot; parentExperimentTaskId?: string | null; initiator?: 'human' | 'agent'; retryOfRunId?: string | null
 }
 export interface WorkbenchStoreOptions { database: DatabaseSync; artifactDirectory: string }
@@ -41,6 +43,29 @@ function experimentIsClosed(experiment: Experiment | null): boolean {
 export class WorkbenchStore {
   readonly database: DatabaseSync
   readonly artifactDirectory: string
+  private sequence = 0
+  get revision(): number { return this.sequence }
+  private readonly listeners = new Set<(sequence: number) => void>()
+  private readonly errorListeners = new Set<(error: unknown) => void>()
+  private readonly notify = () => {
+    const revision = ++this.sequence
+    for (const listener of this.listeners) {
+      try { listener(revision) }
+      catch (error) { console.error('Workbench change delivery failed', error) }
+    }
+  }
+
+  subscribe(listener: (sequence: number) => void, onError?: (error: unknown) => void): () => void {
+    this.listeners.add(listener)
+    if (onError) this.errorListeners.add(onError)
+    return () => { this.listeners.delete(listener); if (onError) this.errorListeners.delete(onError) }
+  }
+  reportError(error: unknown): void {
+    for (const listener of this.errorListeners) {
+      try { listener(error) }
+      catch (cause) { console.error('Workbench error delivery failed', cause) }
+    }
+  }
 
   constructor(options: WorkbenchStoreOptions) {
     this.database = options.database
@@ -89,6 +114,7 @@ export class WorkbenchStore {
     }
     if (!this.rows('PRAGMA table_info(workbench_tasks)').some(column => column.name === 'parent_experiment_task_id')) this.database.exec('ALTER TABLE workbench_tasks ADD COLUMN parent_experiment_task_id TEXT REFERENCES workbench_tasks(task_id)')
     this.database.exec('CREATE INDEX IF NOT EXISTS workbench_tasks_experiment ON workbench_tasks(parent_experiment_task_id)')
+    if (!this.rows('PRAGMA table_info(workbench_tasks)').some(column => column.name === 'submission_input_json')) this.database.exec('ALTER TABLE workbench_tasks ADD COLUMN submission_input_json TEXT')
     if (!this.rows('PRAGMA table_info(workbench_function_bindings)').some(column => column.name === 'request_parts_json')) this.database.exec('ALTER TABLE workbench_function_bindings ADD COLUMN request_parts_json TEXT')
     this.database.exec(`CREATE TABLE IF NOT EXISTS workbench_prompt_turns (
       request_id TEXT PRIMARY KEY, task_id TEXT NOT NULL REFERENCES workbench_tasks(task_id), turn_index INTEGER NOT NULL,
@@ -97,7 +123,18 @@ export class WorkbenchStore {
       request_parts_json TEXT NOT NULL, request_text TEXT NOT NULL, status TEXT NOT NULL, error_json TEXT,
       artifact_id TEXT REFERENCES workbench_task_artifacts(artifact_id), adopted_json TEXT, applied_at INTEGER,
       created_at INTEGER NOT NULL, finished_at INTEGER, start_seq INTEGER NOT NULL, UNIQUE(task_id,turn_index));
-      CREATE INDEX IF NOT EXISTS workbench_prompt_turn_task ON workbench_prompt_turns(task_id)`)
+      CREATE INDEX IF NOT EXISTS workbench_prompt_turn_task ON workbench_prompt_turns(task_id);
+      CREATE TABLE IF NOT EXISTS workbench_translations (
+        request_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, work_id TEXT NOT NULL REFERENCES workbench_works(work_id),
+        branch_id TEXT NOT NULL REFERENCES workbench_branches(branch_id), field TEXT NOT NULL, source_text TEXT NOT NULL,
+        session_id TEXT NOT NULL, harness_turn INTEGER, start_seq INTEGER NOT NULL, created_at INTEGER NOT NULL,
+        finished_at INTEGER, status TEXT NOT NULL, text TEXT, error TEXT);
+      CREATE INDEX IF NOT EXISTS workbench_translations_origin ON workbench_translations(workspace_id,work_id);
+    `)
+    if (!this.rows('PRAGMA table_info(workbench_prompt_turns)').some(column => column.name === 'intent')) this.database.exec("ALTER TABLE workbench_prompt_turns ADD COLUMN intent TEXT NOT NULL DEFAULT 'rewrite'")
+    if (!this.rows('PRAGMA table_info(workbench_prompt_turns)').some(column => column.name === 'candidate_json')) this.database.exec('ALTER TABLE workbench_prompt_turns ADD COLUMN candidate_json TEXT')
+    if (!this.rows('PRAGMA table_info(workbench_prompt_turns)').some(column => column.name === 'submission_input_json')) this.database.exec('ALTER TABLE workbench_prompt_turns ADD COLUMN submission_input_json TEXT')
+    if (!this.rows('PRAGMA table_info(workbench_prompt_turns)').some(column => column.name === 'target_input_json')) this.database.exec('ALTER TABLE workbench_prompt_turns ADD COLUMN target_input_json TEXT')
     this.migratePromptBindings()
     this.migrateReferenceDefaults()
   }
@@ -127,7 +164,10 @@ export class WorkbenchStore {
   }
   private rows(sql: string, ...args: (string | number | null)[]): Row[] { return this.database.prepare(sql).all(...args) as Row[] }
   private row(sql: string, ...args: (string | number | null)[]): Row | undefined { return this.database.prepare(sql).get(...args) as Row | undefined }
-  private run(sql: string, ...args: (string | number | null)[]): void { this.database.prepare(sql).run(...args) }
+  private run(sql: string, ...args: (string | number | null)[]): void {
+    const result = this.database.prepare(sql).run(...args)
+    if (result.changes !== 0) afterCommit(this.database, this.notify)
+  }
   getWork(workId: string): Work { const row = this.row('SELECT * FROM workbench_works WHERE work_id=?', workId); return row ? row as unknown as Work : fail('WORKBENCH_NOT_FOUND', '工作不存在，请重新选择工作。', 'work_id') }
   listWorks(workspaceId: string): Work[] { return this.rows('SELECT * FROM workbench_works WHERE workspace_id=? ORDER BY rowid', workspaceId) as unknown as Work[] }
   assertScope(workspaceId: string, workId: string, branchId?: string): Work {
@@ -286,9 +326,9 @@ export class WorkbenchStore {
       for (const image of fixed.image_refs) { const source = image.source; if (source.kind === 'run_media' && !this.getRun(source.run_id).media.some(media => media.media_id === source.media_id)) fail('WORKBENCH_IMAGE_NOT_FOUND', '请重新选择运行中的图片。', 'input.image_refs') }
       if (input.applyTarget.kind === 'branch' ? input.applyTarget.id !== branch.branch_id : input.applyTarget.id !== fixed.evaluation_input?.run_id) fail('WORKBENCH_SCOPE_MISMATCH', '任务写入目标与固定输入不一致，请核对 apply_target 和任务固定输入后重试。', 'apply_target')
       if (input.retryOfRunId) { const source = this.assertRunInWork(input.retryOfRunId, branch.work_id); if (source.status !== 'failed' && source.status !== 'cancelled') fail('WORKBENCH_INVALID_INPUT', '请选择失败或已取消的运行重试。', 'retry_of_run_id') }
-      const id = randomUUID(); const now = Date.now()
+      const id = input.taskId ?? randomUUID(); const now = Date.now()
       const requestText = input.requestText ?? renderRequestTemplate(input.bindingSnapshot.request_template, id)
-      this.run('INSERT INTO workbench_tasks VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', id, input.branchId, input.functionId, input.title, input.kind, 'pending', JSON.stringify(fixed), JSON.stringify(input.outputContract), JSON.stringify(input.applyTarget), JSON.stringify(input.bindingSnapshot), null, requestText, null, '[]', null, now, now, 'pending', input.initiator ?? 'human', input.retryOfRunId ?? null, input.parentExperimentTaskId ?? null)
+      this.run('INSERT INTO workbench_tasks(task_id,branch_id,function_id,title,kind,status,input_json,output_contract_json,apply_target_json,binding_snapshot_json,session_id,request_text,selected_model_json,answers_json,error_json,created_at,updated_at,execution_state,initiator,retry_of_run_id,parent_experiment_task_id,submission_input_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', id, input.branchId, input.functionId, input.title, input.kind, 'pending', JSON.stringify(fixed), JSON.stringify(input.outputContract), JSON.stringify(input.applyTarget), JSON.stringify(input.bindingSnapshot), null, requestText, null, '[]', null, now, now, 'pending', input.initiator ?? 'human', input.retryOfRunId ?? null, input.parentExperimentTaskId ?? null, input.submissionInput === undefined ? null : JSON.stringify(input.submissionInput))
       if (input.kind === 'experiment') this.run('INSERT INTO workbench_experiments VALUES(?,?,?)', id, 'running', null)
       return this.getTask(id)
     })
@@ -313,9 +353,14 @@ export class WorkbenchStore {
     return { parameter_mapping: null, reference_task_artifacts: [], ...input, ...validateInputReferences(input) } as unknown as TaskInput
   }
   private task(row: Row): Task {
-    const { input_json, output_contract_json, apply_target_json, binding_snapshot_json, selected_model_json, answers_json, error_json, ...rest } = row
+    const { input_json, output_contract_json, apply_target_json, binding_snapshot_json, selected_model_json, answers_json, error_json, submission_input_json: _submission, ...rest } = row
     return { ...rest, input: this.storedInput(input_json), output_contract: parse(output_contract_json), apply_target: parse(apply_target_json), binding_snapshot: parse(binding_snapshot_json), selected_model: selected_model_json ? parse(selected_model_json) : null, answers: parse(answers_json), error: error_json ? parse(error_json) : null } as Task
   }
+  getTaskSubmission(taskId: string): JsonValue | null {
+    const row = this.row('SELECT submission_input_json FROM workbench_tasks WHERE task_id=?', taskId)
+    return row?.submission_input_json ? parse(row.submission_input_json) : null
+  }
+
   findTask(taskId: string): Task | null { const row = this.row('SELECT * FROM workbench_tasks WHERE task_id=?', taskId); return row ? this.task(row) : null }
   getTask(taskId: string): Task { return this.findTask(taskId) ?? fail('WORKBENCH_TASK_NOT_FOUND', '任务不存在，请核对 task_id。', 'task_id') }
 
@@ -325,16 +370,51 @@ export class WorkbenchStore {
     if (workId) this.assertScope(workspaceId, workId, branchId)
     return this.rows('SELECT t.* FROM workbench_tasks t JOIN workbench_branches b ON b.branch_id=t.branch_id JOIN workbench_works w ON w.work_id=b.work_id WHERE w.workspace_id=? AND (? IS NULL OR w.work_id=?) AND (? IS NULL OR b.branch_id=?) ORDER BY t.created_at,t.rowid', workspaceId, workId ?? null, workId ?? null, branchId ?? null, branchId ?? null).map(row => this.task(row))
   }
+  getTranslation(requestId: string): TranslationRecord | null {
+    const row = this.row('SELECT * FROM workbench_translations WHERE request_id=?', requestId)
+    return row ? this.translation(row) : null
+  }
+  private translation(row: Row): TranslationRecord {
+    const { text, error, ...record } = row
+    return { ...record, ...(text === null ? {} : { text }), ...(error === null ? {} : { error }) } as TranslationRecord
+  }
+  saveTranslation(record: TranslationRecord): TranslationRecord {
+    return transaction(this.database, () => {
+      this.assertScope(record.workspace_id, record.work_id, record.branch_id)
+      const previous = this.getTranslation(record.request_id)
+      if (previous) {
+        if (!equalValue([previous.workspace_id, previous.work_id, previous.branch_id, previous.field, previous.source_text], [record.workspace_id, record.work_id, record.branch_id, record.field, record.source_text])) fail('WORKBENCH_EDIT_CONFLICT', '请求来源已改变，请使用新的请求 ID。', 'request_id')
+        if (previous.status !== 'running') return previous
+      }
+      this.run('INSERT INTO workbench_translations VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(request_id) DO UPDATE SET session_id=excluded.session_id,harness_turn=excluded.harness_turn,start_seq=excluded.start_seq,finished_at=excluded.finished_at,status=excluded.status,text=excluded.text,error=excluded.error', record.request_id, record.workspace_id, record.work_id, record.branch_id, record.field, record.source_text, record.session_id, record.harness_turn, record.start_seq, record.created_at, record.finished_at, record.status, record.text ?? null, record.error ?? null)
+      return this.getTranslation(record.request_id)!
+    })
+  }
+  listTranslations(scope: { workspaceId: string; workId?: string }): TranslationRecord[] {
+    return this.rows('SELECT * FROM workbench_translations WHERE workspace_id=? AND (? IS NULL OR work_id=?) ORDER BY created_at,rowid', scope.workspaceId, scope.workId ?? null, scope.workId ?? null).map(row => this.translation(row))
+  }
+  listPendingTranslations(): TranslationRecord[] {
+    return this.rows("SELECT * FROM workbench_translations WHERE status='running' ORDER BY created_at,rowid").map(row => this.translation(row))
+  }
+  listPendingPromptTurns(): PromptTurn[] {
+    return this.rows("SELECT request_id FROM workbench_prompt_turns WHERE status IN ('queued','running') ORDER BY created_at,rowid").map(row => this.getPromptTurn(String(row.request_id))!)
+  }
+
   listPromptTurns(taskId: string): PromptTurn[] {
     this.getTask(taskId)
     return this.rows('SELECT request_id FROM workbench_prompt_turns WHERE task_id=? ORDER BY turn_index', taskId).map(row => this.getPromptTurn(String(row.request_id))!)
   }
+  getPromptSubmission(requestId: string): JsonValue | null {
+    const row = this.row('SELECT submission_input_json FROM workbench_prompt_turns WHERE request_id=?', requestId)
+    return row?.submission_input_json ? parse(row.submission_input_json) : null
+  }
+
   getPromptTurn(requestId: string): PromptTurn | null {
     const row = this.row('SELECT * FROM workbench_prompt_turns WHERE request_id=?', requestId)
     if (!row) return null
     const artifact = row.artifact_id ? this.getArtifact(String(row.artifact_id)).artifact : null
     return {
-      request_id: String(row.request_id), task_id: String(row.task_id), turn_index: Number(row.turn_index), function_id: String(row.function_id), kind: 'prompt',
+      request_id: String(row.request_id), task_id: String(row.task_id), turn_index: Number(row.turn_index), function_id: String(row.function_id), kind: 'prompt', intent: row.intent as PromptTurn['intent'], candidate: row.candidate_json ? parse(row.candidate_json) : null,
       session_id: String(row.session_id), harness_turn: row.harness_turn === null ? null : Number(row.harness_turn), preset_id: String(row.preset_id),
       agent_model: parse(row.agent_model_json), input: parse(row.input_json), request_template: String(row.request_template), request_parts: parse(row.request_parts_json), request_text: String(row.request_text),
       status: row.status as PromptTurn['status'], error: row.error_json ? parse(row.error_json) : null, artifact_id: row.artifact_id as string | null,
@@ -343,21 +423,52 @@ export class WorkbenchStore {
       created_at: Number(row.created_at), finished_at: row.finished_at === null ? null : Number(row.finished_at), start_seq: Number(row.start_seq),
     }
   }
-  beginPromptTurn(turn: Omit<PromptTurn, 'turn_index'>): PromptTurn {
+  private promptTargetInput(requestId: string): PromptTargetInput | null {
+    const row = this.row('SELECT target_input_json FROM workbench_prompt_turns WHERE request_id=?', requestId)
+    return row?.target_input_json ? parse(row.target_input_json) : null
+  }
+
+  private capturePromptTarget(turn: Omit<PromptTurn, 'turn_index'>, submissionInput?: JsonValue): PromptTargetInput {
+    const task = this.getTask(turn.task_id)
+    const branch = this.getBranch(task.branch_id)
+    const submittedDraft = submissionInput && typeof submissionInput === 'object' && !Array.isArray(submissionInput) && 'draft' in submissionInput ? submissionInput.draft : undefined
+    const source = submissionInput === undefined ? task.input : submittedDraft === undefined ? branch.editing_draft ?? branch.draft : validateTaskDraft(submittedDraft)
+    const prompt = { ...source.prompt_input }
+    for (const field of Object.keys(prompt) as (keyof PromptInput)[]) prompt[field] = prompt[field] === null && turn.input[field] === '' ? null : turn.input[field]
+    return { model_id: source.generation_input.model?.id ?? null, prompt_input: prompt }
+  }
+
+  beginPromptTurn(turn: Omit<PromptTurn, 'turn_index'>, submissionInput?: JsonValue): PromptTurn {
     return transaction(this.database, () => {
       const previous = this.getPromptTurn(turn.request_id)
       if (previous) fail(promptEditConfig.errors.conflict.code, promptEditConfig.errors.conflict.message, 'request_id')
       if (this.listPromptTurns(turn.task_id).some(item => item.status === 'queued' || item.status === 'running')) fail(promptEditConfig.errors.busy.code, promptEditConfig.errors.busy.message, 'task_id')
       const index = Number(this.row('SELECT COALESCE(MAX(turn_index),0)+1 AS next FROM workbench_prompt_turns WHERE task_id=?', turn.task_id)!.next)
-      this.run('INSERT INTO workbench_prompt_turns VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      this.run('INSERT INTO workbench_prompt_turns(request_id,task_id,turn_index,function_id,kind,session_id,harness_turn,preset_id,agent_model_json,input_json,request_template,request_parts_json,request_text,status,error_json,artifact_id,adopted_json,applied_at,created_at,finished_at,start_seq,intent,candidate_json,submission_input_json,target_input_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
         turn.request_id, turn.task_id, index, turn.function_id, 'prompt', turn.session_id, turn.harness_turn,
         turn.preset_id, JSON.stringify(turn.agent_model), JSON.stringify(turn.input), turn.request_template, JSON.stringify(turn.request_parts), turn.request_text,
-        turn.status, turn.error ? JSON.stringify(turn.error) : null, turn.artifact_id, null, null, turn.created_at, turn.finished_at, turn.start_seq)
+        turn.status, turn.error ? JSON.stringify(turn.error) : null, turn.artifact_id, null, null, turn.created_at, turn.finished_at, turn.start_seq, turn.intent, turn.candidate ? JSON.stringify(turn.candidate) : null, submissionInput === undefined ? null : JSON.stringify(submissionInput), JSON.stringify(this.capturePromptTarget(turn, submissionInput)))
       this.run('UPDATE workbench_tasks SET session_id=?,selected_model_json=?,execution_state=?,status=?,updated_at=? WHERE task_id=?', turn.session_id || null, JSON.stringify(turn.agent_model), 'pending', 'pending', Date.now(), turn.task_id)
       return this.getPromptTurn(turn.request_id)!
     })
   }
-  updatePromptTurn(requestId: string, update: { session_id?: string; harness_turn?: number; start_seq?: number; status?: PromptTurn['status']; error?: PromptTurn['error']; result?: PromptReply; adopted?: PromptTurn['adopted'] }): PromptTurn {
+  adoptPrompt(requestId: string, selected: NonNullable<PromptTurn['candidate']>): PromptTurn {
+    return transaction(this.database, () => {
+      const turn = this.getPromptTurn(requestId)
+      if (!turn) throw new WorkbenchError(promptEditConfig.errors.missing.code, promptEditConfig.errors.missing.message, 'request_id')
+      if (turn.status !== 'succeeded' || !turn.result) fail(promptEditConfig.errors.adopt.code, promptEditConfig.errors.adopt.message, 'request_id')
+      if (equalValue(turn.adopted, selected)) return turn
+      const branch = this.getBranch(this.getTask(turn.task_id).branch_id)
+      const draft = structuredClone(branch.editing_draft ?? branch.draft)
+      Object.assign(draft.prompt_input, selected)
+      this.run('UPDATE workbench_branches SET editing_draft_json=? WHERE branch_id=?', JSON.stringify(draft), branch.branch_id)
+      this.run('UPDATE workbench_prompt_turns SET adopted_json=?,applied_at=? WHERE request_id=?', JSON.stringify(selected), Date.now(), requestId)
+      if (turn.artifact_id) this.run('UPDATE workbench_task_artifacts SET disposition=?,applied_target_json=? WHERE artifact_id=?', 'applied', JSON.stringify({ kind: 'branch', id: branch.branch_id, fields: ['prompt_input.positive_prompt', 'prompt_input.negative_prompt'] }), turn.artifact_id)
+      return this.getPromptTurn(requestId)!
+    })
+  }
+
+  updatePromptTurn(requestId: string, update: { session_id?: string; harness_turn?: number; start_seq?: number; status?: PromptTurn['status']; error?: PromptTurn['error']; result?: PromptReply; candidate?: PromptTurn['candidate'] }): PromptTurn {
     return transaction(this.database, () => {
       const turn = this.getPromptTurn(requestId)
       if (!turn) throw new WorkbenchError(promptEditConfig.errors.missing.code, promptEditConfig.errors.missing.message, 'request_id')
@@ -378,10 +489,8 @@ export class WorkbenchStore {
         this.run('UPDATE workbench_prompt_turns SET status=?,error_json=?,finished_at=? WHERE request_id=?', update.status, update.error ? JSON.stringify(update.error) : null, terminal ? Date.now() : null, requestId)
         this.run('UPDATE workbench_tasks SET execution_state=?,status=?,error_json=?,updated_at=? WHERE task_id=?', update.status === 'succeeded' ? 'idle' : update.status === 'failed' ? 'failed' : update.status === 'interrupted' ? 'interrupted' : update.status === 'queued' ? 'pending' : 'running', update.status === 'queued' ? 'pending' : update.status, update.error ? JSON.stringify(update.error) : null, Date.now(), turn.task_id)
       }
-      if (update.adopted) {
-        if (turn.status !== 'succeeded') fail(promptEditConfig.errors.adopt.code, promptEditConfig.errors.adopt.message, 'request_id')
-        this.run('UPDATE workbench_prompt_turns SET adopted_json=?,applied_at=? WHERE request_id=?', JSON.stringify(update.adopted), Date.now(), requestId)
-      }
+      if (update.candidate !== undefined) this.run('UPDATE workbench_prompt_turns SET candidate_json=? WHERE request_id=?', update.candidate ? JSON.stringify(update.candidate) : null, requestId)
+      this.refreshTask(turn.task_id)
       return this.getPromptTurn(requestId)!
     })
   }
@@ -393,9 +502,12 @@ export class WorkbenchStore {
     return this.getTask(taskId)
   }
   markExecution(taskId: string, state: ExecutionState, error: Task['error'] = null): Task {
-    this.getTask(taskId)
-    if (state === 'failed' || state === 'interrupted') this.run("UPDATE workbench_prompt_turns SET status=?,error_json=?,finished_at=? WHERE task_id=? AND status IN ('queued','running')", state, error ? JSON.stringify(error) : null, Date.now(), taskId)
-    this.run('UPDATE workbench_tasks SET execution_state=?,error_json=?,updated_at=? WHERE task_id=?', state, error ? JSON.stringify(error) : null, Date.now(), taskId); return this.refreshTask(taskId)
+    return transaction(this.database, () => {
+      this.getTask(taskId)
+      if (state === 'failed' || state === 'interrupted') this.run("UPDATE workbench_prompt_turns SET status=?,error_json=?,finished_at=? WHERE task_id=? AND status IN ('queued','running')", state, error ? JSON.stringify(error) : null, Date.now(), taskId)
+      this.run('UPDATE workbench_tasks SET execution_state=?,error_json=?,updated_at=? WHERE task_id=?', state, error ? JSON.stringify(error) : null, Date.now(), taskId)
+      return this.refreshTask(taskId)
+    })
   }
 
   settleTaskDispatch(taskId: string, error: Task['error'] = null, pauseOnFailure = false): Task {
@@ -407,7 +519,7 @@ export class WorkbenchStore {
         if (experiment && pauseOnFailure) this.run('UPDATE workbench_experiments SET control_state=? WHERE task_id=?', 'paused', taskId)
         return this.markExecution(taskId, 'failed', error)
       }
-      if (experiment?.control_state === 'paused') return task
+      if (experiment?.control_state === 'paused' || task.execution_state !== 'pending') return task
       return this.markExecution(taskId, 'running')
     })
   }
@@ -433,7 +545,7 @@ export class WorkbenchStore {
     return this.rows('SELECT a.* FROM workbench_task_artifacts a JOIN workbench_tasks t ON t.task_id=a.task_id WHERE t.task_id=? OR t.parent_experiment_task_id=? ORDER BY a.created_at,a.rowid', experimentTaskId, experimentTaskId).map(row => this.artifact(row))
   }
   private artifactPatch(task: Task, artifact: ArtifactPayload, candidate = false): Record<string, JsonValue> {
-    if (artifact.type === 'prompt') return { 'prompt_input.positive_prompt': artifact.positive_prompt, 'prompt_input.negative_prompt': artifact.negative_prompt }
+    if (artifact.type === 'prompt') return Object.fromEntries(Object.entries({ positive_prompt: artifact.positive_prompt, negative_prompt: artifact.negative_prompt }).filter(([, value]) => value !== null).map(([field, value]) => [`prompt_input.${field}`, value]))
     if (artifact.type === 'parameters') return Object.fromEntries(Object.entries(artifact.parameters).map(([key, value]) => [`generation_input.parameters.${key}`, value]))
     if (artifact.type === 'generation_input') return { generation_input: jsonValue(artifact.generation_input), image_refs: jsonValue(artifact.image_refs ?? []), workflow_image_bindings: jsonValue(artifact.workflow_image_bindings ?? []) }
     if (artifact.type === 'review') return candidate && artifact.candidate ? { generation_input: jsonValue(artifact.candidate.generation_input), image_refs: jsonValue(artifact.candidate.image_refs ?? []), workflow_image_bindings: jsonValue(artifact.candidate.workflow_image_bindings ?? []) } : { observation: artifact.observation, conclusion: artifact.conclusion, evidence_run_ids: artifact.run_ids, review_artifact_id: null }
@@ -481,18 +593,46 @@ export class WorkbenchStore {
     else this.saveRunReviewDraft({ workspaceId: this.taskWorkspace(task.task_id), workId: this.getBranch(task.branch_id).work_id, runId: target.id, expected: reviewExpected!, draft: validateReviewDraft(current) })
     return true
   }
-  private artifactResourceError(task: Task, artifact: ArtifactPayload): WorkbenchError | null {
+  private artifactResourceError(task: Task, artifact: ArtifactPayload, promptTurn?: PromptTurn): WorkbenchError | null {
     if (artifact.type !== 'prompt' && artifact.type !== 'parameters') return null
     const branch = this.getBranch(task.branch_id)
     const current = (branch.editing_draft ?? branch.draft).generation_input
     const original = task.input.generation_input
-    const problem = artifact.type === 'prompt' && current.model?.id !== original.model?.id
+    const promptTarget = promptTurn ? this.promptTargetInput(promptTurn.request_id) : null
+    const modelId = promptTarget ? promptTarget.model_id : original.model?.id ?? null
+    const problem = artifact.type === 'prompt' && (current.model?.id ?? null) !== modelId
       ? artifactAdoptionErrors.modelMismatch
       : artifact.type === 'parameters' && (current.template_id !== original.template_id || current.instance_id !== original.instance_id)
         ? artifactAdoptionErrors.templateMismatch
         : null
     return problem ? new WorkbenchError(problem.code, problem.message, problem.path) : null
   }
+  private saveGeneratedPrompt(task: Task, turn: PromptTurn, prompt: PromptInput): boolean {
+    const branch = this.getBranch(task.branch_id)
+    const current = branch.editing_draft ?? branch.draft
+    const target = this.promptTargetInput(turn.request_id)
+    if (!target) return false
+    const fields = (Object.keys(prompt) as (keyof PromptInput)[]).filter(field => prompt[field] !== null)
+    for (const field of fields) if (current.prompt_input[field] !== target.prompt_input[field]) return false
+    const draft = structuredClone(branch.draft)
+    draft.prompt_edit_task_id = turn.task_id
+    let editing = branch.editing_draft ? structuredClone(branch.editing_draft) : null
+    if (editing) {
+      editing.prompt_edit_task_id = turn.task_id
+      if ((editing.prompt_change_request ?? '') === (draft.prompt_change_request ?? '')) {
+        if (draft.prompt_change_request === undefined) delete editing.prompt_change_request
+        else editing.prompt_change_request = draft.prompt_change_request
+      }
+    }
+    for (const field of fields) {
+      draft.prompt_input[field] = prompt[field]
+      if (editing) editing.prompt_input[field] = prompt[field]
+    }
+    if (editing && equalValue(editing, draft)) editing = null
+    this.run('UPDATE workbench_branches SET draft_json=?,editing_draft_json=? WHERE branch_id=?', JSON.stringify(draft), editing ? JSON.stringify(editing) : null, task.branch_id)
+    return true
+  }
+
   publish(taskId: string, raw: unknown, identity: WorkbenchIdentity, skillRefs: SkillReadRef[] = []): PublishReceipt {
     const artifact = validateArtifact(raw); const task = this.getTask(taskId)
     this.validateArtifactForTask(task, artifact)
@@ -509,11 +649,18 @@ export class WorkbenchStore {
         if (artifact.type === 'review') patch.review_artifact_id = artifactId
         if (artifact.type === 'experience') patch.experience_artifact_id = artifactId
         this.run('INSERT INTO workbench_task_artifacts VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)', artifactId, taskId, artifact.type, JSON.stringify(artifact), JSON.stringify(sourceFiles), identity.sessionId, identity.turn, identity.callId, JSON.stringify(skillRefs), disposition, null, Date.now(), JSON.stringify({ task_id: taskId, artifact_id: artifactId, disposition }))
-        if (!task.parent_experiment_task_id && task.output_contract.apply_mode === 'automatic' && artifact.type !== 'question') disposition = !this.artifactResourceError(task, artifact) && this.applyPatch(task, patch, task.apply_target.expected) ? 'applied' : 'candidate'
+        const promptTurns = artifact.type === 'prompt' ? this.listPromptTurns(taskId) : []
+        const promptTurn = promptTurns.find(turn => turn.session_id === identity.sessionId && turn.harness_turn === identity.turn)
+        if (promptTurn && !task.parent_experiment_task_id && artifact.type === 'prompt') {
+          const prompt = { positive_prompt: artifact.positive_prompt, negative_prompt: artifact.negative_prompt }
+          const pending = promptTurn.status === 'queued' || promptTurn.status === 'running'
+          disposition = pending && promptTurn.intent === 'generate' && !this.artifactResourceError(task, artifact, promptTurn) && this.saveGeneratedPrompt(task, promptTurn, prompt) ? 'applied' : 'candidate'
+          if (pending) this.run('UPDATE workbench_prompt_turns SET candidate_json=? WHERE request_id=?', disposition === 'candidate' && typeof prompt.positive_prompt === 'string' && typeof prompt.negative_prompt === 'string' ? JSON.stringify(prompt) : null, promptTurn.request_id)
+        } else if (!task.parent_experiment_task_id && task.output_contract.apply_mode === 'automatic' && artifact.type !== 'question' && (artifact.type !== 'prompt' || promptTurns.length === 0)) disposition = !this.artifactResourceError(task, artifact) && this.applyPatch(task, patch, task.apply_target.expected) ? 'applied' : 'candidate'
         const applied = disposition === 'applied' ? { kind: task.apply_target.kind, id: task.apply_target.id, fields: Object.keys(patch) } : null
         this.run('UPDATE workbench_task_artifacts SET disposition=?,applied_target_json=?,publish_receipt_json=? WHERE artifact_id=?', disposition, applied ? JSON.stringify(applied) : null, JSON.stringify({ task_id: taskId, artifact_id: artifactId, disposition }), artifactId)
         if (artifact.type === 'review') for (const runId of artifact.run_ids) this.run('UPDATE generation_runs SET review_artifact_id=? WHERE run_id=? AND workbench_task_id=?', artifactId, runId, task.parent_experiment_task_id ?? taskId)
-        if (artifact.type === 'prompt') this.run("UPDATE workbench_prompt_turns SET artifact_id=?,harness_turn=?,status='succeeded',finished_at=? WHERE task_id=? AND session_id=? AND status IN ('queued','running') AND (harness_turn IS NULL OR harness_turn=?)", artifactId, identity.turn, Date.now(), taskId, identity.sessionId, identity.turn)
+        if (promptTurn) this.run("UPDATE workbench_prompt_turns SET artifact_id=?,status='succeeded',finished_at=? WHERE request_id=? AND status IN ('queued','running')", artifactId, Date.now(), promptTurn.request_id)
         this.refreshTask(taskId)
         return { task_id: taskId, artifact_id: artifactId, disposition }
       })
@@ -547,7 +694,8 @@ export class WorkbenchStore {
     return transaction(this.database, () => {
       const stored = this.getArtifact(input.artifactId); const task = this.getTask(stored.task_id)
       if (stored.artifact.type === 'question') fail('WORKBENCH_INVALID_INPUT', '请通过回答入口回答此问题。')
-      const resourceError = this.artifactResourceError(task, stored.artifact)
+      const promptTurn = stored.artifact.type === 'prompt' ? this.listPromptTurns(task.task_id).find(turn => turn.artifact_id === stored.artifact_id) : undefined
+      const resourceError = this.artifactResourceError(task, stored.artifact, promptTurn)
       if (resourceError) throw resourceError
       let patch = this.artifactPatch(task, stored.artifact, input.candidate)
       if (stored.artifact.type === 'resources') {
@@ -693,12 +841,25 @@ export class WorkbenchStore {
     this.run('UPDATE generation_runs SET workbench_task_id=?,execution_task_id=?,iteration_index=?,initiator=?,candidate_artifact_id=?,retry_of_run_id=? WHERE run_id=?', association.workbenchTaskId, association.executionTaskId, association.iterationIndex, association.initiator, association.candidateArtifactId, association.retryOfRunId, input.runId)
     this.refreshTask(input.taskId)
   }
+  generationRunChanged(runId: string): void {
+    const row = this.row('SELECT workbench_task_id,execution_task_id FROM generation_runs WHERE run_id=?', runId)
+    const taskIds = new Set([row?.workbench_task_id, row?.execution_task_id].filter((id): id is string => typeof id === 'string'))
+    if (taskIds.size === 0) return
+    transaction(this.database, () => {
+      for (const taskId of taskIds) this.refreshTask(taskId)
+      afterCommit(this.database, this.notify)
+    })
+  }
   refreshTask(taskId: string): Task {
+    return transaction(this.database, () => this.deriveTask(taskId))
+  }
+  private deriveTask(taskId: string): Task {
     const task = this.getTask(taskId); const experiment = this.getExperiment(taskId)
     const promptTurn = task.kind === 'prompt' ? this.listPromptTurns(taskId).at(-1) : undefined
     if (promptTurn) {
       const status = promptTurn.status === 'queued' ? 'pending' : promptTurn.status
       if (task.status !== status) this.run('UPDATE workbench_tasks SET status=?,updated_at=? WHERE task_id=?', status, Date.now(), taskId)
+      if (task.parent_experiment_task_id) this.refreshTask(task.parent_experiment_task_id)
       return this.getTask(taskId)
     }
     const artifacts = experiment ? this.listExperimentArtifacts(taskId) : this.listArtifacts(taskId)
@@ -816,15 +977,15 @@ export class WorkbenchStore {
       return this.getBranch(input.branchId)
     })
   }
-  getProjection(input: { workspaceId: string; workId?: string; branchId?: string; refreshAfterMs?: number }): WorkbenchProjection {
+  getProjection(input: { workspaceId: string; workId?: string; branchId?: string }): WorkbenchProjection {
     if (input.workId) this.assertScope(input.workspaceId, input.workId, input.branchId)
     const totalBranchCount = this.row('SELECT COUNT(*) AS count FROM workbench_branches')!.count as number
-    const tasks = this.listTasks(input.workspaceId, input.workId, input.branchId).map(task => this.refreshTask(task.task_id))
+    const tasks = this.listTasks(input.workspaceId, input.workId, input.branchId)
     const workIds = input.workId ? [input.workId] : this.listWorks(input.workspaceId).map(work => work.work_id)
     const branches = workIds.flatMap(id => this.listBranches(id))
     const runs = [...new Map(tasks.flatMap(task => this.listRuns(task.task_id)).map(run => [run.run_id, run])).values()].map(run => ({ ...run, review_draft: this.getRunReviewDraft(run.run_id) })).sort((left, right) => left.created_at - right.created_at)
     const experiences = this.listExperiences()
     const favorites = this.rows('SELECT * FROM workbench_favorites') as unknown as Favorite[]
-    return { reference_destinations: this.referenceDestinations(), workspace_id: input.workspaceId, total_branch_count: totalBranchCount, work_id: input.workId ?? null, works: this.listWorks(input.workspaceId), branches, tasks, artifacts: tasks.flatMap(task => this.listArtifacts(task.task_id)), runs, experiments: tasks.flatMap(task => { const experiment = this.getExperiment(task.task_id); return experiment ? [experiment] : [] }), experiences, favorites, functions: this.listFunctionBindings(input.workspaceId), refreshAfterMs: input.refreshAfterMs ?? 1000 }
+    return { reference_destinations: this.referenceDestinations(), workspace_id: input.workspaceId, total_branch_count: totalBranchCount, work_id: input.workId ?? null, works: this.listWorks(input.workspaceId), branches, tasks, artifacts: tasks.flatMap(task => this.listArtifacts(task.task_id)), runs, experiments: tasks.flatMap(task => { const experiment = this.getExperiment(task.task_id); return experiment ? [experiment] : [] }), experiences, favorites, functions: this.listFunctionBindings(input.workspaceId) }
   }
 }

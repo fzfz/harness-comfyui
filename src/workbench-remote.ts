@@ -1,5 +1,5 @@
 import Schema from '@deepseek-ai/schemastery'
-import type { RemoteResult, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
+import type { RemoteResult, RemoteStream, TypertRemoteContribution } from '@deepseek-ai/dsh-typert-protocol'
 import type { WorkbenchProjection, WorkbenchModelCatalog, TaskRequestDraft, WorkbenchRunInput, WorkbenchRecord, WorkbenchRecordQuery, ImageRef, ImageSource, GenerationInput, TaskDraft } from './workbench/contract.ts'
 import { jsonValueSchema } from './shared/json-contract.ts'
 import { workflowRuntimeParameterInspectionSchema, type WorkflowRuntimeParameterInspection } from './generation/inspection-contract.ts'
@@ -7,7 +7,7 @@ import { contractObject, requiredNullable } from './shared/field-contract.ts'
 import { functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftUpdateSchema, taskDraftSchema, taskRequestDraftSchema, workbenchRunInputSchema, imageRefSchema, generationInputSchema, imageSourceSchema, workbenchRecordSchema } from './workbench/schema.ts'
 
 import { promptStartFields, promptLookupSchema, promptListSchema, promptAdoptSchema, promptTurnSchema, promptRequestInputSchema, type PromptStartRequest, type PromptLookupRequest, type PromptListRequest, type PromptAdoptRequest, type PromptTurn } from './workbench/prompt-edit.ts'
-import { translationResultSchema, type TranslationRequest, type TranslationResult } from './workbench/translation.ts'
+import { translationResultSchema, type TranslationRequest, type TranslationResult, type TranslationRecord } from './workbench/translation.ts'
 export interface WorkbenchImageImportRequest { files: { name: string; media_type: string; bytes: number[] }[] }
 export interface WorkbenchImageResolveRequest { image_refs: ImageRef[] }
 export interface WorkbenchTranslationLookup { request_id: string }
@@ -22,6 +22,7 @@ export interface WorkbenchSaveTaskDraftRequest extends WorkbenchTaskDraftRequest
 export const WORKBENCH_ACTION_TYPES = ["new-workspace", "new-work", "save-draft", "edit-draft", "create-branch", "update-execution", "run", "experiment", "pause-experiment", "resume-experiment", "stop-experiment", "retry", "favorite", "update-review-draft", "evaluate", "reuse", "agent-action", "function-add", "function-edit", "function-remove", "function-preset", "resource-select", "resource-remove", "task-interrupt", "task-resume", "task-answer", "task-apply", "task-generation-apply", "task-branch"] as const
 export type ExperimentActionType = typeof WORKBENCH_ACTION_TYPES[number]
 export interface ExperimentWorkbenchAction extends WorkbenchScope {
+  readonly requestId?: string
   readonly type: ExperimentActionType
   readonly runId?: string
   readonly referenceRunIds?: readonly string[]
@@ -43,7 +44,17 @@ export interface WorkbenchEnvironmentRequest { workspaceId?: string; presetId?: 
 export interface WorkbenchRunInputRequest { workspaceId: string; workId: string; runId: string }
 
 export interface WorkbenchInputDescriptionRequest extends WorkbenchScope { workId: string; branchId: string; generationInput?: GenerationInput }
+export interface WorkbenchSubscription { workspaceId: string; workIds?: string[] }
+export interface WorkbenchUpdate {
+  kind: 'snapshot' | 'change'
+  sequence: number
+  projection: WorkbenchProjection
+  promptTurns: PromptTurn[]
+  translations: TranslationRecord[]
+}
+
 export interface WorkbenchRemoteMethods {
+  subscribe(request: WorkbenchSubscription, signal?: AbortSignal): RemoteStream<WorkbenchUpdate>
   queryRecords(request: WorkbenchRecordQuery): Promise<RemoteResult<WorkbenchRecord[]>>
   importImages(request: WorkbenchImageImportRequest): Promise<RemoteResult<{ images: ImageRef[] }>>
   resolveImages(request: WorkbenchImageResolveRequest): Promise<RemoteResult<{ images: ImageSource[] }>>
@@ -52,6 +63,7 @@ export interface WorkbenchRemoteMethods {
   promptGet(request: PromptLookupRequest): Promise<RemoteResult<PromptTurn>>
   promptList(request: PromptListRequest): Promise<RemoteResult<PromptTurn[]>>
   promptCancel(request: PromptLookupRequest): Promise<RemoteResult<PromptTurn>>
+  promptSaveCandidate(request: PromptAdoptRequest): Promise<RemoteResult<PromptTurn>>
   promptAdopt(request: PromptAdoptRequest): Promise<RemoteResult<PromptTurn>>
   translateStart(request: TranslationRequest): Promise<RemoteResult<TranslationResult>>
   translateGet(request: WorkbenchTranslationLookup): Promise<RemoteResult<TranslationResult>>
@@ -68,6 +80,8 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap { 'workbench/operation-failed': { code: string; issues: { path: string; message: string }[] } }
   interface TypertRemoteNamespaceMap { harnessComfyuiWorkbenchRemote: WorkbenchRemoteMethods }
   interface TypertRemoteMap {
+    'harnessComfyuiWorkbenchRemote/subscribe': WorkbenchRemoteMethods['subscribe']
+    'harnessComfyuiWorkbenchRemote/promptSaveCandidate': WorkbenchRemoteMethods['promptSaveCandidate']
     'harnessComfyuiWorkbenchRemote/queryRecords': WorkbenchRemoteMethods['queryRecords']
     'harnessComfyuiWorkbenchRemote/importImages': WorkbenchRemoteMethods['importImages']
     'harnessComfyuiWorkbenchRemote/resolveImages': WorkbenchRemoteMethods['resolveImages']
@@ -101,7 +115,7 @@ const environmentSchema = contractObject({ workspaceId: identifier(), presetId: 
 const actionSchema = contractObject({
   workspaceId: Schema.string().required(), workId: identifier(), branchId: identifier(),
   type: Schema.union([...WORKBENCH_ACTION_TYPES]).required(), referenceRunIds: Schema.array(identifier()).max(20), runId: identifier(), taskId: identifier(), id: identifier(),
-  field: Schema.string().min(1), value: json, expectedValue: Schema.string(),
+  requestId: identifier(), field: Schema.string().min(1), value: json, expectedValue: Schema.string(),
 }, { exact: true })
 const inputDescriptionResultSchema = contractObject({ value: requiredNullable(workflowRuntimeParameterInspectionSchema) }, { exact: true })
 const runInputSchema = contractObject({ workspaceId: identifier().required(), workId: identifier().required(), runId: identifier().required() }, { exact: true })
@@ -114,7 +128,7 @@ const queryRecordsSchema = contractObject({ type: Schema.union(['task', 'run', '
 const imageImportSchema = contractObject({ files: Schema.array(contractObject({ name: Schema.string().min(1).required(), media_type: Schema.string().min(1).required(), bytes: Schema.array(Schema.natural().max(255).required()).min(1).required() }, { exact: true })).min(1).required() }, { exact: true })
 const imageResolveSchema = contractObject({ image_refs: Schema.array(imageRefSchema).required() }, { exact: true })
 const promptStartSchema = contractObject({ ...promptStartFields, draft: taskDraftSchema.required(false).default(undefined as never) }, { exact: true })
-const translationStartSchema = contractObject({ request_id: identifier().required(), workspace_id: identifier().required(), source_text: Schema.string().min(1).required() }, { exact: true })
+const translationStartSchema = contractObject({ request_id: identifier().required(), workspace_id: identifier().required(), work_id: identifier().required(), branch_id: identifier().required(), field: Schema.union(['positive_prompt', 'negative_prompt']).required(), source_text: Schema.string().min(1).required() }, { exact: true })
 const translationLookupSchema = contractObject({ request_id: identifier().required() }, { exact: true })
 const recordResultSchema = Schema.array(workbenchRecordSchema).required()
 const imageImportResultSchema = contractObject({ images: Schema.array(imageRefSchema).required() }, { exact: true })
@@ -122,8 +136,9 @@ const imageResolveResultSchema = contractObject({ images: Schema.array(imageSour
 const editorUpdateSchema = contractObject({ expected: requiredNullable(taskDraftSchema), draft: requiredNullable(taskDraftSchema) }, { exact: true })
 const branchSaveSchema = contractObject({ expected: taskDraftSchema, expectedEditingDraft: requiredNullable(taskDraftSchema), draft: taskDraftSchema, name: Schema.string(), expectedName: Schema.string(), originalRequest: Schema.string(), expectedOriginalRequest: Schema.string() }, { exact: true })
 const actionReceiptSchema = contractObject({ workspaceId: identifier().required(), workId: identifier(), branchId: identifier(), taskId: identifier(), editingDraft: Schema.union([Schema.const(null), taskDraftSchema]) }, { exact: true })
-const supplementalResultSchemas = { promptPreview: promptRequestInputSchema, promptStart: promptTurnSchema, promptGet: promptTurnSchema, promptCancel: promptTurnSchema, promptAdopt: promptTurnSchema, promptList: Schema.array(promptTurnSchema).required(), mutate: actionReceiptSchema, queryRecords: recordResultSchema, importImages: imageImportResultSchema, resolveImages: imageResolveResultSchema, translateStart: translationResultSchema, translateGet: translationResultSchema, translateCancel: translationResultSchema }
-const requestSchemas = { promptPreview: promptStartSchema, promptStart: promptStartSchema, promptGet: promptLookupSchema, promptCancel: promptLookupSchema, promptAdopt: promptAdoptSchema, promptList: promptListSchema, queryRecords: queryRecordsSchema, importImages: imageImportSchema, resolveImages: imageResolveSchema, translateStart: translationStartSchema, translateGet: translationLookupSchema, translateCancel: translationLookupSchema, getRunInput: runInputSchema, getTaskDraft: taskDraftRequestSchema, saveTaskDraft: taskDraftSaveSchema, getInputDescription: inputDescriptionSchema, getProjection: scopeSchema, getEnvironment: environmentSchema, mutate: actionSchema }
+const supplementalResultSchemas = { promptSaveCandidate: promptTurnSchema, promptPreview: promptRequestInputSchema, promptStart: promptTurnSchema, promptGet: promptTurnSchema, promptCancel: promptTurnSchema, promptAdopt: promptTurnSchema, promptList: Schema.array(promptTurnSchema).required(), mutate: actionReceiptSchema, queryRecords: recordResultSchema, importImages: imageImportResultSchema, resolveImages: imageResolveResultSchema, translateStart: translationResultSchema, translateGet: translationResultSchema, translateCancel: translationResultSchema }
+const subscriptionSchema = contractObject({ workspaceId: identifier().required(), workIds: Schema.array(identifier().required()) }, { exact: true })
+const requestSchemas = { promptSaveCandidate: promptAdoptSchema, subscribe: subscriptionSchema, promptPreview: promptStartSchema, promptStart: promptStartSchema, promptGet: promptLookupSchema, promptCancel: promptLookupSchema, promptAdopt: promptAdoptSchema, promptList: promptListSchema, queryRecords: queryRecordsSchema, importImages: imageImportSchema, resolveImages: imageResolveSchema, translateStart: translationStartSchema, translateGet: translationLookupSchema, translateCancel: translationLookupSchema, getRunInput: runInputSchema, getTaskDraft: taskDraftRequestSchema, saveTaskDraft: taskDraftSaveSchema, getInputDescription: inputDescriptionSchema, getProjection: scopeSchema, getEnvironment: environmentSchema, mutate: actionSchema }
 function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
   const parsed = Schema.resolve(value, requestSchemas[method], {})[0]
   if (method === 'mutate') {
@@ -154,10 +169,11 @@ function parseRequest(method: keyof typeof requestSchemas, value: unknown) {
 }
 export const WORKBENCH_REMOTE = {
   package: 'harness-comfyui',
-  descriptors: (['queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'translateStart', 'translateGet', 'translateCancel', 'getRunInput', 'getProjection', 'getEnvironment', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const).map(method => ({
+  descriptors: (['promptSaveCandidate', 'subscribe', 'queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'translateStart', 'translateGet', 'translateCancel', 'getRunInput', 'getProjection', 'getEnvironment', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const).map(method => ({
     id: `harness-comfyui#${WORKBENCH_REMOTE_NAMESPACE}/${method}`,
     service: WORKBENCH_REMOTE_NAMESPACE, namespace: WORKBENCH_REMOTE_NAMESPACE, method,
     invocation: { kind: 'direct' as const },
+    ...(method === 'subscribe' ? { mode: 'stream' as const } : {}),
     parameters: [{ name: 'request', wire: 'request', source: 'json' as const, codec: {
       mode: 'strict' as const, typeSymbol: `harness-comfyui/workbench#${method}Request`,
       create: () => ({ parse: value => parseRequest(method, value) }),

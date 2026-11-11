@@ -1,46 +1,33 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
+import { WorkbenchDeliveryContext } from './experiment-delivery.tsx'
+import { usePromptTranslation, type TranslationRemote } from './experiment-translation-state.ts'
 import type { ExperimentRemote } from './experiment-contract.ts'
-import type { PromptEditingController, PromptEditingSnapshot } from './experiment-prompt-editor.ts'
+import { promptResultStatus, type PromptEditingController, type PromptEditingSnapshot } from './experiment-prompt-editor.ts'
 import type { PromptTurn } from '../../workbench/prompt-edit.ts'
 import { Button, Modal } from './experiment-controls.tsx'
 
-type TranslationRemote = Pick<ExperimentRemote, 'translateStart' | 'translateGet' | 'translateCancel'>
-function PromptTranslation({ workspaceId, source, remote, pollIntervalMs }: { readonly workspaceId: string; readonly source: string; readonly remote: TranslationRemote; readonly pollIntervalMs: number }) {
-  const [result, setResult] = useState<{ source: string; status: 'running' | 'succeeded' | 'failed'; text?: string; error?: string } | null>(null)
-  const currentSource = useRef(source), requestId = useRef<string | null>(null), timer = useRef<ReturnType<typeof setTimeout> | null>(null), active = useRef(true)
-  currentSource.current = source
-  const start = () => {
-    if (!source.trim()) return
-    if (requestId.current) void remote.translateCancel({ request_id: requestId.current }).catch(() => {})
-    const request_id = crypto.randomUUID(), original = source
-    requestId.current = request_id
-    setResult({ source: original, status: 'running' })
-    const valid = () => active.current && requestId.current === request_id && currentSource.current === original
-    const fail = (error: unknown) => { if (valid()) setResult({ source: original, status: 'failed', error: error instanceof Error ? error.message : '翻译失败，请重试。' }) }
-    const receive = (reply: Awaited<ReturnType<TranslationRemote['translateGet']>>) => {
-      if (!valid()) return
-      setResult({ source: original, ...reply })
-      if (reply.status === 'running' && pollIntervalMs > 0) timer.current = setTimeout(() => { void remote.translateGet({ request_id }).then(receive).catch(fail) }, pollIntervalMs)
-    }
-    void remote.translateStart({ request_id, workspace_id: workspaceId, source_text: original }).then(receive).catch(fail)
-  }
-  useEffect(() => {
-    active.current = true
-    start()
-    return () => { active.current = false; if (timer.current) clearTimeout(timer.current); if (requestId.current) void remote.translateCancel({ request_id: requestId.current }).catch(() => {}) }
-  }, [])
-  const visible = result?.source === source ? result : null
-  return !source.trim() ? null : <div className="prompt-translation" aria-live="polite" aria-busy={visible?.status === 'running'}>
-    {visible?.status === 'running' ? <span>正在翻译…</span> : visible?.status === 'succeeded' ? <p>{visible.text}</p>
-      : <>{visible?.error && <p role="alert">{visible.error}</p>}<Button kind="small quiet" onClick={start}>{visible?.status === 'failed' ? '重试翻译' : '翻译'}</Button></>}
+function PromptTranslation({ workspaceId, workId, branchId, field, source, remote }: { readonly workspaceId: string; readonly workId: string; readonly branchId: string; readonly field: 'positive_prompt' | 'negative_prompt'; readonly source: string; readonly remote: TranslationRemote }) {
+  const translation = usePromptTranslation({ workspace_id: workspaceId, work_id: workId, branch_id: branchId, field, source_text: source }, remote)
+  useEffect(() => { if (!translation.current && !translation.records.length) translation.request() }, [])
+  const result = translation.current
+  return !source.trim() && !result ? null : <div className="prompt-translation" aria-live="polite" aria-busy={result?.status === 'running'}>
+    {!!translation.records.length && <label>翻译记录<select aria-label="翻译记录" value={result?.request_id ?? ''} onChange={event => translation.select(event.target.value)}>
+      {result && !translation.records.some(record => record.request_id === result.request_id) && <option value={result.request_id}>本次翻译</option>}
+      {translation.records.map((record, index) => <option key={record.request_id} value={record.request_id}>第 {index + 1} 次翻译</option>)}
+    </select></label>}
+    {result && result.source_text !== source && <div><span>记录原文</span><pre>{result.source_text}</pre></div>}
+    {result?.status === 'running' ? <span>正在翻译…</span> : result?.status === 'succeeded' ? <p>{result.text}</p>
+      : result?.error && <><p role="alert">{result.error}</p><Button kind="small quiet" onClick={() => translation.request(result.source_text)}>重试翻译</Button></>}
+    <Button kind="small quiet" disabled={!source.trim() || (result?.status === 'running' && result.source_text === source)} onClick={() => translation.request()}>翻译当前提示词</Button>
   </div>
 }
 
-export function ExperimentPromptDialog({ controller, state, workspaceId, originalRequest, baseModelName, remote, pollIntervalMs }: {
-  readonly pollIntervalMs: number
+export function ExperimentPromptDialog({ controller, state, workspaceId, workId, branchId, originalRequest, baseModelName, remote }: {
   readonly controller: PromptEditingController
   readonly state: PromptEditingSnapshot
   readonly workspaceId: string
+  readonly workId: string
+  readonly branchId: string
   readonly originalRequest: string
   readonly baseModelName: string
   readonly remote: TranslationRemote
@@ -52,37 +39,45 @@ export function ExperimentPromptDialog({ controller, state, workspaceId, origina
     {(['positive_prompt', 'negative_prompt'] as const).map(field => <section className="prompt-comparison-field" key={field}>
       <h3>{field === 'positive_prompt' ? '正向提示词' : '负向提示词'}</h3><div className="prompt-comparison-columns">
         <section><h4>改写前</h4><div className="prompt-comparison-source">{state.before[field] || '未填写'}</div>
-          <PromptTranslation key={`before:${field}:${state.turn?.request_id ?? 'initial'}`} workspaceId={workspaceId} source={state.before[field]} remote={remote} pollIntervalMs={pollIntervalMs} /></section>
+          <PromptTranslation key={`before:${field}:${state.turn?.request_id ?? 'initial'}`} workspaceId={workspaceId} workId={workId} branchId={branchId} field={field} source={state.before[field]} remote={remote} /></section>
         <section><h4>生成结果</h4><textarea aria-label={`生成的${field === 'positive_prompt' ? '正向' : '负向'}提示词`} value={result?.[field] ?? ''} readOnly={state.busy || !result}
           onChange={event => { if (result) controller.editResult({ ...result, [field]: event.target.value }) }} />
-          <PromptTranslation key={`after:${field}:${state.turn?.request_id ?? 'initial'}:${!!result}`} workspaceId={workspaceId} source={result?.[field] ?? ''} remote={remote} pollIntervalMs={pollIntervalMs} /></section>
+          <PromptTranslation key={`after:${field}:${state.turn?.request_id ?? 'initial'}:${!!result}`} workspaceId={workspaceId} workId={workId} branchId={branchId} field={field} source={result?.[field] ?? ''} remote={remote} /></section>
       </div>
     </section>)}
     <label className="field"><span>改动意见</span><textarea aria-label="改动意见" className="short" value={state.changeRequest} readOnly={state.busy} onChange={event => controller.setChangeRequest(event.target.value)} /></label>
+    {state.confirmClose && <div role="alertdialog" aria-label="保存生成结果">
+      <p>生成结果的修改尚未保存。</p>
+      <Button onClick={() => { void controller.saveAndClose() }}>保存生成结果</Button>
+      <Button onClick={controller.discardResult}>放弃修改</Button>
+      <Button onClick={controller.continueEditing}>继续编辑</Button>
+    </div>}
     {state.error && <p className="binding-problem" role="alert">{state.error}</p>}
     <div className="prompt-request-state" aria-live="polite">{state.busy ? revision ? '正在改写提示词…' : '正在生成提示词…' : state.turn?.status === 'interrupted' ? '提示词请求已停止。' : ''}</div>
     <footer className="modal-actions"><Button kind="quiet" onClick={controller.close}>关闭</Button>
-      {state.busy ? <Button onClick={() => { void controller.cancel() }}>停止</Button> : <Button onClick={() => { void controller.start() }}>改写提示词</Button>}
-      <Button kind="primary" disabled={!result || state.busy} onClick={() => { void controller.adopt() }}>采用生成结果</Button></footer>
+      {state.busy ? <Button onClick={() => { void controller.cancel() }}>停止</Button> : <Button disabled={state.resultDirty || state.resultSaving} onClick={() => { void controller.start() }}>改写提示词</Button>}
+      <Button kind="primary" disabled={!result || state.busy || state.resultSaving || state.resultDirty || promptResultStatus(state.turn) !== 'pending'} onClick={() => { void controller.adopt() }}>采用生成结果</Button></footer>
   </Modal>
 }
 
-export function PromptTaskTurns({ workspaceId, taskId, remote, onEdit, pollIntervalMs }: { readonly workspaceId: string; readonly taskId: string; readonly pollIntervalMs: number; readonly remote: Pick<ExperimentRemote, 'promptList' | 'promptCancel'>; readonly onEdit?: () => void }) {
-  const [turns, setTurns] = useState<readonly PromptTurn[]>([])
+export function PromptTaskTurns({ workspaceId, taskId, remote, onEdit }: { readonly workspaceId: string; readonly taskId: string; readonly remote: Pick<ExperimentRemote, 'promptList' | 'promptCancel'>; readonly onEdit?: () => void }) {
+  const delivery = useContext(WorkbenchDeliveryContext)
+  const [history, setTurns] = useState<readonly PromptTurn[]>([])
+  const records = delivery.promptTurns.filter(turn => turn.task_id === taskId)
+  const turns = records.length ? records : history
   const [error, setError] = useState('')
   useEffect(() => {
-    let active = true, timer: ReturnType<typeof setTimeout> | undefined
+    let active = true
     const load = async () => {
       try {
         const values = await remote.promptList({ workspace_id: workspaceId, task_id: taskId })
         if (!active) return
         setTurns(values); setError('')
-        if (pollIntervalMs > 0 && values.some(turn => turn.status === 'queued' || turn.status === 'running')) timer = setTimeout(() => { void load() }, pollIntervalMs)
       } catch (failure) { if (active) setError(failure instanceof Error ? failure.message : '提示词记录读取失败，请刷新。') }
     }
     void load()
-    return () => { active = false; if (timer) clearTimeout(timer) }
-  }, [workspaceId, taskId, remote, pollIntervalMs])
+    return () => { active = false }
+  }, [workspaceId, taskId, remote])
   const current = turns.at(-1)
   return <div className="prompt-task-turns">{turns.length > 0 && onEdit && <Button kind="small" onClick={onEdit}>编辑提示词</Button>}{current && (current.status === 'running' || current.status === 'queued') && <Button kind="small" onClick={() => {
     void remote.promptCancel({ workspace_id: workspaceId, request_id: current.request_id }).then(stopped => setTurns(before => before.map(turn => turn.request_id === stopped.request_id ? stopped : turn)))

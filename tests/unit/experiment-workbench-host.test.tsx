@@ -57,6 +57,8 @@ const environment = {
   instances: [{ id: '2', name: 'win3080' }],
 }
 const remote = (): ExperimentHostRemote => ({
+  subscribe: vi.fn(async function* () { yield { kind: 'snapshot' as const, sequence: 0, projection: fullProjection(), promptTurns: [], translations: [] } }),
+  promptSaveCandidate: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
   promptPreview: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
   promptStart: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
   promptGet: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
@@ -174,6 +176,7 @@ describe('official experiment workbench adapter', () => {
       promptGet: { workspace_id: 'workspace-a', request_id: 'prompt-request' },
       promptList: { workspace_id: 'workspace-a', task_id: 'prompt-task' },
       promptCancel: { workspace_id: 'workspace-a', request_id: 'prompt-request' },
+      promptSaveCandidate: { workspace_id: 'workspace-a', request_id: 'prompt-request', positive_prompt: 'candidate window', negative_prompt: 'blur' },
       promptAdopt: { workspace_id: 'workspace-a', request_id: 'prompt-request', positive_prompt: 'window', negative_prompt: '' },
       queryRecords: { type: 'run' as const, workspaceId: 'workspace-other', keyword: '窗框' },
       importImages: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [1, 2, 3] }] },

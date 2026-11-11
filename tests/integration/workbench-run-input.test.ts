@@ -22,6 +22,7 @@ afterEach(async () => {
 
 async function fixture(...args: Parameters<typeof createWorkbenchHostFixture>) {
   const host = await createWorkbenchHostFixture(...args)
+  host.official.controller.prompt.mockImplementation(host.official.acceptPrompt)
   cleanups.push(host.dispose)
   return { ...host, service: host.ctx.harnessComfyuiWorkbench.service }
 }
@@ -829,7 +830,8 @@ it.each(['positive_prompt', 'negative_prompt'] as const)('applies an Agent Promp
   const result = await service.getTask({ taskId: task.task_id }, identity)
   expect(result.artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: 'applied' }])
   const branch = (await remote.getProjection(created, signal())).branches.find(item => item.branch_id === created.branchId)!
-  expect(branch.editing_draft?.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null, [kind]: '' })
+  expect(branch.draft.prompt_input).toEqual({ positive_prompt: null, negative_prompt: null, [kind]: '' })
+  expect(branch.editing_draft).toBeNull()
   await saveFixtureDraft(remote, created, () => {}, signal())
   const submitted = await acceptRun(host, created)
   expect(submitted.task.input.generation_input).toEqual({ ...candidate, parameters: { ...candidate.parameters, [kind === 'positive_prompt' ? 'positive' : 'negative']: '' } })

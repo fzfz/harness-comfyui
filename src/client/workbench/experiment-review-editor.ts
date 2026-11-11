@@ -64,7 +64,7 @@ export class RunReviewEditor {
         this.planned = structuredClone(this.accepted)
         const projection = this.pendingProjection
         this.pendingProjection = undefined
-        if (this.blocked && projection) this.sync(projection)
+        if (projection) this.sync(projection)
       }
     })
     this.tail = result.then(() => {}, () => {})
