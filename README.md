@@ -70,10 +70,11 @@
 4. 选中运行后，在右栏切换到“查看运行”。展开“提交输入”查看提交参数、图片来源和参数绑定。展开“实际输入”查看图片准备后的参数与上传结果；准备未完成时，页面显示对应状态。
 5. 点击“用于下次运行”，将历史运行参数复制到当前分支编辑区。
 6. 在“记录评价与经验”中填写结论，或让 Agent 分析后回填。用户确认内容后保存。
+7. 运行结果中的“Agent 评价”和“下一轮计划”默认折叠。展开后可滚动阅读长正文，也可滚动中央区域查看底部运行列表。
 
 ## 适用版本
 
-1. 插件 `0.53.0` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0530>)。
+1. 插件 `0.53.1` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0531>)。
 
 ## CLI 帮助与图片读取
 

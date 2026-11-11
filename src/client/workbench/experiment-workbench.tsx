@@ -62,6 +62,7 @@ import { readRunParameterValues, useRunInputs } from './experiment-run-input.ts'
 import { RunReviewEditor } from './experiment-review-editor.ts'
 import { ExperimentReviewDialog } from './experiment-review-dialog.tsx'
 import reviewPresentation from './experiment-review-presentation.json' with { type: 'json' }
+import statusPresentation from './experiment-status-presentation.json' with { type: 'json' }
 import libraryPresentation from './experiment-library-presentation.json' with { type: 'json' }
 import { ExperimentStatus, ExperimentTaskRounds, ExperimentRunReview } from './experiment-status.tsx'
 import { ExperimentTranslationDialog } from './experiment-translation-dialog.tsx'
@@ -927,7 +928,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   )
   const compare = p?.runs.find((item) => item.run_id === view.compareRunId)
   const results = (
-    <main className="center">
+    <main className="center review-scroll" tabIndex={0} aria-label={statusPresentation.resultContent}>
       <PanelHead title={work?.name ?? ''} description={work?.goal}>
         <Button
           kind="small"
@@ -2001,7 +2002,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             </Button>
           </main>
         ) : (
-          <div className="layout">
+          <div className={view.page === 'workbench' ? 'layout review-layout' : 'layout'}>
             {sidebar}
             {view.page === 'resources' ? (
               <ExperimentCatalog
