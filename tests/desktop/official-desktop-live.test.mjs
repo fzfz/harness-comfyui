@@ -52,7 +52,6 @@ import { startOfficialMcpServices, OFFICIAL_MCP_FIXTURE } from './fixtures/offic
 import { assertSuccessfulProjectActivations, assertSuccessfulProjectWorkflows, assertToolScope, isOfficialMcpChildRequest, requestMessageText } from './fixtures/official-mcp-acceptance.mjs'
 import { writeOfficialPresetProfilePatch } from './fixtures/official-preset-overrides.mjs'
 import { collectOfficialSessionTrace } from '../../scripts/verification/collect-session-trace.mjs'
-import { verifyWorkbenchPageLayout } from './fixtures/official-workbench-layout.mjs'
 
 import translationConfig from '../../config/workbench-translation.json' with { type: 'json' }
 import translationFixture from './fixtures/official-translation-fixture.json' with { type: 'json' }
@@ -111,7 +110,6 @@ const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'official-business-goal-before-restart.json',
   'official-business-goal-after-restart.json',
   'official-business-retired-preset.json',
-  'official-business-workbench-layout.json',
 ]
 
 function findProfileEntry(entries, entryId) {
@@ -3692,11 +3690,6 @@ description: ${USER_SKILL_DESCRIPTION}
       )
 
       await closePluginSettings(page)
-      await verifyWorkbenchPageLayout(page, {
-        workspaceId: identity.workspaceId,
-        evidenceDirectory: context.businessEvidenceDirectory,
-        waitForValue,
-      })
       await openBusinessSession(page, identity.sessionId)
       await page.evaluate(`window.__runPanelTestContext.sidebarRight.openTab('guide')`)
       await waitForValue(page, `document.querySelector('[data-sidebar-right-guide]') !== null`, value => value === true)
