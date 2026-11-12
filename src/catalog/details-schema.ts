@@ -1,10 +1,12 @@
+import { parseJsonValue, type JsonValue } from '../shared/json-contract.ts'
+import Schema from '@deepseek-ai/schemastery'
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
 import { catalogDefinition, parseCatalogItem, parseCatalogStableId, parseCatalogOperationResult, type CatalogItem, type CatalogKind } from './contract.ts'
 
 export interface CatalogDetailsRequest { readonly kind: CatalogKind; readonly id: string }
 export type CatalogDetailValue = string | number | readonly (string | number)[] | null
 export interface CatalogDetailField { readonly key: string; readonly value: CatalogDetailValue }
-export type CatalogDetails = { [K in CatalogKind]: { readonly kind: K; readonly id: string; readonly item: CatalogItem; readonly fields: readonly CatalogDetailField[] } }[CatalogKind]
+export type CatalogDetails = { [K in CatalogKind]: { readonly kind: K; readonly id: string; readonly item: CatalogItem; readonly fields: readonly CatalogDetailField[]; readonly extra_fields?: Readonly<Record<string, JsonValue>> } }[CatalogKind]
 export const CATALOG_PRESENTATION = presentation
 export const CATALOG_FIELDS = presentation.fields
 
@@ -29,7 +31,7 @@ function fieldValue(key: string, value: unknown): CatalogDetailValue {
 }
 export function parseCatalogDetails(value: unknown): CatalogDetails {
   const input = object(value)
-  if (Object.keys(input).length !== 4) throw new TypeError('Catalog details response: provide exactly kind, id, item and fields.')
+  if (Object.keys(input).some(key => !['kind', 'id', 'item', 'fields', 'extra_fields'].includes(key))) throw new TypeError('Catalog details response: provide kind, id, item, fields and optional extra_fields.')
   const identity = parseCatalogDetailsRequest({ kind: input.kind, id: input.id })
   const item = parseCatalogItem(input.item)
   if (item.context.kind !== identity.kind || item.context.id !== identity.id) throw new TypeError('Catalog details item: return the requested kind and id.')
@@ -41,7 +43,11 @@ export function parseCatalogDetails(value: unknown): CatalogDetails {
     return { key: keys[index]!, value: fieldValue(keys[index]!, field.value) }
   })
   if (fields[0]!.value !== identity.id) throw new TypeError('Catalog details response: return the requested id in the first field as well as the top-level id.')
-  return { ...identity, item, fields }
+  const extraFields = input.extra_fields === undefined ? undefined : Object.fromEntries(Object.entries(object(input.extra_fields)).map(([key, value]) => {
+    if (keys.includes(key)) throw new TypeError('Catalog extra fields: include only fields outside the configured detail fields.')
+    return [key, parseJsonValue(value, { keySchema: Schema.string(), maxDepth: 100 }, `Catalog extra field ${key}`)]
+  }))
+  return { ...identity, item, fields, ...(extraFields === undefined ? {} : { extra_fields: extraFields }) }
 }
 export function parseCatalogDetailsResult(value: unknown) {
   return parseCatalogOperationResult(value, parseCatalogDetails, 'catalog details result')

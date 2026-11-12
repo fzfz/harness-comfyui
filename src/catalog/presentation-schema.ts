@@ -6,7 +6,7 @@ export interface CatalogPresentation {
   readonly pageSize: number
   readonly copy: { readonly details: string; readonly returnToList: string; readonly returnToDetails: string; readonly retry: string; readonly emptyValue: string }
   readonly fields: Readonly<Record<string, CatalogFieldDefinition>>
-  readonly kinds: Readonly<Record<CatalogKind, { readonly details: readonly string[]; readonly summary: readonly string[] }>>
+  readonly kinds: Readonly<Record<CatalogKind, { readonly details: readonly string[]; readonly summary: readonly string[]; readonly prompt_fields: readonly string[]; readonly multiple: boolean }>>
   readonly resourceDetails: readonly string[]
   readonly resourceSources: Readonly<Partial<Record<CatalogKind, Readonly<Record<string, string>>>>>
   readonly templateTypes: Readonly<Record<string, string>>
@@ -32,15 +32,16 @@ export function parseCatalogPresentation(value: unknown): CatalogPresentation {
   }))
   const kinds = object(root.kinds, ['model', 'lora', 'work', 'character', 'style', 'prompt-term', 'artist-string', 'comfyui-template'], 'Catalog presentation kinds')
   const parsedKinds = Object.fromEntries(Object.entries(kinds).map(([kind, value]) => {
-    const lists = object(value, ['details', 'summary'], `Catalog presentation kind ${kind}`)
-    for (const name of ['details', 'summary']) {
+    const lists = object(value, ['details', 'summary', 'prompt_fields', 'multiple'], `Catalog presentation kind ${kind}`)
+    if (typeof lists.multiple !== 'boolean') throw new TypeError(`Catalog presentation ${kind}.multiple: provide a boolean.`)
+    for (const name of ['details', 'summary', 'prompt_fields']) {
       const keys = lists[name]
       if (!Array.isArray(keys) || keys.some(key => typeof key !== 'string' || !Object.hasOwn(fields, key)) || new Set(keys).size !== keys.length) throw new TypeError(`Catalog presentation ${kind}.${name}: reference distinct keys from fields.`)
     }
     const details = lists.details as string[]
     const summary = lists.summary as string[]
     if (details[0] !== 'id' || summary.some(key => !details.includes(key)) || fields.id?.type !== 'id') throw new TypeError(`Catalog presentation ${kind}: start details with the id field of type id and select summary fields from details.`)
-    return [kind, { details, summary }]
+    return [kind, { details, summary, prompt_fields: lists.prompt_fields as string[], multiple: lists.multiple }]
   })) as unknown as CatalogPresentation['kinds']
   const resourceDetails = root.resourceDetails
   if (!Array.isArray(resourceDetails) || resourceDetails.some(key => typeof key !== 'string' || !Object.hasOwn(fields, key)) || new Set(resourceDetails).size !== resourceDetails.length) throw new TypeError('Catalog resourceDetails: reference distinct keys from fields.')

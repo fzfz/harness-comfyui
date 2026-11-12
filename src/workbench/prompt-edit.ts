@@ -1,7 +1,7 @@
 import Schema from '@deepseek-ai/schemastery'
 import { agentModelSchema } from './agent-model-schema.ts'
 import type { AgentModel, TaskDraft } from './contract.ts'
-import type { PromptRequestInput, PromptRequestParts } from './request-template.ts'
+import { PROMPT_REFERENCES, type PromptRequestInput, type PromptRequestParts } from './request-template.ts'
 import { contractObject, requiredNullable } from '../shared/field-contract.ts'
 import { jsonObjectSchema } from '../shared/json-contract.ts'
 
@@ -53,7 +53,7 @@ const object = (fields: Record<string, Schema>) => contractObject(fields, { exac
 const json = () => jsonObjectSchema({ keySchema: text(), maxDepth: 100 }).required()
 export const promptRequestPartsSchema = object({
   block_templates: object({ requirements_block: text(), prompt_edit_block: text(), references_block: text() }),
-  reference_descriptions: object({ requested_skill: text(), experiences: text(), task_artifacts: text(), run_ids: text(), images: text() }),
+  reference_descriptions: object(Object.fromEntries(Object.entries(PROMPT_REFERENCES).map(([name, reference]) => [name, Schema.string().default(reference.description)]))),
 })
 const inputFields = { original_request: text(), base_model_id: text(), positive_prompt: text(), negative_prompt: text(), change_request: text() }
 export const promptStartFields = { workspace_id: id(), work_id: id(), branch_id: id(), function_id: id(), request_id: id(), intent: Schema.union(['generate', 'rewrite']).required(), task_id: id().required(false), input: object(inputFields) }

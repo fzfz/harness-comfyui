@@ -36,6 +36,38 @@ function complete(f: Awaited<ReturnType<typeof setup>>, sessionId: string, reque
 }
 
 describe('prompt editing through the workbench remote', () => {
+  it('sends unsaved selected resources in preview and each prompt turn while retaining earlier snapshots', async () => {
+    const f = await setup(), signal = new AbortController().signal
+    const draft = { ...f.branch.draft, prompt_resource_refs: [
+      { kind: 'style' as const, id: '10' }, { kind: 'style' as const, id: '11' },
+      { kind: 'artist-string' as const, id: '10' }, { kind: 'artist-string' as const, id: '12' },
+    ], generation_input: { ...f.branch.draft.generation_input, loras: [{ id: '3', file_name: 'rain.safetensors', weight: 0.8, trigger_words: ['rain'] }] } }
+    const request = { ...f.request, draft }
+    const preview = await f.remote.promptPreview(request, signal)
+    expect(preview.reference_context.selected_resources).toEqual([
+      expect.objectContaining({ kind: 'lora', id: '3', selected_weight: 0.8, fields: expect.objectContaining({ trigger_words_json: ['rain'] }) }),
+      expect.objectContaining({ kind: 'style', id: '10', fields: expect.objectContaining({ prompt_text: 'prompt' }) }),
+      expect.objectContaining({ kind: 'style', id: '11' }),
+      expect.objectContaining({ kind: 'artist-string', id: '10', fields: expect.objectContaining({ artist_string: '@artist' }) }),
+      expect.objectContaining({ kind: 'artist-string', id: '12' }),
+    ])
+    const first = await f.remote.promptStart(request, signal)
+    expect(first.input).toEqual(preview)
+    expect(first.request_text).toContain('"selected_resources"')
+    expect(first.request_text).toContain('"purpose"')
+    complete(f, first.session_id, first.request_id, 1, { type: 'prompt', positive_prompt: 'rain', negative_prompt: '' })
+    await f.ctx.harnessComfyuiWorkbench.prompts.handleSessionEvents(first.session_id)
+    const second = await f.remote.promptStart({ ...request, request_id: 'resources-rewrite', task_id: first.task_id,
+      input: { ...request.input, positive_prompt: 'rain', change_request: 'Use the remaining style' },
+      draft: { ...draft, prompt_resource_refs: [{ kind: 'style', id: '11' }] },
+    }, signal)
+    expect(second.input.reference_context.selected_resources).toEqual([
+      expect.objectContaining({ kind: 'lora', id: '3', selected_weight: 0.8 }),
+      expect.objectContaining({ kind: 'style', id: '11' }),
+    ])
+    expect((await f.remote.promptGet({ workspace_id: 'workspace_1', request_id: first.request_id }, signal)).input).toEqual(preview)
+  })
+
   it.each([
     { changed: 'model', draftIncluded: false }, { changed: 'model', draftIncluded: true },
     { changed: 'prompt', draftIncluded: false }, { changed: 'prompt', draftIncluded: true },

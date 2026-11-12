@@ -31,6 +31,7 @@ function catalogDetails({ kind, id }: CatalogDetailsRequest) {
   }, fields: CATALOG_PRESENTATION.kinds[kind].details.map(key => ({ key, value: key === 'id' ? id : null })) })
 }
 const draft: TaskDraft = {
+  prompt_resource_refs: [],
   parameter_mapping: null, prompt_input: { positive_prompt: 'rain on glass', negative_prompt: '' }, generation_input: { title: 'rain', instance_id: '1', template_id: '2', model: null, parameters: {}, loras: [] }, instructions: '', reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], base_model_id: null }
 const workflow: UiWorkflow = { version: 0.4, nodes: [
   { id: 1, type: 'Generator', mode: 0, inputs: [{ name: 'width', type: 'INT', link: null, widget: { name: 'width' } }, { name: 'steps', type: 'INT', link: null, widget: { name: 'steps' } }, { name: 'sampler_name', type: 'COMBO', link: null, widget: { name: 'sampler_name' } }], outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [1] }], widgets_values: [512, 5, 'euler'] },
@@ -77,7 +78,7 @@ describe('workbench generation input adapter', () => {
     const adapter = createWorkbenchInputAdapter({ runtime: { inspectTemplateRuntimeParameters: async () => description, validateGenerationRequest: async () => {} }, catalog: { details: vi.fn(), resolveLora: vi.fn(), resolveGenerationModel: async id => ({ id, file_name: 'model.safetensors', base_model_id: id === '3' ? '5' : '6', description: '', usage: '', skill_name: null }), resolveTemplate: async () => ({ id: '2', title: 'template', base_model_id: '9', model_id: templateModel }) } })
     const input = { ...draft.generation_input, model: { id: '3', file_name: 'model.safetensors' }, parameters: { positive_prompt_9: 'candidate warm glass', width_66: 1024 }, title: 'candidate' }
     const restored = await adapter.resolveGenerationDraft(input)
-    expect(restored).toEqual({ parameter_mapping: { positive_prompt_9: 'positive_prompt', negative_prompt_10: 'negative_prompt', width_66: 'width', height_66: 'height' }, generation_input: input, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'template negative' }, base_model_id: '5', instructions: '', reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [] })
+    expect(restored).toEqual({ parameter_mapping: { positive_prompt_9: 'positive_prompt', negative_prompt_10: 'negative_prompt', width_66: 'width', height_66: 'height' }, generation_input: input, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'template negative' }, base_model_id: '5', instructions: '', prompt_resource_refs: [], reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [] })
     expect((await adapter.prepareGenerationInput(restored)).parameters).toEqual({ positive_prompt_9: 'candidate warm glass', negative_prompt_10: 'template negative', width_66: 1024 })
     expect((await adapter.resolveGenerationDraft({ ...input, model: null })).base_model_id).toBe('6')
     templateModel = null

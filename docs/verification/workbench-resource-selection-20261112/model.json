@@ -1,0 +1,591 @@
+{
+  "provider": "openrouter",
+  "model": "thinkingmachines/inkling-2-small:free",
+  "submittedDraft": {
+    "prompt_resource_refs": [
+      {
+        "kind": "style",
+        "id": "12344"
+      },
+      {
+        "kind": "style",
+        "id": "12343"
+      },
+      {
+        "kind": "artist-string",
+        "id": "957"
+      },
+      {
+        "kind": "artist-string",
+        "id": "955"
+      }
+    ],
+    "prompt_input": {
+      "positive_prompt": "",
+      "negative_prompt": ""
+    },
+    "generation_input": {
+      "title": "资源选择与提示词",
+      "instance_id": null,
+      "template_id": "29",
+      "model": {
+        "id": "17",
+        "file_name": "aMixIllustrious_aMix.safetensors"
+      },
+      "parameters": {},
+      "loras": [
+        {
+          "id": "102",
+          "file_name": "rimixxO2.safetensors",
+          "weight": 1,
+          "trigger_words": []
+        },
+        {
+          "id": "74",
+          "file_name": "Dramatic Lighting Slider.safetensors",
+          "weight": 3,
+          "trigger_words": []
+        }
+      ]
+    },
+    "reference_task_ids": [],
+    "reference_run_ids": [],
+    "reference_experiences": [],
+    "image_refs": [],
+    "workflow_image_bindings": [],
+    "instructions": "",
+    "base_model_id": "2",
+    "parameter_mapping": null
+  },
+  "savedDraftAtGeneration": {
+    "prompt_resource_refs": [],
+    "prompt_input": {
+      "positive_prompt": "",
+      "negative_prompt": ""
+    },
+    "generation_input": {
+      "title": "资源选择与提示词",
+      "instance_id": null,
+      "template_id": null,
+      "model": null,
+      "parameters": {},
+      "loras": []
+    },
+    "reference_task_ids": [],
+    "reference_run_ids": [],
+    "reference_experiences": [],
+    "image_refs": [],
+    "workflow_image_bindings": [],
+    "instructions": "",
+    "base_model_id": null,
+    "parameter_mapping": null
+  },
+  "preview": {
+    "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+    "base_model_id": "2",
+    "change_request": "",
+    "positive_prompt": "",
+    "negative_prompt": "",
+    "base_model_name": "wai",
+    "reference_context": {
+      "selected_resources": [
+        {
+          "kind": "model",
+          "id": "17",
+          "name": "aMixIllustrious_aMix.safetensors",
+          "fields": {
+            "base_model_id": "2",
+            "file_name": "aMixIllustrious_aMix.safetensors",
+            "description": "CFG Scale: 7\n\nSampler: Euler a\n\nSteps: 30-40\n\nDenoise: 0.35-0.40\n\nMy settings for ForgeUI\nGeneration\nSampling method - Euler a\n\nSchedule type - Automatic\n\nSampling steps - 20\n\nDimensions - 768 x 1152\n\nCFG Scale - 6\n\nHighres. fix\nUpscaler - None (works for me)\n\nHires steps - 10\n\nDenoising strength - 0.1\n\nUpscale by - 1.5-2",
+            "usage": "CFG Scale: 7\n\nSampler: Euler a\n\nSteps: 30-40\n\nDenoise: 0.35-0.40\n\nMy settings for ForgeUI\nGeneration\nSampling method - Euler a\n\nSchedule type - Automatic\n\nSampling steps - 20\n\nDimensions - 768 x 1152\n\nCFG Scale - 6\n\nHighres. fix\nUpscaler - None (works for me)\n\nHires steps - 10\n\nDenoising strength - 0.1\n\nUpscale by - 1.5-2",
+            "skill_name": "test"
+          }
+        },
+        {
+          "kind": "comfyui-template",
+          "id": "29",
+          "name": "wai_basic_txt2img",
+          "fields": {
+            "base_model_id": "2",
+            "title": "wai_basic_txt2img",
+            "template_type": "text_to_image"
+          }
+        },
+        {
+          "kind": "lora",
+          "id": "102",
+          "name": "rimixxO2.safetensors",
+          "fields": {
+            "base_model_id": "2",
+            "file_name": "rimixxO2.safetensors",
+            "description": "该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。",
+            "usage": "使用 <lora:rimixxO2:1.0> 调用 Ri-mix 风格的柔和体积渐变、清晰发丝和局部材质高光，不添加额外触发词。",
+            "trigger_words_json": []
+          },
+          "selected_weight": 1
+        },
+        {
+          "kind": "lora",
+          "id": "74",
+          "name": "Dramatic Lighting Slider.safetensors",
+          "fields": {
+            "base_model_id": "2",
+            "file_name": "Dramatic Lighting Slider.safetensors",
+            "description": "通过 LoRA 权重增强定向硬光、窗格光和逆光阴影，形成高对比、暖色调的戏剧化明暗分区；多个样例共同表现出对肖像、半身和室内场景的光影塑形效果。",
+            "usage": "无触发词；直接调用 <lora:Dramatic Lighting Slider:3.0>。来源样例权重为 3.0–4.0，建议默认权重为 3.0；降低权重会减弱高光、窗格光和阴影对比，提高权重会增强定向光、暖色调和戏剧性明暗，过高时可能压暗暗部或造成高光过强。样例中的滑杆对比展示 0–4 的强度范围。",
+            "trigger_words_json": []
+          },
+          "selected_weight": 3
+        },
+        {
+          "kind": "style",
+          "id": "12344",
+          "name": "say_hana",
+          "fields": {
+            "base_model_id": "2",
+            "name": "say_hana",
+            "aliases_json": [],
+            "prompt_text": "say_hana",
+            "style_description": "花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。"
+          }
+        },
+        {
+          "kind": "style",
+          "id": "12343",
+          "name": "ds_mile",
+          "fields": {
+            "base_model_id": "2",
+            "name": "ds_mile",
+            "aliases_json": [],
+            "prompt_text": "ds_mile",
+            "style_description": "极致的透明感，色彩非常柔和，治愈系，像是水彩般的质感，纯净。"
+          }
+        },
+        {
+          "kind": "artist-string",
+          "id": "957",
+          "name": "圆窗青丝柔映·WAI",
+          "fields": {
+            "base_model_id": "2",
+            "title": "圆窗青丝柔映·WAI",
+            "description": "画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。",
+            "artist_string": "(bluearchiveofficialart:1.10),(jyt:0.86),(rotroto:1.10)",
+            "style_ids": []
+          }
+        },
+        {
+          "kind": "artist-string",
+          "id": "955",
+          "name": "双灯青衣斜光·WAI",
+          "fields": {
+            "base_model_id": "2",
+            "title": "双灯青衣斜光·WAI",
+            "description": "画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，正面亮光在轮廓和桌面形成清楚亮带；曲线形体配合直线框架，中央轻倾近景由双侧框景和水平面构成层次，局部亮带与表面反射加强前后景关系。",
+            "artist_string": "(icomochi:1.05),(darklux:0.95)",
+            "style_ids": []
+          }
+        }
+      ]
+    }
+  },
+  "turns": [
+    {
+      "request_id": "c374deae-b806-46fd-bbd1-7a464a12da03",
+      "task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+      "turn_index": 1,
+      "function_id": "prompt",
+      "kind": "prompt",
+      "intent": "generate",
+      "candidate": null,
+      "session_id": "session-a73d7330-bf2b-4135-880d-d0279e63c470",
+      "harness_turn": 1,
+      "preset_id": "harness-comfyui-prompt",
+      "agent_model": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling-2-small:free"
+      },
+      "input": {
+        "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+        "base_model_id": "2",
+        "change_request": "",
+        "positive_prompt": "",
+        "negative_prompt": "",
+        "base_model_name": "wai",
+        "reference_context": {
+          "selected_resources": [
+            {
+              "kind": "model",
+              "id": "17",
+              "name": "aMixIllustrious_aMix.safetensors",
+              "fields": {
+                "base_model_id": "2",
+                "file_name": "aMixIllustrious_aMix.safetensors",
+                "description": "CFG Scale: 7\n\nSampler: Euler a\n\nSteps: 30-40\n\nDenoise: 0.35-0.40\n\nMy settings for ForgeUI\nGeneration\nSampling method - Euler a\n\nSchedule type - Automatic\n\nSampling steps - 20\n\nDimensions - 768 x 1152\n\nCFG Scale - 6\n\nHighres. fix\nUpscaler - None (works for me)\n\nHires steps - 10\n\nDenoising strength - 0.1\n\nUpscale by - 1.5-2",
+                "usage": "CFG Scale: 7\n\nSampler: Euler a\n\nSteps: 30-40\n\nDenoise: 0.35-0.40\n\nMy settings for ForgeUI\nGeneration\nSampling method - Euler a\n\nSchedule type - Automatic\n\nSampling steps - 20\n\nDimensions - 768 x 1152\n\nCFG Scale - 6\n\nHighres. fix\nUpscaler - None (works for me)\n\nHires steps - 10\n\nDenoising strength - 0.1\n\nUpscale by - 1.5-2",
+                "skill_name": "test"
+              }
+            },
+            {
+              "kind": "comfyui-template",
+              "id": "29",
+              "name": "wai_basic_txt2img",
+              "fields": {
+                "base_model_id": "2",
+                "title": "wai_basic_txt2img",
+                "template_type": "text_to_image"
+              }
+            },
+            {
+              "kind": "lora",
+              "id": "102",
+              "name": "rimixxO2.safetensors",
+              "fields": {
+                "base_model_id": "2",
+                "file_name": "rimixxO2.safetensors",
+                "description": "该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。",
+                "usage": "使用 <lora:rimixxO2:1.0> 调用 Ri-mix 风格的柔和体积渐变、清晰发丝和局部材质高光，不添加额外触发词。",
+                "trigger_words_json": []
+              },
+              "selected_weight": 1
+            },
+            {
+              "kind": "lora",
+              "id": "74",
+              "name": "Dramatic Lighting Slider.safetensors",
+              "fields": {
+                "base_model_id": "2",
+                "file_name": "Dramatic Lighting Slider.safetensors",
+                "description": "通过 LoRA 权重增强定向硬光、窗格光和逆光阴影，形成高对比、暖色调的戏剧化明暗分区；多个样例共同表现出对肖像、半身和室内场景的光影塑形效果。",
+                "usage": "无触发词；直接调用 <lora:Dramatic Lighting Slider:3.0>。来源样例权重为 3.0–4.0，建议默认权重为 3.0；降低权重会减弱高光、窗格光和阴影对比，提高权重会增强定向光、暖色调和戏剧性明暗，过高时可能压暗暗部或造成高光过强。样例中的滑杆对比展示 0–4 的强度范围。",
+                "trigger_words_json": []
+              },
+              "selected_weight": 3
+            },
+            {
+              "kind": "style",
+              "id": "12344",
+              "name": "say_hana",
+              "fields": {
+                "base_model_id": "2",
+                "name": "say_hana",
+                "aliases_json": [],
+                "prompt_text": "say_hana",
+                "style_description": "花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。"
+              }
+            },
+            {
+              "kind": "style",
+              "id": "12343",
+              "name": "ds_mile",
+              "fields": {
+                "base_model_id": "2",
+                "name": "ds_mile",
+                "aliases_json": [],
+                "prompt_text": "ds_mile",
+                "style_description": "极致的透明感，色彩非常柔和，治愈系，像是水彩般的质感，纯净。"
+              }
+            },
+            {
+              "kind": "artist-string",
+              "id": "957",
+              "name": "圆窗青丝柔映·WAI",
+              "fields": {
+                "base_model_id": "2",
+                "title": "圆窗青丝柔映·WAI",
+                "description": "画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。",
+                "artist_string": "(bluearchiveofficialart:1.10),(jyt:0.86),(rotroto:1.10)",
+                "style_ids": []
+              }
+            },
+            {
+              "kind": "artist-string",
+              "id": "955",
+              "name": "双灯青衣斜光·WAI",
+              "fields": {
+                "base_model_id": "2",
+                "title": "双灯青衣斜光·WAI",
+                "description": "画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，正面亮光在轮廓和桌面形成清楚亮带；曲线形体配合直线框架，中央轻倾近景由双侧框景和水平面构成层次，局部亮带与表面反射加强前后景关系。",
+                "artist_string": "(icomochi:1.05),(darklux:0.95)",
+                "style_ids": []
+              }
+            }
+          ]
+        }
+      },
+      "request_template": "你负责根据原始需求，为指定图像底模编写正向与负向提示词。根据底模选择预设中适用的提示词 Skill。\n\n{{requirements_block}}\n\n{{prompt_edit_block}}\n\n{{references_block}}\n\n产出要求\n1. 返回可直接使用的完整正向与负向提示词，语言和组织方式符合所选底模。\n2. 所选底模无需负向提示词时，负向提示词填写空字符串。\n3. 仅回复 JSON 对象，字段为 type（固定为 prompt）、positive_prompt 和 negative_prompt。",
+      "request_parts": {
+        "block_templates": {
+          "requirements_block": "图像底模：{{base_model_name}}\n底模 ID：{{base_model_id}}\n\n原始需求：\n{{original_request}}",
+          "prompt_edit_block": "根据本轮改动意见，修改下面的提示词。本轮改动意见与原始需求冲突时，以本轮改动意见为准。保留已有提示词中未涉及本轮改动的内容。\n\n本轮改动意见：\n{{change_request}}\n\n本次改动前的正向提示词：\n{{positive_prompt}}\n\n本次改动前的负向提示词：\n{{negative_prompt}}",
+          "references_block": "参考资料：\n{{reference_context}}"
+        },
+        "reference_descriptions": {
+          "selected_resources": "依据所选提示词资源编写画面描述。结合模型、Workflow 类型及 LoRA 的用法和触发词生成提示词。",
+          "requested_skill": "读取并执行指定的提示词 Skill。",
+          "experiences": "按经验中的适用条件选择做法，并用于编写提示词。provenance 记录经验出处，核验依据时再查询。",
+          "task_artifacts": "从用户选择的历史产物中提取适用于本次生成或改写要求的提示词写法。task_id 和 artifact_id 标识该产物的来源。",
+          "run_ids": "查询用户选择的 Run 的实际提示词与图片，提取本轮要求保留或改进的内容。",
+          "images": "读取图片，按各图的 reference_requirement 提取要写入提示词的画面细节。"
+        }
+      },
+      "request_text": "你负责根据原始需求，为指定图像底模编写正向与负向提示词。根据底模选择预设中适用的提示词 Skill。\n\n图像底模：wai\n底模 ID：2\n\n原始需求：\n绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。\n\n\n\n参考资料：\n{\n  \"selected_resources\": {\n    \"purpose\": \"依据所选提示词资源编写画面描述。结合模型、Workflow 类型及 LoRA 的用法和触发词生成提示词。\",\n    \"data\": [\n      {\n        \"kind\": \"model\",\n        \"id\": \"17\",\n        \"name\": \"aMixIllustrious_aMix.safetensors\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"file_name\": \"aMixIllustrious_aMix.safetensors\",\n          \"description\": \"CFG Scale: 7\\n\\nSampler: Euler a\\n\\nSteps: 30-40\\n\\nDenoise: 0.35-0.40\\n\\nMy settings for ForgeUI\\nGeneration\\nSampling method - Euler a\\n\\nSchedule type - Automatic\\n\\nSampling steps - 20\\n\\nDimensions - 768 x 1152\\n\\nCFG Scale - 6\\n\\nHighres. fix\\nUpscaler - None (works for me)\\n\\nHires steps - 10\\n\\nDenoising strength - 0.1\\n\\nUpscale by - 1.5-2\",\n          \"usage\": \"CFG Scale: 7\\n\\nSampler: Euler a\\n\\nSteps: 30-40\\n\\nDenoise: 0.35-0.40\\n\\nMy settings for ForgeUI\\nGeneration\\nSampling method - Euler a\\n\\nSchedule type - Automatic\\n\\nSampling steps - 20\\n\\nDimensions - 768 x 1152\\n\\nCFG Scale - 6\\n\\nHighres. fix\\nUpscaler - None (works for me)\\n\\nHires steps - 10\\n\\nDenoising strength - 0.1\\n\\nUpscale by - 1.5-2\",\n          \"skill_name\": \"test\"\n        }\n      },\n      {\n        \"kind\": \"comfyui-template\",\n        \"id\": \"29\",\n        \"name\": \"wai_basic_txt2img\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"title\": \"wai_basic_txt2img\",\n          \"template_type\": \"text_to_image\"\n        }\n      },\n      {\n        \"kind\": \"lora\",\n        \"id\": \"102\",\n        \"name\": \"rimixxO2.safetensors\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"file_name\": \"rimixxO2.safetensors\",\n          \"description\": \"该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。\",\n          \"usage\": \"使用 <lora:rimixxO2:1.0> 调用 Ri-mix 风格的柔和体积渐变、清晰发丝和局部材质高光，不添加额外触发词。\",\n          \"trigger_words_json\": []\n        },\n        \"selected_weight\": 1\n      },\n      {\n        \"kind\": \"lora\",\n        \"id\": \"74\",\n        \"name\": \"Dramatic Lighting Slider.safetensors\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"file_name\": \"Dramatic Lighting Slider.safetensors\",\n          \"description\": \"通过 LoRA 权重增强定向硬光、窗格光和逆光阴影，形成高对比、暖色调的戏剧化明暗分区；多个样例共同表现出对肖像、半身和室内场景的光影塑形效果。\",\n          \"usage\": \"无触发词；直接调用 <lora:Dramatic Lighting Slider:3.0>。来源样例权重为 3.0–4.0，建议默认权重为 3.0；降低权重会减弱高光、窗格光和阴影对比，提高权重会增强定向光、暖色调和戏剧性明暗，过高时可能压暗暗部或造成高光过强。样例中的滑杆对比展示 0–4 的强度范围。\",\n          \"trigger_words_json\": []\n        },\n        \"selected_weight\": 3\n      },\n      {\n        \"kind\": \"style\",\n        \"id\": \"12344\",\n        \"name\": \"say_hana\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"name\": \"say_hana\",\n          \"aliases_json\": [],\n          \"prompt_text\": \"say_hana\",\n          \"style_description\": \"花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。\"\n        }\n      },\n      {\n        \"kind\": \"style\",\n        \"id\": \"12343\",\n        \"name\": \"ds_mile\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"name\": \"ds_mile\",\n          \"aliases_json\": [],\n          \"prompt_text\": \"ds_mile\",\n          \"style_description\": \"极致的透明感，色彩非常柔和，治愈系，像是水彩般的质感，纯净。\"\n        }\n      },\n      {\n        \"kind\": \"artist-string\",\n        \"id\": \"957\",\n        \"name\": \"圆窗青丝柔映·WAI\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"title\": \"圆窗青丝柔映·WAI\",\n          \"description\": \"画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。\",\n          \"artist_string\": \"(bluearchiveofficialart:1.10),(jyt:0.86),(rotroto:1.10)\",\n          \"style_ids\": []\n        }\n      },\n      {\n        \"kind\": \"artist-string\",\n        \"id\": \"955\",\n        \"name\": \"双灯青衣斜光·WAI\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"title\": \"双灯青衣斜光·WAI\",\n          \"description\": \"画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，正面亮光在轮廓和桌面形成清楚亮带；曲线形体配合直线框架，中央轻倾近景由双侧框景和水平面构成层次，局部亮带与表面反射加强前后景关系。\",\n          \"artist_string\": \"(icomochi:1.05),(darklux:0.95)\",\n          \"style_ids\": []\n        }\n      }\n    ]\n  }\n}\n\n产出要求\n1. 返回可直接使用的完整正向与负向提示词，语言和组织方式符合所选底模。\n2. 所选底模无需负向提示词时，负向提示词填写空字符串。\n3. 仅回复 JSON 对象，字段为 type（固定为 prompt）、positive_prompt 和 negative_prompt。",
+      "status": "succeeded",
+      "error": null,
+      "artifact_id": "7ad34ee8-3d80-4b03-8c92-317c417a2bb9",
+      "result": {
+        "type": "prompt",
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, ds_mile, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, reflection, watercolor",
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+      },
+      "adopted": null,
+      "applied_at": null,
+      "created_at": 1794459440700,
+      "finished_at": 1794459660313,
+      "start_seq": 3
+    },
+    {
+      "request_id": "cebe1e07-faba-4101-9dff-bf8fcbdd9d13",
+      "task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+      "turn_index": 2,
+      "function_id": "prompt",
+      "kind": "prompt",
+      "intent": "rewrite",
+      "candidate": {
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, (reflection:1.2), clean lineart",
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+      },
+      "session_id": "session-a73d7330-bf2b-4135-880d-d0279e63c470",
+      "harness_turn": 2,
+      "preset_id": "harness-comfyui-prompt",
+      "agent_model": {
+        "provider": "openrouter",
+        "model": "thinkingmachines/inkling-2-small:free"
+      },
+      "input": {
+        "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+        "base_model_id": "2",
+        "change_request": "保留白发女子、蓝色外套、雨夜街道和全身构图。依据当前选中的画风与画师串，减弱水彩感，突出清晰细线和霓虹倒影；删除已移除的 ds_mile 标签。",
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, ds_mile, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, reflection, watercolor",
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor",
+        "base_model_name": "wai",
+        "reference_context": {
+          "selected_resources": [
+            {
+              "kind": "model",
+              "id": "17",
+              "name": "aMixIllustrious_aMix.safetensors",
+              "fields": {
+                "base_model_id": "2",
+                "file_name": "aMixIllustrious_aMix.safetensors",
+                "description": "CFG Scale: 7\n\nSampler: Euler a\n\nSteps: 30-40\n\nDenoise: 0.35-0.40\n\nMy settings for ForgeUI\nGeneration\nSampling method - Euler a\n\nSchedule type - Automatic\n\nSampling steps - 20\n\nDimensions - 768 x 1152\n\nCFG Scale - 6\n\nHighres. fix\nUpscaler - None (works for me)\n\nHires steps - 10\n\nDenoising strength - 0.1\n\nUpscale by - 1.5-2",
+                "usage": "CFG Scale: 7\n\nSampler: Euler a\n\nSteps: 30-40\n\nDenoise: 0.35-0.40\n\nMy settings for ForgeUI\nGeneration\nSampling method - Euler a\n\nSchedule type - Automatic\n\nSampling steps - 20\n\nDimensions - 768 x 1152\n\nCFG Scale - 6\n\nHighres. fix\nUpscaler - None (works for me)\n\nHires steps - 10\n\nDenoising strength - 0.1\n\nUpscale by - 1.5-2",
+                "skill_name": "test"
+              }
+            },
+            {
+              "kind": "comfyui-template",
+              "id": "29",
+              "name": "wai_basic_txt2img",
+              "fields": {
+                "base_model_id": "2",
+                "title": "wai_basic_txt2img",
+                "template_type": "text_to_image"
+              }
+            },
+            {
+              "kind": "lora",
+              "id": "102",
+              "name": "rimixxO2.safetensors",
+              "fields": {
+                "base_model_id": "2",
+                "file_name": "rimixxO2.safetensors",
+                "description": "该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。",
+                "usage": "使用 <lora:rimixxO2:1.0> 调用 Ri-mix 风格的柔和体积渐变、清晰发丝和局部材质高光，不添加额外触发词。",
+                "trigger_words_json": []
+              },
+              "selected_weight": 0.75
+            },
+            {
+              "kind": "lora",
+              "id": "74",
+              "name": "Dramatic Lighting Slider.safetensors",
+              "fields": {
+                "base_model_id": "2",
+                "file_name": "Dramatic Lighting Slider.safetensors",
+                "description": "通过 LoRA 权重增强定向硬光、窗格光和逆光阴影，形成高对比、暖色调的戏剧化明暗分区；多个样例共同表现出对肖像、半身和室内场景的光影塑形效果。",
+                "usage": "无触发词；直接调用 <lora:Dramatic Lighting Slider:3.0>。来源样例权重为 3.0–4.0，建议默认权重为 3.0；降低权重会减弱高光、窗格光和阴影对比，提高权重会增强定向光、暖色调和戏剧性明暗，过高时可能压暗暗部或造成高光过强。样例中的滑杆对比展示 0–4 的强度范围。",
+                "trigger_words_json": []
+              },
+              "selected_weight": 1.25
+            },
+            {
+              "kind": "style",
+              "id": "12344",
+              "name": "say_hana",
+              "fields": {
+                "base_model_id": "2",
+                "name": "say_hana",
+                "aliases_json": [],
+                "prompt_text": "say_hana",
+                "style_description": "花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。"
+              }
+            },
+            {
+              "kind": "artist-string",
+              "id": "957",
+              "name": "圆窗青丝柔映·WAI",
+              "fields": {
+                "base_model_id": "2",
+                "title": "圆窗青丝柔映·WAI",
+                "description": "画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。",
+                "artist_string": "(bluearchiveofficialart:1.10),(jyt:0.86),(rotroto:1.10)",
+                "style_ids": []
+              }
+            },
+            {
+              "kind": "artist-string",
+              "id": "955",
+              "name": "双灯青衣斜光·WAI",
+              "fields": {
+                "base_model_id": "2",
+                "title": "双灯青衣斜光·WAI",
+                "description": "画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，正面亮光在轮廓和桌面形成清楚亮带；曲线形体配合直线框架，中央轻倾近景由双侧框景和水平面构成层次，局部亮带与表面反射加强前后景关系。",
+                "artist_string": "(icomochi:1.05),(darklux:0.95)",
+                "style_ids": []
+              }
+            }
+          ]
+        }
+      },
+      "request_template": "你负责根据原始需求，为指定图像底模编写正向与负向提示词。根据底模选择预设中适用的提示词 Skill。\n\n{{requirements_block}}\n\n{{prompt_edit_block}}\n\n{{references_block}}\n\n产出要求\n1. 返回可直接使用的完整正向与负向提示词，语言和组织方式符合所选底模。\n2. 所选底模无需负向提示词时，负向提示词填写空字符串。\n3. 仅回复 JSON 对象，字段为 type（固定为 prompt）、positive_prompt 和 negative_prompt。",
+      "request_parts": {
+        "block_templates": {
+          "requirements_block": "图像底模：{{base_model_name}}\n底模 ID：{{base_model_id}}\n\n原始需求：\n{{original_request}}",
+          "prompt_edit_block": "根据本轮改动意见，修改下面的提示词。本轮改动意见与原始需求冲突时，以本轮改动意见为准。保留已有提示词中未涉及本轮改动的内容。\n\n本轮改动意见：\n{{change_request}}\n\n本次改动前的正向提示词：\n{{positive_prompt}}\n\n本次改动前的负向提示词：\n{{negative_prompt}}",
+          "references_block": "参考资料：\n{{reference_context}}"
+        },
+        "reference_descriptions": {
+          "selected_resources": "依据所选提示词资源编写画面描述。结合模型、Workflow 类型及 LoRA 的用法和触发词生成提示词。",
+          "requested_skill": "读取并执行指定的提示词 Skill。",
+          "experiences": "按经验中的适用条件选择做法，并用于编写提示词。provenance 记录经验出处，核验依据时再查询。",
+          "task_artifacts": "从用户选择的历史产物中提取适用于本次生成或改写要求的提示词写法。task_id 和 artifact_id 标识该产物的来源。",
+          "run_ids": "查询用户选择的 Run 的实际提示词与图片，提取本轮要求保留或改进的内容。",
+          "images": "读取图片，按各图的 reference_requirement 提取要写入提示词的画面细节。"
+        }
+      },
+      "request_text": "你负责根据原始需求，为指定图像底模编写正向与负向提示词。根据底模选择预设中适用的提示词 Skill。\n\n图像底模：wai\n底模 ID：2\n\n原始需求：\n绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。\n\n根据本轮改动意见，修改下面的提示词。本轮改动意见与原始需求冲突时，以本轮改动意见为准。保留已有提示词中未涉及本轮改动的内容。\n\n本轮改动意见：\n保留白发女子、蓝色外套、雨夜街道和全身构图。依据当前选中的画风与画师串，减弱水彩感，突出清晰细线和霓虹倒影；删除已移除的 ds_mile 标签。\n\n本次改动前的正向提示词：\nmasterpiece, best quality, ultra-detailed, highres, say_hana, ds_mile, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, reflection, watercolor\n\n本次改动前的负向提示词：\nbad quality, worst quality, worst detail, sketch, censor\n\n参考资料：\n{\n  \"selected_resources\": {\n    \"purpose\": \"依据所选提示词资源编写画面描述。结合模型、Workflow 类型及 LoRA 的用法和触发词生成提示词。\",\n    \"data\": [\n      {\n        \"kind\": \"model\",\n        \"id\": \"17\",\n        \"name\": \"aMixIllustrious_aMix.safetensors\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"file_name\": \"aMixIllustrious_aMix.safetensors\",\n          \"description\": \"CFG Scale: 7\\n\\nSampler: Euler a\\n\\nSteps: 30-40\\n\\nDenoise: 0.35-0.40\\n\\nMy settings for ForgeUI\\nGeneration\\nSampling method - Euler a\\n\\nSchedule type - Automatic\\n\\nSampling steps - 20\\n\\nDimensions - 768 x 1152\\n\\nCFG Scale - 6\\n\\nHighres. fix\\nUpscaler - None (works for me)\\n\\nHires steps - 10\\n\\nDenoising strength - 0.1\\n\\nUpscale by - 1.5-2\",\n          \"usage\": \"CFG Scale: 7\\n\\nSampler: Euler a\\n\\nSteps: 30-40\\n\\nDenoise: 0.35-0.40\\n\\nMy settings for ForgeUI\\nGeneration\\nSampling method - Euler a\\n\\nSchedule type - Automatic\\n\\nSampling steps - 20\\n\\nDimensions - 768 x 1152\\n\\nCFG Scale - 6\\n\\nHighres. fix\\nUpscaler - None (works for me)\\n\\nHires steps - 10\\n\\nDenoising strength - 0.1\\n\\nUpscale by - 1.5-2\",\n          \"skill_name\": \"test\"\n        }\n      },\n      {\n        \"kind\": \"comfyui-template\",\n        \"id\": \"29\",\n        \"name\": \"wai_basic_txt2img\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"title\": \"wai_basic_txt2img\",\n          \"template_type\": \"text_to_image\"\n        }\n      },\n      {\n        \"kind\": \"lora\",\n        \"id\": \"102\",\n        \"name\": \"rimixxO2.safetensors\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"file_name\": \"rimixxO2.safetensors\",\n          \"description\": \"该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。\",\n          \"usage\": \"使用 <lora:rimixxO2:1.0> 调用 Ri-mix 风格的柔和体积渐变、清晰发丝和局部材质高光，不添加额外触发词。\",\n          \"trigger_words_json\": []\n        },\n        \"selected_weight\": 0.75\n      },\n      {\n        \"kind\": \"lora\",\n        \"id\": \"74\",\n        \"name\": \"Dramatic Lighting Slider.safetensors\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"file_name\": \"Dramatic Lighting Slider.safetensors\",\n          \"description\": \"通过 LoRA 权重增强定向硬光、窗格光和逆光阴影，形成高对比、暖色调的戏剧化明暗分区；多个样例共同表现出对肖像、半身和室内场景的光影塑形效果。\",\n          \"usage\": \"无触发词；直接调用 <lora:Dramatic Lighting Slider:3.0>。来源样例权重为 3.0–4.0，建议默认权重为 3.0；降低权重会减弱高光、窗格光和阴影对比，提高权重会增强定向光、暖色调和戏剧性明暗，过高时可能压暗暗部或造成高光过强。样例中的滑杆对比展示 0–4 的强度范围。\",\n          \"trigger_words_json\": []\n        },\n        \"selected_weight\": 1.25\n      },\n      {\n        \"kind\": \"style\",\n        \"id\": \"12344\",\n        \"name\": \"say_hana\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"name\": \"say_hana\",\n          \"aliases_json\": [],\n          \"prompt_text\": \"say_hana\",\n          \"style_description\": \"花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。\"\n        }\n      },\n      {\n        \"kind\": \"artist-string\",\n        \"id\": \"957\",\n        \"name\": \"圆窗青丝柔映·WAI\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"title\": \"圆窗青丝柔映·WAI\",\n          \"description\": \"画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。\",\n          \"artist_string\": \"(bluearchiveofficialart:1.10),(jyt:0.86),(rotroto:1.10)\",\n          \"style_ids\": []\n        }\n      },\n      {\n        \"kind\": \"artist-string\",\n        \"id\": \"955\",\n        \"name\": \"双灯青衣斜光·WAI\",\n        \"fields\": {\n          \"base_model_id\": \"2\",\n          \"title\": \"双灯青衣斜光·WAI\",\n          \"description\": \"画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，正面亮光在轮廓和桌面形成清楚亮带；曲线形体配合直线框架，中央轻倾近景由双侧框景和水平面构成层次，局部亮带与表面反射加强前后景关系。\",\n          \"artist_string\": \"(icomochi:1.05),(darklux:0.95)\",\n          \"style_ids\": []\n        }\n      }\n    ]\n  }\n}\n\n产出要求\n1. 返回可直接使用的完整正向与负向提示词，语言和组织方式符合所选底模。\n2. 所选底模无需负向提示词时，负向提示词填写空字符串。\n3. 仅回复 JSON 对象，字段为 type（固定为 prompt）、positive_prompt 和 negative_prompt。",
+      "status": "succeeded",
+      "error": null,
+      "artifact_id": "bd2545a4-03a8-47d7-9a1f-eb26e32238b9",
+      "result": {
+        "type": "prompt",
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, (reflection:1.2), clean lineart",
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+      },
+      "adopted": {
+        "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, (reflection:1.2), clean lineart",
+        "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+      },
+      "applied_at": 1794460049510,
+      "created_at": 1794459979347,
+      "finished_at": 1794459989852,
+      "start_seq": 251
+    }
+  ],
+  "adoptedDraft": {
+    "prompt_resource_refs": [
+      {
+        "kind": "style",
+        "id": "12344"
+      },
+      {
+        "kind": "artist-string",
+        "id": "957"
+      },
+      {
+        "kind": "artist-string",
+        "id": "955"
+      }
+    ],
+    "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+    "prompt_change_request": "保留白发女子、蓝色外套、雨夜街道和全身构图。依据当前选中的画风与画师串，减弱水彩感，突出清晰细线和霓虹倒影；删除已移除的 ds_mile 标签。",
+    "prompt_input": {
+      "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, (reflection:1.2), clean lineart",
+      "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+    },
+    "generation_input": {
+      "title": "资源选择与提示词",
+      "instance_id": null,
+      "template_id": "29",
+      "model": {
+        "id": "17",
+        "file_name": "aMixIllustrious_aMix.safetensors"
+      },
+      "parameters": {},
+      "loras": [
+        {
+          "id": "102",
+          "file_name": "rimixxO2.safetensors",
+          "weight": 0.75,
+          "trigger_words": []
+        },
+        {
+          "id": "74",
+          "file_name": "Dramatic Lighting Slider.safetensors",
+          "weight": 1.25,
+          "trigger_words": []
+        }
+      ]
+    },
+    "reference_task_ids": [],
+    "reference_run_ids": [],
+    "reference_experiences": [],
+    "image_refs": [],
+    "workflow_image_bindings": [],
+    "instructions": "",
+    "base_model_id": "2",
+    "parameter_mapping": null
+  },
+  "checks": {
+    "previewResourcesEqualSentResources": true,
+    "currentUnsavedResourcesUsedForRewrite": true,
+    "previousSnapshotUnchanged": true,
+    "adoptedPromptEqualsSecondResult": true
+  },
+  "trace": {
+    "schemaVersion": 1,
+    "runId": "68d8a9dd-33b3-4620-974a-a59f34b93bb1",
+    "sessionId": "session-a73d7330-bf2b-4135-880d-d0279e63c470",
+    "source": {
+      "kind": "official-session-export",
+      "route": "api/session.export"
+    },
+    "sessions": [
+      {
+        "sessionId": "session-a73d7330-bf2b-4135-880d-d0279e63c470",
+        "parentSessionId": null,
+        "entry": "session.v4.jsonl",
+        "path": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/resource-selection-implementation/model-trace-final/sessions/session-session-a73d7330-bf2b-4135-880d-d0279e63c470/session.json",
+        "eventCount": 266,
+        "coverage": {
+          "firstSeq": 0,
+          "lastSeq": 265,
+          "complete": true
+        }
+      }
+    ],
+    "missing": [
+      {
+        "source": "model-request",
+        "sessionId": "session-a73d7330-bf2b-4135-880d-d0279e63c470",
+        "code": "RAW_MODEL_REQUEST_NOT_PERSISTED"
+      },
+      {
+        "source": "model-stream",
+        "sessionId": "session-a73d7330-bf2b-4135-880d-d0279e63c470",
+        "code": "RAW_MODEL_STREAM_NOT_PERSISTED"
+      }
+    ],
+    "complete": false
+  }
+}

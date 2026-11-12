@@ -125,7 +125,7 @@ export async function apply(ctx: Context): Promise<void> {
     associatePromptPublication: (task, identity) => prompts.associatePublication(task.task_id, identity.sessionId, identity.turn),
     resolveImageSources: refs => resolveInputImages(ctx.harnessComfyuiCore.services, refs, signal),
     prepareGenerationInput: input.prepareGenerationInput, resolveResourceRefs: input.resolveResourceRefs, resolveResourceSelection: input.resolveResourceSelection,
-    validateResourceRefs: input.validateReferences,
+    validateResourceRefs: input.validateReferences, resolveSelectedResources: input.resolveSelectedResources,
     resolveParameterMapping: input.resolveParameterMapping, parameterIds: input.parameterIds, validateGenerationInput: input.validateGenerationInput,
     validateParameters: input.validateParameters, resolveGenerationDraft: input.resolveGenerationDraft,
     resolveBaseModelDraft: async (baseModelId, draft) => {
@@ -161,6 +161,7 @@ export async function apply(ctx: Context): Promise<void> {
   const prompts = new WorkbenchPrompts({
     store, sessions, controller, descriptors: defaults, events: id => sessions.events(id), isSessionActive: id => ctx.agents.get(SessionId(id))?.status === 'running', reportError: error => reportFailure(error),
     images: refs => resolveInputImages(ctx.harnessComfyuiCore.services, refs, signal),
+    resources: draft => input.resolveSelectedResources(draft, signal),
     async baseModel(draft, baseModelId) {
       let id: string | null = baseModelId
       if (draft.generation_input.model) {

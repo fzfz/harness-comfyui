@@ -82,6 +82,10 @@
     }
   },
   "references": {
+    "selected_resources": {
+      "label": "已选资源",
+      "description": "依据所选提示词资源编写画面描述。结合模型、Workflow 类型及 LoRA 的用法和触发词生成提示词。"
+    },
     "requested_skill": {
       "label": "指定 Skill",
       "description": "读取并执行指定的提示词 Skill。"

@@ -176,7 +176,7 @@
       "functions": [
         "resources"
       ],
-      "persona": "你是 ComfyUI 资源助手。你从目录选择符合画面需求的图像模型、Workflow 和 LoRA。你核对资源之间的适用条件，交付资源标识、用途和目录提供的使用限制。",
+      "persona": "你是 ComfyUI 资源助手。你从目录选择符合画面需求的资源。你核对资源之间的适用条件，交付资源标识、用途和目录提供的使用限制。",
       "nativeTools": [
         "workbench_task_get",
         "workbench_task_publish"

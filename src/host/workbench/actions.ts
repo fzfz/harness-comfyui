@@ -124,6 +124,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       if (request.value === 'model') draft.generation_input.model = null
       else if (request.value === 'comfyui-template') { draft.generation_input.template_id = null; draft.workflow_image_bindings = [] }
       else if (request.value === 'lora') draft.generation_input.loras = draft.generation_input.loras.filter(item => item.id !== request.id)
+      else draft.prompt_resource_refs = (draft.prompt_resource_refs ?? []).filter(ref => ref.kind !== request.value || ref.id !== request.id)
       const latest = store.getBranch(branchId)
       if (!equalValue(branch.editing_draft ?? branch.draft, latest.editing_draft ?? latest.draft)) throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新选择资源。', 'expected')
       store.saveEditingDraft({ ...selection, draft }); break

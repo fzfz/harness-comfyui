@@ -1,5 +1,5 @@
 import libraryConfig from './library-config.json' with { type: 'json' }
-import type { CatalogKind as CatalogResourceKind } from '../catalog/contract.ts'
+import { CATALOG_KIND_DEFINITIONS, type CatalogKind as CatalogResourceKind } from '../catalog/contract.ts'
 import type { StandardRuntimeParameterKind } from '../generation/inspection-contract.ts'
 import type { JsonValue } from '../shared/json-contract.ts'
 
@@ -15,8 +15,11 @@ export type ArtifactType = ArtifactPayload['type']
 export type ArtifactDisposition = 'applied' | 'candidate' | 'recorded' | 'waiting_input'
 export type ExecutionState = 'pending' | 'running' | 'idle' | 'interrupted' | 'failed'
 export type CatalogKind = CatalogResourceKind
-export const WORKBENCH_RESOURCE_KINDS = ['model', 'lora', 'comfyui-template'] as const
-export interface ResourceRef { kind: typeof WORKBENCH_RESOURCE_KINDS[number]; id: string }
+export const WORKBENCH_RESOURCE_KINDS = CATALOG_KIND_DEFINITIONS.map(definition => definition.kind)
+export type PromptResourceKind = Exclude<CatalogKind, 'model' | 'lora' | 'comfyui-template'>
+export interface ResourceRef { kind: CatalogKind; id: string }
+export interface PromptResourceRef extends ResourceRef { kind: PromptResourceKind }
+export interface ResourceSnapshot extends ResourceRef { name: string; fields: Record<string, JsonValue>; selected_weight?: number }
 export interface ImageRef { image_ref_id: string; source: { kind: 'run_media'; run_id: string; media_id: string } | { kind: 'uploaded_file'; file_id: string }; purpose: 'workflow' | 'agent' | 'both'; reference_requirement: string }
 export interface ImageSource { image_ref_id: string; file_path: string | null; name: string; url: string | null; error?: string }
 export interface WorkflowImageBinding { parameter_id: string; image_ref_ids: string[] }
@@ -40,6 +43,7 @@ export interface GenerationInput extends GenerationInputBase {
 }
 export interface ImageUpload { image_ref_id: string; parameter_id: string; instance_id: string; name: string; subfolder: string; type: 'input' }
 export interface WorkbenchRunInput {
+  prompt_resource_refs?: PromptResourceRef[]
   submitted_input: GenerationInput
   effective_input: GenerationInput | null
   image_uploads: ImageUpload[]
@@ -52,6 +56,7 @@ export interface WorkbenchRunInput {
   workflow_image_bindings: WorkflowImageBinding[]
   input_description: import('../generation/inspection-contract.ts').WorkflowRuntimeParameterInspection | null
   prompt_input: PromptInput
+  selected_resources?: ResourceSnapshot[]
 }
 
 export type ParameterMapping = Record<string, StandardRuntimeParameterKind> | null
@@ -59,7 +64,7 @@ export function isBranchNonGenerationTaskKind(kind: TaskKind): kind is BranchNon
 
 export interface WorkbenchRecordQuery { type: 'task' | 'run' | 'experience' | 'favorite'; workspaceId?: string; workId?: string; taskId?: string; keyword?: string }
 export interface WorkbenchRecord { type: 'task' | 'run' | 'experience'; id: string; workspace_id: string | null; work_id: string | null; branch_id: string | null; task_id: string | null; title: string; base_model_id?: string | null; task?: Task; artifacts?: StoredArtifact[]; runs?: WorkbenchRun[]; run?: WorkbenchRun; experience?: Experience }
-export interface TaskDraft extends InputReferences { prompt_edit_task_id?: string | null; prompt_change_request?: string; prompt_input: PromptInput; generation_input: GenerationInputBase; parameter_mapping: ParameterMapping; base_model_id: string | null; instructions: string }
+export interface TaskDraft extends InputReferences { prompt_resource_refs: PromptResourceRef[]; prompt_edit_task_id?: string | null; prompt_change_request?: string; prompt_input: PromptInput; generation_input: GenerationInputBase; parameter_mapping: ParameterMapping; base_model_id: string | null; instructions: string }
 
 export interface TaskRequestDraft {
   instructions: string
@@ -93,6 +98,7 @@ export interface SavedReview { verdict: ReviewDraft['verdict']; observation: str
 export interface EvaluationInput { run_id: string; verdict: ReviewDraft['verdict']; observation: string; conclusion: string; experience: { title: string; conditions: string; note: string } }
 export type ExperimentInputSource = { type: 'initial' } | { type: 'candidate'; artifact_id: string } | { type: 'run'; run_id: string }
 export interface TaskInput extends Omit<TaskDraft, 'instructions'> {
+  selected_resources?: ResourceSnapshot[]
   delegation_source?: ExperimentInputSource
   requirements: { original_request: string; instructions: string }
   reference_task_artifacts: ReferenceTaskArtifact[]
@@ -170,10 +176,10 @@ export interface TaskChildSummary extends Pick<Task, 'task_id' | 'function_id' |
 export type ArtifactPayload = (
   | ({ type: 'prompt' } & PromptInput)
   | { type: 'parameters'; parameters: Record<string, JsonValue> }
-  | { type: 'generation_input'; generation_input: GenerationInputBase; image_refs?: ImageRef[]; workflow_image_bindings?: WorkflowImageBinding[]; plan_artifact_id?: string | null }
+  | { type: 'generation_input'; generation_input: GenerationInputBase; prompt_resource_refs?: PromptResourceRef[]; selected_resources?: ResourceSnapshot[]; image_refs?: ImageRef[]; workflow_image_bindings?: WorkflowImageBinding[]; plan_artifact_id?: string | null }
   | { type: 'iteration_plan'; source_run_id: string; changes: string[]; reason: string; expected_result: string }
   | { type: 'resources'; refs: ResourceRef[]; reason?: string }
-  | { type: 'review'; observation: string; conclusion: string; run_ids: string[]; candidate?: { generation_input: GenerationInputBase; image_refs?: ImageRef[]; workflow_image_bindings?: WorkflowImageBinding[] } }
+  | { type: 'review'; observation: string; conclusion: string; run_ids: string[]; candidate?: { generation_input: GenerationInputBase; prompt_resource_refs?: PromptResourceRef[]; selected_resources?: ResourceSnapshot[]; image_refs?: ImageRef[]; workflow_image_bindings?: WorkflowImageBinding[] } }
   | { type: 'experience'; title: string; conditions: string; note: string; base_model_id: string | null; model_id: string | null; run_ids: string[] }
   | { type: 'question'; question: string; options: string[] }
 ) & { source_files?: string[] }
@@ -196,6 +202,7 @@ export interface PublishReceipt { task_id: string; artifact_id: string; disposit
 export interface WorkbenchIdentity { workspaceId: string; sessionId: string; turn: number; callId: string }
 export interface WorkbenchRunMedia { media_id: string; run_id: string; filename: string; media_type: string; media_kind: string; byte_size: number; url?: string; download_url?: string }
 export interface WorkbenchRun {
+  selected_resources?: ResourceSnapshot[]
   session_id: string
   created_at: number
   updated_at: number
@@ -264,7 +271,7 @@ export interface TaskGetCommon extends Omit<TaskInput, 'generation_input' | 'par
   image_sources: ImageSource[]
   task_id: string; parent_experiment_task_id: string | null; children: TaskChildSummary[]; status: TaskStatus; output_contract: OutputContract
   artifacts: { task_id: string; artifact_id: string; artifact: ArtifactPayload; disposition: ArtifactDisposition }[]
-  iterations: { index: number; run_id: string; execution_task_id: string | null; generation_input: GenerationInput; image_refs: ImageRef[]; workflow_image_bindings: WorkflowImageBinding[]; review_artifact_id: string | null }[]
+  iterations: { prompt_resource_refs?: PromptResourceRef[]; selected_resources?: ResourceSnapshot[]; index: number; run_id: string; execution_task_id: string | null; generation_input: GenerationInput; image_refs: ImageRef[]; workflow_image_bindings: WorkflowImageBinding[]; review_artifact_id: string | null }[]
   answers: TaskAnswer[]
 }
 

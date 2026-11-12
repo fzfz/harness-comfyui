@@ -1,7 +1,8 @@
 import { contractFields } from '../shared/field-contract.ts'
 import Schema from '@deepseek-ai/schemastery'
 import { STANDARD_RUNTIME_PARAMETER_KINDS } from '../generation/inspection-contract.ts'
-import { artifactSchemas, functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema, taskDraftSchema, inputReferencesSchema, generationInputBaseSchema, generationInputSchema } from './schema.ts'
+import { artifactSchemas, functionBindingEditableSchema, favoriteUpdateSchema, experienceReuseInputSchema, reviewDraftSchema, reviewDraftUpdateSchema, taskRequestDraftSchema, taskDraftSchema, inputReferencesSchema, generationInputBaseSchema, generationInputSchema, resourceSnapshotSchema } from './schema.ts'
+import { PROMPT_RESOURCE_KINDS, promptResourceRefs } from './resources.ts'
 import { TASK_KINDS } from './functions.ts'
 import libraryConfig from './library-config.json' with { type: 'json' }
 import { WORKBENCH_BRANCH_NAME_MAX_LENGTH, WORKBENCH_RESOURCE_KINDS, isRunReviewFunctionKind } from './contract.ts'
@@ -47,11 +48,11 @@ class Validator {
     if (Array.isArray(value)) { value.forEach((v, i) => this.json(v, `${path}.${i}`)); return }
     if (this.object(value, path)) for (const [key, item] of Object.entries(value)) this.json(item, `${path}.${key}`)
   }
-  refs(value: unknown, path: string): void {
+  refs(value: unknown, path: string, kinds: readonly string[] = WORKBENCH_RESOURCE_KINDS): void {
     const found = new Set<string>()
     this.array(value, path, (item, p) => {
       if (!this.object(item, p, ['kind', 'id'])) return
-      if (!(WORKBENCH_RESOURCE_KINDS as readonly string[]).includes(String(item.kind))) this.issue(`${p}.kind`, '请选择模型、LoRA 或 Workflow 模板。')
+      if (!kinds.includes(String(item.kind))) this.issue(`${p}.kind`, '请选择当前目录中的资源类别。')
       this.id(item.id, `${p}.id`)
       const key = `${item.kind}:${item.id}`
       if (found.has(key)) this.issue(p, '请移除重复引用。')
@@ -86,6 +87,7 @@ class Validator {
     }
     this.generation(value.generation_input, `${path}.generation_input`, ready)
     this.id(value.base_model_id, `${path}.base_model_id`, true)
+    this.refs(value.prompt_resource_refs ?? [], `${path}.prompt_resource_refs`, PROMPT_RESOURCE_KINDS)
   }
   finish<T>(value: unknown): T { if (this.issues.length) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', this.issues); return structuredClone(value) as T }
 }
@@ -106,7 +108,9 @@ export function validateTaskDraft(value: unknown, path = 'draft'): TaskDraft {
   try {
     const draft = structuredClone(Schema.resolve(value, taskDraftSchema, {})[0]) as TaskDraft
     validateInputReferences(draft, path)
-    return draft
+    const validator = new Validator()
+    validator.refs(draft.prompt_resource_refs, `${path}.prompt_resource_refs`, PROMPT_RESOURCE_KINDS)
+    return validator.finish(draft)
   } catch (error) { if (error instanceof WorkbenchError) throw error; throw new WorkbenchError('WORKBENCH_INVALID_INPUT', error instanceof Error ? error.message : String(error), path) }
 }
 
@@ -123,6 +127,7 @@ export function taskDraftFromRunInput(input: WorkbenchRunInput, current?: TaskDr
   return validateTaskDraft({ ...current, generation_input: generationInputForDraft(input.generation_input, imageParameterIds), prompt_input: input.prompt_input,
     parameter_mapping: input.parameter_mapping, base_model_id: input.base_model_id,
     image_refs: input.image_refs, workflow_image_bindings: input.workflow_image_bindings,
+    prompt_resource_refs: promptResourceRefs(input.selected_resources ?? []),
     reference_run_ids: [...new Set([...(current?.reference_run_ids ?? []), input.run_id])],
   })
 }
@@ -154,13 +159,16 @@ export function validateInputReferences(value: unknown, path = 'input'): import(
 }
 export function validateTaskInput(kind: TaskKind, value: unknown): TaskInput {
   const v = new Validator()
-  if (!v.object(value, 'input', [...Object.keys(contractFields(taskDraftSchema) ?? {}).filter(key => key !== 'instructions'), 'requirements', 'reference_task_artifacts', 'evaluation_input', 'requested_skill', 'max_runs', 'delegation_source'])) return v.finish(value)
+  if (!v.object(value, 'input', [...Object.keys(contractFields(taskDraftSchema) ?? {}).filter(key => key !== 'instructions'), 'requirements', 'reference_task_artifacts', 'evaluation_input', 'requested_skill', 'max_runs', 'delegation_source', 'selected_resources'])) return v.finish(value)
   const draftFields = Object.keys(contractFields(taskDraftSchema) ?? {})
   const draft = validateTaskDraft(Object.fromEntries(Object.entries(value).filter(([key]) => draftFields.includes(key))), 'input')
   const { instructions: _draftInstructions, ...fixedDraft } = draft
   value = { ...value, ...fixedDraft, reference_task_artifacts: value.reference_task_artifacts ?? [] }
   if (!v.object(value, 'input')) return v.finish(value)
   v.draft(value, 'input', kind === 'run' || kind === 'experiment')
+  if (value.selected_resources !== undefined) v.array(value.selected_resources, 'input.selected_resources', (item, path) => {
+    try { Schema.resolve(item, resourceSnapshotSchema, {}) } catch (error) { v.issue(path, error instanceof Error ? error.message : String(error)) }
+  })
   if (v.object(value.requirements, 'input.requirements', ['original_request', 'instructions'])) { v.text(value.requirements.original_request, 'input.requirements.original_request', true); v.text(value.requirements.instructions, 'input.requirements.instructions') }
   if (value.delegation_source !== undefined && v.object(value.delegation_source, 'input.delegation_source')) {
     const source = value.delegation_source
@@ -203,6 +211,10 @@ export function validateArtifact(value: unknown): ArtifactPayload {
     case 'parameters': if (v.object(value.parameters, 'artifact.parameters')) for (const [key, item] of Object.entries(value.parameters)) v.json(item, `artifact.parameters.${key}`); break
     case 'generation_input':
       v.generation(value.generation_input, 'artifact.generation_input', true); validateInputReferences(value, 'artifact')
+      v.refs(value.prompt_resource_refs ?? [], 'artifact.prompt_resource_refs', PROMPT_RESOURCE_KINDS)
+      if (value.selected_resources !== undefined) v.array(value.selected_resources, 'artifact.selected_resources', (item, path) => {
+        try { Schema.resolve(item, resourceSnapshotSchema, {}) } catch (error) { v.issue(path, error instanceof Error ? error.message : String(error)) }
+      })
       if (value.plan_artifact_id !== undefined && value.plan_artifact_id !== null) v.text(value.plan_artifact_id, 'artifact.plan_artifact_id', true)
       break
     case 'iteration_plan':
@@ -215,7 +227,14 @@ export function validateArtifact(value: unknown): ArtifactPayload {
     case 'review':
       v.text(value.observation, 'artifact.observation'); v.text(value.conclusion, 'artifact.conclusion'); v.strings(value.run_ids, 'artifact.run_ids')
       if (!Array.isArray(value.run_ids) || value.run_ids.length === 0) v.issue('artifact.run_ids', '请填写评价引用的运行 ID。')
-      if (value.candidate !== undefined && v.object(value.candidate, 'artifact.candidate', ['generation_input', 'image_refs', 'workflow_image_bindings'])) { v.generation(value.candidate.generation_input, 'artifact.candidate.generation_input', true); validateInputReferences(value.candidate, 'artifact.candidate') }
+      if (value.candidate !== undefined && v.object(value.candidate, 'artifact.candidate', ['generation_input', 'prompt_resource_refs', 'selected_resources', 'image_refs', 'workflow_image_bindings'])) {
+        v.generation(value.candidate.generation_input, 'artifact.candidate.generation_input', true)
+        validateInputReferences(value.candidate, 'artifact.candidate')
+        v.refs(value.candidate.prompt_resource_refs ?? [], 'artifact.candidate.prompt_resource_refs', PROMPT_RESOURCE_KINDS)
+        if (value.candidate.selected_resources !== undefined) v.array(value.candidate.selected_resources, 'artifact.candidate.selected_resources', (item, path) => {
+          try { Schema.resolve(item, resourceSnapshotSchema, {}) } catch (error) { v.issue(path, error instanceof Error ? error.message : String(error)) }
+        })
+      }
       break
     case 'experience':
       for (const key of ['title', 'conditions', 'note']) v.text(value[key], `artifact.${key}`, true)

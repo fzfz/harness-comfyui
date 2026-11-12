@@ -34,6 +34,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_generation_models'),
     labelField: 'file_name',
     subtitleFields: Object.freeze(presentation.kinds['model'].summary),
+    multiple: presentation.kinds['model'].multiple,
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -42,6 +43,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_loras'),
     labelField: 'file_name',
     subtitleFields: Object.freeze(presentation.kinds['lora'].summary),
+    multiple: presentation.kinds['lora'].multiple,
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -50,6 +52,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_works'),
     labelField: 'name',
     subtitleFields: Object.freeze(presentation.kinds['work'].summary),
+    multiple: presentation.kinds['work'].multiple,
     baseModelScoped: false,
   }),
   Object.freeze({
@@ -58,6 +61,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_characters'),
     labelField: 'name',
     subtitleFields: Object.freeze(presentation.kinds['character'].summary),
+    multiple: presentation.kinds['character'].multiple,
     baseModelScoped: false,
   }),
   Object.freeze({
@@ -66,6 +70,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_styles'),
     labelField: 'name',
     subtitleFields: Object.freeze(presentation.kinds['style'].summary),
+    multiple: presentation.kinds['style'].multiple,
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -74,6 +79,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_prompt_terms'),
     labelField: 'canonical_tag',
     subtitleFields: Object.freeze(presentation.kinds['prompt-term'].summary),
+    multiple: presentation.kinds['prompt-term'].multiple,
     baseModelScoped: false,
   }),
   Object.freeze({
@@ -82,6 +88,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_artist_prompt_strings'),
     labelField: 'title',
     subtitleFields: Object.freeze(presentation.kinds['artist-string'].summary),
+    multiple: presentation.kinds['artist-string'].multiple,
     baseModelScoped: true,
   }),
   Object.freeze({
@@ -90,6 +97,7 @@ export const CATALOG_KIND_DEFINITIONS = Object.freeze([
     path: sourceCatalogPath('query_semantic_comfyui_templates'),
     labelField: 'title',
     subtitleFields: Object.freeze(presentation.kinds['comfyui-template'].summary),
+    multiple: presentation.kinds['comfyui-template'].multiple,
     baseModelScoped: true,
   }),
 ] as const)

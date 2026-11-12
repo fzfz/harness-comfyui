@@ -438,6 +438,7 @@ export class CatalogClient {
       return parseCatalogDetails({
         ...request,
         item: normalizeItem(request.kind, source),
+        extra_fields: Object.fromEntries(Object.entries(source).filter(([key]) => !CATALOG_PRESENTATION.kinds[request.kind].details.includes(key))),
         fields: CATALOG_PRESENTATION.kinds[request.kind].details.map(key => ({
           key, value: CATALOG_FIELDS[key]!.type === 'id' && source[key] !== null ? sourceId(source[key]) : source[key],
         })),

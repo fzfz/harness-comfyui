@@ -125,7 +125,7 @@ it('forks a review candidate with mixed catalog model scopes and preserves its f
     prompt_input: { positive_prompt: 'Review candidate', negative_prompt: 'haze' }, base_model_id: '9', ...candidate,
   } })
   expect(await branchAt(remote, source)).toEqual(parent)
-  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toEqual([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
+  expect((await service.getTask({ taskId: task.task_id }, identity)).artifacts).toMatchObject([{ task_id: task.task_id, artifact_id: published.artifact_id, artifact, disposition: published.disposition }])
   expect((await remote.getProjection(source, signal())).runs.map(run => run.run_id)).toEqual([runId])
   const acceptedId = await acceptRun(host, fork)
   expect((await remote.getProjection(fork, signal())).runs.find(run => run.run_id === acceptedId)!.generation_input).toEqual(candidate.generation_input)

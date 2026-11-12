@@ -63,6 +63,7 @@ const empty: WorkbenchProjection = {
   functions: [],
 }
 const draft: TaskDraft = {
+  prompt_resource_refs: [],
   parameter_mapping: null,
   prompt_input: { positive_prompt: '', negative_prompt: '' },
   generation_input: {
@@ -1597,7 +1598,7 @@ describe('experiment workbench shell', () => {
     const { renderer } = await mount(treeProjection())
     await click(renderer, '收起暖光')
     await click(renderer, '资源')
-    await click(renderer, '切换分支 暖光')
+    await change(renderer, '切换分支', 'warm')
     expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
     expect(renderer.root.findByProps({ 'aria-label': '收起暖光' })).toBeDefined()
     expect(renderer.root.findByProps({ 'aria-label': '切换分支 暖光细节' })).toBeDefined()
@@ -2719,7 +2720,7 @@ describe('experiment workbench Catalog search transitions', () => {
     await click(renderer, '资源')
     await change(renderer, '搜索资源', '  navigation draft  ')
     if (navigation === 'work') await change(renderer, '切换工作', 'work-b')
-    if (navigation === 'branch') await click(renderer, '切换分支 暖光')
+    if (navigation === 'branch') await change(renderer, '切换分支', 'warm')
     if (navigation === 'run') {
       await click(renderer, '查看运行记录')
       const card = renderer.root.findByProps({ 'aria-label': '运行记录' }).findAllByType('article').find(node => nodeText(node).includes('warm-r1'))!
@@ -2805,7 +2806,7 @@ describe('experiment workbench Catalog search transitions', () => {
     await change(renderer, '搜索资源', 'last')
     expect(firstSignal.aborted).toBe(false)
     await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
-    expect(firstSignal.aborted).toBe(true)
+    expect(firstSignal.aborted).toBe(false)
     await act(async () => finishFirst())
     expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['最后结果'])
     expect(readField(renderer.root, '搜索资源')).toBe('last')
@@ -2837,7 +2838,8 @@ describe('experiment workbench Catalog search transitions', () => {
     expect(vi.mocked(catalog.search).mock.calls).toHaveLength(submittedCalls)
     expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['玻璃 LoRA'])
     await act(async () => renderer.root.findByProps({ className: 'catalog-search' }).props.onSubmit({ preventDefault() {} }))
-    expect(catalog.search).toHaveBeenLastCalledWith({ kind: 'lora', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
+    expect(vi.mocked(catalog.search).mock.calls).toHaveLength(submittedCalls)
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['玻璃 LoRA'])
     expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
     expect(onAction).not.toHaveBeenCalled()
   })
@@ -2874,7 +2876,7 @@ describe('experiment workbench Catalog search transitions', () => {
     vi.mocked(catalog.search).mockClear()
     await click(renderer, '添加 LoRA')
     expect(readField(renderer.root, '搜索资源')).toBe('')
-    expect(catalog.search).toHaveBeenCalledWith({ kind: 'lora', query: '', page: 1, baseModelId: '1', modelId: null }, expect.any(AbortSignal))
+    expect(catalog.search).toHaveBeenCalledWith({ kind: 'lora', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
     expect(nodeText(renderer.root.findByProps({ className: 'row between catalog-results-head' }))).toContain('LoRA')
   })
 })
@@ -2950,7 +2952,7 @@ describe('experiment workbench generation-model filtering', () => {
     expect(catalog.search).toHaveBeenLastCalledWith({ kind: 'lora', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
   })
 
-  it('ignores cancelled model-option and selected-model responses after newer filters', async () => {
+  it('cancels stale model options and caches delayed resource pages after newer filters', async () => {
     const { catalog } = modelFilterCatalog()
     const search = vi.mocked(catalog.search).getMockImplementation()!
     let delayOptions = true
@@ -2965,17 +2967,21 @@ describe('experiment workbench generation-model filtering', () => {
     await click(renderer, '资源')
     await change(renderer, '筛选底模', '1')
     await change(renderer, '筛选底模', '2')
-    expect(pending.every(request => request.signal.aborted)).toBe(true)
+    expect(pending).toHaveLength(2)
+    expect(pending.filter(request => request.signal.aborted)).toHaveLength(1)
     await act(async () => { for (const request of pending.splice(0)) await request.finish() })
     expect(renderer.root.findByProps({ 'aria-label': '筛选生成模型' }).findAllByType('option').map(option => option.props.value)).toEqual(['', '201'])
     delayOptions = false
     await change(renderer, '筛选底模', '1')
     await change(renderer, '筛选生成模型', '110')
     await change(renderer, '筛选生成模型', '101')
-    expect(pending.every(request => request.signal.aborted)).toBe(true)
+    expect(pending.every(request => !request.signal.aborted)).toBe(true)
     await act(async () => { for (const request of pending.splice(0)) await request.finish() })
     expect(readField(renderer.root, '筛选生成模型')).toBe('101')
     expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['A 模型 101'])
+    await change(renderer, '筛选生成模型', '110')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual(['A 模型 110'])
+    expect(vi.mocked(catalog.search).mock.calls.filter(([request]) => request.modelId === '110')).toHaveLength(1)
   })
 
   it('retries a failed model-directory page and exposes the complete options', async () => {
@@ -3076,7 +3082,7 @@ describe.each([
     expect(reopened.onAction).not.toHaveBeenCalled()
   })
 
-  it('keeps base-model B results after the cancelled A request returns late', async () => {
+  it('keeps base-model B visible while a late A response fills the A cache', async () => {
     const catalog = createCatalog()
     let finishA!: () => void
     let signalA!: AbortSignal
@@ -3094,11 +3100,13 @@ describe.each([
     await click(renderer, label)
     await change(renderer, '筛选底模', '1')
     await change(renderer, '筛选底模', '2')
-    expect(signalA.aborted).toBe(true)
+    expect(signalA.aborted).toBe(false)
     expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([nameB])
     await act(async () => finishA())
     expect(readField(renderer.root, '筛选底模')).toBe('2')
     expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([nameB])
+    await change(renderer, '筛选底模', '1')
+    expect(renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)).toEqual([nameA])
     expect(data.branches.map(branch => branch.draft)).toEqual(originalDrafts)
     expect(onAction).not.toHaveBeenCalled()
   })
@@ -3812,7 +3820,7 @@ describe('experiment workbench direct generation model selection', () => {
     await click(renderer, '选择 ANIMA3')
     expect(onAction).toHaveBeenCalledExactlyOnceWith({
       type: 'resource-select', workspaceId: 'workspace-a', workId: 'work-a', branchId: 'root', id: '21',
-      value: { kind: 'model', id: '21', file_name: 'anima.safetensors' },
+      value: { kind: 'model', id: '21' },
     })
     expect(renderer.root.findAllByProps({ role: 'dialog' })).toEqual([])
     expect(renderer.root.findByProps({ 'aria-label': '资源' }).props.className).toBe('active')
@@ -3903,7 +3911,7 @@ describe('experiment workbench generation model selection', () => {
     } finally { await host.dispose() }
   })
 
-  it('opens model replacement with the current branch base and clears the previous model filter', async () => {
+  it('opens model replacement with all base models and clears the previous model filter', async () => {
     const { catalog } = modelFilterCatalog(), data = fullProjection()
     data.branches[0]!.draft.base_model_id = '1'
     const { renderer } = await mount(data, { catalog })
@@ -3911,9 +3919,9 @@ describe('experiment workbench generation model selection', () => {
     await change(renderer, '筛选底模', '2')
     await change(renderer, '筛选生成模型', '201')
     await click(renderer, '更换生成模型')
-    expect(readField(renderer.root, '筛选底模')).toBe('1')
+    expect(readField(renderer.root, '筛选底模')).toBe('')
     expect(readField(renderer.root, '筛选生成模型')).toBe('')
-    expect(catalog.search).toHaveBeenCalledWith({ kind: 'model', query: '', page: 1, baseModelId: '1', modelId: null }, expect.any(AbortSignal))
+    expect(catalog.search).toHaveBeenCalledWith({ kind: 'model', query: '', page: 1, baseModelId: null, modelId: null }, expect.any(AbortSignal))
     expect(nodeText(renderer.root.findByProps({ className: 'catalog-pagination' }))).toContain('1 / 2')
   })
 })
@@ -4253,7 +4261,7 @@ describe('experiment workbench Catalog detail values', () => {
         { key: 'version', value: null }, { key: 'description', value: '模型说明' },
         { key: 'usage', value: '模型用法' }, { key: 'skill_name', value: '生成 Skill' },
       ],
-      expected: [['资源类型', '生成模型'], ['底模', 'anima'], ['文件名', 'model.safetensors'], ['文件格式', 'safetensors'], ['精度 / 量化', 'fp16'], ['说明', '模型说明']],
+      expected: [['资源类型', '生成模型'], ['底模', 'anima'], ['文件名', 'model.safetensors'], ['文件格式', 'safetensors'], ['精度 / 量化', 'fp16'], ['说明', '模型说明'], ['记录 ID', '11'], ['基础模型 ID', '1'], ['作者', '作者'], ['使用方法', '模型用法'], ['Skill 名称', '生成 Skill']],
     },
 {
       kind: 'lora' as const, category: 'LoRA', id: '13', label: '玻璃 LoRA',
@@ -4264,7 +4272,7 @@ describe('experiment workbench Catalog detail values', () => {
         { key: 'version', value: 'v1' }, { key: 'description', value: 'LoRA 说明' },
         { key: 'usage', value: 'LoRA 用法' }, { key: 'trigger_words_json', value: ['glass', 'soft light'] }, { key: 'weight', value: 0 },
       ],
-      expected: [['资源类型', 'LoRA'], ['底模', 'anima'], ['文件名', 'glass.safetensors'], ['文件格式', 'safetensors'], ['版本', 'v1'], ['说明', 'LoRA 说明'], ['触发词', 'glass、soft light'], ['建议权重', '0']],
+      expected: [['资源类型', 'LoRA'], ['底模', 'anima'], ['文件名', 'glass.safetensors'], ['文件格式', 'safetensors'], ['版本', 'v1'], ['说明', 'LoRA 说明'], ['触发词', 'glass、soft light'], ['建议权重', '0'], ['记录 ID', '13'], ['基础模型 ID', '1'], ['生成模型 ID', '11'], ['作者', '作者'], ['使用方法', 'LoRA 用法']],
     },
 {
       kind: 'comfyui-template' as const, category: 'Workflow 模板', id: '12', label: '文生图',
@@ -4272,7 +4280,7 @@ describe('experiment workbench Catalog detail values', () => {
         { key: 'id', value: '12' }, { key: 'base_model_id', value: '1' }, { key: 'model_id', value: '11' },
         { key: 'lora_id', value: null }, { key: 'title', value: '文生图' }, { key: 'template_type', value: 'text_to_image' },
       ],
-      expected: [['资源类型', 'Workflow 模板'], ['底模', 'anima'], ['模板类型', '文生图']],
+      expected: [['资源类型', 'Workflow 模板'], ['底模', 'anima'], ['模板类型', '文生图'], ['记录 ID', '12'], ['基础模型 ID', '1'], ['生成模型 ID', '11'], ['标题', '文生图']],
     }
 ])('shows the prototype detail rows for $kind from the Catalog values', async ({ kind, category, id, label, fields, expected }) => {
     const catalog = makeCatalog()
@@ -4312,7 +4320,7 @@ describe('experiment workbench Catalog detail values', () => {
     await click(renderer, '资源')
     await click(renderer, 'LoRA')
     await click(renderer, '查看详情')
-    expect(renderer.root.findAllByType('dd').map(nodeText)).toEqual(['LoRA', '', '', '0'])
+    expect(renderer.root.findAllByType('dd').map(nodeText)).toEqual(['LoRA', '', '', '0', '13'])
   })
 })
 
@@ -4612,6 +4620,142 @@ describe('experiment workbench overlay and loading lifecycle', () => {
   })
 })
 
+describe('experiment workbench complete resource selection', () => {
+  it('shows every Catalog category, preserves same-ID selections and displays each prompt resource group', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft.prompt_resource_refs = [
+      { kind: 'style', id: '16' }, { kind: 'style', id: '26' },
+      { kind: 'artist-string', id: '16' }, { kind: 'artist-string', id: '28' },
+      { kind: 'work', id: '14' }, { kind: 'character', id: '15' }, { kind: 'prompt-term', id: '17' },
+    ]
+    const { renderer, onAction } = await mount(data, { catalog })
+    await click(renderer, '资源')
+    const kinds = renderer.root.findByProps({ 'aria-label': '资源类型' })
+    expect(kinds.findAllByType('button').map(button => button.props['data-resource-kind'])).toEqual(
+      expect.arrayContaining(['model', 'comfyui-template', 'lora', 'work', 'character', 'style', 'prompt-term', 'artist-string']))
+    const style = kinds.findAllByType('button').find(button => button.props['data-resource-kind'] === 'style')!
+    expect(nodeText(style)).toContain('2')
+    await act(() => style.props.onClick())
+    expect(renderer.root.findByProps({ className: 'catalog-content' }).findByProps({ 'aria-label': '移除 柔光' }).props['aria-pressed']).toBe(true)
+    const resources = renderer.root.findByProps({ 'aria-label': '已选资源' })
+    expect(resources.findAllByProps({ 'data-resource-group': 'style' })).toHaveLength(1)
+    expect(nodeText(resources.findByProps({ 'data-resource-group': 'style' }))).toContain('柔光')
+    expect(resources.findAllByProps({ 'data-resource-group': 'artist-string' })).toHaveLength(1)
+    await act(() => resources.findByProps({ 'data-resource-group': 'style' }).findAllByType('button').find(button => button.props['aria-label'] === '移除 柔光')!.props.onClick())
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: 'edit-draft' }))
+    expect(data.branches[0]!.draft.prompt_resource_refs).toHaveLength(7)
+    expect(data.branches[0]!.editing_draft!.prompt_resource_refs).toEqual([
+      { kind: 'style', id: '26' }, { kind: 'artist-string', id: '16' }, { kind: 'artist-string', id: '28' },
+      { kind: 'work', id: '14' }, { kind: 'character', id: '15' }, { kind: 'prompt-term', id: '17' },
+    ])
+  })
+
+  it('opens selected execution and prompt resources from editable and saved inputs', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.runs = []
+    data.branches[0]!.draft.prompt_resource_refs = [{ kind: 'style', id: '16' }]
+    const original = structuredClone(data.branches[0]!.draft)
+    const { renderer, onAction } = await mount(data, { catalog })
+    const resources = () => renderer.root.findByProps({ 'aria-label': '已选资源' })
+    const open = async (name: string) => {
+      await act(() => resources().findByProps({ 'aria-label': `查看详情 ${name}` }).props.onClick())
+    }
+    for (const [name, kind, id] of [
+      ['model.safetensors', 'model', '11'], ['文生图', 'comfyui-template', '12'], ['玻璃 LoRA', 'lora', '13'],
+    ]) {
+      await open(name!)
+      expect(catalog.details).toHaveBeenLastCalledWith({ kind, id }, expect.any(AbortSignal))
+      expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toHaveLength(1)
+    }
+    await act(() => resources().findByProps({ 'aria-label': '添加 画师或画风' }).props.onClick())
+    expect(renderer.root.findByProps({ 'data-resource-kind': 'style' }).props['aria-pressed']).toBe(true)
+    expect(renderer.root.findAllByProps({ className: 'catalog-detail' })).toHaveLength(0)
+    await open('柔光')
+    expect(catalog.details).toHaveBeenLastCalledWith({ kind: 'style', id: '16' }, expect.any(AbortSignal))
+    await click(renderer, '保存参数')
+    expect(resources().findAllByType('button').map(button => button.props['aria-label'])).toEqual(['查看详情 柔光'])
+    await click(renderer, '运行结果')
+    await open('柔光')
+    expect(renderer.root.findByProps({ className: 'catalog-detail' }).findAllByType('h2').map(nodeText)).toEqual(['柔光'])
+    expect(data.branches[0]!.draft).toEqual(original)
+    expect(onAction).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'resource-select' }))
+  })
+
+  it('keeps the active category when a previous Catalog response arrives late', async () => {
+    const data = fullProjection(), catalog = makeCatalog()
+    data.branches[0]!.draft.prompt_resource_refs = [{ kind: 'style', id: '16' }, { kind: 'artist-string', id: '18' }]
+    const search = vi.mocked(catalog.search).getMockImplementation()!
+    let finish!: () => Promise<void>, previousSignal!: AbortSignal
+    vi.mocked(catalog.search).mockImplementation((request, signal) => request.kind === 'style'
+      ? new Promise(resolve => { previousSignal = signal; finish = async () => resolve(await search(request, signal)) })
+      : search(request, signal))
+    const { renderer } = await mount(data, { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '画师或画风')
+    await click(renderer, '画师串')
+    const labels = () => renderer.root.findByProps({ className: 'catalog-grid' }).findAllByType('h3').map(nodeText)
+    expect(labels()).toEqual(['画师串'])
+    expect(previousSignal.aborted).toBe(false)
+    await act(async () => finish())
+    expect(labels()).toEqual(['画师串'])
+    expect(renderer.root.findByProps({ className: 'catalog-content' }).findByProps({ 'aria-label': '移除 画师串' }).props['aria-pressed']).toBe(true)
+    await click(renderer, '画师或画风')
+    expect(labels()).toEqual(['柔光'])
+    expect(vi.mocked(catalog.search).mock.calls.filter(([request]) => request.kind === 'style')).toHaveLength(1)
+  })
+
+  it('displays fixed historical resource content without querying current Catalog details', async () => {
+    const data = fullProjection(), run = data.runs[0]!, catalog = makeCatalog()
+    data.branches[0]!.draft.prompt_resource_refs = [{ kind: 'style', id: '26' }]
+    const snapshots = [{ kind: 'style' as const, id: '16', name: '当次画风', fields: { prompt_text: 'recorded brushwork' } }]
+    const { renderer } = await mount(data, { catalog, remote: {
+      getRunInput: async () => ({ ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
+        image_refs: [], workflow_image_bindings: [], input_description: runInputDescription(run.generation_input.parameters),
+        prompt_input: { positive_prompt: 'recorded prompt', negative_prompt: '' }, selected_resources: snapshots }),
+    } })
+    vi.mocked(catalog.details).mockClear()
+    await click(renderer, '查看运行输入')
+    const resources = renderer.root.findByProps({ 'aria-label': '已选资源' })
+    expect(nodeText(resources)).toContain('当次画风')
+    expect(nodeText(resources)).toContain('recorded brushwork')
+    expect(resources.findAllByType('button')).toHaveLength(0)
+    expect(catalog.details).not.toHaveBeenCalledWith({ kind: 'style', id: '16' }, expect.any(AbortSignal))
+    expect(data.branches[0]!.draft.prompt_resource_refs).toEqual([{ kind: 'style', id: '26' }])
+  })
+
+  it('shows original prompt resource text and expandable source fields in details', async () => {
+    const catalog = makeCatalog()
+    vi.mocked(catalog.details).mockImplementation(async request => ({
+      ...request, item: catalogItems.find(item => item.context.kind === request.kind)!,
+      fields: request.kind === 'style' ? [
+        { key: 'id', value: '16' }, { key: 'name', value: '柔光' }, { key: 'aliases_json', value: ['soft'] },
+        { key: 'prompt_text', value: 'artist, soft light' }, { key: 'style_description', value: '薄涂的透明光影' },
+      ] : [],
+      extra_fields: { source_notes: { examples: ['original note'] } },
+    }))
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '资源')
+    await click(renderer, '画师或画风')
+    await click(renderer, '查看详情 柔光')
+    const detail = renderer.root.findByProps({ className: 'catalog-detail' })
+    expect(nodeText(detail)).toContain('artist, soft light')
+    expect(nodeText(detail)).toContain('薄涂的透明光影')
+    expect(nodeText(detail)).toContain('soft')
+    expect(detail.findAllByType('summary').map(nodeText)).toContain('其他字段')
+    expect(nodeText(detail)).toContain('source_notes')
+    expect(nodeText(detail)).toContain('original note')
+  })
+
+  it('opens selected resource categories with all base models', async () => {
+    const catalog = makeCatalog()
+    const { renderer } = await mount(fullProjection(), { catalog })
+    await click(renderer, '添加 LoRA')
+    expect(renderer.root.findByProps({ 'aria-label': '筛选底模' }).props.value).toBe('')
+    expect(catalog.search).toHaveBeenLastCalledWith(expect.objectContaining({ kind: 'lora', baseModelId: null }), expect.any(AbortSignal))
+  })
+})
+
 describe('experiment workbench free Catalog resource selection', () => {
   const choices = [
     ['lora', '添加 LoRA', 1],
@@ -4642,7 +4786,7 @@ describe('experiment workbench free Catalog resource selection', () => {
         expect(button.props['aria-pressed']).toBe(false)
         await act(() => button.props.onClick())
         expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
-          type: 'resource-select', id: item.context.id, value: item.context,
+          type: 'resource-select', id: item.context.id, value: { kind: item.context.kind, id: item.context.id },
         }))
       }
     }
@@ -4676,7 +4820,7 @@ describe('experiment workbench free Catalog resource selection', () => {
     const button = renderer.root.findByProps({ 'aria-label': '选择 文生图' })
     expect(button.props.disabled).toBe(false)
     await act(() => button.props.onClick())
-    expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'resource-select', id: '12', value: item.context }))
+    expect(onAction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'resource-select', id: '12', value: { kind: item.context.kind, id: item.context.id } }))
   })
 })
 
@@ -6657,7 +6801,7 @@ describe('prompt editing through the visible workbench', () => {
     const request = start.mock.calls[0]![0]
     const completed: PromptTurn = { request_id: request.request_id, task_id: 'manual-task', turn_index: 1, function_id: 'prompt', kind: 'prompt', intent: 'rewrite', candidate: null, session_id: 'session', harness_turn: 1,
       preset_id: 'preset', agent_model: data.functions[0]!.agent_model, input: { ...request.input, base_model_name: 'SDXL', reference_context: {} },
-      request_template: '', request_parts: { block_templates: { requirements_block: '', prompt_edit_block: '', references_block: '' }, reference_descriptions: { requested_skill: '', experiences: '', task_artifacts: '', run_ids: '', images: '' } },
+      request_template: '', request_parts: { block_templates: { requirements_block: '', prompt_edit_block: '', references_block: '' }, reference_descriptions: { requested_skill: '', experiences: '', task_artifacts: '', run_ids: '', images: '', selected_resources: '' } },
       request_text: '', status: 'succeeded', error: null, result: { type: 'prompt', positive_prompt: 'Agent result', negative_prompt: '' }, artifact_id: 'artifact', adopted: null, applied_at: null, created_at: 1, finished_at: 2, start_seq: 0,
     }
     await act(() => { finish(completed); data.tasks.push(makeTask('manual-task', 'root', 'prompt')); remote.publish(data, [completed]) })
@@ -8163,7 +8307,7 @@ describe('experiment workbench Run review through Remote', () => {
       await change(renderer, '任务类型', 'resources')
       expect(nodeText(renderer.root.findByProps({ id: 'function-location' }))).toBe('资源')
       const defaultResources = readField(renderer.root, '执行要求')
-      expect(defaultResources).toBe(approvedInstructions.functions.find(item => item.kind === 'resources')!.requestTemplate)
+      expect(defaultResources).toBe(WORKBENCH_FUNCTIONS.find(item => item.kind === 'resources')!.default_request_template)
       await change(renderer, '执行要求', '自定义执行要求 {{task_id}}')
       await change(renderer, '任务类型', 'parameters')
       expect(readField(renderer.root, '执行要求')).toBe('自定义执行要求 {{task_id}}')

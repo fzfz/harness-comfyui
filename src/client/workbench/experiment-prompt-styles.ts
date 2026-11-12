@@ -17,7 +17,7 @@ export const promptEditingStyles = `
 .experiment-workbench .template-variable-list button[aria-selected=true], .experiment-workbench .template-variable-list button:hover { background: var(--tint); }
 .experiment-workbench .template-variable-list code { display: block; color: var(--muted); }
 .experiment-workbench .request-block-editor, .experiment-workbench .request-reference-editor, .experiment-workbench .request-preview { margin: 14px 0; }
-.experiment-workbench .request-preview pre, .experiment-workbench .prompt-task-turns pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.experiment-workbench .request-preview pre, .experiment-workbench .prompt-task-turns pre, .experiment-workbench .prompt-translation pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .experiment-workbench .prompt-task-turns details { margin: 12px 0; border-top: 1px solid var(--line); padding-top: 12px; }
 @media (max-width: 800px) { .experiment-workbench .prompt-comparison-columns { grid-template-columns: 1fr; } }
 `

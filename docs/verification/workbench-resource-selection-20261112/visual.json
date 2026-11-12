@@ -1,0 +1,1268 @@
+{
+  "run": {
+    "ok": true,
+    "runId": "68d8a9dd-33b3-4620-974a-a59f34b93bb1",
+    "mode": "development",
+    "environment": {
+      "root": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment",
+      "leasePath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/active-probe.json"
+    },
+    "initializationStatus": "unverified",
+    "recordPath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/68d8a9dd-33b3-4620-974a-a59f34b93bb1/run.json",
+    "evidenceDirectory": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/68d8a9dd-33b3-4620-974a-a59f34b93bb1/evidence",
+    "process": {
+      "pid": 31901,
+      "processGroupId": 31901,
+      "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/user-data --remote-debugging-port=62103 --remote-debugging-address=127.0.0.1",
+      "workingDirectory": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/workspace",
+      "listeningPorts": [
+        62102,
+        62103,
+        62128
+      ],
+      "observedAt": "2026-11-12T05:04:37.917Z"
+    },
+    "ports": {
+      "host": 62102,
+      "rendererCdp": 62103,
+      "hostInspector": 62104
+    },
+    "renderer": {
+      "ready": true,
+      "title": "DeepSeek Harness",
+      "url": "dsh-app://app/",
+      "readyState": "complete",
+      "bodyTextLength": 24
+    },
+    "hostInspectorListening": false,
+    "capabilities": {
+      "defaultApplicationLogsIsolated": false,
+      "applicationHostHealthVerified": false,
+      "pluginIdentityVerified": false
+    },
+    "stopCommand": {
+      "executable": "/opt/homebrew/Cellar/node/25.8.2/bin/node",
+      "arguments": [
+        "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/tests/desktop/fixtures/official-desktop-probe.mjs",
+        "stop",
+        "--run-id",
+        "68d8a9dd-33b3-4620-974a-a59f34b93bb1",
+        "--repository-root",
+        "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui",
+        "--config",
+        "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/resource-selection-implementation/desktop.json"
+      ]
+    }
+  },
+  "sourceIdentity": {
+    "schemaVersion": 1,
+    "packageName": "harness-comfyui",
+    "packageVersion": "0.53.3",
+    "archivePath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/resource-selection-implementation/candidate.tgz",
+    "sourceCommit": "0310c2c08265cdd4bc959d2a981fa797f3119e75",
+    "dirty": true,
+    "runtimeFiles": [
+      ".agents/skills/anima-prompt-builder/SKILL.md",
+      ".agents/skills/anima-prompt-builder/agents/openai.yaml",
+      ".agents/skills/anima-prompt-builder/references/04-final-self-check.md",
+      ".agents/skills/anima-prompt-builder/references/05-conflict-table.md",
+      ".agents/skills/anima-prompt-builder/references/06-slot-order.md",
+      ".agents/skills/anima-prompt-builder/references/07-assembly-decision-tree.md",
+      ".agents/skills/anima-prompt-builder/references/08-count-identity.md",
+      ".agents/skills/anima-prompt-builder/references/09-appearance.md",
+      ".agents/skills/anima-prompt-builder/references/10-clothing-state.md",
+      ".agents/skills/anima-prompt-builder/references/11-pose-action-sex.md",
+      ".agents/skills/anima-prompt-builder/references/12-expression-reaction.md",
+      ".agents/skills/anima-prompt-builder/references/13-camera-shot.md",
+      ".agents/skills/anima-prompt-builder/references/14-scene-environment.md",
+      ".agents/skills/anima-prompt-builder/references/15-detail-mood.md",
+      ".agents/skills/anima-prompt-builder/references/16-special-theme.md",
+      ".agents/skills/anima-prompt-builder/references/artist-style-query-vocabulary.md",
+      ".agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/anima-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/anima-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/anima-prompt-builder/references/prompt-weight-policy.json",
+      ".agents/skills/anima-prompt-builder/references/prompt-weighting.md",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/anima-prompt-builder/scripts/validate-output.mjs",
+      ".agents/skills/character-portrait-prompt-designer/SKILL.md",
+      ".agents/skills/character-portrait-prompt-designer/evals/evals.json",
+      ".agents/skills/character-portrait-prompt-designer/evals/verification-report.md",
+      ".agents/skills/character-portrait-prompt-designer/references/color-theory.md",
+      ".agents/skills/character-portrait-prompt-designer/references/material-selection.md",
+      ".agents/skills/comfyui-generate/SKILL.md",
+      ".agents/skills/comfyui-generate/references/image-size-selection.md",
+      ".agents/skills/comfyui-image-review/SKILL.md",
+      ".agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      ".agents/skills/krea2-anime-prompt-builder/agents/openai.yaml",
+      ".agents/skills/krea2-anime-prompt-builder/references/anime-style-presets.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/krea2-anime-prompt-builder/references/input-contract.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/krea2-prompt-rules.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/motion-migration-constraints.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/游戏服装多样性库.md",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/validate-output.mjs",
+      ".agents/skills/local-image-reader/SKILL.md",
+      ".agents/skills/moss-prompt-builder/SKILL.md",
+      ".agents/skills/moss-prompt-builder/agents/openai.yaml",
+      ".agents/skills/moss-prompt-builder/scripts/compile_prompt.py",
+      ".agents/skills/moss-prompt-builder/scripts/test_compile_prompt.py",
+      ".agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+      ".agents/skills/wai-sdxl-prompt-builder/agents/openai.yaml",
+      ".agents/skills/wai-sdxl-prompt-builder/references/action-structure.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/artist-style-query-vocabulary.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/composition-decision-tree.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/NTR.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/RBQ与物化.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/事后.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/偷窥与展示.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/另类日常.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/异种.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/束缚与BDSM.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/男娘与Futa.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/胁迫.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/调教与宠物.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/隐奸.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/before-after-storyboard.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/camera-action-pairing.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/environment-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/multi-subject-attribution.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/nsfw-action-structure.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/occlusion-and-depth.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/single-subject-portrait.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/two-subject-interaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/input-contract.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-conflict-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/action.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/appearance.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/artist.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/camera-composition.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/character.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/detail-mood.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/environment.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/expression-reaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/lighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/non-artist-style.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/outfit.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/quality.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/relation-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/subject.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/technical.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/action.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/appearance.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/artist.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/camera-composition.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/character.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/detail-mood.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/environment.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/expression-reaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/lighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/non-artist-style.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/outfit.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/quality.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/relation-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/subject.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/technical.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-self-check.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weight-policy.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/spatial-relation-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/storyboard-panel-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/visual-design-slot-order.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/wai-artist-syntax.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/wai-prompt-position-order.md",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/validate-output.mjs",
+      ".local/source-cli/harness-comfyui.mjs",
+      ".local/source-client/client.js",
+      ".local/source-host/browser-settings-schema-Ylit-evx.js",
+      ".local/source-host/cli.js",
+      ".local/source-host/comfy-frontend-worker.js",
+      ".local/source-host/core.js",
+      ".local/source-host/delegation-DCPsytPo.js",
+      ".local/source-host/dispatch-BZ9Bn2fH.js",
+      ".local/source-host/errors-CkknegYz.js",
+      ".local/source-host/generation-error-s7pDSYyC.js",
+      ".local/source-host/generation-runtime-DQW5FsJ0.js",
+      ".local/source-host/image-reader-processing-D040q8C2.js",
+      ".local/source-host/image-reader.js",
+      ".local/source-host/index.js",
+      ".local/source-host/node-script-environment-Cri47yxe.js",
+      ".local/source-host/pending-requests-BrC9NqCi.js",
+      ".local/source-host/plugin-BNVo3WVY.js",
+      ".local/source-host/prompt-contract-BXnLomFw.js",
+      ".local/source-host/resource-path-DPveDwF2.js",
+      ".local/source-host/run-input-contract-DodbMeX2.js",
+      ".local/source-host/runtime-artifacts-B-u2SE0p.js",
+      ".local/source-host/settings-Ba3QViu4.js",
+      ".local/source-host/settings-entry-ids-DSb58B0I.js",
+      ".local/source-host/specialist-tools.js",
+      ".local/source-host/tool-schema-LF-lVRce.js",
+      ".local/source-host/validation-nH6wF6u_.js",
+      ".local/source-host/web.js",
+      ".local/source-host/workbench-tools.js",
+      "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+      "agent-presets/harness-comfyui-cli-candidate/preset.yml",
+      "agent-presets/harness-comfyui-translation/agent.cordis.yml",
+      "agent-presets/noobai-mcp.cordis.yml",
+      "agent-presets/presets.cordis.yml",
+      "agent-presets/project-installed-presets.mjs",
+      "agent-presets/shared/agent.cordis.yml",
+      "agent-presets/specialist-composition.mjs",
+      "agent-presets/specialist-preset.mjs",
+      "agent-presets/specialist-skills.mjs",
+      "agent-presets/translation-composition.mjs",
+      "agent-presets/translation-preset.mjs",
+      "agent-presets/workbench-composition.mjs",
+      "config/base.json",
+      "config/browser-settings.json",
+      "config/environment-overrides.json",
+      "config/error-catalog.json",
+      "config/image-reader-processing.json",
+      "config/image-reader-profiles.json",
+      "config/image-reader-runtime.json",
+      "config/managed-cli-environment.json",
+      "config/managed-cli-help.json",
+      "config/managed-cli-limits.json",
+      "config/node-script-runtime.json",
+      "config/plugin-package-schema.mjs",
+      "config/plugin-package.json",
+      "config/plugin-runtime-resources-schema.ts",
+      "config/plugin-runtime-resources.json",
+      "config/plugin-storage.json",
+      "config/product-agent-schema.mjs",
+      "config/product-agent.json",
+      "config/profiles/production.json",
+      "config/runtime-artifacts.json",
+      "config/schema.ts",
+      "config/settings-entry-ids.json",
+      "config/source-client.json",
+      "config/workbench-agent-roles.json",
+      "config/workbench-delegation-tools.json",
+      "config/workbench-tool-descriptions.json",
+      "config/workbench-translation.json",
+      "cordis.patch.yml",
+      "locales/cli/en.json",
+      "locales/cli/zh.json",
+      "locales/core/en.json",
+      "locales/core/zh.json",
+      "locales/image-reader/en.json",
+      "locales/image-reader/zh.json",
+      "locales/presets/en.json",
+      "locales/presets/zh.json",
+      "locales/web/en.json",
+      "locales/web/zh.json",
+      "locales/workbench/en.json",
+      "locales/workbench/zh.json",
+      "scripts/cli/help-schema.mjs",
+      "scripts/cli/help.mjs"
+    ]
+  },
+  "restart": {
+    "restored": {
+      "branch_id": "ce365458-bb71-4f7c-aee3-1a56640c13ca",
+      "work_id": "bec0a074-fda5-408e-9a53-1fd7f3779666",
+      "parent_branch_id": null,
+      "name": "主分支",
+      "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+      "source_run_id": null,
+      "source_artifact_id": null,
+      "source_experience_id": null,
+      "draft": {
+        "prompt_resource_refs": [
+          {
+            "kind": "style",
+            "id": "12344"
+          },
+          {
+            "kind": "style",
+            "id": "12343"
+          },
+          {
+            "kind": "artist-string",
+            "id": "957"
+          },
+          {
+            "kind": "artist-string",
+            "id": "955"
+          },
+          {
+            "kind": "work",
+            "id": "3761"
+          },
+          {
+            "kind": "work",
+            "id": "3760"
+          },
+          {
+            "kind": "character",
+            "id": "39938"
+          },
+          {
+            "kind": "character",
+            "id": "39937"
+          },
+          {
+            "kind": "prompt-term",
+            "id": "914"
+          },
+          {
+            "kind": "prompt-term",
+            "id": "2121"
+          }
+        ],
+        "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+        "prompt_change_request": "",
+        "prompt_input": {
+          "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, ds_mile, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, reflection, watercolor",
+          "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+        },
+        "generation_input": {
+          "title": "资源选择与提示词",
+          "instance_id": null,
+          "template_id": "29",
+          "model": {
+            "id": "17",
+            "file_name": "aMixIllustrious_aMix.safetensors"
+          },
+          "parameters": {},
+          "loras": [
+            {
+              "id": "102",
+              "file_name": "rimixxO2.safetensors",
+              "weight": 0.75,
+              "trigger_words": []
+            },
+            {
+              "id": "74",
+              "file_name": "Dramatic Lighting Slider.safetensors",
+              "weight": 1.25,
+              "trigger_words": []
+            }
+          ]
+        },
+        "reference_task_ids": [],
+        "reference_run_ids": [],
+        "reference_experiences": [],
+        "image_refs": [],
+        "workflow_image_bindings": [],
+        "instructions": "",
+        "base_model_id": "2",
+        "parameter_mapping": null
+      },
+      "editing_draft": null,
+      "execution": {
+        "mode": "once",
+        "max_runs": 3
+      }
+    },
+    "body": "h\nHARNESS / COMFYUI\n工作区\n资源选择验收\ndefault-workspace\n添加工作区\n/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/workspace\n实验工作台\n配置中心\n工作\n资源选择与提示词\n主分支\n新建工作\n运行结果\n资源\n任务1\n经验0\n收藏0\n运行记录\n资源目录\n返回结果\n刷新目录\n生成模型\n1\nLoRA\n2\n作品\n2\n角色\n2\n画师或画风\n2\n提示词条目\n2\n画师串\n2\nWorkflow 模板\n1\n底模\n全部底模\nmoss\nkrea2\nwai\nanima\n生成模型\n全部生成模型\nmoss_image_base_int8_convrot.safetensors\nmoss_image_sft_int8_convrot.safetensors\nMoss-绮真mossRefinedRealism_v10_int8.safetensors\nMoss-moodyMossMix_v2025STEPSCFG3_int8_convrot.safetensors\nMoss-动漫miaomiaoHaremMOSS_baseV10_int8.safetensors\nMoss-大师pornmasterMoss_v1_int8_convrot.safetensors\nMoss-dirtyMoss_int8_convrot.safetensors\nmoss_image_sft_4step_v2.0_fp32.safetensors\naMixIllustrious_aMix.safetensors\nmiaomiaoHarem_anima16.safetensors\nrinSoftsketch_v20.safetensors\nhassakuXLIllustrious_v13StyleA.safetensors\nKrea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf\nKrea2-TurboNSWAIO_v10_fp8.safetensors\nKrea2-MuseByStable_v15Turbo_fp8.safetensors\nkrea2_turbo_bf16.safetensors\nanima-preview3-base.safetensors\nKrea2-MuseByStable_v15Turbo_GGUF_Q4.gguf\nanima-aesthetic-v1.1.safetensors\nanima_baseV10.safetensors\nwaiIllustriousSDXL_v170.safetensors\n搜索\n画师串\n959 项\nmoss\n淡雅细线清透赛璐璐风\n\n选择\n查看详情\nanima\n圆窗青丝柔映·ANIMA\n\n说明：画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。\n\n选择\n查看详情\nwai\n已选\n圆窗青丝柔映·WAI\n\n说明：画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。\n\n移除\n查看详情\nanima\n双灯青衣斜光·ANIMA\n\n说明：画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，正面亮光在轮廓和桌面形成清楚亮带；曲线形体配合直线框架，中央轻倾近景由双侧框景和水平面构成层次，局部亮带与表面反射加强前后景关系。\n\n选择\n查看详情\nwai\n已选\n双灯青衣斜光·WAI\n\n说明：画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，正面亮光在轮廓和桌面形成清楚亮带；曲线形体配合直线框架，中央轻倾近景由双侧框景和水平面构成层次，局部亮带与表面反射加强前后景关系。\n\n移除\n查看详情\nanima\n圆窗青缎静构·ANIMA\n\n说明：画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，正面亮光在曲面和木桌形成柔和反射；曲线形体配合直线框架，中央定轴近景由圆弧后景和水平面收束，局部亮带与表面反射加强前后景关系。\n\n选择\n查看详情\nwai\n圆窗青缎静构·WAI\n\n说明：画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，正面亮光在曲面和木桌形成柔和反射；曲线形体配合直线框架，中央定轴近景由圆弧后景和水平面收束，局部亮带与表面反射加强前后景关系。\n\n选择\n查看详情\nanima\n圆窗青髻暖映·ANIMA\n\n说明：画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白、浅肤与朱红形成冷暖层次，圆窗亮光在轮廓和桌面形成连续高光；曲线形体配合直线框架，中央近景以左侧灯笼和圆弧后景保持平衡，局部亮带与表面反射加强前后景关系。\n\n选择\n查看详情\n上一页\n1 / 120\n下一页\n当前分支\n主分支\n\n所属工作：资源选择与提示词\n\n起点：新建主分支\n\n准备运行\n查看运行\n编辑下次运行\n编辑中\n参考来源\n引用运行\n\n尚未添加参考来源。\n\n引用经验\n引用收藏\n引用任务\n分支名称\n原始需求\n图像底模\n请选择底模\nmoss\nkrea2\nwai\nanima\n对比提示词\nAgent 预设：ComfyUI 提示词预设\nAgent 模型：OpenRouter · thinkingmachines/inkling-2-small:free\n提示词已保存。\n正向提示词\n翻译\n负向提示词\n翻译\nComfyUI 实例\n请选择\nwin3080\n已选资源\n选择资源\n推荐资源\n生成模型 · wai\naMixIllustrious_aMix.safetensors\n更换\nWorkflow 模板\nwai_basic_txt2img\n更换\nLoRA2\n添加\nrimixxO2.safetensors\n权重\n×\nDramatic Lighting Slider.safetensors\n权重\n×\n作品2\n添加\n.flow\n查看详情\n移除\nvtuber\n查看详情\n移除\n角色2\n添加\nvanilla\n查看详情\n移除\nd.va（守卫先锋）\n查看详情\n移除\n画师或画风2\n添加\nsay_hana\n查看详情\n移除\nds_mile\n查看详情\n移除\n提示词条目2\n添加\n!\n查看详情\n移除\n!!\n查看详情\n移除\n画师串2\n添加\n圆窗青丝柔映·WAI\n查看详情\n移除\n双灯青衣斜光·WAI\n查看详情\n移除\n输入图片\nWorkflow 输入图片\n从运行记录选择\n选择本机图片\n\n未选择 Workflow 输入图片\n\nAgent 参考图片\n从运行记录选择\n选择本机图片\n\n未选择 Agent 参考图片\n\n生成参数\n建议参数\n采样步数\n引导强度\nSeed\n画面尺寸\n请选择\n取消\n保存参数",
+    "overflow": {
+      "client": 1265,
+      "scroll": 1265
+    }
+  },
+  "selection": {
+    "cleared": "生成模型\n1\nLoRA\n2\n作品\n2\n角色\n2\n画师或画风\n2\n提示词条目\n2\n画师串\n2\nWorkflow 模板\n1\n底模\n全部底模\nmoss\nkrea2\nwai\nanima\n生成模型\n全部生成模型\nmoss_image_base_int8_convrot.safetensors\nmoss_image_sft_int8_convrot.safetensors\nMoss-绮真mossRefinedRealism_v10_int8.safetensors\nMoss-moodyMossMix_v2025STEPSCFG3_int8_convrot.safetensors\nMoss-动漫miaomiaoHaremMOSS_baseV10_int8.safetensors\nMoss-大师pornmasterMoss_v1_int8_convrot.safetensors\nMoss-dirtyMoss_int8_convrot.safetensors\nmoss_image_sft_4step_v2.0_fp32.safetensors\naMixIllustrious_aMix.safetensors\nmiaomiaoHarem_anima16.safetensors\nrinSoftsketch_v20.safetensors\nhassakuXLIllustrious_v13StyleA.safetensors\nKrea2-红redcraft2KREA2RedMix_2Krea2Edition_GGUF_Q4.gguf\nKrea2-TurboNSWAIO_v10_fp8.safetensors\nKrea2-MuseByStable_v15Turbo_fp8.safetensors\nkrea2_turbo_bf16.safetensors\nanima-preview3-base.safetensors\nKrea2-MuseByStable_v15Turbo_GGUF_Q4.gguf\nanima-aesthetic-v1.1.safetensors\nanima_baseV10.safetensors\nwaiIllustriousSDXL_v170.safetensors\n搜索\n画师或画风\n12413 项\nanima\nsay_hana\n\n画风说明：花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。\n\n选择\n查看详情\nanima\nds_mile\n\n画风说明：极致的透明感，色彩非常柔和，治愈系，像是水彩般的质感，纯净。\n\n选择\n查看详情\nanima\nmashiro kta\n\n画风说明：混沌，暗黑，素描/涂鸦质感，极具张力，崩坏感。\n\n选择\n查看详情\nanima\ntarou2\n\n画风说明：运动感，结实的身体线条，透视夸张，美式日系融合，波普风。\n\n选择\n查看详情\nanima\nkrenz\n\n画风说明：极强的透视与块面概括，扎实的光影结构，学院派风格。\n\n选择\n查看详情\nanima\nnavy\n\n画风说明：糖果色、幼面肉感、软色情。湿润大眼、重下眼线、桃色腮红、微张唇。弹性挤压、关节粉晕。漫反射、边缘光、梦幻柔光。粉白淡紫、低对比、透明发丝。第一人称视角、金属勒痕。\n\n选择\n查看详情\nanima\nnijihashi sora\n\n画风说明：阳光色气、梦幻商插。俏皮幼态、超现实肉感。多色高亮瞳、轻盈发丝。高明度扩散、补色碰撞、高反光水渍。弱化线稿、胶片通透感、精细材质。大透视、强动态。纯真诱惑、沉浸互动。\n\n选择\n查看详情\nanima\nmiwabe sakura\n\n画风说明：进阶赛璐珞、高发光感。清透蓝紫调、强冷暖对比。宝石碎钻瞳、灵动微醺。极高皮肤透明度、丝绸水渍、塑料薄纱。背景高填充、花卉粒子点缀。腰臀曲线、组织压迹、色气美感。\n\n选择\n查看详情\n上一页\n1 / 1552\n下一页",
+    "branch": {
+      "branch_id": "ce365458-bb71-4f7c-aee3-1a56640c13ca",
+      "work_id": "bec0a074-fda5-408e-9a53-1fd7f3779666",
+      "parent_branch_id": null,
+      "name": "主分支",
+      "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+      "source_run_id": null,
+      "source_artifact_id": null,
+      "source_experience_id": null,
+      "draft": {
+        "prompt_resource_refs": [
+          {
+            "kind": "style",
+            "id": "12344"
+          },
+          {
+            "kind": "style",
+            "id": "12343"
+          },
+          {
+            "kind": "artist-string",
+            "id": "957"
+          },
+          {
+            "kind": "artist-string",
+            "id": "955"
+          },
+          {
+            "kind": "work",
+            "id": "3761"
+          },
+          {
+            "kind": "work",
+            "id": "3760"
+          },
+          {
+            "kind": "character",
+            "id": "39938"
+          },
+          {
+            "kind": "character",
+            "id": "39937"
+          },
+          {
+            "kind": "prompt-term",
+            "id": "914"
+          },
+          {
+            "kind": "prompt-term",
+            "id": "2121"
+          }
+        ],
+        "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+        "prompt_change_request": "",
+        "prompt_input": {
+          "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, ds_mile, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, reflection, watercolor",
+          "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+        },
+        "generation_input": {
+          "title": "资源选择与提示词",
+          "instance_id": null,
+          "template_id": "29",
+          "model": {
+            "id": "17",
+            "file_name": "aMixIllustrious_aMix.safetensors"
+          },
+          "parameters": {},
+          "loras": [
+            {
+              "id": "102",
+              "file_name": "rimixxO2.safetensors",
+              "weight": 0.75,
+              "trigger_words": []
+            },
+            {
+              "id": "74",
+              "file_name": "Dramatic Lighting Slider.safetensors",
+              "weight": 1.25,
+              "trigger_words": []
+            }
+          ]
+        },
+        "reference_task_ids": [],
+        "reference_run_ids": [],
+        "reference_experiences": [],
+        "image_refs": [],
+        "workflow_image_bindings": [],
+        "instructions": "",
+        "base_model_id": "2",
+        "parameter_mapping": null
+      },
+      "editing_draft": null,
+      "execution": {
+        "mode": "once",
+        "max_runs": 3
+      }
+    },
+    "groups": [
+      {
+        "name": "LoRA2",
+        "open": true
+      },
+      {
+        "name": "作品2",
+        "open": false
+      },
+      {
+        "name": "角色2",
+        "open": false
+      },
+      {
+        "name": "画师或画风2",
+        "open": true
+      },
+      {
+        "name": "提示词条目2",
+        "open": false
+      },
+      {
+        "name": "画师串2",
+        "open": true
+      }
+    ]
+  },
+  "cancel": {
+    "saved": {
+      "branch_id": "ce365458-bb71-4f7c-aee3-1a56640c13ca",
+      "work_id": "bec0a074-fda5-408e-9a53-1fd7f3779666",
+      "parent_branch_id": null,
+      "name": "主分支",
+      "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+      "source_run_id": null,
+      "source_artifact_id": null,
+      "source_experience_id": null,
+      "draft": {
+        "prompt_resource_refs": [
+          {
+            "kind": "style",
+            "id": "12344"
+          },
+          {
+            "kind": "style",
+            "id": "12343"
+          },
+          {
+            "kind": "artist-string",
+            "id": "957"
+          },
+          {
+            "kind": "artist-string",
+            "id": "955"
+          }
+        ],
+        "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+        "prompt_change_request": "",
+        "prompt_input": {
+          "positive_prompt": "",
+          "negative_prompt": ""
+        },
+        "generation_input": {
+          "title": "资源选择与提示词",
+          "instance_id": null,
+          "template_id": "29",
+          "model": {
+            "id": "17",
+            "file_name": "aMixIllustrious_aMix.safetensors"
+          },
+          "parameters": {},
+          "loras": [
+            {
+              "id": "102",
+              "file_name": "rimixxO2.safetensors",
+              "weight": 0.75,
+              "trigger_words": []
+            },
+            {
+              "id": "74",
+              "file_name": "Dramatic Lighting Slider.safetensors",
+              "weight": 1.25,
+              "trigger_words": []
+            }
+          ]
+        },
+        "reference_task_ids": [],
+        "reference_run_ids": [],
+        "reference_experiences": [],
+        "image_refs": [],
+        "workflow_image_bindings": [],
+        "instructions": "",
+        "base_model_id": "2",
+        "parameter_mapping": null
+      },
+      "editing_draft": null,
+      "execution": {
+        "mode": "once",
+        "max_runs": 3
+      }
+    },
+    "removed": {
+      "branch_id": "ce365458-bb71-4f7c-aee3-1a56640c13ca",
+      "work_id": "bec0a074-fda5-408e-9a53-1fd7f3779666",
+      "parent_branch_id": null,
+      "name": "主分支",
+      "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+      "source_run_id": null,
+      "source_artifact_id": null,
+      "source_experience_id": null,
+      "draft": {
+        "prompt_resource_refs": [
+          {
+            "kind": "style",
+            "id": "12344"
+          },
+          {
+            "kind": "style",
+            "id": "12343"
+          },
+          {
+            "kind": "artist-string",
+            "id": "957"
+          },
+          {
+            "kind": "artist-string",
+            "id": "955"
+          }
+        ],
+        "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+        "prompt_change_request": "",
+        "prompt_input": {
+          "positive_prompt": "",
+          "negative_prompt": ""
+        },
+        "generation_input": {
+          "title": "资源选择与提示词",
+          "instance_id": null,
+          "template_id": "29",
+          "model": {
+            "id": "17",
+            "file_name": "aMixIllustrious_aMix.safetensors"
+          },
+          "parameters": {},
+          "loras": [
+            {
+              "id": "102",
+              "file_name": "rimixxO2.safetensors",
+              "weight": 0.75,
+              "trigger_words": []
+            },
+            {
+              "id": "74",
+              "file_name": "Dramatic Lighting Slider.safetensors",
+              "weight": 1.25,
+              "trigger_words": []
+            }
+          ]
+        },
+        "reference_task_ids": [],
+        "reference_run_ids": [],
+        "reference_experiences": [],
+        "image_refs": [],
+        "workflow_image_bindings": [],
+        "instructions": "",
+        "base_model_id": "2",
+        "parameter_mapping": null
+      },
+      "editing_draft": {
+        "prompt_resource_refs": [
+          {
+            "kind": "style",
+            "id": "12344"
+          },
+          {
+            "kind": "artist-string",
+            "id": "957"
+          },
+          {
+            "kind": "artist-string",
+            "id": "955"
+          }
+        ],
+        "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+        "prompt_change_request": "",
+        "prompt_input": {
+          "positive_prompt": "",
+          "negative_prompt": ""
+        },
+        "generation_input": {
+          "title": "资源选择与提示词",
+          "instance_id": null,
+          "template_id": "29",
+          "model": {
+            "id": "17",
+            "file_name": "aMixIllustrious_aMix.safetensors"
+          },
+          "parameters": {},
+          "loras": [
+            {
+              "id": "102",
+              "file_name": "rimixxO2.safetensors",
+              "weight": 0.75,
+              "trigger_words": []
+            },
+            {
+              "id": "74",
+              "file_name": "Dramatic Lighting Slider.safetensors",
+              "weight": 1.25,
+              "trigger_words": []
+            }
+          ]
+        },
+        "reference_task_ids": [],
+        "reference_run_ids": [],
+        "reference_experiences": [],
+        "image_refs": [],
+        "workflow_image_bindings": [],
+        "instructions": "",
+        "base_model_id": "2",
+        "parameter_mapping": null
+      },
+      "execution": {
+        "mode": "once",
+        "max_runs": 3
+      }
+    },
+    "restored": {
+      "branch_id": "ce365458-bb71-4f7c-aee3-1a56640c13ca",
+      "work_id": "bec0a074-fda5-408e-9a53-1fd7f3779666",
+      "parent_branch_id": null,
+      "name": "主分支",
+      "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+      "source_run_id": null,
+      "source_artifact_id": null,
+      "source_experience_id": null,
+      "draft": {
+        "prompt_resource_refs": [
+          {
+            "kind": "style",
+            "id": "12344"
+          },
+          {
+            "kind": "style",
+            "id": "12343"
+          },
+          {
+            "kind": "artist-string",
+            "id": "957"
+          },
+          {
+            "kind": "artist-string",
+            "id": "955"
+          }
+        ],
+        "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+        "prompt_change_request": "",
+        "prompt_input": {
+          "positive_prompt": "",
+          "negative_prompt": ""
+        },
+        "generation_input": {
+          "title": "资源选择与提示词",
+          "instance_id": null,
+          "template_id": "29",
+          "model": {
+            "id": "17",
+            "file_name": "aMixIllustrious_aMix.safetensors"
+          },
+          "parameters": {},
+          "loras": [
+            {
+              "id": "102",
+              "file_name": "rimixxO2.safetensors",
+              "weight": 0.75,
+              "trigger_words": []
+            },
+            {
+              "id": "74",
+              "file_name": "Dramatic Lighting Slider.safetensors",
+              "weight": 1.25,
+              "trigger_words": []
+            }
+          ]
+        },
+        "reference_task_ids": [],
+        "reference_run_ids": [],
+        "reference_experiences": [],
+        "image_refs": [],
+        "workflow_image_bindings": [],
+        "instructions": "",
+        "base_model_id": "2",
+        "parameter_mapping": null
+      },
+      "editing_draft": null,
+      "execution": {
+        "mode": "once",
+        "max_runs": 3
+      }
+    }
+  },
+  "empty": {
+    "body": "生成模型\n1\nLoRA\n2\n作品\n2\n角色\n2\n画师或画风\n2\n提示词条目\n2\n画师串\n2\nWorkflow 模板\n1\n底模\n全部底模\nmoss\nkrea2\nwai\nanima\n生成模型\n全部生成模型\nmoss_image_base_int8_convrot.safetensors\nmoss_image_sft_int8_convrot.safetensors\nMoss-绮真mossRefinedRealism_v10_int8.safetensors\nMoss-moodyMossMix_v2025STEPSCFG3_int8_convrot.safetensors\nMoss-动漫miaomiaoHaremMOSS_baseV10_int8.safetensors\nMoss-大师pornmasterMoss_v1_int8_convrot.safetensors\nMoss-dirtyMoss_int8_convrot.safetensors\nmoss_image_sft_4step_v2.0_fp32.safetensors\n搜索\n画师或画风\n0 项\n没有匹配的资源\n清除筛选\n上一页\n1 / 1\n下一页",
+    "clear": true
+  },
+  "details": [
+    {
+      "name": "aMixIllustrious_aMix.safetensors",
+      "text": "返回资源列表\n已选择\naMixIllustrious_aMix.safetensors\n资源类型\n生成模型\n底模\nwai\n文件名\naMixIllustrious_aMix.safetensors\n文件格式\nsafetensors\n精度 / 量化\nnone\n说明\nCFG Scale: 7\n\nSampler: Euler a\n\nSteps: 30-40\n\nDenoise: 0.35-0.40\n\nMy settings for ForgeUI\nGeneration\nSampling method - Euler a\n\nSchedule type - Automatic\n\nSampling steps - 20\n\nDimensions - 768 x 1152\n\nCFG Scale - 6\n\nHighres. fix\nUpscaler - None (works for me)\n\nHires steps - 10\n\nDenoising strength - 0.1\n\nUpscale by - 1.5-2\n更多资料\n其他字段",
+      "images": [
+        {
+          "src": "http://127.0.0.1:18092/media/images/2d/2d1ea6f9-c5b1-4595-b859-9efb62fea7b0-92293.png",
+          "loaded": true
+        }
+      ]
+    },
+    {
+      "name": "rimixxO2.safetensors",
+      "text": "返回资源列表\n移除\nrimixxO2.safetensors\n资源类型\nLoRA\n底模\nwai\n文件名\nrimixxO2.safetensors\n文件格式\nsafetensors\n精度 / 量化\nnone\n版本\nRi-mix Ω v2 (Illustrious)\n说明\n该 LoRA 适合以半写实动漫插画的柔和体积渐变塑形皮肤、发丝和布料，并以局部锐利高光突出金属、皮革和其他高反射表面，形成 Ri-mix 风格的清晰材质渲染。该 LoRA 在不同人物、服装和场景中呈现清晰轮廓、分束发丝、皮肤体积渐变，并在有光泽或有纹理的表面上配置局部锐利高光和可见折痕。该 LoRA 主要用于把人物面部、发丝和服装渲染为 Ri-mix 风格的柔和体积渐变与局部锐利高光效果。该 LoRA 适合表现女性角色的纵向人物画面，包括面部近景、半身、三分之二身和全身构图；适合表现幻想冒险、战斗、现代时装和生活方式题材中的人物与环境；适合表现直视、闭眼低头、抬手、握剑、举臂、坐姿和前倾等单人动作，并清晰呈现提示词指定的服装、道具、背景和材质。\n触发词\n建议权重\n1\n更多资料\n其他字段",
+      "images": [
+        {
+          "src": "http://127.0.0.1:18092/media/images/civitai-lora/996220/2811751/generation-model-1/125679835.png",
+          "loaded": true
+        }
+      ]
+    },
+    {
+      "name": "say_hana",
+      "text": "返回资源列表\n移除\nsay_hana\n资源类型\n画师或画风\n底模\nwai\n说明\n花卉与少女，淡雅的配色，富有诗意的氛围，细腻柔美。\n提示词\nsay_hana\n更多资料\n其他字段",
+      "images": []
+    },
+    {
+      "name": "圆窗青丝柔映·WAI",
+      "text": "返回资源列表\n移除\n圆窗青丝柔映·WAI\n资源类型\n画师串\n底模\nwai\n说明\n画面采用二维动漫数字插画，以清楚深色细线分隔外轮廓与内部结构，平涂色面叠加柔和渐变塑造体积。青绿、白蓝、浅肤与朱红形成冷暖层次，圆窗亮光在曲面和桌面留下连续高光；曲线形体配合直线框架，中央略倾近景由圆弧后景和水平前景稳定构图，局部亮带与表面反射加强前后景关系。\n提示词\n(bluearchiveofficialart:1.10),(jyt:0.86),(rotroto:1.10)\n更多资料\n其他字段",
+      "images": [
+        {
+          "src": "http://127.0.0.1:18092/media/images/68/6867c2f5-8533-4708-8c18-4e6758db64c2-89061.jpg",
+          "loaded": true
+        }
+      ]
+    },
+    {
+      "name": ".flow",
+      "text": "返回资源列表\n选择\n.flow\n资源类型\n作品\n角色\n怪物、锈月\n更多资料\n其他字段",
+      "images": []
+    },
+    {
+      "name": "vanilla",
+      "text": "返回资源列表\n选择\nvanilla\n资源类型\n角色\n提示词\n无\n更多资料\n其他字段",
+      "images": []
+    },
+    {
+      "name": "!",
+      "text": "返回资源列表\n选择\n!\n资源类型\n提示词条目\n提示词\n!\n更多资料\n其他字段",
+      "images": []
+    }
+  ],
+  "workflow": {
+    "collapsed": true,
+    "expanded": true,
+    "hasWorkflow": true,
+    "body": "其他字段\ncover_url\nnull\nsample_image_urls\n[]\nworkflow_json\n{\n  \"last_node_id\": 7,\n  \"last_link_id\": 9,\n  \"nodes\": [\n    {\n      \"id\": 1,\n      \"type\": \"CheckpointLoaderSimple\",\n      \"pos\": [\n        40,\n        180\n      ],\n      \"size\": [\n        315,\n        98\n      ],\n      \"flags\": {},\n      \"order\": 0,\n      \"mode\": 0,\n      \"outputs\": [\n        {\n          \"name\": \"MODEL\",\n          \"type\": \"MODEL\",\n          \"links\": [\n            1\n          ]\n        },\n        {\n          \"name\": \"CLIP\",\n          \"type\": \"CLIP\",\n          \"links\": [\n            2,\n            3\n          ]\n        },\n        {\n          \"name\": \"VAE\",\n          \"type\": \"VAE\",\n          \"links\": [\n            8\n          ]\n        }\n      ],\n      \"properties\": {\n        \"Node name for S&R\": \"wai_checkpoint\"\n      },\n      \"widgets_values\": [\n        \"waiIllustriousSDXL_v170.safetensors\"\n      ]\n    },\n    {\n      \"id\": 2,\n      \"type\": \"CLIPTextEncode\",\n      \"pos\": [\n        400,\n        50\n      ],\n      \"size\": [\n        420,\n        180\n      ],\n      \"flags\": {},\n      \"order\": 1,\n      \"mode\": 0,\n      \"inputs\": [\n        {\n          \"name\": \"clip\",\n          \"type\": \"CLIP\",\n          \"link\": 2\n        }\n      ],\n      \"outputs\": [\n        {\n          \"name\": \"CONDITIONING\",\n          \"type\": \"CONDITIONING\",\n          \"links\": [\n            4\n          ]\n        }\n      ],\n      \"properties\": {\n        \"Node name for S&R\": \"wai_positive_prompt\"\n      },\n      \"widgets_values\": [\n        \"__WAI_POSITIVE_PROMPT_PLACEHOLDER__\"\n      ]\n    },\n    {\n      \"id\": 3,\n      \"type\": \"CLIPTextEncode\",\n      \"pos\": [\n        400,\n        270\n      ],\n      \"size\": [\n        420,\n        180\n      ],\n      \"flags\": {},\n      \"order\": 2,\n      \"mode\": 0,\n      \"inputs\": [\n        {\n          \"name\": \"clip\",\n          \"type\": \"CLIP\",\n          \"link\": 3\n        }\n      ],\n      \"outputs\": [\n        {\n          \"name\": \"CONDITIONING\",\n          \"type\": \"CONDITIONING\",\n          \"links\": [\n            5\n          ]\n        }\n      ],\n      \"properties\": {\n        \"Node name for S&R\": \"wai_negative_prompt\"\n      },\n      \"widgets_values\": [\n        \"__WAI_NEGATIVE_PROMPT_PLACEHOLDER__\"\n      ]\n    },\n    {\n      \"id\": 4,\n      \"type\": \"EmptyLatentImage\",\n      \"pos\": [\n        400,\n        510\n      ],\n      \"size\": [\n        315,\n        106\n      ],\n      \"flags\": {},\n      \"order\": 3,\n      \"mode\": 0,\n      \"outputs\": [\n        {\n          \"name\": \"LATENT\",\n          \"type\": \"LATENT\",\n          \"links\": [\n            6\n          ]\n        }\n      ],\n      \"properties\": {\n        \"Node name for S&R\": \"wai_latent\"\n      },\n      \"widgets_values\": [\n        1024,\n        1344,\n        1\n      ]\n    },\n    {\n      \"id\": 5,\n      \"type\": \"KSampler\",\n      \"pos\": [\n        890,\n        180\n      ],\n      \"size\": [\n        315,\n        274\n      ],\n      \"flags\": {},\n      \"order\": 4,\n      \"mode\": 0,\n      \"inputs\": [\n        {\n          \"name\": \"model\",\n          \"type\": \"MODEL\",\n          \"link\": 1\n        },\n        {\n          \"name\": \"positive\",\n          \"type\": \"CONDITIONING\",\n          \"link\": 4\n        },\n        {\n          \"name\": \"negative\",\n          \"type\": \"CONDITIONING\",\n          \"link\": 5\n        },\n        {\n          \"name\": \"latent_image\",\n          \"type\": \"LATENT\",\n          \"link\": 6\n        }\n      ],\n      \"outputs\": [\n        {\n          \"name\": \"LATENT\",\n          \"type\": \"LATENT\",\n          \"links\": [\n            7\n          ]\n        }\n      ],\n      \"properties\": {\n        \"Node name for S&R\": \"wai_sampler\"\n      },\n      \"widgets_values\": [\n        0,\n        \"fixed\",\n        25,\n        7,\n        \"euler_ancestral\",\n        \"normal\",\n        1\n      ]\n    },\n    {\n      \"id\": 6,\n      \"type\": \"VAEDecode\",\n      \"pos\": [\n        1250,\n        190\n      ],\n      \"size\": [\n        210,\n        82\n      ],\n      \"flags\": {},\n      \"order\": 5,\n      \"mode\": 0,\n      \"inputs\": [\n        {\n          \"name\": \"samples\",\n          \"type\": \"LATENT\",\n          \"link\": 7\n        },\n        {\n          \"name\": \"vae\",\n          \"type\": \"VAE\",\n          \"link\": 8\n        }\n      ],\n      \"outputs\": [\n        {\n          \"name\": \"IMAGE\",\n          \"type\": \"IMAGE\",\n          \"links\": [\n            9\n          ]\n        }\n      ],\n      \"properties\": {\n        \"Node name for S&R\": \"wai_decode\"\n      }\n    },\n    {\n      \"id\": 7,\n      \"type\": \"SaveImage\",\n      \"pos\": [\n        1500,\n        190\n      ],\n      \"size\": [\n        315,\n        58\n      ],\n      \"flags\": {},\n      \"order\": 6,\n      \"mode\": 0,\n      \"inputs\": [\n        {\n          \"name\": \"images\",\n          \"type\": \"IMAGE\",\n          \"link\": 9\n        }\n      ],\n      \"properties\": {\n        \"Node name for S&R\": \"wai_save\"\n      },\n      \"widgets_values\": [\n        \"WAI\"\n      ]\n    }\n  ],\n  \"links\": [\n    [\n      1,\n      1,\n      0,\n      5,\n      0,\n      \"MODEL\"\n    ],\n    [\n      2,\n      1,\n      1,\n      2,\n      0,\n      \"CLIP\"\n    ],\n    [\n      3,\n      1,\n      1,\n      3,\n      0,\n      \"CLIP\"\n    ],\n    [\n      4,\n      2,\n      0,\n      5,\n      1,\n      \"CONDITIONING\"\n    ],\n    [\n      5,\n      3,\n      0,\n      5,\n      2,\n      \"CONDITIONING\"\n    ],\n    [\n      6,\n      4,\n      0,\n      5,\n      3,\n      \"LATENT\"\n    ],\n    [\n      7,\n      5,\n      0,\n      6,\n      0,\n      \"LATENT\"\n    ],\n    [\n      8,\n      1,\n      2,\n      6,\n      1,\n      \"VAE\"\n    ],\n    [\n      9,\n      6,\n      0,\n      7,\n      0,\n      \"IMAGE\"\n    ]\n  ],\n  \"groups\": [],\n  \"config\": {},\n  \"extra\": {\n    \"ds\": {\n      \"scale\": 1,\n      \"offset\": [\n        0,\n        0\n      ]\n    }\n  },\n  \"version\": 0.4\n}"
+  },
+  "finalRun": {
+    "ok": true,
+    "runId": "98c99b82-9555-4719-8cfd-48491a73a365",
+    "mode": "development",
+    "environment": {
+      "root": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment",
+      "leasePath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/active-probe.json"
+    },
+    "initializationStatus": "unverified",
+    "recordPath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365/run.json",
+    "evidenceDirectory": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365/evidence",
+    "process": {
+      "pid": 48298,
+      "processGroupId": 48298,
+      "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/user-data --remote-debugging-port=63909 --remote-debugging-address=127.0.0.1",
+      "workingDirectory": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/workspace",
+      "listeningPorts": [
+        63908,
+        63909,
+        63939
+      ],
+      "observedAt": "2026-11-12T05:12:07.713Z"
+    },
+    "ports": {
+      "host": 63908,
+      "rendererCdp": 63909,
+      "hostInspector": 63910
+    },
+    "renderer": {
+      "ready": true,
+      "title": "DeepSeek Harness",
+      "url": "dsh-app://app/",
+      "readyState": "complete",
+      "bodyTextLength": 84
+    },
+    "hostInspectorListening": false,
+    "capabilities": {
+      "defaultApplicationLogsIsolated": false,
+      "applicationHostHealthVerified": false,
+      "pluginIdentityVerified": false
+    },
+    "stopCommand": {
+      "executable": "/opt/homebrew/Cellar/node/25.8.2/bin/node",
+      "arguments": [
+        "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/tests/desktop/fixtures/official-desktop-probe.mjs",
+        "stop",
+        "--run-id",
+        "98c99b82-9555-4719-8cfd-48491a73a365",
+        "--repository-root",
+        "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui",
+        "--config",
+        "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/resource-selection-implementation/desktop.json"
+      ]
+    }
+  },
+  "finalSourceIdentity": {
+    "schemaVersion": 1,
+    "packageName": "harness-comfyui",
+    "packageVersion": "0.53.3",
+    "archivePath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/resource-selection-implementation/candidate.tgz",
+    "sourceCommit": "0310c2c08265cdd4bc959d2a981fa797f3119e75",
+    "dirty": true,
+    "runtimeFiles": [
+      ".agents/skills/anima-prompt-builder/SKILL.md",
+      ".agents/skills/anima-prompt-builder/agents/openai.yaml",
+      ".agents/skills/anima-prompt-builder/references/04-final-self-check.md",
+      ".agents/skills/anima-prompt-builder/references/05-conflict-table.md",
+      ".agents/skills/anima-prompt-builder/references/06-slot-order.md",
+      ".agents/skills/anima-prompt-builder/references/07-assembly-decision-tree.md",
+      ".agents/skills/anima-prompt-builder/references/08-count-identity.md",
+      ".agents/skills/anima-prompt-builder/references/09-appearance.md",
+      ".agents/skills/anima-prompt-builder/references/10-clothing-state.md",
+      ".agents/skills/anima-prompt-builder/references/11-pose-action-sex.md",
+      ".agents/skills/anima-prompt-builder/references/12-expression-reaction.md",
+      ".agents/skills/anima-prompt-builder/references/13-camera-shot.md",
+      ".agents/skills/anima-prompt-builder/references/14-scene-environment.md",
+      ".agents/skills/anima-prompt-builder/references/15-detail-mood.md",
+      ".agents/skills/anima-prompt-builder/references/16-special-theme.md",
+      ".agents/skills/anima-prompt-builder/references/artist-style-query-vocabulary.md",
+      ".agents/skills/anima-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/anima-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/anima-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/anima-prompt-builder/references/prompt-weight-policy.json",
+      ".agents/skills/anima-prompt-builder/references/prompt-weighting.md",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/anima-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/anima-prompt-builder/scripts/validate-output.mjs",
+      ".agents/skills/character-portrait-prompt-designer/SKILL.md",
+      ".agents/skills/character-portrait-prompt-designer/evals/evals.json",
+      ".agents/skills/character-portrait-prompt-designer/evals/verification-report.md",
+      ".agents/skills/character-portrait-prompt-designer/references/color-theory.md",
+      ".agents/skills/character-portrait-prompt-designer/references/material-selection.md",
+      ".agents/skills/comfyui-generate/SKILL.md",
+      ".agents/skills/comfyui-generate/references/image-size-selection.md",
+      ".agents/skills/comfyui-image-review/SKILL.md",
+      ".agents/skills/krea2-anime-prompt-builder/SKILL.md",
+      ".agents/skills/krea2-anime-prompt-builder/agents/openai.yaml",
+      ".agents/skills/krea2-anime-prompt-builder/references/anime-style-presets.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/krea2-anime-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/krea2-anime-prompt-builder/references/input-contract.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/krea2-prompt-rules.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/motion-migration-constraints.md",
+      ".agents/skills/krea2-anime-prompt-builder/references/游戏服装多样性库.md",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/krea2-anime-prompt-builder/scripts/validate-output.mjs",
+      ".agents/skills/local-image-reader/SKILL.md",
+      ".agents/skills/moss-prompt-builder/SKILL.md",
+      ".agents/skills/moss-prompt-builder/agents/openai.yaml",
+      ".agents/skills/moss-prompt-builder/scripts/compile_prompt.py",
+      ".agents/skills/moss-prompt-builder/scripts/test_compile_prompt.py",
+      ".agents/skills/wai-sdxl-prompt-builder/SKILL.md",
+      ".agents/skills/wai-sdxl-prompt-builder/agents/openai.yaml",
+      ".agents/skills/wai-sdxl-prompt-builder/references/action-structure.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/artist-adoption.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/artist-style-query-vocabulary.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/composition-decision-tree.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/composition-scenario-branches.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/NTR.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/RBQ与物化.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/事后.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/偷窥与展示.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/另类日常.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/异种.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/束缚与BDSM.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/男娘与Futa.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/胁迫.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/调教与宠物.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/cross-position-themes/隐奸.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/before-after-storyboard.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/camera-action-pairing.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/environment-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/multi-subject-attribution.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/nsfw-action-structure.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/occlusion-and-depth.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/single-subject-portrait.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/examples/two-subject-interaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-contract.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-output-schema.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/generation-profiles.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/input-contract.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-conflict-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/action.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/appearance.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/artist.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/camera-composition.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/character.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/detail-mood.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/environment.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/expression-reaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/lighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/non-artist-style.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/outfit.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/quality.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/relation-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/subject.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-examples/technical.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/action.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/appearance.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/artist.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/camera-composition.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/character.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/detail-mood.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/environment.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/expression-reaction.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/lighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/non-artist-style.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/outfit.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/quality.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/relation-narrative.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/subject.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-position-rules/technical.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-self-check.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weight-policy.json",
+      ".agents/skills/wai-sdxl-prompt-builder/references/prompt-weighting.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/spatial-relation-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/storyboard-panel-rules.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/visual-design-slot-order.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/wai-artist-syntax.md",
+      ".agents/skills/wai-sdxl-prompt-builder/references/wai-prompt-position-order.md",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help-schema.mjs",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.json",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/cli-help.mjs",
+      ".agents/skills/wai-sdxl-prompt-builder/scripts/validate-output.mjs",
+      ".local/source-cli/harness-comfyui.mjs",
+      ".local/source-client/client.js",
+      ".local/source-host/browser-settings-schema-Ylit-evx.js",
+      ".local/source-host/cli.js",
+      ".local/source-host/comfy-frontend-worker.js",
+      ".local/source-host/core.js",
+      ".local/source-host/delegation-DCPsytPo.js",
+      ".local/source-host/dispatch-BZ9Bn2fH.js",
+      ".local/source-host/errors-CkknegYz.js",
+      ".local/source-host/generation-error-s7pDSYyC.js",
+      ".local/source-host/generation-runtime-DQW5FsJ0.js",
+      ".local/source-host/image-reader-processing-D040q8C2.js",
+      ".local/source-host/image-reader.js",
+      ".local/source-host/index.js",
+      ".local/source-host/node-script-environment-Cri47yxe.js",
+      ".local/source-host/pending-requests-BrC9NqCi.js",
+      ".local/source-host/plugin-BNVo3WVY.js",
+      ".local/source-host/prompt-contract-BXnLomFw.js",
+      ".local/source-host/resource-path-DPveDwF2.js",
+      ".local/source-host/run-input-contract-DodbMeX2.js",
+      ".local/source-host/runtime-artifacts-B-u2SE0p.js",
+      ".local/source-host/settings-Ba3QViu4.js",
+      ".local/source-host/settings-entry-ids-DSb58B0I.js",
+      ".local/source-host/specialist-tools.js",
+      ".local/source-host/tool-schema-LF-lVRce.js",
+      ".local/source-host/validation-nH6wF6u_.js",
+      ".local/source-host/web.js",
+      ".local/source-host/workbench-tools.js",
+      "agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml",
+      "agent-presets/harness-comfyui-cli-candidate/preset.yml",
+      "agent-presets/harness-comfyui-translation/agent.cordis.yml",
+      "agent-presets/noobai-mcp.cordis.yml",
+      "agent-presets/presets.cordis.yml",
+      "agent-presets/project-installed-presets.mjs",
+      "agent-presets/shared/agent.cordis.yml",
+      "agent-presets/specialist-composition.mjs",
+      "agent-presets/specialist-preset.mjs",
+      "agent-presets/specialist-skills.mjs",
+      "agent-presets/translation-composition.mjs",
+      "agent-presets/translation-preset.mjs",
+      "agent-presets/workbench-composition.mjs",
+      "config/base.json",
+      "config/browser-settings.json",
+      "config/environment-overrides.json",
+      "config/error-catalog.json",
+      "config/image-reader-processing.json",
+      "config/image-reader-profiles.json",
+      "config/image-reader-runtime.json",
+      "config/managed-cli-environment.json",
+      "config/managed-cli-help.json",
+      "config/managed-cli-limits.json",
+      "config/node-script-runtime.json",
+      "config/plugin-package-schema.mjs",
+      "config/plugin-package.json",
+      "config/plugin-runtime-resources-schema.ts",
+      "config/plugin-runtime-resources.json",
+      "config/plugin-storage.json",
+      "config/product-agent-schema.mjs",
+      "config/product-agent.json",
+      "config/profiles/production.json",
+      "config/runtime-artifacts.json",
+      "config/schema.ts",
+      "config/settings-entry-ids.json",
+      "config/source-client.json",
+      "config/workbench-agent-roles.json",
+      "config/workbench-delegation-tools.json",
+      "config/workbench-tool-descriptions.json",
+      "config/workbench-translation.json",
+      "cordis.patch.yml",
+      "locales/cli/en.json",
+      "locales/cli/zh.json",
+      "locales/core/en.json",
+      "locales/core/zh.json",
+      "locales/image-reader/en.json",
+      "locales/image-reader/zh.json",
+      "locales/presets/en.json",
+      "locales/presets/zh.json",
+      "locales/web/en.json",
+      "locales/web/zh.json",
+      "locales/workbench/en.json",
+      "locales/workbench/zh.json",
+      "scripts/cli/help-schema.mjs",
+      "scripts/cli/help.mjs"
+    ]
+  },
+  "finalLayout": {
+    "dialog": {
+      "clientWidth": 1065,
+      "scrollWidth": 1065
+    },
+    "records": [
+      {
+        "clientWidth": 498,
+        "scrollWidth": 498,
+        "whiteSpace": "pre-wrap",
+        "overflowWrap": "anywhere"
+      }
+    ],
+    "branch": {
+      "branch_id": "ce365458-bb71-4f7c-aee3-1a56640c13ca",
+      "work_id": "bec0a074-fda5-408e-9a53-1fd7f3779666",
+      "parent_branch_id": null,
+      "name": "主分支",
+      "original_request": "绘制雨夜街道上的白发女子全身像，蓝色外套，霓虹灯倒影。采用已选画风和画师串中的色彩、线条及光照特点。",
+      "source_run_id": null,
+      "source_artifact_id": null,
+      "source_experience_id": null,
+      "draft": {
+        "prompt_resource_refs": [
+          {
+            "kind": "style",
+            "id": "12344"
+          },
+          {
+            "kind": "artist-string",
+            "id": "957"
+          },
+          {
+            "kind": "artist-string",
+            "id": "955"
+          }
+        ],
+        "prompt_edit_task_id": "a8c5e0d0-a66a-4dc1-88d7-4ce070161ffa",
+        "prompt_change_request": "保留白发女子、蓝色外套、雨夜街道和全身构图。依据当前选中的画风与画师串，减弱水彩感，突出清晰细线和霓虹倒影；删除已移除的 ds_mile 标签。",
+        "prompt_input": {
+          "positive_prompt": "masterpiece, best quality, ultra-detailed, highres, say_hana, (bluearchiveofficialart:1.10), (jyt:0.86), (rotroto:1.10), (icomochi:1.05), (darklux:0.95), 1girl, white_hair, long_hair, blue_coat, black_pants, boots, wet_clothes, standing, light_smile, looking_at_viewer, full_body, night, rain, street, building, neon_lights, wet_pavement, puddle, film_grain, cinematic, blue neon lighting, red neon lighting, rim light, high contrast, (reflection:1.2), clean lineart",
+          "negative_prompt": "bad quality, worst quality, worst detail, sketch, censor"
+        },
+        "generation_input": {
+          "title": "资源选择与提示词",
+          "instance_id": null,
+          "template_id": "29",
+          "model": {
+            "id": "17",
+            "file_name": "aMixIllustrious_aMix.safetensors"
+          },
+          "parameters": {},
+          "loras": [
+            {
+              "id": "102",
+              "file_name": "rimixxO2.safetensors",
+              "weight": 0.75,
+              "trigger_words": []
+            },
+            {
+              "id": "74",
+              "file_name": "Dramatic Lighting Slider.safetensors",
+              "weight": 1.25,
+              "trigger_words": []
+            }
+          ]
+        },
+        "reference_task_ids": [],
+        "reference_run_ids": [],
+        "reference_experiences": [],
+        "image_refs": [],
+        "workflow_image_bindings": [],
+        "instructions": "",
+        "base_model_id": "2",
+        "parameter_mapping": null
+      },
+      "editing_draft": null,
+      "execution": {
+        "mode": "once",
+        "max_runs": 3
+      }
+    }
+  },
+  "cleanup": {
+    "ok": true,
+    "record": {
+      "schemaVersion": 1,
+      "runId": "98c99b82-9555-4719-8cfd-48491a73a365",
+      "mode": "development",
+      "state": "stopped",
+      "createdAt": "2026-11-12T05:12:03.828Z",
+      "updatedAt": "2026-11-12T05:12:47.622Z",
+      "application": {
+        "bundlePath": "/Applications/DeepSeek Harness.app",
+        "executablePath": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness",
+        "version": "0.2.1-rc.3",
+        "bundleId": "com.deepseek.dsh"
+      },
+      "directories": {
+        "run": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365",
+        "dshHome": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/dsh-home",
+        "electronUserData": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/user-data",
+        "workspace": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/workspace",
+        "logs": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365/logs",
+        "evidence": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365/evidence",
+        "profile": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/dsh-home/profiles/desktop",
+        "diagnosticFile": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365/logs/diagnostic.log"
+      },
+      "environment": {
+        "root": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment",
+        "leasePath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/active-probe.json"
+      },
+      "ports": {
+        "host": 63908,
+        "rendererCdp": 63909,
+        "hostInspector": 63910
+      },
+      "launch": {
+        "arguments": [
+          "--user-data-dir=/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/user-data",
+          "--remote-debugging-port=63909",
+          "--remote-debugging-address=127.0.0.1"
+        ],
+        "environment": {
+          "DSH_HOME": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/dsh-home",
+          "DSH_DESKTOP_USER_DATA_DIR": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/user-data",
+          "DSH_DESKTOP_DIAGNOSTIC_FILE": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365/logs/diagnostic.log",
+          "DSH_DESKTOP_HOST_INSPECT_PORT": "63910"
+        },
+        "unsetEnvironmentNames": [
+          "ELECTRON_RUN_AS_NODE"
+        ]
+      },
+      "process": {
+        "pid": 48298,
+        "processGroupId": 48298,
+        "command": "/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness --user-data-dir=/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/user-data --remote-debugging-port=63909 --remote-debugging-address=127.0.0.1",
+        "workingDirectory": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-development/official-environment/workspace",
+        "listeningPorts": [
+          63908,
+          63909,
+          63939
+        ],
+        "observedAt": "2026-11-12T05:12:07.713Z"
+      },
+      "result": {
+        "exitCode": null,
+        "error": null,
+        "completedAt": "2026-11-12T05:12:47.622Z",
+        "portsReleased": true
+      }
+    },
+    "recordPath": "/Users/fzfz/.codex/worktrees/workbench-resource-selection/harness-comfyui/.local/desktop-e2e/98c99b82-9555-4719-8cfd-48491a73a365/run.json"
+  }
+}

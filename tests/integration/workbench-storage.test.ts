@@ -390,16 +390,19 @@ describe('workbench storage public boundary', () => {
     await expect(f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'model', id: '9' }] } }, identity)).rejects.toThrow('resource missing')
     const receipt = await f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'model', id: '3' }] } }, identity)
     expect(receipt.disposition).toBe('candidate')
-    await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: { generation_input: f.branch.draft.generation_input as never, image_refs: [], workflow_image_bindings: [], base_model_id: null } })
+    await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: { generation_input: f.branch.draft.generation_input as never, image_refs: [], workflow_image_bindings: [], prompt_resource_refs: [], base_model_id: null } })
     expect(f.store.getBranch(f.branch.branch_id).editing_draft?.generation_input.model).toEqual({ id: '3', file_name: 'selected.safetensors' })
     expect(f.store.getBranch(f.branch.branch_id).editing_draft?.base_model_id).toBe('5')
   })
 
-  it('rejects context resources and retains unresolved generation resources as candidates', async () => {
+  it('records prompt and generation resource recommendations as candidates until source details are resolved', async () => {
     const f = fixture()
     const task = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'resources' })
     const identity = { workspaceId: 'workspace', sessionId: task.session_id!, turn: 1, callId: 'resources' }
-    await expect(f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'character', id: '2' }] } }, identity)).rejects.toMatchObject({ code: 'WORKBENCH_INVALID_INPUT' })
+    const character = await f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'character', id: '2' }] } }, identity)
+    expect(character.disposition).toBe('candidate')
+    expect(f.store.getArtifact(character.artifact_id).artifact).toEqual({ type: 'resources', refs: [{ kind: 'character', id: '2' }] })
+    await expect(f.service.adoptArtifact({ artifactId: character.artifact_id, expected: {} })).rejects.toMatchObject({ code: 'WORKBENCH_RESOURCE_DETAILS_REQUIRED' })
     const model = await f.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'model', id: '3' }] } }, identity)
     await expect(f.service.adoptArtifact({ artifactId: model.artifact_id, expected: {} })).rejects.toMatchObject({ code: 'WORKBENCH_RESOURCE_DETAILS_REQUIRED' })
     expect(f.store.getArtifact(model.artifact_id).disposition).toBe('candidate')

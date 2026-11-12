@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   CATALOG_KIND_DEFINITIONS,
+  CATALOG_PAGE_SIZE,
   catalogPageCount,
   catalogDefinition,
   type BaseModelList,
@@ -26,6 +27,13 @@ export interface CatalogApi {
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 export type CatalogReference = Pick<CatalogContext, 'kind' | 'id'>
 
+interface CatalogPageEntry {
+  status: LoadStatus
+  page: CatalogPage | null
+  error: string | null
+  readonly controller: AbortController
+}
+
 export function useCatalogBrowser({ catalog, enabled = true, query, onInvalidBaseModel, modelOptions = false }: {
   readonly catalog?: CatalogApi
   readonly enabled?: boolean
@@ -41,9 +49,8 @@ export function useCatalogBrowser({ catalog, enabled = true, query, onInvalidBas
   const [modelStatus, setModelStatus] = useState<LoadStatus>('idle')
   const [modelError, setModelError] = useState<string | null>(null)
   const [modelAttempt, setModelAttempt] = useState(0)
-  const [page, setPage] = useState<CatalogPage | null>(null)
-  const [status, setStatus] = useState<LoadStatus>('idle')
-  const [error, setError] = useState<string | null>(null)
+  const pageCache = useMemo(() => new Map<string, CatalogPageEntry>(), [catalog])
+  const [, renderPages] = useState(0)
   const [attempt, setAttempt] = useState(0)
   const [baseAttempt, setBaseAttempt] = useState(0)
   useEffect(() => {
@@ -96,30 +103,43 @@ export function useCatalogBrowser({ catalog, enabled = true, query, onInvalidBas
     })
     return () => controller.abort()
   }, [catalog, enabled, modelOptions, query.baseModelId, modelAttempt])
+  const request: CatalogQueryRequest = {
+    kind: definition.kind,
+    query: query.query,
+    page: query.page,
+    baseModelId: definition.baseModelScoped ? query.baseModelId : null,
+    modelId: definition.baseModelScoped ? query.modelId : null,
+  }
+  const pageKey = JSON.stringify([request.kind, request.query, request.baseModelId, request.modelId, request.page, CATALOG_PAGE_SIZE])
+  useEffect(() => () => {
+    for (const entry of pageCache.values()) entry.controller.abort()
+    pageCache.clear()
+  }, [pageCache, enabled])
   useEffect(() => {
-    setPage(null)
-    setError(null)
-    setStatus(enabled && catalog && baseModelReady ? 'loading' : 'idle')
-    if (!enabled || !catalog || !baseModelReady) return
-    const controller = new AbortController()
-    void catalog.search({
-      kind: definition.kind,
-      query: query.query,
-      page: query.page,
-      baseModelId: definition.baseModelScoped ? query.baseModelId : null,
-      modelId: definition.baseModelScoped ? query.modelId : null,
-    }, controller.signal).then(result => {
-      if (controller.signal.aborted) return
-      setPage(result)
-      setStatus('ready')
+    if (!enabled || !catalog || !baseModelReady || pageCache.has(pageKey)) return
+    const entry: CatalogPageEntry = { status: 'loading', page: null, error: null, controller: new AbortController() }
+    pageCache.set(pageKey, entry)
+    renderPages(value => value + 1)
+    const current = () => !entry.controller.signal.aborted && pageCache.get(pageKey) === entry
+    void catalog.search(request, entry.controller.signal).then(result => {
+      if (!current()) return
+      entry.page = result
+      entry.status = 'ready'
+      renderPages(value => value + 1)
     }).catch(reason => {
-      if (controller.signal.aborted) return
-      setError(catalogFailureText(reason))
-      setStatus('error')
+      if (!current()) return
+      entry.error = catalogFailureText(reason)
+      entry.status = 'error'
+      renderPages(value => value + 1)
     })
-    return () => controller.abort()
-  }, [catalog, enabled, baseModelReady, definition, query.kind, query.query, query.page, query.baseModelId, query.modelId, attempt])
+  }, [catalog, enabled, baseModelReady, pageCache, pageKey, attempt])
+  const currentPage = enabled && catalog && baseModelReady ? pageCache.get(pageKey) : undefined
+  const page = currentPage?.page ?? null
+  const status: LoadStatus = currentPage?.status ?? (enabled && catalog && baseModelReady ? 'loading' : 'idle')
+  const error = currentPage?.error ?? null
   const retry = () => {
+    pageCache.get(pageKey)?.controller.abort()
+    pageCache.delete(pageKey)
     if (baseModelStatus === 'error') setBaseAttempt(value => value + 1)
     if (modelStatus === 'error') setModelAttempt(value => value + 1)
     setAttempt(value => value + 1)
@@ -183,18 +203,28 @@ export function CatalogDetailFields({ details, presentation, baseModels = [] }: 
   const values = new Map(details.fields.map(field => [field.key, field.value]))
   values.set('resource_type', catalogDefinition(details.kind).label)
   values.set('base_model', baseModels.find(item => item.id === details.item.baseModelId)?.label ?? null)
+  const sources = CATALOG_PRESENTATION.resourceSources[details.kind] ?? {}
   const fields = presentation === 'resource'
     ? CATALOG_PRESENTATION.resourceDetails.flatMap(key => {
-      const value = values.get(CATALOG_PRESENTATION.resourceSources[details.kind]?.[key] ?? key)
+      const value = values.get(sources[key] ?? key)
       return value === undefined || value === null ? [] : [{ key, value }]
     })
     : details.fields
-  return <dl>{fields.map(field => <div key={field.key}>
-    <dt>{CATALOG_FIELDS[field.key]!.label}</dt>
-    <dd>{presentation === 'chat' && (field.value === null || field.value === '' || Array.isArray(field.value) && field.value.length === 0)
-      ? CATALOG_PRESENTATION.copy.emptyValue
-      : presentation === 'resource' && field.key === 'template_type'
-        ? CATALOG_PRESENTATION.templateTypes[String(field.value)] ?? String(field.value)
-        : Array.isArray(field.value) ? field.value.join('、') : String(field.value)}</dd>
+  const shown = new Set(fields.map(field => sources[field.key] ?? field.key))
+  const remaining = presentation === 'resource' ? details.fields.filter(field => !shown.has(field.key) && field.value !== null) : []
+  const displayValue = (key: string, value: unknown, original: boolean) => {
+    if (original) return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+    if (presentation === 'chat' && (value === null || value === '' || Array.isArray(value) && value.length === 0)) return CATALOG_PRESENTATION.copy.emptyValue
+    if (presentation === 'resource' && key === 'template_type') return CATALOG_PRESENTATION.templateTypes[String(value)] ?? String(value)
+    if (Array.isArray(value)) return value.join('、')
+    return typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
+  }
+  const rows = (entries: readonly { readonly key: string; readonly value: unknown }[], original = false) => <dl>{entries.map(field => <div key={field.key}>
+    <dt>{CATALOG_FIELDS[field.key]?.label ?? field.key}</dt>
+    <dd>{displayValue(field.key, field.value, original)}</dd>
   </div>)}</dl>
+  return <>{rows(fields)}
+    {!!remaining.length && <details className="catalog-extra-fields"><summary>更多资料</summary>{rows(remaining)}</details>}
+    {presentation === 'resource' && !!Object.keys(details.extra_fields ?? {}).length && <details className="catalog-extra-fields"><summary>其他字段</summary>{rows(Object.entries(details.extra_fields!).map(([key, value]) => ({ key, value })), true)}</details>}
+  </>
 }
