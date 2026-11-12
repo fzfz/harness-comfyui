@@ -1915,9 +1915,6 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   </option>
                 ))}
               </select>
-              {view.page === 'resources' && <select className="work-picker" aria-label="切换分支" value={view.branchId ?? ''} onChange={event => selectBranch(event.target.value)}>
-                {p?.branches.map(item => <option key={item.branch_id} value={item.branch_id}>{item.name}</option>)}
-              </select>}
               <Button
                 kind="small quiet"
                 icon="plus"
@@ -2002,8 +1999,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             </Button>
           </main>
         ) : (
-          <div className={view.page === 'workbench' ? 'layout review-layout' : view.page === 'resources' ? 'layout resource-layout' : 'layout'}>
-            {view.page !== 'resources' && sidebar}
+          <div className={view.page === 'workbench' ? 'layout review-layout' : 'layout'}>
+            {sidebar}
             {view.page === 'resources' ? (
               <ExperimentCatalog
                 catalog={props.catalog}

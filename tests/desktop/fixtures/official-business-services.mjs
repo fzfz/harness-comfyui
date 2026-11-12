@@ -149,6 +149,12 @@ export async function startOfficialBusinessServices(fixture, { outputPngBytes = 
       }).catch(error => writeFailure(response, error))
       return
     }
+    if (request.method === 'POST' && request.url === '/internal/semantic/generation-models') {
+      void readJson(request).then(input => {
+        writeJson(response, { status: 'ok', message: null, results: [], page: input.page, page_size: input.page_size, total_count: 0 })
+      }).catch(error => writeFailure(response, error))
+      return
+    }
     if (request.method === 'POST' && request.url === '/internal/semantic/comfyui-templates') {
       void readJson(request).then(input => {
         const origin = `http://127.0.0.1:${server.address().port}`
@@ -391,7 +397,7 @@ function createSemanticDiscovery() {
       id: { type: 'string', minLength: 1, maxLength: 20, pattern: '^[1-9][0-9]{0,19}$', description: 'Decimal Catalog record identifier', example: '123' },
     },
   }
-  const schemas = Object.fromEntries(['CatalogBaseModel', 'CatalogTemplate'].map(prefix => [
+  const schemas = Object.fromEntries(['CatalogBaseModel', 'CatalogTemplate', 'CatalogGenerationModel'].map(prefix => [
     `${prefix}Request`, {
       type: 'object', oneOf: [
         { $ref: `#/components/schemas/${prefix}SearchRequest` },
@@ -409,16 +415,24 @@ function createSemanticDiscovery() {
     description: 'Base-model identifier for Catalog filtering', example: '123',
   }
   schemas.CatalogTemplateResolveRequest = resolve
+  schemas.CatalogGenerationModelSearchRequest = structuredClone(schemas.CatalogTemplateSearchRequest)
+  schemas.CatalogGenerationModelResolveRequest = resolve
+  const operations = {
+    BaseModel: { label: 'base-model', id: 'querySemanticBaseModelsForSkill', tool: 'query_semantic_base_models' },
+    Template: { label: 'ComfyUI template', id: 'querySemanticComfyuiTemplatesForSkill', tool: 'query_semantic_comfyui_templates' },
+    GenerationModel: { label: 'generation-model', id: 'querySemanticGenerationModelsForSkill', tool: 'query_semantic_generation_models' },
+  }
   return {
     openapi: '3.1.0',
     paths: Object.fromEntries([
       ['/internal/semantic/base-models', 'BaseModel'],
       ['/internal/semantic/comfyui-templates', 'Template'],
+      ['/internal/semantic/generation-models', 'GenerationModel'],
     ].map(([path, type]) => [path, { post: {
-      summary: `Search or resolve ${type === 'BaseModel' ? 'base-model' : 'ComfyUI template'} records`,
+      summary: `Search or resolve ${operations[type].label} records`,
       description: 'Search or resolve Catalog records using stable identifiers.',
-      operationId: type === 'BaseModel' ? 'querySemanticBaseModelsForSkill' : 'querySemanticComfyuiTemplatesForSkill',
-      'x-harness-tool-name': type === 'BaseModel' ? 'query_semantic_base_models' : 'query_semantic_comfyui_templates',
+      operationId: operations[type].id,
+      'x-harness-tool-name': operations[type].tool,
       requestBody: {
         required: true,
         content: { 'application/json': {

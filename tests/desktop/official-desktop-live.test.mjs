@@ -76,7 +76,12 @@ const RETIRED_BUSINESS_TOOL_NAMES = ['query_semantic_comfyui_instances', 'query_
   'query_semantic_generation_models', 'query_semantic_loras', 'generate_with_comfyui',
   'get_generation_run_media', 'inspect_image', 'read_comfyui_run_inputs']
 const CORDIS_SKILL_NAMES = ['agent-experience', 'cordis-composition-reference', 'cordis-plugin-development', 'editing-cordis-compositions']
+const EXPERIMENT_BRANCH_VIEWPORT_WIDTHS = [1024, 1280, 1440]
 const DURABLE_BUSINESS_EVIDENCE_FILES = [
+  'official-business-branch-sidebar.json',
+  'official-business-branch-sidebar-failure.png',
+  ...EXPERIMENT_BRANCH_VIEWPORT_WIDTHS.flatMap(width => ['resources', 'tasks'].map(tab =>
+    `official-business-branch-sidebar-${width}-${tab}.png`)),
   'startup-ready.json',
   'official-business-skill-requests.json',
   'stop-request.json',
@@ -894,6 +899,223 @@ async function seedDesktopMedia(context, identity, stagedRunRepositoryFile) {
 
 // Capture the plugin's normal Context without replacing its components or services.
 
+
+async function verifyExperimentBranchSidebar(page, workspaceId, evidenceDirectory) {
+  const viewport = await page.evaluate(`({ width: window.innerWidth, height: window.innerHeight, deviceScaleFactor: window.devicePixelRatio, mobile: false })`)
+  const previousWorkspace = await page.evaluate(`localStorage.getItem('harness-comfyui:experiment-workspace')`)
+  const sidebarCollapsed = await page.evaluate(`document.querySelector('[data-sidebar-collapsed="true"]') !== null`)
+  const seeded = await page.evaluate(`(async () => {
+    const remote = window.__runPanelTestContext.get('remote.harnessComfyuiWorkbenchRemote')
+    const work = await remote.mutate({
+      type: 'new-work', workspaceId: ${JSON.stringify(workspaceId)},
+      value: { name: 'Desktop 三栏工作', goal: '核对标签切换与分支选择' },
+    })
+    if (!work.ok) return { work }
+    const child = await remote.mutate({
+      ...work.value, type: 'create-branch',
+      value: { name: 'Desktop 对照分支', original_request: '核对资源页分支切换' },
+    })
+    const projection = await remote.getProjection(work.value)
+    return { work, child, projection }
+  })()`)
+  expect(seeded.work, JSON.stringify(seeded.work)).toMatchObject({ ok: true })
+  expect(seeded.child, JSON.stringify(seeded.child)).toMatchObject({ ok: true })
+  expect(seeded.projection).toMatchObject({ ok: true })
+  const branches = seeded.projection.value.branches
+  expect(branches.map(branch => branch.name)).toEqual(['主分支', 'Desktop 对照分支'])
+  const root = `document.querySelector('[data-experiment-workbench-root]')?.shadowRoot`
+  const geometry = `(() => {
+    const root = ${root}
+    const layout = root?.querySelector('.layout')
+    const sidebar = layout?.querySelector(':scope > .sidebar')
+    const tree = sidebar?.querySelector('[role="tree"][aria-label="当前工作分支树"]')
+    const center = layout?.querySelector(':scope > main.center')
+    const inspector = layout?.querySelector(':scope > .inspector')
+    if (!layout || !sidebar || !tree || !center || !inspector) return null
+    const bounds = element => {
+      if (!element) return null
+      const rect = element.getBoundingClientRect()
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
+    }
+    const kinds = center.querySelector('nav[aria-label="资源类型"]')
+    const content = center.querySelector('.catalog-content')
+    return {
+      viewportWidth: window.innerWidth,
+      page: root.querySelector('nav[aria-label="工作导航"] button.active')?.getAttribute('aria-label'),
+      branches: [...tree.querySelectorAll('.branch-item')].map(button => ({
+        name: button.querySelector('.branch-name')?.textContent.trim(),
+        label: button.getAttribute('aria-label'),
+        selected: button.closest('[role="treeitem"]').getAttribute('aria-selected') === 'true',
+      })),
+      inspectorBranch: inspector.querySelector('.config-head h2')?.textContent.trim(),
+      sidebar: bounds(sidebar), tree: bounds(tree), center: bounds(center), inspector: bounds(inspector),
+      resourceKinds: bounds(kinds), resourceContent: bounds(content),
+      kindsInCenter: !!kinds && center.contains(kinds),
+      cards: [...center.querySelectorAll('.catalog-card')].map(bounds),
+      kindLabels: [...(kinds?.querySelectorAll('button') ?? [])].map(button => button.getAttribute('aria-label')),
+    }
+  })()`
+  const observations = []
+  const failures = []
+  const failureDetails = []
+  const recordFailure = (phase, error) => {
+    failures.push(error)
+    failureDetails.push({ phase, message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack ?? null : null })
+  }
+  let opened = false
+  const click = async selector => {
+    const target = await waitForValue(page, `(() => {
+      const root = ${root}
+      const button = root?.querySelector(${JSON.stringify(selector)})
+      if (!(button instanceof HTMLElement)) return null
+      const rect = button.getBoundingClientRect()
+      const x = rect.left + rect.width / 2
+      const y = rect.top + rect.height / 2
+      const hit = root.elementFromPoint(x, y)
+      return {
+        x, y, visible: button.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }),
+        disabled: button.matches(':disabled, [aria-disabled="true"]'),
+        hit: document.elementFromPoint(x, y) === root.host && (hit === button || button.contains(hit)),
+        inViewport: rect.width > 0 && rect.height > 0 && x >= 0 && x < innerWidth && y >= 0 && y < innerHeight,
+      }
+    })()`, state => state?.visible && !state.disabled && state.hit && state.inViewport, 10_000)
+    await page.command('Input.dispatchMouseEvent', { type: 'mousePressed', x: target.x, y: target.y, button: 'left', clickCount: 1 })
+    await page.command('Input.dispatchMouseEvent', { type: 'mouseReleased', x: target.x, y: target.y, button: 'left', clickCount: 1 })
+  }
+  const assertLayout = (state, baseline, branchName) => {
+    expect(state.branches.map(({ name, label }) => ({ name, label }))).toEqual(
+      branches.map(branch => ({ name: branch.name, label: `切换分支 ${branch.name}` })),
+    )
+    expect(state.branches.filter(branch => branch.selected).map(branch => branch.name)).toEqual([branchName])
+    expect(state.inspectorBranch).toBe(branchName)
+    expect(state.sidebar.width).toBeGreaterThan(0)
+    expect(state.tree.height).toBeGreaterThan(0)
+    expect(state.center.width).toBeGreaterThan(0)
+    expect(state.inspector.width).toBeGreaterThan(0)
+    expect(state.sidebar.right).toBeLessThanOrEqual(state.center.left + 1)
+    expect(state.center.right).toBeLessThanOrEqual(state.inspector.left + 1)
+    expect(state.inspector.right).toBeLessThanOrEqual(state.viewportWidth + 1)
+    for (const region of ['sidebar', 'tree', 'inspector']) {
+      for (const edge of ['left', 'top', 'width', 'height']) {
+        expect(state[region][edge], `${state.page} ${region} ${edge}`).toBeCloseTo(baseline[region][edge], 0)
+      }
+    }
+    if (state.page === '资源') {
+      expect(state.kindsInCenter).toBe(true)
+      expect(state.kindLabels.length).toBeGreaterThan(1)
+      expect(state.resourceKinds.width).toBeGreaterThan(0)
+      expect(state.resourceKinds.left).toBeGreaterThanOrEqual(state.center.left)
+      expect(state.resourceKinds.right).toBeLessThanOrEqual(state.resourceContent.left + 1)
+      expect(state.resourceContent.right).toBeLessThanOrEqual(state.center.right + 1)
+      expect(state.cards).toHaveLength(8)
+      for (const card of state.cards) {
+        expect(card.left).toBeGreaterThanOrEqual(state.resourceContent.left)
+        expect(card.right).toBeLessThanOrEqual(state.resourceContent.right + 1)
+      }
+    }
+  }
+  try {
+    await page.evaluate(`(localStorage.setItem('harness-comfyui:experiment-workspace', ${JSON.stringify(workspaceId)}), document.querySelector('button[aria-label="实验工作台"]').click(), true)`)
+    opened = true
+    await waitForValue(page, `(${root})?.querySelector('.branch-item')?.textContent`, text => text?.includes('主分支'))
+    if (!sidebarCollapsed) {
+      expect(await page.evaluate(`(() => {
+        const button = document.querySelector('button[aria-label="收起侧边栏"]')
+        if (!button) return false
+        button.click()
+        return true
+      })()`)).toBe(true)
+      await waitForValue(page, `document.querySelector('[data-sidebar-collapsed="true"]') !== null`, value => value === true)
+    }
+    for (const width of EXPERIMENT_BRANCH_VIEWPORT_WIDTHS) {
+      await page.command('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false })
+      await waitForValue(page, 'window.innerWidth', actual => actual === width)
+      await click('nav[aria-label="工作导航"] button[aria-label="运行结果"]')
+      const baseline = await waitForValue(page, geometry, state => state?.page === '运行结果')
+      const branchName = baseline.inspectorBranch
+      for (const tab of ['运行结果', '资源', '任务', '经验', '收藏']) {
+        await click(`nav[aria-label="工作导航"] button[aria-label="${tab}"]`)
+        if (tab === '资源') {
+          await click('nav[aria-label="资源类型"] button[data-resource-kind="comfyui-template"]')
+          await waitForValue(page, `(${root})?.querySelectorAll('main.center .catalog-card').length`, count => count === 8)
+        }
+        const state = await waitForValue(page, geometry, value => value?.page === tab)
+        observations.push(state)
+        if (tab === '资源' || tab === '任务') {
+          const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
+          const name = tab === '资源' ? 'resources' : 'tasks'
+          await writeFile(join(evidenceDirectory, `official-business-branch-sidebar-${width}-${name}.png`),
+            Buffer.from(screenshot.data, 'base64'), { mode: 0o600 })
+        }
+        assertLayout(state, baseline, branchName)
+      }
+      await click('nav[aria-label="工作导航"] button[aria-label="资源"]')
+      const nextBranch = branches.find(branch => branch.name !== branchName)
+      await click(`button[aria-label="切换分支 ${nextBranch.name}"]`)
+      const switched = await waitForValue(page, geometry,
+        state => state?.page === '运行结果' && state.inspectorBranch === nextBranch.name)
+      assertLayout(switched, baseline, nextBranch.name)
+      await click('nav[aria-label="工作导航"] button[aria-label="资源"]')
+      await waitForValue(page, `(${root})?.querySelectorAll('main.center .catalog-card').length`, count => count === 8)
+      const resourceBranch = await waitForValue(page, geometry,
+        state => state?.page === '资源' && state.inspectorBranch === nextBranch.name)
+      assertLayout(resourceBranch, baseline, nextBranch.name)
+      observations.push(switched, resourceBranch)
+    }
+  } catch (error) {
+    recordFailure('acceptance', error)
+    try {
+      const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
+      await writeFile(join(evidenceDirectory, 'official-business-branch-sidebar-failure.png'),
+        Buffer.from(screenshot.data, 'base64'), { mode: 0o600 })
+    } catch (captureError) {
+      recordFailure('screenshot', captureError)
+    }
+  } finally {
+    const cleanup = await Promise.allSettled([
+      (async () => {
+        await page.command('Emulation.clearDeviceMetricsOverride')
+        await waitForValue(page, `({ width: window.innerWidth, height: window.innerHeight })`,
+          actual => actual.width === viewport.width && actual.height === viewport.height)
+      })(),
+      (async () => {
+        if (opened) {
+          await page.evaluate(`(document.querySelector('button[aria-label="实验工作台"][aria-pressed="true"]')?.click(), true)`)
+          await waitForValue(page, `document.querySelector('[data-experiment-workbench-root]') === null`, value => value === true)
+        }
+      })(),
+      (async () => {
+        await page.evaluate(`(() => {
+          const collapsed = document.querySelector('[data-sidebar-collapsed="true"]') !== null
+          if (collapsed !== ${sidebarCollapsed})
+            document.querySelector('button[aria-label="' + (collapsed ? '打开侧边栏' : '收起侧边栏') + '"]').click()
+        })()`)
+        await waitForValue(page, `document.querySelector('[data-sidebar-collapsed="true"]') !== null`,
+          actual => actual === sidebarCollapsed)
+      })(),
+      page.evaluate(`(() => {
+        const previous = ${JSON.stringify(previousWorkspace)}
+        if (previous === null) localStorage.removeItem('harness-comfyui:experiment-workspace')
+        else localStorage.setItem('harness-comfyui:experiment-workspace', previous)
+      })()`),
+    ])
+    const cleanupPhases = ['viewport', 'workbench', 'sidebar', 'workspace-selection']
+    cleanup.forEach((result, index) => {
+      if (result.status === 'rejected') recordFailure(`cleanup:${cleanupPhases[index]}`, result.reason)
+    })
+    try {
+      await writeFile(join(evidenceDirectory, 'official-business-branch-sidebar.json'),
+        JSON.stringify({ workspaceId, workId: seeded.work.value.workId, branches, observations, failures: failureDetails,
+          cleanup: cleanup.map(result => ({ status: result.status, ...(result.status === 'rejected' ? { error: String(result.reason) } : {}) })),
+        }, null, 2) + '\n', { mode: 0o600 })
+    } catch (evidenceError) {
+      recordFailure('evidence', evidenceError)
+    }
+    if (failures.length === 1) throw failures[0]
+    if (failures.length > 1) throw new AggregateError(failures, 'Experiment branch sidebar verification or cleanup failed')
+  }
+}
 
 async function verifyContextDialog(page, context) {
   const viewport = await page.evaluate(`({ width: window.innerWidth, height: window.innerHeight, deviceScaleFactor: window.devicePixelRatio, mobile: false })`)
@@ -4045,6 +4267,9 @@ description: ${USER_SKILL_DESCRIPTION}
       await page.command('Emulation.setDeviceMetricsOverride', desktopViewport)
       await waitForValue(page, 'window.innerWidth', width => width === desktopViewport.width)
       await verifyContextDialog(page, context)
+      await page.command('Emulation.clearDeviceMetricsOverride')
+      deviceMetricsOverridden = false
+      await verifyExperimentBranchSidebar(page, identity.workspaceId, context.businessEvidenceDirectory)
       savedBrowserPath = await verifyWorkflowBrowserSettings(page, context, desktopConfig, profileYamlAdapter)
       retiredPresetFixture = await createRetiredPresetFixture(page, promptCapture, identity.workspaceId, workspacePath)
       const activeGoal = await armWorkbenchGoalForRestart(page, promptCapture, nativeSubagentEvidence, goalEvidence)
@@ -4160,6 +4385,7 @@ description: ${USER_SKILL_DESCRIPTION}
           'workflow-browser-invalid-path-draft-save-and-restart',
           'saved-media-history-viewer-download-copy-responsive-layout',
           'context-dialog',
+          'experiment-branch-sidebar-through-tabs-and-resource-branch-switch-at-1024-1280-1440',
           'controlled-official-generation-through-frontend-worker-runtime-and-media-ui',
         ],
         generation: generationEvidence,

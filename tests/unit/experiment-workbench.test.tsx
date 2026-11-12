@@ -1594,11 +1594,19 @@ describe('experiment workbench shell', () => {
     expect(renderer.root.findAllByProps({ role: 'treeitem' }).map(node => node.props['aria-level'])).toEqual([1, 2, 3, 2])
   })
 
-  it('opens results and reveals children when selecting a collapsed branch from resources', async () => {
-    const { renderer } = await mount(treeProjection())
+  it('keeps the branch tree across tabs and switches branches from resources', async () => {
+    const { renderer } = await mount(treeProjection(), { catalog: makeCatalog() })
     await click(renderer, '收起暖光')
-    await click(renderer, '资源')
-    await change(renderer, '切换分支', 'warm')
+    for (const page of ['资源', '任务', '经验', '收藏', '运行结果', '资源']) {
+      await click(renderer, page)
+      expect(renderer.root.findByProps({ 'aria-label': page }).props.className).toBe('active')
+      const tree = renderer.root.findByProps({ role: 'tree', 'aria-label': '当前工作分支树' })
+      expect(tree.findByProps({ 'aria-label': '切换分支 暖光' })).toBeDefined()
+      expect(tree.findAllByProps({ role: 'treeitem' })).toHaveLength(3)
+      expect(renderer.root.findByProps({ 'aria-label': '展开暖光' })).toBeDefined()
+    }
+    expect(renderer.root.findAllByProps({ 'aria-label': '切换分支' })).toHaveLength(0)
+    await click(renderer, '切换分支 暖光')
     expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
     expect(renderer.root.findByProps({ 'aria-label': '收起暖光' })).toBeDefined()
     expect(renderer.root.findByProps({ 'aria-label': '切换分支 暖光细节' })).toBeDefined()
@@ -2720,7 +2728,7 @@ describe('experiment workbench Catalog search transitions', () => {
     await click(renderer, '资源')
     await change(renderer, '搜索资源', '  navigation draft  ')
     if (navigation === 'work') await change(renderer, '切换工作', 'work-b')
-    if (navigation === 'branch') await change(renderer, '切换分支', 'warm')
+    if (navigation === 'branch') await click(renderer, '切换分支 暖光')
     if (navigation === 'run') {
       await click(renderer, '查看运行记录')
       const card = renderer.root.findByProps({ 'aria-label': '运行记录' }).findAllByType('article').find(node => nodeText(node).includes('warm-r1'))!

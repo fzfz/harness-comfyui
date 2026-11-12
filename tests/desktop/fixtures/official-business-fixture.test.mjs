@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import officialBusinessFixtureJson from './official-business-fixture.json' with { type: 'json' }
 import { parseOfficialBusinessFixture } from './official-business-schema.mjs'
 import { startOfficialBusinessServices } from './official-business-services.mjs'
+import { CatalogClient } from '../../../src/host/catalog/catalog-client.ts'
 
 import translation from '../../../config/workbench-translation.json' with { type: 'json' }
 import { assertTranslationPresetObservation } from './official-translation-acceptance.mjs'
@@ -327,6 +328,46 @@ describe('official Desktop business fixture schema', () => {
     } finally {
       await services.close()
     }
+  })
+
+  it('serves resource filters and template pagination through the production Catalog client', async () => {
+    const fixture = parseOfficialBusinessFixture(officialBusinessFixtureJson)
+    const services = await startOfficialBusinessServices(fixture)
+    try {
+      const address = new URL(services.origin)
+      const catalog = new CatalogClient({ settings: { get: () => ({
+        url: `${address.protocol}//${address.hostname}`, port: Number(address.port),
+      }) } })
+      const response = await fetch(`${services.origin}/internal/semantic/generation-models`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mode: 'search', query: '', page: 1, page_size: 8 }),
+      })
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({
+        status: 'ok', message: null, results: [], page: 1, page_size: 8, total_count: 0,
+      })
+      const signal = new AbortController().signal
+      expect(await catalog.baseModels(signal)).toEqual({
+        items: [{ id: fixture.catalog.baseModel.id, label: fixture.catalog.baseModel.name }],
+      })
+      for (const baseModelId of [null, fixture.catalog.baseModel.id]) {
+        for (const page of [1, 2]) {
+          expect(await catalog.search({ kind: 'model', query: '', page, baseModelId, modelId: null }, signal))
+            .toEqual({ kind: 'model', query: '', page, items: [], totalCount: 0 })
+        }
+      }
+      const first = await catalog.search({ kind: 'comfyui-template', query: '', page: 1, baseModelId: null, modelId: null }, signal)
+      const second = await catalog.search({ kind: 'comfyui-template', query: '', page: 2, baseModelId: fixture.catalog.baseModel.id, modelId: null }, signal)
+      expect(first.items.map(item => item.context.id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+      expect(second.items.map(item => item.context.id)).toEqual(['9'])
+      expect(first.totalCount).toBe(9)
+      expect(second.totalCount).toBe(9)
+      for (const item of [...first.items, ...second.items]) {
+        expect(item).toMatchObject({
+          context: { kind: 'comfyui-template' }, baseModelId: fixture.catalog.baseModel.id, modelId: null,
+        })
+      }
+    } finally { await services.close() }
   })
 
   it('serves isolated Source, LiteGraph frontend, object_info, job, history, and media contracts', async () => {
