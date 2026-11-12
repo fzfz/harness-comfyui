@@ -1,3 +1,4 @@
+import { contracts } from '#contracts'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { SessionEventConsumer, requestTurn } from './session-events.ts'
 import type { FunctionDescriptor, ImageRef, ImageSource, ResourceSnapshot, Task, TaskDraft } from '../../workbench/contract.ts'
@@ -5,7 +6,7 @@ import type { PromptAdoptRequest, PromptListRequest, PromptLookupRequest, Prompt
 import { buildPromptRequest, DEFAULT_PROMPT_REQUEST_PARTS, type PromptRequestInput } from '../../workbench/request-template.ts'
 import config from '../../workbench/prompt-edit-config.json' with { type: 'json' }
 import { equalValue } from '../../shared/json-contract.ts'
-import { validateArtifact, validateTaskDraft, WorkbenchError } from '../../workbench/validation.ts'
+import { WorkbenchError } from '../../workbench/validation.ts'
 import type { WorkbenchStore } from '../storage/workbench-store.ts'
 import type { HarnessWorkbenchSessions, OfficialSessionController } from './harness-adapter.ts'
 
@@ -66,7 +67,7 @@ export class WorkbenchPrompts {
     const branch = store.getBranch(request.branch_id)
     const binding = store.getFunctionBinding(request.workspace_id, request.function_id)
     if (binding.kind !== 'prompt') return failure('binding', 'function_id')
-    return this.prepare(request.input, validateTaskDraft(request.draft ?? branch.editing_draft ?? branch.draft), binding.requested_skill)
+    return this.prepare(request.input, contracts.parse('taskDraft', 'input', request.draft ?? branch.editing_draft ?? branch.draft), binding.requested_skill)
   }
 
   private acceptedRequest(request: PromptStartRequest): PromptTurn | null {
@@ -81,7 +82,7 @@ export class WorkbenchPrompts {
     const previous = this.acceptedRequest(request)
     if (previous) return previous
     const branch = store.getBranch(request.branch_id)
-    const draft = validateTaskDraft(request.draft ?? branch.editing_draft ?? branch.draft)
+    const draft = contracts.parse('taskDraft', 'input', request.draft ?? branch.editing_draft ?? branch.draft)
     const binding = store.getFunctionBinding(request.workspace_id, request.function_id)
     if (binding.kind !== 'prompt') failure('binding', 'function_id')
     const input = await this.prepare(request.input, draft, binding.requested_skill)
@@ -97,7 +98,7 @@ export class WorkbenchPrompts {
       const descriptor = this.ports.descriptors.find(item => item.kind === 'prompt')!
       const { instructions: _instructions, ...fixed } = draft
       task = store.createTask({ branchId: branch.branch_id, functionId: binding.function_id, title: `${binding.name} · ${branch.name}`, kind: 'prompt',
-        input: { ...fixed, selected_resources: input.reference_context.selected_resources ?? [], base_model_id: input.base_model_id, requirements: { original_request: input.original_request, instructions: input.change_request }, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: 0 },
+        input: { ...fixed, selected_resources: contracts.parse('resourceSnapshots', 'input', input.reference_context.selected_resources ?? []), base_model_id: input.base_model_id, requirements: { original_request: input.original_request, instructions: input.change_request }, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: 0 },
         outputContract: { ...descriptor.output_contract, apply_mode: 'record' }, applyTarget: { kind: 'branch', id: branch.branch_id, expected: {} },
         bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template }, requestText: '',
       })
@@ -244,7 +245,7 @@ export class WorkbenchPrompts {
 export function parsePromptReply(text: string): PromptReply {
   const trimmed = text.trim()
   const source = trimmed.startsWith('```') ? trimmed.replace(/^```(?:json)?\s*/u, '').replace(/\s*```$/u, '') : trimmed
-  const artifact = validateArtifact(JSON.parse(source))
+  const artifact = contracts.parse('taskArtifact', 'input', JSON.parse(source))
   if (artifact.type !== 'prompt' || typeof artifact.positive_prompt !== 'string' || typeof artifact.negative_prompt !== 'string') return failure('reply', 'reply')
   return { type: 'prompt', positive_prompt: artifact.positive_prompt, negative_prompt: artifact.negative_prompt }
 }

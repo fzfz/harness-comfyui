@@ -6,16 +6,13 @@ import { repositoryResource } from '../resource-path.ts'
 import { nodeScriptEnvironment } from '../node-script-environment.ts'
 import Schema from '@deepseek-ai/schemastery'
 import type { Context } from '@deepseek-ai/cordis'
-import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import { assertSupportedJsonSchema, type ToolRunContext } from '@deepseek-ai/dsh-tools'
 import configuration from '../../../config/workbench-agent-roles.json' with { type: 'json' }
-import { cliInputSchemas, cliSubmissionItemSchema } from '../../cli/input-schema.ts'
-import { cliResultSchemas } from '../../cli/result-schema.ts'
-import { parseCliRequest } from '../../cli/contract.ts'
+import { contracts } from '#contracts'
 import { dispatch } from '../cli/dispatch.ts'
 import type { CliExecutionIdentity } from '../cli/shell-capability.ts'
 import { GenerationRunWaitService } from '../generation/run-wait-service.ts'
-import { jsonValue, WorkbenchError } from '../../workbench/validation.ts'
-import { nativeToolSchema } from './tool-schema.ts'
+import { WorkbenchError } from '../../workbench/validation.ts'
 import type {} from '../core/plugin.ts'
 import type {} from '../image-reader/plugin.ts'
 import type {} from './plugin.ts'
@@ -25,11 +22,11 @@ export const inject = ['tools', 'harnessComfyuiCore', 'harnessComfyuiWorkbench',
 export const Config = Schema.object({ roleId: Schema.string().required() })
 
 const commands = {
-  workbench_run_submit: ['generation.submit', 'generation submit'],
-  workbench_run_media: ['generation.resolve-media', 'generation resolve-media'],
-  workbench_run_inputs: ['generation.run-inputs', 'generation run-inputs'],
-  workbench_workflow_parameters: ['generation.inspect-template-parameters', 'generation inspect-template-parameters'],
-  workbench_image_read: ['image.inspect', 'image inspect'],
+  workbench_run_submit: 'generation.submit',
+  workbench_run_media: 'generation.resolve-media',
+  workbench_run_inputs: 'generation.run-inputs',
+  workbench_workflow_parameters: 'generation.inspect-template-parameters',
+  workbench_image_read: 'image.inspect',
 } as const
 
 function caller(execution: ToolRunContext): CliExecutionIdentity {
@@ -53,32 +50,20 @@ export function apply(ctx: Context, config: { roleId: string }): void {
 
   registerPromptTools(ctx, role)
 
-  for (const [toolName, [command, schemaKey]] of Object.entries(commands)) {
+  for (const [toolName, command] of Object.entries(commands)) {
     if (!role.nativeTools.includes(toolName)) continue
-    const definition = configuration.nativeTools[toolName as keyof typeof commands]
-    const description = `${definition.purpose}。${definition.guidance}`
-    const input = schemaKey === 'generation submit' ? Schema.object({
-      ...cliInputSchemas[schemaKey].dict,
-      items: Schema.array(cliSubmissionItemSchema).min(1).max(cliInputSchemas[schemaKey].dict!.items!.inner!.meta.max!).required(),
-    }) : cliInputSchemas[schemaKey]
-    const output = toolName === 'workbench_run_submit' ? Schema.object({
-      ...cliResultSchemas['generation submit'].dict,
-      runs: cliResultSchemas['generation resolve-media'].dict!.runs!.required(),
-    }) : cliResultSchemas[schemaKey]
-    ctx.tools.register({
-      name: toolName, description,
-      parameters: nativeToolSchema(input) as ToolDefinition['parameters'],
-      output: { schema: nativeToolSchema(output), render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
-      async execute(args, execution) {
+    ctx.tools.register(contracts.bind(toolName as keyof typeof commands, 'native', {
+      assertSchema: assertSupportedJsonSchema,
+      async execute(args, execution: ToolRunContext) {
         execution.signal.throwIfAborted()
-        const request = parseCliRequest({ ...args as Record<string, unknown>, command })
+        const request = contracts.parse('cliRequest', 'input', { ...args as Record<string, unknown>, command })
         const identity = caller(execution)
         const result = await dispatch({
           workbench: ctx.harnessComfyuiWorkbench.service, runtime: core.runtime, imageReader: ctx.imageReader,
           workspaceRegistry: ctx.workspaceRegistry,
 
         }, identity, request, execution.signal)
-        if (request.command !== 'generation.submit') return jsonValue(result)
+        if (request.command !== 'generation.submit') return result
         const accepted = result as { items: { run_id: string }[] }
         const completion = await wait!.register(identity, accepted.items.map(item => item.run_id), execution.signal)
         const owner = identity.sessionId as Parameters<typeof ctx.jobs.wait>[2]
@@ -91,23 +76,19 @@ export function apply(ctx: Context, config: { roleId: string }): void {
           if (observation.status !== 'completed') throw new Error(observation.detail ?? configuration.generationWait.failureMessage)
           const media = await core.runtime.readGenerationRunMedia({ runIds: completion.run_ids }, execution.signal)
           ctx.jobs.remove(jobId, owner)
-          return jsonValue({ ...accepted, ...media })
+          return { ...accepted, ...media }
         } catch (error) {
           ctx.jobs.kill(jobId, owner)
           throw error
         }
       },
-    })
+    }))
   }
 }
 
 function registerPromptTools(ctx: Context, role: typeof configuration.roles[number]): void {
-  const nonempty = Schema.string().min(1).required()
-  const fileRead = Schema.object({ file_path: nonempty, offset: Schema.natural().default(0), limit: Schema.natural().min(1).max(configuration.fileRead.maxLines).default(configuration.fileRead.defaultLines), search: Schema.string().min(1).default(undefined as never) })
-  const fileWrite = Schema.object({ file_path: nonempty, content: Schema.string().required() })
-  const validate = Schema.object({ skill_name: nonempty, mode: Schema.string().default(undefined as never), help: Schema.boolean().default(false), input: Schema.any().default(undefined as never) })
-  const handlers: Record<string, { schema: Schema; execute(args: Record<string, unknown>, execution: ToolRunContext): Promise<unknown> }> = {
-    workbench_file_read: { schema: fileRead, async execute(args, execution) {
+  const handlers = {
+    workbench_file_read: { async execute(args: Record<string, unknown>, execution: ToolRunContext) {
       const path = resolve(caller(execution).cwd, args.file_path as string)
       const offset = args.offset as number, limit = args.limit as number
       if ((await stat(path)).isDirectory()) {
@@ -118,13 +99,13 @@ function registerPromptTools(ctx: Context, role: typeof configuration.roles[numb
       const entries = lines.map((text, line) => ({ line, text })).filter(entry => args.search === undefined || entry.text.includes(args.search as string))
       return { file_path: path, offset, total_lines: lines.length, text: entries.slice(offset, offset + limit).map(entry => entry.text).join('\n'), ...(args.search === undefined ? {} : { matches: entries.slice(offset, offset + limit) }), next_offset: offset + limit < entries.length ? offset + limit : null }
     } },
-    workbench_file_write: { schema: fileWrite, async execute(args, execution) {
+    workbench_file_write: { async execute(args: Record<string, unknown>, execution: ToolRunContext) {
       const path = resolve(caller(execution).cwd, args.file_path as string)
       await mkdir(dirname(path), { recursive: true })
       await writeFile(path, args.content as string, { encoding: 'utf8', signal: execution.signal })
       return { file_path: path }
     } },
-    workbench_prompt_validate: { schema: validate, async execute(args, execution) {
+    workbench_prompt_validate: { async execute(args: Record<string, unknown>, execution: ToolRunContext) {
       const skill = args.skill_name as keyof typeof configuration.promptValidators
       const validator = configuration.promptValidators[skill]
       if (!validator || !role.skills.some(candidate => candidate.name === skill)) throw new TypeError(`skill_name 无效，请选择当前预设支持的提示词校验器：${role.skills.filter(candidate => Object.hasOwn(configuration.promptValidators, candidate.name)).map(candidate => candidate.name).join('、')}。`)
@@ -148,17 +129,13 @@ function registerPromptTools(ctx: Context, role: typeof configuration.roles[numb
   }
   for (const [toolName, handler] of Object.entries(handlers)) {
     if (!role.nativeTools.includes(toolName)) continue
-    const purpose = configuration.nativeTools[toolName as keyof typeof configuration.nativeTools].purpose
-    const guidance = toolName === 'workbench_prompt_validate'
-      ? '执行当前 Skill 的 scripts 校验或编译步骤时使用。skill_name 取 Skill 名称；help=true 读取帮助；mode 取帮助中的模式；input 按所选 Skill 帮助中的输入格式填写 JSON。返回退出码、stdout、stderr、校验结果及草稿路径。'
-      : toolName === 'workbench_file_read' ? 'file_path 支持 Skill resourceBase 中的绝对路径及工作目录相对路径。目录路径返回目录项；search 按原文字面检索文件。offset 从 0 开始，表示行、匹配项或目录项的位置；next_offset 非空时可继续读取。' : 'file_path 为工作目录相对路径或绝对路径；content 是完整文字。返回保存路径。'
-    ctx.tools.register({ name: toolName, description: `${purpose}。${guidance}`, parameters: nativeToolSchema(handler.schema) as ToolDefinition['parameters'], output: { schema: {}, render: (_args, result) => [{ type: 'text', text: JSON.stringify(result) }] },
-      async execute(args, execution) {
+    ctx.tools.register(contracts.bind(toolName as keyof typeof handlers, 'native', {
+      assertSchema: assertSupportedJsonSchema,
+      async execute(args, execution: ToolRunContext) {
         execution.signal.throwIfAborted()
-        const input = Schema.resolve(args, handler.schema, {})[0] as Record<string, unknown>
-        return jsonValue(await handler.execute(input, execution))
+        return handler.execute(args as Record<string, unknown>, execution)
       },
-    })
+    }))
   }
 }
 

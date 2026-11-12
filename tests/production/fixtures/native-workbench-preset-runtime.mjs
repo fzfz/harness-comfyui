@@ -8,6 +8,8 @@ import { pathToFileURL } from 'node:url'
 import { fixtureTool } from './native-preset-tool.mjs'
 
 const sdkRequire = createRequire(process.argv[3])
+const workbenchToolsEntry = process.argv[4]
+assert.equal(typeof workbenchToolsEntry, 'string', 'Pass the built candidate workbench-tools entry as the fourth argument')
 const [cordis, loader, include, presets, sessions, projections, prompt, tools, scope, group, skillRegistry,
   agents, goals, commands, agentLoop, llm, jobsLocal] = [
   '@deepseek-ai/cordis', '@deepseek-ai/cordis-plugin-loader',
@@ -437,8 +439,16 @@ try {
   await root.plugin(loader.Loader)
   root.loader.builtins.include = include.default
   root.loader.builtins.group = group.default
-  root.loader.internal = { import: (name, baseUrl) => name.startsWith('@deepseek-ai/')
-    ? sdkRequire(name) : import(URL.canParse(name) ? name : pathToFileURL(createRequire(baseUrl).resolve(name)).href) }
+  root.loader.internal = { async import(name, baseUrl) {
+    try {
+      if (name === 'harness-comfyui/workbench-tools') return await import(pathToFileURL(workbenchToolsEntry).href)
+      return name.startsWith('@deepseek-ai/') ? sdkRequire(name)
+        : await import(URL.canParse(name) ? name : pathToFileURL(createRequire(baseUrl).resolve(name)).href)
+    } catch (error) {
+      process.stderr.write(`Preset module import failed: ${name} from ${baseUrl}\n${error instanceof Error ? error.stack : String(error)}\n`)
+      throw error
+    }
+  } }
   root.provide('workingDirectory', { ensure: async () => directory })
   root.provide('harnessComfyuiWorkbench', { service: {} })
   await root.plugin(skillRegistry.default)

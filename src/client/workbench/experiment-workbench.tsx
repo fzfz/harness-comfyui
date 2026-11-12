@@ -1,3 +1,4 @@
+import type { JsonValue } from '#contracts'
 import React, {
   useCallback,
   useEffect,
@@ -16,11 +17,11 @@ import {
 import type {
   Branch,
   FunctionBinding,
-  JsonValue,
   Task,
   StoredArtifact,
   TaskDraft,
   WorkbenchRun,
+  WorkbenchRecord,
 } from '../../workbench/contract.ts'
 import { isRunReviewFunctionKind, WORKBENCH_BRANCH_NAME_MAX_LENGTH, WORKBENCH_RESOURCE_KINDS } from '../../workbench/contract.ts'
 import type {
@@ -1167,7 +1168,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     try {
       const local = p?.runs.find(item => item.run_id === id)
       let record = libraryRecords.find(item => item.type === 'run' && item.id === id) ?? sourceRecords.get(`run:${id}`)
-      if (!record && local) record = { type: 'run', id, run: local, title: local.title, workspace_id: state.workspaceId, work_id: view.workId, branch_id: taskFor(local)?.branch_id ?? null, task_id: local.workbench_task_id }
+      if (!record && local) record = { type: 'run', id, run: local, title: local.title, workspace_id: state.workspaceId, work_id: view.workId, branch_id: taskFor(local)?.branch_id ?? null, task_id: local.workbench_task_id, base_model_id: taskFor(local)?.input.base_model_id ?? null }
       if (!record) record = (await props.remote.queryRecords({ type: 'run' })).find(item => item.id === id)
       if (!record?.workspace_id || !record.work_id || !record.branch_id) { setMessage('来源记录已不可用，请重新选择。'); return }
       const target = record
@@ -1207,9 +1208,19 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
         <div className="library-reference-tools"><label className="field"><span>添加到下次运行</span><select aria-label="引用目标分支" value={view.branchId ?? ''} onChange={event => {
           const destination = p?.reference_destinations.find(item => item.branch_id === event.target.value)
           if (destination) { selectWorkspace(destination.workspace_id); props.onWorkspaceChange(destination.workspace_id); store.updateView({ workId: destination.work_id, branchId: destination.branch_id, inspectRun: false, page: view.page }) ; void store.refresh() }
-        }}><option value="">选择已有工作与分支</option>{p?.reference_destinations.map(item => <option key={item.branch_id} value={item.branch_id}>{[props.workspaces.find(workspace => workspace.id === item.workspace_id)?.name ?? item.workspace_id, item.work_name, item.branch_name].join(' / ')}</option>)}</select></label><Button kind="small primary" disabled={!librarySelection.length} onClick={() => addReferences(librarySelection.map(key => {
+        }}><option value="">选择已有工作与分支</option>{p?.reference_destinations.map(item => <option key={item.branch_id} value={item.branch_id}>{[props.workspaces.find(workspace => workspace.id === item.workspace_id)?.name ?? item.workspace_id, item.work_name, item.branch_name].join(' / ')}</option>)}</select></label><Button kind="small primary" disabled={!librarySelection.length} onClick={() => addReferences(librarySelection.flatMap<WorkbenchRecord>(key => {
           const [type, id] = key.split(':')
-          return libraryRecords.find(item => item.type === type && item.id === id) ?? (type === 'experience' ? { type: 'experience', id, title: p?.experiences.find(item => item.experience_id === id)?.title ?? id, workspace_id: null, work_id: null, branch_id: null, task_id: null, experience: p?.experiences.find(item => item.experience_id === id) } : { type: 'run', id, title: id, workspace_id: null, work_id: null, branch_id: null, task_id: null, run: p?.runs.find(item => item.run_id === id) })
+          const record = libraryRecords.find(item => item.type === type && item.id === id)
+          if (record) return [record]
+          if (type === 'experience') {
+            const experience = p?.experiences.find(item => item.experience_id === id)
+            return experience ? [{ type, id, title: experience.title, workspace_id: null, work_id: experience.work_id, branch_id: experience.branch_id, task_id: experience.task_id, base_model_id: experience.base_model_id, experience }] : []
+          }
+          if (type === 'run') {
+            const run = p?.runs.find(item => item.run_id === id)
+            return run ? [{ type, id, title: run.title, workspace_id: state.workspaceId, work_id: view.workId, branch_id: taskFor(run)?.branch_id ?? null, task_id: run.workbench_task_id, base_model_id: taskFor(run)?.input.base_model_id ?? null, run }] : []
+          }
+          return []
         }))}>添加所选引用（{librarySelection.length}）</Button>{!work && <Button kind="small" onClick={() => setModal('new-work')}>新建工作</Button>}</div>
         {favoritePage && (
           <div className="eyebrow" style={{ margin: '5px 0 14px' }}>
@@ -1230,7 +1241,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               <div className="row">
                 <Button
                   kind="small"
-                  onClick={() => addReferences([{ branch_id: null,  type: 'experience', id: item.experience_id, title: item.title, workspace_id: null, work_id: item.work_id, task_id: item.task_id, experience: item }])}
+                  onClick={() => addReferences([{ branch_id: item.branch_id, type: 'experience', id: item.experience_id, title: item.title, workspace_id: null, work_id: item.work_id, task_id: item.task_id, base_model_id: item.base_model_id, experience: item }])}
                 >
                   添加引用
                 </Button>
@@ -1382,7 +1393,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                         void action('task-answer', {
                           taskId: item.task_id,
                           id: question.artifact_id,
-                          value: new FormData(form).get('answer'),
+                          value: String(new FormData(form).get('answer') ?? ''),
                         })
                       }}
                     >
@@ -1598,7 +1609,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const beginPreparation = () => { preparationEditor?.begin(); store.updateView({ inspectRun: false }) }
   const updatePreparation = (change: Partial<TaskDraft>, branchChange?: { name?: string; originalRequest?: string }) => preparationEditor?.change(change, branchChange)
   const useReferenceRun = async (record: import('../../workbench/contract.ts').WorkbenchRecord) => {
-    if (!branch || !record.run) return
+    if (!branch || record.type !== 'run') return
     try {
       const source = await props.remote.getRunInput({ workspaceId: record.workspace_id ?? state.workspaceId ?? '', workId: record.work_id ?? '', runId: record.id })
       const restored = taskDraftFromRunInput(source, preparedDraft ?? branch.draft)
@@ -1778,7 +1789,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       </fieldset> : savedSummary}
       {view.inspectRun && historical && <><details className="task-input"><summary>提交输入</summary><pre>{JSON.stringify({ generation_input: historical.submitted_input, image_refs: historical.image_refs, workflow_image_bindings: historical.workflow_image_bindings }, null, 2)}</pre></details><details className="task-input"><summary>实际输入</summary>{historical.effective_input ? <pre>{JSON.stringify({ generation_input: historical.effective_input, image_uploads: historical.image_uploads }, null, 2)}</pre> : <p>实际输入尚未准备完成。</p>}</details></>}
       <div className="inspector-foot execution-controls">
-        {view.inspectRun ? <div className="preparation-footer"><Button kind="primary" disabled={!!experiment} onClick={() => run && void useReferenceRun({ branch_id: null,  type: 'run', id: run.run_id, workspace_id: state.workspaceId, work_id: view.workId, task_id: run.workbench_task_id, title: run.title, run })}>用于下次运行</Button></div>
+        {view.inspectRun ? <div className="preparation-footer"><Button kind="primary" disabled={!!experiment} onClick={() => run && void useReferenceRun({ branch_id: taskFor(run)?.branch_id ?? null, type: 'run', id: run.run_id, workspace_id: state.workspaceId, work_id: view.workId, task_id: run.workbench_task_id, title: run.title, base_model_id: taskFor(run)?.input.base_model_id ?? null, run })}>用于下次运行</Button></div>
           : experiment ? <div className="row"><Button kind="primary" onClick={() => void action(experiment.control_state === 'paused' ? 'resume-experiment' : 'pause-experiment', { taskId: experiment.task_id })}>{experiment.control_state === 'paused' ? '继续实验' : '暂停实验'}</Button><Button kind="small" onClick={() => void action('stop-experiment', { taskId: experiment.task_id })}>结束实验</Button></div>
           : editing ? <div className="preparation-actions"><Button kind="quiet" disabled={preparation?.saving} onClick={() => {
             void preparationEditor?.cancel().catch(() => undefined)
@@ -2204,12 +2215,12 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     setFormSubmitting(true)
                     const saved = await action(type, {
                       value: {
-                        name: data.get('name'),
+                        name: String(data.get('name') ?? ''),
                         ...(modal === 'new-workspace'
-                          ? { path: data.get('path') }
+                          ? { path: String(data.get('path') ?? '') }
                           : modal === 'branch'
-                            ? { original_request: data.get('goal') }
-                            : { goal: data.get('goal') }),
+                            ? { original_request: String(data.get('goal') ?? '') }
+                            : { goal: String(data.get('goal') ?? '') }),
                       },
                     }, isCurrent)
                     if (formSubmissionPending.current === instance)

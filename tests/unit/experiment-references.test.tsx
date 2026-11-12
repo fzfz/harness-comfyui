@@ -1,4 +1,6 @@
+import { contracts } from '#contracts'
 import React from 'react'
+import { recordFixture } from '../support/contract-fixtures.ts'
 import { afterEach, expect, it, vi } from 'vitest'
 import { act, create } from './experiment-renderer.ts'
 import { fullProjection } from './experiment-workbench-fixtures.ts'
@@ -8,7 +10,7 @@ import type { StoredArtifact, WorkbenchRecord } from '../../src/workbench/contra
 it('projects an embedded task Run as a Run record without task or artifact payloads', async () => {
   vi.stubGlobal('document', new EventTarget())
   const data = fullProjection(), task = data.tasks[0]!, run = data.runs[0]!
-  const record = { type: 'task' as const, id: task.task_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: task.branch_id, task_id: task.task_id, title: task.title, task, runs: [run], artifacts: data.artifacts }
+  const record = recordFixture({ type: 'task' as const, id: task.task_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: task.branch_id, task_id: task.task_id, title: task.title, task, runs: [run], artifacts: data.artifacts })
   const onAdd = vi.fn()
   let renderer!: ReturnType<typeof create>
   await act(async () => { renderer = create(<ExperimentReferencePicker kind="task" workspaces={[]} remote={{ queryRecords: async () => [record] }} onAdd={onAdd} onUseRun={vi.fn()} onInspect={vi.fn()} onClose={vi.fn()} />) })
@@ -21,7 +23,7 @@ it('projects an embedded task Run as a Run record without task or artifact paylo
 it('groups runs by their owning task and preserves each disclosure state', async () => {
   vi.stubGlobal('document', new EventTarget())
   const data = fullProjection(), taskId = 'task_12345678901234567890'
-  const records = ['run-a', 'run-b', 'run-c'].map((id, index) => ({ type: 'run' as const, id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: index < 2 ? taskId : 'other-task', base_model_id: '1', title: id, run: { ...data.runs[0]!, run_id: id, workbench_task_id: index < 2 ? taskId : 'other-task' } }))
+  const records = ['run-a', 'run-b', 'run-c'].map((id, index) => (recordFixture({ type: 'run' as const, id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: index < 2 ? taskId : 'other-task', base_model_id: '1', title: id, run: { ...data.runs[0]!, run_id: id, workbench_task_id: index < 2 ? taskId : 'other-task' } })))
   let renderer!: ReturnType<typeof create>
   await act(async () => { renderer = create(<ExperimentReferencePicker kind="run" workspaces={[]} baseModels={[{ id: '1', label: 'SDXL' }]} remote={{ queryRecords: async () => records }} onAdd={vi.fn()} onUseRun={vi.fn()} onInspect={vi.fn()} onClose={vi.fn()} />) })
   const groups = () => renderer.root.findAllByProps({ className: 'reference-task' })
@@ -44,7 +46,7 @@ it('groups runs by their owning task and preserves each disclosure state', async
 it.each(['experience', 'favorite'] as const)('uses the prototype choice row and folded origin for %s experiences', async kind => {
   vi.stubGlobal('document', new EventTarget())
   const id = 'experience_12345678901234567890'
-  const record = { type: 'experience' as const, id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: null, title: '完整经验标题', experience: { ...fullProjection().experiences[0]!, experience_id: id, title: '完整经验标题', conditions: '完整适用条件', note: '完整经验结论', provenance: { created_by_task_id: 'task-source', evidence: [] } } }
+  const record = recordFixture({ type: 'experience' as const, id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: null, title: '完整经验标题', experience: { ...fullProjection().experiences[0]!, experience_id: id, title: '完整经验标题', conditions: '完整适用条件', note: '完整经验结论', provenance: { created_by_task_id: 'task-source', evidence: [] } } })
   let renderer!: ReturnType<typeof create>
   await act(async () => { renderer = create(<ExperimentReferencePicker kind={kind} workspaces={[{ id: 'workspace-a', name: '来源工作区', path: '/workspace-a' }]} remote={{ queryRecords: async () => [record] }} onAdd={vi.fn()} onUseRun={vi.fn()} onInspect={vi.fn()} onClose={vi.fn()} />) })
   const card = renderer.root.findByProps({ className: 'reference-option' })
@@ -65,7 +67,7 @@ it('keeps complete provenance IDs available while shortening their display', asy
   vi.stubGlobal('document', new EventTarget())
   const taskId = 'task_12345678901234567890', runId = 'run_12345678901234567890'
   const experience = { ...fullProjection().experiences[0]!, provenance: { created_by_task_id: taskId, evidence: [{ run_id: runId, generation_task_id: taskId, role: 'supporting_evidence' as const }] } }
-  const record = { type: 'experience' as const, id: experience.experience_id, workspace_id: null, work_id: null, branch_id: null, task_id: taskId, title: experience.title, experience }
+  const record = recordFixture({ type: 'experience' as const, id: experience.experience_id, workspace_id: null, work_id: null, branch_id: null, task_id: taskId, title: experience.title, experience })
   let renderer!: ReturnType<typeof create>
   await act(async () => { renderer = create(<ExperimentReferencePicker kind="experience" workspaces={[]} remote={{ queryRecords: async () => [record] }} onAdd={vi.fn()} onUseRun={vi.fn()} onInspect={vi.fn()} onClose={vi.fn()} />) })
   expect(renderer.root.findByProps({ 'aria-label': taskId }).props.title).toBe(taskId)
@@ -77,7 +79,7 @@ it('keeps complete provenance IDs available while shortening their display', asy
 
 it('uses the prototype compact Run card in favorite references', async () => {
   vi.stubGlobal('document', new EventTarget())
-  const run = fullProjection().runs[0]!, record = { type: 'run' as const, id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, title: run.title, run }
+  const run = fullProjection().runs[0]!, record = recordFixture({ type: 'run' as const, id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, title: run.title, run })
   let renderer!: ReturnType<typeof create>
   await act(async () => { renderer = create(<ExperimentReferencePicker kind="favorite" workspaces={[]} remote={{ queryRecords: async () => [record] }} onAdd={vi.fn()} onUseRun={vi.fn()} onInspect={vi.fn()} onClose={vi.fn()} />) })
   const card = renderer.root.findByProps({ className: 'reference-option' })
@@ -90,7 +92,7 @@ it('uses the prototype compact Run card in favorite references', async () => {
 
 it.each(['image-workflow', 'image-agent'] as const)('uses the prototype image list for %s and omits Runs without image media', async kind => {
   vi.stubGlobal('document', new EventTarget())
-  const run = fullProjection().runs[0]!, record = { type: 'run' as const, id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, title: run.title, run }
+  const run = fullProjection().runs[0]!, record = recordFixture({ type: 'run' as const, id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, title: run.title, run })
   let renderer!: ReturnType<typeof create>
   await act(async () => { renderer = create(<ExperimentReferencePicker kind={kind} workspaces={[]} remote={{ queryRecords: async () => [record, { ...record, id: 'empty-run', run: { ...run, run_id: 'empty-run', media: [] } }] }} onAdd={vi.fn()} onUseRun={vi.fn()} onInspect={vi.fn()} onClose={vi.fn()} />) })
   const cards = renderer.root.findAllByProps({ className: 'reference-option' })
@@ -104,7 +106,7 @@ it.each(['image-workflow', 'image-agent'] as const)('uses the prototype image li
 
 it('adds multiple selected experiences through the cross-workspace record interface', async () => {
   vi.stubGlobal('document', new EventTarget())
-  const records = ['a', 'b'].map(id => ({ type: 'experience' as const, id, workspace_id: 'other', work_id: null, branch_id: null, task_id: null, title: `经验 ${id}`, experience: { experience_id: id, title: `经验 ${id}`, conditions: '玻璃', note: '保留窗框', evidence_run_ids: [], provenance: { created_by_task_id: null, evidence: [] } } }))
+  const records = ['a', 'b'].map(id => (recordFixture({ type: 'experience' as const, id, workspace_id: 'other', work_id: null, branch_id: null, task_id: null, title: `经验 ${id}`, experience: { ...fullProjection().experiences[0]!, work_id: null, branch_id: null, task_id: null, experience_id: id, title: `经验 ${id}`, conditions: '玻璃', note: '保留窗框', evidence_run_ids: [], provenance: { created_by_task_id: null, evidence: [] } } })))
   const queryRecords = vi.fn(async () => [...records]), onAdd = vi.fn()
   let renderer!: ReturnType<typeof create>
   await act(async () => { renderer = create(<ExperimentReferencePicker kind="experience" workspaces={[{ id: 'other', name: '来源工作区', path: '/other' }]} remote={{ queryRecords } as any} onAdd={onAdd} onUseRun={vi.fn()} onInspect={vi.fn()} onClose={vi.fn()} />) })
@@ -136,7 +138,7 @@ async function mountPicker(kind: PickerProps['kind'], records: readonly Workbenc
 function pickerRun(id: string, taskId = 'source-task'): WorkbenchRecord {
   const sample = fullProjection().runs[0]!
   const run = { ...sample, run_id: id, title: id, workbench_task_id: taskId, media: sample.media.map(media => ({ ...media, media_id: id + '-media', filename: id + '.png' })) }
-  return { type: 'run', id, title: id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: taskId, base_model_id: '1', run }
+  return recordFixture({ type: 'run', id, title: id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: taskId, base_model_id: '1', run })
 }
 
 it.each(['image-workflow', 'image-agent'] as const)('adds the checked media in selection order for %s and removes unchecked media', async kind => {
@@ -158,7 +160,7 @@ it('uses a Run input and exposes task artifacts through their separate actions',
   await act(() => runs.renderer.root.findAllByType('button').find(button => button.children.join('') === '使用此运行输入')!.props.onClick())
   expect(runs.onUseRun).toHaveBeenCalledWith(runRecord)
   const data = fullProjection(), task = data.tasks[0]!
-  const taskRecord: WorkbenchRecord = { type: 'task', id: task.task_id, title: task.title, task, artifacts: data.artifacts, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: task.branch_id, task_id: task.task_id }
+  const taskRecord: WorkbenchRecord = recordFixture({ type: 'task', id: task.task_id, title: task.title, task, runs: [], artifacts: data.artifacts, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: task.branch_id, task_id: task.task_id })
   const tasks = await mountPicker('task', [taskRecord])
   await act(() => tasks.renderer.root.findAllByType('button').find(button => button.children.join('') === '添加任务引用')!.props.onClick())
   expect(tasks.onAdd).toHaveBeenCalledWith([taskRecord])
@@ -170,7 +172,7 @@ it('uses a Run input and exposes task artifacts through their separate actions',
 
 it('keeps only checked favorite records and opens a selected Run source', async () => {
   const experience = fullProjection().experiences[0]!
-  const experienceRecord: WorkbenchRecord = { type: 'experience', id: experience.experience_id, title: experience.title, experience, workspace_id: null, work_id: null, branch_id: null, task_id: null }
+  const experienceRecord: WorkbenchRecord = recordFixture({ type: 'experience', id: experience.experience_id, title: experience.title, experience, workspace_id: null, work_id: null, branch_id: null, task_id: null })
   const run = pickerRun('favorite-run')
   const { renderer, onAdd, onInspect } = await mountPicker('favorite', [experienceRecord, run])
   for (const [label, checked] of [['选择经验 ' + experienceRecord.id, true], ['选择运行 ' + run.id, true], ['选择经验 ' + experienceRecord.id, false]] as const) {
@@ -195,9 +197,9 @@ it.each([new Error('目录读取失败'), 'closed connection'])('retries a faile
 
 it('follows complete experience Task and Run IDs through the record interface', async () => {
   const data = fullProjection(), task = data.tasks[0]!, runRecord = pickerRun('evidence-run')
-  const taskRecord: WorkbenchRecord = { type: 'task', id: task.task_id, title: task.title, task, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id }
+  const taskRecord: WorkbenchRecord = recordFixture({ type: 'task', id: task.task_id, title: task.title, task, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id , runs: [] , artifacts: [] })
   const experience = { ...data.experiences[0]!, provenance: { created_by_task_id: task.task_id, evidence: [{ run_id: runRecord.id, generation_task_id: task.task_id, role: 'counterexample' as const }] } }
-  const record: WorkbenchRecord = { type: 'experience', id: experience.experience_id, title: experience.title, experience, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id }
+  const record: WorkbenchRecord = recordFixture({ type: 'experience', id: experience.experience_id, title: experience.title, experience, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id })
   const queryRecords = vi.fn(async (query: { type: string }) => query.type === 'task' ? [taskRecord] : query.type === 'run' ? [runRecord] : [record])
   const { renderer, onInspect } = await mountPicker('experience', [record], { remote: { queryRecords }, workspaces: [{ id: 'workspace-a', name: '来源区', path: '/a' }], destinations: [{ workspace_id: 'workspace-a', work_id: 'work-a', work_name: '来源工作', branch_id: 'root', branch_name: '主分支' }] })
   expect(JSON.stringify(renderer.toJSON())).toContain('来源区 / 来源工作 / 主分支')
@@ -210,7 +212,7 @@ it('follows complete experience Task and Run IDs through the record interface', 
 
 it('reports a failed source lookup and lets the user reload the reference list', async () => {
   const experience = { ...fullProjection().experiences[0]!, provenance: { created_by_task_id: null, evidence: [{ run_id: 'failed-source', generation_task_id: null, role: 'supporting_evidence' as const }] } }
-  const record: WorkbenchRecord = { type: 'experience', id: experience.experience_id, title: experience.title, experience, workspace_id: null, work_id: null, branch_id: null, task_id: null }
+  const record: WorkbenchRecord = recordFixture({ type: 'experience', id: experience.experience_id, title: experience.title, experience, workspace_id: null, work_id: null, branch_id: null, task_id: null })
   const queryRecords = vi.fn(async (query: { type: string }) => { if (query.type === 'run') throw 'offline'; return [record] })
   const { renderer, onInspect } = await mountPicker('experience', [record], { remote: { queryRecords } })
   await act(async () => renderer.root.findByProps({ 'aria-label': 'failed-source' }).props.onClick())
@@ -223,7 +225,7 @@ it('reports a failed source lookup and lets the user reload the reference list',
 
 it('filters work and task options by Workspace and resets dependent selections when their source changes', async () => {
   const task = fullProjection().tasks[0]!
-  const records: WorkbenchRecord[] = ['a', 'b'].map(id => ({ type: 'task', id: 'task-' + id, title: '任务 ' + id, task: { ...task, task_id: 'task-' + id, title: '任务 ' + id }, workspace_id: 'workspace-' + id, work_id: 'work-' + id, branch_id: 'branch-' + id, task_id: 'task-' + id }))
+  const records: WorkbenchRecord[] = ['a', 'b'].map(id => (recordFixture({ type: 'task', id: 'task-' + id, title: '任务 ' + id, task: { ...task, task_id: 'task-' + id, title: '任务 ' + id }, workspace_id: 'workspace-' + id, work_id: 'work-' + id, branch_id: 'branch-' + id, task_id: 'task-' + id , runs: [] , artifacts: [] })))
   const queryRecords = vi.fn(async (query: { workspaceId?: string; workId?: string; taskId?: string }) => records.filter(record => (!query.workspaceId || record.workspace_id === query.workspaceId) && (!query.workId || record.work_id === query.workId) && (!query.taskId || record.task_id === query.taskId)))
   const { renderer } = await mountPicker('task', records, { remote: { queryRecords }, workspaces: ['a', 'b'].map(id => ({ id: 'workspace-' + id, name: '工作区 ' + id, path: '/' + id })), destinations: ['a', 'b'].map(id => ({ workspace_id: 'workspace-' + id, work_id: 'work-' + id, work_name: '工作 ' + id, branch_id: 'branch-' + id, branch_name: '主分支' })) })
   const select = (label: string) => renderer.root.findByProps({ 'aria-label': label })
@@ -246,8 +248,8 @@ it('lists submitted task artifacts while keeping questions outside the completed
   const question: StoredArtifact = { ...common, artifact_id: 'artifact-question-hidden', type: 'question', artifact: { type: 'question', question: '采用哪种光线？', options: ['晨光'] }, disposition: 'waiting_input' }
   const prompt: StoredArtifact = { ...common, artifact_id: 'artifact-visible', type: 'prompt', artifact: { type: 'prompt', positive_prompt: 'morning light', negative_prompt: '' }, disposition: 'applied' }
   const records: WorkbenchRecord[] = [
-    { type: 'task', id: task.task_id, title: task.title, task, artifacts: [question, prompt], workspace_id: null, work_id: null, branch_id: null, task_id: task.task_id },
-    { type: 'task', id: 'only-question', title: '等待回答', task: { ...task, task_id: 'only-question' }, artifacts: [question], workspace_id: null, work_id: null, branch_id: null, task_id: 'only-question' },
+    recordFixture({ type: 'task', id: task.task_id, title: task.title, task, artifacts: [question, prompt], workspace_id: null, work_id: null, branch_id: null, task_id: task.task_id , runs: [] }),
+    recordFixture({ type: 'task', id: 'only-question', title: '等待回答', task: { ...task, task_id: 'only-question' }, artifacts: [question], workspace_id: null, work_id: null, branch_id: null, task_id: 'only-question' , runs: [] }),
   ]
   const { renderer } = await mountPicker('task', records)
   const output = JSON.stringify(renderer.toJSON())

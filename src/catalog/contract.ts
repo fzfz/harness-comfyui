@@ -1,109 +1,10 @@
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
-import { isLoraWeight, loraTriggerWordsAreUnique, LORA_TRIGGER_WORDS_MAX_COUNT } from '../generation/lora-contract.ts'
+import { contracts } from '#contracts'
 import { validateSourceSettingsSection, type SourceAddress } from '../source-settings.ts'
 import { ERROR_CATALOG } from '../../config/error-catalog-schema.ts'
 import sourceClientConfiguration from '../../config/source-client.json' with { type: 'json' }
-function sourceCatalogPath(toolName: string): string {
-  const operation = Object.entries(sourceClientConfiguration.catalog.operations).find(([, entry]) => entry.toolName === toolName)
-  if (operation === undefined) throw new TypeError(`Catalog operation is not configured: ${toolName}`)
-  return operation[0]
-}
-export const CATALOG_PAGE_SIZE = presentation.pageSize
-export const CATALOG_BASE_MODEL_PAGE_SIZE = sourceClientConfiguration.catalog.baseModelPageSize
-export const CATALOG_COMFYUI_INSTANCE_PAGE_SIZE = sourceClientConfiguration.catalog.instancePageSize
-export const CATALOG_QUERY_TIMEOUT_MS = sourceClientConfiguration.catalog.queryTimeoutMs
-export const CATALOG_REMOTE_NAMESPACE = 'harnessComfyuiCatalog'
-export const CATALOG_REMOTE_SERVICE = `remote.${CATALOG_REMOTE_NAMESPACE}`
-export const CATALOG_BASE_MODEL_PATH = sourceCatalogPath('query_semantic_base_models')
-export const CATALOG_COMFYUI_INSTANCE_PATH = sourceCatalogPath('query_semantic_comfyui_instances')
-export const CATALOG_COMFYUI_INSTANCE_QUERY = Object.freeze({
-  mode: 'search',
-  query: '',
-  page: 1,
-  page_size: CATALOG_COMFYUI_INSTANCE_PAGE_SIZE,
-} as const)
-export const CATALOG_ERROR_CODES = Object.freeze([
-  'CATALOG_QUERY_FAILED',
-  'CATALOG_RESPONSE_TOO_LARGE',
-  'CATALOG_PROTOCOL_ERROR',
-] as const)
-export const CATALOG_KIND_DEFINITIONS = Object.freeze([
-  Object.freeze({
-    kind: 'model',
-    label: '生成模型',
-    path: sourceCatalogPath('query_semantic_generation_models'),
-    labelField: 'file_name',
-    subtitleFields: Object.freeze(presentation.kinds['model'].summary),
-    multiple: presentation.kinds['model'].multiple,
-    baseModelScoped: true,
-  }),
-  Object.freeze({
-    kind: 'lora',
-    label: 'LoRA',
-    path: sourceCatalogPath('query_semantic_loras'),
-    labelField: 'file_name',
-    subtitleFields: Object.freeze(presentation.kinds['lora'].summary),
-    multiple: presentation.kinds['lora'].multiple,
-    baseModelScoped: true,
-  }),
-  Object.freeze({
-    kind: 'work',
-    label: '作品',
-    path: sourceCatalogPath('query_semantic_works'),
-    labelField: 'name',
-    subtitleFields: Object.freeze(presentation.kinds['work'].summary),
-    multiple: presentation.kinds['work'].multiple,
-    baseModelScoped: false,
-  }),
-  Object.freeze({
-    kind: 'character',
-    label: '角色',
-    path: sourceCatalogPath('query_semantic_characters'),
-    labelField: 'name',
-    subtitleFields: Object.freeze(presentation.kinds['character'].summary),
-    multiple: presentation.kinds['character'].multiple,
-    baseModelScoped: false,
-  }),
-  Object.freeze({
-    kind: 'style',
-    label: '画师或画风',
-    path: sourceCatalogPath('query_semantic_styles'),
-    labelField: 'name',
-    subtitleFields: Object.freeze(presentation.kinds['style'].summary),
-    multiple: presentation.kinds['style'].multiple,
-    baseModelScoped: true,
-  }),
-  Object.freeze({
-    kind: 'prompt-term',
-    label: '提示词条目',
-    path: sourceCatalogPath('query_semantic_prompt_terms'),
-    labelField: 'canonical_tag',
-    subtitleFields: Object.freeze(presentation.kinds['prompt-term'].summary),
-    multiple: presentation.kinds['prompt-term'].multiple,
-    baseModelScoped: false,
-  }),
-  Object.freeze({
-    kind: 'artist-string',
-    label: '画师串',
-    path: sourceCatalogPath('query_semantic_artist_prompt_strings'),
-    labelField: 'title',
-    subtitleFields: Object.freeze(presentation.kinds['artist-string'].summary),
-    multiple: presentation.kinds['artist-string'].multiple,
-    baseModelScoped: true,
-  }),
-  Object.freeze({
-    kind: 'comfyui-template',
-    label: 'Workflow 模板',
-    path: sourceCatalogPath('query_semantic_comfyui_templates'),
-    labelField: 'title',
-    subtitleFields: Object.freeze(presentation.kinds['comfyui-template'].summary),
-    multiple: presentation.kinds['comfyui-template'].multiple,
-    baseModelScoped: true,
-  }),
-] as const)
-
-export type CatalogKind = (typeof CATALOG_KIND_DEFINITIONS)[number]['kind']
-export type CatalogErrorCode = (typeof CATALOG_ERROR_CODES)[number]
+import { CATALOG_PAGE_SIZE, CATALOG_BASE_MODEL_PAGE_SIZE, CATALOG_COMFYUI_INSTANCE_PAGE_SIZE, CATALOG_QUERY_TIMEOUT_MS, CATALOG_REMOTE_NAMESPACE, CATALOG_REMOTE_SERVICE, CATALOG_BASE_MODEL_PATH, CATALOG_COMFYUI_INSTANCE_PATH, CATALOG_COMFYUI_INSTANCE_QUERY, CATALOG_ERROR_CODES, CATALOG_KIND_DEFINITIONS, type CatalogKind, type CatalogErrorCode, CATALOG_STABLE_ID_PATTERN } from './definitions.ts'
+export * from './definitions.ts'
 
 export interface CatalogQueryRequest {
   readonly kind: CatalogKind
@@ -276,7 +177,6 @@ export function parseCatalogPageNumber(value: unknown): number {
   return value as number
 }
 
-export const CATALOG_STABLE_ID_PATTERN = /^[1-9][0-9]{0,19}$/u
 
 export function parseCatalogStableId(value: unknown): string {
   if (typeof value !== 'string' || !CATALOG_STABLE_ID_PATTERN.test(value)) {
@@ -463,21 +363,12 @@ export function parseCatalogResolvedTemplate(value: unknown): CatalogResolvedTem
   })
 }
 
-function resolvedTriggerWords(value: unknown): readonly string[] {
-  if (!Array.isArray(value) || value.length > LORA_TRIGGER_WORDS_MAX_COUNT) {
-    throw new TypeError('resolved LoRA trigger words are invalid')
-  }
-  const words = value.map((word, index) => itemText(word, `resolved LoRA trigger word ${index}`, 500))
-  if (!loraTriggerWordsAreUnique(words)) throw new TypeError('resolved LoRA trigger words are duplicated')
-  return Object.freeze(words)
-}
-
 export function parseCatalogResolvedLora(value: unknown): CatalogResolvedLora {
   const input = record(value, 'resolved LoRA')
   exactKeys(input, [
     'id', 'base_model_id', 'model_id', 'file_name', 'description', 'usage', 'trigger_words', 'weight',
   ], 'resolved LoRA')
-  if (!isLoraWeight(input.weight)) {
+  if (!contracts.parse('loraWeightValid', 'input', input.weight)) {
     throw new TypeError('resolved LoRA weight is invalid')
   }
   return Object.freeze({
@@ -487,8 +378,8 @@ export function parseCatalogResolvedLora(value: unknown): CatalogResolvedLora {
     file_name: itemText(input.file_name, 'resolved LoRA file name', 500),
     description: itemText(input.description, 'resolved LoRA description', 100_000),
     usage: itemText(input.usage, 'resolved LoRA usage', 100_000),
-    trigger_words: resolvedTriggerWords(input.trigger_words),
-    weight: input.weight,
+    trigger_words: Object.freeze(contracts.parse('catalogLoraTriggerWords', 'input', input.trigger_words)),
+    weight: contracts.parse('loraWeight', 'input', input.weight),
   })
 }
 

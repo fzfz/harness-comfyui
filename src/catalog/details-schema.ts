@@ -1,5 +1,4 @@
-import { parseJsonValue, type JsonValue } from '../shared/json-contract.ts'
-import Schema from '@deepseek-ai/schemastery'
+import { contracts, type JsonValue } from '#contracts'
 import { CATALOG_PRESENTATION as presentation } from './presentation-schema.ts'
 import { catalogDefinition, parseCatalogItem, parseCatalogStableId, parseCatalogOperationResult, type CatalogItem, type CatalogKind } from './contract.ts'
 
@@ -45,7 +44,7 @@ export function parseCatalogDetails(value: unknown): CatalogDetails {
   if (fields[0]!.value !== identity.id) throw new TypeError('Catalog details response: return the requested id in the first field as well as the top-level id.')
   const extraFields = input.extra_fields === undefined ? undefined : Object.fromEntries(Object.entries(object(input.extra_fields)).map(([key, value]) => {
     if (keys.includes(key)) throw new TypeError('Catalog extra fields: include only fields outside the configured detail fields.')
-    return [key, parseJsonValue(value, { keySchema: Schema.string(), maxDepth: 100 }, `Catalog extra field ${key}`)]
+    return [key, contracts.parse('catalogExtraValue', 'input', value)]
   }))
   return { ...identity, item, fields, ...(extraFields === undefined ? {} : { extra_fields: extraFields }) }
 }

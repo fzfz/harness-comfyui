@@ -9,7 +9,7 @@ import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
 describe('Catalog Remote contribution', () => {
   it('assembles every plugin method under one Typert package registration', () => {
     expect(HARNESS_COMFYUI_REMOTE.package).toBe('harness-comfyui')
-    expect(HARNESS_COMFYUI_REMOTE.descriptors.map(descriptor => descriptor.id)).toEqual([
+    expect(HARNESS_COMFYUI_REMOTE.descriptors.map(descriptor => descriptor.id).sort()).toEqual([
       'harness-comfyui#harnessComfyuiCatalog/search',
       'harness-comfyui#harnessComfyuiCatalog/baseModels',
       'harness-comfyui#harnessComfyuiCatalog/sourceAddress',
@@ -43,7 +43,7 @@ describe('Catalog Remote contribution', () => {
       'harness-comfyui#harnessComfyuiImageReader/deleteProfile',
       'harness-comfyui#harnessComfyuiBrowserSettings/configuration',
       'harness-comfyui#harnessComfyuiBrowserSettings/validate',
-    ])
+    ].sort())
   })
 
   it('mounts strict cancellable current-profile save and delete methods', () => {

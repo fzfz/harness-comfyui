@@ -1,10 +1,11 @@
+import { contracts } from '#contracts'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { apply as registerWorkbenchTools } from '../../src/host/workbench/tools.ts'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import { WorkbenchService } from '../../src/workbench/service.ts'
 import { WORKBENCH_FUNCTIONS as defaults } from '../../src/workbench/functions.ts'
 
@@ -108,7 +109,7 @@ it('pauses delegated children through the official subagent service', async () =
 it('allows experience delegation after reaching the goal and keeps generation stopped', async () => {
   const f = await fixture()
   const input = f.parent.input.generation_input
-  const receipt = await f.runtime.acceptGenerations(f.identity, [{ requestId: '11111111-1111-4111-8111-111111111111', request: toGenerationRequest({ ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, f.parent.task_id)
+  const receipt = await f.runtime.acceptGenerations(f.identity, [{ requestId: '11111111-1111-4111-8111-111111111111', request: contracts.parse('runtimeGenerationRequest', 'input', { ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, f.parent.task_id)
   await f.runtime.advance()
   const runId = receipt.items[0]!.runId
   f.store.publish(f.parent.task_id, { type: 'review', run_ids: [runId], observation: 'The workflow failed.', conclusion: 'Use the failure evidence.' }, f.identity)

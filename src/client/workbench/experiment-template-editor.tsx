@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { requestTemplateVariables, type PromptBlockName } from '../../workbench/request-template.ts'
+import { contracts } from '#contracts'
+import type { PromptBlockName } from '../../workbench/request-template.ts'
 import { Button } from './experiment-controls.tsx'
 
 export function ExperimentTemplateEditor({ label, value, kind, block, disabled, onChange }: {
@@ -15,7 +16,7 @@ export function ExperimentTemplateEditor({ label, value, kind, block, disabled, 
   const textarea = useRef<HTMLTextAreaElement>(null)
   const container = useRef<HTMLDivElement>(null)
   const selection = useRef<{ start: number; end: number } | null>(null)
-  const variables = requestTemplateVariables(kind, block)
+  const variables = contracts.parse('requestTemplateVariables', 'input', { kind, ...(block ? { block } : {}) })
   useEffect(() => { setOpen(false); setHighlighted(0) }, [kind, block])
   useEffect(() => {
     if (!open) return

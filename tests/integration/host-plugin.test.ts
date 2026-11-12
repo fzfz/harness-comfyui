@@ -1,6 +1,6 @@
 import { createTestCredentialProvider } from '../support/credential-provider.ts'
 import { provideWorkbenchOfficialServices } from '../support/workbench-host.ts'
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { createServer } from 'node:http'
 import { dirname, join, resolve } from 'node:path'
@@ -12,15 +12,14 @@ import { ComfyWorkflowCompiler } from '../../src/host/generation/workflow-compil
 import { Context } from '@deepseek-ai/cordis'
 import { SettingsForms, type SettingsPathOp } from '@deepseek-ai/dsh-settings'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 
 import errorCatalog from '../../config/error-catalog.json' with { type: 'json' }
 import pluginRuntimeResources from '../../config/plugin-runtime-resources.json' with { type: 'json' }
 import runtimeArtifacts from '../../config/runtime-artifacts.json' with { type: 'json' }
 import { Config as CoreConfig } from '../../src/host/core/schema.ts'
-import { materializeManagedCliModuleFromSources } from '../../scripts/build/cli-module.mjs'
-import { materializeHostModule } from '../../scripts/build/host-module.mjs'
+import { materializeTestPluginResources } from '../support/plugin-runtime-resources.ts'
 import IMAGE_READER_REMOTE from '../../src/image-reader/remote.ts'
 import { IMAGE_READER_PROFILE_ENTRY_ID } from '../../src/image-reader/settings.ts'
 import * as harnessComfyui from '../support/product-plugin.ts'
@@ -37,6 +36,19 @@ import {
   IMAGE_READER_SENTINEL_PROMPT,
   createImageReaderProviderFailureFixture,
 } from '../support/image-reader-provider-failure.ts'
+
+const sourceResources = vi.hoisted(() => ({
+  locate: (_relativePath: string): string => { throw new Error('Build source plugin runtime resources before activation') },
+}))
+vi.mock('../../src/host/resource-path.ts', () => ({
+  repositoryResource: (relativePath: string) => sourceResources.locate(relativePath),
+}))
+let sourcePackage: Awaited<ReturnType<typeof materializeTestPluginResources>> | undefined
+beforeAll(async () => {
+  sourcePackage = await materializeTestPluginResources()
+  sourceResources.locate = sourcePackage.resource
+}, 30_000)
+afterAll(async () => { await sourcePackage?.dispose() })
 
 const temporaryDirectories: string[] = []
 
@@ -61,29 +73,18 @@ function stubTestProfileEnvironment(): string {
   return root
 }
 
-async function materializeTestHostModule(options: {
-  omitResource?: keyof typeof PLUGIN_RUNTIME_RESOURCE_PATHS
-  omitRequiredFile?: string
-} = {}): Promise<string> {
-  const outputRoot = mkdtempSync(join(process.cwd(), '.host-module-test-'))
-  temporaryDirectories.push(outputRoot)
-  const output = await materializeHostModule(process.cwd(), { outputRoot })
-  const packageRoot = dirname(dirname(dirname(output)))
-  const paths = Object.fromEntries(Object.entries(PLUGIN_RUNTIME_RESOURCE_PATHS)
-    .map(([key, relativePath]) => [key, resolve(packageRoot, relativePath)])) as Record<keyof typeof PLUGIN_RUNTIME_RESOURCE_PATHS, string>
-
-  await materializeManagedCliModuleFromSources(process.cwd(), packageRoot)
-  if (options.omitResource === 'managedCli') rmSync(paths.managedCli)
-  if (options.omitResource === 'frontendCompilerWorker') rmSync(paths.frontendCompilerWorker)
-  for (const relativePath of pluginRuntimeResources.requiredFiles) {
-    if (options.omitRequiredFile === relativePath) continue
-    const source = resolve(process.cwd(), relativePath)
-    const destination = resolve(packageRoot, relativePath)
-    mkdirSync(dirname(destination), { recursive: true })
-    copyFileSync(source, destination)
-  }
-  return output
+async function materializeTestHostModule(options: Parameters<typeof materializeTestPluginResources>[0] = {}): Promise<string> {
+  const fixture = await materializeTestPluginResources(options)
+  temporaryDirectories.push(fixture.packageRoot)
+  return fixture.entry
 }
+
+it('cleans the temporary runtime package after a source build failure', async () => {
+  const repositoryRoot = mkdtempSync(join(tmpdir(), 'host-source-build-failure-'))
+  temporaryDirectories.push(repositoryRoot)
+  await expect(materializeTestPluginResources({ repositoryRoot })).rejects.toThrow()
+  expect(readdirSync(repositoryRoot)).toEqual([])
+})
 
 function packageRootForHostEntry(entry: string): string {
   return dirname(dirname(dirname(entry)))

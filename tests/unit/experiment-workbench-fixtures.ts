@@ -117,7 +117,9 @@ export const makeTask = (
   id: string,
   branchId = 'child',
   kind: TaskKind = 'run',
-): Task => ({
+): Task => {
+  const { instructions: _instructions, ...snapshot } = structuredClone(draft)
+  return ({
   task_id: id,
   parent_experiment_task_id: null,
   branch_id: branchId,
@@ -126,12 +128,12 @@ export const makeTask = (
   kind,
   status: 'succeeded',
   input: {
-    ...structuredClone(draft),
+    ...snapshot,
     reference_task_artifacts: [],
     requirements: { original_request: '玻璃花房', instructions: '比较光线' },
     reference_run_ids: [],
     requested_skill: null,
-    max_runs: 3,
+    max_runs: kind === 'run' ? 1 : kind === 'experiment' ? 3 : 0,
   },
   output_contract: {
     artifact_types: ['prompt'],
@@ -160,7 +162,8 @@ export const makeTask = (
   execution_state: 'idle',
   initiator: 'human',
   retry_of_run_id: null,
-})
+  })
+}
 export const makeRun = (
   id: string,
   taskId: string,

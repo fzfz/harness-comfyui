@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderRequestTemplate, requestTemplateProblem } from '../../src/workbench/request-template.ts'
+import { contracts } from '#contracts'
+import { renderRequestTemplate } from '../../src/workbench/request-template.ts'
 import { WorkbenchTranslations } from '../../src/host/workbench/translation-service.ts'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { FunctionBinding } from '../../src/workbench/contract.ts'
@@ -68,8 +69,8 @@ describe('translation execution requirements', () => {
   })
 
   it('validates the source-text placeholder and preserves prompt syntax when rendering', () => {
-    expect(requestTemplateProblem('请翻译：{{source_text}}', 'translate')).toBe('')
-    expect(requestTemplateProblem('任务：{{task_id}}', 'translate')).not.toBe('')
+    expect(contracts.parse('requestTemplateProblem', 'input', { template: '请翻译：{{source_text}}', kind: 'translate' })).toBe('')
+    expect(contracts.parse('requestTemplateProblem', 'input', { template: '任务：{{task_id}}', kind: 'translate' })).not.toBe('')
     expect(renderRequestTemplate('请翻译：\n{{source_text}}', '(light:1.2)\n<lora:portrait:0.7> $&', 'translate')).toBe('请翻译：\n(light:1.2)\n<lora:portrait:0.7> $&')
   })
   it('reads persisted translation state without consuming session events', async () => {

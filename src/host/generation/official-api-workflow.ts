@@ -1,8 +1,9 @@
+import type { JsonValue } from '#contracts'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { GenerationRuntimeError, type ComfyConnection, type JsonValue } from './generation-runtime.ts'
+import { GenerationRuntimeError, type ComfyConnection} from './generation-runtime.ts'
 import type { UiWorkflow } from './source-preparer.ts'
 
 export const OFFICIAL_API_WORKFLOW_COMPILER_SCHEMA_VERSION = 3

@@ -82,6 +82,14 @@ describe('plugin build and package entry points', () => {
       const output = await stat(resolve(outputRoot, outputPath))
       expect(output.isFile(), `${outputPath} must be a built file`).toBe(true)
     }
+    for (const artifactRoot of configuredArtifactRoots) {
+      for (const file of await listFiles(resolve(outputRoot, artifactRoot))) {
+        if (!/\.(?:m?js)$/u.test(file)) continue
+        const builtSource = await readFile(resolve(outputRoot, artifactRoot, file), 'utf8')
+        const privateImport = builtSource.match(/(?:from\s*|import\s*\(|require\s*\()\s*['"]#contracts(?:\/[^'"]*)?['"]/u)
+        expect(privateImport, `${artifactRoot}/${file} must bundle the private contract module`).toBeNull()
+      }
+    }
     expect(await readdir(join(outputRoot, '.local/source-host'))).toContain('core.js')
   })
 
@@ -257,6 +265,7 @@ describe('plugin build and package entry points', () => {
     expect(manifest.private).toBeUndefined()
     expect(manifest.scripts).toBeUndefined()
     expect(manifest.devDependencies).toBeUndefined()
+    expect(manifest.imports).toBeUndefined()
     expect(references).toContain('./.local/source-host/index.js')
     expect(references).toContain('./.local/source-client/client.js')
     expect(references.length).toBeGreaterThan(1)

@@ -1,4 +1,5 @@
-import { toGenerationRequest, type CliRequest } from '../../cli/contract.ts'
+import { contracts, type ContractValue } from '#contracts'
+type CliRequest = ContractValue<'cliRequest'>
 import { resolveGenerationWorkspaceId } from '../generation/workspace-access.ts'
 import type { CliHandlerOptions } from './schema.ts'
 import type { CliExecutionIdentity } from './shell-capability.ts'
@@ -50,7 +51,7 @@ export async function dispatch(
       await options.workbench?.authorizeGeneration(request.workbench_task_id ?? null, owner)
       const accepted = await options.runtime.acceptGenerations(owner, request.items.map(item => ({
         requestId: item.request_id,
-        request: toGenerationRequest(item.request),
+        request: contracts.parse('runtimeGenerationRequest', 'input', item.request),
       })), signal, request.workbench_task_id)
       return Object.freeze({ items: Object.freeze(accepted.items.map(item => Object.freeze({
         request_id: item.requestId,

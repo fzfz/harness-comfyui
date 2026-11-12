@@ -49,12 +49,13 @@ describe('source workspace engineering contract', () => {
     expect(scripts).toMatchObject({
       build: 'node scripts/build/cli.mjs build',
       'pack:plugin': 'node scripts/build/cli.mjs pack',
+      'check:contracts-boundary': 'node scripts/security/check-contract-boundary.mjs',
       'test:production': 'vitest run tests/production --maxWorkers=1 --no-file-parallelism',
       'test:contract': 'vitest run tests/contract tests/security',
       'test:desktop': 'node tests/desktop/run-desktop-tests.mjs',
       'verify:comfyui-workflows': 'node --experimental-strip-types scripts/verification/comfyui-workflow-matrix.mjs',
       'quality:preinstall': 'pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts',
-      'quality:fast': 'pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype',
+      'quality:fast': 'pnpm run check:harness-boundary && pnpm run check:contracts-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype',
       quality: 'pnpm run quality:preinstall && pnpm run quality:fast && pnpm run test:desktop',
     })
     expect(Object.keys(scripts).filter(name => /^(?:prod|dev|web):/u.test(name))).toEqual([])

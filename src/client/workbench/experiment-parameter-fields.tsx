@@ -1,6 +1,7 @@
+import type { JsonValue } from '#contracts'
 import React, { useSyncExternalStore } from 'react'
 import type { RemoteFailure } from '@deepseek-ai/dsh-typert-protocol'
-import type { JsonValue } from '../../workbench/contract.ts'
+
 import type { WorkflowRuntimeParameterInspectionParameter } from '../../generation/inspection-contract.ts'
 import type { ExperimentSizeOption } from './experiment-input.ts'
 import { AutosaveField, type FieldEditor, type FieldOptions } from './experiment-fields.tsx'

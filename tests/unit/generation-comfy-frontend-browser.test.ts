@@ -1,3 +1,4 @@
+import type { JsonValue } from '#contracts'
 import { EventEmitter } from 'node:events'
 import { runInNewContext } from 'node:vm'
 
@@ -11,7 +12,7 @@ import {
   type CdpSession,
   type WebSocketLike,
 } from '../../src/host/generation/comfy-frontend-browser.ts'
-import type { JsonValue } from '../../src/host/generation/generation-runtime.ts'
+
 import type { UiWorkflow } from '../../src/host/generation/source-preparer.ts'
 
 afterEach(() => {

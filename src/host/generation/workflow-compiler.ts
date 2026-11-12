@@ -1,4 +1,5 @@
-import { GenerationRuntimeError, type JsonValue } from './generation-runtime.ts'
+import type { JsonValue } from '#contracts'
+import { GenerationRuntimeError} from './generation-runtime.ts'
 import type {
   OfficialApiWorkflowCompileInput,
   OfficialApiWorkflowCompileResult,
