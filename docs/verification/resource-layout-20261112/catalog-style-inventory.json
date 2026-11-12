@@ -1,0 +1,492 @@
+[
+  {
+    "width": 1024,
+    "remaining": [
+      {
+        "selector": ".catalog-original img[hidden]",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "none"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-detail .resource-detail-identity",
+        "differences": {
+          "flex-wrap": {
+            "actual": null,
+            "prototype": "wrap"
+          },
+          "margin": {
+            "actual": null,
+            "prototype": "-6px 0 20px"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "flex"
+          },
+          "align-items": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "justify-content": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "min-width": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "min-height": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "flex": {
+            "actual": null,
+            "prototype": "1"
+          },
+          "height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "background": {
+            "actual": null,
+            "prototype": "#edf1eb"
+          },
+          "border-radius": {
+            "actual": null,
+            "prototype": "6px"
+          },
+          "overflow": {
+            "actual": null,
+            "prototype": "auto"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original img",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "block"
+          },
+          "max-width": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "max-height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "object-fit": {
+            "actual": null,
+            "prototype": "contain"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-error p",
+        "differences": {
+          "max-width": {
+            "actual": null,
+            "prototype": "480px"
+          },
+          "overflow-wrap": {
+            "actual": null,
+            "prototype": "anywhere"
+          },
+          "line-height": {
+            "actual": null,
+            "prototype": "1.8"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      }
+    ]
+  },
+  {
+    "width": 1280,
+    "remaining": [
+      {
+        "selector": ".catalog-filters",
+        "differences": {
+          "grid-template-columns": {
+            "actual": "repeat(2,minmax(160px,260px))",
+            "prototype": "minmax(160px,260px)"
+          }
+        },
+        "reason": "approved second generation-model filter"
+      },
+      {
+        "selector": ".catalog-original img[hidden]",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "none"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-detail .resource-detail-identity",
+        "differences": {
+          "flex-wrap": {
+            "actual": null,
+            "prototype": "wrap"
+          },
+          "margin": {
+            "actual": null,
+            "prototype": "-6px 0 20px"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "flex"
+          },
+          "align-items": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "justify-content": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "min-width": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "min-height": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "flex": {
+            "actual": null,
+            "prototype": "1"
+          },
+          "height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "background": {
+            "actual": null,
+            "prototype": "#edf1eb"
+          },
+          "border-radius": {
+            "actual": null,
+            "prototype": "6px"
+          },
+          "overflow": {
+            "actual": null,
+            "prototype": "auto"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original img",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "block"
+          },
+          "max-width": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "max-height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "object-fit": {
+            "actual": null,
+            "prototype": "contain"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-error p",
+        "differences": {
+          "max-width": {
+            "actual": null,
+            "prototype": "480px"
+          },
+          "overflow-wrap": {
+            "actual": null,
+            "prototype": "anywhere"
+          },
+          "line-height": {
+            "actual": null,
+            "prototype": "1.8"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      }
+    ]
+  },
+  {
+    "width": 1440,
+    "remaining": [
+      {
+        "selector": ".catalog-filters",
+        "differences": {
+          "grid-template-columns": {
+            "actual": "repeat(2,minmax(160px,260px))",
+            "prototype": "minmax(160px,260px)"
+          }
+        },
+        "reason": "approved second generation-model filter"
+      },
+      {
+        "selector": ".catalog-original img[hidden]",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "none"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-detail .resource-detail-identity",
+        "differences": {
+          "flex-wrap": {
+            "actual": null,
+            "prototype": "wrap"
+          },
+          "margin": {
+            "actual": null,
+            "prototype": "-6px 0 20px"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "flex"
+          },
+          "align-items": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "justify-content": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "min-width": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "min-height": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "flex": {
+            "actual": null,
+            "prototype": "1"
+          },
+          "height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "background": {
+            "actual": null,
+            "prototype": "#edf1eb"
+          },
+          "border-radius": {
+            "actual": null,
+            "prototype": "6px"
+          },
+          "overflow": {
+            "actual": null,
+            "prototype": "auto"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original img",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "block"
+          },
+          "max-width": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "max-height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "object-fit": {
+            "actual": null,
+            "prototype": "contain"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-error p",
+        "differences": {
+          "max-width": {
+            "actual": null,
+            "prototype": "480px"
+          },
+          "overflow-wrap": {
+            "actual": null,
+            "prototype": "anywhere"
+          },
+          "line-height": {
+            "actual": null,
+            "prototype": "1.8"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      }
+    ]
+  },
+  {
+    "width": 1920,
+    "remaining": [
+      {
+        "selector": ".catalog-filters",
+        "differences": {
+          "grid-template-columns": {
+            "actual": "repeat(2,minmax(160px,260px))",
+            "prototype": "minmax(160px,260px)"
+          }
+        },
+        "reason": "approved second generation-model filter"
+      },
+      {
+        "selector": ".catalog-original img[hidden]",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "none"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-detail .resource-detail-identity",
+        "differences": {
+          "flex-wrap": {
+            "actual": null,
+            "prototype": "wrap"
+          },
+          "margin": {
+            "actual": null,
+            "prototype": "-6px 0 20px"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "flex"
+          },
+          "align-items": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "justify-content": {
+            "actual": null,
+            "prototype": "center"
+          },
+          "min-width": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "min-height": {
+            "actual": null,
+            "prototype": "0"
+          },
+          "flex": {
+            "actual": null,
+            "prototype": "1"
+          },
+          "height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "background": {
+            "actual": null,
+            "prototype": "#edf1eb"
+          },
+          "border-radius": {
+            "actual": null,
+            "prototype": "6px"
+          },
+          "overflow": {
+            "actual": null,
+            "prototype": "auto"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-original img",
+        "differences": {
+          "display": {
+            "actual": null,
+            "prototype": "block"
+          },
+          "max-width": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "max-height": {
+            "actual": null,
+            "prototype": "100%"
+          },
+          "object-fit": {
+            "actual": null,
+            "prototype": "contain"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      },
+      {
+        "selector": ".catalog-error p",
+        "differences": {
+          "max-width": {
+            "actual": null,
+            "prototype": "480px"
+          },
+          "overflow-wrap": {
+            "actual": null,
+            "prototype": "anywhere"
+          },
+          "line-height": {
+            "actual": null,
+            "prototype": "1.8"
+          }
+        },
+        "reason": "no matching product DOM consumer"
+      }
+    ]
+  }
+]

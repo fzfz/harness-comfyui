@@ -1594,14 +1594,41 @@ describe('experiment workbench shell', () => {
     expect(renderer.root.findAllByProps({ role: 'treeitem' }).map(node => node.props['aria-level'])).toEqual([1, 2, 3, 2])
   })
 
-  it('opens results and reveals children when selecting a collapsed branch from resources', async () => {
-    const { renderer } = await mount(treeProjection())
+  it('keeps resource navigation beside the catalog and returns to the selected branch', async () => {
+    const { renderer } = await mount(treeProjection(), { catalog: makeCatalog() })
+    await click(renderer, '切换分支 暖光')
     await click(renderer, '收起暖光')
+    const workbar = nodeText(renderer.root.findByProps({ className: 'workbar' }))
     await click(renderer, '资源')
-    await change(renderer, '切换分支', 'warm')
+    expect(nodeText(renderer.root.findByProps({ className: 'workbar' }))).toBe(workbar)
+    expect(renderer.root.findAllByProps({ 'aria-label': '切换分支' })).toHaveLength(0)
+
+    const sidebar = renderer.root.findByProps({ className: 'sidebar resource-sidebar' })
+    expect(sidebar.findAllByType('h3').map(nodeText)).toEqual(['资源分类'])
+    expect(nodeText(sidebar)).toContain('已选 3 项')
+    expect(nodeText(sidebar.findByProps({ className: 'sidebar-foot' }))).toContain('暖光')
+    const navigation = sidebar.findByProps({ 'aria-label': '资源分类' })
+    expect(navigation.findAllByType('button').map(node => [node.props['aria-label'], nodeText(node.findByProps({ className: 'count' }))])).toEqual([
+      ['生成模型', '1'],
+      ['LoRA', '1'],
+      ['作品', '0'],
+      ['角色', '0'],
+      ['画师或画风', '0'],
+      ['提示词条目', '0'],
+      ['画师串', '0'],
+      ['Workflow 模板', '1'],
+    ])
+    const catalog = renderer.root.findByProps({ className: 'catalog-browser' })
+    expect(catalog.findAllByType('nav')).toHaveLength(0)
+    const heading = renderer.root.findAllByProps({ className: 'workbench-head' }).find(node => nodeText(node).includes('资源目录'))!
+    expect(heading.findAllByType('button').map(nodeText)).toEqual(['刷新目录'])
+
+    await click(renderer, 'LoRA')
+    expect(catalog.findByProps({ className: 'row between catalog-results-head' }).findAllByType('b').map(nodeText)).toEqual(['LoRA'])
+    await act(() => sidebar.findAllByType('button').find(node => nodeText(node) === '返回运行结果')!.props.onClick())
     expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
-    expect(renderer.root.findByProps({ 'aria-label': '收起暖光' })).toBeDefined()
-    expect(renderer.root.findByProps({ 'aria-label': '切换分支 暖光细节' })).toBeDefined()
+    expect(renderer.root.findByProps({ 'aria-label': '展开暖光' })).toBeDefined()
+    expect(renderer.root.findAllByProps({ 'aria-label': '切换分支 暖光细节' })).toHaveLength(0)
     expect(readField(renderer.root, '分支名称')).toBe('暖光')
     expect(renderer.root.findByProps({ 'aria-label': '查看运行 warm-r2' }).props['aria-pressed']).toBe(true)
   })
@@ -2720,7 +2747,10 @@ describe('experiment workbench Catalog search transitions', () => {
     await click(renderer, '资源')
     await change(renderer, '搜索资源', '  navigation draft  ')
     if (navigation === 'work') await change(renderer, '切换工作', 'work-b')
-    if (navigation === 'branch') await change(renderer, '切换分支', 'warm')
+    if (navigation === 'branch') {
+      await click(renderer, '返回运行结果')
+      await click(renderer, '切换分支 暖光')
+    }
     if (navigation === 'run') {
       await click(renderer, '查看运行记录')
       const card = renderer.root.findByProps({ 'aria-label': '运行记录' }).findAllByType('article').find(node => nodeText(node).includes('warm-r1'))!
@@ -3891,7 +3921,7 @@ describe('experiment workbench generation model selection', () => {
       const expected = { ...before, editing_draft: { ...seeded, base_model_id: '2', generation_input: { ...seeded.generation_input, model: { id: '16', file_name: records[1]!.file_name } } } }
       expect(host.store.getBranch(scope.branchId)).toEqual(expected)
       expect(host.store.listFunctionBindings(scope.workspaceId)).toEqual(bindingsBefore)
-      await click(renderer, '返回结果')
+      await click(renderer, '返回运行结果')
       expect(renderer.root.findByProps({ 'aria-label': '运行结果' }).props.className).toBe('active')
       await act(() => renderer.unmount())
       const reopened = await mount(data, options)
@@ -4631,7 +4661,7 @@ describe('experiment workbench complete resource selection', () => {
     ]
     const { renderer, onAction } = await mount(data, { catalog })
     await click(renderer, '资源')
-    const kinds = renderer.root.findByProps({ 'aria-label': '资源类型' })
+    const kinds = renderer.root.findByProps({ 'aria-label': '资源分类' })
     expect(kinds.findAllByType('button').map(button => button.props['data-resource-kind'])).toEqual(
       expect.arrayContaining(['model', 'comfyui-template', 'lora', 'work', 'character', 'style', 'prompt-term', 'artist-string']))
     const style = kinds.findAllByType('button').find(button => button.props['data-resource-kind'] === 'style')!

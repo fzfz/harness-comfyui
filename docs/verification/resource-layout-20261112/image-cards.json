@@ -1,0 +1,72 @@
+[
+  {
+    "src": "http://127.0.0.1:18092/media/images/c4/c4ba6136-197d-4bb8-abbd-6e9f24ea6142-68272.png",
+    "loaded": true,
+    "naturalWidth": 1776,
+    "naturalHeight": 1184,
+    "objectFit": "contain",
+    "background": "rgb(237, 241, 235)",
+    "width": 306.5,
+    "height": 111
+  },
+  {
+    "src": "http://127.0.0.1:18092/media/images/9c/9c2a046d-2f25-4b77-b192-4cdeb066b64c-70326.png",
+    "loaded": true,
+    "naturalWidth": 2000,
+    "naturalHeight": 1600,
+    "objectFit": "contain",
+    "background": "rgb(237, 241, 235)",
+    "width": 306.5,
+    "height": 111
+  },
+  {
+    "src": "http://127.0.0.1:18092/media/images/8e/8e7d1bce-d50d-4d0f-8c9c-2cb6d2b2131e-01546.png",
+    "loaded": true,
+    "naturalWidth": 832,
+    "naturalHeight": 1216,
+    "objectFit": "contain",
+    "background": "rgb(237, 241, 235)",
+    "width": 306.5,
+    "height": 111
+  },
+  {
+    "src": "http://127.0.0.1:18092/media/images/22/22f0dc81-7f68-4f96-889f-022286e94c0f-29600.jpg",
+    "loaded": true,
+    "naturalWidth": 1536,
+    "naturalHeight": 2368,
+    "objectFit": "contain",
+    "background": "rgb(237, 241, 235)",
+    "width": 306.5,
+    "height": 111
+  },
+  {
+    "src": "http://127.0.0.1:18092/media/images/10/10a8f964-81d9-4fba-ba11-851b3efe4b8a-08404.png",
+    "loaded": true,
+    "naturalWidth": 1088,
+    "naturalHeight": 1936,
+    "objectFit": "contain",
+    "background": "rgb(237, 241, 235)",
+    "width": 306.5,
+    "height": 111
+  },
+  {
+    "src": "http://127.0.0.1:18092/media/images/ad/ad43c277-67f7-4a75-bafa-7b28dc141e18-75025.png",
+    "loaded": true,
+    "naturalWidth": 1248,
+    "naturalHeight": 1872,
+    "objectFit": "contain",
+    "background": "rgb(237, 241, 235)",
+    "width": 306.5,
+    "height": 111
+  },
+  {
+    "src": "http://127.0.0.1:18092/media/images/f1/f1f4a407-8f26-41ee-80e4-bd04bbdf1d49-92666.png",
+    "loaded": true,
+    "naturalWidth": 960,
+    "naturalHeight": 1536,
+    "objectFit": "contain",
+    "background": "rgb(237, 241, 235)",
+    "width": 306.5,
+    "height": 111
+  }
+]
