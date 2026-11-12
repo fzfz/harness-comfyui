@@ -12,7 +12,7 @@ function taskResult(kind: string): Record<string, unknown> {
     task_id: 'task_1', parent_experiment_task_id: null, children: [], kind, status: 'running',
     prompt_input: { positive_prompt: 'current prompt', negative_prompt: null },
     generation_input: { title: 'scene', instance_id: '2', template_id: '12', model: null, parameters: { steps_7: 28 }, loras: [] },
-    reference_task_ids: [], reference_task_artifacts: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], image_sources: [], base_model_id: null,
+    prompt_resource_refs: [], reference_task_ids: [], reference_task_artifacts: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], image_sources: [], base_model_id: null,
     requirements: { original_request: 'glass house', instructions: '' },
     reference_run_ids: [], requested_skill: null, max_runs: kind === 'run' ? 1 : kind === 'experiment' ? 3 : 0,
     output_contract: { artifact_types: [], required_artifact_types: [], parameter_ids: [], apply_mode: 'automatic', requires_finished_runs: false },

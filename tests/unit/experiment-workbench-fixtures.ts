@@ -57,6 +57,7 @@ export const agentModel: AgentModel = {
   reasoningEffort: 'high',
 }
 export const draft: TaskDraft = {
+  prompt_resource_refs: [],
   parameter_mapping: null,
   prompt_input: { positive_prompt: 'glass house', negative_prompt: 'blur' },
   generation_input: {

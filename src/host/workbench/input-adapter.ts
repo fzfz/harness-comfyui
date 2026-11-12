@@ -3,7 +3,10 @@ import type { CatalogClient } from '../catalog/catalog-client.ts'
 import { GenerationRuntimeError, type GenerationRuntime } from '../generation/generation-runtime.ts'
 import { GenerationInputValidationError } from '../generation/workflow-compiler.ts'
 import { parseCliGenerationRequest, toGenerationRequest } from '../../cli/contract.ts'
-import { WORKBENCH_RESOURCE_KINDS, type GenerationInput, type GenerationInputBase, type JsonValue, type ResourceRef, type TaskDraft } from '../../workbench/contract.ts'
+import { catalogDefinition } from '../../catalog/contract.ts'
+import { CATALOG_PRESENTATION } from '../../catalog/details-schema.ts'
+import { selectedResourceRefs, isPromptResourceKind } from '../../workbench/resources.ts'
+import { WORKBENCH_RESOURCE_KINDS, type ResourceSnapshot, type GenerationInput, type GenerationInputBase, type JsonValue, type ResourceRef, type TaskDraft } from '../../workbench/contract.ts'
 import { validateGenerationInput as validateStructure, validateTaskDraft, generationInputForDraft, WorkbenchError } from '../../workbench/validation.ts'
 
 import { parameterMapping, promptParameter, readGenerationPromptInput } from '../../workbench/prompt-input.ts'
@@ -133,11 +136,33 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
     }
     operationSignal.throwIfAborted()
   }
+  const resolveSelectedResources = async (draft: Pick<TaskDraft, 'generation_input' | 'prompt_resource_refs'>, requestSignal?: AbortSignal): Promise<ResourceSnapshot[]> => {
+    const operationSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal
+    operationSignal.throwIfAborted()
+    return Promise.all(selectedResourceRefs(draft).map(async ref => {
+      try {
+        const detail = await catalog.details(ref, operationSignal)
+        operationSignal.throwIfAborted()
+        const values = Object.fromEntries(detail.fields.map(field => [field.key, field.value]))
+        return { ...ref, name: detail.item.label, fields: Object.fromEntries(CATALOG_PRESENTATION.kinds[ref.kind].prompt_fields.map(key => [key, structuredClone(values[key] ?? null)])),
+          ...(ref.kind === 'lora' ? { selected_weight: draft.generation_input.loras.find(lora => lora.id === ref.id)!.weight } : {}),
+        } as ResourceSnapshot
+      } catch (error) {
+        if (operationSignal.aborted || error instanceof Error && error.name === 'AbortError') throw error
+        const name = ref.kind === 'model' ? draft.generation_input.model?.file_name : ref.kind === 'lora' ? draft.generation_input.loras.find(lora => lora.id === ref.id)?.file_name : null
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new WorkbenchError('WORKBENCH_RESOURCE_UNAVAILABLE', `${catalogDefinition(ref.kind).label}“${name ?? ref.id}”读取失败：${reason}。请重试；若仍然失败，请移除或重新选择此资源。`, 'prompt_resource_refs')
+      }
+    }))
+  }
   const resolveResources = async (refs: ResourceRef[], current: TaskDraft, templateParameters: 'initialize' | 'preserve-selected'): Promise<TaskDraft> => {
     const draft = structuredClone(current)
     for (const ref of refs) {
-      if (!(WORKBENCH_RESOURCE_KINDS as readonly string[]).includes(ref.kind)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择模型、LoRA 或 Workflow 模板。', 'resource.kind')
-      if (ref.kind === 'model') {
+      if (!(WORKBENCH_RESOURCE_KINDS as readonly string[]).includes(ref.kind)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择当前目录中的资源类别。', 'resource.kind')
+      if (isPromptResourceKind(ref.kind)) {
+        await resourceAt(catalog.details(ref, signal), 'value.id')
+        if (!(draft.prompt_resource_refs ?? []).some(item => item.kind === ref.kind && item.id === ref.id)) draft.prompt_resource_refs = [...(draft.prompt_resource_refs ?? []), { kind: ref.kind, id: ref.id }]
+      } else if (ref.kind === 'model') {
         const model = await resourceAt(catalog.resolveGenerationModel(ref.id, signal), 'value.id')
         draft.generation_input.model = { id: model.id, file_name: model.file_name }; draft.base_model_id = model.base_model_id
       } else if (ref.kind === 'lora') {
@@ -165,5 +190,5 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
   }
   const resolveResourceRefs = (refs: ResourceRef[], current: TaskDraft) => resolveResources(refs, current, 'preserve-selected')
   const resolveResourceSelection = (ref: ResourceRef, current: TaskDraft) => resolveResources([ref], current, 'initialize')
-  return { resolveParameterMapping, prepareGenerationInput, resolveGenerationDraft, resolveResourceRefs, resolveResourceSelection, validateGenerationInput, validateParameters, validateDraft, validateReferences, parameterIds: async (input: GenerationInputBase) => (await parameterArtifactDescriptors(input)).map(parameter => parameter.parameter_id) }
+  return { resolveSelectedResources, resolveParameterMapping, prepareGenerationInput, resolveGenerationDraft, resolveResourceRefs, resolveResourceSelection, validateGenerationInput, validateParameters, validateDraft, validateReferences, parameterIds: async (input: GenerationInputBase) => (await parameterArtifactDescriptors(input)).map(parameter => parameter.parameter_id) }
 }

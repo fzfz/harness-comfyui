@@ -31,7 +31,9 @@
     "changes": "下一轮准备修改的具体提示词、参数或资源。",
     "reason": "计划解决的画面问题或运行错误。",
     "expected_result": "按计划修改后希望获得的画面效果或运行结果。",
-    "plan_artifact_id": "此候选输入采用的 iteration_plan 产物 ID。"
+    "plan_artifact_id": "此候选输入采用的 iteration_plan 产物 ID。",
+    "prompt_resource_refs": "所选作品、角色、画师或画风、提示词条目和画师串的类别与目录 ID。候选输入按此字段保存下一轮选择。",
+    "selected_resources": "创建任务或接纳候选时读取的资源内容。每项包含类别、ID、名称和资料字段；LoRA 还保存所选权重。编写提示词时使用这份资料。"
   },
   "publish": {
     "summary": "向指定工作台任务提交产物或补充问题。",
@@ -48,7 +50,7 @@
       "resources": "refs 保存资源类型与真实目录 ID；reason 说明各资源的选择依据。",
       "review": "observation 保存图片观察或失败事实；conclusion 保存评价或诊断。run_ids 覆盖实际分析、比较或诊断的 Run；candidate 可保存下一轮候选生成输入。",
       "experience": "title 保存具体经验标题；conditions 保存适用模型、场景和条件；note 保存做法、效果及局限。base_model_id 与 model_id 分别指定底模与生成模型；run_ids 只包含总结时实际采用的证据 Run。",
-      "generation_input": "generation_input 保存下一轮生成输入。",
+      "generation_input": "generation_input 保存下一轮执行资源与参数；prompt_resource_refs 保存下一轮提示词资源引用。Host 读取目录并保存 selected_resources。",
       "question": "question 说明缺少什么信息；options 保存可供用户选择的回答。"
     }
   },
@@ -56,6 +58,7 @@
     "prompt": [
       "结合 requirements.original_request、requirements.instructions 和 answers，确定要描写的画面内容。",
       "prompt_input 中已有提示词时，按本次要求决定保留和改写的内容。",
+      "根据 selected_resources 中的资源资料编写画面描述。按模型、Workflow 和 LoRA 的用法编写提示词，并加入所需触发词。",
       "引用历史任务时，从 reference_task_artifacts 中选用符合本次需求的提示词。引用历史运行时，按 reference_run_ids 查看提示词和图片，确定要保留或改进的内容。",
       "从 reference_experiences 中选择适用于当前图像模型和场景的做法，用于本次提示词。",
       "image_refs 中的图片用途为 agent 或 both 时，调用读图工具，按 reference_requirement 观察图片。将用户要求参考的细节写入提示词。",
@@ -78,7 +81,7 @@
     ],
     "resources": [
       "根据 requirements.original_request、requirements.instructions 和 answers，确定本次要查找的资源及画面要求。",
-      "根据 generation_input 核对已选资源，按用户要求补充或替换资源。",
+      "根据 generation_input 和 prompt_resource_refs 核对已选资源，按用户要求补充或替换资源。",
       "reference_task_artifacts 中的历史资源推荐，以及 reference_run_ids 对应的实际输入和图片，可用于选择本次候选资源。",
       "根据 reference_experiences 中的适用条件和已观察效果，判断经验中提到的资源是否符合本次需求。",
       "查询资源目录中的真实 ID 和详情，核对资源的画风、人物或 Workflow 功能。"
@@ -116,7 +119,7 @@
       "通过 workbench_function_list 读取功能配置。通过 workbench_function_delegate 委派运行、评价及所需业务功能。首轮输入来源为 initial，后续运行来源为已提交的候选输入产物。",
       "运行结束后委派评价功能，source 使用 {\"type\":\"run\",\"run_id\":\"被评价的 Run ID\"}。读取子任务评价后决定继续改进或结束。",
       "继续改进时先提交 iteration_plan，写明来源 Run、修改内容、原因和预期效果。根据计划中的修改内容委派提示词、参数或资源功能，并引用来源 Run 的评价产物和本次计划产物。",
-      "将选定子任务产物汇总为 generation_input，并用 plan_artifact_id 关联计划。下一次运行委派使用该候选产物。",
+      "将选定子任务产物汇总为 generation_input。保存本轮 prompt_resource_refs，并用 plan_artifact_id 关联计划。委派下一次运行时，使用该候选产物。",
       "根据 children 的状态和 artifacts 的 task_id 核对各功能结果。子任务提出问题时等待用户回答；达到目标或运行次数上限后结束实验。"
     ]
   },
@@ -137,6 +140,8 @@
   ],
   "fields_by_kind": {
     "prompt": [
+      "prompt_resource_refs",
+      "selected_resources",
       "prompt_input",
       "base_model_id",
       "generation_input",
@@ -149,6 +154,8 @@
       "requested_skill"
     ],
     "rewrite": [
+      "prompt_resource_refs",
+      "selected_resources",
       "prompt_input",
       "base_model_id",
       "reference_task_ids",
@@ -160,6 +167,8 @@
       "requested_skill"
     ],
     "parameters": [
+      "prompt_resource_refs",
+      "selected_resources",
       "generation_input",
       "reference_run_ids",
       "reference_experiences",
@@ -167,6 +176,8 @@
       "workflow_image_bindings"
     ],
     "resources": [
+      "prompt_resource_refs",
+      "selected_resources",
       "generation_input",
       "base_model_id",
       "reference_task_ids",
@@ -175,21 +186,29 @@
       "reference_experiences"
     ],
     "review": [
+      "prompt_resource_refs",
+      "selected_resources",
       "evaluation_input",
       "reference_run_ids",
       "reference_experiences",
       "image_refs"
     ],
     "compare": [
+      "prompt_resource_refs",
+      "selected_resources",
       "reference_run_ids",
       "reference_experiences",
       "image_refs"
     ],
     "diagnose": [
+      "prompt_resource_refs",
+      "selected_resources",
       "evaluation_input",
       "reference_run_ids"
     ],
     "experience": [
+      "prompt_resource_refs",
+      "selected_resources",
       "evaluation_input",
       "reference_run_ids",
       "reference_experiences",
@@ -197,6 +216,8 @@
       "base_model_id"
     ],
     "run": [
+      "prompt_resource_refs",
+      "selected_resources",
       "generation_input",
       "image_refs",
       "workflow_image_bindings",
@@ -204,6 +225,8 @@
       "max_runs"
     ],
     "experiment": [
+      "prompt_resource_refs",
+      "selected_resources",
       "generation_input",
       "prompt_input",
       "base_model_id",

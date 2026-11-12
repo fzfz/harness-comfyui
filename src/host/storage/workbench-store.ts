@@ -3,7 +3,7 @@ import { basename, join } from 'node:path'
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import type { GenerationRequest } from '../../generation/submission-contract.ts'
-import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PromptInput, PublishReceipt, ReviewDraft, ReviewDraftUpdate, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
+import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PromptInput, PublishReceipt, ResourceSnapshot, ReviewDraft, ReviewDraftUpdate, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
 import { equalValue } from '../../shared/json-contract.ts'
 import { jsonValue, validateArtifact, validateFunctionBinding, validateTaskDraft, validateTaskRequestDraft, validateTaskInput, validateReviewDraft, validateInputReferences, generationInputWithImages, runBaseModelId, WorkbenchError } from '../../workbench/validation.ts'
 import { deriveTaskStatus, isFinishedRun, mergeTaskDraft } from '../../workbench/state.ts'
@@ -181,7 +181,7 @@ export class WorkbenchStore {
     return transaction(this.database, () => {
       const work: Work = { work_id: randomUUID(), workspace_id: input.workspaceId, name: input.name, goal: input.goal }
       this.run('INSERT INTO workbench_works VALUES(?,?,?,?)', work.work_id, work.workspace_id, work.name, work.goal)
-      const draft = input.draft ?? { parameter_mapping: null, prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: input.name, instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], instructions: '', base_model_id: null }
+      const draft = input.draft ?? { prompt_resource_refs: [], parameter_mapping: null, prompt_input: { positive_prompt: '', negative_prompt: '' }, generation_input: { title: input.name, instance_id: null, template_id: null, model: null, parameters: {}, loras: [] }, reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], instructions: '', base_model_id: null }
       const branch = this.insertBranch({ workId: work.work_id, name: '主分支', originalRequest: input.goal, draft })
       return { work, branch }
     })
@@ -262,7 +262,12 @@ export class WorkbenchStore {
       this.run("UPDATE workbench_tasks SET kind='prompt' WHERE kind='rewrite'")
     })
   }
-  private binding(row: Row): FunctionBinding { const { agent_model_json, request_parts_json, ...rest } = row; return { ...rest, builtin: Boolean(row.builtin), agent_model: parse(agent_model_json), ...(row.kind === 'prompt' ? { request_parts: request_parts_json ? parse(request_parts_json) : structuredClone(DEFAULT_PROMPT_REQUEST_PARTS) } : {}) } as FunctionBinding }
+  private binding(row: Row): FunctionBinding {
+    const { agent_model_json, request_parts_json, ...rest } = row
+    const savedParts = request_parts_json ? parse<import('../../workbench/request-template.ts').PromptRequestParts>(request_parts_json) : null
+    const requestParts = savedParts ? { ...savedParts, reference_descriptions: { ...DEFAULT_PROMPT_REQUEST_PARTS.reference_descriptions, ...savedParts.reference_descriptions } } : structuredClone(DEFAULT_PROMPT_REQUEST_PARTS)
+    return { ...rest, builtin: Boolean(row.builtin), agent_model: parse(agent_model_json), ...(row.kind === 'prompt' ? { request_parts: requestParts } : {}) } as FunctionBinding
+  }
   listFunctionBindings(workspaceId: string): FunctionBinding[] { return this.rows('SELECT * FROM workbench_function_bindings WHERE workspace_id=? ORDER BY rowid', workspaceId).map(row => this.binding(row)) }
   getFunctionBinding(workspaceId: string, functionId: string): FunctionBinding { const row = this.row('SELECT * FROM workbench_function_bindings WHERE workspace_id=? AND function_id=?', workspaceId, functionId); return row ? this.binding(row) : fail('WORKBENCH_FUNCTION_NOT_FOUND', '功能已移除，请在配置中心选择功能。', 'function_id') }
   saveFunctionBinding(input: FunctionBinding): FunctionBinding {
@@ -337,20 +342,25 @@ export class WorkbenchStore {
   private assertDelegationInput(parent: Task, input: TaskInput): void {
     const source = input.delegation_source ?? fail('WORKBENCH_INVALID_INPUT', '请选择功能子任务的输入来源。', 'input.delegation_source')
     let generationInput = generationInputWithImages(parent.input.generation_input, parent.input)
+    let resources: Pick<TaskInput, 'prompt_resource_refs' | 'selected_resources'> = parent.input
     if (source.type === 'candidate') {
       const candidate = this.getArtifact(source.artifact_id)
       if (candidate.task_id !== parent.task_id || candidate.artifact.type !== 'generation_input') fail('WORKBENCH_SCOPE_MISMATCH', '请选择父实验发布的 generation_input 产物。', 'input.delegation_source.artifact_id')
-      if (candidate.artifact.type === 'generation_input') generationInput = generationInputWithImages(candidate.artifact.generation_input, candidate.artifact)
+      if (candidate.artifact.type === 'generation_input') {
+        generationInput = generationInputWithImages(candidate.artifact.generation_input, candidate.artifact)
+        resources = { prompt_resource_refs: candidate.artifact.prompt_resource_refs ?? [], selected_resources: candidate.artifact.selected_resources ?? [] }
+      }
     } else if (source.type === 'run') {
       const run = this.getRun(source.run_id)
       if (run.workbench_task_id !== parent.task_id) fail('WORKBENCH_SCOPE_MISMATCH', '请选择父实验的运行作为输入来源。', 'input.delegation_source.run_id')
       return
     }
+    if (!equalValue(resources.prompt_resource_refs ?? [], input.prompt_resource_refs ?? []) || !equalValue(resources.selected_resources ?? [], input.selected_resources ?? [])) fail('WORKBENCH_INPUT_MISMATCH', '功能子任务的资源资料与所选来源不一致，请重新选择输入来源。', 'input.selected_resources')
     if (!equalValue(generationInput, generationInputWithImages(input.generation_input, input))) fail('WORKBENCH_INPUT_MISMATCH', '功能子任务的固定输入与所选来源不一致，请重新选择输入来源。', 'input.generation_input')
   }
   private storedInput(value: unknown): TaskInput {
     const { context_refs: _context, instructions: _draftInstructions, ...input } = parse<Record<string, unknown>>(value)
-    return { parameter_mapping: null, reference_task_artifacts: [], ...input, ...validateInputReferences(input) } as unknown as TaskInput
+    return { parameter_mapping: null, prompt_resource_refs: [], selected_resources: [], reference_task_artifacts: [], ...input, ...validateInputReferences(input) } as unknown as TaskInput
   }
   private task(row: Row): Task {
     const { input_json, output_contract_json, apply_target_json, binding_snapshot_json, selected_model_json, answers_json, error_json, submission_input_json: _submission, ...rest } = row
@@ -547,8 +557,8 @@ export class WorkbenchStore {
   private artifactPatch(task: Task, artifact: ArtifactPayload, candidate = false): Record<string, JsonValue> {
     if (artifact.type === 'prompt') return Object.fromEntries(Object.entries({ positive_prompt: artifact.positive_prompt, negative_prompt: artifact.negative_prompt }).filter(([, value]) => value !== null).map(([field, value]) => [`prompt_input.${field}`, value]))
     if (artifact.type === 'parameters') return Object.fromEntries(Object.entries(artifact.parameters).map(([key, value]) => [`generation_input.parameters.${key}`, value]))
-    if (artifact.type === 'generation_input') return { generation_input: jsonValue(artifact.generation_input), image_refs: jsonValue(artifact.image_refs ?? []), workflow_image_bindings: jsonValue(artifact.workflow_image_bindings ?? []) }
-    if (artifact.type === 'review') return candidate && artifact.candidate ? { generation_input: jsonValue(artifact.candidate.generation_input), image_refs: jsonValue(artifact.candidate.image_refs ?? []), workflow_image_bindings: jsonValue(artifact.candidate.workflow_image_bindings ?? []) } : { observation: artifact.observation, conclusion: artifact.conclusion, evidence_run_ids: artifact.run_ids, review_artifact_id: null }
+    if (artifact.type === 'generation_input') return { generation_input: jsonValue(artifact.generation_input), image_refs: jsonValue(artifact.image_refs ?? []), workflow_image_bindings: jsonValue(artifact.workflow_image_bindings ?? []), prompt_resource_refs: jsonValue(artifact.prompt_resource_refs ?? []) }
+    if (artifact.type === 'review') return candidate && artifact.candidate ? { generation_input: jsonValue(artifact.candidate.generation_input), image_refs: jsonValue(artifact.candidate.image_refs ?? []), workflow_image_bindings: jsonValue(artifact.candidate.workflow_image_bindings ?? []), prompt_resource_refs: jsonValue(artifact.candidate.prompt_resource_refs ?? []) } : { observation: artifact.observation, conclusion: artifact.conclusion, evidence_run_ids: artifact.run_ids, review_artifact_id: null }
     if (artifact.type === 'experience') return { title: artifact.title, conditions: artifact.conditions, note: artifact.note, evidence_run_ids: artifact.run_ids, experience_artifact_id: null }
     if (artifact.type === 'resources') return {}
     return {}
@@ -701,7 +711,7 @@ export class WorkbenchStore {
       if (stored.artifact.type === 'resources') {
         if (input.resolvedDraft) {
           const draft = validateTaskDraft(input.resolvedDraft)
-          patch = { generation_input: jsonValue(draft.generation_input), image_refs: jsonValue(draft.image_refs), workflow_image_bindings: jsonValue(draft.workflow_image_bindings), base_model_id: draft.base_model_id }
+          patch = { generation_input: jsonValue(draft.generation_input), image_refs: jsonValue(draft.image_refs), workflow_image_bindings: jsonValue(draft.workflow_image_bindings), prompt_resource_refs: jsonValue(draft.prompt_resource_refs ?? []), base_model_id: draft.base_model_id }
         } else if (stored.artifact.refs.some(ref => (WORKBENCH_RESOURCE_KINDS as readonly string[]).includes(ref.kind))) fail('WORKBENCH_RESOURCE_DETAILS_REQUIRED', '请先读取候选资源详情，再采用模型、LoRA 或模板。', 'artifact.refs')
       }
       if (input.candidate && (stored.artifact.type !== 'review' || !stored.artifact.candidate)) fail('WORKBENCH_INVALID_INPUT', '此产物没有建议输入，请选择包含建议输入的评价产物。', 'candidate')
@@ -709,7 +719,7 @@ export class WorkbenchStore {
       if (generation) {
         if (!input.resolvedDraft) fail('WORKBENCH_INPUT_RESOLUTION_REQUIRED', '请先读取模板参数并恢复提示词，再采用生成输入。', 'artifact_id')
         const draft = validateTaskDraft(input.resolvedDraft)
-        patch = { prompt_input: jsonValue(draft.prompt_input), generation_input: jsonValue(draft.generation_input), image_refs: jsonValue(draft.image_refs), workflow_image_bindings: jsonValue(draft.workflow_image_bindings), base_model_id: draft.base_model_id }
+        patch = { prompt_input: jsonValue(draft.prompt_input), generation_input: jsonValue(draft.generation_input), image_refs: jsonValue(draft.image_refs), workflow_image_bindings: jsonValue(draft.workflow_image_bindings), prompt_resource_refs: jsonValue(draft.prompt_resource_refs ?? []), base_model_id: draft.base_model_id }
       }
       const target = generation ? { kind: 'branch' as const, id: task.branch_id, expected: input.expected } : task.apply_target
       if (stored.artifact.type === 'review' && !input.candidate) patch.review_artifact_id = stored.artifact_id
@@ -782,8 +792,19 @@ export class WorkbenchStore {
     const row = this.row('SELECT * FROM generation_runs WHERE run_id=?', runId) ?? fail('WORKBENCH_RUN_NOT_FOUND', '运行不存在，请重新选择运行。', 'run_id')
     return { submitted_input: this.generationInput({ ...row, effective_input_json: null }), effective_input: row.effective_input_json ? this.generationInput(row) : null, image_uploads: row.image_uploads_json ? parse(row.image_uploads_json) : [] }
   }
+
+  getRunResources(runId: string): ResourceSnapshot[] {
+    const row = this.row('SELECT candidate_artifact_id,execution_task_id,workbench_task_id FROM generation_runs WHERE run_id=?', runId)
+    if (!row) return []
+    if (row.candidate_artifact_id) {
+      const artifact = this.getArtifact(String(row.candidate_artifact_id)).artifact
+      return artifact.type === 'generation_input' ? structuredClone(artifact.selected_resources ?? []) : []
+    }
+    const taskId = row.execution_task_id ?? row.workbench_task_id
+    return taskId ? structuredClone(this.getTask(String(taskId)).input.selected_resources ?? []) : []
+  }
   private runSnapshot(row: Row): WorkbenchRun {
-    return { session_id: String(row.session_id), created_at: Number(row.created_at), updated_at: Number(row.updated_at), media: this.runMedia(String(row.run_id)), run_id: String(row.run_id), workbench_task_id: String(row.workbench_task_id ?? ''), execution_task_id: row.execution_task_id as string | null ?? null, iteration_index: row.iteration_index as number | null, status: row.status as WorkbenchRun['status'], title: String(row.title), generation_input: this.generationInput(row), candidate_artifact_id: row.candidate_artifact_id as string | null, review_artifact_id: row.review_artifact_id as string | null, retry_of_run_id: row.retry_of_run_id as string | null, initiator: row.initiator as 'human' | 'agent', review: row.review_json ? parse(row.review_json) : null, review_draft: row.review_draft_json ? parse(row.review_draft_json) : null, error: row.error_code ? { code: String(row.error_code), message: String(row.error_message) } : null }
+    return { selected_resources: this.getRunResources(String(row.run_id)), session_id: String(row.session_id), created_at: Number(row.created_at), updated_at: Number(row.updated_at), media: this.runMedia(String(row.run_id)), run_id: String(row.run_id), workbench_task_id: String(row.workbench_task_id ?? ''), execution_task_id: row.execution_task_id as string | null ?? null, iteration_index: row.iteration_index as number | null, status: row.status as WorkbenchRun['status'], title: String(row.title), generation_input: this.generationInput(row), candidate_artifact_id: row.candidate_artifact_id as string | null, review_artifact_id: row.review_artifact_id as string | null, retry_of_run_id: row.retry_of_run_id as string | null, initiator: row.initiator as 'human' | 'agent', review: row.review_json ? parse(row.review_json) : null, review_draft: row.review_draft_json ? parse(row.review_draft_json) : null, error: row.error_code ? { code: String(row.error_code), message: String(row.error_message) } : null }
   }
   private runMedia(runId: string): WorkbenchRun['media'] {
     return this.rows('SELECT media_id,run_id,filename,media_type,media_kind,byte_size FROM generation_media WHERE run_id=? ORDER BY rowid', runId) as unknown as WorkbenchRun['media']

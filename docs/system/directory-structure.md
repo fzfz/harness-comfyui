@@ -20,7 +20,7 @@
    | [src/host/generation/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation>) | Generation Runtime、Workflow 参数化、官方前端导出、缓存、Comfy transport、coordinator 与媒体服务。 |
    | [src/host/workbench/](../../src/host/workbench/) | 实验工作台的官方 Session 适配、输入校验与 Remote 服务。 |
    | [src/host/storage/](../../src/host/storage/) | 工作台对象的 SQLite 存储、事务和产物文件管理。 |
-   | [src/workbench/](../../src/workbench/) | 工作、分支、任务、产物与经验的领域合同和任务服务。 |
+   | [src/workbench/](../../src/workbench/) | 工作、分支、资源引用与快照、任务、产物和经验的领域合同及任务服务。 |
    | [src/workbench-remote.ts](../../src/workbench-remote.ts) | 实验工作台的查询与操作接口。 |
    | [src/host/image-reader/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/image-reader>) | 图片读取配置、原生 Provider 设置适配、输入处理与视觉模型调用。 |
    | [src/host/resource-path.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/resource-path.ts>) | 已安装包内资源的定位入口。 |

@@ -374,7 +374,7 @@ it('keeps a failed continue paused with its error and retries the same Task and 
   expect(after.tasks[0]).toMatchObject({ task_id: f.task.task_id, session_id: f.task.session_id, binding_snapshot: f.task.binding_snapshot, selected_model: f.task.selected_model, request_text: f.task.request_text, input: f.task.input, error: null })
   const fixed = await f.service.getTask({ taskId: f.task.task_id }, f.identity)
   expect(fixed.iterations.map(iteration => iteration.run_id)).toEqual(after.runs.map(run => run.run_id))
-  expect(fixed.artifacts).toEqual(expect.arrayContaining([expect.objectContaining({ artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } })]))
+  expect(fixed.artifacts).toEqual(expect.arrayContaining([expect.objectContaining({ artifact: expect.objectContaining({ type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [], selected_resources: expect.arrayContaining([expect.objectContaining({ kind: 'model', id: '2' }), expect.objectContaining({ kind: 'comfyui-template', id: '5' })]) }) })]))
   expect(after.runs.find(run => run.run_id === accepted.items[0]!.runId)).toMatchObject({ workbench_task_id: f.task.task_id, iteration_index: 2 })
   expect(f.official.controller.create).toHaveBeenCalledOnce()
 })

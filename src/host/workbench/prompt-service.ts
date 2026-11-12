@@ -1,6 +1,6 @@
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { SessionEventConsumer, requestTurn } from './session-events.ts'
-import type { FunctionDescriptor, ImageRef, ImageSource, Task, TaskDraft } from '../../workbench/contract.ts'
+import type { FunctionDescriptor, ImageRef, ImageSource, ResourceSnapshot, Task, TaskDraft } from '../../workbench/contract.ts'
 import type { PromptAdoptRequest, PromptListRequest, PromptLookupRequest, PromptReply, PromptStartRequest, PromptTurn } from '../../workbench/prompt-edit.ts'
 import { buildPromptRequest, DEFAULT_PROMPT_REQUEST_PARTS, type PromptRequestInput } from '../../workbench/request-template.ts'
 import config from '../../workbench/prompt-edit-config.json' with { type: 'json' }
@@ -19,6 +19,7 @@ interface PromptPorts {
   events(sessionId: string): Promise<readonly SessionEvent[]>
   baseModel(draft: TaskDraft, baseModelId: string): Promise<{ id: string; name: string }>
   images(refs: ImageRef[]): Promise<ImageSource[]>
+  resources(draft: TaskDraft): Promise<ResourceSnapshot[]>
 }
 const failure = (name: keyof typeof config.errors, path: string): never => { const error = config.errors[name]; throw new WorkbenchError(error.code, error.message, path) }
 const unfinished = (turn: PromptTurn) => turn.status === 'queued' || turn.status === 'running'
@@ -28,10 +29,11 @@ export class WorkbenchPrompts {
   private readonly events: SessionEventConsumer
   constructor(private readonly ports: PromptPorts) { this.events = new SessionEventConsumer(ports.events) }
 
-  async prepare(input: PromptStartRequest['input'], draft: TaskDraft, skill: string | null): Promise<PromptRequestInput> {
+  async prepare(input: PromptStartRequest['input'], draft: TaskDraft, skill: string | null, fixedResources?: ResourceSnapshot[]): Promise<PromptRequestInput> {
     if (!input.original_request.trim()) failure('requirements', 'input.original_request')
     if (!input.base_model_id && !draft.generation_input.model) failure('baseModel', 'input.base_model_id')
     const baseModel = await this.ports.baseModel(draft, input.base_model_id)
+    const selectedResources = fixedResources ?? await this.ports.resources(draft)
     const artifacts = draft.reference_task_ids.flatMap(id => this.ports.store.listArtifacts(id).map(stored => ({ task_id: stored.task_id, artifact_id: stored.artifact_id, artifact: stored.artifact })))
     const experiences = draft.reference_experiences.map(reference => { this.ports.store.getExperience(reference.experience_id); return structuredClone(reference) })
     for (const id of draft.reference_run_ids) this.ports.store.getRun(id)
@@ -39,13 +41,14 @@ export class WorkbenchPrompts {
     const resolved = await this.ports.images(references)
     const images = references.map(reference => ({ ...reference, ...resolved.find(image => image.image_ref_id === reference.image_ref_id) }))
     return { ...input, base_model_id: baseModel.id, base_model_name: baseModel.name, reference_context: {
+      selected_resources: selectedResources,
       ...(skill ? { requested_skill: skill } : {}), ...(experiences.length ? { experiences } : {}),
       ...(artifacts.length ? { task_artifacts: artifacts } : {}), ...(draft.reference_run_ids.length ? { run_ids: draft.reference_run_ids } : {}), ...(images.length ? { images } : {}),
     } }
   }
 
   async prepareTask(binding: import('../../workbench/contract.ts').FunctionBinding, input: import('../../workbench/contract.ts').TaskInput) {
-    const prepared = await this.prepare({ original_request: input.requirements.original_request, base_model_id: input.base_model_id ?? '', positive_prompt: input.prompt_input.positive_prompt ?? '', negative_prompt: input.prompt_input.negative_prompt ?? '', change_request: input.requirements.instructions }, { ...input, instructions: input.requirements.instructions }, binding.requested_skill)
+    const prepared = await this.prepare({ original_request: input.requirements.original_request, base_model_id: input.base_model_id ?? '', positive_prompt: input.prompt_input.positive_prompt ?? '', negative_prompt: input.prompt_input.negative_prompt ?? '', change_request: input.requirements.instructions }, { ...input, instructions: input.requirements.instructions }, binding.requested_skill, input.selected_resources ?? [])
     if (input.reference_task_artifacts.length) prepared.reference_context.task_artifacts = input.reference_task_artifacts
     return { input: prepared, requestText: buildPromptRequest(binding.request_template, prepared, binding.request_parts ?? DEFAULT_PROMPT_REQUEST_PARTS) }
   }
@@ -94,7 +97,7 @@ export class WorkbenchPrompts {
       const descriptor = this.ports.descriptors.find(item => item.kind === 'prompt')!
       const { instructions: _instructions, ...fixed } = draft
       task = store.createTask({ branchId: branch.branch_id, functionId: binding.function_id, title: `${binding.name} · ${branch.name}`, kind: 'prompt',
-        input: { ...fixed, base_model_id: input.base_model_id, requirements: { original_request: input.original_request, instructions: input.change_request }, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: 0 },
+        input: { ...fixed, selected_resources: input.reference_context.selected_resources ?? [], base_model_id: input.base_model_id, requirements: { original_request: input.original_request, instructions: input.change_request }, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: 0 },
         outputContract: { ...descriptor.output_contract, apply_mode: 'record' }, applyTarget: { kind: 'branch', id: branch.branch_id, expected: {} },
         bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template }, requestText: '',
       })

@@ -18,6 +18,9 @@ describe('Catalog details', () => {
       { key: 'id', value: '1' }, { key: 'name', value: '作品' }, { key: 'aliases_json', value: ['别名'] },
       { key: 'category_name', value: '游戏' }, { key: 'character_names', value: ['角色'] },
     ] })
+    expect(details.extra_fields).toMatchObject({ workflow_json: { private: true } })
+    expect(() => parseCatalogDetails({ ...details, extra_fields: { name: 'duplicate' } })).toThrow()
+    expect(() => parseCatalogDetails({ ...details, extra_fields: { unsupported: undefined } })).toThrow()
     expect(process.mock.calls[0]?.[0]).toMatchObject({ path: '/internal/semantic/works', input: { mode: 'resolve', id: '1' }, signal })
   })
 })
@@ -63,7 +66,7 @@ it.each([
   const details = await cli(source).api.details({ kind, id: '1' }, new AbortController().signal)
   expect(details.kind).toBe(kind)
   expect(details.fields.map(field => field.key)).toEqual(keys)
-  expect(JSON.stringify(details)).not.toContain('workflow_json')
+  if (kind === 'comfyui-template') expect(details.extra_fields?.workflow_json).toEqual({ nodes: [] })
 })
 
 import { CATALOG_PRESENTATION, parseCatalogPresentation } from '../../src/catalog/presentation-schema.ts'

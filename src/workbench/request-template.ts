@@ -13,7 +13,7 @@ export interface PromptRequestInput {
   readonly change_request: string
   readonly positive_prompt: string
   readonly negative_prompt: string
-  readonly reference_context: Partial<Record<PromptReferenceName, unknown>>
+  readonly reference_context: Partial<Record<PromptReferenceName, unknown>> & { selected_resources?: import('./contract.ts').ResourceSnapshot[] }
 }
 export const PROMPT_BLOCKS = configuration.blocks
 export const PROMPT_REFERENCES = configuration.references

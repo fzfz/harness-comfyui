@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { isDelegatable, type DelegateFunctionRequest, type DelegatedSessionRequest } from './delegation.ts'
-import type { AgentModel, ArtifactPayload, EvaluationInput, ExperienceReuseInput, ExecutionState, FunctionDescriptor, GenerationInput, GenerationInputBase, JsonValue, ReviewDraft, ReviewDraftUpdate, SkillReadRef, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRunInput } from './contract.ts'
+import type { AgentModel, ArtifactPayload, EvaluationInput, ExperienceReuseInput, ExecutionState, FunctionDescriptor, GenerationInput, GenerationInputBase, JsonValue, ReviewDraft, ReviewDraftUpdate, SkillReadRef, ResourceSnapshot, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRunInput } from './contract.ts'
 import experimentControlErrors from './experiment-control-errors.json' with { type: 'json' }
 import libraryConfig from './library-config.json' with { type: 'json' }
 import { isBranchNonGenerationTaskKind, isRunReviewFunctionKind } from './contract.ts'
@@ -9,6 +9,7 @@ import { equalValue } from '../shared/json-contract.ts'
 import { jsonValue, validateArtifact, validateReviewDraftUpdate, validateTaskDraft, validateTaskInput, validateTaskRequestDraft, generationInputWithImages, taskDraftFromRunInput, runBaseModelId, WorkbenchError } from './validation.ts'
 
 import { parameterMapping, readSavedPromptInput } from './prompt-input.ts'
+import { promptResourceRefs } from './resources.ts'
 import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeParameterInspection } from '../generation/inspection-contract.ts'
 
 export interface WorkbenchSessionBoundary {
@@ -31,6 +32,7 @@ export interface WorkbenchServiceOptions {
   resolveParameterMapping?: (input: GenerationInput) => Promise<TaskDraft['parameter_mapping']>
   prepareGenerationInput?: (draft: TaskDraft) => Promise<GenerationInputBase>
   resolveGenerationDraft?: (input: GenerationInput) => Promise<TaskDraft>
+  resolveSelectedResources?: (draft: Pick<TaskDraft, 'generation_input' | 'prompt_resource_refs'>) => Promise<ResourceSnapshot[]>
   resolveResourceRefs?: (refs: import('./contract.ts').ResourceRef[], draft: TaskDraft) => Promise<TaskDraft>
   resolveResourceSelection?: (ref: import('./contract.ts').ResourceRef, draft: TaskDraft) => Promise<TaskDraft>
   resolveBaseModelDraft?: (baseModelId: string, draft: TaskDraft) => Promise<TaskDraft>
@@ -104,9 +106,11 @@ export class WorkbenchService {
       acceptedReview = this.store.saveRunReviewDraft({ workspaceId: request.workspaceId, workId: request.workId, runId, ...update })
     }
     let draft = branch.draft
+    let selectedResources: ResourceSnapshot[] | undefined
     if (evaluationInput) {
       const historical = await this.getRunInput({ workspaceId: request.workspaceId, workId: request.workId, runId: evaluationInput.run_id })
       draft = { ...taskDraftFromRunInput(historical, branch.draft), base_model_id: null }
+      selectedResources = historical.selected_resources ?? []
     }
     if (binding.kind === 'parameters' && taskDraft) {
       draft = structuredClone(branch.draft)
@@ -123,12 +127,13 @@ export class WorkbenchService {
       if (!referenceRunIds.includes(source.run_id)) referenceRunIds.push(source.run_id)
       const input = await this.getRunInput({ workspaceId: request.workspaceId, workId: request.workId, runId: source.run_id })
       draft = await this.mappedRunDraft(input)
+      selectedResources = input.selected_resources ?? []
     }
     if (isBranchNonGenerationTaskKind(binding.kind) && draft.parameter_mapping === null && this.options.resolveParameterMapping) {
       draft = { ...draft, parameter_mapping: await this.options.resolveParameterMapping(draft.generation_input) }
     }
     const { instructions: _draftInstructions, ...fixedDraft } = draft
-    const input = { ...fixedDraft, requirements: { original_request: branch.original_request, instructions: submittedDraft ? submittedDraft.instructions.trim() : request.instructions ?? taskDraft?.instructions ?? draft.instructions }, reference_run_ids: referenceRunIds, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: binding.kind === 'run' ? 1 : binding.kind === 'experiment' ? request.maxRuns ?? branch.execution.max_runs : 0, ...(evaluationInput ? { evaluation_input: evaluationInput } : {}) }
+    const input = { ...fixedDraft, selected_resources: selectedResources ?? await this.options.resolveSelectedResources?.(draft) ?? [], requirements: { original_request: branch.original_request, instructions: submittedDraft ? submittedDraft.instructions.trim() : request.instructions ?? taskDraft?.instructions ?? draft.instructions }, reference_run_ids: referenceRunIds, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: binding.kind === 'run' ? 1 : binding.kind === 'experiment' ? request.maxRuns ?? branch.execution.max_runs : 0, ...(evaluationInput ? { evaluation_input: evaluationInput } : {}) }
     if (binding.kind === 'run' || binding.kind === 'experiment') {
       if (this.options.prepareGenerationInput && !request.retryOfRunId) input.generation_input = await this.options.prepareGenerationInput(draft)
       await this.options.validateGenerationInput?.(generationInputWithImages(input.generation_input, input), 'input.generation_input')
@@ -204,6 +209,8 @@ export class WorkbenchService {
       input.generation_input = structuredClone(candidate.artifact.generation_input)
       input.image_refs = structuredClone(candidate.artifact.image_refs ?? [])
       input.workflow_image_bindings = structuredClone(candidate.artifact.workflow_image_bindings ?? [])
+      input.prompt_resource_refs = structuredClone(candidate.artifact.prompt_resource_refs ?? [])
+      input.selected_resources = structuredClone(candidate.artifact.selected_resources ?? [])
       const resolved = await this.options.resolveGenerationDraft?.(generationInputWithImages(input.generation_input, input))
       input.parameter_mapping = resolved?.parameter_mapping ?? null
       input.prompt_input = resolved?.prompt_input ?? { positive_prompt: null, negative_prompt: null }
@@ -213,7 +220,7 @@ export class WorkbenchService {
       if (run.workbench_task_id !== parent.task_id) throw new WorkbenchError('WORKBENCH_RUN_SCOPE_MISMATCH', '请选择此实验中的运行。', 'source.run_id')
       const historical = await this.getRunInput({ workspaceId, workId: this.store.getBranch(parent.branch_id).work_id, runId: run.run_id })
       const { instructions: _instructions, ...fixed } = await this.mappedRunDraft(historical)
-      Object.assign(input, fixed, { reference_task_ids: parent.input.reference_task_ids, reference_experiences: parent.input.reference_experiences })
+      Object.assign(input, fixed, { selected_resources: historical.selected_resources, reference_task_ids: parent.input.reference_task_ids, reference_experiences: parent.input.reference_experiences })
       input.reference_run_ids = [...new Set([...parent.input.reference_run_ids, run.run_id])]
       if (isRunReviewFunctionKind(binding.kind)) {
         input.evaluation_input = { run_id: run.run_id, verdict: 'unrated', observation: '', conclusion: '', experience: { title: '', conditions: '', note: '' } }
@@ -276,7 +283,7 @@ export class WorkbenchService {
     const run = this.store.getRun(request.runId)
     const task = this.store.getTask(run.workbench_task_id)
     const description = await this.options.readRunInputDescription?.(this.store.taskWorkspace(task.task_id), run.run_id) ?? null
-    return { ...this.store.getRunInputs(run.run_id), parameter_mapping: description ? parameterMapping(flattenWorkflowRuntimeParameters(description)) : null, base_model_id: runBaseModelId(run, task), run_id: run.run_id, branch_id: task.branch_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], input_description: description, prompt_input: readSavedPromptInput(run.generation_input, description?.parameters ?? []) }
+    return { ...this.store.getRunInputs(run.run_id), selected_resources: run.selected_resources ?? [], prompt_resource_refs: promptResourceRefs(run.selected_resources ?? []), parameter_mapping: description ? parameterMapping(flattenWorkflowRuntimeParameters(description)) : null, base_model_id: runBaseModelId(run, task), run_id: run.run_id, branch_id: task.branch_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], input_description: description, prompt_input: readSavedPromptInput(run.generation_input, description?.parameters ?? []) }
   }
 
   async getTask(request: { taskId: string }, identity: WorkbenchIdentity): Promise<TaskGetResult> {
@@ -286,7 +293,7 @@ export class WorkbenchService {
     const { parameter_mapping, ...input } = task.input
     const children = this.store.listChildTasks(task.task_id)
     const result = { task_id: task.task_id, parent_experiment_task_id: task.parent_experiment_task_id, children: children.map(child => ({ task_id: child.task_id, function_id: child.function_id, kind: child.kind, title: child.title, status: child.status, session_id: child.session_id, execution_state: child.execution_state, preset_id: child.binding_snapshot.preset_id, agent_model: child.binding_snapshot.agentModel, error: child.error })), status: task.status, ...input, image_sources: await this.options.resolveImageSources?.(input.image_refs) ?? [], output_contract: task.output_contract, artifacts: artifacts.map(a => ({ artifact_id: a.artifact_id, task_id: a.task_id, artifact: a.artifact, disposition: a.disposition })), iterations: this.store.listRuns(task.task_id).map(run => {
-      return { index: run.iteration_index ?? 1, run_id: run.run_id, execution_task_id: run.execution_task_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], review_artifact_id: run.review_artifact_id }
+      return { index: run.iteration_index ?? 1, run_id: run.run_id, execution_task_id: run.execution_task_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], selected_resources: run.selected_resources ?? [], prompt_resource_refs: promptResourceRefs(run.selected_resources ?? []), review_artifact_id: run.review_artifact_id }
     }), answers: [...task.answers, ...children.flatMap(child => child.answers)] }
     if (!isBranchNonGenerationTaskKind(task.kind)) return { ...result, kind: task.kind }
     const parameters: [string, JsonValue][] = [], unresolved: [string, JsonValue][] = []
@@ -303,8 +310,11 @@ export class WorkbenchService {
     const task = await this.authorize(request.taskId, identity)
     const artifact = validateArtifact(request.artifact)
     this.store.validateArtifactForTask(task, artifact)
-    if (artifact.type === 'generation_input') await this.options.validateGenerationInput?.(generationInputWithImages(artifact.generation_input, artifact), 'artifact.generation_input')
-    if (artifact.type === 'review' && artifact.candidate) await this.options.validateGenerationInput?.(generationInputWithImages(artifact.candidate.generation_input, artifact.candidate), 'artifact.candidate.generation_input')
+    const candidate = artifact.type === 'generation_input' ? artifact : artifact.type === 'review' ? artifact.candidate : undefined
+    if (candidate) {
+      await this.options.validateGenerationInput?.(generationInputWithImages(candidate.generation_input, candidate), artifact.type === 'generation_input' ? 'artifact.generation_input' : 'artifact.candidate.generation_input')
+      candidate.selected_resources = await this.options.resolveSelectedResources?.({ generation_input: candidate.generation_input, prompt_resource_refs: candidate.prompt_resource_refs ?? [] }) ?? []
+    }
     if (artifact.type === 'parameters') await this.options.validateParameters?.(task.input.generation_input, artifact.parameters, 'artifact.parameters')
     if (artifact.type === 'resources') await this.options.validateResourceRefs?.(artifact.refs, 'artifact.refs')
     const refs = await this.options.sessions.skillReadRefs?.({ sessionId: identity.sessionId }) ?? []
@@ -316,9 +326,12 @@ export class WorkbenchService {
     const task = this.store.getTask(stored.task_id)
     const artifact = stored.artifact
     let resolvedDraft: TaskDraft | undefined
-    if (artifact.type === 'resources' && this.options.resolveResourceRefs) resolvedDraft = await this.options.resolveResourceRefs(artifact.refs, this.store.getBranch(task.branch_id).draft)
+    if (artifact.type === 'resources' && this.options.resolveResourceRefs) {
+      const branch = this.store.getBranch(task.branch_id)
+      resolvedDraft = await this.options.resolveResourceRefs(artifact.refs, branch.editing_draft ?? branch.draft)
+    }
     const generation = artifact.type === 'generation_input' ? artifact : artifact.type === 'review' && request.candidate ? artifact.candidate : undefined
-    if (generation && this.options.resolveGenerationDraft) resolvedDraft = await this.options.resolveGenerationDraft(generationInputWithImages(generation.generation_input, generation))
+    if (generation && this.options.resolveGenerationDraft) resolvedDraft = { ...await this.options.resolveGenerationDraft(generationInputWithImages(generation.generation_input, generation)), prompt_resource_refs: structuredClone(generation.prompt_resource_refs ?? []) }
     if (artifact.type === 'parameters') await this.options.validateParameters?.(task.input.generation_input, artifact.parameters, 'artifact.parameters')
     return this.store.adoptArtifact({ ...request, resolvedDraft })
   }
@@ -355,7 +368,7 @@ export class WorkbenchService {
     const stored = this.store.getArtifact(request.artifactId)
     const task = this.store.getTask(stored.task_id)
     this.store.assertScope(request.workspaceId, request.workId)
-    const { requirements: _requirements, reference_task_artifacts: _artifacts, requested_skill: _skill, max_runs: _maxRuns, evaluation_input: _evaluation, ...savedDraft } = task.input
+    const { requirements: _requirements, reference_task_artifacts: _artifacts, requested_skill: _skill, max_runs: _maxRuns, evaluation_input: _evaluation, selected_resources: _selectedResources, ...savedDraft } = task.input
     let draft: TaskDraft = { ...structuredClone(savedDraft), instructions: task.input.requirements.instructions }
     if (stored.artifact.type === 'prompt') {
       draft.prompt_input = { positive_prompt: stored.artifact.positive_prompt, negative_prompt: stored.artifact.negative_prompt }
@@ -364,7 +377,7 @@ export class WorkbenchService {
     } else if (stored.artifact.type === 'generation_input' || stored.artifact.type === 'review' && stored.artifact.candidate) {
       const generation = stored.artifact.type === 'generation_input' ? stored.artifact : stored.artifact.candidate!
       if (!this.options.resolveGenerationDraft) throw new WorkbenchError('WORKBENCH_INPUT_RESOLUTION_REQUIRED', '当前无法解析生成输入。请重新打开工作台后，再点击“从产物创建分支”。', 'artifact_id')
-      draft = await this.options.resolveGenerationDraft(generationInputWithImages(generation.generation_input, generation))
+      draft = { ...await this.options.resolveGenerationDraft(generationInputWithImages(generation.generation_input, generation)), prompt_resource_refs: structuredClone(generation.prompt_resource_refs ?? []) }
     } else throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择提示词、参数、生成输入或包含建议输入的评价产物创建分支。', 'artifact_id')
     const source = this.store.getBranch(task.branch_id)
     const parent = source.work_id === request.workId ? source : this.store.listBranches(request.workId).find(branch => branch.parent_branch_id === null)!

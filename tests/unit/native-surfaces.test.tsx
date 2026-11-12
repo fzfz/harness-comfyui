@@ -792,13 +792,13 @@ describe('native Harness workbench surfaces', () => {
       kind: 'lora', query: 'Age', page: 2, baseModelId: '2', modelId: null,
     }, expect.any(AbortSignal))
     const previous = buttonByText(renderer!, WORKBENCH_COPY.previousPage)
+    const requestsBeforePrevious = vi.mocked(api.search).mock.calls.length
     await act(async () => {
       ;(previous.props.onClick as () => void)()
       await Promise.resolve()
     })
-    expect(api.search).toHaveBeenLastCalledWith({
-      kind: 'lora', query: 'Age', page: 1, baseModelId: '2', modelId: null,
-    }, expect.any(AbortSignal))
+    expect(api.search).toHaveBeenCalledTimes(requestsBeforePrevious)
+    expect(buttonByText(renderer!, WORKBENCH_COPY.previousPage).props.disabled).toBe(true)
     act(() => renderer!.unmount())
 
     act(() => {

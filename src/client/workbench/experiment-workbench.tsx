@@ -76,6 +76,8 @@ import { ExperimentReferencePicker } from './experiment-reference-picker.tsx'
 import { PreparationEditor } from './experiment-preparation.ts'
 import { ExperienceKnowledge, ExperienceProvenance } from './experiment-experience.tsx'
 import { ExperimentBranchGraph } from './experiment-branch-graph.tsx'
+import { PromptResourceGroups, ResourceSnapshotGroups } from './experiment-resource-selection.tsx'
+import { promptResourceRefs, selectedResourceRefs } from '../../workbench/resources.ts'
 import branchGraphPresentation from './experiment-branch-graph.json' with { type: 'json' }
 const emptyPreparation = () => null
 const noPreparationSubscription = () => () => undefined
@@ -123,7 +125,7 @@ function PanelHead({
   )
 }
 
-function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
+function LoraSummary({ scope, item, load, save, locked, onError, onRemove, onDetail }: {
   readonly scope: { workspaceId: string | null; workId: string | null; branchId: string | null }
   readonly item: TaskDraft['generation_input']['loras'][number]
   readonly load?: CatalogApi['details']
@@ -131,13 +133,14 @@ function LoraSummary({ scope, item, load, save, locked, onError, onRemove }: {
   readonly locked: boolean
   readonly onError: (message: string) => void
   readonly onRemove: () => void
+  readonly onDetail: () => void
 }) {
   const editor = useBranchFieldEdits(scope.workspaceId, scope.workId, scope.branchId, item.id)(item.id)
   const { details, error } = useCatalogDetails({ kind: 'lora', id: item.id }, load)
   const name = details?.kind === 'lora' && details.id === item.id ? details.item.label : item.file_name
   useEffect(() => { if (error) onError(error) }, [error, onError])
   return <div className="picked-lora">
-    <b>{name}</b>
+    <button className="selected-resource-name" type="button" aria-label={`查看详情 ${name}`} onClick={onDetail}><b>{name}</b></button>
     <AutosaveField label="权重" inputLabel={`${name} 权重`} value={String(item.weight)}
       options={{ type: 'number', step: 0.05 }} editor={editor} save={save} locked={locked} />
     <Button kind="quiet small" label={`移除 ${name}`} onClick={onRemove}>×</Button>
@@ -642,7 +645,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
     const scope = { workspaceId: state.workspaceId, workId: view.workId, branchId: branch.branch_id }
     try {
       await preparationEditor.flush()
-      await props.onAction({ type, ...scope, id: item.context.id, value: type === 'resource-select' ? item.context : item.context.kind })
+      await props.onAction({ type, ...scope, id: item.context.id, value: type === 'resource-select' ? { kind: item.context.kind, id: item.context.id } : item.context.kind })
     } catch (error) { setMessage(error instanceof Error ? error.message : '资源选择失败，请重试。') }
   }
   const selectResource = (item: CatalogItem) => void changeResource('resource-select', item)
@@ -1290,8 +1293,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
               taskRuns = p.runs.filter(
                 (run) => run.workbench_task_id === item.task_id || run.execution_task_id === item.task_id,
               ),
+              targetBranch = item.apply_target.kind === 'branch' ? p.branches.find(branch => branch.branch_id === item.apply_target.id) : undefined,
               targetDraft = item.apply_target.kind === 'branch'
-                ? p.branches.find(branch => branch.branch_id === item.apply_target.id)?.draft
+                ? targetBranch?.editing_draft ?? targetBranch?.draft
                 : p.runs.find(run => run.run_id === item.apply_target.id)?.review_draft,
               expected = targetDraft ? structuredClone(targetDraft) : undefined
             return (
@@ -1518,7 +1522,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                     disabled={!artifact.artifact.run_ids.some(id => p.runs.some(run => run.run_id === id && !!run.review_draft))}
                     onClick={() => openExperience(artifact)}>{reviewPresentation.open}</Button>}
                   {sourceBranch && artifact?.artifact.type === 'review' && artifact.artifact.candidate && <Button kind="small" onClick={() => void action('task-generation-apply', {
-                    taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id, value: structuredClone(sourceBranch.draft),
+                    taskId: item.task_id, branchId: item.branch_id, id: artifact.artifact_id, value: structuredClone(sourceBranch.editing_draft ?? sourceBranch.draft),
                   })}>{reviewPresentation.candidate}</Button>}
                 </div>
                 {item.kind === 'experiment' && <div className="experiment-subtasks">
@@ -1545,7 +1549,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const editing = !view.inspectRun && !experiment && !!preparation?.editing
   const preparedDraft = preparation?.draft ?? branch?.editing_draft ?? branch?.draft
   const inputs = view.inspectRun && run ? historical ? {
-    ...branch!.draft, generation_input: historical.generation_input, prompt_input: historical.prompt_input,
+    ...branch!.draft, generation_input: historical.generation_input, prompt_input: historical.prompt_input, prompt_resource_refs: promptResourceRefs(historical.selected_resources ?? []),
     image_refs: historical.image_refs, workflow_image_bindings: historical.workflow_image_bindings, parameter_mapping: historical.parameter_mapping, base_model_id: historical.base_model_id,
     reference_run_ids: taskFor(run)?.input.reference_run_ids ?? [], reference_task_ids: taskFor(run)?.input.reference_task_ids ?? [], reference_experiences: taskFor(run)?.input.reference_experiences ?? [], instructions: taskFor(run)?.input.requirements.instructions ?? '',
   } : branch?.draft : experimentTask ? { ...experimentTask.input, instructions: experimentTask.input.requirements.instructions } : (editing ? preparedDraft : branch?.draft)
@@ -1632,8 +1636,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   }
   const selectedTemplateId = inputs?.generation_input.template_id ?? null
   const { details: selectedTemplate, error: selectedTemplateError } = useCatalogDetails(
-    selectedTemplateId ? { kind: 'comfyui-template', id: selectedTemplateId } : null, props.catalog?.details)
-  const selectedTemplateName = selectedTemplate?.kind === 'comfyui-template' && selectedTemplate.id === selectedTemplateId ? selectedTemplate.item.label : selectedTemplateId ?? ''
+    selectedTemplateId && !view.inspectRun ? { kind: 'comfyui-template', id: selectedTemplateId } : null, props.catalog?.details)
+  const selectedTemplateName = view.inspectRun ? historical?.selected_resources?.find(item => item.kind === 'comfyui-template' && item.id === selectedTemplateId)?.name ?? selectedTemplateId ?? '' : selectedTemplate?.kind === 'comfyui-template' && selectedTemplate.id === selectedTemplateId ? selectedTemplate.item.label : selectedTemplateId ?? ''
   useEffect(() => { if (selectedTemplateError) setMessage(selectedTemplateError) }, [selectedTemplateError, setMessage])
   const parameterScope = branch && state.workspaceId ? inputDescriptionCache.key(state.workspaceId, (preparedDraft ?? branch.draft).generation_input) : ''
   const parameterFieldEditor = useBranchFieldEdits(state.workspaceId, view.workId, view.branchId, parameterScope)
@@ -1667,7 +1671,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const openCatalog = (kind: CatalogKind) => {
     setCatalogQueryDraft({ workspaceId: state.workspaceId, value: '' })
     store.updateView({ page: 'resources', catalogDetail: null, catalogGallery: null,
-      catalogFilters: { ...view.catalogFilters, kind, baseModelId: inputs?.base_model_id ?? '', modelId: '', query: '', page: 1 } })
+      catalogFilters: { ...view.catalogFilters, kind, baseModelId: '', modelId: '', query: '', page: 1 } })
   }
   const hasTranslationHistory = (field: 'positive_prompt' | 'negative_prompt') => state.translations.some(record => record.workspace_id === state.workspaceId && record.work_id === view.workId && record.branch_id === view.branchId && record.field === field)
   const openTranslation = (field: 'positive_prompt' | 'negative_prompt', prompts = { positive_prompt: inputs?.prompt_input.positive_prompt ?? '', negative_prompt: inputs?.prompt_input.negative_prompt ?? '' }) => {
@@ -1717,14 +1721,18 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
   const resources = inputs && <section aria-label="已选资源" className="selected-resources">
     <div className="row between"><h3>已选资源</h3><Button kind="small quiet" icon="plus" onClick={() => openCatalog('model')}>选择资源</Button></div>
     <div className="agent-field-action">{agentButton('推荐资源', 'resources', locked)}</div>
-    <div className="picked-item"><span>生成模型 · {modelLabel(inputs)}</span><b>{inputs.generation_input.model?.file_name ?? '未选择'}</b><Button kind="small quiet" label="更换生成模型" onClick={() => openCatalog('model')}>更换</Button></div>
-    <div className="picked-item"><span>Workflow 模板</span><b>{selectedTemplateId ? selectedTemplateName : '未选择'}</b><Button kind="small quiet" label="选择 Workflow 模板" onClick={() => openCatalog('comfyui-template')}>{selectedTemplateId ? '更换' : '选择'}</Button></div>
-    <div className="picked-loras"><div className="row between"><span>LoRA</span><Button kind="small quiet" icon="plus" label="添加 LoRA" onClick={() => openCatalog('lora')}>添加</Button></div>
+    <div className="picked-item"><span>生成模型 · {modelLabel(inputs)}</span>{inputs.generation_input.model ? <button type="button" className="selected-resource-name" aria-label={`查看详情 ${inputs.generation_input.model.file_name}`} onClick={() => { openCatalog('model'); store.updateView({ catalogDetail: { kind: 'model', id: inputs.generation_input.model!.id } }) }}><b>{inputs.generation_input.model.file_name}</b></button> : <b>未选择</b>}<Button kind="small quiet" label="更换生成模型" onClick={() => openCatalog('model')}>更换</Button></div>
+    <div className="picked-item"><span>Workflow 模板</span>{selectedTemplateId ? <button type="button" className="selected-resource-name" aria-label={`查看详情 ${selectedTemplateName}`} onClick={() => { openCatalog('comfyui-template'); store.updateView({ catalogDetail: { kind: 'comfyui-template', id: selectedTemplateId } }) }}><b>{selectedTemplateName}</b></button> : <b>未选择</b>}<Button kind="small quiet" label="选择 Workflow 模板" onClick={() => openCatalog('comfyui-template')}>{selectedTemplateId ? '更换' : '选择'}</Button></div>
+    <details className="picked-loras selected-resource-group" data-resource-group="lora" open><summary>LoRA<span className="count">{inputs.generation_input.loras.length}</span></summary><div className="resource-group-actions"><Button kind="small quiet" icon="plus" label="添加 LoRA" onClick={() => openCatalog('lora')}>添加</Button></div>
       {inputs.generation_input.loras.map(item => <LoraSummary key={item.id} scope={{ workspaceId: state.workspaceId, workId: view.workId, branchId: view.branchId }} item={item} load={props.catalog?.details} locked={locked} onError={setMessage}
+        onDetail={() => { openCatalog('lora'); store.updateView({ catalogDetail: { kind: 'lora', id: item.id } }) }}
         save={async value => { updatePreparation({ generation_input: { ...preparedDraft!.generation_input, loras: preparedDraft!.generation_input.loras.map(lora => lora.id === item.id ? { ...lora, weight: Number(value) } : lora) } }); return true }}
         onRemove={() => updatePreparation({ generation_input: { ...preparedDraft!.generation_input, loras: preparedDraft!.generation_input.loras.filter(lora => lora.id !== item.id) } })} />)}
       {!inputs.generation_input.loras.length && <p className="muted">未选择 LoRA</p>}
-    </div>
+    </details>
+    <PromptResourceGroups refs={inputs.prompt_resource_refs ?? []} load={props.catalog?.details} editable
+      onOpen={(kind, id) => { openCatalog(kind); if (id) store.updateView({ catalogDetail: { kind, id } }) }}
+      onRemove={resource => updatePreparation({ prompt_resource_refs: (preparedDraft?.prompt_resource_refs ?? []).filter(item => item.kind !== resource.kind || item.id !== resource.id) })} />
   </section>
   const savedSummary = inputs && <div className="input-summary">
     {view.inspectRun && readout('任务名称', run?.title)}
@@ -1735,6 +1743,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
       <div><dt>生成模型</dt><dd>{inputs.generation_input.model?.file_name ?? '未选择'}</dd></div><div><dt>Workflow 模板</dt><dd>{selectedTemplateName || '未选择'}</dd></div>
       <div><dt>LoRA</dt><dd>{inputs.generation_input.loras.map(item => item.file_name + ' · ' + item.weight).join('、') || '未选择'}</dd></div>
     </dl></details>
+    {view.inspectRun ? <ResourceSnapshotGroups snapshots={historical?.selected_resources ?? []} /> : experimentTask ? <ResourceSnapshotGroups snapshots={experimentTask.input.selected_resources ?? []} /> :
+      <section className="selected-resources" aria-label="已选资源"><h3>已选提示词资源</h3><PromptResourceGroups refs={inputs.prompt_resource_refs ?? []} load={props.catalog?.details} editable={false}
+        onOpen={(kind, id) => { openCatalog(kind); if (id) store.updateView({ catalogDetail: { kind, id } }) }} /></section>}
     <details className="config-section" open><summary>提示词与图片</summary>{prompt('positive_prompt')}{prompt('negative_prompt')}{imageInputs}</details>
     <details className="config-section" open><summary>生成参数</summary><RuntimeParameterSummary parameters={displayedParameters} description={inputDescription} /></details>
   </div>
@@ -1904,6 +1915,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   </option>
                 ))}
               </select>
+              {view.page === 'resources' && <select className="work-picker" aria-label="切换分支" value={view.branchId ?? ''} onChange={event => selectBranch(event.target.value)}>
+                {p?.branches.map(item => <option key={item.branch_id} value={item.branch_id}>{item.name}</option>)}
+              </select>}
               <Button
                 kind="small quiet"
                 icon="plus"
@@ -1988,8 +2002,8 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             </Button>
           </main>
         ) : (
-          <div className={view.page === 'workbench' ? 'layout review-layout' : 'layout'}>
-            {sidebar}
+          <div className={view.page === 'workbench' ? 'layout review-layout' : view.page === 'resources' ? 'layout resource-layout' : 'layout'}>
+            {view.page !== 'resources' && sidebar}
             {view.page === 'resources' ? (
               <ExperimentCatalog
                 catalog={props.catalog}
@@ -2344,7 +2358,7 @@ interface ExperimentCatalogProps {
   readonly queryText: string
   readonly onQueryChange: (query: string) => void
   readonly back: ReactNode
-  readonly selected?: Pick<TaskDraft, 'base_model_id' | 'generation_input'>
+  readonly selected?: Pick<TaskDraft, 'base_model_id' | 'generation_input' | 'prompt_resource_refs'>
   readonly locked: boolean
   readonly onSelect: (item: CatalogItem) => void
   readonly onRemove: (item: CatalogItem) => void
@@ -2386,14 +2400,10 @@ function ExperimentCatalog({
   const retryError = detailRequest && detailError ? retryDetails : retry
   const loading = status === 'loading'
   const bases = baseModels?.items ?? []
-  const selection: CatalogReference[] = [
-    ...(selected?.generation_input.model ? [{ kind: 'model' as const, id: selected.generation_input.model.id }] : []),
-    ...(selected?.generation_input.template_id ? [{ kind: 'comfyui-template' as const, id: selected.generation_input.template_id }] : []),
-    ...(selected?.generation_input.loras.map(lora => ({ kind: 'lora' as const, id: lora.id })) ?? []),
-  ]
+  const selection: CatalogReference[] = selected ? selectedResourceRefs(selected) : []
   const chosen = (item: CatalogItem) => selection.some(ref => workbenchContextKey(ref) === workbenchContextKey(item.context))
   const selectButton = (item: CatalogItem, selected = chosen(item)) => {
-    const multiple = item.context.kind !== 'model' && item.context.kind !== 'comfyui-template'
+    const multiple = catalogDefinition(item.context.kind).multiple
     const label = selected ? multiple ? '移除' : '已选择' : '选择'
     return <Button kind={selected ? 'small' : 'small primary'} disabled={locked || selected && !multiple}
       label={`${label} ${item.label}`} pressed={selected} onClick={() => selected && multiple ? onRemove(item) : onSelect(item)}>{label}</Button>
@@ -2421,7 +2431,7 @@ function ExperimentCatalog({
     onFilters({ ...filters, baseModelId: '', modelId: '', query: '', page: 1 })
   return (
     <main className="center">
-      <PanelHead title="资源目录">{back}</PanelHead>
+      <PanelHead title="资源目录">{back}<Button kind="small quiet" onClick={retry}>刷新目录</Button></PanelHead>
       <div className="catalog-browser">
         <nav className="catalog-kinds" aria-label="资源类型">
           <CatalogKinds selected={kind.kind}>{(item, selected) => WORKBENCH_RESOURCE_KINDS.some(kind => kind === item.kind) ? (
@@ -2429,11 +2439,13 @@ function ExperimentCatalog({
               type="button"
               key={item.kind}
               aria-pressed={selected}
+              aria-label={item.label}
+              data-resource-kind={item.kind}
               onClick={() =>
                 onFilters({ ...filters, kind: item.kind, query: '', page: 1 })
               }
             >
-              {item.label}
+              <span>{item.label}</span><small>{selection.filter(ref => ref.kind === item.kind).length}</small>
             </button>
           ) : null}</CatalogKinds>
         </nav>
