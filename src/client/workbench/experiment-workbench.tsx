@@ -1915,6 +1915,9 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   </option>
                 ))}
               </select>
+              {view.page === 'resources' && <select className="work-picker" aria-label="切换分支" value={view.branchId ?? ''} onChange={event => selectBranch(event.target.value)}>
+                {p?.branches.map(item => <option key={item.branch_id} value={item.branch_id}>{item.name}</option>)}
+              </select>}
               <Button
                 kind="small quiet"
                 icon="plus"
@@ -1999,7 +2002,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
             </Button>
           </main>
         ) : (
-          <div className={view.page === 'workbench' ? 'layout review-layout' : 'layout'}>
+          <div className={view.page === 'workbench' ? 'layout review-layout' : view.page === 'resources' ? 'layout resource-layout' : 'layout'}>
             {view.page !== 'resources' && sidebar}
             {view.page === 'resources' ? (
               <ExperimentCatalog
@@ -2015,8 +2018,7 @@ export function ExperimentWorkbench(props: ExperimentWorkbenchProps) {
                   if (patch.query !== undefined) setCatalogQueryDraft({ workspaceId: state.workspaceId, value: patch.query })
                   store.updateView({ catalogFilters: { ...store.getSnapshot().view.catalogFilters, ...patch }, ...(patch.query !== undefined ? { catalogDetail: null, catalogGallery: null } : {}) })
                 }}
-                branchName={branch?.name ?? ''}
-                onBack={() => changePage('workbench')}
+                back={back}
                 selected={inputs}
                 onSelect={(item) =>
                   void selectResource(item)
@@ -2355,8 +2357,7 @@ interface ExperimentCatalogProps {
   ) => void
   readonly queryText: string
   readonly onQueryChange: (query: string) => void
-  readonly branchName: string
-  readonly onBack: () => void
+  readonly back: ReactNode
   readonly selected?: Pick<TaskDraft, 'base_model_id' | 'generation_input' | 'prompt_resource_refs'>
   readonly locked: boolean
   readonly onSelect: (item: CatalogItem) => void
@@ -2376,8 +2377,7 @@ function ExperimentCatalog({
   onFilters,
   queryText,
   onQueryChange,
-  branchName,
-  onBack,
+  back,
   selected,
   locked,
   onSelect,
@@ -2430,13 +2430,10 @@ function ExperimentCatalog({
   const reset = () =>
     onFilters({ ...filters, baseModelId: '', modelId: '', query: '', page: 1 })
   return (
-    <>
-      <aside className="sidebar resource-sidebar">
-        <div className="sidebar-head">
-          <h3>资源分类</h3>
-          <p className="muted">已选 {selection.length} 项</p>
-        </div>
-        <nav className="resource-kind-nav" aria-label="资源分类">
+    <main className="center">
+      <PanelHead title="资源目录">{back}<Button kind="small quiet" onClick={retry}>刷新目录</Button></PanelHead>
+      <div className="catalog-browser">
+        <nav className="catalog-kinds" aria-label="资源类型">
           <CatalogKinds selected={kind.kind}>{(item, selected) => WORKBENCH_RESOURCE_KINDS.some(kind => kind === item.kind) ? (
             <button
               type="button"
@@ -2448,244 +2445,235 @@ function ExperimentCatalog({
                 onFilters({ ...filters, kind: item.kind, query: '', page: 1 })
               }
             >
-              <span>{item.label}</span><span className="count">{selection.filter(ref => ref.kind === item.kind).length}</span>
+              <span>{item.label}</span><small>{selection.filter(ref => ref.kind === item.kind).length}</small>
             </button>
           ) : null}</CatalogKinds>
         </nav>
-        <div className="sidebar-foot">
-          <small>{branchName}</small>
-          <Button kind="small" icon="arrow" onClick={onBack}>返回运行结果</Button>
-        </div>
-      </aside>
-      <main className="center">
-        <PanelHead title="资源目录"><Button kind="small" icon="grid" onClick={retry}>刷新目录</Button></PanelHead>
-        <div className="catalog-browser">
-          <div key={panel} className="catalog-content" {...scroll(panel, contentReady)}>
-            {gallery ? (
-              <div className="catalog-gallery">
-                <div className="row between">
-                  <Button kind="small quiet" onClick={() => onGallery(null)}>
-                    {detailRequest ? '返回详情' : '返回资源列表'}
-                  </Button>
-                  {galleryItem && <><h3>{galleryItem.label}</h3>
-                  <span className="mono">
-                    {`${galleryIndex + 1} / ${galleryImages.length}`}
-                  </span></>}
-                </div>
-                {detailError ? <div className="empty">
-                  <p role="alert">{detailError}</p>
-                  <Button kind="small" onClick={retryDetails}>重试</Button>
-                </div> : galleryItem ? <div className="gallery-stage">
-                  <Button
-                    kind="quiet"
-                    label="上一张图片"
-                    disabled={galleryIndex === 0}
-                    onClick={() =>
-                      onGallery({ ...gallery, index: galleryIndex - 1 })
-                    }
-                  >
-                    ‹
-                  </Button>
-                  <div className="artwork">
-                    <img
-                      src={galleryImages[galleryIndex]}
-                      alt={galleryItem.label}
-                    />
-                  </div>
-                  <Button
-                    kind="quiet"
-                    label="下一张图片"
-                    disabled={
-                      galleryIndex >= galleryImages.length - 1
-                    }
-                    onClick={() =>
-                      onGallery({ ...gallery, index: galleryIndex + 1 })
-                    }
-                  >
-                    ›
-                  </Button>
-                </div> : <div className="empty"><span className="loading-ring" /></div>}
+        <div key={panel} className="catalog-content" {...scroll(panel, contentReady)}>
+          {gallery ? (
+            <div className="catalog-gallery">
+              <div className="row between">
+                <Button kind="small quiet" onClick={() => onGallery(null)}>
+                  {detailRequest ? '返回详情' : '返回资源列表'}
+                </Button>
+                {galleryItem && <><h3>{galleryItem.label}</h3>
+                <span className="mono">
+                  {`${galleryIndex + 1} / ${galleryImages.length}`}
+                </span></>}
               </div>
-            ) : detailRequest ? (
-              <div className="catalog-detail">
-                <div className="row between">
-                  <Button kind="small quiet" onClick={() => onDetail(null)}>
-                    <Icon name="arrow" />返回资源列表
-                  </Button>
-                  {detail && selectButton(detail)}
-                </div>
-                {detail && <h2>{detail.label}</h2>}
-                {detail && detailPreviewUrl !== undefined && (
-                  <button
-                    className="detail-cover"
-                    type="button"
-                    aria-label={`预览图片 ${detail.label}`}
-                    onClick={() => openGallery(detail)}
-                  >
-                    <img src={detailPreviewUrl} alt={detail.label} />
-                  </button>
-                )}
-                {error ? (
-                  <div className="empty">
-                    <p role="alert">{error}</p>
-                    <Button
-                      kind="small"
-                      onClick={retryError}
-                    >
-                      重试
-                    </Button>
-                  </div>
-                ) : details ? (
-                  <CatalogDetailFields details={details} presentation="resource" baseModels={bases} />
-                ) : (
-                  <div className="empty">
-                    <span className="loading-ring" />
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="catalog-list-panel">
-                {kind.baseModelScoped && (
-                  <div className="catalog-filters">
-                    <label>
-                      底模
-                      <select
-                        aria-label="筛选底模"
-                        value={filters.baseModelId}
-                        onChange={(event) =>
-                          onFilters({
-                            ...filters,
-                            baseModelId: event.target.value,
-                            query: queryText,
-                            modelId: '',
-                            page: 1,
-                          })
-                        }
-                      >
-                        <option value="">全部底模</option>
-                        {bases.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      生成模型
-                      <select
-                        aria-label="筛选生成模型"
-                        value={filters.modelId}
-                        onChange={(event) =>
-                          onFilters({
-                            ...filters,
-                            modelId: event.target.value,
-                            query: queryText,
-                            page: 1,
-                          })
-                        }
-                      >
-                        <option value="">全部生成模型</option>
-                        {models.map((item) => (
-                          <option key={item.context.id} value={item.context.id}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                )}
-                <form
-                  className="catalog-search"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    onFilters({ ...filters, query: queryText.trim(), page: 1 })
-                  }}
+              {detailError ? <div className="empty">
+                <p role="alert">{detailError}</p>
+                <Button kind="small" onClick={retryDetails}>重试</Button>
+              </div> : galleryItem ? <div className="gallery-stage">
+                <Button
+                  kind="quiet"
+                  label="上一张图片"
+                  disabled={galleryIndex === 0}
+                  onClick={() =>
+                    onGallery({ ...gallery, index: galleryIndex - 1 })
+                  }
                 >
-                  <input
-                    aria-label="搜索资源"
-                    placeholder={`搜索${kind.label}`}
-                    value={queryText}
-                    onChange={(event) => onQueryChange(event.target.value)}
+                  ‹
+                </Button>
+                <div className="artwork">
+                  <img
+                    src={galleryImages[galleryIndex]}
+                    alt={galleryItem.label}
                   />
-                  <button className="btn" type="submit">
-                    搜索
-                  </button>
-                </form>
-                <div className="row between catalog-results-head">
-                  <b>{kind.label}</b>
-                  <small>{`${result?.totalCount ?? 0} 项`}</small>
                 </div>
-                {error ? (
-                  <div className="empty">
-                    <p role="alert">{error}</p>
-                    <Button
-                      kind="small"
-                      onClick={retryError}
-                    >
-                      重试
-                    </Button>
-                  </div>
-                ) : loading ? (
-                  <div className="empty">
-                    <span className="loading-ring" />
-                  </div>
-                ) : (
-                  <div className="catalog-grid">
-                    <CatalogItems items={result?.items ?? []} selection={selection}>{(item, selected, key) => {
-                      const previewUrl = catalogImageUrls(item)[0]
-                      return (
-                      <article key={key} className={`catalog-card ${selected ? 'chosen' : ''}`}>
-                        {previewUrl !== undefined ? <button type="button" className="catalog-cover"
-                          aria-label={`预览图片 ${item.label}`} onClick={() => openGallery(item)}>
-                          <img src={previewUrl} alt={item.label} />
-                        </button> : <div className="catalog-cover no-cover"><span><Icon name={item.context.kind === 'comfyui-template' ? 'grid' : 'book'} /></span></div>}
-                        <div className="catalog-card-body">
-                          <div className="row between"><small>{bases.find(base => base.id === item.baseModelId)?.label ?? kind.label}</small>{selected ? <span className="pill"><Icon name="check" />已选</span> : null}</div>
-                          <h3 title={item.label}>{item.label}</h3>
-                          <p>{item.subtitle}</p>
-                          <div className="row between">
-                            {selectButton(item, selected)}
-                            <Button kind="small quiet" label={`查看详情 ${item.label}`} onClick={() => onDetail({ kind: item.context.kind, id: item.context.id })}>查看详情</Button>
-                          </div>
-                        </div>
-                      </article>
-                    )}}</CatalogItems>
-                    {!result?.items.length && (
-                      <div className="empty">
-                        <h3>{catalog ? '没有匹配的资源' : '资源目录尚未连接'}</h3>
-                        <Button kind="small" onClick={reset}>
-                          清除筛选
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="catalog-pagination">
-                  <Button
-                    kind="small"
-                    disabled={filters.page <= 1 || loading}
-                    onClick={() =>
-                      onFilters({ ...filters, query: queryText, page: filters.page - 1 })
-                    }
-                  >
-                    上一页
-                  </Button>
-                  <span>{`${filters.page} / ${pages}`}</span>
-                  <Button
-                    kind="small"
-                    disabled={filters.page >= pages || loading}
-                    onClick={() =>
-                      onFilters({ ...filters, query: queryText, page: filters.page + 1 })
-                    }
-                  >
-                    下一页
-                  </Button>
-                </div>
+                <Button
+                  kind="quiet"
+                  label="下一张图片"
+                  disabled={
+                    galleryIndex >= galleryImages.length - 1
+                  }
+                  onClick={() =>
+                    onGallery({ ...gallery, index: galleryIndex + 1 })
+                  }
+                >
+                  ›
+                </Button>
+              </div> : <div className="empty"><span className="loading-ring" /></div>}
+            </div>
+          ) : detailRequest ? (
+            <div className="catalog-detail">
+              <div className="row between">
+                <Button kind="small quiet" onClick={() => onDetail(null)}>
+                  <Icon name="arrow" />返回资源列表
+                </Button>
+                {detail && selectButton(detail)}
               </div>
-            )}
-          </div>
+              {detail && <h2>{detail.label}</h2>}
+              {detail && detailPreviewUrl !== undefined && (
+                <button
+                  className="detail-cover"
+                  type="button"
+                  aria-label={`预览图片 ${detail.label}`}
+                  onClick={() => openGallery(detail)}
+                >
+                  <img src={detailPreviewUrl} alt={detail.label} />
+                </button>
+              )}
+              {error ? (
+                <div className="empty">
+                  <p role="alert">{error}</p>
+                  <Button
+                    kind="small"
+                    onClick={retryError}
+                  >
+                    重试
+                  </Button>
+                </div>
+              ) : details ? (
+                <CatalogDetailFields details={details} presentation="resource" baseModels={bases} />
+              ) : (
+                <div className="empty">
+                  <span className="loading-ring" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="catalog-list-panel">
+              {kind.baseModelScoped && (
+                <div className="catalog-filters">
+                  <label>
+                    底模
+                    <select
+                      aria-label="筛选底模"
+                      value={filters.baseModelId}
+                      onChange={(event) =>
+                        onFilters({
+                          ...filters,
+                          baseModelId: event.target.value,
+                          query: queryText,
+                          modelId: '',
+                          page: 1,
+                        })
+                      }
+                    >
+                      <option value="">全部底模</option>
+                      {bases.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    生成模型
+                    <select
+                      aria-label="筛选生成模型"
+                      value={filters.modelId}
+                      onChange={(event) =>
+                        onFilters({
+                          ...filters,
+                          modelId: event.target.value,
+                          query: queryText,
+                          page: 1,
+                        })
+                      }
+                    >
+                      <option value="">全部生成模型</option>
+                      {models.map((item) => (
+                        <option key={item.context.id} value={item.context.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+              <form
+                className="catalog-search"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  onFilters({ ...filters, query: queryText.trim(), page: 1 })
+                }}
+              >
+                <input
+                  aria-label="搜索资源"
+                  placeholder={`搜索${kind.label}`}
+                  value={queryText}
+                  onChange={(event) => onQueryChange(event.target.value)}
+                />
+                <button className="btn" type="submit">
+                  搜索
+                </button>
+              </form>
+              <div className="row between catalog-results-head">
+                <b>{kind.label}</b>
+                <small>{`${result?.totalCount ?? 0} 项`}</small>
+              </div>
+              {error ? (
+                <div className="empty">
+                  <p role="alert">{error}</p>
+                  <Button
+                    kind="small"
+                    onClick={retryError}
+                  >
+                    重试
+                  </Button>
+                </div>
+              ) : loading ? (
+                <div className="empty">
+                  <span className="loading-ring" />
+                </div>
+              ) : (
+                <div className="catalog-grid">
+                  <CatalogItems items={result?.items ?? []} selection={selection}>{(item, selected, key) => {
+                    const previewUrl = catalogImageUrls(item)[0]
+                    return (
+                    <article key={key} className={`catalog-card ${selected ? 'chosen' : ''}`}>
+                      {previewUrl !== undefined ? <button type="button" className="catalog-cover"
+                        aria-label={`预览图片 ${item.label}`} onClick={() => openGallery(item)}>
+                        <img src={previewUrl} alt={item.label} />
+                      </button> : <div className="catalog-cover no-cover"><span><Icon name={item.context.kind === 'comfyui-template' ? 'grid' : 'book'} /></span></div>}
+                      <div className="catalog-card-body">
+                        <div className="row between"><small>{bases.find(base => base.id === item.baseModelId)?.label ?? kind.label}</small>{selected ? <span className="pill"><Icon name="check" />已选</span> : null}</div>
+                        <h3 title={item.label}>{item.label}</h3>
+                        <p>{item.subtitle}</p>
+                        <div className="row between">
+                          {selectButton(item, selected)}
+                          <Button kind="small quiet" label={`查看详情 ${item.label}`} onClick={() => onDetail({ kind: item.context.kind, id: item.context.id })}>查看详情</Button>
+                        </div>
+                      </div>
+                    </article>
+                  )}}</CatalogItems>
+                  {!result?.items.length && (
+                    <div className="empty">
+                      <h3>{catalog ? '没有匹配的资源' : '资源目录尚未连接'}</h3>
+                      <Button kind="small" onClick={reset}>
+                        清除筛选
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="catalog-pagination">
+                <Button
+                  kind="small"
+                  disabled={filters.page <= 1 || loading}
+                  onClick={() =>
+                    onFilters({ ...filters, query: queryText, page: filters.page - 1 })
+                  }
+                >
+                  上一页
+                </Button>
+                <span>{`${filters.page} / ${pages}`}</span>
+                <Button
+                  kind="small"
+                  disabled={filters.page >= pages || loading}
+                  onClick={() =>
+                    onFilters({ ...filters, query: queryText, page: filters.page + 1 })
+                  }
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }
