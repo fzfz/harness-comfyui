@@ -1,16 +1,48 @@
 import { randomUUID } from 'node:crypto'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import sharp from 'sharp'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import officialBusinessFixtureJson from './official-business-fixture.json' with { type: 'json' }
 import { parseOfficialBusinessFixture } from './official-business-schema.mjs'
 import { startOfficialBusinessServices } from './official-business-services.mjs'
+import { CatalogClient } from '../../../src/host/catalog/catalog-client.ts'
+import { verifyWorkbenchPageLayout } from './official-workbench-layout.mjs'
 
 import translation from '../../../config/workbench-translation.json' with { type: 'json' }
 import { assertTranslationPresetObservation } from './official-translation-acceptance.mjs'
 
 describe('controlled model response scripts', () => {
+  it('serves model filters and template cover images through the catalog client', async () => {
+    const fixture = parseOfficialBusinessFixture(officialBusinessFixtureJson)
+    const services = await startOfficialBusinessServices(fixture)
+    try {
+      const address = new URL(services.origin)
+      const catalog = new CatalogClient({ settings: { get: () => ({
+        url: `${address.protocol}//${address.hostname}`, port: Number(address.port),
+      }) } })
+      const signal = new AbortController().signal
+      for (const baseModelId of [null, fixture.catalog.baseModel.id]) {
+        await expect(catalog.search({ kind: 'model', query: '', page: 1, baseModelId, modelId: null }, signal))
+          .resolves.toMatchObject({ kind: 'model', items: [], totalCount: 0 })
+      }
+      const templates = await catalog.search({
+        kind: 'comfyui-template', query: '', page: 1, baseModelId: fixture.catalog.baseModel.id, modelId: null,
+      }, signal)
+      expect(templates.totalCount).toBe(fixture.catalog.totalTemplates)
+      expect(templates.items.length).toBeGreaterThan(0)
+      const cover = await fetch(templates.items[0].coverUrl)
+      expect(cover.status).toBe(200)
+      expect(cover.headers.get('content-type')).toBe('image/svg+xml')
+      expect(await sharp(Buffer.from(await cover.arrayBuffer())).metadata()).toMatchObject({
+        width: fixture.catalog.images.cover.width, height: fixture.catalog.images.cover.height,
+      })
+    } finally { await services.close() }
+  })
+
   it('serves the configured PNG dimensions and reports its actual byte length', async () => {
     const outputPngBytes = await sharp({ create: { width: 512, height: 512, channels: 4, background: '#7f9fbfff' } }).png().toBuffer()
     const fixture = parseOfficialBusinessFixture(officialBusinessFixtureJson)
@@ -127,6 +159,91 @@ describe('controlled model response scripts', () => {
     } finally {
       await services.close()
     }
+  })
+})
+
+describe('workbench layout cleanup', () => {
+  async function scenario(options = {}) {
+    const directory = await mkdtemp(join(tmpdir(), 'workbench-layout-cleanup-'))
+    const primaryError = new Error('layout measurement transport failed')
+    const viewport = { width: 1440, height: 900 }
+    const events = []
+    let measuringFailed = false
+    const page = {
+      evaluate: vi.fn(async () => {
+        if (!measuringFailed) return viewport
+        events.push('close-workbench')
+        if (options.closeError) throw options.closeError
+        return true
+      }),
+      command: vi.fn(async method => {
+        if (method === 'Input.dispatchMouseEvent') {
+          measuringFailed = true
+          throw primaryError
+        }
+        if (method === 'Emulation.clearDeviceMetricsOverride') {
+          events.push('clear-metrics')
+          if (options.clearError) throw options.clearError
+        }
+        return {}
+      }),
+    }
+    const waitForValue = vi.fn(async (_page, expression, accept) => {
+      if (!measuringFailed) {
+        if (expression === 'innerWidth') return 1024
+        if (expression.includes("return visibleButton('打开侧边栏') ? false : null")) return options.expanded !== false
+        return true
+      }
+      if (expression === '({ width: innerWidth, height: innerHeight })') {
+        events.push('native-size')
+        expect(accept(viewport)).toBe(true)
+        expect(accept({ ...viewport, width: viewport.width + 1 })).toBe(false)
+        expect(accept({ ...viewport, height: viewport.height + 1 })).toBe(false)
+        return viewport
+      }
+      events.push('restore-sidebar')
+      if (options.sidebarError) throw options.sidebarError
+      return true
+    })
+    return {
+      directory, primaryError, events, page,
+      run: () => verifyWorkbenchPageLayout(page, {
+        workspaceId: 'workspace', evidenceDirectory: options.writeFailure ? join(directory, 'missing') : directory, waitForValue,
+      }),
+    }
+  }
+
+  it('retains the measurement error and attempts every cleanup after evidence and UI failures', async () => {
+    const clearError = new Error('device metrics cleanup failed')
+    const closeError = new Error('workbench close failed')
+    const sidebarError = new Error('sidebar restoration failed')
+    const fixture = await scenario({ writeFailure: true, clearError, closeError, sidebarError })
+    try {
+      const error = await fixture.run().catch(error => error)
+      expect(error).toBeInstanceOf(AggregateError)
+      expect(error.errors).toEqual([
+        fixture.primaryError, expect.objectContaining({ code: 'ENOENT' }), clearError, closeError, sidebarError,
+      ])
+      expect(fixture.events).toEqual(['clear-metrics', 'close-workbench', 'restore-sidebar'])
+    } finally { await rm(fixture.directory, { recursive: true, force: true }) }
+  })
+
+  it('clears emulation and checks both native dimensions before restoring the UI', async () => {
+    const fixture = await scenario()
+    try {
+      await expect(fixture.run()).rejects.toBe(fixture.primaryError)
+      expect(fixture.page.command).toHaveBeenCalledWith('Emulation.clearDeviceMetricsOverride')
+      expect(fixture.page.command.mock.calls.filter(([method]) => method === 'Emulation.setDeviceMetricsOverride')).toHaveLength(1)
+      expect(fixture.events).toEqual(['clear-metrics', 'native-size', 'close-workbench', 'restore-sidebar'])
+    } finally { await rm(fixture.directory, { recursive: true, force: true }) }
+  })
+
+  it('keeps an initially collapsed host sidebar collapsed', async () => {
+    const fixture = await scenario({ expanded: false })
+    try {
+      await expect(fixture.run()).rejects.toBe(fixture.primaryError)
+      expect(fixture.events).toEqual(['clear-metrics', 'native-size', 'close-workbench'])
+    } finally { await rm(fixture.directory, { recursive: true, force: true }) }
   })
 })
 

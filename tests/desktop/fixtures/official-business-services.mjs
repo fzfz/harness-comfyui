@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { randomUUID } from 'node:crypto'
 import managedCliHelp from '../../../config/managed-cli-help.json' with { type: 'json' }
+import sourceClientConfiguration from '../../../config/source-client.json' with { type: 'json' }
 import { requestMessageText } from './official-mcp-acceptance.mjs'
 
 const MAX_MODEL_REQUEST_BYTES = 1024 * 1024
@@ -146,6 +147,16 @@ export async function startOfficialBusinessServices(fixture, { outputPngBytes = 
           ? []
           : [{ id: fixture.catalog.baseModel.id, name: fixture.catalog.baseModel.name }]
         writeJson(response, { status: 'ok', message: null, results, page: 1, page_size: 20, total_count: results.length })
+      }).catch(error => writeFailure(response, error))
+      return
+    }
+    if (request.method === 'POST' && request.url === '/internal/semantic/generation-models') {
+      void readJson(request).then(input => {
+        writeJson(response, {
+          status: 'ok', message: null, results: [], total_count: 0,
+          page: input.mode === 'resolve' ? 1 : input.page,
+          page_size: input.mode === 'resolve' ? 1 : input.page_size,
+        })
       }).catch(error => writeFailure(response, error))
       return
     }
@@ -391,7 +402,7 @@ function createSemanticDiscovery() {
       id: { type: 'string', minLength: 1, maxLength: 20, pattern: '^[1-9][0-9]{0,19}$', description: 'Decimal Catalog record identifier', example: '123' },
     },
   }
-  const schemas = Object.fromEntries(['CatalogBaseModel', 'CatalogTemplate'].map(prefix => [
+  const schemas = Object.fromEntries(['CatalogBaseModel', 'CatalogTemplate', 'CatalogGenerationModel'].map(prefix => [
     `${prefix}Request`, {
       type: 'object', oneOf: [
         { $ref: `#/components/schemas/${prefix}SearchRequest` },
@@ -409,16 +420,19 @@ function createSemanticDiscovery() {
     description: 'Base-model identifier for Catalog filtering', example: '123',
   }
   schemas.CatalogTemplateResolveRequest = resolve
+  schemas.CatalogGenerationModelSearchRequest = schemas.CatalogTemplateSearchRequest
+  schemas.CatalogGenerationModelResolveRequest = resolve
   return {
     openapi: '3.1.0',
     paths: Object.fromEntries([
       ['/internal/semantic/base-models', 'BaseModel'],
       ['/internal/semantic/comfyui-templates', 'Template'],
+      ['/internal/semantic/generation-models', 'GenerationModel'],
     ].map(([path, type]) => [path, { post: {
-      summary: `Search or resolve ${type === 'BaseModel' ? 'base-model' : 'ComfyUI template'} records`,
+      summary: `Search or resolve ${type} records`,
       description: 'Search or resolve Catalog records using stable identifiers.',
-      operationId: type === 'BaseModel' ? 'querySemanticBaseModelsForSkill' : 'querySemanticComfyuiTemplatesForSkill',
-      'x-harness-tool-name': type === 'BaseModel' ? 'query_semantic_base_models' : 'query_semantic_comfyui_templates',
+      operationId: sourceClientConfiguration.catalog.operations[path].operationId,
+      'x-harness-tool-name': sourceClientConfiguration.catalog.operations[path].toolName,
       requestBody: {
         required: true,
         content: { 'application/json': {
