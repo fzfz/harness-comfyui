@@ -120,7 +120,7 @@
 
 4. [Core](../../src/host/core/plugin.ts) 管理 Generation Runtime 与 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 共用的数据库连接。产物文件保存在插件 Run 目录下的 `task-artifacts` 中。
 
-5. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 校验准备输入与模板参数。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID、类型、单图或多图类型和尺寸候选。分支的编辑输入与已保存输入分别持久化，产物回填由 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 写入所属分支。
+5. [工作台输入适配器](../../src/host/workbench/input-adapter.ts) 校验准备输入与模板参数，并解析已选资源快照。资源引用由 [resources.ts](../../src/workbench/resources.ts) 派生，快照字段投影由 [Catalog 展示配置](../../src/catalog/presentation.json) 定义。参数栏读取[模板参数描述](../../src/generation/inspection-contract.ts)中的参数 ID、类型、单图或多图类型和尺寸候选。分支的编辑输入与已保存输入分别持久化，产物回填由 [WorkbenchStore](../../src/host/storage/workbench-store.ts) 写入所属分支。
 
 6. [WorkbenchInputFileService](../../src/host/generation/input-file-service.ts) 保存本机导入图片。[输入图片解析](../../src/host/workbench/input-images.ts)提供 Run 媒体与导入文件的本地路径及预览地址。[SourceGenerationPreparer](../../src/host/generation/source-preparer.ts)向所选实例上传 Workflow 用途图片，保存上传响应并生成实际输入；Run 同时保留提交输入。
 
