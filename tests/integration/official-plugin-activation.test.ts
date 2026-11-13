@@ -1,5 +1,6 @@
 import { createTestCredentialProvider } from '../support/credential-provider.ts'
 import { provideWorkbenchOfficialServices } from '../support/workbench-host.ts'
+import { materializeTestPluginResources } from '../support/plugin-runtime-resources.ts'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -7,7 +8,7 @@ import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { CLI_ENVIRONMENT_NAMES, CLI_ROUTE_PATH } from '../../src/cli/contract.ts'
 import { BROWSER_SETTINGS_REMOTE_NAMESPACE } from '../../src/browser-settings-schema.ts'
@@ -19,6 +20,19 @@ import HARNESS_COMFYUI_REMOTE from '../../src/remote.ts'
 import * as cli from '../../src/host/cli/plugin.ts'
 import * as imageReaderPlugin from '../../src/host/image-reader/plugin.ts'
 import * as web from '../../src/host/web/plugin.ts'
+
+const sourceResources = vi.hoisted(() => ({
+  locate: (_relativePath: string): string => { throw new Error('Build source plugin runtime resources before activation') },
+}))
+vi.mock('../../src/host/resource-path.ts', () => ({
+  repositoryResource: (relativePath: string) => sourceResources.locate(relativePath),
+}))
+let sourcePackage: Awaited<ReturnType<typeof materializeTestPluginResources>> | undefined
+beforeAll(async () => {
+  sourcePackage = await materializeTestPluginResources()
+  sourceResources.locate = sourcePackage.resource
+}, 30_000)
+afterAll(async () => { await sourcePackage?.dispose() })
 
 const fibers: Array<{ dispose(): Promise<void> }> = []
 const temporaryDirectories: string[] = []

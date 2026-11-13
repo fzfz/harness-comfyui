@@ -1,14 +1,16 @@
 {
   "name": "harness-comfyui",
-  "version": "0.54.2",
+  "version": "0.54.3",
   "private": true,
   "type": "module",
+  "imports": { "#contracts": "./src/contracts/index.ts" },
   "packageManager": "pnpm@11.11.0",
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
     "dsh": "0.2.1-rc.3"
   },
   "scripts": {
+    "check:contracts-boundary": "node scripts/security/check-contract-boundary.mjs",
     "check:harness-boundary": "node scripts/security/check-harness-boundary.mjs",
     "check:manifest-lock": "node scripts/security/check-manifest-lock.mjs",
     "security:advisories": "node scripts/security/audit-lockfile.mjs",
@@ -24,7 +26,7 @@
     "test:prototype": "node --test prototype/generation-workbench/tests/*.test.mjs prototype/media-viewer-navigation/tests/*.test.mjs",
     "verify:comfyui-workflows": "node --experimental-strip-types scripts/verification/comfyui-workflow-matrix.mjs",
     "quality:preinstall": "pnpm run check:manifest-lock && pnpm run security:advisories && pnpm run security:build-scripts",
-    "quality:fast": "pnpm run check:harness-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype",
+    "quality:fast": "pnpm run check:harness-boundary && pnpm run check:contracts-boundary && pnpm run typecheck && pnpm run test:coverage && pnpm run test:contract && pnpm run test:production && pnpm run test:prototype",
     "quality": "pnpm run quality:preinstall && pnpm run quality:fast && pnpm run test:desktop",
     "test:production": "vitest run tests/production --maxWorkers=1 --no-file-parallelism"
   },

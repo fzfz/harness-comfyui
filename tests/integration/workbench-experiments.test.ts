@@ -1,7 +1,8 @@
+import { contracts } from '#contracts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it, vi } from 'vitest'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import type { GenerationPreparationAdapter, GenerationTransport } from '../../src/host/generation/generation-runtime.ts'
 import type { GenerationInput } from '../../src/workbench/contract.ts'
 import * as workbenchPlugin from '../../src/host/workbench/plugin.ts'
@@ -466,7 +467,7 @@ it.each([
   const requestId = randomUUID(), runId = (await accept(f, f.task.input.generation_input, requestId)).items[0]!.runId
   const receipt = await f.remote.mutate({ ...f.selected, type: 'run' }, signal())
   const other = (await f.remote.getProjection(f.selected, signal())).tasks.find(task => task.task_id === receipt.taskId)!
-  const otherAccepted = await f.runtime.acceptGenerations({ ...f.identity, sessionId: other.session_id! }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...other.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, other.task_id)
+  const otherAccepted = await f.runtime.acceptGenerations({ ...f.identity, sessionId: other.session_id! }, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...other.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, other.task_id)
   await f.remote.mutate({ ...f.selected, type, taskId: f.task.task_id }, signal())
   await finishRuns(f)
   const after = await f.remote.getProjection(f.selected, signal()), run = after.runs.find(item => item.run_id === runId)!
@@ -556,7 +557,7 @@ async function fixture(maxRuns = 3, preparer?: GenerationPreparationAdapter, tra
 
 type Fixture = Awaited<ReturnType<typeof fixture>>
 function accept(f: Fixture, input: GenerationInput = f.task.input.generation_input, requestId = randomUUID()) {
-  return f.runtime.acceptGenerations(f.identity, [{ requestId, request: toGenerationRequest({ ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, f.task.task_id)
+  return f.runtime.acceptGenerations(f.identity, [{ requestId, request: contracts.parse('runtimeGenerationRequest', 'input', { ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, f.task.task_id)
 }
 
 async function nextRound(f: Fixture) {

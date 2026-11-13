@@ -1,7 +1,7 @@
-import { CATALOG_KIND_DEFINITIONS } from '../catalog/contract.ts'
-import type { PromptResourceKind, PromptResourceRef, ResourceRef, TaskDraft } from './contract.ts'
+import { CATALOG_KIND_DEFINITIONS } from '../catalog/definitions.ts'
+import type { CatalogKind, PromptResourceKind, PromptResourceRef, ResourceRef, TaskDraft } from './contract.ts'
 
-export function isPromptResourceKind(kind: ResourceRef['kind']): kind is PromptResourceKind {
+export function isPromptResourceKind(kind: CatalogKind): kind is PromptResourceKind {
   return kind !== 'model' && kind !== 'lora' && kind !== 'comfyui-template'
 }
 

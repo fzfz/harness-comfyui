@@ -1,10 +1,11 @@
+import { contracts, type ContractInput } from '#contracts'
 import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, expect, it } from 'vitest'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
 import { WorkbenchStore } from '../../src/host/storage/workbench-store.ts'
 import type { ArtifactPayload, GenerationInput, Task, TaskInput } from '../../src/workbench/contract.ts'
@@ -32,8 +33,8 @@ function fixture() {
     const input: TaskInput = { ...draft, generation_input: { ...draft.generation_input, title: 'Glass', instance_id: '8', template_id: '5' }, requirements: { original_request: branch.original_request, instructions: 'Keep the glass' }, reference_task_artifacts: [], requested_skill: null, max_runs: kind === 'experiment' ? 2 : kind === 'run' ? 1 : 0, ...inputOverride }
     return store.createTask({ branchId: branch.branch_id, functionId: binding.function_id, title: binding.name, kind, input, bindingSnapshot: { function_id: binding.function_id, name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agentModel: binding.agent_model, requested_skill: binding.requested_skill, request_template: binding.request_template }, outputContract: descriptor.output_contract, applyTarget: { kind: 'branch', id: branch.branch_id, expected: {} }, parentExperimentTaskId: parent?.task_id, initiator: parent ? 'agent' : 'human' })
   }
-  const publish = (task: Task, artifact: ArtifactPayload) => store.publish(task.task_id, artifact, { workspaceId: 'workspace', sessionId: task.session_id ?? task.task_id, turn: 1, callId: randomUUID() })
-  const submit = (task: Task, input: GenerationInput = task.input.generation_input, requestId = randomUUID(), sessionId = task.task_id) => runtime.acceptGenerations({ workspaceId: 'workspace', sessionId, turn: 1, callId: randomUUID() }, [{ requestId, request: toGenerationRequest({ ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, task.task_id)
+  const publish = (task: Task, artifact: ContractInput<'taskArtifact'>) => store.publish(task.task_id, contracts.parse('taskArtifact', 'input', artifact), { workspaceId: 'workspace', sessionId: task.session_id ?? task.task_id, turn: 1, callId: randomUUID() })
+  const submit = (task: Task, input: GenerationInput = task.input.generation_input, requestId = randomUUID(), sessionId = task.task_id) => runtime.acceptGenerations({ workspaceId: 'workspace', sessionId, turn: 1, callId: randomUUID() }, [{ requestId, request: contracts.parse('runtimeGenerationRequest', 'input', { ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, task.task_id)
   cleanups.push(() => { runtime.close(); database.close(); rmSync(directory, { recursive: true, force: true }) })
   return { database, store, runtime, branch, create, publish, submit }
 }

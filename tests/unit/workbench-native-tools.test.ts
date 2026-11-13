@@ -7,8 +7,6 @@ import Schema from '@deepseek-ai/schemastery'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { assertSupportedJsonSchema, validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
-import { taskPublishRequestSchema } from '../../src/workbench/schema.ts'
-import { nativeToolSchema } from '../../src/host/workbench/tool-schema.ts'
 
 it.each([
   { input: {}, expected: ['workbench_task_get', 'workbench_task_publish', 'workbench_experiment_end'] },
@@ -21,7 +19,9 @@ it.each([
 })
 
 it('exposes the publication contract as the host-supported native tool schema', () => {
-  const schema = nativeToolSchema(taskPublishRequestSchema)
+  const tools = new Map<string, ToolDefinition>()
+  apply({ tools: { register: (tool: ToolDefinition) => tools.set(tool.name, tool) }, harnessComfyuiWorkbench: { service: {} } } as unknown as Context)
+  const schema = tools.get('workbench_task_publish')!.parameters
   expect(() => assertSupportedJsonSchema(schema)).not.toThrow()
   expect(validateJsonSchemaValue(schema, { task_id: 'task-a', artifact: { type: 'prompt', positive_prompt: 'garden', negative_prompt: '' } })).toEqual([])
   expect(validateJsonSchemaValue(schema, { task_id: 'task-a', artifact: { type: 'prompt', positive_prompt: 'garden' } })).not.toEqual([])

@@ -1,9 +1,10 @@
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { contracts } from '#contracts'
 import { SessionEventConsumer, requestTurn } from './session-events.ts'
 import type { FunctionBinding } from '../../workbench/contract.ts'
 import type { TranslationRequest, TranslationResult, TranslationRecord } from '../../workbench/translation.ts'
 import configuration from '../../../config/workbench-translation.json' with { type: 'json' }
-import { renderRequestTemplate, requestTemplateProblem } from '../../workbench/request-template.ts'
+import { renderRequestTemplate } from '../../workbench/request-template.ts'
 import { WorkbenchError } from '../../workbench/validation.ts'
 import type { OfficialSessionController } from './harness-adapter.ts'
 import type { WorkbenchStore } from '../storage/workbench-store.ts'
@@ -33,7 +34,7 @@ export class WorkbenchTranslations {
     }
     if (!request.source_text.trim()) throw new WorkbenchError('WORKBENCH_TRANSLATION_EMPTY', configuration.errors.empty, 'source_text')
     const binding = structuredClone(this.ports.binding(request.workspace_id))
-    const problem = requestTemplateProblem(binding.request_template, 'translate')
+    const problem = contracts.parse('requestTemplateProblem', 'input', { template: binding.request_template, kind: 'translate' })
     if (binding.kind !== 'translate' || problem) throw new WorkbenchError('WORKBENCH_TRANSLATION_CONFIGURATION', problem || configuration.errors.binding, 'request_template')
     const controller = new AbortController()
     this.pending.set(request.request_id, controller)
@@ -67,7 +68,9 @@ export class WorkbenchTranslations {
 
   get(requestId: string): TranslationResult {
     const record = this.record(requestId)
-    return { request_id: record.request_id, status: record.status, ...(record.text !== undefined ? { text: record.text } : {}), ...(record.error !== undefined ? { error: record.error } : {}) }
+    return record.status === 'succeeded' ? { request_id: record.request_id, status: record.status, text: record.text }
+      : record.status === 'failed' ? { request_id: record.request_id, status: record.status, error: record.error }
+      : { request_id: record.request_id, status: record.status }
   }
 
   handleSessionEvents(sessionId: string): Promise<void> {
@@ -80,7 +83,7 @@ export class WorkbenchTranslations {
         const { end, text, turn } = matched
         if (!end) { if (record.harness_turn === null) this.ports.store.saveTranslation({ ...record, harness_turn: turn }); continue }
         const error = end.data.reason.kind === 'error' ? end.data.reason.error.message : end.data.reason.kind !== 'completed' ? configuration.errors.incomplete : !text.trim() ? configuration.errors.emptyReply : undefined
-        this.ports.store.saveTranslation({ ...record, harness_turn: turn, status: error ? 'failed' : 'succeeded', ...(error ? { error } : { text }), finished_at: Date.now() })
+        this.ports.store.saveTranslation({ ...record, harness_turn: turn, ...(error ? { status: 'failed' as const, error } : { status: 'succeeded' as const, text }), finished_at: Date.now() })
         this.pending.delete(record.request_id)
       }
     })

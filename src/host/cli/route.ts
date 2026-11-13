@@ -1,13 +1,11 @@
-import Schema from '@deepseek-ai/schemastery'
+import { contracts, ContractError } from '#contracts'
 import help from '../../../config/managed-cli-help.json' with { type: 'json' }
-import { cliResultSchemas } from '../../cli/result-schema.ts'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { dispatch } from './dispatch.ts'
 
 import {
   CLI_MAX_BODY_BYTES,
-  CLI_ROUTE_PATH,
-  parseCliRequest
+  CLI_ROUTE_PATH
 } from '../../cli/contract.ts'
 import {
   GenerationRuntimeError
@@ -138,16 +136,15 @@ export function createCliHandler(options: CliHandlerOptions) {
           'The shell-call capability is missing, expired, or invalid.',
         )
       }
-      const cliRequest = parseCliRequest(await readJsonBody(request))
-      const data = await dispatch(options, identity, cliRequest, abortController.signal)
+      const cliRequest = contracts.parse('cliRequest', 'input', await readJsonBody(request))
+      const execute = contracts.bind('cliRequest', 'cli', parsed => dispatch(options, identity, parsed, abortController.signal))
       try {
-        const schema = cliResultSchemas[cliRequest.command.replaceAll('.', ' ') as keyof typeof cliResultSchemas]
-        Schema.resolve(data, schema, {})
+        sendSuccess(response, await execute(cliRequest))
       } catch (error) {
-        const detail = `The Host result for ${cliRequest.command} is invalid: ${error instanceof Error ? error.message : 'result contract mismatch'}`
+        if (!(error instanceof ContractError) || error.direction !== 'output') throw error
+        const detail = `The Host result for ${cliRequest.command} is invalid: ${error.message}`
         throw new CliHttpError(502, 'CLI_PROTOCOL_ERROR', help.messages.protocolFailure.replace('{detail}', detail))
       }
-      sendSuccess(response, data)
     } catch (error) {
       if (response.destroyed || response.writableEnded) return
       if (response.headersSent) {

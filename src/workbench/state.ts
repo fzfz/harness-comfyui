@@ -1,4 +1,5 @@
-import type { Experiment, GenerationInput, JsonValue, PromptInput, StoredArtifact, Task, TaskDraft, TaskStatus, WorkbenchRun } from './contract.ts'
+import type { JsonValue } from '#contracts'
+import type { Experiment, GenerationInput, PromptInput, StoredArtifact, Task, TaskDraft, TaskStatus, WorkbenchRun } from './contract.ts'
 
 import { equalValue } from '../shared/json-contract.ts'
 import { WorkbenchError } from './validation.ts'

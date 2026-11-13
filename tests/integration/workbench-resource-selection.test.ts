@@ -1,11 +1,11 @@
+import { contracts } from '#contracts'
 import { randomUUID } from 'node:crypto'
-import Schema from '@deepseek-ai/schemastery'
 import { WORKBENCH_REMOTE } from '../../src/workbench-remote.ts'
-import { taskGetResultSchema } from '../../src/workbench/schema.ts'
+
 import { afterEach, expect, it } from 'vitest'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import { generationInputWithImages } from '../../src/workbench/validation.ts'
 
 const cleanups: (() => Promise<void>)[] = []
@@ -30,13 +30,15 @@ it('round trips actual Run and task resource results through their public result
   const receipt = await host.remote.mutate({ ...scope, type: 'run' }, signal())
   const task = host.store.getTask(receipt.taskId!)
   const identity = { workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'schema-run' }
-  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...generationInputWithImages(task.input.generation_input, task.input), instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...generationInputWithImages(task.input.generation_input, task.input), instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
   const input = await host.remote.getRunInput({ ...scope, workId: scope.workId!, runId: accepted.items[0]!.runId }, signal())
-  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'getRunInput')!.result.create()
+  const remoteResult = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'getRunInput')!.result
+  if (remoteResult.mode !== 'strict') throw new Error('Run input Remote requires a strict result codec')
+  const codec = remoteResult.create()
   expect(codec.parse(input)).toEqual(input)
   expect(input.prompt_resource_refs).toEqual([{ kind: 'style', id: '7' }])
   const result = await host.service.getTask({ taskId: task.task_id }, identity)
-  expect(Schema.resolve(result, taskGetResultSchema, {})[0]).toEqual(result)
+  expect(contracts.parse('taskGetResult', 'output', result)).toEqual(result)
   expect(result.iterations[0]!.prompt_resource_refs).toEqual([{ kind: 'style', id: '7' }])
 })
 
@@ -47,7 +49,7 @@ it.each(['changed', 'deleted'])('retries the fixed Run resource snapshots after 
   const receipt = await host.remote.mutate({ ...scope, type: 'run' }, signal())
   const task = host.store.getTask(receipt.taskId!)
   const identity = { workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'retry-source' }
-  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...generationInputWithImages(task.input.generation_input, task.input), instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...generationInputWithImages(task.input.generation_input, task.input), instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
   await host.runtime.advance()
   const details = host.catalog.details.getMockImplementation()!
   host.catalog.details.mockImplementation(async (ref, requestSignal) => {
@@ -69,11 +71,11 @@ it('keeps an associated candidate without snapshots empty instead of borrowing t
   const parent = host.store.getTask(receipt.taskId!)
   const identity = { workspaceId: scope.workspaceId, sessionId: parent.session_id!, turn: 1, callId: 'historical-experiment' }
   const input = { ...generationInputWithImages(parent.input.generation_input, parent.input), instance_id: '8', template_id: '5' }
-  const first = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest(input) }], undefined, parent.task_id)
+  const first = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', input) }], undefined, parent.task_id)
   await host.runtime.advance()
   host.store.publish(parent.task_id, { type: 'review', run_ids: [first.items[0]!.runId], observation: 'Recorded failure', conclusion: 'Try the saved candidate' }, { ...identity, callId: 'historical-review' })
   host.store.publish(parent.task_id, { type: 'generation_input', generation_input: { ...parent.input.generation_input, title: 'Historical candidate' } }, { ...identity, callId: 'historical-candidate' })
-  const second = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...input, title: 'Historical candidate' }) }], undefined, parent.task_id)
+  const second = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...input, title: 'Historical candidate' }) }], undefined, parent.task_id)
   expect(parent.input.selected_resources).not.toEqual([])
   const historical = await host.remote.getRunInput({ ...scope, workId: scope.workId!, runId: second.items[0]!.runId }, signal())
   expect(historical.selected_resources).toEqual([])
@@ -127,7 +129,7 @@ it('records candidate prompt resources and reuses the candidate snapshot for its
   const parent = host.store.getTask(receipt.taskId!)
   const identity = { workspaceId: scope.workspaceId, sessionId: parent.session_id!, turn: 1, callId: 'experiment' }
   const input = { ...generationInputWithImages(parent.input.generation_input, parent.input), instance_id: '8', template_id: '5' }
-  const first = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest(input) }], undefined, parent.task_id)
+  const first = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', input) }], undefined, parent.task_id)
   await host.runtime.advance()
   await host.service.publish({ taskId: parent.task_id, artifact: { type: 'review', run_ids: [first.items[0]!.runId], observation: 'Controlled failure', conclusion: 'Change the artist resources' } }, { ...identity, callId: 'review-first' })
   const candidate = await host.service.publish({ taskId: parent.task_id, artifact: { type: 'generation_input', generation_input: { ...parent.input.generation_input, title: 'Second artist selection' }, prompt_resource_refs: [{ kind: 'artist-string', id: '9' }], selected_resources: [] } }, { ...identity, callId: 'candidate-second' })
@@ -135,7 +137,7 @@ it('records candidate prompt resources and reuses the candidate snapshot for its
   if (stored.type !== 'generation_input') throw new Error('Expected generation candidate')
   expect(stored.selected_resources).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'artist-string', id: '9', fields: expect.objectContaining({ artist_string: '@artist' }) })]))
   expect(stored.selected_resources).not.toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'style', id: '7' })]))
-  const second = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...input, title: 'Second artist selection' }) }], undefined, parent.task_id)
+  const second = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...input, title: 'Second artist selection' }) }], undefined, parent.task_id)
   const historical = await host.remote.getRunInput({ ...scope, workId: scope.workId!, runId: second.items[0]!.runId }, signal())
   expect(historical.selected_resources).toEqual(stored.selected_resources)
   const original = await host.remote.getRunInput({ ...scope, workId: scope.workId!, runId: first.items[0]!.runId }, signal())
@@ -156,7 +158,7 @@ it('freezes saved prompt resources in tasks and reuses each Run snapshot after t
     expect.objectContaining({ kind: 'style', id: '7', name: 'Watercolor', fields: expect.objectContaining({ prompt_text: 'prompt' }) }),
     expect.objectContaining({ kind: 'artist-string', id: '7', name: 'Garden artists', fields: expect.objectContaining({ artist_string: '@artist' }) }),
   ]))
-  const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'accept-run' }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...generationInputWithImages(task.input.generation_input, task.input), instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'accept-run' }, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...generationInputWithImages(task.input.generation_input, task.input), instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
   const runId = accepted.items[0]!.runId
   await host.remote.mutate({ ...scope, type: 'resource-remove', value: 'style', id: '7' }, signal())
   await saveFixtureDraft(host.remote, scope, () => {}, signal())

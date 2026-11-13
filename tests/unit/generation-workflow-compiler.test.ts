@@ -1,10 +1,11 @@
+import type { JsonValue } from '#contracts'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { describe, expect, it, vi } from 'vitest'
 
-import type { JsonValue } from '../../src/host/generation/generation-runtime.ts'
+
 import {
   OfficialApiWorkflowCompiler,
   overlayRuntimeApiWorkflow,

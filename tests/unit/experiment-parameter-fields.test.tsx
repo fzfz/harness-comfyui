@@ -1,10 +1,11 @@
+import type { JsonValue } from '#contracts'
 import React, { useState } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { act, create } from './experiment-renderer.ts'
 import { RuntimeParameterField, RuntimeSizeField } from '../../src/client/workbench/experiment-parameter-fields.tsx'
 import { useBranchFieldEdits } from '../../src/client/workbench/experiment-fields.tsx'
-import type { JsonValue } from '../../src/workbench/contract.ts'
+
 import type { WorkflowRuntimeParameterInspectionParameter } from '../../src/generation/inspection-contract.ts'
 import type { ExperimentSizeOption } from '../../src/client/workbench/experiment-input.ts'
 

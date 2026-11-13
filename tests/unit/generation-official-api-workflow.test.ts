@@ -1,3 +1,4 @@
+import type { JsonValue } from '#contracts'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -10,7 +11,7 @@ import {
   overlayRuntimeApiWorkflow,
   type ComfyFrontendExporter,
 } from '../../src/host/generation/official-api-workflow.ts'
-import type { JsonValue } from '../../src/host/generation/generation-runtime.ts'
+
 import type { UiWorkflow } from '../../src/host/generation/source-preparer.ts'
 
 const temporaryDirectories: string[] = []

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildPromptRequest, DEFAULT_PROMPT_REQUEST_PARTS, requestTemplateProblem, requestTemplateVariables } from '../../src/workbench/request-template.ts'
+import { contracts } from '#contracts'
+import { buildPromptRequest, DEFAULT_PROMPT_REQUEST_PARTS } from '../../src/workbench/request-template.ts'
 
 describe('prompt request blocks', () => {
   it('renders first-generation input without empty edit or reference blocks and preserves user braces', () => {
@@ -19,13 +20,13 @@ describe('prompt request blocks', () => {
     })).toBe('肖像|增加侧光:portrait/""|{\n  "run_ids": {\n    "purpose": "保留构图",\n    "data": [\n      "run-1"\n    ]\n  }\n}')
   })
   it('lists and validates variables for each editor scope', () => {
-    expect(requestTemplateVariables('prompt').map(item => item.name)).toEqual(['requirements_block', 'prompt_edit_block', 'references_block'])
-    expect(requestTemplateVariables('prompt', 'references_block').map(item => item.name)).toEqual(['reference_context'])
-    expect(requestTemplateVariables('translate').map(item => item.name)).toEqual(['source_text'])
-    expect(requestTemplateVariables('review').map(item => item.name)).toEqual(['task_id'])
-    expect(requestTemplateProblem('{{requirements_block}}', 'prompt')).toBe('')
-    expect(requestTemplateProblem('{{original_request}}', 'prompt')).not.toBe('')
-    expect(requestTemplateProblem('{{original_request}}', 'prompt', 'requirements_block')).toBe('')
-    expect(requestTemplateProblem('{{task_id}}', 'prompt', 'requirements_block')).not.toBe('')
+    expect(contracts.parse('requestTemplateVariables', 'input', { kind: 'prompt' }).map(item => item.name)).toEqual(['requirements_block', 'prompt_edit_block', 'references_block'])
+    expect(contracts.parse('requestTemplateVariables', 'input', { kind: 'prompt', block: 'references_block' }).map(item => item.name)).toEqual(['reference_context'])
+    expect(contracts.parse('requestTemplateVariables', 'input', { kind: 'translate' }).map(item => item.name)).toEqual(['source_text'])
+    expect(contracts.parse('requestTemplateVariables', 'input', { kind: 'review' }).map(item => item.name)).toEqual(['task_id'])
+    expect(contracts.parse('requestTemplateProblem', 'input', { template: '{{requirements_block}}', kind: 'prompt' })).toBe('')
+    expect(contracts.parse('requestTemplateProblem', 'input', { template: '{{original_request}}', kind: 'prompt' })).not.toBe('')
+    expect(contracts.parse('requestTemplateProblem', 'input', { template: '{{original_request}}', kind: 'prompt', block: 'requirements_block' })).toBe('')
+    expect(contracts.parse('requestTemplateProblem', 'input', { template: '{{task_id}}', kind: 'prompt', block: 'requirements_block' })).not.toBe('')
   })
 })

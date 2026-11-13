@@ -45,6 +45,9 @@ import { publishSavedDesktopRun } from './fixtures/official-business-media.mjs'
 import { stageRetiredPresetHistory } from './fixtures/official-lifecycle-services.mjs'
 import { trackedStartProbe } from './fixtures/official-command-cancellation.mjs'
 import { GenerationRuntime } from '../../src/host/generation/generation-runtime.ts'
+import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
+import { contracts } from '#contracts'
+import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import { loadProfile } from '../../src/config/load-profile.ts'
 import { generationMediaContentUrl } from '../../src/generation/contract.ts'
 
@@ -64,6 +67,16 @@ const PRODUCT_PRESET_ID = productAgentConfig.preset.id
 const PROJECT_PRESET_IDS = [PRODUCT_PRESET_ID]
 const REPOSITORY_SKILL_CATALOG = Object.freeze(repositorySkillCatalogFixture)
 const OFFICIAL_BUSINESS_FIXTURE = parseOfficialBusinessFixture(officialBusinessFixtureJson)
+const NULLABLE_TASK_MARKER = 'OFFICIAL_NULLABLE_MODEL_TASK'
+const NULLABLE_TASK_MODEL = Object.freeze({ id: '19', base_model_id: OFFICIAL_BUSINESS_FIXTURE.catalog.baseModel.id, file_name: 'model.safetensors',
+  file_format: null, precision_or_quantization: null, author: null, version: null,
+  description: 'Controlled Desktop model for nullable Prompt Skill acceptance.', usage: 'Use the saved Workbench generation input.', skill_name: null,
+  cover_url: null, sample_image_urls: [] })
+const NULLABLE_TASK_MODEL_SNAPSHOT = Object.freeze({ kind: 'model', id: NULLABLE_TASK_MODEL.id, name: NULLABLE_TASK_MODEL.file_name,
+  fields: { base_model_id: NULLABLE_TASK_MODEL.base_model_id, file_name: NULLABLE_TASK_MODEL.file_name, description: NULLABLE_TASK_MODEL.description, usage: NULLABLE_TASK_MODEL.usage, skill_name: null } })
+const NULLABLE_TASK_GENERATION_INPUT = Object.freeze({ title: 'Nullable model fixed input', instance_id: OFFICIAL_BUSINESS_FIXTURE.generation.instanceId, template_id: OFFICIAL_BUSINESS_FIXTURE.generation.templateId,
+  model: { id: NULLABLE_TASK_MODEL.id, file_name: NULLABLE_TASK_MODEL.file_name }, parameters: {}, loras: [] })
+const NULLABLE_TASK_ARTIFACT = Object.freeze({ type: 'parameters', parameters: {} })
 const WORKSPACE_COMFYUI_GENERATE_DESCRIPTION = OFFICIAL_BUSINESS_FIXTURE.skills.workspaceDescription
 const UNIQUE_WORKSPACE_SKILL_NAME = OFFICIAL_BUSINESS_FIXTURE.skills.uniqueWorkspaceName
 const UNIQUE_WORKSPACE_SKILL_DESCRIPTION = OFFICIAL_BUSINESS_FIXTURE.skills.uniqueWorkspaceDescription
@@ -95,6 +108,8 @@ const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'official-business-workspace-boundary.json',
   'official-business-skill-markers.json',
   'official-business-skill-markers.png',
+  'official-business-nullable-task.json',
+  'official-business-nullable-task.png',
   'official-business-controlled-generation.json',
   'official-business-controlled-generation.png',
   'official-business-generation-after-restart.json',
@@ -252,6 +267,7 @@ async function startModelRequestCaptureServer() {
     get skillToolCalls() { return services.skillToolCalls },
     get promptSubmission() { return services.promptSubmission },
     holdGenerationCompletion() { return services.holdGenerationCompletion() },
+    useGenerationModels(records) { return services.useGenerationModels(records) },
     get controlledPngByteLength() { return services.controlledPngByteLength },
     get historyRequestCount() { return services.historyRequestCount },
     async request(timeoutMs = 10_000) { return services.nextRequest(timeoutMs) },
@@ -1114,6 +1130,135 @@ async function verifyExperimentBranchSidebar(page, workspaceId, evidenceDirector
     }
     if (failures.length === 1) throw failures[0]
     if (failures.length > 1) throw new AggregateError(failures, 'Experiment branch sidebar verification or cleanup failed')
+  }
+}
+
+async function prepareNullableWorkbenchTask(remote, { workspaceId, agentModel, generationInput, requestTemplate }) {
+  const work = await remote.mutate({ type: 'new-work', workspaceId, value: { name: 'Desktop 可空模型任务', goal: '读取模型 Skill 为 null 的固定任务输入' } })
+  if (!work.ok) return { phase: 'work', result: work }
+  const projection = await remote.getProjection(work.value)
+  if (!projection.ok) return { phase: 'projection', result: projection }
+  const binding = projection.value.functions.find(item => item.kind === 'parameters')
+  if (!binding) return { phase: 'binding', result: projection }
+  const configured = await remote.mutate({ ...work.value, type: 'function-edit', id: binding.function_id, value: {
+    name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agent_model: agentModel,
+    requested_skill: null, request_template: requestTemplate,
+  } })
+  if (!configured.ok) return { phase: 'function', result: configured, binding, work }
+  const selected = await remote.mutate({ ...work.value, type: 'resource-select', value: { kind: 'model', id: generationInput.model.id } })
+  if (!selected.ok) return { phase: 'model', result: selected, binding, work }
+  const before = await remote.getProjection(work.value)
+  if (!before.ok) return { phase: 'selected-projection', result: before, binding, work }
+  const branch = before.value.branches.find(item => item.branch_id === work.value.branchId)
+  const draft = structuredClone(branch.editing_draft ?? branch.draft)
+  draft.prompt_input = { positive_prompt: null, negative_prompt: null }
+  draft.generation_input = structuredClone(generationInput)
+  const saved = await remote.mutate({ ...work.value, type: 'save-draft', value: { expected: branch.draft, expectedEditingDraft: branch.editing_draft, draft } })
+  if (!saved.ok) return { phase: 'save', result: saved, binding, work }
+  const started = await remote.mutate({ ...work.value, type: 'agent-action', id: binding.function_id })
+  return { phase: 'ready', work, started, draft, binding }
+}
+
+async function verifyWorkbenchNullableTaskGet(page, services, workspaceId, evidenceDirectory) {
+  const marker = NULLABLE_TASK_MARKER
+  const model = NULLABLE_TASK_MODEL
+  const expectedSnapshot = NULLABLE_TASK_MODEL_SNAPSHOT
+  const previousWorkspace = await page.evaluate(`localStorage.getItem('harness-comfyui:experiment-workspace')`)
+  const restoreModels = services.useGenerationModels([model])
+  const requestStart = services.requestLog.length
+  const matches = request => request.sequence >= requestStart && (request.body.messages ?? []).some(message =>
+    message.role === 'user' && requestMessageText(message).includes(`${marker} `))
+  const taskIdIn = request => {
+    const text = (request.body.messages ?? []).filter(message => message.role === 'user').map(requestMessageText).join('\n')
+    const match = new RegExp(`${marker} (\\S+)`, 'u').exec(text)
+    expect(match, 'The official task request must contain its task ID').not.toBeNull()
+    return match[1]
+  }
+  services.enqueueModelResponse(request => matches(request) && !hasControlledToolResult(request, 'nullable-task-get'),
+    request => controlledToolResponse([{ id: 'nullable-task-get', name: 'workbench_task_get', arguments: { task_id: taskIdIn(request) } }]))
+  services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'nullable-task-get') && !hasControlledToolResult(request, 'nullable-task-publish'),
+    request => controlledToolResponse([{ id: 'nullable-task-publish', name: 'workbench_task_publish', arguments: { task_id: taskIdIn(request), artifact: NULLABLE_TASK_ARTIFACT } }]))
+  services.enqueueModelResponse(request => matches(request) && hasControlledToolResult(request, 'nullable-task-publish'),
+    { role: 'assistant', content: 'OFFICIAL_NULLABLE_MODEL_TASK_COMPLETE' })
+  const evidence = { workspaceId, model, expectedSnapshot }
+  let opened = false
+  try {
+    const setup = await page.evaluate(`(${prepareNullableWorkbenchTask.toString()})(window.__runPanelTestContext.get('remote.harnessComfyuiWorkbenchRemote'), ${JSON.stringify({
+      workspaceId, agentModel: { provider: OFFICIAL_BUSINESS_FIXTURE.provider.id, model: OFFICIAL_BUSINESS_FIXTURE.provider.modelId },
+      generationInput: NULLABLE_TASK_GENERATION_INPUT, requestTemplate: `${marker} {{task_id}}`,
+    })})`)
+    evidence.setup = setup
+    expect(setup, JSON.stringify(setup)).toMatchObject({ phase: 'ready', started: { ok: true } })
+    const taskId = setup.started.value.taskId
+    const firstRequest = await services.requestWhere(request => matches(request) && !hasControlledToolResult(request, 'nullable-task-get'), 30_000)
+    const deliveredRequest = await services.requestWhere(request => matches(request) && hasControlledToolResult(request, 'nullable-task-get'), 30_000)
+    const finishedRequest = await services.requestWhere(request => matches(request) && hasControlledToolResult(request, 'nullable-task-publish'), 30_000)
+    const toolText = controlledToolResult(deliveredRequest, 'nullable-task-get')
+    const delivered = JSON.parse(toolText)
+    const current = await page.evaluate(`(async () => window.__runPanelTestContext.get('remote.harnessComfyuiWorkbenchRemote').getProjection(${JSON.stringify(setup.work.value)}))()`)
+    expect(current).toMatchObject({ ok: true })
+    const task = current.value.tasks.find(item => item.task_id === taskId)
+    evidence.firstRequest = firstRequest.body
+    evidence.deliveredRequest = deliveredRequest.body
+    evidence.finishedRequest = finishedRequest.body
+    evidence.toolText = toolText
+    evidence.task = task
+    expect(task).toBeDefined()
+    expect(taskIdIn(firstRequest)).toBe(taskId)
+    expect(firstRequest.body.tools.some(tool => (tool.function?.name ?? tool.name) === 'workbench_task_get')).toBe(true)
+    expect(delivered).toMatchObject({ task_id: taskId, kind: 'parameters' })
+    expect(delivered.selected_resources).toEqual(expect.arrayContaining([expectedSnapshot]))
+    expect(delivered.selected_resources).toEqual(task.input.selected_resources)
+    expect(delivered.generation_input).toEqual(setup.draft.generation_input)
+    expect(delivered.generation_input).toEqual(task.input.generation_input)
+    expect(delivered.output_contract).toEqual(task.output_contract)
+    expect(delivered.output_contract.artifact_types).toContain('parameters')
+    expect(delivered.requested_skill).toBeNull()
+    await waitForOfficialSessionEnd(page, task.session_id, 'completed')
+
+    await page.evaluate(`(localStorage.setItem('harness-comfyui:experiment-workspace', ${JSON.stringify(workspaceId)}), document.querySelector('button[aria-label="实验工作台"]').click(), true)`)
+    opened = true
+    const root = `document.querySelector('[data-experiment-workbench-root]')?.shadowRoot`
+    await waitForValue(page, `Boolean((${root})?.querySelector('select[aria-label="切换工作"] option[value="${setup.work.value.workId}"]'))`, value => value === true)
+    await page.evaluate(`(() => {
+      const root = ${root}
+      const select = root.querySelector('select[aria-label="切换工作"]')
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(select, ${JSON.stringify(setup.work.value.workId)})
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+      root.querySelector('nav[aria-label="工作导航"] button[aria-label="任务"]').click()
+    })()`)
+    const pageResult = await waitForValue(page, `(() => {
+      const card = (${root})?.querySelector('[data-task="${taskId}"]')
+      if (!card) return null
+      card.querySelector('details.task-input').open = true
+      return { taskId: card.dataset.task, input: card.querySelector('[aria-label="任务输入 JSON"]')?.textContent, text: card.textContent }
+    })()`, value => value?.input?.includes('"skill_name": null') === true, 30_000)
+    evidence.pageResult = pageResult
+    expect(JSON.parse(pageResult.input).selected_resources).toEqual(task.input.selected_resources)
+    const screenshot = await page.command('Page.captureScreenshot', { format: 'png' })
+    await writeFile(join(evidenceDirectory, 'official-business-nullable-task.png'), Buffer.from(screenshot.data, 'base64'), { mode: 0o600 })
+  } catch (error) {
+    evidence.failure = { message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : null }
+    throw error
+  } finally {
+    restoreModels()
+    const cleanup = await Promise.allSettled([
+      evidence.setup?.binding ? page.evaluate(`(async () => {
+        const binding = ${JSON.stringify(evidence.setup.binding)}
+        const remote = window.__runPanelTestContext.get('remote.harnessComfyuiWorkbenchRemote')
+        const restored = await remote.mutate({ workspaceId: ${JSON.stringify(workspaceId)}, type: 'function-edit', id: binding.function_id, value: {
+          name: binding.name, kind: binding.kind, preset_id: binding.preset_id, agent_model: binding.agent_model,
+          requested_skill: binding.requested_skill, request_template: binding.request_template, ...(binding.request_parts ? { request_parts: binding.request_parts } : {}),
+        } })
+        if (!restored.ok) throw new Error(JSON.stringify(restored))
+      })()`) : Promise.resolve(),
+      opened ? page.evaluate(`(document.querySelector('button[aria-label="实验工作台"][aria-pressed="true"]')?.click(), true)`) : Promise.resolve(),
+      page.evaluate(`(() => { const previous = ${JSON.stringify(previousWorkspace)}; if (previous === null) localStorage.removeItem('harness-comfyui:experiment-workspace'); else localStorage.setItem('harness-comfyui:experiment-workspace', previous) })()`),
+    ])
+    evidence.cleanup = cleanup.map(result => ({ status: result.status, ...(result.status === 'rejected' ? { error: String(result.reason) } : {}) }))
+    await writeFile(join(evidenceDirectory, 'official-business-nullable-task.json'), `${JSON.stringify(evidence, null, 2)}\n`, { mode: 0o600 })
+    const failures = cleanup.filter(result => result.status === 'rejected')
+    if (failures.length) throw new AggregateError(failures.map(result => result.reason), 'Nullable task acceptance cleanup failed')
   }
 }
 
@@ -3049,6 +3194,49 @@ async function verifyGenerationAfterRestart(page, generationEvidence, evidenceDi
   return evidence
 }
 
+describe('official Desktop fixture preflight', () => {
+  it('preflights nullable model task preparation through Workbench resource selection', async () => {
+    const services = await startOfficialBusinessServices(OFFICIAL_BUSINESS_FIXTURE)
+    const restoreModels = services.useGenerationModels([NULLABLE_TASK_MODEL])
+    let host
+    try {
+      host = await createWorkbenchHostFixture()
+      const origin = new URL(services.origin)
+      const catalog = new CatalogClient({ settings: { get: () => ({ url: `${origin.protocol}//${origin.hostname}`, port: Number(origin.port) }) } })
+      host.catalog.resolveGenerationModel.mockImplementation((id, signal) => catalog.resolveGenerationModel(id, signal))
+      host.catalog.details.mockImplementation((request, signal) => catalog.details(request, signal))
+      host.official.listPresets.mockImplementation(async () => host.store.listFunctionBindings('workspace_1').map(binding => ({ id: binding.preset_id, name: binding.name })))
+      const signal = new AbortController().signal
+      const remote = {
+        mutate: async request => ({ ok: true, value: await host.remote.mutate(request, signal) }),
+        getProjection: async request => ({ ok: true, value: await host.remote.getProjection(request, signal) }),
+      }
+      const setup = await runInNewContext(`(${prepareNullableWorkbenchTask.toString()})(remote, options)`, { remote, structuredClone, options: {
+        workspaceId: 'workspace_1', agentModel: { provider: 'provider-a', model: 'model-a' },
+        generationInput: NULLABLE_TASK_GENERATION_INPUT, requestTemplate: `${NULLABLE_TASK_MARKER} {{task_id}}`,
+      } })
+      expect(setup).toMatchObject({ phase: 'ready', started: { ok: true } })
+      const scope = setup.work.value
+      const task = host.store.getTask(setup.started.value.taskId)
+      const delivered = contracts.parse('workbench task get', 'output', await host.ctx.harnessComfyuiWorkbench.service.getTask({ taskId: task.task_id }, { workspaceId: scope.workspaceId, sessionId: task.session_id, turn: 1, callId: 'nullable-preflight-get' }))
+      expect(task.input.selected_resources).toEqual(expect.arrayContaining([NULLABLE_TASK_MODEL_SNAPSHOT]))
+      expect(task.input.requested_skill).toBeNull()
+      expect(task.input.generation_input).toEqual(NULLABLE_TASK_GENERATION_INPUT)
+      expect(task.output_contract).toEqual({ artifact_types: ['parameters'], required_artifact_types: ['parameters'], parameter_ids: ['seed', 'steps', 'width', 'height'], apply_mode: 'automatic', requires_finished_runs: false })
+      expect(delivered.selected_resources).toEqual(task.input.selected_resources)
+      expect(delivered.output_contract).toEqual(task.output_contract)
+      expect(delivered.generation_input).toEqual(NULLABLE_TASK_GENERATION_INPUT)
+      const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: structuredClone(NULLABLE_TASK_ARTIFACT) },
+        { workspaceId: scope.workspaceId, sessionId: task.session_id, turn: 1, callId: 'nullable-preflight-publish' })
+      expect(published).toMatchObject({ task_id: task.task_id, disposition: 'applied' })
+      expect(host.store.listArtifacts(task.task_id).find(item => item.artifact_id === published.artifact_id)?.artifact).toEqual(NULLABLE_TASK_ARTIFACT)
+    } finally {
+      restoreModels()
+      await Promise.all([host?.dispose(), services.close()])
+    }
+  })
+})
+
 describe('official Desktop plugin regression', () => {
   it('installs the packed candidate through Desktop, restarts the app, and verifies workbench behavior', async () => {
     const repositoryRoot = sourceRepositoryRoot
@@ -4270,6 +4458,7 @@ description: ${USER_SKILL_DESCRIPTION}
       await page.command('Emulation.clearDeviceMetricsOverride')
       deviceMetricsOverridden = false
       await verifyExperimentBranchSidebar(page, identity.workspaceId, context.businessEvidenceDirectory)
+      await verifyWorkbenchNullableTaskGet(page, promptCapture, identity.workspaceId, context.businessEvidenceDirectory)
       savedBrowserPath = await verifyWorkflowBrowserSettings(page, context, desktopConfig, profileYamlAdapter)
       retiredPresetFixture = await createRetiredPresetFixture(page, promptCapture, identity.workspaceId, workspacePath)
       const activeGoal = await armWorkbenchGoalForRestart(page, promptCapture, nativeSubagentEvidence, goalEvidence)

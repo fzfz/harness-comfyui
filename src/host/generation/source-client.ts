@@ -1,10 +1,11 @@
+import type { JsonValue } from '#contracts'
 import { ERROR_CATALOG } from '../../../config/error-catalog-schema.ts'
 
 import { readSourceRecord, type SourceRead } from '../source-client/source-client.ts'
 import { SourceClientError } from '../source-client/http-client.ts'
 
 import { readSourceAddress, type SourceAddress } from '../../source-settings.ts'
-import { GenerationRuntimeError, type JsonValue } from './generation-runtime.ts'
+import { GenerationRuntimeError} from './generation-runtime.ts'
 import type {
   ComfyInstanceSource,
   ComfyTemplateBundle,

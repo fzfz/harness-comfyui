@@ -36,15 +36,18 @@
     },
     "workbench_file_read": {
       "purpose": "分段读取 Skill 参考文件及用户提供的文字资料",
-      "step": "读取资料"
+      "step": "读取资料",
+      "guidance": "file_path 支持 Skill resourceBase 中的绝对路径及工作目录相对路径。目录路径返回目录项；search 按原文字面检索文件。offset 从 0 开始，表示行、匹配项或目录项的位置；next_offset 非空时可继续读取。"
     },
     "workbench_file_write": {
       "purpose": "在当前工作目录保存人物外观基准与提示词草稿",
-      "step": "保存提示词资料"
+      "step": "保存提示词资料",
+      "guidance": "file_path 为工作目录相对路径或绝对路径；content 是完整文字。返回保存路径。"
     },
     "workbench_prompt_validate": {
       "purpose": "调用所选 Prompt Builder 的固定校验器或编译器",
-      "step": "校验提示词结构"
+      "step": "校验提示词结构",
+      "guidance": "执行当前 Skill 的 scripts 校验或编译步骤时使用。skill_name 取 Skill 名称；help=true 读取帮助；mode 取帮助中的模式；input 按所选 Skill 帮助中的输入格式填写 JSON。返回退出码、stdout、stderr、校验结果及草稿路径。"
     },
     "workbench_function_list": {
       "purpose": "读取实验所在工作区的功能配置",

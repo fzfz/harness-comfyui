@@ -43,7 +43,7 @@ export function ExperimentTranslationDialog({ workspaceId, workId, branchId, ini
       </div></section>
     </div></div>
     <footer className="modal-actions"><Button kind="quiet" onClick={onClose}>关闭</Button><Button disabled={!prompts[field].trim() || (result?.status === 'running' && result.source_text === prompts[field])} onClick={() => translation.request()}>翻译当前提示词</Button><Button kind="primary" disabled={result?.status !== 'succeeded'} onClick={() => {
-      if (!result?.text) return
+      if (result?.status !== 'succeeded' || !result.text) return
       void navigator.clipboard.writeText(result.text).then(() => translation.markCopied(result.request_id))
     }}>{translation.copied ? '已复制' : '复制译文'}</Button></footer>
   </section></div>

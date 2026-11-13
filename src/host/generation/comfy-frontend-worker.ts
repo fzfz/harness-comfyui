@@ -1,8 +1,9 @@
+import type { JsonValue } from '#contracts'
 import type { Readable, Writable } from 'node:stream'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import type { JsonValue } from '../../generation/run-input-contract.ts'
+
 import {
   ChromeComfyFrontend,
   type ChromeComfyFrontendOptions,
