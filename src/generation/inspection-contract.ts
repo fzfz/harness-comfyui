@@ -1,57 +1,24 @@
-import Schema from '@deepseek-ai/schemastery'
-import { contractObject, requiredNullable } from '../shared/field-contract.ts'
-import { equalValue, jsonArraySchema } from '../shared/json-contract.ts'
-import { GENERATION_JSON_CONTRACT, generationJsonValueSchema } from './json-contract.ts'
-import type { JsonValue } from '../shared/json-contract.ts'
+import type { JsonValue } from '#contracts'
+import type { ContractReadonlyValue } from '#contracts'
+import { equalValue } from '../shared/json-contract.ts'
+
+
 
 import parameterAliases from './runtime-parameter-aliases.json' with { type: 'json' }
 import imageInputErrors from './image-input-errors.json' with { type: 'json' }
 
-import type { ImageRef, WorkflowImageBinding } from '../workbench/contract.ts'
+import type { ImageRef } from '../workbench/contract.ts'
 export const RUNTIME_PARAMETER_INPUT_ALIASES: Readonly<Record<string, readonly string[]>> = Object.freeze(
   Object.fromEntries(Object.entries(parameterAliases).map(([kind, names]) => [kind, Object.freeze(names)])),
 )
 
-export interface WorkflowRuntimeParameterInspectionParameter {
-  readonly parameter_id: string
-  readonly image_cardinality?: 'one' | 'many'
-  readonly image_required?: boolean
-  readonly kind: StandardRuntimeParameterKind
-  readonly value_type: typeof WORKFLOW_RUNTIME_PARAMETER_VALUE_TYPES[number]
-  readonly current_value: JsonValue
-  readonly minimum?: number
-  readonly maximum?: number
-  readonly allowed_values?: readonly JsonValue[]
-}
-export interface WorkflowWidthHeightSizeCandidate {
-  readonly candidate_id: string
-  readonly representation: 'width_height'
-  readonly width: WorkflowRuntimeParameterInspectionParameter
-  readonly height: WorkflowRuntimeParameterInspectionParameter
-}
-export interface WorkflowAspectRatioMegapixelsSizeCandidate {
-  readonly candidate_id: string
-  readonly representation: 'aspect_ratio_megapixels'
-  readonly aspect_ratio: WorkflowRuntimeParameterInspectionParameter
-  readonly megapixels: WorkflowRuntimeParameterInspectionParameter
-}
-export interface WorkflowResolutionPresetMapping {
-  readonly value: JsonValue
-  readonly width: number
-  readonly height: number
-}
-export interface WorkflowResolutionPresetSizeCandidate {
-  readonly candidate_id: string
-  readonly representation: 'resolution_preset'
-  readonly parameter: WorkflowRuntimeParameterInspectionParameter
-  readonly mapped_options: readonly WorkflowResolutionPresetMapping[]
-  readonly unmapped_values: readonly JsonValue[]
-}
-export type WorkflowRuntimeSizeCandidate = WorkflowWidthHeightSizeCandidate | WorkflowAspectRatioMegapixelsSizeCandidate | WorkflowResolutionPresetSizeCandidate
-export interface WorkflowRuntimeParameterInspection {
-  readonly parameters: readonly WorkflowRuntimeParameterInspectionParameter[]
-  readonly size_candidates: readonly WorkflowRuntimeSizeCandidate[]
-}
+export type WorkflowRuntimeParameterInspectionParameter = ContractReadonlyValue<'workflowRuntimeParameter'>
+export type WorkflowWidthHeightSizeCandidate = Extract<WorkflowRuntimeSizeCandidate, { representation: 'width_height' }>
+export type WorkflowAspectRatioMegapixelsSizeCandidate = Extract<WorkflowRuntimeSizeCandidate, { representation: 'aspect_ratio_megapixels' }>
+export type WorkflowResolutionPresetMapping = WorkflowResolutionPresetSizeCandidate['mapped_options'][number]
+export type WorkflowResolutionPresetSizeCandidate = Extract<WorkflowRuntimeSizeCandidate, { representation: 'resolution_preset' }>
+export type WorkflowRuntimeSizeCandidate = ContractReadonlyValue<'workflowRuntimeSizeCandidate'>
+export type WorkflowRuntimeParameterInspection = ContractReadonlyValue<'workflowRuntimeParameterInspection'>
 export function flattenWorkflowRuntimeParameters(description: WorkflowRuntimeParameterInspection): readonly WorkflowRuntimeParameterInspectionParameter[] {
   const parameters = new Map<string, WorkflowRuntimeParameterInspectionParameter>()
   for (const parameter of description.parameters) parameters.set(parameter.parameter_id, parameter)
@@ -72,7 +39,7 @@ export interface WorkflowImageInputProblem {
 
 export function workflowImageInputProblem(
   description: WorkflowRuntimeParameterInspection,
-  bindings: readonly WorkflowImageBinding[],
+  bindings: readonly ContractReadonlyValue<'workflowImageBinding'>[],
   parameters: Readonly<Record<string, JsonValue>> = {},
   refs: readonly ImageRef[] = [],
 ): WorkflowImageInputProblem | undefined {
@@ -127,24 +94,3 @@ export const STANDARD_RUNTIME_PARAMETER_KINDS = Object.freeze([
   'reference_image', 'aspect_ratio', 'megapixels',
 ] as const)
 export type StandardRuntimeParameterKind = typeof STANDARD_RUNTIME_PARAMETER_KINDS[number]
-
-export const workflowRuntimeParameterSchema = contractObject({
-  image_cardinality: Schema.union(['one', 'many']),
-  image_required: Schema.boolean(),
-  parameter_id: Schema.string().required(), kind: Schema.union(STANDARD_RUNTIME_PARAMETER_KINDS).required(),
-  value_type: Schema.union(WORKFLOW_RUNTIME_PARAMETER_VALUE_TYPES).required(),
-  current_value: requiredNullable(generationJsonValueSchema),
-  minimum: Schema.number(), maximum: Schema.number(), allowed_values: jsonArraySchema(GENERATION_JSON_CONTRACT),
-}).required() satisfies Schema<any, WorkflowRuntimeParameterInspectionParameter>
-export const workflowRuntimeSizeCandidateSchema = Schema.union([
-  contractObject({ candidate_id: Schema.string().required(), representation: Schema.const('width_height').required(), width: workflowRuntimeParameterSchema, height: workflowRuntimeParameterSchema }).required(),
-  contractObject({ candidate_id: Schema.string().required(), representation: Schema.const('aspect_ratio_megapixels').required(), aspect_ratio: workflowRuntimeParameterSchema, megapixels: workflowRuntimeParameterSchema }).required(),
-  contractObject({
-    candidate_id: Schema.string().required(), representation: Schema.const('resolution_preset').required(), parameter: workflowRuntimeParameterSchema,
-    mapped_options: Schema.array(contractObject({ value: requiredNullable(generationJsonValueSchema), width: Schema.natural().min(1).required(), height: Schema.natural().min(1).required() }).required()).required(),
-    unmapped_values: jsonArraySchema(GENERATION_JSON_CONTRACT).required(),
-  }).required(),
-]).required() satisfies Schema<any, WorkflowRuntimeSizeCandidate>
-export const workflowRuntimeParameterInspectionSchema = contractObject({
-  parameters: Schema.array(workflowRuntimeParameterSchema).required(), size_candidates: Schema.array(workflowRuntimeSizeCandidateSchema).required(),
-}).required() satisfies Schema<any, WorkflowRuntimeParameterInspection>

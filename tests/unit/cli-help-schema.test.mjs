@@ -1,9 +1,9 @@
+import { contracts } from '#contracts'
 import { describe, expect, it } from 'vitest'
 import descriptions from '../../config/workbench-tool-descriptions.json' with { type: 'json' }
 import definition from '../../config/managed-cli-help.json' with { type: 'json' }
 import { parseHelpDefinition, parseManagedHelpDefinition } from '../../scripts/cli/help-schema.mjs'
 import { renderHelp, helpHint } from '../../scripts/cli/help.mjs'
-import { renderCommandContract } from '../../scripts/cli/contract-help.mjs'
 
 describe('managed CLI help contract', () => {
   it('renders native tool summaries from the shared description source', () => {
@@ -13,34 +13,34 @@ describe('managed CLI help contract', () => {
   })
 
   it('renders common task fields once before the task-specific result branches', () => {
-    const lines = renderCommandContract('workbench task get')
+    const lines = contracts.describe('workbench task get')
     expect(lines.filter(line => line.startsWith('task_id:'))).toHaveLength(2)
   })
 
   it('reuses native task guidance and exposes submitted images and effective Run inputs', () => {
-    const task = renderCommandContract('workbench task get').join('\n')
+    const task = contracts.describe('workbench task get').join('\n')
     expect(task).toContain(descriptions.fields.image_refs)
     expect(task).toContain(descriptions.fields.reference_experiences)
     expect(task).not.toContain('context_refs')
     expect(task).not.toContain('template_image_parameters')
     expect(task).not.toContain('input_source：')
-    const publish = renderCommandContract('workbench task publish').join('\n')
+    const publish = contracts.describe('workbench task publish').join('\n')
     expect(publish).toContain(descriptions.publish.artifact_fields.review)
     expect(publish).toContain(descriptions.publish.steps[1])
-    expect(renderCommandContract('generation submit').join('\n')).toContain(descriptions.fields.workflow_image_bindings)
-    const inputs = renderCommandContract('generation run-inputs').join('\n')
+    expect(contracts.describe('generation submit').join('\n')).toContain(descriptions.fields.workflow_image_bindings)
+    const inputs = contracts.describe('generation run-inputs').join('\n')
     expect(inputs).toContain('submitted_input')
     expect(inputs).toContain('effective_input')
     expect(inputs).toContain('image_uploads')
   })
 
   it('renders required nullable fields and nested template choices for CLI consumers', () => {
-    const lines = renderCommandContract('generation inspect-template-parameters')
+    const lines = contracts.describe('generation inspect-template-parameters')
     expect(lines).toContain('parameters[].current_value: JSON value；必填。')
     expect(lines).toContain('parameters[].allowed_values: JSON value[]；可选。')
     expect(lines).toContain('size_candidates[].mapped_options[].value: JSON value；必填。')
-    expect(lines).toContain('size_candidates[].mapped_options[].width: integer；必填，数值至少 1。')
-    expect(renderCommandContract('generation submit')).toContain('items[].request.model: object | null；必填。')
+    expect(lines).toContain('size_candidates[].mapped_options[].width: integer；必填，数值须大于或等于 1。')
+    expect(contracts.describe('generation submit')).toContainEqual(expect.stringContaining('items[].request.model: object | null；必填'))
   })
 
 

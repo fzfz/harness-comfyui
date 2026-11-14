@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { contracts } from '#contracts'
 
 import { stdin, stdout, stderr } from 'node:process'
 import definition from '../../config/managed-cli-help.json' with { type: 'json' }
@@ -6,18 +7,11 @@ import { parseManagedHelpDefinition } from './help-schema.mjs'
 const help = parseManagedHelpDefinition(definition)
 import { presentationArguments, renderHelp, helpHint, renderNextSteps, shellQuote } from './help.mjs'
 
-import {
-  CLI_MAX_BODY_BYTES,
-  CLI_ENVIRONMENT_NAMES,
-  CLI_ROUTE_PATH,
-  parseCliArguments,
-} from '../../src/cli/contract.ts'
+import { CLI_MAX_BODY_BYTES, CLI_ENVIRONMENT_NAMES, CLI_ROUTE_PATH } from '../../src/cli/contract.ts'
 
 import { prepareResultFile, writeResultFile, discardUnpublishedResult } from './result-file.mjs'
 
-import { assertRequestSize, decodeUtf8, loadGenerationManifest } from './generation-manifest.mjs'
-import { loadWorkbenchRequest } from './workbench-request.mjs'
-import { renderCommandContract } from './contract-help.mjs'
+import { decodeUtf8, loadCliFileRequest } from './input-files.mjs'
 import { GENERATION_ACCEPTANCE_STATUSES } from '../../src/generation/submission-contract.ts'
 import { MIN_RUN_INPUT_ID_PREFIX_LENGTH } from '../../src/generation/run-input-contract.ts'
 import { GENERATION_MAX_SUBMISSION_ITEMS } from '../../src/cli/limits.ts'
@@ -125,7 +119,7 @@ async function main() {
       max_request_bytes: CLI_MAX_BODY_BYTES,
       max_response_bytes: MAX_RESPONSE_BYTES,
       min_run_id_prefix_length: MIN_RUN_INPUT_ID_PREFIX_LENGTH,
-    }, renderCommandContract)
+    }, key => contracts.describe(key))
   } catch (error) {
     await reportFailure(`CLI_ARGUMENT_INVALID: ${error.message} ${helpHint(help, [])}`, 2)
     return
@@ -157,11 +151,11 @@ async function main() {
     }
     const input = await stdinText(needsStdin)
     request = workbenchInput && (needsStdin || needsFile)
-      ? await loadWorkbenchRequest(argv, input)
+      ? await loadCliFileRequest(argv, input)
       : argv[0] === 'generation' && argv[1] === 'submit' && (needsStdin || needsFile)
-        ? await loadGenerationManifest(argv, input)
-        : parseCliArguments(argv, input)
-    assertRequestSize(request)
+        ? await loadCliFileRequest(argv, input)
+        : contracts.parse('cliArguments', 'input', { argv: argv, stdin: input })
+    request = contracts.parse('cliRequest', 'input', request)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'CLI arguments are invalid'
     const code = error !== null && typeof error === 'object' && error.code === 'CLI_REQUEST_TOO_LARGE'

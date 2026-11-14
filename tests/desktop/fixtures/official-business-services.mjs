@@ -25,6 +25,7 @@ export async function startOfficialBusinessServices(fixture, { outputPngBytes = 
   const waiters = []
   const responsePauses = []
   const modelResponses = []
+  let generationModels = []
   const server = createServer((request, response) => {
     const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
     if (request.method === 'GET' && pathname === '/internal/comfyui-source') {
@@ -151,7 +152,13 @@ export async function startOfficialBusinessServices(fixture, { outputPngBytes = 
     }
     if (request.method === 'POST' && request.url === '/internal/semantic/generation-models') {
       void readJson(request).then(input => {
-        writeJson(response, { status: 'ok', message: null, results: [], page: input.page, page_size: input.page_size, total_count: 0 })
+        const matching = generationModels.filter(model => input.mode === 'resolve'
+          ? String(model.id) === String(input.id)
+          : (input.base_model_id == null || String(model.base_model_id) === String(input.base_model_id)))
+        const page = input.mode === 'resolve' ? 1 : input.page
+        const pageSize = input.mode === 'resolve' ? 1 : input.page_size
+        const results = input.mode === 'resolve' ? matching : matching.slice((page - 1) * pageSize, page * pageSize)
+        writeJson(response, { status: 'ok', message: null, results, page, page_size: pageSize, total_count: matching.length })
       }).catch(error => writeFailure(response, error))
       return
     }
@@ -296,6 +303,11 @@ export async function startOfficialBusinessServices(fixture, { outputPngBytes = 
   return {
     origin,
     baseURL: `${origin}/v1`,
+    useGenerationModels(records) {
+      const previous = generationModels
+      generationModels = structuredClone(records)
+      return () => { generationModels = previous }
+    },
     enqueueModelResponse(predicate, delta) {
       if (typeof predicate !== 'function') throw new TypeError('controlled model response predicate must be a function')
       modelResponses.push({ predicate, delta: typeof delta === 'function' ? delta : structuredClone(delta) })

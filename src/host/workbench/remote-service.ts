@@ -1,6 +1,7 @@
+import { ContractError } from '#contracts'
 import { randomUUID } from 'node:crypto'
 import type { WorkbenchImageImportRequest, WorkbenchImageResolveRequest, WorkbenchTranslationLookup } from '../../workbench-remote.ts'
-import type { WorkbenchRecordQuery, WorkbenchRun, ImageRef } from '../../workbench/contract.ts'
+import type { WorkbenchRecord, WorkbenchRecordQuery, WorkbenchRun, ImageRef } from '../../workbench/contract.ts'
 import type { PromptStartRequest, PromptLookupRequest, PromptListRequest, PromptAdoptRequest } from '../../workbench/prompt-edit.ts'
 import type { TranslationRequest } from '../../workbench/translation.ts'
 import { resolveInputImages } from './input-images.ts'
@@ -16,7 +17,10 @@ import type {} from './plugin.ts'
 async function report<T>(operation: () => Promise<T>): Promise<T> {
   try { return await operation() }
   catch (error) {
-    if (error instanceof WorkbenchError) throw new RemoteError('workbench/operation-failed', error.issues.map(issue => issue.message).join('\n'), { code: error.code, issues: error.issues })
+    if (error instanceof WorkbenchError || error instanceof ContractError) {
+      const message = error instanceof ContractError ? error.message : error.issues.map(issue => issue.message).join('\n')
+      throw new RemoteError('workbench/operation-failed', message, { code: error.code, issues: error.issues })
+    }
     throw error
   }
 }
@@ -72,10 +76,14 @@ export class WorkbenchRemoteService extends TypertRemoteService {
     } finally { release(); signal.removeEventListener('abort', abort) }
   }
 
-  async queryRecords(request: WorkbenchRecordQuery, signal: AbortSignal) {
+  async queryRecords(request: WorkbenchRecordQuery, signal: AbortSignal): Promise<WorkbenchRecord[]> {
     signal.throwIfAborted()
     const media = (run: WorkbenchRun): WorkbenchRun => ({ ...run, media: run.media.map(item => ({ ...item, url: generationMediaContentUrl(item.media_id, run.session_id), download_url: generationMediaDownloadUrl(item.media_id, run.session_id) })) })
-    return report(async () => (await this.host.harnessComfyuiWorkbench.service.queryRecords(request)).map(record => ({ ...record, ...(record.run ? { run: media(record.run) } : {}), ...(record.runs ? { runs: record.runs.map(media) } : {}) })))
+    return report(async () => (await this.host.harnessComfyuiWorkbench.service.queryRecords(request)).map((record): WorkbenchRecord => {
+      if (record.type === 'run') return { ...record, run: media(record.run) }
+      if (record.type === 'task') return { ...record, runs: record.runs.map(media) }
+      return record
+    }))
   }
   async importImages(request: WorkbenchImageImportRequest, signal: AbortSignal) {
     return report(async () => {

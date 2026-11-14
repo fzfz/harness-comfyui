@@ -9,6 +9,26 @@
 1. 插件适配官方 DeepSeek Harness Desktop `0.2.2-rc.3`。
 2. 工作台使用原生工具执行器和子 Agent 控制组件。“ComfyUI 持续实验预设”支持 `wait_agent`。
 
+# Harness ComfyUI v0.54.4
+
+## Agent Studio 预设数据
+
+1. Release 附件 `four-pools.json` 提供 9 个 Agent 及对应的提示词集、工具集和 Skill 集，使用 Agent Studio `0.1.8` 的导入格式。
+2. 用户在 Agent 中心导入数据后，可将预设绑定到对应 Agent。配置步骤见[Agent Studio 数据配置](user/agent-studio-data.md)。
+3. 原版 Agent Studio 中的验收覆盖 9 个预设的真实会话、提示词编辑、Skill 读取和应用重启后的配置保留。
+
+# Harness ComfyUI v0.54.3
+
+## 工作台任务读取
+
+1. 生成模型的 `skill_name` 为空时，Agent 可读取任务的固定输入与产物要求。
+
+## 设置保存与验收
+
+1. 图片读取设置经宿主序列化后仍可加载和保存。
+2. 官方 Desktop 验收覆盖生成模型未填写 `skill_name` 时的任务读取。
+3. 官方 Desktop 验收覆盖产物提交和设置加载。
+
 # Harness ComfyUI v0.54.2
 
 ## 工作台分支导航

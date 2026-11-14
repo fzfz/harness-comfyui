@@ -255,11 +255,11 @@ describe('workbench storage public boundary', () => {
   })
 
   it.each([
-    { change: { name: 'Changed name' }, path: 'expectedName' },
-    { change: { originalRequest: 'Changed request' }, path: 'expectedOriginalRequest' },
-    { change: { name: '', expectedName: '主分支' }, path: 'name' },
-    { change: { name: '名'.repeat(41), expectedName: '主分支' }, path: 'name' },
-    { change: { originalRequest: '  ', expectedOriginalRequest: 'paint rain' }, path: 'original_request' },
+    { change: { name: 'Changed name' }, path: '$.expectedName' },
+    { change: { originalRequest: 'Changed request' }, path: '$.expectedOriginalRequest' },
+    { change: { name: '', expectedName: '主分支' }, path: '$.name' },
+    { change: { name: '名'.repeat(41), expectedName: '主分支' }, path: '$.name' },
+    { change: { originalRequest: '  ', expectedOriginalRequest: 'paint rain' }, path: '$.originalRequest' },
   ])('rejects invalid branch metadata at $path without persisting it', ({ change, path }) => {
     const f = fixture()
     expect(() => f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.branch.draft, draft: f.branch.draft, ...change })).toThrowError(expect.objectContaining({
@@ -298,12 +298,12 @@ describe('workbench storage public boundary', () => {
     const baseline = f.store.getBranch(f.branch.branch_id).draft
     const manual = structuredClone(baseline); manual.prompt_input.positive_prompt = 'manual during task'
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: baseline, draft: manual })
-    await expect(f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(baseline) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })).rejects.toMatchObject({ code: 'WORKBENCH_EDIT_CONFLICT' })
+    await expect(f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(baseline) as Record<string, import('#contracts').JsonValue> })).rejects.toMatchObject({ code: 'WORKBENCH_EDIT_CONFLICT' })
     const manualBase = structuredClone(manual); manualBase.base_model_id = '8'
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: manual, draft: manualBase })
-    await expect(f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manual) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })).rejects.toMatchObject({ code: 'WORKBENCH_EDIT_CONFLICT' })
+    await expect(f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manual) as Record<string, import('#contracts').JsonValue> })).rejects.toMatchObject({ code: 'WORKBENCH_EDIT_CONFLICT' })
     expect(f.store.getBranch(f.branch.branch_id).draft).toEqual(manualBase)
-    await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manualBase) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })
+    await f.service.adoptArtifact({ artifactId: receipt.artifact_id, expected: jsonValue(manualBase) as Record<string, import('#contracts').JsonValue> })
     expect(f.store.getBranch(f.branch.branch_id).editing_draft).toEqual({ ...manualBase, parameter_mapping: { positive_prompt_9: 'positive_prompt', negative_prompt_10: 'negative_prompt' }, generation_input: candidate, prompt_input: { positive_prompt: 'candidate warm glass', negative_prompt: 'candidate clear' }, image_refs: [], workflow_image_bindings: [], base_model_id: '5' })
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.store.getBranch(f.branch.branch_id).draft, draft: f.store.getBranch(f.branch.branch_id).editing_draft! })
     const next = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
@@ -315,7 +315,7 @@ describe('workbench storage public boundary', () => {
     const improved = { ...candidate, parameters: { positive_prompt_9: 'review cool glass', negative_prompt_10: 'review contrast' } }
     const improvedReceipt = await f.service.publish({ taskId: review.task_id, artifact: { type: 'review', observation: 'warm', conclusion: 'cooler', run_ids: ['candidate-source'], candidate: { generation_input: improved, image_refs: [], workflow_image_bindings: [] } } }, { workspaceId: 'workspace', sessionId: review.session_id!, turn: 1, callId: 'review-candidate' })
     const reviewBaseline = f.store.getBranch(f.branch.branch_id).draft
-    await f.service.adoptArtifact({ artifactId: improvedReceipt.artifact_id, candidate: true, expected: jsonValue(reviewBaseline) as Record<string, import('../../src/workbench/contract.ts').JsonValue> })
+    await f.service.adoptArtifact({ artifactId: improvedReceipt.artifact_id, candidate: true, expected: jsonValue(reviewBaseline) as Record<string, import('#contracts').JsonValue> })
     f.store.saveBranchDraft({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, expected: f.store.getBranch(f.branch.branch_id).draft, draft: f.store.getBranch(f.branch.branch_id).editing_draft! })
     const final = await f.service.createTask({ workspaceId: 'workspace', workId: f.work.work_id, branchId: f.branch.branch_id, functionId: 'run' })
     expect(final.input.prompt_input).toEqual({ positive_prompt: 'review cool glass', negative_prompt: 'review contrast' })

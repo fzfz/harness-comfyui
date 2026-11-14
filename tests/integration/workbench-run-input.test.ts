@@ -1,7 +1,8 @@
+import { contracts } from '#contracts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it, vi } from 'vitest'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 import type { WorkbenchScope } from '../../src/workbench-remote.ts'
 import { generationInputWithImages, taskDraftFromRunInput } from '../../src/workbench/validation.ts'
@@ -79,7 +80,7 @@ it('removes uploaded image parameters before inheriting a Run and rejects submis
   const taskReceipt = await host.remote.mutate({ ...selected, type: 'run' }, signal())
   const task = host.store.getTask(taskReceipt.taskId!)
   const submission = generationInputWithImages(task.input.generation_input, task.input)
-  const accepted = await host.runtime.acceptGenerations({ workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'image-source' }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...submission, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations({ workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'image-source' }, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...submission, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
   for (let phase = 0; phase < 3; phase += 1) await host.runtime.advance()
   const historical = await host.remote.getRunInput({ ...selected, workId: selected.workId!, runId: accepted.items[0]!.runId }, signal())
   expect(historical.effective_input?.parameters).toMatchObject({ reference_image: 'previous-upload.png', width: 768, height: 512 })
@@ -115,7 +116,7 @@ it('keeps fixed task images at the root and assembles them only for generation s
   expect(task.input.image_refs).toEqual(images)
   expect(task.input.generation_input).not.toHaveProperty('image_refs')
   expect(task.input.generation_input).not.toHaveProperty('workflow_image_bindings')
-  const accepted = await host.runtime.acceptGenerations({ workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'submit-images' }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...generationInputWithImages(task.input.generation_input, task.input), instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations({ workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'submit-images' }, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...generationInputWithImages(task.input.generation_input, task.input), instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
   const historical = await host.remote.getRunInput({ ...selected, workId: selected.workId!, runId: accepted.items[0]!.runId }, signal())
   expect(historical.submitted_input.image_refs).toEqual(images)
   expect(historical.image_refs).toEqual(images)
@@ -133,7 +134,7 @@ it('keeps fixed task images at the root and assembles them only for generation s
   expect(cleared.input.generation_input).not.toHaveProperty('image_refs')
   const cleanSubmission = generationInputWithImages(cleared.input.generation_input, cleared.input)
   expect(cleanSubmission.image_refs).toEqual([])
-  const cleanRun = await host.runtime.acceptGenerations({ workspaceId: child.workspaceId, sessionId: cleared.session_id!, turn: 1, callId: 'submit-cleared' }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...cleanSubmission, instance_id: cleanSubmission.instance_id!, template_id: cleanSubmission.template_id! }) }], undefined, cleared.task_id)
+  const cleanRun = await host.runtime.acceptGenerations({ workspaceId: child.workspaceId, sessionId: cleared.session_id!, turn: 1, callId: 'submit-cleared' }, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...cleanSubmission, instance_id: cleanSubmission.instance_id!, template_id: cleanSubmission.template_id! }) }], undefined, cleared.task_id)
   expect((await host.remote.getRunInput({ ...child, workId: child.workId!, runId: cleanRun.items[0]!.runId }, signal())).image_refs).toEqual([])
 })
 
@@ -319,7 +320,7 @@ async function acceptRun(host: Fixture, scope: WorkbenchScope, type: 'run' | 'ex
   const receipt = await host.remote.mutate({ ...scope, type, ...(runId ? { runId } : {}) }, signal())
   const task = (await host.remote.getProjection(scope, signal())).tasks.find(task => task.task_id === receipt.taskId)!
   const identity = { workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'submit' }
-  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...task.input.generation_input, instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...task.input.generation_input, instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
   return { task, identity, runId: accepted.items[0]!.runId }
 }
 
@@ -421,7 +422,7 @@ it.each([{ kind: 'run', maxRuns: 1 }, { kind: 'experiment', maxRuns: 1 }, { kind
     expect(reviewed.tasks.find(item => item.task_id === task.task_id)?.status).toBe('needs_attention')
     expect(reviewed.experiments.find(item => item.task_id === task.task_id)?.control_state).toBe('running')
   }
-  await expect(runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)).rejects.toMatchObject({ code: kind === 'run' || maxRuns === 1 ? 'WORKBENCH_BUDGET_EXHAUSTED' : 'WORKBENCH_ITERATION_INCOMPLETE' })
+  await expect(runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)).rejects.toMatchObject({ code: kind === 'run' || maxRuns === 1 ? 'WORKBENCH_BUDGET_EXHAUSTED' : 'WORKBENCH_ITERATION_INCOMPLETE' })
   expect((await remote.getProjection(selected, signal())).runs).toHaveLength(1)
 })
 
@@ -456,7 +457,7 @@ it('returns Work Runs in global creation order when experiment iterations interl
   time.mockReturnValue(3000)
   await service.publish({ taskId: experiment.task.task_id, artifact: { type: 'review', observation: 'Instance unavailable', conclusion: 'Try again', run_ids: [experiment.runId] } }, { ...experiment.identity, callId: 'review' })
   await service.publish({ taskId: experiment.task.task_id, artifact: { type: 'generation_input', generation_input: experiment.task.input.generation_input, image_refs: [], workflow_image_bindings: [] } }, { ...experiment.identity, callId: 'candidate' })
-  const second = await runtime.acceptGenerations(experiment.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...experiment.task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, experiment.task.task_id)
+  const second = await runtime.acceptGenerations(experiment.identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...experiment.task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, experiment.task.task_id)
   const projection = await remote.getProjection({ workspaceId: selected.workspaceId, workId: selected.workId }, signal())
   expect(projection.runs.map(run => run.run_id)).toEqual([experiment.runId, single.runId, second.items[0]!.runId])
 })
@@ -549,7 +550,7 @@ it('shares the original candidate context between task iterations and Run input 
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'review', observation: 'Failed preparation', conclusion: 'Try a candidate', run_ids: [source.runId] } }, { ...source.identity, callId: 'review' })
   const input = { ...source.task.input.generation_input, parameters: { ...source.task.input.generation_input.parameters, positive: 'Candidate prompt' } }
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: input, image_refs: [], workflow_image_bindings: [] } }, { ...source.identity, callId: 'candidate' })
-  const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...input, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
+  const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...input, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
   const runId = accepted.items[0]!.runId
   const result = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
   const task = await service.getTask({ taskId: source.task.task_id }, source.identity)
@@ -637,7 +638,7 @@ it('keeps each experimental Run complete when its candidate changes template, re
   }
   const candidateImages = { image_refs: [{ image_ref_id: 'candidate-image', source: { kind: 'uploaded_file' as const, file_id: 'file-candidate' }, purpose: 'workflow' as const, reference_requirement: '' }], workflow_image_bindings: [{ parameter_id: 'reference_image', image_ref_ids: ['candidate-image'] }] }
   const published = await service.publish({ taskId: initial.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, ...candidateImages } }, { ...initial.identity, callId: 'candidate-all' })
-  const accepted = await runtime.acceptGenerations(initial.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...generationInputWithImages(candidate, candidateImages), instance_id: '9', template_id: '6' }) }], undefined, initial.task.task_id)
+  const accepted = await runtime.acceptGenerations(initial.identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...generationInputWithImages(candidate, candidateImages), instance_id: '9', template_id: '6' }) }], undefined, initial.task.task_id)
   const runId = accepted.items[0]!.runId
   await runtime.advance()
   const second = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())
@@ -706,7 +707,7 @@ it('retries a failed later candidate with its saved prompts, model, context and 
   host.catalog.resolveGenerationModel.mockImplementation(async id => ({ id, file_name: 'paint.safetensors', base_model_id: id === '4' ? '9' : '1' }))
   const candidate = { ...source.task.input.generation_input, model: { id: '4', file_name: 'paint.safetensors' }, parameters: { positive: 'Candidate snow', negative: 'mist', seed: 31 } }
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...source.identity, callId: 'candidate' })
-  const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
+  const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...candidate, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
   const runId = accepted.items[0]!.runId
   for (let phase = 0; phase < 3; phase += 1) await runtime.advance()
   const failed = (await remote.getProjection(selected, signal())).runs.find(run => run.run_id === runId)!
@@ -760,7 +761,7 @@ it('keeps eight independent Run identities and their own Task provenance for ide
     expect(projection.tasks.find(task => task.task_id === item.task.task_id)?.binding_snapshot).toEqual(item.task.binding_snapshot)
   }
   const source = accepted[0]!
-  await expect(runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...source.task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)).rejects.toMatchObject({ code: 'WORKBENCH_BUDGET_EXHAUSTED' })
+  await expect(runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...source.task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)).rejects.toMatchObject({ code: 'WORKBENCH_BUDGET_EXHAUSTED' })
   expect((await remote.getProjection(selected, signal())).runs).toHaveLength(8)
 })
 async function undescribedCandidateFixture() {
@@ -773,7 +774,7 @@ async function undescribedCandidateFixture() {
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'review', observation: 'Prepare failed', conclusion: 'Use candidate', run_ids: [source.runId] } }, { ...source.identity, callId: 'review' })
   const candidate = { ...source.task.input.generation_input, parameters: { positive: 'Candidate snow', negative: 'Candidate mist', seed: 31, opaque: { keep: true } } }
   await service.publish({ taskId: source.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...source.identity, callId: 'candidate' })
-  const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
+  const accepted = await runtime.acceptGenerations(source.identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...candidate, instance_id: '8', template_id: '5' }) }], undefined, source.task.task_id)
   const runId = accepted.items[0]!.runId
   await runtime.advance()
   return { host, selected, source, candidate, runId }
@@ -893,7 +894,7 @@ it('compiles an unmapped opaque candidate again through Run branch and raw retry
   await service.publish({ taskId: initial.task.task_id, artifact: { type: 'review', observation: 'First run failed', conclusion: 'Try opaque template', run_ids: [initial.runId] } }, { ...initial.identity, callId: 'review' })
   const candidate = { ...initial.task.input.generation_input, template_id: '6', parameters: { positive_prompt: 'Opaque candidate snow', sampler_name: { b: [2], a: 1 } } }
   await service.publish({ taskId: initial.task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, { ...initial.identity, callId: 'candidate' })
-  const accepted = await runtime.acceptGenerations(initial.identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8' }) }], undefined, initial.task.task_id)
+  const accepted = await runtime.acceptGenerations(initial.identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...candidate, instance_id: '8' }) }], undefined, initial.task.task_id)
   const runId = accepted.items[0]!.runId
   for (let phase = 0; phase < 3; phase += 1) await runtime.advance()
   const fixed = await remote.getRunInput({ workspaceId: selected.workspaceId, workId: selected.workId!, runId }, signal())

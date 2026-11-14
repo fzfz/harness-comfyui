@@ -1,4 +1,5 @@
 import React from 'react'
+import { contracts } from '#contracts'
 import type { MainPanelId, PanelInfo } from '@deepseek-ai/dsh-client-ui-layout/client'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { createPortal } from 'react-dom'
@@ -73,9 +74,9 @@ const remote = (): ExperimentHostRemote => ({
   translateCancel: vi.fn(async request => ({ ok: true as const, value: { request_id: request.request_id, status: 'failed' as const, error: '翻译已取消。' } })),
   getRunInput: vi.fn(async request => {
     const data = fullProjection(), run = data.runs.find(run => run.run_id === request.runId)!, task = data.tasks.find(task => task.task_id === run.workbench_task_id)!
-    return { ok: true as const, value: { run_id: run.run_id, branch_id: task.branch_id, submitted_input: run.generation_input, effective_input: run.generation_input, image_uploads: [], parameter_mapping: task.input.parameter_mapping, base_model_id: task.input.base_model_id, generation_input: run.generation_input,
+    return { ok: true as const, value: contracts.parse('workbenchRunInput', 'output', { run_id: run.run_id, branch_id: task.branch_id, submitted_input: run.generation_input, effective_input: run.generation_input, image_uploads: [], parameter_mapping: task.input.parameter_mapping, base_model_id: task.input.base_model_id, generation_input: run.generation_input,
       image_refs: task.input.image_refs, workflow_image_bindings: task.input.workflow_image_bindings, input_description: runInputDescription(run.generation_input.parameters),
-      prompt_input: { positive_prompt: String(run.generation_input.parameters.positive_1 ?? ''), negative_prompt: String(run.generation_input.parameters.negative_1 ?? '') } } }
+      prompt_input: { positive_prompt: String(run.generation_input.parameters.positive_1 ?? ''), negative_prompt: String(run.generation_input.parameters.negative_1 ?? '') } }) }
   }),
   getTaskDraft: vi.fn(async () => ({ ok: true as const, value: null })),
   saveTaskDraft: vi.fn(async request => ({ ok: true as const, value: request.draft })),

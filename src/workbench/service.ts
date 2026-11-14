@@ -1,12 +1,14 @@
+import type { JsonValue } from '#contracts'
+import { contracts, ContractError } from '#contracts'
 import { randomUUID } from 'node:crypto'
 import { isDelegatable, type DelegateFunctionRequest, type DelegatedSessionRequest } from './delegation.ts'
-import type { AgentModel, ArtifactPayload, EvaluationInput, ExperienceReuseInput, ExecutionState, FunctionDescriptor, GenerationInput, GenerationInputBase, JsonValue, ReviewDraft, ReviewDraftUpdate, SkillReadRef, ResourceSnapshot, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRunInput } from './contract.ts'
+import type { AgentModel, ArtifactPayload, EvaluationInput, ExperienceReuseInput, ExecutionState, FunctionDescriptor, GenerationInput, GenerationInputBase, ReviewDraft, ReviewDraftUpdate, SkillReadRef, ResourceSnapshot, Task, TaskDraft, TaskRequestDraft, TaskGetResult, WorkbenchIdentity, WorkbenchRunInput } from './contract.ts'
 import experimentControlErrors from './experiment-control-errors.json' with { type: 'json' }
 import libraryConfig from './library-config.json' with { type: 'json' }
 import { isBranchNonGenerationTaskKind, isRunReviewFunctionKind } from './contract.ts'
 import type { WorkbenchStore } from '../host/storage/workbench-store.ts'
 import { equalValue } from '../shared/json-contract.ts'
-import { jsonValue, validateArtifact, validateReviewDraftUpdate, validateTaskDraft, validateTaskInput, validateTaskRequestDraft, generationInputWithImages, taskDraftFromRunInput, runBaseModelId, WorkbenchError } from './validation.ts'
+import { jsonValue, generationInputWithImages, taskDraftFromRunInput, runBaseModelId, WorkbenchError } from './validation.ts'
 
 import { parameterMapping, readSavedPromptInput } from './prompt-input.ts'
 import { promptResourceRefs } from './resources.ts'
@@ -87,7 +89,7 @@ export class WorkbenchService {
     const { instructions: _branchInstructions, ...branchDraft } = branch.draft
     const binding = this.store.getFunctionBinding(request.workspaceId, request.functionId)
     if (binding.kind === 'translate') throw new WorkbenchError('WORKBENCH_FUNCTION_NOT_TASK', '请通过提示词翻译入口使用此功能。', 'function_id')
-    const submittedDraft = request.taskDraft === undefined ? undefined : validateTaskRequestDraft(request.taskDraft)
+    const submittedDraft = request.taskDraft === undefined ? undefined : contracts.parse('taskRequestDraft', 'input', request.taskDraft)
     const taskDraft = submittedDraft ?? this.store.getTaskDraft(branch.branch_id, binding.function_id)
     const descriptor = this.options.descriptors.find(item => item.kind === binding.kind)
     if (!descriptor) throw new WorkbenchError('WORKBENCH_FUNCTION_NOT_FOUND', '功能类型不可用，请在配置中心重新选择。', 'function_id')
@@ -96,12 +98,12 @@ export class WorkbenchService {
     let acceptedReview: ReviewDraft | undefined
     let evaluationInput: EvaluationInput | undefined
     if (reviewTarget) {
-      const update = validateReviewDraftUpdate(request.evaluationDraft)
+      const update = contracts.parse('reviewDraftUpdate', 'input', request.evaluationDraft)
       const runId = request.runId ?? ''
       const run = this.store.assertReviewRun(request.workspaceId, request.workId, runId)
       if (binding.kind === 'diagnose' && run.status !== 'failed' && run.status !== 'cancelled') throw new WorkbenchError('WORKBENCH_FAILED_RUN_REQUIRED', '请选择失败或已取消的运行后诊断。', 'input.evaluation_input.run_id')
       evaluationInput = { run_id: runId, verdict: update.draft.verdict, observation: update.draft.observation, conclusion: update.draft.conclusion, experience: { title: update.draft.title, conditions: update.draft.conditions, note: update.draft.note } }
-      validateTaskInput(binding.kind, { ...branchDraft, requirements: { original_request: branch.original_request, instructions: '' }, reference_run_ids: referenceRunIds, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: 0, evaluation_input: evaluationInput })
+      contracts.parse('taskInputForKind', 'input', { kind: binding.kind, value: { ...branchDraft, requirements: { original_request: branch.original_request, instructions: '' }, reference_run_ids: referenceRunIds, reference_task_artifacts: [], requested_skill: binding.requested_skill, max_runs: 0, evaluation_input: evaluationInput } })
       for (const id of referenceRunIds) { const run = this.store.getRun(id); if (!['succeeded', 'failed', 'cancelled'].includes(run.status)) throw new WorkbenchError('WORKBENCH_RUN_NOT_FINISHED', '请等待参考运行结束。', 'reference_run_ids') }
       acceptedReview = this.store.saveRunReviewDraft({ workspaceId: request.workspaceId, workId: request.workId, runId, ...update })
     }
@@ -283,7 +285,7 @@ export class WorkbenchService {
     const run = this.store.getRun(request.runId)
     const task = this.store.getTask(run.workbench_task_id)
     const description = await this.options.readRunInputDescription?.(this.store.taskWorkspace(task.task_id), run.run_id) ?? null
-    return { ...this.store.getRunInputs(run.run_id), selected_resources: run.selected_resources ?? [], prompt_resource_refs: promptResourceRefs(run.selected_resources ?? []), parameter_mapping: description ? parameterMapping(flattenWorkflowRuntimeParameters(description)) : null, base_model_id: runBaseModelId(run, task), run_id: run.run_id, branch_id: task.branch_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], input_description: description, prompt_input: readSavedPromptInput(run.generation_input, description?.parameters ?? []) }
+    return contracts.parse('workbenchRunInput', 'output', { ...this.store.getRunInputs(run.run_id), selected_resources: run.selected_resources ?? [], prompt_resource_refs: promptResourceRefs(run.selected_resources ?? []), parameter_mapping: description ? parameterMapping(flattenWorkflowRuntimeParameters(description)) : null, base_model_id: runBaseModelId(run, task), run_id: run.run_id, branch_id: task.branch_id, generation_input: run.generation_input, image_refs: run.generation_input.image_refs ?? [], workflow_image_bindings: run.generation_input.workflow_image_bindings ?? [], input_description: description, prompt_input: readSavedPromptInput(run.generation_input, description?.parameters ?? []) })
   }
 
   async getTask(request: { taskId: string }, identity: WorkbenchIdentity): Promise<TaskGetResult> {
@@ -308,7 +310,7 @@ export class WorkbenchService {
   }
   async publish(request: { taskId: string; artifact: unknown }, identity: WorkbenchIdentity) {
     const task = await this.authorize(request.taskId, identity)
-    const artifact = validateArtifact(request.artifact)
+    const artifact = contracts.parse('taskArtifact', 'input', request.artifact)
     this.store.validateArtifactForTask(task, artifact)
     const candidate = artifact.type === 'generation_input' ? artifact : artifact.type === 'review' ? artifact.candidate : undefined
     if (candidate) {
@@ -424,7 +426,7 @@ export class WorkbenchService {
   }
 
   private dispatchError(error: unknown): NonNullable<Task['error']> {
-    return { code: error instanceof WorkbenchError ? error.code : experimentControlErrors.dispatchFailureCode, message: error instanceof Error ? error.message : String(error) }
+    return { code: (error instanceof WorkbenchError || error instanceof ContractError) ? error.code : experimentControlErrors.dispatchFailureCode, message: error instanceof Error ? error.message : String(error) }
   }
 
   async controlTask(request: { taskId: string; action: 'interrupt' | 'pause' | 'continue' }): Promise<Task> {

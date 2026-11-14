@@ -1,6 +1,7 @@
+import { contracts } from '#contracts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { afterEach, expect, it, vi } from 'vitest'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import { CatalogClient } from '../../src/host/catalog/catalog-client.ts'
 import { CATALOG_COMFYUI_INSTANCE_QUERY } from '../../src/catalog/contract.ts'
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol'
@@ -72,8 +73,8 @@ it('starts one experiment with fixed Task, Session, budget and first Run input',
   await remote.mutate({ ...selected, type: 'update-execution', field: 'max_runs', value: 5 }, signal())
   const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'experiment-first' }
   const fixed = { ...task.input.generation_input, instance_id: '8', template_id: '5' }
-  await expect(runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: toGenerationRequest({ ...fixed, parameters: { ...fixed.parameters, positive: 'Later glass' } }) }], undefined, task.task_id)).rejects.toMatchObject({ code: 'WORKBENCH_INPUT_MISMATCH' })
-  const accepted = await runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(fixed) }], undefined, task.task_id)
+  await expect(runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...fixed, parameters: { ...fixed.parameters, positive: 'Later glass' } }) }], undefined, task.task_id)).rejects.toMatchObject({ code: 'WORKBENCH_INPUT_MISMATCH' })
+  const accepted = await runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', fixed) }], undefined, task.task_id)
   const after = await remote.getProjection(selected, signal()), run = after.runs[0]!
   expect(after.tasks[0]!.input).toEqual(task.input)
   expect(after.tasks[0]!.binding_snapshot).toEqual(task.binding_snapshot)
@@ -97,7 +98,7 @@ it('changes a custom kind and removes its bindings while retaining Task, Run and
   const rewriteReceipt = await startConfiguredTask(remote, selected, binding.function_id)
   const before = await remote.getProjection(selected, signal()), runTask = before.tasks.find(task => task.task_id === runReceipt.taskId)!, rewrite = before.tasks.find(task => task.task_id === rewriteReceipt.taskId)!
   const runIdentity = { workspaceId: selected.workspaceId, sessionId: runTask.session_id!, turn: 1, callId: 'custom-run' }
-  const accepted = await runtime.acceptGenerations(runIdentity, [{ requestId: crypto.randomUUID(), request: toGenerationRequest({ ...runTask.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, runTask.task_id)
+  const accepted = await runtime.acceptGenerations(runIdentity, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...runTask.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, runTask.task_id)
   await runtime.advance()
   const runId = accepted.items[0]!.runId
   await remote.mutate({ ...selected, type: 'function-edit', id: binding.function_id, value: { ...base, name: 'Custom review', kind: 'review', request_template: 'Review {{task_id}}.' } }, signal())
@@ -211,7 +212,7 @@ it('keeps both prompt slots and rejects unsupported prompt fields', async () => 
   const before = (await remote.getProjection(selected, signal())).branches[0]!.draft
   for (const field of ['steps', 'cfg', 'seed', 'references']) {
     await expect(saveFixtureDraft(remote, { ...selected }, draft => { draft.prompt_input[field as 'positive_prompt' | 'negative_prompt'] = 2 as never }, signal())).rejects.toMatchObject({
-      code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'draft' }] },
+      code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: `$.draft.prompt_input.${field}` }] },
     })
   }
   expect((await remote.getProjection(selected, signal())).branches[0]!.draft).toEqual(before)
@@ -235,7 +236,11 @@ it('reads registered instance titles through the public Catalog and exposes only
   expect(query).toHaveBeenCalledOnce()
 })
 
-it.each(['', '   ', ' 生成提示词 '])('rejects a blank or duplicate function name through Remote and preserves saved input: %j', async name => {
+it.each([
+  { name: '', path: '$.name', message: expect.any(String), reason: 'empty' },
+  { name: '   ', path: '$.name', message: expect.any(String), reason: 'whitespace' },
+  { name: ' 生成提示词 ', path: 'binding.name', message: '请填写与已有功能不同的名称。', reason: 'duplicate' },
+])('rejects a $reason function name through Remote and preserves saved input', async ({ name, path, message }) => {
   const { remote, store } = await fixture()
   const scope = { workspaceId: 'workspace_1' }
   await remote.getProjection(scope, signal())
@@ -243,7 +248,7 @@ it.each(['', '   ', ' 生成提示词 '])('rejects a blank or duplicate function
   await remote.mutate({ ...scope, type: 'function-add', value }, signal())
   const binding = (await remote.getProjection(scope, signal())).functions.find(item => item.name === value.name)!
   await expect(remote.mutate({ ...scope, type: 'function-edit', id: binding.function_id, value: editableBinding({ ...binding, name, request_template: 'Rejected edit {{requirements_block}}' }) }, signal())).rejects.toMatchObject({
-    details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'binding.name', message: '请填写与已有功能不同的名称。' }] },
+    details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path, message }] },
   })
   expect(store.getFunctionBinding(scope.workspaceId, binding.function_id)).toEqual(binding)
 })
@@ -559,7 +564,7 @@ it.each([
   const before = await remote.getProjection(scope, signal())
   const binding = before.functions.find(item => item.function_id === 'prompt')!
   await expect(remote.mutate({ ...scope, type: 'function-edit', id: binding.function_id, value: editableBinding({ ...binding, request_template: template }) }, signal()))
-    .rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: 'binding.request_template', message }] } })
+    .rejects.toMatchObject({ details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: '$.request_template', message }] } })
   expect((await remote.getProjection(scope, signal())).functions).toEqual(before.functions)
 })
 
@@ -959,7 +964,7 @@ it.each([
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const original = (await remote.getProjection(selected, signal())).branches[0]!
   await expect(saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [field === 'name' ? 'name' : 'originalRequest']: 'Changed text', [field === 'name' ? 'expectedName' : 'expectedOriginalRequest']: expectedValue })).rejects.toMatchObject({
-    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path, message: expect.any(String) }] },
+    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: `$.${path}`, message: expect.any(String) }] },
   })
   expect((await remote.getProjection(selected, signal())).branches[0]).toEqual(original)
 })
@@ -991,7 +996,7 @@ it.each([
   const selected = await remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'Rain', goal: 'Paint rain' } }, signal())
   const original = (await remote.getProjection(selected, signal())).branches[0]!
   await expect(saveFixtureDraft(remote, { ...selected }, () => {}, signal(), { [field === 'name' ? 'name' : 'originalRequest']: value, [field === 'name' ? 'expectedName' : 'expectedOriginalRequest']: original[field] })).rejects.toMatchObject({
-    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: field === 'original_request' ? 'originalRequest' : field, message: expect.any(String) }] },
+    code: 'workbench/operation-failed', details: { code: 'WORKBENCH_INVALID_INPUT', issues: [{ path: field === 'original_request' ? '$.originalRequest' : '$.name', message: expect.any(String) }] },
   })
   expect((await remote.getProjection(selected, signal())).branches[0]).toEqual(original)
 })

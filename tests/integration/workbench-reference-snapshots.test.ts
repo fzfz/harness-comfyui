@@ -1,5 +1,5 @@
-import Schema from '@deepseek-ai/schemastery'
-import { workbenchRecordSchema } from '../../src/workbench/schema.ts'
+import { contracts } from '#contracts'
+
 import { DatabaseSync } from 'node:sqlite'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -61,8 +61,8 @@ it('fixes cross-workspace task artifacts and independent experience contents whe
   expect(read.reference_run_ids).toEqual([])
   const records = f.store.queryRecords({ type: 'task', workspaceId: source.workspaceId })
   expect(records.map(item => item.id)).toEqual([sourceTask.task_id])
-  expect(Schema.resolve(records[0], workbenchRecordSchema, {})[0]).toMatchObject({ type: 'task', task: { task_id: sourceTask.task_id }, artifacts: [{ artifact_id: receipt.artifact_id }] })
-  expect(() => Schema.resolve({ ...records[0], task: { ...sourceTask, input: { invalid: true } } }, workbenchRecordSchema, {})).toThrow()
+  expect(contracts.parse('workbenchRecord', 'output', records[0])).toMatchObject({ type: 'task', task: { task_id: sourceTask.task_id }, artifacts: [{ artifact_id: receipt.artifact_id }] })
+  expect(() => contracts.parse('workbenchRecord', 'output', { ...records[0], task: { ...sourceTask, input: { invalid: true } } })).toThrow()
   f.store.setFavorite({ workspaceId: source.workspaceId, workId: source.workId, targetType: 'experience', targetId: experience.experience_id, favorite: true })
   expect(f.store.getProjection({ workspaceId: 'empty' }).experiences[0]?.title).toBe('Changed')
   expect(f.store.getProjection({ workspaceId: 'empty' }).favorites).toEqual([{ target_type: 'experience', target_id: experience.experience_id }])

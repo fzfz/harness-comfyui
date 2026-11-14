@@ -1,3 +1,4 @@
+import type { JsonValue } from '#contracts'
 import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, statSync, unlinkSync } from 'node:fs'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
@@ -9,7 +10,6 @@ import type { GenerationMediaKind } from '../../generation/contract.ts'
 import { GENERATION_MAX_SUBMISSION_ITEMS } from '../../cli/limits.ts'
 import type { GenerationRunStatus } from '../../generation/run-status.ts'
 import {
-  isGenerationRequestId,
   type GenerationImageUpload,
   type GenerationLoraSelection,
   type GenerationModelSelection,
@@ -24,26 +24,21 @@ import {
   type GenerationRunInputArguments,
   type GenerationRunInputError,
   type GenerationRunInputResult,
-  type JsonValue,
 } from '../../generation/run-input-contract.ts'
 import type { GenerationRunMediaResult } from '../../image-reader/run-media-contract.ts'
 import { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
-import { isLoraWeight } from '../../generation/lora-contract.ts'
 import { PluginStorageError } from '../plugin-storage-error.ts'
 import type {
   GenerationTemplateRuntimeParameterInspectionInput,
   WorkflowRuntimeParameterInspection,
 } from './source-preparer.ts'
 
-export type { JsonPrimitive, JsonValue } from '../../generation/run-input-contract.ts'
 export { GenerationRuntimeError, GenerationSubmissionNotSentError } from './generation-error.ts'
 
 export type { GenerationRunStatus } from '../../generation/run-status.ts'
 export type { GenerationLoraSelection, GenerationModelSelection, GenerationRequest } from '../../generation/submission-contract.ts'
 
-import { imageRefSchema, workflowImageBindingSchema } from '../../workbench/schema.ts'
-import Schema from '@deepseek-ai/schemastery'
-import { workflowRuntimeParameterInspectionSchema } from '../../generation/inspection-contract.ts'
+import { contracts } from '#contracts'
 
 export interface GenerationIdentity {
   readonly workspaceId: string
@@ -381,106 +376,17 @@ export async function readGenerationJsonArtifact(
   return jsonRecord(document, label)
 }
 
-function generationRequest(document: string): GenerationRequest {
-  const source = jsonRecord(document, 'Generation request')
-  if (
-    typeof source.title !== 'string'
-    || (source.instanceId !== null && typeof source.instanceId !== 'string')
-    || typeof source.templateId !== 'string'
-    || source.parameters === null
-    || typeof source.parameters !== 'object'
-    || Array.isArray(source.parameters)
-    || !Array.isArray(source.loras)
-  ) {
-    throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation request is invalid.')
-  }
-  const loras = source.loras.map((value, index): GenerationLoraSelection => {
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', `Persisted Generation LoRA ${index} is invalid.`)
-    }
-    const selection = value as Readonly<Record<string, JsonValue>>
-    if (
-      typeof selection.id !== 'string'
-      || typeof selection.fileName !== 'string'
-      || !isLoraWeight(selection.weight)
-      || !Array.isArray(selection.triggerWords)
-      || selection.triggerWords.some(word => typeof word !== 'string')
-    ) {
-      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', `Persisted Generation LoRA ${index} is invalid.`)
-    }
-    return Object.freeze({
-      id: selection.id,
-      fileName: selection.fileName,
-      weight: selection.weight,
-      triggerWords: Object.freeze(selection.triggerWords as string[]),
-    })
-  })
-  let model: GenerationModelSelection | null = null
-  if (source.model !== undefined && source.model !== null) {
-    if (typeof source.model !== 'object' || Array.isArray(source.model)) {
-      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation model is invalid.')
-    }
-    const selection = source.model as Readonly<Record<string, JsonValue>>
-    if (typeof selection.id !== 'string' || typeof selection.fileName !== 'string') {
-      throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation model is invalid.')
-    }
-    model = Object.freeze({ id: selection.id, fileName: selection.fileName })
-  }
-  return Object.freeze({
-    title: source.title,
-    instanceId: source.instanceId,
-    templateId: source.templateId,
-    model,
-    parameters: source.parameters as Readonly<Record<string, JsonValue>>,
-    loras: Object.freeze(loras),
-    ...(source.imageRefs === undefined ? {} : { imageRefs: Schema.resolve(source.imageRefs, Schema.array(imageRefSchema), {})[0] }),
-    ...(source.workflowImageBindings === undefined ? {} : { workflowImageBindings: Schema.resolve(source.workflowImageBindings, Schema.array(workflowImageBindingSchema), {})[0] }),
-  })
+function generationRequest(document: string, contract: 'generationRequest' | 'historicalGenerationRequest' = 'generationRequest'): GenerationRequest {
+  try { return contracts.parse(contract, 'input', jsonRecord(document, 'Generation request')) }
+  catch (error) { throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', error instanceof Error ? error.message : String(error)) }
 }
 
-function historicalGenerationRequest(document: string): GenerationRequest {
-  let source: Readonly<Record<string, JsonValue>>
-  try {
-    source = jsonRecord(document, 'Generation request')
-  } catch {
-    throw new GenerationRuntimeError('GENERATION_REQUEST_INVALID', 'The persisted Generation request is invalid.')
-  }
-  return generationRequest(JSON.stringify(source.loras === undefined ? { ...source, loras: [] } : source))
-}
 
-function runInputArguments(request: GenerationRequest): GenerationRunInputArguments {
-  return Object.freeze({
-    title: request.title,
-    ...(request.instanceId === null ? {} : { instance_id: request.instanceId }),
-    template_id: request.templateId,
-    ...(request.model === null ? {} : {
-      model: Object.freeze({ id: request.model.id, file_name: request.model.fileName }),
-    }),
-    parameters: request.parameters,
-    ...(request.imageRefs === undefined ? {} : { image_refs: request.imageRefs }),
-    ...(request.workflowImageBindings === undefined ? {} : { workflow_image_bindings: request.workflowImageBindings }),
-    loras: Object.freeze(request.loras.map(lora => Object.freeze({
-      id: lora.id,
-      file_name: lora.fileName,
-      weight: lora.weight,
-      trigger_words: [...lora.triggerWords],
-    }))),
-  })
-}
+
+
 
 function runInputError(code: string, message: string): GenerationRunInputError {
   return Object.freeze({ code, message })
-}
-
-function assertRunLookupInput(input: { readonly runIds: readonly string[] }): void {
-  if (
-    !Array.isArray(input.runIds)
-    || input.runIds.length === 0
-    || input.runIds.length > MAX_RUN_INPUT_QUERY_IDS
-    || input.runIds.some(runId => typeof runId !== 'string')
-  ) {
-    throw new TypeError(`runIds must contain between 1 and ${MAX_RUN_INPUT_QUERY_IDS} strings`)
-  }
 }
 
 function mediaSnapshot(row: MediaRow): GenerationMediaSnapshot {
@@ -759,7 +665,7 @@ export class GenerationRuntime {
     assertPathId(workspaceId, 'workspaceId')
     const requestIds = new Set<string>()
     const normalized = items.map(item => {
-      if (item === null || typeof item !== 'object' || !isGenerationRequestId(item.requestId)) {
+      if (item === null || typeof item !== 'object' || !contracts.parse('generationRequestIdValid', 'input', item.requestId)) {
         throw new GenerationRuntimeError('GENERATION_SUBMISSION_INVALID', 'Each requestId must be a UUID.')
       }
       const requestId = item.requestId.toLowerCase()
@@ -886,9 +792,9 @@ export class GenerationRuntime {
     input: { readonly workspaceId?: string; readonly runIds: readonly string[] },
     signal?: AbortSignal,
   ): Promise<GenerationRunInputResult> {
-    assertRunLookupInput(input)
+    const runIds = contracts.parse('cliRunIds', 'input', input.runIds)
     const runs = []
-    for (const runId of input.runIds) {
+    for (const runId of runIds) {
       signal?.throwIfAborted()
       try {
         runs.push(await this.readGenerationRunInput(runId, signal))
@@ -924,14 +830,14 @@ export class GenerationRuntime {
     input: { readonly workspaceId?: string; readonly runIds: readonly string[]; readonly includeParameters?: boolean },
     signal?: AbortSignal,
   ): Promise<GenerationRunMediaResult> {
-    assertRunLookupInput(input)
+    const runIds = contracts.parse('cliRunIds', 'input', input.runIds)
     const runs = []
     for (const requestedRunId of input.runIds) {
       signal?.throwIfAborted()
       try {
         const row = this.resolveGenerationRunRow(requestedRunId)
         const parameters = input.includeParameters === true
-          ? runInputArguments(historicalGenerationRequest(row.effective_input_json ?? row.request_json)).parameters
+          ? contracts.parse('generationRunArguments', 'input', generationRequest(row.effective_input_json ?? row.request_json, 'historicalGenerationRequest')).parameters
           : undefined
         const mediaRows = this.database.prepare(`
           SELECT * FROM generation_media
@@ -1034,7 +940,7 @@ export class GenerationRuntime {
       throw error
     }
     if (!Object.hasOwn(source, 'input_description')) return null
-    try { return Schema.resolve(source.input_description, workflowRuntimeParameterInspectionSchema, {})[0] as WorkflowRuntimeParameterInspection }
+    try { return contracts.parse('workflowRuntimeParameterInspection', 'output', source.input_description) as WorkflowRuntimeParameterInspection }
     catch { return null }
   }
 
@@ -1043,9 +949,9 @@ export class GenerationRuntime {
     signal?: AbortSignal,
   ): Promise<AvailableGenerationRunInput> {
     const row = this.resolveGenerationRunRow(requestedRunId)
-    const request = historicalGenerationRequest(row.request_json)
-    const submittedInput = runInputArguments(request)
-    const effectiveInput = row.effective_input_json === null ? null : runInputArguments(historicalGenerationRequest(row.effective_input_json))
+    const request = generationRequest(row.request_json, 'historicalGenerationRequest')
+    const submittedInput = contracts.parse('generationRunArguments', 'input', request)
+    const effectiveInput = row.effective_input_json === null ? null : contracts.parse('generationRunArguments', 'input', generationRequest(row.effective_input_json, 'historicalGenerationRequest'))
     const inputs = { workspace_id: row.workspace_id, submitted_input: submittedInput, effective_input: effectiveInput, image_uploads: row.image_uploads_json === null ? [] : JSON.parse(row.image_uploads_json) as GenerationImageUpload[] }
     const argumentsValue = effectiveInput ?? submittedInput
     const inputDescription = await this.readRunInputDescription(row, signal)

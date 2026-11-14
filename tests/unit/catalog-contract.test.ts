@@ -281,7 +281,7 @@ describe('catalog Remote contract', () => {
     expect(() => parseCatalogResolvedLora({
       id: '68', base_model_id: '2', model_id: '1', file_name: 'lora.safetensors',
       description: 'effect', usage: 'usage', trigger_words: ['usnr', 'usnr'], weight: 1,
-    })).toThrow('duplicated')
+    })).toThrow('duplicates')
     expect(() => parseCatalogResolvedGenerationModel({
       id: '1', base_model_id: '2', file_name: 'model.safetensors', description: 'model', skill_name: null,
     })).toThrow('properties')

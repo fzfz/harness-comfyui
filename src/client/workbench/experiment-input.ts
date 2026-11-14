@@ -1,5 +1,6 @@
+import type { JsonValue } from '#contracts'
 import type { WorkbenchInputDescriptionRequest } from '../../workbench-remote.ts'
-import type { GenerationInput, JsonValue } from '../../workbench/contract.ts'
+import type { GenerationInput} from '../../workbench/contract.ts'
 import type {
   StandardRuntimeParameterKind,
   WorkflowRuntimeParameterInspection,

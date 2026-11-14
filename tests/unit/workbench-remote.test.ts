@@ -7,9 +7,22 @@ import { parseCatalogDetails } from '../../src/catalog/details-schema.ts'
 import { WorkbenchRemoteService } from '../../src/host/workbench/remote-service.ts'
 import { WORKBENCH_REMOTE } from '../../src/workbench-remote.ts'
 import { WorkbenchError } from '../../src/workbench/validation.ts'
-import { parseCliGenerationRequest, toGenerationRequest } from '../../src/cli/contract.ts'
+import { contracts, ContractError } from '#contracts'
 import type { WorkbenchProjection, TaskDraft } from '../../src/workbench/contract.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
+
+function environmentResultFixture() {
+  return {
+    workspaces: [{ id: 'workspace_1', name: 'Workspace', path: '/project' }], presets: [], defaultPresetId: 'workbench',
+    models: { default: { provider: 'provider', model: 'model' }, groups: [{ id: 'provider', name: 'Provider', models: [{ id: 'model', name: 'Model' }] }], routableProviders: ['provider'], failures: [] },
+    skills: [], instances: [],
+  }
+}
+
+function strictCodec(codec: (typeof WORKBENCH_REMOTE)['descriptors'][number]['result']) {
+  if (codec.mode !== 'strict') throw new Error('Workbench Remote requires strict codecs')
+  return codec.create()
+}
 
 it('imports image bytes and resolves each reference independently through the mounted Remote', async () => {
   const host = await createWorkbenchHostFixture()
@@ -82,7 +95,7 @@ function restrictSelectedResources(catalog: Awaited<ReturnType<typeof createWork
 }
 
 it('requires explicit favorite states and complete experience reuse choices through the Remote codec', () => {
-  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
+  const codec = strictCodec(WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec)
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
   for (const targetType of ['run', 'experience']) for (const favorite of [true, false]) {
     const value = { targetType, favorite }
@@ -103,8 +116,8 @@ it('requires explicit favorite states and complete experience reuse choices thro
 })
 
 it('validates editable function inputs and explicit editing identities through the Remote codec', () => {
-  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
-  const value = { name: 'Glass rewrite', kind: 'prompt', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{task_id}}.' }
+  const codec = strictCodec(WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec)
+  const value = { name: 'Glass rewrite', kind: 'prompt', preset_id: 'preset-a', agent_model: { provider: 'provider-a', model: 'model-a' }, requested_skill: null, request_template: 'Read {{requirements_block}}.' }
   expect(codec.parse({ workspaceId: 'workspace_1', type: 'function-add', value })).toMatchObject({ value })
   expect(codec.parse({ workspaceId: 'workspace_1', type: 'function-edit', id: 'custom-a', value })).toMatchObject({ id: 'custom-a', value })
   for (const extra of [{ function_id: 'custom-a' }, { workspace_id: 'other' }, { builtin: true }]) {
@@ -140,9 +153,11 @@ it('validates record, image and translation request and result codecs by operati
   ]
   for (const item of cases) {
     const descriptor = WORKBENCH_REMOTE.descriptors.find(value => value.method === item.method)!
-    const request = descriptor.parameters[0]!.codec.create(), result = descriptor.result.create()
+    const request = strictCodec(descriptor.parameters[0]!.codec), result = strictCodec(descriptor.result)
     expect(request.parse(JSON.parse(JSON.stringify(item.request)))).toEqual(item.request)
-    expect(result.parse(JSON.parse(JSON.stringify(item.result)))).toEqual(item.result)
+    const expectedResult = item.method === 'queryRecords' && Array.isArray(item.result)
+      ? item.result.map(record => ({ ...record, base_model_id: null })) : item.result
+    expect(result.parse(JSON.parse(JSON.stringify(item.result)))).toEqual(expectedResult)
     expect(() => request.parse(item.badRequest), item.method).toThrow()
     expect(() => result.parse(item.badResult), item.method).toThrow()
     expect(() => request.parse({ ...item.request, extra: true }), item.method).toThrow()
@@ -163,7 +178,7 @@ async function saveDraft(
 
 it('requires the editor snapshot and validates the accepted editor receipt', () => {
   const descriptor = WORKBENCH_REMOTE.descriptors.find(item => item.method === 'mutate')!
-  const request = descriptor.parameters[0].codec.create(), result = descriptor.result.create()
+  const request = strictCodec(descriptor.parameters[0].codec), result = strictCodec(descriptor.result)
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
   const cancel = { ...scope, type: 'edit-draft', value: { expected: null, draft: null } }
   expect(request.parse(cancel)).toMatchObject(cancel)
@@ -197,7 +212,7 @@ it('describes a Branch and reads referenced Run inputs across Workspaces by Run 
     expect(inspect).toHaveBeenLastCalledWith({ templateId: '5', instanceId: '8' }, signal)
     await remote.mutate({ ...scope, type: 'run' }, signal)
     const task = (await remote.getProjection(scope, signal)).tasks[0]!
-    const accepted = await runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'accepted' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+    const accepted = await runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'accepted' }, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', task.input.generation_input)) }], signal, task.task_id)
     const runId = accepted.items[0]!.runId
     await saveDraft(remote, scope, draft => { draft.generation_input.instance_id = '9' }, signal)
     await selectResource(remote, scope, { kind: 'comfyui-template', id: '6' }, signal)
@@ -249,7 +264,7 @@ it('changes the model without removing selected resources or changing other inpu
     const expectedInput = { ...after.generation_input, parameters: { ...after.generation_input.parameters, positive: 'Latest prompt', negative: '' } }
     expect(task.input).toMatchObject({ generation_input: expectedInput, image_refs: after.image_refs, workflow_image_bindings: after.workflow_image_bindings, base_model_id: '9' })
     const expectedSubmission = { ...expectedInput, image_refs: after.image_refs, workflow_image_bindings: after.workflow_image_bindings }
-    const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'mixed-model-run' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(expectedSubmission)) }], signal, task.task_id)
+    const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'mixed-model-run' }, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', expectedSubmission)) }], signal, task.task_id)
     const projection = await remote.getProjection(scope, signal)
     expect(projection.runs.find(run => run.run_id === accepted.items[0]!.runId)?.generation_input).toEqual(expectedSubmission)
   } finally { await host.dispose() }
@@ -347,6 +362,9 @@ it('reports Workbench error identities and field paths while preserving unexpect
   })
   environment.mockRejectedValueOnce(new WorkbenchError('WORKBENCH_PRESET_UNAVAILABLE', 'Choose an available preset', 'preset_id'))
   await expect(remote.getEnvironment({ presetId: 'missing' }, new AbortController().signal)).rejects.toMatchObject({ details: { code: 'WORKBENCH_PRESET_UNAVAILABLE' } })
+  const contractFailure = new ContractError('taskDraft', 'input', new TypeError('Expected an object'), '$.generation_input')
+  getProjection.mockRejectedValueOnce(contractFailure)
+  await expect(remote.getProjection({ workspaceId: 'workspace_1' }, new AbortController().signal)).rejects.toMatchObject({ message: contractFailure.message, details: { code: contractFailure.code, issues: contractFailure.issues } })
   const failure = new Error('Official model catalog unavailable')
   environment.mockRejectedValueOnce(failure)
   await expect(remote.getEnvironment({}, new AbortController().signal)).rejects.toBe(failure)
@@ -366,7 +384,7 @@ it('stops already cancelled calls and cancels a projection completed after the c
 })
 
 it('accepts complete saved-draft snapshots and rejects retired field update actions', () => {
-  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
+  const codec = strictCodec(WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec)
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
   const draft = { parameter_mapping: null, generation_input: projection().runs[0]!.generation_input, prompt_input: { positive_prompt: '', negative_prompt: '' }, image_refs: [], workflow_image_bindings: [], reference_task_ids: [], reference_run_ids: [], reference_experiences: [], instructions: '', base_model_id: null }
   const value = { expected: draft, expectedEditingDraft: null, draft, name: 'Edited branch', expectedName: 'Original branch', originalRequest: 'Edited request', expectedOriginalRequest: 'Original request' }
@@ -375,7 +393,7 @@ it('accepts complete saved-draft snapshots and rejects retired field update acti
 })
 
 it('requires complete review updates and generation adoption snapshots through the Remote codec', () => {
-  const codec = WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec.create()
+  const codec = strictCodec(WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'mutate')!.parameters[0]!.codec)
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
   const draft = { verdict: 'unrated', observation: '', conclusion: '', title: '', conditions: '', note: '', evidence_run_ids: ['run_1'], review_artifact_id: null, experience_artifact_id: null, experience_id: null }
   const update = { expected: draft, draft }
@@ -392,7 +410,7 @@ it('requires complete review updates and generation adoption snapshots through t
 })
 
 it('validates each RPC request from JSON with exact field names and identifier constraints', () => {
-  const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, descriptor.parameters[0]!.codec.create()]))
+  const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, strictCodec(descriptor.parameters[0]!.codec)]))
   expect(codecs.getProjection!.parse({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })).toEqual({ workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' })
   const inputScope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1' }
   expect(codecs.getInputDescription!.parse(inputScope)).toEqual(inputScope)
@@ -407,7 +425,7 @@ it('validates each RPC request from JSON with exact field names and identifier c
 
 it('round trips a complete projection through the declared result codec and rejects non-object results', () => {
   for (const descriptor of WORKBENCH_REMOTE.descriptors) {
-    const codec = descriptor.result.create()
+    const codec = strictCodec(descriptor.result)
     if (['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'promptSaveCandidate', 'subscribe'].includes(descriptor.method)) continue
     if (descriptor.method === 'getTaskDraft' || descriptor.method === 'saveTaskDraft') {
       const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
@@ -429,14 +447,14 @@ it('round trips a complete projection through the declared result codec and reje
       for (const invalid of [undefined, [], 'result', { parameters: [] }, { parameters: [], size_candidates: [{ candidate_id: 'missing-representation' }] }]) expect(() => codec.parse(invalid), JSON.stringify(invalid) ?? 'undefined').toThrow()
       continue
     }
-    const value = descriptor.method === 'getProjection' ? projection() : { workspaceId: 'workspace_1' }
+    const value = descriptor.method === 'getProjection' ? projection() : descriptor.method === 'getEnvironment' ? environmentResultFixture() : { workspaceId: 'workspace_1' }
     expect(codec.parse(JSON.parse(JSON.stringify(value)))).toEqual(value)
     for (const invalid of [null, [], 'result', 1, { value: Number.NaN }, { '': 'empty key' }]) expect(() => codec.parse(invalid)).toThrow()
   }
 })
 
 it('validates task-draft scope and resource overrides through the public request codecs', () => {
-  const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, descriptor.parameters[0].codec.create()]))
+  const codecs = Object.fromEntries(WORKBENCH_REMOTE.descriptors.map(descriptor => [descriptor.method, strictCodec(descriptor.parameters[0].codec)]))
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', branchId: 'branch_1', functionId: 'parameters' }
   const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
   expect(codecs.getTaskDraft!.parse(scope)).toEqual(scope)
@@ -447,11 +465,26 @@ it('validates task-draft scope and resource overrides through the public request
 
 it('validates the historical Run request and nullable saved-input result through its Remote codecs', () => {
   const descriptor = WORKBENCH_REMOTE.descriptors.find(item => item.method === 'getRunInput')!
-  const request = descriptor.parameters[0].codec.create(), result = descriptor.result.create()
+  const request = strictCodec(descriptor.parameters[0].codec), result = strictCodec(descriptor.result)
   const scope = { workspaceId: 'workspace_1', workId: 'work_1', runId: 'run_1' }
   expect(request.parse(scope)).toEqual(scope)
   for (const value of [{ ...scope, runId: '' }, { ...scope, workId: undefined }, { ...scope, branchId: 'current_branch' }]) expect(() => request.parse(value)).toThrow()
   const input = { run_id: 'run_1', branch_id: 'branch_1', generation_input: projection().runs[0]!.generation_input, submitted_input: projection().runs[0]!.generation_input, effective_input: null, image_uploads: [], parameter_mapping: null, base_model_id: null, image_refs: [], workflow_image_bindings: [], input_description: null, prompt_input: { positive_prompt: null, negative_prompt: null } }
   expect(result.parse(input)).toEqual(input)
   for (const value of [{}, { ...input, generation_input: null }, { ...input, input_description: [] }, { ...input, prompt_input: { positive_prompt: 1 } }, { ...input, extra: true }]) expect(() => result.parse(value)).toThrow()
+})
+
+it('validates shared nested data in projection, environment and subscription output codecs', () => {
+  const codec = (method: string) => strictCodec(WORKBENCH_REMOTE.descriptors.find(item => item.method === method)!.result)
+  const snapshot = projection()
+  const environment = environmentResultFixture()
+  const update = { kind: 'snapshot', sequence: 1, projection: snapshot, promptTurns: [], translations: [] }
+  expect(codec('getProjection').parse(snapshot)).toEqual(snapshot)
+  expect(codec('getEnvironment').parse(environment)).toEqual(environment)
+  expect(codec('subscribe').parse(update)).toEqual(update)
+  for (const method of ['getProjection', 'getEnvironment', 'subscribe']) expect(() => codec(method).parse({})).toThrow()
+  const invalidProjection = { ...snapshot, runs: [{ ...snapshot.runs[0], generation_input: { ...snapshot.runs[0]!.generation_input, loras: 'invalid' } }] }
+  expect(() => codec('getProjection').parse(invalidProjection)).toThrow()
+  expect(() => codec('subscribe').parse({ ...update, projection: invalidProjection })).toThrow()
+  expect(() => codec('getEnvironment').parse({ ...environment, models: { ...environment.models, groups: [{ id: 'provider', name: 'Provider', models: [{ id: 7, name: 'Model' }] }] } })).toThrow()
 })

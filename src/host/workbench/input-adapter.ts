@@ -1,13 +1,15 @@
+import type { JsonValue } from '#contracts'
+import { contracts, ContractError } from '#contracts'
 import { flattenWorkflowRuntimeParameters, validateWorkflowRuntimeParameterValue } from '../../generation/inspection-contract.ts'
 import type { CatalogClient } from '../catalog/catalog-client.ts'
 import { GenerationRuntimeError, type GenerationRuntime } from '../generation/generation-runtime.ts'
 import { GenerationInputValidationError } from '../generation/workflow-compiler.ts'
-import { parseCliGenerationRequest, toGenerationRequest } from '../../cli/contract.ts'
+
 import { catalogDefinition } from '../../catalog/contract.ts'
 import { CATALOG_PRESENTATION } from '../../catalog/details-schema.ts'
 import { selectedResourceRefs, isPromptResourceKind } from '../../workbench/resources.ts'
-import { WORKBENCH_RESOURCE_KINDS, type ResourceSnapshot, type GenerationInput, type GenerationInputBase, type JsonValue, type ResourceRef, type TaskDraft } from '../../workbench/contract.ts'
-import { validateGenerationInput as validateStructure, validateTaskDraft, generationInputForDraft, WorkbenchError } from '../../workbench/validation.ts'
+import { WORKBENCH_RESOURCE_KINDS, type ResourceSnapshot, type GenerationInput, type GenerationInputBase, type ResourceRef, type TaskDraft } from '../../workbench/contract.ts'
+import { generationInputForDraft, WorkbenchError } from '../../workbench/validation.ts'
 
 import { parameterMapping, promptParameter, readGenerationPromptInput } from '../../workbench/prompt-input.ts'
 
@@ -28,6 +30,7 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
   const generationAt = async <T>(read: () => Promise<T>, path: string, operationSignal = signal): Promise<T> => {
     try { return await read() }
     catch (error) {
+      if (error instanceof ContractError) throw error
       if (operationSignal.aborted || error instanceof Error && error.name === 'AbortError') throw error
       const message = error instanceof Error ? error.message : String(error)
       const inputPath = error instanceof GenerationInputValidationError ? error.inputPath : null
@@ -66,7 +69,7 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
   const validateGenerationInput = async (raw: GenerationInput, path = 'generation_input', requestSignal?: AbortSignal): Promise<void> => {
     const operationSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal
     operationSignal.throwIfAborted()
-    const input = validateStructure(raw, path, true)
+    const input = contracts.parse((true) ? 'generationInputReady' : 'generationInput', 'input', raw)
     await resourceAt(catalog.resolveTemplate(input.template_id!, operationSignal), `${path}.template_id`)
     if (input.model) {
       const model = await resourceAt(catalog.resolveGenerationModel(input.model.id, operationSignal), `${path}.model.id`)
@@ -76,7 +79,7 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
       const lora = await resourceAt(catalog.resolveLora(selection.id, operationSignal), `${path}.loras.${index}.id`)
       if (lora.file_name !== selection.file_name) throw new WorkbenchError('WORKBENCH_RESOURCE_MISMATCH', 'LoRA 文件名与目录记录不一致，请重新选择 LoRA。', `${path}.loras.${index}.file_name`)
     }
-    await generationAt(() => runtime.validateGenerationRequest(toGenerationRequest(parseCliGenerationRequest(input)), operationSignal), path, operationSignal)
+    await generationAt(() => runtime.validateGenerationRequest(contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', input)), operationSignal), path, operationSignal)
   }
   const prepareGenerationInput = async (draft: TaskDraft): Promise<GenerationInputBase> => {
     const input = generationInputForDraft(structuredClone(draft.generation_input), Object.entries(draft.parameter_mapping ?? {}).filter(([, kind]) => kind === 'reference_image').map(([id]) => id))
@@ -96,11 +99,11 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
     return template.model_id ? (await resourceAt(catalog.resolveGenerationModel(template.model_id, signal), 'generation_input.template_id')).base_model_id : template.base_model_id
   }
   const resolveGenerationDraft = async (generationInput: GenerationInput): Promise<TaskDraft> => {
-    const input = validateStructure(generationInput, 'generation_input', true)
+    const input = contracts.parse((true) ? 'generationInputReady' : 'generationInput', 'input', generationInput)
     const parameters = flattenWorkflowRuntimeParameters(await inspect(input))
     const promptInput = readGenerationPromptInput(input, parameters)
     const generation = generationInputForDraft(input, parameters.filter(parameter => parameter.kind === 'reference_image').map(parameter => parameter.parameter_id))
-    return validateTaskDraft({ prompt_input: promptInput, generation_input: generation, parameter_mapping: parameterMapping(parameters), image_refs: input.image_refs ?? [], workflow_image_bindings: input.workflow_image_bindings ?? [], base_model_id: await resolveGenerationBaseModelId(input) })
+    return contracts.parse('taskDraft', 'input', { prompt_input: promptInput, generation_input: generation, parameter_mapping: parameterMapping(parameters), image_refs: input.image_refs ?? [], workflow_image_bindings: input.workflow_image_bindings ?? [], base_model_id: await resolveGenerationBaseModelId(input) })
   }
   const parameterArtifactDescriptors = async (input: GenerationInputBase, operationSignal = signal) => flattenWorkflowRuntimeParameters(await inspect(input, operationSignal)).filter(parameter => !['positive_prompt', 'negative_prompt', 'reference_image'].includes(parameter.kind))
   const validateParameters = async (input: GenerationInputBase, parameters: Record<string, JsonValue>, path = 'artifact.parameters', requestSignal?: AbortSignal): Promise<void> => {
@@ -116,7 +119,7 @@ export function createWorkbenchInputAdapter({ runtime, catalog, signal = new Abo
   const validateDraft = async (raw: TaskDraft, requestSignal?: AbortSignal): Promise<void> => {
     const operationSignal = requestSignal ? AbortSignal.any([signal, requestSignal]) : signal
     operationSignal.throwIfAborted()
-    const draft = validateTaskDraft(raw)
+    const draft = contracts.parse('taskDraft', 'input', raw)
     if (!draft.generation_input.instance_id || !draft.generation_input.template_id) return
     const description = await inspect(draft.generation_input, operationSignal)
     const parameters = new Map(flattenWorkflowRuntimeParameters(description).map(parameter => [parameter.parameter_id, parameter]))

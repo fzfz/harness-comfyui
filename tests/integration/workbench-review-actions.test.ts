@@ -1,3 +1,4 @@
+import { contracts } from '#contracts'
 import { saveFixtureDraft } from '../support/workbench-draft.ts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -5,7 +6,7 @@ import type { GenerationTransport } from '../../src/host/generation/generation-r
 import type { ReviewDraft } from '../../src/workbench/contract.ts'
 import type { WorkbenchScope } from '../../src/workbench-remote.ts'
 import { CatalogError } from '../../src/host/catalog/catalog-client.ts'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 
 const cleanups: (() => Promise<void>)[] = []
@@ -23,7 +24,7 @@ it('saves an experience in the actual later experiment Run model scope without c
   await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'review', observation: 'Rain is complete', conclusion: 'Try the snow model', run_ids: [firstRunId] } }, identity)
   const candidate = { ...task.input.generation_input, model: { id: '4', file_name: 'snow.safetensors' } }
   await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'generation_input', generation_input: candidate, image_refs: [], workflow_image_bindings: [] } }, identity)
-  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...candidate, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...candidate, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
   const runId = accepted.items[0]!.runId
   for (let phase = 0; phase < 4; phase += 1) await host.runtime.advance()
   const expected = await reviewDraft(host, selected, runId)
@@ -233,7 +234,7 @@ async function acceptRun(host: Host, selected: WorkbenchScope, finish = true, ty
   const receipt = await host.remote.mutate({ ...selected, type }, signal())
   const task = (await host.remote.getProjection(selected, signal())).tasks.find(item => item.task_id === receipt.taskId)!
   const identity = { workspaceId: selected.workspaceId, sessionId: task.session_id!, turn: 1, callId: randomUUID() }
-  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: toGenerationRequest({ ...task.input.generation_input, instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
+  const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...task.input.generation_input, instance_id: task.input.generation_input.instance_id!, template_id: task.input.generation_input.template_id! }) }], undefined, task.task_id)
   const runId = accepted.items[0]!.runId
   if (finish) for (let phase = 0; phase < 4; phase += 1) await host.runtime.advance()
   return runId

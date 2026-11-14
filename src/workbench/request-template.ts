@@ -1,40 +1,15 @@
+import { contracts, type ContractValue } from '#contracts'
 import configuration from './request-template.json' with { type: 'json' }
 
 export type PromptBlockName = keyof typeof configuration.blocks
 export type PromptReferenceName = keyof typeof configuration.references
-export interface PromptRequestParts {
-  readonly block_templates: Record<PromptBlockName, string>
-  readonly reference_descriptions: Record<PromptReferenceName, string>
-}
-export interface PromptRequestInput {
-  readonly base_model_id: string
-  readonly base_model_name: string
-  readonly original_request: string
-  readonly change_request: string
-  readonly positive_prompt: string
-  readonly negative_prompt: string
-  readonly reference_context: Partial<Record<PromptReferenceName, unknown>> & { selected_resources?: import('./contract.ts').ResourceSnapshot[] }
-}
+export type PromptRequestParts = ContractValue<'promptRequestParts'>
+export type PromptRequestInput = ContractValue<'promptRequestInput'>
 export const PROMPT_BLOCKS = configuration.blocks
 export const PROMPT_REFERENCES = configuration.references
 export const DEFAULT_PROMPT_REQUEST_PARTS: PromptRequestParts = {
   block_templates: Object.fromEntries(Object.entries(PROMPT_BLOCKS).map(([name, block]) => [name, block.template])) as Record<PromptBlockName, string>,
   reference_descriptions: Object.fromEntries(Object.entries(PROMPT_REFERENCES).map(([name, reference]) => [name, reference.description])) as Record<PromptReferenceName, string>,
-}
-
-export function requestTemplateVariables(kind = 'run', block?: PromptBlockName) {
-  return block ? PROMPT_BLOCKS[block].variables : configuration.variables[kind === 'prompt' ? 'prompt' : kind === 'translate' ? 'translate' : 'task']
-}
-
-export function requestTemplateProblem(template: string, kind = 'run', block?: PromptBlockName): string {
-  if (!template.trim()) return configuration.errors.empty
-  const variables = requestTemplateVariables(kind, block), names: string[] = variables.map(item => item.name)
-  const placeholder = names.map(name => '{{' + name + '}}').join('、')
-  const tokens = [...template.matchAll(/\{\{([^{}]*)\}\}/g)]
-  const problem = tokens.some(match => !names.includes(match[1].trim())) ? 'unsupported'
-    : !tokens.some(match => names.includes(match[1].trim())) ? 'missing'
-    : /\{\{|\}\}/.test(template.replace(/\{\{[^{}]*\}\}/g, '')) ? 'incomplete' : null
-  return problem ? configuration.errors[problem].replace('{placeholder}', placeholder) : ''
 }
 
 function replaceFields(template: string, values: Readonly<Record<string, unknown>>): string {
@@ -44,8 +19,9 @@ function replaceFields(template: string, values: Readonly<Record<string, unknown
   })
 }
 
-export function renderRequestTemplate(template: string, value: string, kind = 'run'): string {
-  return replaceFields(template, { [requestTemplateVariables(kind)[0].name]: value })
+export function renderRequestTemplate(template: string, value: string, kind?: string): string {
+  const variables = contracts.parse('requestTemplateVariables', 'input', kind === undefined ? {} : { kind })
+  return replaceFields(template, { [variables[0].name]: value })
 }
 
 export function buildPromptRequest(template: string, input: PromptRequestInput, parts: PromptRequestParts = DEFAULT_PROMPT_REQUEST_PARTS): string {

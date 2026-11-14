@@ -100,3 +100,16 @@
 2. [存储验收](../../tests/integration/workbench-storage.test.ts)覆盖默认生成提示词的保存、候选采用及查询返回的持久记录。
 3. [事务验收](../../tests/unit/storage-transaction.test.ts)覆盖嵌套事务提交与回滚后的通知。
 4. [Client 交付验收](../../tests/unit/experiment-delivery-boundaries.test.tsx)覆盖历史加载、订阅通知及页面关闭。[输入编辑验收](../../tests/unit/experiment-preparation.test.ts)覆盖保存期间的本地修改。
+
+## 合同模块验收
+
+1. [contracts.test.ts](../../tests/unit/contracts.test.ts)验证公开接口；[类型矩阵](../../tests/unit/contracts-value-matrix.test.ts)验证类型语义、约束、宿主声明及规范化返回值。
+2. [原生工具用例](../../tests/unit/workbench-native-tools.test.ts)验证工具返回值。
+3. [专用工具用例](../../tests/unit/workbench-specialist-tools.test.ts)验证输出拦截。
+4. [CLI route 用例](../../tests/integration/cli-route.test.ts)验证规范化结果交付。
+5. [Remote 用例](../../tests/unit/workbench-remote.test.ts)验证请求与响应解析。
+6. `pnpm check:contracts-boundary`执行[依赖门禁](../../scripts/security/check-contract-boundary.mjs)。[contracts-boundary.test.mjs](../../tests/contract/contracts-boundary.test.mjs)验证合同模块的入口约束及依赖门禁的拒绝行为。
+7. [插件包测试](../../tests/production/plugin-package.test.mjs)验证安装包能够独立运行，官方 Desktop E2E 验证宿主载入与业务交付。
+
+8. [Schema 联动用例](../../tests/contract/contracts-schema-sync.test.mjs)在隔离副本中修改一处字段声明，验证派生类型、帮助、输入解析和输出校验同步变化。
+9. [设置声明用例](../../tests/unit/contracts-settings.test.ts)验证宿主序列化与客户端重建后的字段约束。

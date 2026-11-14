@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { contracts } from '#contracts'
 import type { WorkbenchEnvironment } from '../../workbench-remote.ts'
 import type { AgentModel, FunctionBinding, FunctionBindingEditable, TaskKind } from '../../workbench/contract.ts'
 import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
 import { agentModelProblem } from '../../workbench/agent-model.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
-import { buildPromptRequest, DEFAULT_PROMPT_REQUEST_PARTS, PROMPT_BLOCKS, PROMPT_REFERENCES, requestTemplateProblem, type PromptBlockName, type PromptReferenceName, type PromptRequestInput } from '../../workbench/request-template.ts'
+import { buildPromptRequest, DEFAULT_PROMPT_REQUEST_PARTS, PROMPT_BLOCKS, PROMPT_REFERENCES, type PromptBlockName, type PromptReferenceName, type PromptRequestInput } from '../../workbench/request-template.ts'
 import { ExperimentTemplateEditor } from './experiment-template-editor.tsx'
 import type { ExperimentRemote } from './experiment-contract.ts'
 import { Button, Modal } from './experiment-controls.tsx'
@@ -129,8 +130,8 @@ function FunctionEditor({ binding, create = false, functions, loadEnvironment, o
   const presets = environment?.presets.filter(item => !item.broken) ?? []
   const preset = presets.find(item => item.id === draft.preset_id)
   const parts = draft.request_parts ?? DEFAULT_PROMPT_REQUEST_PARTS
-  const problem = requestTemplateProblem(draft.request_template, draft.kind) || (draft.kind === 'prompt'
-    ? Object.entries(parts.block_templates).map(([name, template]) => requestTemplateProblem(template, 'prompt', name as PromptBlockName)).find(Boolean) : '') || (environment
+  const problem = contracts.parse('requestTemplateProblem', 'input', { template: draft.request_template, kind: draft.kind }) || (draft.kind === 'prompt'
+    ? Object.entries(parts.block_templates).map(([name, template]) => contracts.parse('requestTemplateProblem', 'input', { template, kind: 'prompt', block: name as PromptBlockName })).find(Boolean) : '') || (environment
     ? !preset ? presentation.selectAvailablePreset : agentModelProblem(draft.agent_model, groups, environment.models.routableProviders) : '')
   const update = (value: Partial<FunctionBinding>) => { setDraft(before => ({ ...before, ...value })); setError('') }
   const selectModel = (providerId: string, modelId?: string) => {

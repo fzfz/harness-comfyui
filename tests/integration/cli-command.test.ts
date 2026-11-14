@@ -190,8 +190,8 @@ describe('managed CLI manifest preflight', () => {
       { value: { items: [] }, diagnostic: 'items' },
       { value: { items: Array.from({ length: 21 }, () => item) }, diagnostic: '20' },
       { value: { items: [item, item] }, diagnostic: 'duplicates' },
-      { value: { items: [{ ...item, request_id: 'invalid' }] }, diagnostic: 'UUID' },
-      { value: { items: [{ ...item, session_id: 'forged' }] }, diagnostic: 'properties' },
+      { value: { items: [{ ...item, request_id: 'invalid' }] }, diagnostic: 'request_id' },
+      { value: { items: [{ ...item, session_id: 'forged' }] }, diagnostic: 'session_id' },
       { value: { items: [{ ...item, parameter_files: { positive_prompt: 'relative.txt' } }] }, diagnostic: 'absolute path' },
       { value: { items: [{ ...item, request: { ...request, parameters: { positive_prompt: 'duplicate' } }, parameter_files: { positive_prompt: path } }] }, diagnostic: 'both parameters and parameter_files' },
       { value: { items: [item, { ...item, request_id: '11234567-89ab-4cde-8fab-0123456789ab', parameter_files: { positive_prompt: join(directory, 'missing.txt') } }] }, diagnostic: 'items[1] parameter positive_prompt file' },
@@ -203,7 +203,7 @@ describe('managed CLI manifest preflight', () => {
         const result = await runCli({ args: ['generation', 'submit', '--stdin'], stdin: JSON.stringify(testCase.value), apiUrl: host.apiUrl })
         expect(result.exitCode, JSON.stringify(testCase.value)).toBe(2)
         expect(result.stdout).toBe('')
-        expect(result.stderr).toContain(testCase.diagnostic)
+        expect(result.stderr, result.stderr).toContain(testCase.diagnostic)
       }
       expect(host.requests).toEqual([])
     } finally { await host.close() }
@@ -987,11 +987,11 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
       apiUrl: `http://127.0.0.1:${address.port}/api/harness-comfyui/cli/v1`,
     })
 
-    expectCliResult(result, {
-      exitCode: 2,
-      stdout: '',
-      stderr: 'CLI_ARGUMENT_INVALID: CLI command is invalid; received argv: ["image","run-media","--stdin"]. Pass the command words and options shown by --help\n',
-    })
+    expect(result.exitCode).toBe(2)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('CLI_ARGUMENT_INVALID:')
+    expect(result.stderr).toContain('CLI command is invalid')
+    expect(result.stderr).toContain('["image","run-media","--stdin"]')
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
@@ -1084,7 +1084,8 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
 
     expect(result.exitCode).toBe(2)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain('CLI_REQUEST_INVALID: CLI request run_ids must contain between 1 and 20 strings')
+    expect(result.stderr).toContain('CLI_REQUEST_INVALID:')
+    expect(result.stderr).toMatch(/run_ids.*(?:>= 1|at least 1)/u)
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })
@@ -1151,7 +1152,8 @@ describe('installed managed Harness ComfyUI CLI executable', () => {
 
     expect(result.exitCode).toBe(2)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain('CLI_ARGUMENT_INVALID: CLI command is invalid')
+    expect(result.stderr).toContain('CLI_ARGUMENT_INVALID:')
+    expect(result.stderr).toContain('--stdin')
     expect(requests).toBe(0)
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   })

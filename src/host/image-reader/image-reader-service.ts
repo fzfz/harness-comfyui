@@ -1,4 +1,5 @@
-import { imageReaderPromptIssue, IMAGE_READER_PROMPT_MAX_LENGTH } from '../../image-reader/prompt-contract.ts'
+import { contracts } from '#contracts'
+import { IMAGE_READER_PROMPT_MAX_LENGTH } from '../../image-reader/prompt-contract.ts'
 import { imageReaderDiagnosticSchema, type ImageReaderDiagnostic } from '../../image-reader/diagnostics-schema.ts'
 
 import type { ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
@@ -136,7 +137,7 @@ export class ImageReaderService {
     if (profile.model.trim().length === 0 || (profile.provider.trim().length === 0 && this.options.scope.prepare === undefined)) {
       throw new ImageReaderError('IMAGE_READER_MODEL_NOT_CONFIGURED', 'Image reading requires a configured provider and visual model.')
     }
-    const promptIssue = prompt === undefined ? undefined : imageReaderPromptIssue(prompt)
+    const promptIssue = prompt === undefined ? undefined : contracts.parse('imageReaderPromptIssue', 'input', prompt)
     if (promptIssue === 'required') {
       throw new ImageReaderError('IMAGE_READER_PROMPT_REQUIRED', 'The per-call image reading prompt must contain non-whitespace text.')
     }

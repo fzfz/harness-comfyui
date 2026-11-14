@@ -114,7 +114,7 @@
 
 1. [ExperimentWorkbenchHost](../../src/client/workbench/experiment-host.tsx) 在官方主面板承载实验工作台。[ExperimentWorkbenchStore](../../src/client/workbench/experiment-store.ts) 管理浏览选择、业务订阅和滚动位置；界面通过 [Workbench Remote](../../src/workbench-remote.ts) 读取工作数据及当前 Profile 的经验、收藏与引用记录。
 
-2. [WorkbenchService](../../src/workbench/service.ts) 处理任务固定输入、引用快照、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。[工作台原生 Tool](../../src/host/workbench/tools.ts) 与受管 CLI 共用领域服务、[schema](../../src/workbench/schema.ts)及[字段说明](../../config/workbench-tool-descriptions.json)。
+2. [WorkbenchService](../../src/workbench/service.ts) 处理任务固定输入、引用快照、产物和执行状态。[HarnessWorkbenchSessions](../../src/host/workbench/harness-adapter.ts) 使用官方 Session 入口创建会话、选择模型、投递任务和查询主子会话状态。[工作台原生 Tool](../../src/host/workbench/tools.ts) 与受管 CLI 共用领域服务，数据解析遵循本页“合同模块”一节。
 
 3. 持续实验通过 [功能发现与委派工具](../../src/host/workbench/tools.ts) 读取功能配置并创建功能子任务。[会话适配器](../../src/host/workbench/harness-adapter.ts) 按配置调用官方子会话接口；[任务存储](../../src/host/storage/workbench-store.ts) 保存父子任务、Run 执行者、逐轮评价与计划。字段合同见 [contract.ts](../../src/workbench/contract.ts)。
 
@@ -141,3 +141,10 @@
 3. 处理后的图片统一保存为宿主 Attachment，并通过 `llm.prepareCall()` 调用宿主 Provider。宿主负责请求协议、流式响应和取消；图片读取服务负责图片输入、观察文本与业务错误。自定义 Chat Completions 地址接入同一调用路径，Provider 适配入口为 [ImageReaderNativeSettings](../../src/host/image-reader/native-settings.ts)。
 
 4. 执行 [comfyui-image-review](../../.agents/skills/comfyui-image-review/SKILL.md) 的 Agent 负责依据参数和观察完成 Prompt 比较与改进。[local-image-reader](../../.agents/skills/local-image-reader/SKILL.md) 定义用户提供本地图片时的读取流程。命名配置、凭据、默认提示词和调用诊断见[图片读取设置](configuration.md#图片读取设置)。
+
+## 合同模块
+
+1. 工具、CLI、Remote、业务服务、Client、帮助脚本和测试通过 `#contracts` 调用[公开入口](../../src/contracts/index.ts)。[package.json](../../package.json)定义模块映射。
+2. 合同模块的[内部 Schema](../../src/contracts/internal/schema.ts)是业务数据格式的唯一声明来源。模块内部负责解析、转换、规范化、约束校验和帮助生成；消费者只使用公开入口及其派生类型。
+3. 业务处理函数负责校验调用身份、权限、资源存在性和任务状态。
+4. [依赖门禁](../../scripts/security/check-contract-boundary.mjs)约束消费者访问范围，验收入口见[测试规范](testing.md#合同模块验收)。

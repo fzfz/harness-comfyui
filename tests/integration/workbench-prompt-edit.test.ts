@@ -354,7 +354,9 @@ describe('prompt editing through the workbench remote', () => {
     const payloads = { promptStart: f.request, promptGet: lookup, promptCancel: lookup, promptList: { workspace_id: 'workspace_1', task_id: turn.task_id }, promptAdopt: { ...lookup, positive_prompt: 'adopted', negative_prompt: '' } }
     for (const method of ['promptStart', 'promptGet', 'promptCancel', 'promptList', 'promptAdopt'] as const) {
       const descriptor = WORKBENCH_REMOTE.descriptors.find(item => item.method === method)!
-      const requestCodec = descriptor.parameters[0]!.codec.create()
+      const parameter = descriptor.parameters[0]!.codec
+      if (parameter.mode !== 'strict' || descriptor.result.mode !== 'strict') throw new Error('Prompt Remote requires strict request and result codecs')
+      const requestCodec = parameter.create()
       expect(requestCodec.parse(payloads[method])).toEqual(payloads[method])
       expect(() => requestCodec.parse({ ...payloads[method], extra: true })).toThrow()
       const resultCodec = descriptor.result.create()
@@ -408,7 +410,9 @@ describe('prompt editing through the workbench remote', () => {
     expect(started.input).toEqual(preview)
     expect(f.store.getTask(started.task_id).input.reference_experiences).toEqual(draft.reference_experiences)
     const descriptor = WORKBENCH_REMOTE.descriptors.find(item => item.method === 'promptPreview')!
-    expect(descriptor.parameters[0]!.codec.create().parse(request)).toMatchObject(request)
+    const parameter = descriptor.parameters[0]!.codec
+    if (parameter.mode !== 'strict' || descriptor.result.mode !== 'strict') throw new Error('Prompt preview requires strict request and result codecs')
+    expect(parameter.create().parse(request)).toMatchObject(request)
     expect(descriptor.result.create().parse(preview)).toEqual(preview)
   })
   it.each([

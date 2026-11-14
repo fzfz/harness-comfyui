@@ -905,7 +905,7 @@ describe('GenerationRuntime historical Run input lookup', () => {
     await expect(runtime.readGenerationRunInputs({
       workspaceId: 'workspace_1',
       runIds: missingRunIds,
-    })).rejects.toThrow('between 1 and 20')
+    })).rejects.toThrow(/cliRunIds.*array length <= 20/u)
     runtime.close()
   })
 

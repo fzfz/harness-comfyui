@@ -1,5 +1,5 @@
 import type { SaveImageReaderProfileRequest } from './contract.ts'
-import { imageReaderPromptIssue } from './prompt-contract.ts'
+import { contracts } from '#contracts'
 import {
   IMAGE_READER_API_KEY_MAX_LENGTH,
   IMAGE_READER_ENDPOINT_MAX_LENGTH,
@@ -98,7 +98,7 @@ export function validateSaveImageReaderProfileRequest(
 
   if (profile.model.trim().length === 0) invalid('IMAGE_READER_MODEL_REQUIRED')
   if (profile.model.length > IMAGE_READER_MODEL_MAX_LENGTH) invalid('IMAGE_READER_MODEL_TOO_LONG')
-  const promptIssue = imageReaderPromptIssue(profile.defaultPrompt)
+  const promptIssue = contracts.parse('imageReaderPromptIssue', 'input', profile.defaultPrompt)
   if (promptIssue === 'required') invalid('IMAGE_READER_DEFAULT_PROMPT_REQUIRED')
   if (promptIssue === 'too-long') invalid('IMAGE_READER_DEFAULT_PROMPT_TOO_LONG')
   if (!Number.isFinite(profile.temperature)) invalid('IMAGE_READER_TEMPERATURE_NUMBER_INVALID')

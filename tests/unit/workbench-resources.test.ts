@@ -1,21 +1,21 @@
-import Schema from '@deepseek-ai/schemastery'
+import { contracts } from '#contracts'
 import { describe, expect, it, vi } from 'vitest'
 import { CATALOG_KIND_DEFINITIONS } from '../../src/catalog/contract.ts'
 import { CATALOG_PRESENTATION, type CatalogDetails } from '../../src/catalog/details-schema.ts'
 import { createWorkbenchInputAdapter } from '../../src/host/workbench/input-adapter.ts'
-import { validateArtifact, validateTaskDraft } from '../../src/workbench/validation.ts'
-import { taskInputSchema } from '../../src/workbench/schema.ts'
 
-const draft = () => validateTaskDraft({ prompt_input: { positive_prompt: 'rain', negative_prompt: null }, generation_input: { title: 'scene', instance_id: null, template_id: null, model: null, loras: [], parameters: {} }, parameter_mapping: null, base_model_id: null })
+
+
+const draft = () => contracts.parse('taskDraft', 'input', { prompt_input: { positive_prompt: 'rain', negative_prompt: null }, generation_input: { title: 'scene', instance_id: null, template_id: null, model: null, loras: [], parameters: {} }, parameter_mapping: null, base_model_id: null })
 
 describe('workbench resource selection contract', () => {
   it('accepts all catalog categories in recommendations and preserves same-id distinct categories', () => {
     const refs = CATALOG_KIND_DEFINITIONS.map(({ kind }) => ({ kind, id: '1' }))
-    expect(validateArtifact({ type: 'resources', refs })).toEqual({ type: 'resources', refs })
+    expect(contracts.parse('taskArtifact', 'input', { type: 'resources', refs })).toEqual({ type: 'resources', refs })
     expect(draft().prompt_resource_refs).toEqual([])
-    expect(validateTaskDraft({ ...draft(), prompt_resource_refs: [{ kind: 'style', id: '1' }, { kind: 'artist-string', id: '1' }] }).prompt_resource_refs).toHaveLength(2)
-    expect(() => validateTaskDraft({ ...draft(), prompt_resource_refs: [{ kind: 'model', id: '1' }] })).toThrow()
-    expect(() => validateTaskDraft({ ...draft(), prompt_resource_refs: [{ kind: 'style', id: '1' }, { kind: 'style', id: '1' }] })).toThrow()
+    expect(contracts.parse('taskDraft', 'input', { ...draft(), prompt_resource_refs: [{ kind: 'style', id: '1' }, { kind: 'artist-string', id: '1' }] }).prompt_resource_refs).toHaveLength(2)
+    expect(() => contracts.parse('taskDraft', 'input', { ...draft(), prompt_resource_refs: [{ kind: 'model', id: '1' }] })).toThrow()
+    expect(() => contracts.parse('taskDraft', 'input', { ...draft(), prompt_resource_refs: [{ kind: 'style', id: '1' }, { kind: 'style', id: '1' }] })).toThrow()
   })
 
   it('resolves draft resources into independent source-field snapshots with selected LoRA weight', async () => {
@@ -31,7 +31,7 @@ describe('workbench resource selection contract', () => {
     expect(snapshots[1]!.fields).toEqual({ base_model_id: '5', name: 'Soft ink', prompt_text: '@ink', style_description: null, aliases_json: null })
     expect(snapshots[2]!.fields.artist_string).toBe('@line')
     const { instructions: _instructions, ...input } = selected
-    const saved = Schema.resolve({ ...input, requirements: { original_request: 'scene', instructions: '' }, requested_skill: null, max_runs: 0, selected_resources: snapshots }, taskInputSchema, {})[0]
+    const saved = contracts.parse('taskInput', 'output', { ...input, requirements: { original_request: 'scene', instructions: '' }, requested_skill: null, max_runs: 0, selected_resources: snapshots })
     expect(saved.selected_resources).toEqual(snapshots)
     expect(Object.keys(snapshots[0]!.fields)).toEqual(CATALOG_PRESENTATION.kinds.lora.prompt_fields)
     selected.generation_input.loras[0]!.weight = 0.9

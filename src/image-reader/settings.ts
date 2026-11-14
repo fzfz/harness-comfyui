@@ -1,4 +1,4 @@
-import { imageReaderPromptSchema, imageReaderPromptIssue } from './prompt-contract.ts'
+import { contracts } from '#contracts'
 import bundledProfiles from '../../config/image-reader-profiles.json' with { type: 'json' }
 import settingsEntryIds from '../../config/settings-entry-ids.json' with { type: 'json' }
 import Schema from '@deepseek-ai/schemastery'
@@ -141,7 +141,7 @@ const imageReaderProfileSchema = Schema.object({
   endpoint: Schema.string().max(IMAGE_READER_ENDPOINT_MAX_LENGTH),
   model: Schema.string().max(IMAGE_READER_MODEL_MAX_LENGTH).required(),
   hasApiKey: Schema.boolean(),
-  defaultPrompt: imageReaderPromptSchema.required(),
+  defaultPrompt: contracts.bind('imageReaderDefaultPrompt', 'settings'),
   temperature: Schema.number().min(IMAGE_READER_TEMPERATURE_MIN).max(IMAGE_READER_TEMPERATURE_MAX).required(),
   maxTokens: Schema.natural().min(IMAGE_READER_MAX_TOKENS_MIN).max(IMAGE_READER_MAX_TOKENS_MAX).required(),
 })
@@ -194,7 +194,7 @@ function decodeImageReaderProfile(value: unknown): ImageReaderProfile | undefine
     || source.model.length > IMAGE_READER_MODEL_MAX_LENGTH
     || typeof source.hasApiKey !== 'boolean'
     || typeof source.defaultPrompt !== 'string'
-    || imageReaderPromptIssue(source.defaultPrompt) !== undefined
+    || contracts.parse('imageReaderPromptIssue', 'input', source.defaultPrompt) !== undefined
     || typeof source.temperature !== 'number'
     || !Number.isFinite(source.temperature)
     || source.temperature < IMAGE_READER_TEMPERATURE_MIN

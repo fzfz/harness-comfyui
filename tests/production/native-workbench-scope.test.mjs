@@ -3,11 +3,16 @@ import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { materializeTestPluginResources } from '../support/plugin-runtime-resources.ts'
 
 const execFile = promisify(execFileCallback)
 const repositoryRoot = resolve(import.meta.dirname, '../..')
 const { application } = JSON.parse(await readFile(resolve(repositoryRoot, 'config/desktop-e2e.json'), 'utf8'))
+const manifest = JSON.parse(await readFile(resolve(repositoryRoot, 'package.json'), 'utf8'))
+let candidate
+beforeAll(async () => { candidate = await materializeTestPluginResources() }, 30_000)
+afterAll(async () => { await candidate?.dispose() })
 
 describe('official workbench Preset assembly', () => {
   it.each([
@@ -24,6 +29,7 @@ describe('official workbench Preset assembly', () => {
     const { stdout } = await execFile(resolve(application.bundlePath, application.executableRelativePath), [
       resolve(import.meta.dirname, 'fixtures/native-workbench-preset-runtime.mjs'), scenario,
       resolve(application.bundlePath, 'Contents/Resources/app.asar/dsh/package.json'),
+      candidate.resource(manifest.exports['./workbench-tools'].default),
     ], { cwd: repositoryRoot, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, encoding: 'utf8' })
     expect(JSON.parse(stdout)).toEqual({ scenario, passed: true })
   })

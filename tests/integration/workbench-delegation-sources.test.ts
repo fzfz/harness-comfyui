@@ -1,6 +1,7 @@
+import { contracts } from '#contracts'
 import { randomUUID } from 'node:crypto'
 import { afterEach, expect, it, vi } from 'vitest'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import type { GenerationPreparationAdapter, GenerationTransport } from '../../src/host/generation/generation-runtime.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../src/generation/inspection-contract.ts'
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
@@ -72,7 +73,7 @@ it('uses the adopted candidate model and saved template mapping when delegating 
   const f = await fixture()
   const run = async (taskId: string, sessionId: string) => {
     const input = f.store.getTask(taskId).input.generation_input
-    const accepted = await f.runtime.acceptGenerations({ ...f.identity, sessionId }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, taskId)
+    const accepted = await f.runtime.acceptGenerations({ ...f.identity, sessionId }, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...input, instance_id: input.instance_id!, template_id: input.template_id! }) }], undefined, taskId)
     for (let step = 0; step < 5; step += 1) await f.runtime.advance()
     return accepted.items[0]!.runId
   }
@@ -159,7 +160,7 @@ it('returns child questions, answers, artifact owners and run executors through 
   expect(answered.status).not.toBe('waiting_input')
   expect(f.resume).toHaveBeenCalledOnce()
   const executor = await f.delegate('run', { type: 'initial' })
-  const accepted = await f.runtime.acceptGenerations({ ...f.identity, sessionId: executor.session_id }, [{ requestId: randomUUID(), request: toGenerationRequest({ ...f.parent.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, executor.task_id)
+  const accepted = await f.runtime.acceptGenerations({ ...f.identity, sessionId: executor.session_id }, [{ requestId: randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...f.parent.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, executor.task_id)
   const runId = accepted.items[0]!.runId
   for (let step = 0; step < 5; step += 1) await f.runtime.advance()
   const reviewer = await f.delegate('review', { type: 'run', run_id: runId }, [question.artifact_id])

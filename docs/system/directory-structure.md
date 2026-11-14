@@ -20,13 +20,14 @@
    | [src/host/generation/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/generation>) | Generation Runtime、Workflow 参数化、官方前端导出、缓存、Comfy transport、coordinator 与媒体服务。 |
    | [src/host/workbench/](../../src/host/workbench/) | 实验工作台的官方 Session 适配、输入校验与 Remote 服务。 |
    | [src/host/storage/](../../src/host/storage/) | 工作台对象的 SQLite 存储、事务和产物文件管理。 |
+   | [src/contracts/](../../src/contracts/) | 合同模块；接口职责见[系统架构](architecture.md#合同模块)。 |
    | [src/workbench/](../../src/workbench/) | 工作、分支、资源引用与快照、任务、产物和经验的领域合同及任务服务。 |
    | [src/workbench-remote.ts](../../src/workbench-remote.ts) | 实验工作台的查询与操作接口。 |
    | [src/host/image-reader/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/image-reader>) | 图片读取配置、原生 Provider 设置适配、输入处理与视觉模型调用。 |
    | [src/host/resource-path.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/resource-path.ts>) | 已安装包内资源的定位入口。 |
    | [src/host/node-script-environment.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/host/node-script-environment.ts>) | Electron Node 脚本环境入口。 |
    | [src/source-settings.ts](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/source-settings.ts>) | 数据源地址与端口合同。 |
-   | [src/cli/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/cli>) | 受管 CLI 的业务请求和参数合同。 |
+   | [src/cli/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/cli>) | 受管 CLI 的环境、路由常量与派生请求类型。 |
    | [src/generation/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/generation>) | Generation Remote、媒体 URL 与历史 Run 查询合同。 |
    | [src/image-reader/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/image-reader>) | 图片读取配置、凭据操作、模型目录与 Remote 合同。 |
    | [src/catalog/](</Volumes/4Tdisk/work/AI2/harness-comfyui/src/catalog>) | Catalog 展示字段、详情 schema 与上下文类型。 |

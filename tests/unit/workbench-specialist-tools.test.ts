@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import { validateJsonSchemaValue, type ToolDefinition, type ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { randomUUID } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -29,6 +29,31 @@ function observationJobs() {
 }
 
 describe('specialist business tools', () => {
+  it('delivers nullable Workflow values through the registered tool and host output validator', async () => {
+    const result = { parameters: [{ parameter_id: 'seed', kind: 'seed', value_type: 'integer', current_value: null }], size_candidates: [] }
+    const runtime = { inspectTemplateRuntimeParameters: vi.fn(async () => result) }
+    const tools = new Map<string, ToolDefinition>()
+    apply({ tools: { register: (tool: ToolDefinition) => tools.set(tool.name, tool) }, harnessComfyuiWorkbench: { service: {} }, harnessComfyuiCore: { services: { runtime } } } as unknown as Context, { roleId: 'harness-comfyui-parameters' })
+    const tool = tools.get('workbench_workflow_parameters')!
+    const value = await tool.execute({ template_id: '47', instance_id: '2' }, {
+      signal: new AbortController().signal, callId: 'parameters', rootCallId: 'parameters',
+      agent: { session: { id: 'parameter-session', header: { cwd: '/project' }, snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'parameters', turn: 1 } }] } },
+    } as unknown as ToolRunContext)
+    expect(value).toEqual(result)
+    expect(validateJsonSchemaValue(tool.output.schema, value)).toEqual([])
+  })
+
+  it('rejects an invalid Workflow size before the registered tool delivers its output', async () => {
+    const parameter = { parameter_id: 'size', kind: 'resolution_preset', value_type: 'choice', current_value: 'small' }
+    const result = { parameters: [], size_candidates: [{ candidate_id: 'preset', representation: 'resolution_preset', parameter, mapped_options: [{ value: 'small', width: -1, height: 1024 }], unmapped_values: [] }] }
+    const tools = new Map<string, ToolDefinition>()
+    apply({ tools: { register: (tool: ToolDefinition) => tools.set(tool.name, tool) }, harnessComfyuiWorkbench: { service: {} }, harnessComfyuiCore: { services: { runtime: { inspectTemplateRuntimeParameters: async () => result } } } } as unknown as Context, { roleId: 'harness-comfyui-parameters' })
+    await expect(tools.get('workbench_workflow_parameters')!.execute({ template_id: '47', instance_id: '2' }, {
+      signal: new AbortController().signal, callId: 'parameters', rootCallId: 'parameters',
+      agent: { session: { id: 'parameter-session', header: { cwd: '/project' }, snapshotEvents: () => [{ type: 'tool/call', data: { callId: 'parameters', turn: 1 } }] } },
+    } as unknown as ToolRunContext)).rejects.toThrow(/width|output/u)
+  })
+
   it('reports a missing Run observer only when the consumer requests generation.wait', async () => {
     await expect(dispatch({ runtime: {} as never, imageReader: {} as never, workspaceRegistry: {} as never },
       { sessionId: 'session', cwd: '/project', callId: 'wait-call', rootCallId: 'wait-call', turn: 1 },
@@ -83,6 +108,11 @@ describe('specialist business tools', () => {
     }
     try {
       apply(ctx, { roleId: 'harness-comfyui-prompt' })
+      expect(tools.get('workbench_file_read')!.description).toContain('offset')
+      expect(tools.get('workbench_file_read')!.description).toContain('search')
+      expect(tools.get('workbench_file_write')!.description).toContain('content')
+      expect(tools.get('workbench_prompt_validate')!.description).toContain('help=true')
+      expect(tools.get('workbench_prompt_validate')!.description).toContain('mode')
       await execute('workbench_file_write', { file_path: 'character.txt', content: 'brown hair\nblue eyes' })
       expect(await execute('workbench_file_read', { file_path: 'character.txt', offset: 1, limit: 1 })).toMatchObject({ text: 'blue eyes', total_lines: 2 })
       expect(await execute('workbench_prompt_validate', { skill_name: 'moss-prompt-builder', help: true })).toMatchObject({ exit_code: 0, stdout: expect.stringContaining('Caption') })

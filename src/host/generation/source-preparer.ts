@@ -1,9 +1,9 @@
+import type { JsonValue } from '#contracts'
 import {
   GenerationRuntimeError,
   type ComfyConnection,
   type GenerationPreparationAdapter,
   type GenerationRequest,
-  type JsonValue,
   type PreparedGeneration,
 } from './generation-runtime.ts'
 import type { GenerationImageUpload, GenerationPreparationContext } from './generation-runtime.ts'

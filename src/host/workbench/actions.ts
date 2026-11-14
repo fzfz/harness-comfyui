@@ -1,21 +1,17 @@
+import type { JsonValue } from '#contracts'
+import { contracts, ContractError } from '#contracts'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import { type ExperimentWorkbenchAction } from '../../workbench-remote.ts'
 import type { WorkbenchActionReceipt } from '../../workbench-remote.ts'
-import { isRunReviewFunctionKind, type JsonValue, type ResourceRef } from '../../workbench/contract.ts'
+import { isRunReviewFunctionKind, type ResourceRef } from '../../workbench/contract.ts'
 import { equalValue } from '../../shared/json-contract.ts'
-import { jsonValue, validateFavoriteUpdate, validateExperienceReuseInput, validateFunctionBindingEditable, validateReviewDraftUpdate, validateTaskDraft, validateTaskRequestDraft, WorkbenchError } from '../../workbench/validation.ts'
+import { jsonValue, WorkbenchError } from '../../workbench/validation.ts'
 import type {} from './plugin.ts'
 import type {} from '../core/plugin.ts'
 
-function fields(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '操作输入 value 必须是对象。请按操作要求填写字段。', 'value')
-  return value as Record<string, unknown>
-}
-function text(value: unknown, path: string): string {
-  if (typeof value !== 'string' || !value.trim()) throw new WorkbenchError('WORKBENCH_INVALID_INPUT', `字段 ${path} 必须是非空文本。请填写后重试。`, path)
-  return value
-}
+
+
 
 export async function executeWorkbenchAction(ctx: Context, request: ExperimentWorkbenchAction, requestSignal = new AbortController().signal): Promise<WorkbenchActionReceipt> {
   const { service, signal: lifecycleSignal } = ctx.harnessComfyuiWorkbench
@@ -24,8 +20,8 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
   const { store } = service
   const { runtime } = ctx.harnessComfyuiCore.services
   if (request.type === 'new-workspace') {
-    const value = fields(request.value)
-    const path = text(value.path, 'path').trim(), name = text(value.name, 'name').trim()
+    const value = contracts.parse('actionFields', 'input', request.value)
+    const path = contracts.parse('actionText', 'input', value.path).trim(), name = contracts.parse('actionText', 'input', value.name).trim()
     try {
       const existing = await ctx.workspaceRegistry.resolveByPath(path)
       if (existing) return { workspaceId: String(existing.id) }
@@ -35,7 +31,7 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       const workspace = await ctx.workspaceRegistry.create(path, name)
       return { workspaceId: String(workspace.id) }
     } catch (error) {
-      if (error instanceof WorkbenchError) throw error
+      if ((error instanceof WorkbenchError || error instanceof ContractError)) throw error
       const failure = new WorkbenchError('WORKBENCH_WORKSPACE_CREATE_FAILED', '无法添加工作区，请填写已存在且可访问的项目目录。', 'path')
       failure.cause = error
       throw failure
@@ -43,36 +39,36 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
   }
   await ctx.harnessComfyuiWorkbench.initializeWorkspace(request.workspaceId)
   if (request.type === 'new-work') {
-    const value = fields(request.value)
-    const created = store.createWork({ workspaceId: request.workspaceId, name: text(value.name, 'name'), goal: text(value.goal, 'goal') })
+    const value = contracts.parse('actionFields', 'input', request.value)
+    const created = store.createWork({ workspaceId: request.workspaceId, name: contracts.parse('actionText', 'input', value.name), goal: contracts.parse('actionText', 'input', value.goal) })
     return { workspaceId: request.workspaceId, workId: created.work.work_id, branchId: created.branch.branch_id }
   }
   if (request.type.startsWith('function-')) {
-    if (request.type === 'function-remove') store.removeFunctionBinding(request.workspaceId, text(request.id, 'function_id'))
+    if (request.type === 'function-remove') store.removeFunctionBinding(request.workspaceId, contracts.parse('actionText', 'input', request.id))
     else if (request.type === 'function-preset') {
-      const presetId = text(request.value, 'preset_id')
+      const presetId = contracts.parse('actionText', 'input', request.value)
       await ctx.harnessComfyuiWorkbench.validateFunctionPreset(presetId)
       const skills = await ctx.harnessComfyuiWorkbench.presetSkills(request.workspaceId, presetId)
-      const binding = { ...store.getFunctionBinding(request.workspaceId, text(request.id, 'function_id')), preset_id: presetId }
+      const binding = { ...store.getFunctionBinding(request.workspaceId, contracts.parse('actionText', 'input', request.id)), preset_id: presetId }
       if (binding.requested_skill && !skills.some(skill => skill.name === binding.requested_skill)) binding.requested_skill = null
       store.saveFunctionBinding(binding)
     } else {
-      const value = validateFunctionBindingEditable(request.value)
+      const value = contracts.parse('functionBindingEditable', 'input', request.value)
       await ctx.harnessComfyuiWorkbench.validateFunctionPreset(value.preset_id)
       await ctx.harnessComfyuiWorkbench.validateFunctionAgentModel(value.agent_model)
       const identity = request.type === 'function-add'
         ? { workspace_id: request.workspaceId, function_id: randomUUID(), builtin: false }
-        : store.getFunctionBinding(request.workspaceId, text(request.id, 'function_id'))
+        : store.getFunctionBinding(request.workspaceId, contracts.parse('actionText', 'input', request.id))
       store.saveFunctionBinding({ ...identity, ...value })
     }
     return { workspaceId: request.workspaceId, ...(request.workId ? { workId: request.workId } : {}), ...(request.branchId ? { branchId: request.branchId } : {}) }
   }
   if (request.type === 'favorite') {
-    const value = validateFavoriteUpdate(request.value)
-    store.setFavorite({ workspaceId: request.workspaceId, workId: request.workId, targetType: value.targetType, targetId: text(request.id, 'target_id'), favorite: value.favorite })
+    const value = contracts.parse('favoriteUpdate', 'input', request.value)
+    store.setFavorite({ workspaceId: request.workspaceId, workId: request.workId, targetType: value.targetType, targetId: contracts.parse('actionText', 'input', request.id), favorite: value.favorite })
     return { workspaceId: request.workspaceId, ...(request.workId ? { workId: request.workId } : {}), ...(request.branchId ? { branchId: request.branchId } : {}) }
   }
-  const workId = text(request.workId, 'work_id'), branchId = text(request.branchId, 'branch_id')
+  const workId = contracts.parse('actionText', 'input', request.workId), branchId = contracts.parse('actionText', 'input', request.branchId)
   store.assertScope(request.workspaceId, workId, branchId)
   const branch = store.getBranch(branchId)
   const selection = { workspaceId: request.workspaceId, workId, branchId }
@@ -80,27 +76,20 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
   if (request.taskId && store.getBranch(store.getTask(request.taskId).branch_id).work_id !== workId) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的任务。', 'task_id')
   switch (request.type) {
     case 'save-draft': {
-      const value = fields(request.value)
-      const draft = validateTaskDraft(value.draft)
-      await ctx.harnessComfyuiWorkbench.validateDraft(draft, signal)
+      const value = contracts.parse('branchSave', 'input', request.value)
+      await ctx.harnessComfyuiWorkbench.validateDraft(value.draft, signal)
       signal.throwIfAborted()
-      store.saveBranchDraft({ ...selection, expected: validateTaskDraft(value.expected), draft,
-        expectedEditingDraft: value.expectedEditingDraft === null ? null : validateTaskDraft(value.expectedEditingDraft),
-        ...(value.name !== undefined ? { name: text(value.name, 'name'), expectedName: text(value.expectedName, 'expectedName') } : {}),
-        ...(value.originalRequest !== undefined ? { originalRequest: text(value.originalRequest, 'originalRequest'), expectedOriginalRequest: text(value.expectedOriginalRequest, 'expectedOriginalRequest') } : {}),
-      })
+      store.saveBranchDraft({ ...selection, ...value })
       break
     }
     case 'edit-draft': {
-      const value = fields(request.value)
-      const expected = value.expected === null ? null : validateTaskDraft(value.expected)
-      const draft = value.draft === null ? null : validateTaskDraft(value.draft)
-      const updated = store.saveEditingDraft({ ...selection, expected, draft })
+      const value = contracts.parse('editorUpdate', 'input', request.value)
+      const updated = store.saveEditingDraft({ ...selection, ...value })
       return { ...selection, editingDraft: updated.editing_draft }
     }
     case 'create-branch': {
-      const value = fields(request.value)
-      const name = text(value.name, 'name'), originalRequest = text(value.original_request, 'original_request')
+      const value = contracts.parse('actionFields', 'input', request.value)
+      const name = contracts.parse('actionText', 'input', value.name), originalRequest = contracts.parse('actionText', 'input', value.original_request)
       const created = request.runId
         ? await service.createBranchFromRun({ workspaceId: request.workspaceId, workId, runId: request.runId, name, originalRequest })
         : store.createBranch({ workId, parentBranchId: branchId, name, originalRequest, draft: branch.draft })
@@ -112,8 +101,8 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
       break
     }
     case 'resource-select': {
-      const ref = fields(request.value)
-      const resource = { kind: text(ref.kind, 'kind'), id: text(ref.id, 'id') } as ResourceRef
+      const ref = contracts.parse('actionFields', 'input', request.value)
+      const resource = { kind: contracts.parse('actionText', 'input', ref.kind), id: contracts.parse('actionText', 'input', ref.id) } as ResourceRef
       const draft = await ctx.harnessComfyuiWorkbench.resolveResourceSelection(resource, branch.editing_draft ?? branch.draft)
       const latest = store.getBranch(branchId)
       if (!equalValue(branch.editing_draft ?? branch.draft, latest.editing_draft ?? latest.draft)) throw new WorkbenchError('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新选择资源。', 'expected')
@@ -131,47 +120,47 @@ export async function executeWorkbenchAction(ctx: Context, request: ExperimentWo
     }
     case 'run': case 'experiment': case 'retry': case 'agent-action': {
       const kind = request.type === 'retry' ? 'run' : request.type
-      const functionId = request.type === 'agent-action' ? text(request.id, 'function_id') : store.listFunctionBindings(request.workspaceId).find(item => item.kind === kind)?.function_id
-      const value = request.value && typeof request.value === 'object' ? fields(request.value) : {}
-      const selectedFunctionId = text(functionId, 'function_id')
+      const functionId = request.type === 'agent-action' ? contracts.parse('actionText', 'input', request.id) : store.listFunctionBindings(request.workspaceId).find(item => item.kind === kind)?.function_id
+      const value = request.value && typeof request.value === 'object' ? contracts.parse('actionFields', 'input', request.value) : {}
+      const selectedFunctionId = contracts.parse('actionText', 'input', functionId)
       const selectedKind = store.getFunctionBinding(request.workspaceId, selectedFunctionId).kind
       const evaluation = selectedKind !== 'translate' && isRunReviewFunctionKind(selectedKind)
-        ? { runId: text(request.runId, 'run_id'), evaluationDraft: validateReviewDraftUpdate(value.evaluationDraft) } : {}
-      const task = await service.createTask({ ...selection, requestId: request.requestId, functionId: selectedFunctionId, ...evaluation, ...(value.draft !== undefined ? { taskDraft: validateTaskRequestDraft(value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
+        ? { runId: contracts.parse('actionText', 'input', request.runId), evaluationDraft: contracts.parse('reviewDraftUpdate', 'input', value.evaluationDraft) } : {}
+      const task = await service.createTask({ ...selection, requestId: request.requestId, functionId: selectedFunctionId, ...evaluation, ...(value.draft !== undefined ? { taskDraft: contracts.parse('taskRequestDraft', 'input', value.draft) } : typeof value.instructions === 'string' ? { instructions: value.instructions } : {}), ...(request.referenceRunIds ? { referenceRunIds: [...request.referenceRunIds] } : request.runId ? { referenceRunIds: [request.runId] } : {}), ...(request.type === 'retry' && request.runId ? { retryOfRunId: request.runId } : {}), maxRuns: branch.execution.max_runs })
       return { ...selection, taskId: task.task_id }
     }
     case 'task-interrupt': case 'task-resume': case 'pause-experiment': case 'resume-experiment': {
-      await service.controlTask({ taskId: text(request.taskId, 'task_id'), action: request.type === 'task-interrupt' ? 'interrupt' : request.type === 'pause-experiment' ? 'pause' : 'continue' }); break
+      await service.controlTask({ taskId: contracts.parse('actionText', 'input', request.taskId), action: request.type === 'task-interrupt' ? 'interrupt' : request.type === 'pause-experiment' ? 'pause' : 'continue' }); break
     }
     case 'stop-experiment': {
-      await service.endExperiment({ taskId: text(request.taskId, 'task_id'), reason: 'user_ended' }, { workspaceId: request.workspaceId, workId }); break
+      await service.endExperiment({ taskId: contracts.parse('actionText', 'input', request.taskId), reason: 'user_ended' }, { workspaceId: request.workspaceId, workId }); break
     }
     case 'task-answer': {
-      await service.replyTask({ taskId: text(request.taskId, 'task_id'), questionArtifactId: text(request.id, 'question_artifact_id'), answer: text(request.value, 'answer') }); break
+      await service.replyTask({ taskId: contracts.parse('actionText', 'input', request.taskId), questionArtifactId: contracts.parse('actionText', 'input', request.id), answer: contracts.parse('actionText', 'input', request.value) }); break
     }
     case 'update-review-draft': {
-      const runId = text(request.runId, 'run_id'), update = validateReviewDraftUpdate(request.value)
+      const runId = contracts.parse('actionText', 'input', request.runId), update = contracts.parse('reviewDraftUpdate', 'input', request.value)
       store.saveRunReviewDraft({ workspaceId: request.workspaceId, workId, runId, ...update }); break
     }
     case 'evaluate': {
-      const runId = text(request.runId, 'run_id'), value = fields(request.value)
-      await service.saveRunReview({ workspaceId: request.workspaceId, workId, runId, ...validateReviewDraftUpdate({ expected: value.expected, draft: value.draft }), saveExperience: value.saveExperience === true }); break
+      const runId = contracts.parse('actionText', 'input', request.runId), value = contracts.parse('actionFields', 'input', request.value)
+      await service.saveRunReview({ workspaceId: request.workspaceId, workId, runId, ...contracts.parse('reviewDraftUpdate', 'input', { expected: value.expected, draft: value.draft }), saveExperience: value.saveExperience === true }); break
     }
     case 'task-apply': case 'task-generation-apply': {
-      const artifactId = text(request.id, 'artifact_id')
+      const artifactId = contracts.parse('actionText', 'input', request.id)
       const artifact = store.getArtifact(artifactId), task = store.getTask(artifact.task_id)
       if (store.getBranch(task.branch_id).work_id !== workId) throw new WorkbenchError('WORKBENCH_SCOPE_MISMATCH', '请选择当前工作的产物。', 'artifact_id')
       const candidate = request.type === 'task-generation-apply'
-      const expected = candidate ? jsonValue(validateTaskDraft(request.value)) as Record<string, JsonValue> : fields(request.value) as Record<string, JsonValue>
+      const expected = candidate ? jsonValue(contracts.parse('taskDraft', 'input', request.value)) as Record<string, JsonValue> : contracts.parse('actionFields', 'input', request.value) as Record<string, JsonValue>
       await service.adoptArtifact({ artifactId, expected, candidate }); break
     }
     case 'reuse': {
-      const value = validateExperienceReuseInput(request.value)
-      const created = await service.createBranchFromExperience({ workspaceId: request.workspaceId, workId, experienceId: text(request.id, 'experience_id'), ...value })
+      const value = contracts.parse('experienceReuseInput', 'input', request.value)
+      const created = await service.createBranchFromExperience({ workspaceId: request.workspaceId, workId, experienceId: contracts.parse('actionText', 'input', request.id), ...value })
       return { ...selection, branchId: created.branch_id }
     }
     case 'task-branch': {
-      const created = await service.createBranchFromArtifact({ workspaceId: request.workspaceId, workId, artifactId: text(request.id, 'artifact_id'), name: text(fields(request.value).name, 'name') })
+      const created = await service.createBranchFromArtifact({ workspaceId: request.workspaceId, workId, artifactId: contracts.parse('actionText', 'input', request.id), name: contracts.parse('actionText', 'input', contracts.parse('actionFields', 'input', request.value).name) })
       return { ...selection, branchId: created.branch_id }
     }
     default: throw new WorkbenchError('WORKBENCH_INVALID_INPUT', '请选择工作台中的操作。', 'type')

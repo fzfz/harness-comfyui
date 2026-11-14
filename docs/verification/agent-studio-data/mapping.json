@@ -1,0 +1,92 @@
+[
+  {
+    "sourcePresetId": "harness-comfyui-cli-candidate",
+    "targetPresetId": "studio-comfyui-workbench",
+    "name": "ComfyUI工作台预设 · Studio",
+    "agentId": "studio-comfyui-workbench",
+    "promptSetId": "studio-comfyui-workbench-prompt",
+    "toolSetId": "studio-comfyui-workbench-tools",
+    "skillSetId": "studio-comfyui-workbench-skills",
+    "runtimeContext": true
+  },
+  {
+    "sourcePresetId": "harness-comfyui-translation",
+    "targetPresetId": "studio-comfyui-translation",
+    "name": "翻译预设 · Studio",
+    "agentId": "studio-comfyui-translation",
+    "promptSetId": "studio-comfyui-translation-prompt",
+    "toolSetId": "studio-comfyui-translation-tools",
+    "skillSetId": "studio-comfyui-translation-skills",
+    "runtimeContext": false
+  },
+  {
+    "sourcePresetId": "harness-comfyui-prompt",
+    "targetPresetId": "studio-comfyui-prompt",
+    "name": "ComfyUI 提示词预设 · Studio",
+    "agentId": "studio-comfyui-prompt",
+    "promptSetId": "studio-comfyui-prompt-prompt",
+    "toolSetId": "studio-comfyui-prompt-tools",
+    "skillSetId": "studio-comfyui-prompt-skills",
+    "runtimeContext": true
+  },
+  {
+    "sourcePresetId": "harness-comfyui-parameters",
+    "targetPresetId": "studio-comfyui-parameters",
+    "name": "ComfyUI 参数预设 · Studio",
+    "agentId": "studio-comfyui-parameters",
+    "promptSetId": "studio-comfyui-parameters-prompt",
+    "toolSetId": "studio-comfyui-parameters-tools",
+    "skillSetId": "studio-comfyui-parameters-skills",
+    "runtimeContext": true
+  },
+  {
+    "sourcePresetId": "harness-comfyui-resources",
+    "targetPresetId": "studio-comfyui-resources",
+    "name": "ComfyUI 资源预设 · Studio",
+    "agentId": "studio-comfyui-resources",
+    "promptSetId": "studio-comfyui-resources-prompt",
+    "toolSetId": "studio-comfyui-resources-tools",
+    "skillSetId": "studio-comfyui-resources-skills",
+    "runtimeContext": true
+  },
+  {
+    "sourcePresetId": "harness-comfyui-run",
+    "targetPresetId": "studio-comfyui-run",
+    "name": "ComfyUI 运行任务预设 · Studio",
+    "agentId": "studio-comfyui-run",
+    "promptSetId": "studio-comfyui-run-prompt",
+    "toolSetId": "studio-comfyui-run-tools",
+    "skillSetId": "studio-comfyui-run-skills",
+    "runtimeContext": true
+  },
+  {
+    "sourcePresetId": "harness-comfyui-review",
+    "targetPresetId": "studio-comfyui-review",
+    "name": "ComfyUI 评价预设 · Studio",
+    "agentId": "studio-comfyui-review",
+    "promptSetId": "studio-comfyui-review-prompt",
+    "toolSetId": "studio-comfyui-review-tools",
+    "skillSetId": "studio-comfyui-review-skills",
+    "runtimeContext": true
+  },
+  {
+    "sourcePresetId": "harness-comfyui-experience",
+    "targetPresetId": "studio-comfyui-experience",
+    "name": "ComfyUI 经验预设 · Studio",
+    "agentId": "studio-comfyui-experience",
+    "promptSetId": "studio-comfyui-experience-prompt",
+    "toolSetId": "studio-comfyui-experience-tools",
+    "skillSetId": "studio-comfyui-experience-skills",
+    "runtimeContext": true
+  },
+  {
+    "sourcePresetId": "harness-comfyui-experiment",
+    "targetPresetId": "studio-comfyui-experiment",
+    "name": "ComfyUI 持续实验预设 · Studio",
+    "agentId": "studio-comfyui-experiment",
+    "promptSetId": "studio-comfyui-experiment-prompt",
+    "toolSetId": "studio-comfyui-experiment-tools",
+    "skillSetId": "studio-comfyui-experiment-skills",
+    "runtimeContext": true
+  }
+]

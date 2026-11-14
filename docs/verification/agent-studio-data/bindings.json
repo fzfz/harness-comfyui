@@ -1,0 +1,45 @@
+{
+  "bindings": {
+    "presets": [
+      {
+        "presetId": "studio-comfyui-workbench",
+        "agentId": "studio-comfyui-workbench"
+      },
+      {
+        "presetId": "studio-comfyui-translation",
+        "agentId": "studio-comfyui-translation"
+      },
+      {
+        "presetId": "studio-comfyui-prompt",
+        "agentId": "studio-comfyui-prompt"
+      },
+      {
+        "presetId": "studio-comfyui-parameters",
+        "agentId": "studio-comfyui-parameters"
+      },
+      {
+        "presetId": "studio-comfyui-resources",
+        "agentId": "studio-comfyui-resources"
+      },
+      {
+        "presetId": "studio-comfyui-run",
+        "agentId": "studio-comfyui-run"
+      },
+      {
+        "presetId": "studio-comfyui-review",
+        "agentId": "studio-comfyui-review"
+      },
+      {
+        "presetId": "studio-comfyui-experience",
+        "agentId": "studio-comfyui-experience"
+      },
+      {
+        "presetId": "studio-comfyui-experiment",
+        "agentId": "studio-comfyui-experiment"
+      }
+    ]
+  },
+  "runtimeContextOff": [
+    "studio-comfyui-translation"
+  ]
+}

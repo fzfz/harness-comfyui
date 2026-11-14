@@ -1,4 +1,6 @@
 import React from 'react'
+import { artifactFixture, recordFixture } from '../support/contract-fixtures.ts'
+import { contracts, type ContractInput } from '#contracts'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CatalogItem, CatalogKind } from '../../src/catalog/contract.ts'
@@ -143,9 +145,9 @@ const mount = async (
       getRunInput: vi.fn(async (request: { runId: string }) => {
         const run = data.runs.find(run => run.run_id === request.runId)!
         const task = data.tasks.find(task => task.task_id === run.workbench_task_id)!
-        return { run_id: run.run_id, branch_id: task.branch_id, submitted_input: run.generation_input, effective_input: run.generation_input, image_uploads: [], parameter_mapping: task.input.parameter_mapping, base_model_id: task.input.base_model_id, generation_input: structuredClone(run.generation_input),
+        return contracts.parse('workbenchRunInput', 'output', { run_id: run.run_id, branch_id: task.branch_id, submitted_input: run.generation_input, effective_input: run.generation_input, image_uploads: [], parameter_mapping: task.input.parameter_mapping, base_model_id: task.input.base_model_id, generation_input: structuredClone(run.generation_input),
           image_refs: structuredClone(task.input.image_refs), workflow_image_bindings: structuredClone(task.input.workflow_image_bindings), input_description: runInputDescription(run.generation_input.parameters),
-          prompt_input: { positive_prompt: String(run.generation_input.parameters.positive_1 ?? ''), negative_prompt: String(run.generation_input.parameters.negative_1 ?? '') } }
+          prompt_input: { positive_prompt: String(run.generation_input.parameters.positive_1 ?? ''), negative_prompt: String(run.generation_input.parameters.negative_1 ?? '') } })
       }),
       getProjection: vi.fn(async (scope: { workId?: string }) => ({
         ...data,
@@ -284,7 +286,7 @@ it.each(['建议参数', '推荐资源'])('shows the current preparation referen
   data.branches[0]!.draft.reference_run_ids = [run.run_id]
   data.branches[0]!.draft.reference_task_ids = [task.task_id]
   data.branches[0]!.draft.reference_experiences = [{ experience_id: experience.experience_id, title: experience.title, conditions: experience.conditions, note: experience.note, provenance: experience.provenance }]
-  const records = [{ type: 'run' as const, id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, title: run.title, run }, { type: 'task' as const, id: task.task_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, title: task.title, task }]
+  const records = [recordFixture({ type: 'run' as const, id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, title: run.title, run }), recordFixture({ type: 'task' as const, id: task.task_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, title: task.title, task , runs: [] , artifacts: [] })]
   const { renderer, onAction } = await mount(data, { catalog: makeCatalog(), remote: { queryRecords: async request => records.filter(record => record.type === request.type) } })
   await click(renderer, label)
   await change(renderer, '任务要求', '查看来源后保留本次要求')
@@ -308,7 +310,7 @@ it.each([true, false])('shows only the saved review in a source Run dialog: save
   data.branches[0]!.draft.reference_run_ids = [run.run_id]
   run.review = saved ? { verdict: 'met', observation: '已保存观察', conclusion: '已保存的评价结论', source_artifact_id: null } : null
   run.review_draft!.conclusion = '尚未保存的评价草稿'
-  const { renderer } = await mountReady(data, { remote: { queryRecords: async request => request.type === 'run' ? [{ type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, run }] : [] } })
+  const { renderer } = await mountReady(data, { remote: { queryRecords: async request => request.type === 'run' ? [recordFixture({ type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, run })] : [] } })
   await click(renderer, '查看来源')
   const dialog = renderer.root.findByProps({ 'role': 'dialog', 'aria-label': '参考内容' })
   if (saved) expect(nodeText(dialog.findByProps({ 'aria-label': '评价' }))).toBe('评价已保存的评价结论')
@@ -323,8 +325,8 @@ it('shares historical parameter labels, exclusions and size rendering between th
   const savedDescription = runInputDescription(run.generation_input.parameters)
   const description = { ...savedDescription, parameters: [...savedDescription.parameters.map(parameter => parameter.kind === 'seed' ? { ...parameter, current_value: 987654321 } : parameter), { parameter_id: 'extra_runtime_field', kind: 'denoise' as const, value_type: 'number' as const, current_value: 0.75 }, { parameter_id: 'workflow_image_99', kind: 'reference_image' as const, value_type: 'string' as const, current_value: 'staged/image.png', image_cardinality: 'one' as const }] }
   const { renderer } = await mountReady(data, { remote: {
-    queryRecords: async request => request.type === 'run' ? [{ type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, run }] : [],
-    getRunInput: async () => ({ ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input, image_refs: [], workflow_image_bindings: [], input_description: description, prompt_input: { positive_prompt: 'glass house', negative_prompt: 'blur' } }),
+    queryRecords: async request => request.type === 'run' ? [recordFixture({ type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, run })] : [],
+    getRunInput: async () => (contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input, image_refs: [], workflow_image_bindings: [], input_description: description, prompt_input: { positive_prompt: 'glass house', negative_prompt: 'blur' } })),
   } })
   await click(renderer, '查看运行输入')
   const values = (panel: RenderNode) => panel.findAllByType('div').filter(node => node.findAllByType('dt').length === 1 && node.findAllByType('dd').length === 1).map(node => [nodeText(node.findAllByType('dt')[0]!), nodeText(node.findAllByType('dd')[0]!)])
@@ -455,7 +457,7 @@ it.each([false, true])('saves the current template and Agent prompt before creat
 
 it.each([false, true])('adds a historical Run without writing its ID as a task reference and creates a real Host task; retained task payload=%s', async retainedTask => {
   const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
-  const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+
   const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
   try {
     const source = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: '引用来源', goal: '已有运行' } }, signal)
@@ -464,14 +466,14 @@ it.each([false, true])('adds a historical Run without writing its ID as a task r
     await setHostField(host, { ...source, field: 'instance_id', value: '8' }, signal)
     const accepted = await host.remote.mutate({ ...source, type: 'run' }, signal)
     const sourceTask = (await host.remote.getProjection(source, signal)).tasks.find(task => task.task_id === accepted.taskId)!
-    const generated = await host.runtime.acceptGenerations({ workspaceId: source.workspaceId, sessionId: sourceTask.session_id!, turn: 1, callId: 'embedded-run-reference' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(sourceTask.input.generation_input)) }], signal, sourceTask.task_id)
+    const generated = await host.runtime.acceptGenerations({ workspaceId: source.workspaceId, sessionId: sourceTask.session_id!, turn: 1, callId: 'embedded-run-reference' }, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', sourceTask.input.generation_input)) }], signal, sourceTask.task_id)
     const runId = generated.items[0]!.runId
     for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
     const target = await host.remote.mutate({ type: 'new-work', workspaceId: source.workspaceId, value: { name: '引用目标', goal: '参考已有运行' } }, signal)
     await host.remote.mutate({ ...target, type: 'function-preset', id: 'parameters', value: 'preset-a' }, signal)
     const environment = await host.remote.getEnvironment({ workspaceId: target.workspaceId }, signal)
     const { renderer } = await mount(await host.remote.getProjection(target, signal), { storage: { getItem: () => JSON.stringify({ workId: target.workId, branchId: target.branchId }), setItem: vi.fn() }, workspaceId: target.workspaceId, workspaces: environment.workspaces, presets: environment.presets, instances: environment.instances, agentModelGroups: environment.models.groups, routableProviders: environment.models.routableProviders,
-      onAction: request => host.remote.mutate(request, signal), remote: { subscribe: (request, streamSignal) => host.remote.subscribe(request, streamSignal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal), queryRecords: async request => { const records = await host.remote.queryRecords(request, signal); return retainedTask && request.type === 'run' ? records.map(record => ({ ...record, task: sourceTask })) : records }, getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
+      onAction: request => host.remote.mutate(request, signal), remote: { subscribe: (request, streamSignal) => host.remote.subscribe(request, streamSignal), getInputDescription: request => host.remote.getInputDescription(request, signal), getRunInput: request => host.remote.getRunInput(request, signal), getProjection: request => host.remote.getProjection(request, signal), queryRecords: async request => { const records = await host.remote.queryRecords(request, signal); if (retainedTask && request.type === 'run') for (const record of records) Object.defineProperty(record, 'task', { value: sourceTask, enumerable: true }); return records }, getTaskDraft: request => host.remote.getTaskDraft(request, signal), saveTaskDraft: request => host.remote.saveTaskDraft(request, signal) } })
     expect(readField(renderer.root, '原始需求')).toBe('参考已有运行')
     await click(renderer, retainedTask ? '引用运行' : '引用任务')
     const embedded = renderer.root.findAllByProps({ className: 'reference-option' }).find(option => option.findAllByProps({ title: runId }).length > 0 && !nodeText(option).includes('添加任务引用'))!
@@ -496,8 +498,8 @@ it('restores historical image input into root image fields while keeping generat
   const image = { image_ref_id: 'history-image', source: { kind: 'uploaded_file' as const, file_id: 'history-file' }, purpose: 'agent' as const, reference_requirement: '参考窗框' }
   const submitted = { ...run.generation_input, image_refs: [image], workflow_image_bindings: [] }
   const { renderer, onAction } = await mount(data, { remote: {
-    queryRecords: async () => [{ type: 'run', id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, title: run.title, run }],
-    getRunInput: async () => ({ ...runInputDefaults(submitted), run_id: run.run_id, branch_id: 'root', generation_input: submitted, image_refs: [image], workflow_image_bindings: [], input_description: inputDescription, prompt_input: { positive_prompt: '历史正向词', negative_prompt: '' } }),
+    queryRecords: async () => [recordFixture({ type: 'run', id: run.run_id, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, title: run.title, run })],
+    getRunInput: async () => (contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(submitted), run_id: run.run_id, branch_id: 'root', generation_input: submitted, image_refs: [image], workflow_image_bindings: [], input_description: inputDescription, prompt_input: { positive_prompt: '历史正向词', negative_prompt: '' } })),
   } })
   await click(renderer, '引用运行')
   await click(renderer, '使用此运行输入')
@@ -514,11 +516,11 @@ it('restores historical image input into root image fields while keeping generat
 it('shows submitted input and a pending effective input separately when image preparation failed', async () => {
   const data = fullProjection(), run = data.runs[0]!, input = data.tasks[0]!.input
   run.status = 'failed'
-  const { renderer } = await mount(data, { startEditing: false, remote: { getRunInput: async () => ({
+  const { renderer } = await mount(data, { startEditing: false, remote: { getRunInput: async () => (contracts.parse('workbenchRunInput', 'output', {
     run_id: run.run_id, branch_id: 'root', submitted_input: run.generation_input, effective_input: null, generation_input: run.generation_input,
     image_uploads: [], parameter_mapping: input.parameter_mapping, base_model_id: input.base_model_id, image_refs: [], workflow_image_bindings: [],
     input_description: inputDescription, prompt_input: input.prompt_input,
-  }) } })
+  })) } })
   await click(renderer, '查看运行输入')
   const summaries = renderer.root.findAllByType('summary').map(nodeText)
   expect(summaries).toContain('提交输入')
@@ -556,7 +558,7 @@ async function setHostField(host: Awaited<ReturnType<typeof import('../support/w
   else if (request.field === 'original_request') Object.assign(metadata, { originalRequest: request.value, expectedOriginalRequest: branch.original_request })
   else if (request.field === 'positive_prompt' || request.field === 'negative_prompt') draft.prompt_input[request.field] = request.value as string
   else if (request.field === 'instance_id') draft.generation_input.instance_id = request.value as string
-  else if (request.field === 'parameter') draft.generation_input.parameters[request.id!] = request.value as import('../../src/workbench/contract.ts').JsonValue
+  else if (request.field === 'parameter') draft.generation_input.parameters[request.id!] = request.value as import('#contracts').JsonValue
   else if (request.field === 'lora-weight') draft.generation_input.loras.find(item => item.id === request.id)!.weight = request.value as number
   else throw new Error('Unsupported fixture field: ' + request.field)
   return host.remote.mutate({ workspaceId: request.workspaceId, workId: request.workId, branchId: request.branchId, type: 'save-draft', value: { expected: branch.draft, expectedEditingDraft: branch.editing_draft, draft, ...metadata } }, signal)
@@ -623,7 +625,7 @@ describe('experiment workbench saved preparation contract', () => {
 
   it('adds multiple source experiences without replacing the current prompt', async () => {
     const data = fullProjection(), experience = data.experiences[0]!
-    const records = ['source-a', 'source-b'].map(id => ({ type: 'experience' as const, id, workspace_id: 'other-workspace', work_id: 'other-work', branch_id: null, task_id: null, title: id, experience: { ...experience, experience_id: id, title: id } }))
+    const records = ['source-a', 'source-b'].map(id => (recordFixture({ type: 'experience' as const, id, workspace_id: 'other-workspace', work_id: 'other-work', branch_id: null, task_id: null, title: id, experience: { ...experience, experience_id: id, title: id } })))
     const { renderer, onAction } = await mount(data, { remote: { queryRecords: async () => records } })
     await change(renderer, '正向提示词', 'keep local prompt')
     await click(renderer, '引用经验')
@@ -637,7 +639,7 @@ describe('experiment workbench saved preparation contract', () => {
   })
 
   it('preserves the originating branch while browsing a source and returning', async () => {
-    const data = fullProjection(), source = { branch_id: null,  type: 'run' as const, id: 'external-run', workspace_id: 'other-workspace', work_id: 'other-work', task_id: 'external-task', title: '来源运行', run: { ...data.runs[0]!, run_id: 'external-run' } }
+    const data = fullProjection(), source = recordFixture({ branch_id: null,  type: 'run' as const, id: 'external-run', workspace_id: 'other-workspace', work_id: 'other-work', task_id: 'external-task', title: '来源运行', run: { ...data.runs[0]!, run_id: 'external-run' } })
     const { renderer, onAction } = await mount(data, { remote: { queryRecords: async () => [source] } })
     await change(renderer, '正向提示词', 'unfinished local prompt')
     await click(renderer, '引用运行')
@@ -679,8 +681,8 @@ describe('preparation and library operation boundaries', () => {
   it.each([true, false])('adds selected favorite experiences and runs to preparation with record cache=%s', async cached => {
     const data = fullProjection(), experience = data.experiences[0]!, run = data.runs[1]!
     const records = [
-      { type: 'experience' as const, id: experience.experience_id, title: experience.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'child', task_id: null, experience },
-      { type: 'run' as const, id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'child', task_id: run.workbench_task_id, run },
+      recordFixture({ type: 'experience' as const, id: experience.experience_id, title: experience.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'child', task_id: null, experience }),
+      recordFixture({ type: 'run' as const, id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'child', task_id: run.workbench_task_id, run }),
     ]
     const { renderer, onAction } = await mount(data, { remote: { queryRecords: async () => cached ? records : [] } })
     await click(renderer, '收藏')
@@ -785,7 +787,7 @@ describe('preparation image and translation integration', () => {
 
   it('selects a Run image for each purpose and keeps the media identity unique', async () => {
     const data = fullProjection(), run = data.runs[0]!, media = run.media[0]!
-    const { renderer } = await mount(data, { remote: { queryRecords: async () => [{ type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, run }] } })
+    const { renderer } = await mount(data, { remote: { queryRecords: async () => [recordFixture({ type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: run.workbench_task_id, run })] } })
     for (const purpose of ['workflow', 'agent']) {
       const section = renderer.root.findByProps({ 'data-image-section': purpose })
       await act(async () => section.findAllByType('button').find(button => nodeText(button) === '从运行记录选择')!.props.onClick())
@@ -859,13 +861,13 @@ describe('reference source and removal operations', () => {
     data.branches[0]!.draft.reference_task_ids = [task.task_id]
     data.branches[0]!.draft.reference_experiences = [{ experience_id: experience.experience_id, title: experience.title, conditions: experience.conditions, note: experience.note, provenance: experience.provenance }]
     const artifacts: WorkbenchProjection['artifacts'] = [
-      { artifact_id: 'source-prompt', task_id: task.task_id, type: 'prompt', artifact: { type: 'prompt', positive_prompt: '来源产物', negative_prompt: '' }, source_files: [], session_id: 'source-session', turn: 1, call_id: 'source-call', skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1 },
-      { artifact_id: 'source-question', task_id: task.task_id, type: 'question', artifact: { type: 'question', question: '来源问题', options: [] }, source_files: [], session_id: 'source-session', turn: 1, call_id: 'source-call', skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1 },
+      { artifact_id: 'source-prompt', task_id: task.task_id, type: 'prompt', artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '来源产物', negative_prompt: '' }), source_files: [], session_id: 'source-session', turn: 1, call_id: 'source-call', skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1 },
+      { artifact_id: 'source-question', task_id: task.task_id, type: 'question', artifact: contracts.parse('taskArtifact', 'input', { type: 'question', question: '来源问题', options: [] }), source_files: [], session_id: 'source-session', turn: 1, call_id: 'source-call', skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1 },
     ]
     const records: import('../../src/workbench/contract.ts').WorkbenchRecord[] = [
-      { type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, run },
-      { type: 'task', id: task.task_id, title: task.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, task, runs: [run], artifacts },
-      { type: 'experience', id: experience.experience_id, title: experience.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, experience },
+      recordFixture({ type: 'run', id: run.run_id, title: run.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, run }),
+      recordFixture({ type: 'task', id: task.task_id, title: task.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, task, runs: [run], artifacts }),
+      recordFixture({ type: 'experience', id: experience.experience_id, title: experience.title, workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', task_id: task.task_id, experience }),
     ]
     return { data, task, run, experience, records, remote: { queryRecords: async (request: { type: string }) => records.filter(record => record.type === request.type || request.type === 'favorite') } }
   }
@@ -941,7 +943,7 @@ describe('reference source and removal operations', () => {
   it('previews a source Run image by its resolved name and translates its prompt', async () => {
     const { data, records, remote, run } = sourceFixture()
     const image: import('../../src/workbench/contract.ts').ImageRef = { image_ref_id: 'source-image', source: { kind: 'uploaded_file', file_id: 'file' }, purpose: 'both', reference_requirement: '来源图片要求' }
-    const sourceInput = { ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input, submitted_input: run.generation_input, effective_input: run.generation_input, input_description: runInputDescription(run.generation_input.parameters), prompt_input: { positive_prompt: 'source prompt', negative_prompt: 'source negative' }, image_refs: [image], workflow_image_bindings: [], image_uploads: [], parameter_mapping: null, base_model_id: null }
+    const sourceInput = contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input, submitted_input: run.generation_input, effective_input: run.generation_input, input_description: runInputDescription(run.generation_input.parameters), prompt_input: { positive_prompt: 'source prompt', negative_prompt: 'source negative' }, image_refs: [image], workflow_image_bindings: [], image_uploads: [], parameter_mapping: null, base_model_id: null })
     const translateStart = vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'succeeded' as const, text: '来源译文' }))
     const focus = vi.fn(), hostFocus = vi.fn(), root = { activeElement: { focus } }
     const { renderer } = await mountReady(data, { remote: { ...remote, getRunInput: async () => sourceInput, translateStart,
@@ -960,7 +962,7 @@ describe('reference source and removal operations', () => {
     expect(focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(hostFocus).not.toHaveBeenCalled()
     expect(renderer.root.findByProps({ role: 'dialog', 'aria-label': '参考内容' })).toBeDefined()
-    expect(records[0]!.run).toBe(run)
+    expect(records[0]!.run).toEqual(run)
   })
 
   it('opens model selection from the resources header and removes a prepared LoRA locally', async () => {
@@ -979,12 +981,12 @@ describe('global library external sources and work creation', () => {
   it('resolves a nonlocal favorite Run from library records before navigating to its source', async () => {
     const data = fullProjection(), external = data.runs[1]!
     data.runs = data.runs.filter(run => run.run_id !== external.run_id)
-    const record = { type: 'run' as const, id: external.run_id, title: external.title, workspace_id: 'workspace-a', work_id: 'work-b', branch_id: 'external-branch', task_id: external.workbench_task_id, run: external }
+    const record = recordFixture({ type: 'run' as const, id: external.run_id, title: external.title, workspace_id: 'workspace-a', work_id: 'work-b', branch_id: 'external-branch', task_id: external.workbench_task_id, run: external })
     const destination = { ...fullProjection(), work_id: 'work-b', branches: [{ ...data.branches[1]!, branch_id: 'external-branch', work_id: 'work-b', parent_branch_id: null }], tasks: [{ ...data.tasks[1]!, work_id: 'work-b', branch_id: 'external-branch' }], runs: [external] }
-    const { renderer } = await mountReady({ ...data, branches: [...data.branches, ...destination.branches], tasks: [...data.tasks.filter(task => task.task_id !== external.workbench_task_id), ...destination.tasks], runs: [...data.runs, external] }, { remote: { queryRecords: async () => [record], getProjection: async scope => scope.workId === 'work-b' ? destination : data, getRunInput: async () => ({
+    const { renderer } = await mountReady({ ...data, branches: [...data.branches, ...destination.branches], tasks: [...data.tasks.filter(task => task.task_id !== external.workbench_task_id), ...destination.tasks], runs: [...data.runs, external] }, { remote: { queryRecords: async () => [record], getProjection: async scope => scope.workId === 'work-b' ? destination : data, getRunInput: async () => (contracts.parse('workbenchRunInput', 'output', {
       ...runInputDefaults(external.generation_input), run_id: external.run_id, branch_id: 'external-branch', generation_input: external.generation_input,
       input_description: runInputDescription(external.generation_input.parameters), prompt_input: { positive_prompt: 'external', negative_prompt: '' }, image_refs: [], workflow_image_bindings: [],
-    }) } })
+    })) } })
     await click(renderer, '收藏')
     expect(nodeText(renderer.root)).toContain('收藏的运行')
     await click(renderer, '查看运行')
@@ -998,11 +1000,11 @@ describe('global library external sources and work creation', () => {
     experience.provenance = { created_by_task_id: null, evidence: [{ run_id: external.run_id, generation_task_id: external.workbench_task_id, role: 'supporting_evidence' }] }
     const remoteProjection = { ...data, workspace_id: 'workspace-b', work_id: 'work-b', works: [{ ...data.works[0]!, workspace_id: 'workspace-b', work_id: 'work-b' }], branches: [{ ...data.branches[1]!, work_id: 'work-b' }], runs: [external] }
     const onWorkspaceChange = vi.fn(), queryRecords = vi.fn(async (request: { type: string }) => request.type === 'run' ? [
-      { type: 'run' as const, id: external.run_id, title: external.title, workspace_id: 'workspace-b', work_id: 'work-b', branch_id: 'child', task_id: external.workbench_task_id, run: external },
+      recordFixture({ type: 'run' as const, id: external.run_id, title: external.title, workspace_id: 'workspace-b', work_id: 'work-b', branch_id: 'child', task_id: external.workbench_task_id, run: external }),
     ] : [])
     const { renderer } = await mountReady(data, { onWorkspaceChange, remote: { queryRecords,
       getProjection: async scope => scope.workspaceId === 'workspace-b' ? remoteProjection : data,
-      getRunInput: async () => ({ ...runInputDefaults(external.generation_input), run_id: external.run_id, branch_id: 'child', generation_input: external.generation_input, input_description: runInputDescription(external.generation_input.parameters), prompt_input: { positive_prompt: 'external', negative_prompt: '' }, image_refs: [], workflow_image_bindings: [] }),
+      getRunInput: async () => (contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(external.generation_input), run_id: external.run_id, branch_id: 'child', generation_input: external.generation_input, input_description: runInputDescription(external.generation_input.parameters), prompt_input: { positive_prompt: 'external', negative_prompt: '' }, image_refs: [], workflow_image_bindings: [] })),
     } })
     await click(renderer, '经验')
     await click(renderer, external.run_id)
@@ -2316,7 +2318,7 @@ describe('experiment workbench forms and task results', () => {
         generation_input: data.branches[0]!.draft.generation_input,
         image_refs: [], workflow_image_bindings: [],
       },
-    ]
+    ].map(artifact => contracts.parse('taskArtifact', 'input', artifact))
     data.tasks.push(...artifacts.slice(1).map((artifact, index) => makeTask('artifact-' + (index + 1), 'child',
       artifact.type === 'generation_input' || artifact.type === 'question' ? 'run' : artifact.type === 'iteration_plan' ? 'experiment' : artifact.type)))
     data.artifacts = artifacts.map((artifact, i) => ({
@@ -3578,7 +3580,7 @@ describe('experiment workbench LoRA draft persistence', () => {
 
   it('saves a numeric weight across refresh and removes only the draft while preserving the accepted Run input', async () => {
     const { createWorkbenchHostFixture } = await import('../support/workbench-host.ts')
-    const { parseCliGenerationRequest, toGenerationRequest } = await import('../../src/cli/contract.ts')
+
     const host = await createWorkbenchHostFixture(), signal = new AbortController().signal
     try {
       const created = await host.remote.mutate({ type: 'new-work', workspaceId: 'workspace_1', value: { name: 'LoRA 草稿', goal: '保留运行输入' } }, signal)
@@ -3611,7 +3613,7 @@ describe('experiment workbench LoRA draft persistence', () => {
       await click(renderer, '保存参数')
       await click(renderer, '运行任务')
       const task = (await host.remote.getProjection(scope, signal)).tasks[0]!
-      const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'lora-history' }, [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+      const accepted = await host.runtime.acceptGenerations({ workspaceId: scope.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'lora-history' }, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', task.input.generation_input)) }], signal, task.task_id)
       const runId = accepted.items[0]!.runId
       await click(renderer, '编辑参数')
       await blur(renderer, '玻璃 LoRA 权重', '0.35')
@@ -4716,11 +4718,11 @@ describe('experiment workbench complete resource selection', () => {
   it('displays fixed historical resource content without querying current Catalog details', async () => {
     const data = fullProjection(), run = data.runs[0]!, catalog = makeCatalog()
     data.branches[0]!.draft.prompt_resource_refs = [{ kind: 'style', id: '26' }]
-    const snapshots = [{ kind: 'style' as const, id: '16', name: '当次画风', fields: { prompt_text: 'recorded brushwork' } }]
+    const snapshots = [{ kind: 'style' as const, id: '16', name: '当次画风', fields: { base_model_id: '1', name: '当次画风', aliases_json: [], prompt_text: 'recorded brushwork', style_description: null } }]
     const { renderer } = await mount(data, { catalog, remote: {
-      getRunInput: async () => ({ ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
+      getRunInput: async () => (contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
         image_refs: [], workflow_image_bindings: [], input_description: runInputDescription(run.generation_input.parameters),
-        prompt_input: { positive_prompt: 'recorded prompt', negative_prompt: '' }, selected_resources: snapshots }),
+        prompt_input: { positive_prompt: 'recorded prompt', negative_prompt: '' }, selected_resources: snapshots })),
     } })
     vi.mocked(catalog.details).mockClear()
     await click(renderer, '查看运行输入')
@@ -5964,7 +5966,7 @@ describe('experiment workbench task status notifications', () => {
     data = { ...data, tasks: [{ ...task, status: outcome === 'conflict' ? 'succeeded' : outcome }] }
     if (outcome === 'conflict') data.artifacts = [{
       artifact_id: 'conflicting-prompt', task_id: task.task_id, type: 'prompt',
-      artifact: { type: 'prompt', positive_prompt: '候选光线', negative_prompt: '' },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '候选光线', negative_prompt: '' }),
       source_files: [], session_id: task.session_id!, turn: 1, call_id: 'publish', skill_refs: [],
       disposition: 'candidate', applied_target: null, created_at: 2000,
     }]
@@ -6079,7 +6081,7 @@ describe('experiment workbench recorded task details', () => {
     data.branches[0]!.draft.prompt_input.positive_prompt = '用户后来修改的提示词'
     data.artifacts = [{
       artifact_id: 'recorded-prompt', task_id: task.task_id, type: 'prompt',
-      artifact: { type: 'prompt', positive_prompt: '产物提示词', negative_prompt: '产物负向词' },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '产物提示词', negative_prompt: '产物负向词' }),
       source_files: [], session_id: task.session_id!, turn: 2, call_id: 'publish-call', skill_refs: [],
       disposition: 'applied', applied_target: null, created_at: 2000,
     }]
@@ -6128,7 +6130,7 @@ describe('experiment workbench task reply isolation', () => {
     ] }
     data.artifacts = data.tasks.map((task, index) => ({
       artifact_id: 'question-' + index, task_id: task.task_id, type: 'question',
-      artifact: { type: 'question', question: index ? '保留哪个场景？' : '希望使用哪种光线？', options: [] },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'question', question: index ? '保留哪个场景？' : '希望使用哪种光线？', options: [] }),
       source_files: [], session_id: task.session_id!, turn: 1, call_id: 'ask', skill_refs: [],
       disposition: 'waiting_input', applied_target: null, created_at: 2000,
     }))
@@ -6184,7 +6186,7 @@ describe('experiment workbench task review conflict', () => {
     data.tasks = [task]
     data.artifacts = [{
       artifact_id: 'candidate-review', task_id: task.task_id, type: 'review',
-      artifact: { type: 'review', observation: '花房有自然光', conclusion: '保留当前光线', run_ids: ['r1'] },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'review', observation: '花房有自然光', conclusion: '保留当前光线', run_ids: ['r1'] }),
       source_files: [], session_id: task.session_id!, turn: 1, call_id: 'review', skill_refs: [],
       disposition: 'candidate', applied_target: null, created_at: 2000,
     }]
@@ -6351,7 +6353,7 @@ describe('experiment workbench follow-up question notification', () => {
       answers: [{ question_artifact_id: 'answered-question', answer: '自然光' }] }
     let data: WorkbenchProjection = { ...fullProjection(), tasks: [task], artifacts: [{
       artifact_id: 'answered-question', task_id: task.task_id, type: 'question',
-      artifact: { type: 'question', question: '希望使用哪种光线？', options: [] },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'question', question: '希望使用哪种光线？', options: [] }),
       source_files: [], session_id: task.session_id!, turn: 1, call_id: 'first-question', skill_refs: [],
       disposition: 'waiting_input', applied_target: null, created_at: 2000,
     }] }
@@ -6365,7 +6367,7 @@ describe('experiment workbench follow-up question notification', () => {
     })
     data = { ...data, tasks: [{ ...task, status: 'waiting_input' }], artifacts: [...data.artifacts, {
       ...data.artifacts[0]!, artifact_id: 'new-question',
-      artifact: { type: 'question', question: '保留哪个场景？', options: [] }, call_id: 'follow-up-question', created_at: 3000,
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'question', question: '保留哪个场景？', options: [] }), call_id: 'follow-up-question', created_at: 3000,
     }] }
     await deliverChanges()
     expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('光线生成需要补充输入 · follow-up-task')
@@ -6396,7 +6398,7 @@ describe('experiment workbench displayed artifact adoption', () => {
     task.apply_target.expected = { 'prompt_input.positive_prompt': '任务创建时文本' }
     data.artifacts = [{
       artifact_id: 'adoption-prompt', task_id: task.task_id, type: 'prompt',
-      artifact: { type: 'prompt', positive_prompt: 'Agent 候选文本', negative_prompt: '候选负向文本' },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: 'Agent 候选文本', negative_prompt: '候选负向文本' }),
       source_files: [], session_id: task.session_id!, turn: 1, call_id: 'publish', skill_refs: [],
       disposition: 'candidate', applied_target: null, created_at: 2000,
     }]
@@ -6427,9 +6429,9 @@ describe('experiment workbench current task artifact', () => {
     data.tasks = [task]
     const base = { task_id: task.task_id, source_files: [], session_id: task.session_id!, turn: 1, skill_refs: [], applied_target: null }
     data.artifacts = [
-      { ...base, artifact_id: 'earlier-prompt', type: 'prompt', artifact: { type: 'prompt', positive_prompt: '先前结果', negative_prompt: '' }, call_id: 'old', disposition: 'applied', created_at: 1000 },
-      { ...base, artifact_id: 'latest-parameters', type: 'parameters', artifact: { type: 'parameters', parameters: { steps_71: 35, denoise_82: 0.6, enabled_91: false } }, call_id: 'new', disposition: 'candidate', created_at: 2000 },
-      { ...base, artifact_id: 'latest-question', type: 'question', artifact: { type: 'question', question: '还需要补充吗？', options: [] }, call_id: 'question', disposition: 'waiting_input', created_at: 3000 },
+      { ...base, artifact_id: 'earlier-prompt', type: 'prompt', artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '先前结果', negative_prompt: '' }), call_id: 'old', disposition: 'applied', created_at: 1000 },
+      { ...base, artifact_id: 'latest-parameters', type: 'parameters', artifact: contracts.parse('taskArtifact', 'input', { type: 'parameters', parameters: { steps_71: 35, denoise_82: 0.6, enabled_91: false } }), call_id: 'new', disposition: 'candidate', created_at: 2000 },
+      { ...base, artifact_id: 'latest-question', type: 'question', artifact: contracts.parse('taskArtifact', 'input', { type: 'question', question: '还需要补充吗？', options: [] }), call_id: 'question', disposition: 'waiting_input', created_at: 3000 },
     ]
     const { renderer, onAction } = await mount(data)
     await click(renderer, '任务')
@@ -6509,7 +6511,7 @@ describe('experiment workbench recommended resource details', () => {
     const data = fullProjection(), task = makeTask('resource-candidate', 'child', 'resources'), catalog = makeCatalog()
     data.tasks = [task]
     data.artifacts = [{ artifact_id: 'resource-proposal', task_id: task.task_id, type: 'resources',
-      artifact: { type: 'resources', refs: [{ kind: 'lora', id: '13' }], reason: '用于玻璃细节' },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'resources', refs: [{ kind: 'lora', id: '13' }], reason: '用于玻璃细节' }),
       source_files: [], session_id: task.session_id!, turn: 1, call_id: 'resources', skill_refs: [], disposition: 'candidate', applied_target: null, created_at: 1000 }]
     const original = structuredClone(data.branches[0]!.draft)
     const { renderer, onAction } = await mount(data, { catalog })
@@ -6535,7 +6537,7 @@ describe('experiment workbench generation artifact presentation', () => {
     data.tasks = [task]
     data.runs = []
     data.artifacts = [{ artifact_id: 'generation-proposal', task_id: task.task_id, type: 'generation_input',
-      artifact: { type: 'generation_input', generation_input: data.branches[0]!.draft.generation_input, image_refs: [], workflow_image_bindings: [] },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'generation_input', generation_input: data.branches[0]!.draft.generation_input, image_refs: [], workflow_image_bindings: [] }),
       source_files: [], session_id: task.session_id!, turn: 1, call_id: 'generation', skill_refs: [], disposition: 'candidate', applied_target: null, created_at: 1000 }]
     const { renderer } = await mount(data)
     await click(renderer, '任务')
@@ -6583,9 +6585,9 @@ describe('experiment workbench Agent result delivery through Remote', () => {
       const accepted = await host.remote.getProjection(workScope, signal), task = accepted.tasks[0]!
       expect(task.input.requirements.instructions).toBe('保留窗框\n调整自然光')
       const acceptedDraft = accepted.branches.find(branch => branch.branch_id === root.branchId)!.draft
-      const artifact: ArtifactPayload = kind === 'parameters'
+      const artifact: ArtifactPayload = artifactFixture(kind === 'parameters'
         ? { type: 'parameters', parameters: { steps: 35 } }
-        : { type: 'prompt', positive_prompt: '  Agent 正向词\n保留换行  ', negative_prompt: 'Agent 负向词' }
+        : { type: 'prompt', positive_prompt: '  Agent 正向词\n保留换行  ', negative_prompt: 'Agent 负向词' })
       await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
         { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'result-' + kind })
       await change(renderer, '切换工作', other.workId!)
@@ -6827,8 +6829,8 @@ describe('experiment workbench current artifact conflict state', () => {
     data.tasks = [task]
     const base = { task_id: task.task_id, type: 'prompt' as const, source_files: [], session_id: task.session_id!, turn: 1, skill_refs: [], applied_target: null }
     data.artifacts = [
-      { ...base, artifact_id: 'old-candidate', artifact: { type: 'prompt', positive_prompt: '先前候选', negative_prompt: '' }, call_id: 'old', disposition: 'candidate', created_at: 1000 },
-      { ...base, artifact_id: 'current-applied', artifact: { type: 'prompt', positive_prompt: '当前结果', negative_prompt: '' }, call_id: 'current', disposition: 'applied', created_at: 2000 },
+      { ...base, artifact_id: 'old-candidate', artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '先前候选', negative_prompt: '' }), call_id: 'old', disposition: 'candidate', created_at: 1000 },
+      { ...base, artifact_id: 'current-applied', artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '当前结果', negative_prompt: '' }), call_id: 'current', disposition: 'applied', created_at: 2000 },
     ]
     const { renderer } = await mount(data)
     await click(renderer, '任务')
@@ -6852,7 +6854,7 @@ describe('experiment workbench resource adoption through Remote', () => {
       await saveHostInput(host, root)
       const accepted = await host.remote.mutate({ ...root, type: 'agent-action', id: 'resources' }, signal)
       const task = (await host.remote.getProjection(scope, signal)).tasks.find(task => task.task_id === accepted.taskId)!
-      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'resources', refs: [{ kind: 'lora', id: '4' }], reason: '保留玻璃细节' } },
+      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: contracts.parse('taskArtifact', 'input', { type: 'resources', refs: [{ kind: 'lora', id: '4' }], reason: '保留玻璃细节' }) },
         { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'resource-candidate' })
       const details = host.catalog.details.getMockImplementation()!
       host.catalog.details.mockImplementation(async (request, requestSignal) => {
@@ -6906,9 +6908,9 @@ describe('experiment workbench artifact branch through Remote', () => {
       } else await setHostField(host, { ...source, field: 'instance_id', value: '9' }, signal)
       const selected = await host.remote.mutate({ ...source, type: 'create-branch', value: { name: '其他分支', original_request: '其他需求' } }, signal)
       await setHostField(host, { ...selected, field: 'positive_prompt', value: '另一分支手工文本' }, signal)
-      const artifact: ArtifactPayload = kind === 'prompt'
+      const artifact: ArtifactPayload = artifactFixture(kind === 'prompt'
         ? { type: 'prompt', positive_prompt: '候选分支提示词', negative_prompt: '候选负向词' }
-        : { type: 'parameters', parameters: { steps: 28 } }
+        : { type: 'parameters', parameters: { steps: 28 } })
       const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
         { workspaceId: source.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'branch-candidate' })
       const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
@@ -6950,13 +6952,13 @@ describe('experiment workbench artifact branch eligibility', () => {
     const data = fullProjection(), task = makeTask('eligible-artifact', 'root', variant === 'experiment' ? 'experiment' : variant.startsWith('review') ? 'review' : 'run')
     data.tasks = [task]
     const candidate = { generation_input: data.branches[0]!.draft.generation_input, image_refs: [], workflow_image_bindings: [] }
-    const artifact: ArtifactPayload = variant === 'generation' ? { type: 'generation_input', ...candidate }
+    const artifact: ArtifactPayload = artifactFixture(variant === 'generation' ? { type: 'generation_input', ...candidate }
       : variant === 'resources' ? { type: 'resources', refs: [{ kind: 'lora', id: '13' }], reason: '保留依据' }
         : variant === 'experiment' ? { type: 'prompt', positive_prompt: '实验结果', negative_prompt: '' }
-          : { type: 'review', observation: '光线清晰', conclusion: '保留构图', run_ids: [], ...(variant === 'review-candidate' ? { candidate } : {}) }
+          : { type: 'review', observation: '光线清晰', conclusion: '保留构图', run_ids: [data.runs[0]!.run_id], ...(variant === 'review-candidate' ? { candidate } : {}) })
     const base = { task_id: task.task_id, source_files: [], session_id: task.session_id!, turn: 1, skill_refs: [], applied_target: null }
     data.artifacts = [
-      { ...base, artifact_id: 'earlier-eligible', type: 'prompt', artifact: { type: 'prompt', positive_prompt: '先前产物', negative_prompt: '' }, call_id: 'earlier', disposition: 'candidate', created_at: 1000 },
+      { ...base, artifact_id: 'earlier-eligible', type: 'prompt', artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '先前产物', negative_prompt: '' }), call_id: 'earlier', disposition: 'candidate', created_at: 1000 },
       { ...base, artifact_id: 'latest-eligible', type: artifact.type, artifact, call_id: 'latest', disposition: 'candidate', created_at: 2000 },
     ]
     const { renderer, onAction } = await mount(data)
@@ -6967,7 +6969,12 @@ describe('experiment workbench artifact branch eligibility', () => {
     if (variant === 'review-candidate') {
       const details = card.findByProps({ className: 'task-output' }).findAllByType('details')[0]!
       expect(details.findAllByType('summary').map(nodeText)).toEqual(['查看建议输入'])
-      expect(JSON.parse(nodeText(details.findAllByType('pre')[0]!))).toEqual(candidate)
+      expect(JSON.parse(nodeText(details.findAllByType('pre')[0]!))).toEqual({
+        prompt_resource_refs: [],
+        generation_input: data.branches[0]!.draft.generation_input,
+        image_refs: [],
+        workflow_image_bindings: [],
+      })
     }
     expect(JSON.parse(nodeText(card.findByProps({ 'aria-label': '产物 JSON' })))).toHaveLength(2)
     if (allowed) {
@@ -6994,7 +7001,7 @@ describe('experiment workbench long artifact branch name', () => {
       const task = (await host.remote.getProjection(scope, signal)).tasks.find(task => task.task_id === accepted.taskId)!
       await setHostField(host, { ...source, field: 'positive_prompt', value: '父分支手工输入' }, signal)
       const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
-        artifact: { type: 'prompt', positive_prompt: '长名称候选输入', negative_prompt: '候选负向词' } },
+        artifact: contracts.parse('taskArtifact', 'input', { type: 'prompt', positive_prompt: '长名称候选输入', negative_prompt: '候选负向词' }) },
         { workspaceId: source.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'long-name-candidate' })
       const onAction = vi.fn((request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => host.remote.mutate(request, signal))
       const { renderer } = await mount(await host.remote.getProjection(scope, signal), {
@@ -7061,9 +7068,9 @@ describe('experiment workbench Run actions through Remote', () => {
     } satisfies NonNullable<Parameters<typeof mount>[1]>
   }
   const acceptTask = async (host: Host, workspaceId: string, task: WorkbenchProjection['tasks'][number]) => {
-    const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+
     const result = await host.runtime.acceptGenerations({ workspaceId, sessionId: task.session_id!, turn: 1, callId: 'visible-run' },
-      [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+      [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', task.input.generation_input)) }], signal, task.task_id)
     return result.items[0]!.runId
   }
 
@@ -7321,9 +7328,9 @@ describe('experiment workbench fixed historical Run input', () => {
   it('shows the saved prompts and image references while retaining the current preparation', async () => {
     const data = fullProjection(), run = data.runs[0]!, task = data.tasks[0]!
     data.branches[0]!.draft.prompt_input.positive_prompt = '当前草稿'
-    const fixed = { ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
+    const fixed = contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
       image_refs: [{ image_ref_id: 'saved-reference', source: { kind: 'uploaded_file' as const, file_id: 'saved-file' }, purpose: 'agent' as const, reference_requirement: '历史窗框要求' }], workflow_image_bindings: [],
-      input_description: inputDescription, prompt_input: { positive_prompt: '保存的历史提示词', negative_prompt: '保存的历史负向词' } }
+      input_description: inputDescription, prompt_input: { positive_prompt: '保存的历史提示词', negative_prompt: '保存的历史负向词' } })
     const { renderer, onAction } = await mount(data, { remote: { getRunInput: async () => fixed } })
     await click(renderer, '查看运行输入')
     expect(readField(renderer.root, '正向提示词')).toBe('保存的历史提示词')
@@ -7346,10 +7353,10 @@ describe('experiment workbench compiled historical parameter values', () => {
     const saved = { ...inputDescription, parameters: inputDescription.parameters.map(parameter => ({
       ...parameter, current_value: parameter.kind === 'seed' ? 38521047 : parameter.kind === 'steps' ? 34 : parameter.current_value,
     })) }
-    const getRunInput = vi.fn(async (scope: { runId: string }) => ({ ...runInputDefaults(data.runs.find(run => run.run_id === scope.runId)!.generation_input),  run_id: scope.runId, branch_id: 'root',
+    const getRunInput = vi.fn(async (scope: { runId: string }) => (contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(data.runs.find(run => run.run_id === scope.runId)!.generation_input),  run_id: scope.runId, branch_id: 'root',
       generation_input: data.runs.find(run => run.run_id === scope.runId)!.generation_input, image_refs: [], workflow_image_bindings: [],
       input_description: scope.runId === target.run_id ? saved : inputDescription,
-      prompt_input: { positive_prompt: '固定正向词', negative_prompt: '' } }))
+      prompt_input: { positive_prompt: '固定正向词', negative_prompt: '' } })))
     const { renderer, onAction } = await mount(data, { remote: { getRunInput } })
     expect(nodeText(renderer.root.findByProps({ className: 'stage-caption' }))).toContain('Seed 38521047 · 34 步')
     await change(renderer, '查看运行输入', '', true)
@@ -7412,8 +7419,8 @@ describe('experiment workbench restored historical input', () => {
 describe('experiment workbench historical read errors', () => {
   it.each([new Error('历史输入读取失败，请稍后重试。'), '历史输入读取失败，请稍后重试。'])('keeps the draft readable and retries a failed historical read after selecting another Run: %s', async failure => {
     const data = fullProjection(), run = data.runs[0]!
-    const fixed = { ...runInputDefaults(run.generation_input),  run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
-      reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], instructions: '', input_description: inputDescription, prompt_input: { positive_prompt: '恢复后的固定提示词', negative_prompt: '' } }
+    const fixed = contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(run.generation_input),  run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input,
+      image_refs: [], workflow_image_bindings: [], input_description: inputDescription, prompt_input: { positive_prompt: '恢复后的固定提示词', negative_prompt: '' } })
     const getRunInput = vi.fn(async (request: { runId: string }) => ({ ...fixed, run_id: request.runId })).mockRejectedValueOnce(failure)
     const { renderer } = await mount(data, { remote: { getRunInput } })
     expect(nodeText(renderer.root.findByProps({ className: 'toast' }))).toContain('历史输入读取失败')
@@ -7430,9 +7437,9 @@ describe('experiment workbench historical read errors', () => {
     const data = fullProjection()
     let resolve!: (value: import('../../src/workbench/contract.ts').WorkbenchRunInput) => void
     const first = new Promise<import('../../src/workbench/contract.ts').WorkbenchRunInput>(finish => { resolve = finish })
-    const fixed = (runId: string) => ({ ...runInputDefaults(data.runs.find(run => run.run_id === runId)!.generation_input),  run_id: runId, branch_id: runId === 'r1' ? 'root' : 'child',
+    const fixed = (runId: string) => (contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(data.runs.find(run => run.run_id === runId)!.generation_input),  run_id: runId, branch_id: runId === 'r1' ? 'root' : 'child',
       generation_input: data.runs.find(run => run.run_id === runId)!.generation_input, image_refs: [], workflow_image_bindings: [], input_description: inputDescription,
-      prompt_input: { positive_prompt: runId + ' 固定提示词', negative_prompt: '' } })
+      prompt_input: { positive_prompt: runId + ' 固定提示词', negative_prompt: '' } }))
     const getRunInput = vi.fn(async (request: { runId: string }) => request.runId === 'r1' ? first : fixed(request.runId))
     const { renderer } = await mount(data, { remote: { getRunInput } })
     await click(renderer, '切换分支 暖光探索')
@@ -7453,9 +7460,9 @@ describe('experiment workbench preparing historical Run input', () => {
     let data: WorkbenchProjection = { ...fullProjection(), runs: [makeRun('preparing-history', 't1', 'created')] }
     data.runs[0]!.generation_input.parameters = { raw_parameter_77: '保存的参数', positive_1: '固定正向' }
     let prepared = false
-    const getRunInput = vi.fn(async () => ({ ...runInputDefaults(data.runs[0]!.generation_input),  run_id: 'preparing-history', branch_id: 'root', generation_input: data.runs[0]!.generation_input,
-      reference_task_ids: [], reference_run_ids: [], reference_experiences: [], image_refs: [], workflow_image_bindings: [], instructions: '', input_description: prepared ? inputDescription : null,
-      prompt_input: prepared ? { positive_prompt: '固定正向', negative_prompt: '' } : { positive_prompt: null, negative_prompt: null } }))
+    const getRunInput = vi.fn(async () => (contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(data.runs[0]!.generation_input),  run_id: 'preparing-history', branch_id: 'root', generation_input: data.runs[0]!.generation_input,
+      image_refs: [], workflow_image_bindings: [], input_description: prepared ? inputDescription : null,
+      prompt_input: prepared ? { positive_prompt: '固定正向', negative_prompt: '' } : { positive_prompt: null, negative_prompt: null } })))
     const { renderer } = await mount(data, { remote: { getRunInput, getProjection: async () => structuredClone(data) } })
     await change(renderer, '查看运行输入', '', true)
     expect(readField(renderer.root, 'raw_parameter_77')).toBe('保存的参数')
@@ -7485,7 +7492,7 @@ describe('experiment workbench experiment round presentation', () => {
     const artifacts: ArtifactPayload[] = [
       { type: 'review', observation, conclusion: '保留完整评价结论', run_ids: [run.run_id] },
       { type: 'iteration_plan', source_run_id: run.run_id, changes, reason: '保留完整修改原因', expected_result: '保留完整预期效果' },
-    ]
+    ].map(artifact => contracts.parse('taskArtifact', 'input', artifact))
     data.artifacts = artifacts.map((artifact, index) => ({
       artifact_id: index === 0 ? 'long-review' : 'long-plan', task_id: run.workbench_task_id, type: artifact.type, artifact,
       source_files: [], session_id: 'session-t1', turn: 1, call_id: `long-${index}`, skill_refs: [],
@@ -7526,10 +7533,11 @@ describe('experiment workbench experiment round presentation', () => {
     data.tasks = [experiment, generation, reviewTask]
     data.runs = [first, second]
     data.experiments = [{ task_id: experiment.task_id, control_state: 'running', end_reason: null, submitted_count: 2, max_runs: 3 }]
-    const stored = (id: string, taskId: string, artifact: ArtifactPayload): WorkbenchProjection['artifacts'][number] => ({
-      artifact_id: id, task_id: taskId, type: artifact.type, artifact, source_files: [], session_id: 'session-' + taskId,
-      turn: 1, call_id: id, skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1000,
-    })
+    const stored = (id: string, taskId: string, input: ContractInput<'taskArtifact'>): WorkbenchProjection['artifacts'][number] => {
+      const artifact = contracts.parse('taskArtifact', 'input', input)
+      return { artifact_id: id, task_id: taskId, type: artifact.type, artifact, source_files: [], session_id: 'session-' + taskId,
+        turn: 1, call_id: id, skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1000 }
+    }
     data.artifacts = [
       stored('review-first', reviewTask.task_id, { type: 'review', observation: '窗框断开', conclusion: '需要保留结构', run_ids: [first.run_id] }),
       stored('plan-first', experiment.task_id, { type: 'iteration_plan', source_run_id: first.run_id, changes: ['降低引导强度'], reason: '保留窗框结构', expected_result: '窗框连续' }),
@@ -7676,7 +7684,7 @@ describe('experiment workbench experiment round presentation', () => {
     data.runs = [result]
     data.artifacts = [{
       artifact_id: 'experience-artifact', task_id: child.task_id, type: 'experience',
-      artifact: { type: 'experience', title: '窗框经验', conditions: '玻璃建筑', note: '降低引导强度', base_model_id: '1', model_id: '11', run_ids: [result.run_id] },
+      artifact: contracts.parse('taskArtifact', 'input', { type: 'experience', title: '窗框经验', conditions: '玻璃建筑', note: '降低引导强度', base_model_id: '1', model_id: '11', run_ids: [result.run_id] }),
       source_files: [], session_id: child.session_id!, turn: 1, call_id: 'experience', skill_refs: [], disposition: 'recorded', applied_target: null, created_at: 1000,
     }]
     const onAction = vi.fn(async (request: Parameters<ExperimentWorkbenchProps['onAction']>[0]) => {
@@ -7732,9 +7740,9 @@ describe('experiment workbench Run review through Remote', () => {
       await saveHostInput(host, scope)
       const receipt = await host.remote.mutate({ ...scope, type: 'run' }, signal)
       const task = (await host.remote.getProjection(scope, signal)).tasks.find(item => item.task_id === receipt.taskId)!
-      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+
       const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() },
-        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+        [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', task.input.generation_input)) }], signal, task.task_id)
       if (finish) {
         for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
         host.official.agents.get(task.session_id!)!.status = 'idle'
@@ -7762,12 +7770,12 @@ describe('experiment workbench Run review through Remote', () => {
     await host.remote.mutate({ ...root, type: 'update-execution', field: 'max_runs', value: maxRuns }, signal)
     const receipt = await host.remote.mutate({ ...root, type: 'experiment' }, signal)
     const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.task_id === receipt.taskId)!
-    const publish = (artifact: ArtifactPayload) => host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
+    const publish = (artifact: ContractInput<'taskArtifact'>) => host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: contracts.parse('taskArtifact', 'input', artifact) },
       { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() })
     const accept = async (input = task.input.generation_input) => {
-      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+
       const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: crypto.randomUUID() },
-        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(input)) }], signal, task.task_id)
+        [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', input)) }], signal, task.task_id)
       return accepted.items[0]!.runId
     }
     const finish = async () => { for (let phase = 0; phase < 4; phase++) await host.runtime.advance() }
@@ -8068,9 +8076,9 @@ describe('experiment workbench Run review through Remote', () => {
       await host.remote.mutate({ ...root, type: 'update-execution', field: 'max_runs', value: 3 }, signal)
       const receipt = await host.remote.mutate({ ...root, type: 'experiment' }, signal)
       const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.task_id === receipt.taskId)!
-      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+
       await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'active-experiment' },
-        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+        [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', task.input.generation_input)) }], signal, task.task_id)
       const { renderer } = await mountReady(await host.remote.getProjection(root, signal), options)
       await click(renderer, '查看运行 ' + runId)
       await vi.waitFor(() => expect(renderer.root.findByProps({ 'aria-label': '查看运行输入' }).props['aria-pressed']).toBe(true))
@@ -8271,9 +8279,9 @@ describe('experiment workbench Run review through Remote', () => {
       await setHostField(host, { ...root, field: 'original_request', value: '启动后的需求修改', expectedValue: '保留窗框' }, signal)
       await setHostField(host, { ...root, field: 'positive_prompt', value: '启动后的分支修改' }, signal)
       await setHostField(host, { ...root, field: 'parameter', id: 'seed_1', value: 999 }, signal)
-      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+
       const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'experiment-first' },
-        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(task.input.generation_input)) }], signal, task.task_id)
+        [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', task.input.generation_input)) }], signal, task.task_id)
       const runId = accepted.items[0]!.runId
       await vi.waitFor(() => expect(nodeText(box())).toContain(runId + ' 正在运行'), { timeout: 3000 })
       expect(readField(renderer.root, 'seed_1')).toBe('123')
@@ -8304,9 +8312,9 @@ describe('experiment workbench Run review through Remote', () => {
       await click(renderer, '独立运行')
       await vi.waitFor(async () => expect((await host.remote.getProjection(root, signal)).tasks.some(item => item.function_id === added.function_id)).toBe(true))
       const originalTask = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id)!
-      const { toGenerationRequest, parseCliGenerationRequest } = await import('../../src/cli/contract.ts')
+
       const accepted = await host.runtime.acceptGenerations({ workspaceId: root.workspaceId, sessionId: originalTask.session_id!, turn: 1, callId: 'custom-run' },
-        [{ requestId: crypto.randomUUID(), request: toGenerationRequest(parseCliGenerationRequest(originalTask.input.generation_input)) }], signal, originalTask.task_id)
+        [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', contracts.parse('cliGenerationRequest', 'input', originalTask.input.generation_input)) }], signal, originalTask.task_id)
       for (let phase = 0; phase < 4; phase++) await host.runtime.advance()
       host.official.agents.get(originalTask.session_id!)!.status = 'idle'
       await click(renderer, '配置中心')
@@ -8330,7 +8338,7 @@ describe('experiment workbench Run review through Remote', () => {
       await change(renderer, '任务要求', '历史产物要求')
       await act(async () => renderer.root.findByProps({ id: 'modal-form' }).props.onSubmit({ preventDefault() {} }))
       const changedTask = (await host.remote.getProjection(root, signal)).tasks.find(item => item.function_id === added.function_id && item.kind === 'resources')!
-      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: changedTask.task_id, artifact: { type: 'resources', refs: [{ kind: 'lora', id: '3' }], reason: '保留的历史产物' } },
+      await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: changedTask.task_id, artifact: contracts.parse('taskArtifact', 'input', { type: 'resources', refs: [{ kind: 'lora', id: '3' }], reason: '保留的历史产物' }) },
         { workspaceId: root.workspaceId, sessionId: changedTask.session_id!, turn: 1, callId: 'custom-artifact' })
       host.official.agents.get(changedTask.session_id!)!.status = 'idle'
       await click(renderer, '配置中心')
@@ -8609,7 +8617,7 @@ describe('experiment workbench Run review through Remote', () => {
         await click(renderer, '记录评价与经验')
         const count = accepted.runs.length
         await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
-          artifact: { type: 'review', observation: kind === 'compare' ? '两次窗框差异' : '实例连接失败', conclusion: '固定运行的处理结论', run_ids: task.input.reference_run_ids } },
+          artifact: contracts.parse('taskArtifact', 'input', { type: 'review', observation: kind === 'compare' ? '两次窗框差异' : '实例连接失败', conclusion: '固定运行的处理结论', run_ids: task.input.reference_run_ids }) },
           { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: kind })
         await vi.waitFor(() => expect(readField(renderer.root, '评价结论')).toBe('固定运行的处理结论'), { timeout: 3000 })
         await click(renderer, '取消')
@@ -8709,8 +8717,8 @@ describe('experiment workbench Run review through Remote', () => {
       const task = (await host.remote.getProjection(root, signal)).tasks.find(item => item.kind === 'review')!
       await change(renderer, '观察', '分析期间的手工观察')
       const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
-        artifact: { type: 'review', observation: '候选观察', conclusion: '候选结论', run_ids: [runId],
-          candidate: { generation_input: { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, positive: '独立采用的窗框输入' } }, image_refs: task.input.image_refs, workflow_image_bindings: task.input.workflow_image_bindings } } },
+        artifact: contracts.parse('taskArtifact', 'input', { type: 'review', observation: '候选观察', conclusion: '候选结论', run_ids: [runId],
+          candidate: { generation_input: { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, positive: '独立采用的窗框输入' } }, image_refs: task.input.image_refs, workflow_image_bindings: task.input.workflow_image_bindings } }) },
         { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'manual-conflict' })
       expect(published.disposition).toBe('candidate')
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 850)) })
@@ -8843,7 +8851,7 @@ describe('experiment workbench Run review through Remote', () => {
       const fixedInput = structuredClone(before.runs.find(item => item.run_id === runId)!.generation_input)
       const candidate = { generation_input: { ...task.input.generation_input, parameters: { ...task.input.generation_input.parameters, positive: '候选窗框输入' } }, image_refs: task.input.image_refs, workflow_image_bindings: task.input.workflow_image_bindings }
       const published = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id,
-        artifact: { type: 'review', observation: '候选观察', conclusion: '候选结论', run_ids: [runId], candidate } },
+        artifact: contracts.parse('taskArtifact', 'input', { type: 'review', observation: '候选观察', conclusion: '候选结论', run_ids: [runId], candidate }) },
         { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'review-candidate' })
       await vi.waitFor(() => expect(readField(renderer.root, '观察')).toBe('候选观察'), { timeout: 3000 })
       expect((await host.remote.getProjection(root, signal)).branches[0]!.draft.prompt_input.positive_prompt).toBe('')
@@ -8891,9 +8899,9 @@ describe('experiment workbench Run review through Remote', () => {
       const remoteApi = renderer.root.props.remote
       await act(() => renderer.update(<ExperimentWorkbench {...options} connectionState={renderer.root.props.connectionState} remote={remoteApi}
         onWorkspaceChange={vi.fn()} onAction={request => options.onAction(request)} />))
-      const artifact: ArtifactPayload = kind === 'review'
+      const artifact: ArtifactPayload = artifactFixture(kind === 'review'
         ? { type: 'review', observation: 'Agent 观察', conclusion: 'Agent 结论', run_ids: [runId] }
-        : { type: 'experience', title: '窗框经验', conditions: '玻璃建筑', note: '保留窗框连续性', run_ids: [runId], base_model_id: '1', model_id: '2' }
+        : { type: 'experience', title: '窗框经验', conditions: '玻璃建筑', note: '保留窗框连续性', run_ids: [runId], base_model_id: '1', model_id: '2' })
       const delivered = await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact },
         { workspaceId: root.workspaceId, sessionId: task.session_id!, turn: 1, callId: 'review-' + kind })
       await vi.waitFor(() => expect(readField(renderer.root, kind === 'review' ? '观察' : '经验标题'))

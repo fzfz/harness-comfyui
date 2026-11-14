@@ -1,10 +1,11 @@
+import type { JsonValue } from '#contracts'
 import { spawn } from 'node:child_process'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { performance } from 'node:perf_hooks'
 
-import type { JsonValue } from '../../generation/run-input-contract.ts'
+
 import { GenerationRuntimeError } from './generation-error.ts'
 import type { ComfyFrontendExporter, ComfyFrontendExporterInput } from './official-api-workflow.ts'
 import type { UiWorkflow } from './source-preparer.ts'

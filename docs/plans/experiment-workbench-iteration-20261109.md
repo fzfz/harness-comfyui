@@ -64,7 +64,7 @@
 | Run 查询使用调用会话解析出的工作区。 | [CLI dispatch()](../../src/host/cli/dispatch.ts)、[workspace-access.ts](../../src/host/generation/workspace-access.ts)。 | 查询按记录 ID 解析来源；任务提交按所属分支解析结果位置。 |
 | 生成接纳要求任务工作区与生成工作区一致。 | [WorkbenchStore.assertGenerationAcceptance()](../../src/host/storage/workbench-store.ts)。 | Host 按 Task ID 解析生成工作区，接纳结果归入任务所属分支。 |
 | 经验、收藏投影跟随所选工作过滤；经验复用要求同一工作。 | [WorkbenchService.createBranchFromExperience()](../../src/workbench/service.ts)。 | 经验和收藏改为全局查询；来源读取与目标分支创建分别指定位置。 |
-| 任务输入有 `reference_run_ids`，缺少完整的任务、经验与图片引用。 | [contract.ts](../../src/workbench/contract.ts)、[schema.ts](../../src/workbench/schema.ts)。 | 扩展结构化参考内容。 |
+| 任务输入有 `reference_run_ids`，缺少完整的任务、经验与图片引用。 | [contract.ts](../../src/workbench/contract.ts)、[合同模块](../../src/contracts/index.ts)。 | 扩展结构化参考内容。 |
 | 工作台任务读写通过 CLI 提供。预设已经加载 Shell、Skill、MCP 和原生工具呈现组件。 | [CLI 插件](../../src/host/cli/plugin.ts)、[预设共享组合](../../agent-presets/shared/agent.cordis.yml)。 | 将任务读写接入原生 Tool，由预设组合并由宿主提供工具声明。 |
 | 10 种功能的默认执行要求以工具步骤为主。 | [functions.json](../../src/workbench/functions.json)。 | 按第 5.4.1 节分别定义任务提示词、预设和工具组件的职责。 |
 | 图片参数显示为手填文本；未识别图片参数时控件禁用。 | [RuntimeParameterField](../../src/client/workbench/experiment-parameter-fields.tsx)。 | 改为选图与参数绑定控件。 |
@@ -196,7 +196,7 @@
 7. 图片预览、原图下载及媒体路由按媒体 ID 解析来源。任务列表与 Run 列表按所属工作显示；任务详情可打开各条跨区参考记录。
 8. 配置中心决定本次任务使用的 Agent 预设、提供商、模型、推理等级和执行要求。创建任务时固定这份配置。
 9. 运行任务提交 1 个 Run，`max_runs` 为 1。持续实验使用用户填写的次数上限，界面显示“最多运行次数”。
-10. 原生 Tool 和受管 CLI 共用 [schema.ts](../../src/workbench/schema.ts)、[contract.ts](../../src/workbench/contract.ts)与 WorkbenchService。`output_contract` 的参数 ID 根据任务模板生成。`requested_skill` 沿用功能配置，`evaluation_input` 保存被评价 Run 的资料。工具装配与说明来源见第 5.4.1 节。
+10. 原生 Tool 和受管 CLI 共用 [合同模块](../../src/contracts/index.ts)、[contract.ts](../../src/workbench/contract.ts)与 WorkbenchService。`output_contract` 的参数 ID 根据任务模板生成。`requested_skill` 沿用功能配置，`evaluation_input` 保存被评价 Run 的资料。工具装配与说明来源见第 5.4.1 节。
 11. 页面展示任务的执行中、等待输入、成功或失败状态，并保留每次 Run 的实际结果。
 12. 持续实验首轮使用固定输入，后续轮次读取本任务上一轮 Run 与评价，再提交候选输入。全部轮次归入本任务所属分支。
 
@@ -224,7 +224,7 @@
    | `workbench_task_publish` | `taskPublishRequestSchema`，接收 `task_id` 与 `artifact`。 | `WorkbenchService.publish()`。 | 产物 ID、采用状态与问题回执。 |
    | `workbench_experiment_end` | `experimentEndRequestSchema`，接收 `task_id` 与 `reason`。 | `WorkbenchService.endExperiment()`。 | 实验结束状态。 |
 
-3. 工具组件的参数 schema 由 [schema.ts](../../src/workbench/schema.ts)派生。执行时从 Harness 的 Tool 执行上下文取得会话、Tool Call 与取消信号，沿用业务服务的身份解析和权限规则。模型只传业务参数。
+3. 工具组件通过[合同模块](../../src/contracts/index.ts)生成参数声明。执行时从 Harness 的 Tool 执行上下文取得会话、Tool Call 与取消信号，沿用业务服务的身份解析和权限规则。模型只传业务参数。
 4. [共享预设组合](../../agent-presets/shared/agent.cordis.yml)加载工作台工具组件。用户在 Agent Studio 创建的预设可以复用该组件，并组合不同的角色提示词、MCP、Skill 和其他工具。配置中心为各功能选择预设，同一个预设可以执行多种功能。
 5. 创建任务时，工作台按绑定的预设 ID、提供商、模型和推理等级创建 Harness 会话。Harness 负责工具声明与 Skill 目录的呈现；Agent 根据工具用途完成任务。
 6. 生成、Run 查询和读图继续复用现有预设能力。Skill 使用受管 CLI 时，其正文提供完整入口。配置中心任务提示词只维护本节第 1 项规定的内容。

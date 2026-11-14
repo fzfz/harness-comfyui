@@ -1,5 +1,6 @@
+import type { JsonValue } from '#contracts'
 import React from 'react'
-import type { JsonValue } from '../../workbench/contract.ts'
+
 import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeParameterInspection } from '../../generation/inspection-contract.ts'
 import { experimentSizeOptions } from './experiment-input.ts'
 import options from './experiment-input-options.json' with { type: 'json' }

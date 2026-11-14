@@ -1,3 +1,4 @@
+import { ContractError, type JsonValue } from '#contracts'
 import { DatabaseSync } from 'node:sqlite'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -11,7 +12,7 @@ import { ComfyWorkflowCompiler } from '../../src/host/generation/workflow-compil
 import type { UiWorkflow } from '../../src/host/generation/source-preparer.js'
 import { flattenWorkflowRuntimeParameters, type WorkflowRuntimeSizeCandidate } from '../../src/generation/inspection-contract.ts'
 import type { GenerationRequest } from '../../src/generation/submission-contract.js'
-import type { JsonValue, TaskDraft } from '../../src/workbench/contract.js'
+import type { TaskDraft } from '../../src/workbench/contract.js'
 
 import { CATALOG_PRESENTATION, parseCatalogDetails, type CatalogDetailsRequest } from '../../src/catalog/details-schema.ts'
 
@@ -242,14 +243,24 @@ describe('workbench generation input adapter', () => {
     expect(runtime.inspectTemplateRuntimeParameters).not.toHaveBeenCalled()
   })
 
-  it('maps a synchronous CLI request validation failure at the published generation input path', async () => {
+  it('forwards a synchronous CLI validation error with its contract identity and field path', async () => {
     const runtime = { inspectTemplateRuntimeParameters: vi.fn(), validateGenerationRequest: vi.fn() }
     const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
     const adapter = createWorkbenchInputAdapter({ runtime, catalog })
-    await expect(adapter.validateGenerationInput({ ...draft.generation_input, title: '' }, 'artifact.generation_input')).rejects.toMatchObject({
-      code: 'WORKBENCH_GENERATION_INVALID', issues: [{ path: 'artifact.generation_input' }],
+    const failure: unknown = await adapter.validateGenerationInput({ ...draft.generation_input, title: '' }, 'artifact.generation_input').catch(error => error)
+    expect(failure).toBeInstanceOf(ContractError)
+    expect(failure).toMatchObject({
+      contractId: 'cliGenerationRequest', direction: 'input', issues: [{ path: '$.title', message: expect.stringContaining('length >= 1') }],
     })
     expect(runtime.validateGenerationRequest).not.toHaveBeenCalled()
+  })
+
+  it('forwards the original contract error object returned by runtime validation', async () => {
+    const failure = new ContractError('generationRequest', 'input', new TypeError('Invalid width'), '$.parameters.width_1')
+    const runtime = { inspectTemplateRuntimeParameters: vi.fn(), validateGenerationRequest: vi.fn(async () => { throw failure }) }
+    const catalog = { details: vi.fn(), resolveGenerationModel: vi.fn(), resolveLora: vi.fn(), resolveTemplate: vi.fn(async () => ({ id: '2', title: 'template', base_model_id: '5', model_id: null })) }
+    const adapter = createWorkbenchInputAdapter({ runtime, catalog })
+    await expect(adapter.validateGenerationInput(draft.generation_input, 'artifact.generation_input')).rejects.toBe(failure)
   })
 
   it('reports catalog failures, filename mismatches and runtime field errors at the published artifact path', async () => {

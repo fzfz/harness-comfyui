@@ -1,3 +1,4 @@
+import { contracts, type ContractReadonlyValue } from '#contracts'
 import help from '../../../config/managed-cli-help.json' with { type: 'json' }
 import type { JobOutcome, JobRegistry, JobSpec } from '@deepseek-ai/dsh-jobs'
 import { isGenerationRunTerminal, type GenerationRunStatus } from '../../generation/run-status.ts'
@@ -11,10 +12,7 @@ export interface GenerationRunWaitIdentity {
   readonly rootCallId: string
 }
 
-export interface GenerationRunWaitReceipt {
-  readonly job_id: string
-  readonly run_ids: readonly string[]
-}
+export type GenerationRunWaitReceipt = ContractReadonlyValue<'generationRunWaitReceipt'>
 
 export interface GenerationRunWaitOptions {
   readonly runtime: Pick<GenerationRuntime, 'readGenerationRunMedia'>
@@ -70,7 +68,7 @@ export class GenerationRunWaitService {
     } catch (error) {
       throw new GenerationRuntimeError('GENERATION_WAIT_UNAVAILABLE', `${help.messages.generationWaitUnavailable} ${error instanceof Error ? error.message : String(error)}`)
     }
-    const receipt = Object.freeze({ job_id: jobId, run_ids: canonicalIds })
+    const receipt = contracts.parse('generationRunWaitReceipt', 'output', { job_id: jobId, run_ids: canonicalIds })
     this.active.set(key, { receipt, cancel, done })
     return receipt
   }
@@ -105,7 +103,7 @@ export class GenerationRunWaitService {
           .sort((left, right) => left.run_id.localeCompare(right.run_id))
       }
       signal.throwIfAborted()
-      return { status: 'completed', result: JSON.stringify({ runs: current.map(({ run_id, status }) => ({ run_id, status })) }) }
+      return { status: 'completed', result: JSON.stringify(contracts.parse('generationRunWaitSummary', 'output', { runs: current.map(({ run_id, status }) => ({ run_id, status })) })) }
     } catch (error) {
       if (signal.aborted) return { status: 'killed' }
       return { status: 'failed', detail: error instanceof Error ? error.message : 'Run observation failed. Query the Runs with generation resolve-media --stdin.' }

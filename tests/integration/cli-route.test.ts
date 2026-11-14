@@ -224,6 +224,33 @@ it('rejects a malformed nested Host result through the CLI result contract', asy
 })
 
 describe('Harness ComfyUI managed CLI route', () => {
+  it('delivers normalized task output instead of the unparsed service value', async () => {
+    const result = {
+      task_id: 'task-normalized', parent_experiment_task_id: null, children: [], kind: 'run', status: 'running',
+      prompt_input: { positive_prompt: 'portrait', negative_prompt: null },
+      generation_input: { title: 'Portrait', instance_id: '2', template_id: '47', model: null, parameters: {}, loras: [] },
+      prompt_resource_refs: [], reference_task_ids: [], reference_run_ids: [], reference_task_artifacts: [], reference_experiences: [],
+      image_refs: [], workflow_image_bindings: [], base_model_id: null,
+      requirements: { original_request: 'Portrait', instructions: '' }, requested_skill: null, max_runs: 1,
+      output_contract: { artifact_types: [], required_artifact_types: [], parameter_ids: [], apply_mode: 'record', requires_finished_runs: true },
+      artifacts: [], iterations: [], answers: [],
+    }
+    const server = await serve(webServer => registerHarnessComfyuiCliRoute({
+      webServer,
+      capabilities: { authorize: () => ({ sessionId: 'session_1', turn: 1, callId: 'call_1', rootCallId: 'root-test', cwd: '/workspace' }) },
+      runtime: {} as never,
+      workbench: { taskWorkspace: () => 'workspace_1', getTask: async () => result } as never,
+      imageReader: unusedImageReader(),
+      workspaceRegistry: { resolveByPath: async () => ({ id: 'workspace_1' }) },
+    }))
+    try {
+      const response = await post(server.origin, 'capability', { command: 'workbench.task.get', task_id: result.task_id })
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({ ok: true, data: { ...result, image_sources: [] } })
+      expect(Object.hasOwn(result, 'image_sources')).toBe(false)
+    } finally { await server.close() }
+  })
+
   it('accepts task generation in the task Workspace while preserving the authenticated caller', async () => {
     const accepted = vi.fn(async () => ({ items: [{ requestId: '01234567-89ab-4cde-8fab-0123456789ab', runId: 'run_task', acceptance: 'accepted' }] }))
     const taskWorkspace = vi.fn(() => 'workspace-source')
@@ -710,7 +737,7 @@ describe('Harness ComfyUI managed CLI route', () => {
         expect(response.status).toBe(400)
         expect(await response.json()).toEqual({
           ok: false,
-          error: { code: 'CLI_REQUEST_INVALID', message: 'CLI request command is invalid' },
+          error: { code: 'CLI_REQUEST_INVALID', message: expect.stringContaining('CLI request command is invalid') },
         })
       }
       const unauthorized = await post(server.origin, 'wrong', requests[0])
@@ -829,7 +856,7 @@ describe('Harness ComfyUI managed CLI route', () => {
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({
       ok: false,
-      error: { code: 'CLI_REQUEST_INVALID', message: 'CLI request command is invalid' },
+      error: { code: 'CLI_REQUEST_INVALID', message: expect.stringContaining('CLI request command is invalid') },
     })
     expect(acceptGenerations).not.toHaveBeenCalled()
     expect(inspectTemplateRuntimeParameters).not.toHaveBeenCalled()

@@ -1,8 +1,9 @@
+import { contracts } from '#contracts'
 import { expect, it, vi } from 'vitest'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { WorkbenchUpdate } from '../../src/workbench-remote.ts'
 import type { WorkflowRuntimeParameterInspection } from '../../src/generation/inspection-contract.ts'
-import { toGenerationRequest } from '../../src/cli/contract.ts'
+
 import { createWorkbenchHostFixture } from '../support/workbench-host.ts'
 
 
@@ -28,7 +29,7 @@ it('limits snapshots and completed media to the requested work while retaining c
       host.store.saveBranchDraft({ workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id, expected: branch.draft, draft: { ...branch.draft, generation_input: { ...branch.draft.generation_input, instance_id: '8', template_id: '5' } } })
       const task = await host.ctx.harnessComfyuiWorkbench.service.createTask({ workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id, functionId: 'experiment', maxRuns: 1 })
       const identity = { workspaceId: 'workspace_1', sessionId: task.session_id!, turn: 1, callId: name }
-      const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: toGenerationRequest({ ...task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
+      const accepted = await host.runtime.acceptGenerations(identity, [{ requestId: crypto.randomUUID(), request: contracts.parse('runtimeGenerationRequest', 'input', { ...task.input.generation_input, instance_id: '8', template_id: '5' }) }], undefined, task.task_id)
       const runId = accepted.items[0]!.runId
       for (let step = 0; step < 5; step++) await host.runtime.advance()
       await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'review', observation: 'Rain is visible', conclusion: 'Keep the input', run_ids: [runId] } }, identity)

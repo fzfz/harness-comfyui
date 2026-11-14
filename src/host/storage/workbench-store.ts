@@ -1,11 +1,13 @@
+import type { JsonValue } from '#contracts'
+import { contracts } from '#contracts'
 import { randomUUID } from 'node:crypto'
 import { basename, join } from 'node:path'
 import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import type { DatabaseSync } from 'node:sqlite'
 import type { GenerationRequest } from '../../generation/submission-contract.ts'
-import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, JsonValue, OutputContract, PromptInput, PublishReceipt, ResourceSnapshot, ReviewDraft, ReviewDraftUpdate, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
+import type { AgentModel, ApplyTarget, ArtifactPayload, BindingSnapshot, Branch, ExecutionDraft, ExecutionState, Experience, Experiment, Favorite, FunctionBinding, FunctionDescriptor, GenerationInput, OutputContract, PromptInput, PublishReceipt, ResourceSnapshot, ReviewDraft, ReviewDraftUpdate, SavedReview, SkillReadRef, StoredArtifact, Task, TaskDraft, TaskRequestDraft, TaskInput, Work, WorkbenchIdentity, WorkbenchProjection, WorkbenchRun } from '../../workbench/contract.ts'
 import { equalValue } from '../../shared/json-contract.ts'
-import { jsonValue, validateArtifact, validateFunctionBinding, validateTaskDraft, validateTaskRequestDraft, validateTaskInput, validateReviewDraft, validateInputReferences, generationInputWithImages, runBaseModelId, WorkbenchError } from '../../workbench/validation.ts'
+import { jsonValue, generationInputWithImages, runBaseModelId, WorkbenchError } from '../../workbench/validation.ts'
 import { deriveTaskStatus, isFinishedRun, mergeTaskDraft } from '../../workbench/state.ts'
 import { functionNameProblem } from '../../workbench/function-name.ts'
 import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
@@ -194,7 +196,7 @@ export class WorkbenchStore {
     if (input.sourceRunId) this.getRun(input.sourceRunId)
     if (input.sourceArtifactId) this.getArtifact(input.sourceArtifactId)
     if (input.sourceExperienceId) this.getExperience(input.sourceExperienceId)
-    const draft = validateTaskDraft(input.draft)
+    const draft = contracts.parse('taskDraft', 'input', input.draft)
     const branch: Branch = { branch_id: randomUUID(), work_id: input.workId, parent_branch_id: input.parentBranchId ?? null, name: input.name, original_request: input.originalRequest, source_run_id: input.sourceRunId ?? null, source_artifact_id: input.sourceArtifactId ?? null, source_experience_id: input.sourceExperienceId ?? null, draft, editing_draft: structuredClone(draft), execution: input.execution ?? { mode: 'once', max_runs: 3 } }
     this.run('INSERT INTO workbench_branches(branch_id,work_id,parent_branch_id,name,original_request,source_run_id,source_artifact_id,source_experience_id,draft_json,execution_json,editing_draft_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)', branch.branch_id, branch.work_id, branch.parent_branch_id, branch.name, branch.original_request, branch.source_run_id, branch.source_artifact_id, branch.source_experience_id, JSON.stringify(branch.draft), JSON.stringify(branch.execution), JSON.stringify(branch.editing_draft))
     return branch
@@ -202,7 +204,7 @@ export class WorkbenchStore {
   createBranch(input: Parameters<WorkbenchStore['insertBranch']>[0] & { parentBranchId: string }): Branch { return transaction(this.database, () => this.insertBranch(input)) }
   private storedDraft(value: unknown): TaskDraft {
     const { context_refs: _context, ...draft } = parse<Record<string, unknown>>(value)
-    return validateTaskDraft({ parameter_mapping: null, ...draft })
+    return contracts.parse('taskDraft', 'input', { parameter_mapping: null, ...draft })
   }
   private branch(row: Row): Branch { const { draft_json, editing_draft_json, execution_json, ...rest } = row; return { ...rest, draft: this.storedDraft(draft_json), editing_draft: editing_draft_json ? this.storedDraft(editing_draft_json) : null, execution: parse(execution_json) } as Branch }
   getBranch(branchId: string): Branch { const row = this.row('SELECT * FROM workbench_branches WHERE branch_id=?', branchId); return row ? this.branch(row) : fail('WORKBENCH_NOT_FOUND', '分支不存在，请重新选择分支。', 'branch_id') }
@@ -212,17 +214,11 @@ export class WorkbenchStore {
       this.assertScope(input.workspaceId, input.workId, input.branchId)
       const branch = this.getBranch(input.branchId)
       if (Object.hasOwn(input, 'expectedEditingDraft') && !equalValue(branch.editing_draft, input.expectedEditingDraft)) fail('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新保存。', 'expectedEditingDraft')
-      if (input.name !== undefined && typeof input.expectedName !== 'string') fail('WORKBENCH_INVALID_INPUT', '缺少编辑前的分支名称，请刷新页面后保存。', 'expectedName')
-      if (input.originalRequest !== undefined && typeof input.expectedOriginalRequest !== 'string') fail('WORKBENCH_INVALID_INPUT', '缺少编辑前的原始需求，请刷新页面后保存。', 'expectedOriginalRequest')
+      contracts.parse('branchMetadata', 'input', input)
       if (!equalValue(branch.draft, input.expected)) fail('WORKBENCH_EDIT_CONFLICT', '分支内容已改变，请刷新后重新保存。', 'expected')
       if (input.originalRequest !== undefined && branch.original_request !== input.expectedOriginalRequest) fail('WORKBENCH_EDIT_CONFLICT', '原始需求已改变，请刷新后重新保存。', 'original_request')
-      if (input.name !== undefined && (!input.name.trim() || input.name.length > WORKBENCH_BRANCH_NAME_MAX_LENGTH)) {
-        const error = libraryConfig.errors.branchNameInvalid
-        fail(error.code, error.message.replaceAll('{maxLength}', String(WORKBENCH_BRANCH_NAME_MAX_LENGTH)), error.path)
-      }
       if (input.name !== undefined && branch.name !== input.expectedName) fail('WORKBENCH_EDIT_CONFLICT', '分支名称已改变，请刷新后重新保存。', 'name')
-      if (input.originalRequest !== undefined && !input.originalRequest.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写原始需求。', 'original_request')
-      const draft = validateTaskDraft(input.draft)
+      const draft = contracts.parse('taskDraft', 'input', input.draft)
       const execution = this.validateExecution(input.execution ?? branch.execution)
       this.run('UPDATE workbench_branches SET draft_json=?,editing_draft_json=NULL,original_request=?,execution_json=?,name=? WHERE branch_id=?', JSON.stringify(draft), input.originalRequest ?? branch.original_request, JSON.stringify(execution), input.name ?? branch.name, branch.branch_id)
       return this.getBranch(branch.branch_id)
@@ -273,7 +269,7 @@ export class WorkbenchStore {
   saveFunctionBinding(input: FunctionBinding): FunctionBinding {
     const problem = functionNameProblem(input, this.listFunctionBindings(input.workspace_id))
     if (problem) fail('WORKBENCH_INVALID_INPUT', problem, 'binding.name')
-    const value = validateFunctionBinding({ ...input, name: input.name.trim() })
+    const value = contracts.parse('functionBinding', 'input', { ...input, name: input.name.trim() })
     this.run('INSERT INTO workbench_function_bindings(workspace_id,function_id,name,kind,builtin,preset_id,agent_model_json,requested_skill,request_template,request_parts_json) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(workspace_id,function_id) DO UPDATE SET name=excluded.name,kind=excluded.kind,builtin=excluded.builtin,preset_id=excluded.preset_id,agent_model_json=excluded.agent_model_json,requested_skill=excluded.requested_skill,request_template=excluded.request_template,request_parts_json=excluded.request_parts_json', value.workspace_id, value.function_id, value.name, value.kind, Number(value.builtin), value.preset_id, JSON.stringify(value.agent_model), value.requested_skill, value.request_template, value.kind === 'prompt' ? JSON.stringify(value.request_parts ?? DEFAULT_PROMPT_REQUEST_PARTS) : null)
     return this.getFunctionBinding(value.workspace_id, value.function_id)
   }
@@ -291,7 +287,7 @@ export class WorkbenchStore {
   saveTaskDraft(branchId: string, functionId: string, value: TaskRequestDraft): TaskRequestDraft {
     const branch = this.getBranch(branchId)
     this.getFunctionBinding(this.getWork(branch.work_id).workspace_id, functionId)
-    const draft = validateTaskRequestDraft(value)
+    const draft = contracts.parse('taskRequestDraft', 'input', value)
     this.run('INSERT INTO workbench_task_drafts(branch_id,function_id,instructions,resources_json) VALUES(?,?,?,?) ON CONFLICT(branch_id,function_id) DO UPDATE SET instructions=excluded.instructions,resources_json=excluded.resources_json', branchId, functionId, draft.instructions, JSON.stringify(draft.resources))
     return draft
   }
@@ -322,7 +318,7 @@ export class WorkbenchStore {
         if (parent.kind !== 'experiment' || parent.parent_experiment_task_id || input.kind === 'experiment' || parent.branch_id !== branch.branch_id) fail('WORKBENCH_SCOPE_MISMATCH', '请选择同一分支的持续实验作为父任务。', 'parent_experiment_task_id')
       }
       const { instructions: _draftInstructions, ...taskInput } = input.input as TaskInput & { instructions?: string }
-      const fixed = validateTaskInput(input.kind, taskInput)
+      const fixed = contracts.parse('taskInputForKind', 'input', { kind: input.kind, value: taskInput })
       if (input.parentExperimentTaskId) this.assertDelegationInput(this.getTask(input.parentExperimentTaskId), fixed)
       for (const runId of fixed.reference_run_ids) this.getRun(runId)
       const referenceArtifacts = [...fixed.reference_task_artifacts.map(reference => this.getArtifact(reference.artifact_id)), ...fixed.reference_task_ids.flatMap(taskId => this.listArtifacts(this.getTask(taskId).task_id))]
@@ -360,7 +356,7 @@ export class WorkbenchStore {
   }
   private storedInput(value: unknown): TaskInput {
     const { context_refs: _context, instructions: _draftInstructions, ...input } = parse<Record<string, unknown>>(value)
-    return { parameter_mapping: null, prompt_resource_refs: [], selected_resources: [], reference_task_artifacts: [], ...input, ...validateInputReferences(input) } as unknown as TaskInput
+    return { parameter_mapping: null, prompt_resource_refs: [], selected_resources: [], reference_task_artifacts: [], ...input, ...contracts.parse('inputReferences', 'input', input) } as unknown as TaskInput
   }
   private task(row: Row): Task {
     const { input_json, output_contract_json, apply_target_json, binding_snapshot_json, selected_model_json, answers_json, error_json, submission_input_json: _submission, ...rest } = row
@@ -396,15 +392,15 @@ export class WorkbenchStore {
         if (!equalValue([previous.workspace_id, previous.work_id, previous.branch_id, previous.field, previous.source_text], [record.workspace_id, record.work_id, record.branch_id, record.field, record.source_text])) fail('WORKBENCH_EDIT_CONFLICT', '请求来源已改变，请使用新的请求 ID。', 'request_id')
         if (previous.status !== 'running') return previous
       }
-      this.run('INSERT INTO workbench_translations VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(request_id) DO UPDATE SET session_id=excluded.session_id,harness_turn=excluded.harness_turn,start_seq=excluded.start_seq,finished_at=excluded.finished_at,status=excluded.status,text=excluded.text,error=excluded.error', record.request_id, record.workspace_id, record.work_id, record.branch_id, record.field, record.source_text, record.session_id, record.harness_turn, record.start_seq, record.created_at, record.finished_at, record.status, record.text ?? null, record.error ?? null)
+      this.run('INSERT INTO workbench_translations VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(request_id) DO UPDATE SET session_id=excluded.session_id,harness_turn=excluded.harness_turn,start_seq=excluded.start_seq,finished_at=excluded.finished_at,status=excluded.status,text=excluded.text,error=excluded.error', record.request_id, record.workspace_id, record.work_id, record.branch_id, record.field, record.source_text, record.session_id, record.harness_turn, record.start_seq, record.created_at, record.finished_at, record.status, record.status === 'succeeded' ? record.text : null, record.status === 'failed' ? record.error : null)
       return this.getTranslation(record.request_id)!
     })
   }
   listTranslations(scope: { workspaceId: string; workId?: string }): TranslationRecord[] {
     return this.rows('SELECT * FROM workbench_translations WHERE workspace_id=? AND (? IS NULL OR work_id=?) ORDER BY created_at,rowid', scope.workspaceId, scope.workId ?? null, scope.workId ?? null).map(row => this.translation(row))
   }
-  listPendingTranslations(): TranslationRecord[] {
-    return this.rows("SELECT * FROM workbench_translations WHERE status='running' ORDER BY created_at,rowid").map(row => this.translation(row))
+  listPendingTranslations(): Extract<TranslationRecord, { status: 'running' }>[] {
+    return this.rows("SELECT * FROM workbench_translations WHERE status='running' ORDER BY created_at,rowid").map(row => this.translation(row)).filter((record): record is Extract<TranslationRecord, { status: 'running' }> => record.status === 'running')
   }
   listPendingPromptTurns(): PromptTurn[] {
     return this.rows("SELECT request_id FROM workbench_prompt_turns WHERE status IN ('queued','running') ORDER BY created_at,rowid").map(row => this.getPromptTurn(String(row.request_id))!)
@@ -442,7 +438,7 @@ export class WorkbenchStore {
     const task = this.getTask(turn.task_id)
     const branch = this.getBranch(task.branch_id)
     const submittedDraft = submissionInput && typeof submissionInput === 'object' && !Array.isArray(submissionInput) && 'draft' in submissionInput ? submissionInput.draft : undefined
-    const source = submissionInput === undefined ? task.input : submittedDraft === undefined ? branch.editing_draft ?? branch.draft : validateTaskDraft(submittedDraft)
+    const source = submissionInput === undefined ? task.input : submittedDraft === undefined ? branch.editing_draft ?? branch.draft : contracts.parse('taskDraft', 'input', submittedDraft)
     const prompt = { ...source.prompt_input }
     for (const field of Object.keys(prompt) as (keyof PromptInput)[]) prompt[field] = prompt[field] === null && turn.input[field] === '' ? null : turn.input[field]
     return { model_id: source.generation_input.model?.id ?? null, prompt_input: prompt }
@@ -588,7 +584,7 @@ export class WorkbenchStore {
   }
   private applyPatch(task: Task, patch: Record<string, JsonValue>, expected: Record<string, JsonValue>, target = task.apply_target, parameterMapping?: TaskDraft['parameter_mapping']): boolean {
     const current = this.targetValues(target)
-    const reviewExpected = target.kind === 'run_review' ? validateReviewDraft(current) : undefined
+    const reviewExpected = target.kind === 'run_review' ? contracts.parse('reviewDraft', 'input', current) : undefined
     for (const key of Object.keys(patch)) {
       let expectedKey: string | undefined
       for (const field of Object.keys(expected)) if ((key === field || key.startsWith(`${field}.`)) && (!expectedKey || field.length > expectedKey.length)) expectedKey = field
@@ -600,7 +596,7 @@ export class WorkbenchStore {
     for (const [key, value] of Object.entries(patch)) this.put(current, key, value)
     if (target.kind === 'branch' && Object.hasOwn(patch, 'generation_input') && parameterMapping !== undefined) current.parameter_mapping = jsonValue(parameterMapping)
     if (target.kind === 'branch') this.run('UPDATE workbench_branches SET editing_draft_json=? WHERE branch_id=?', JSON.stringify(current), target.id)
-    else this.saveRunReviewDraft({ workspaceId: this.taskWorkspace(task.task_id), workId: this.getBranch(task.branch_id).work_id, runId: target.id, expected: reviewExpected!, draft: validateReviewDraft(current) })
+    else this.saveRunReviewDraft({ workspaceId: this.taskWorkspace(task.task_id), workId: this.getBranch(task.branch_id).work_id, runId: target.id, expected: reviewExpected!, draft: contracts.parse('reviewDraft', 'input', current) })
     return true
   }
   private artifactResourceError(task: Task, artifact: ArtifactPayload, promptTurn?: PromptTurn): WorkbenchError | null {
@@ -644,7 +640,7 @@ export class WorkbenchStore {
   }
 
   publish(taskId: string, raw: unknown, identity: WorkbenchIdentity, skillRefs: SkillReadRef[] = []): PublishReceipt {
-    const artifact = validateArtifact(raw); const task = this.getTask(taskId)
+    const artifact = contracts.parse('taskArtifact', 'input', raw); const task = this.getTask(taskId)
     this.validateArtifactForTask(task, artifact)
     const duplicate = this.listArtifacts(taskId).find(a => a.session_id === identity.sessionId && a.turn === identity.turn && a.call_id === identity.callId && equalValue(a.artifact, artifact))
     if (duplicate) return parse<PublishReceipt>(this.row('SELECT publish_receipt_json FROM workbench_task_artifacts WHERE artifact_id=?', duplicate.artifact_id)!.publish_receipt_json)
@@ -710,7 +706,7 @@ export class WorkbenchStore {
       let patch = this.artifactPatch(task, stored.artifact, input.candidate)
       if (stored.artifact.type === 'resources') {
         if (input.resolvedDraft) {
-          const draft = validateTaskDraft(input.resolvedDraft)
+          const draft = contracts.parse('taskDraft', 'input', input.resolvedDraft)
           patch = { generation_input: jsonValue(draft.generation_input), image_refs: jsonValue(draft.image_refs), workflow_image_bindings: jsonValue(draft.workflow_image_bindings), prompt_resource_refs: jsonValue(draft.prompt_resource_refs ?? []), base_model_id: draft.base_model_id }
         } else if (stored.artifact.refs.some(ref => (WORKBENCH_RESOURCE_KINDS as readonly string[]).includes(ref.kind))) fail('WORKBENCH_RESOURCE_DETAILS_REQUIRED', '请先读取候选资源详情，再采用模型、LoRA 或模板。', 'artifact.refs')
       }
@@ -718,7 +714,7 @@ export class WorkbenchStore {
       const generation = stored.artifact.type === 'generation_input' || input.candidate
       if (generation) {
         if (!input.resolvedDraft) fail('WORKBENCH_INPUT_RESOLUTION_REQUIRED', '请先读取模板参数并恢复提示词，再采用生成输入。', 'artifact_id')
-        const draft = validateTaskDraft(input.resolvedDraft)
+        const draft = contracts.parse('taskDraft', 'input', input.resolvedDraft)
         patch = { prompt_input: jsonValue(draft.prompt_input), generation_input: jsonValue(draft.generation_input), image_refs: jsonValue(draft.image_refs), workflow_image_bindings: jsonValue(draft.workflow_image_bindings), prompt_resource_refs: jsonValue(draft.prompt_resource_refs ?? []), base_model_id: draft.base_model_id }
       }
       const target = generation ? { kind: 'branch' as const, id: task.branch_id, expected: input.expected } : task.apply_target
@@ -900,7 +896,7 @@ export class WorkbenchStore {
     return transaction(this.database, () => {
       this.assertReviewRun(input.workspaceId, input.workId, input.runId)
       if (!equalValue(this.getRunReviewDraft(input.runId), input.expected)) fail('WORKBENCH_EDIT_CONFLICT', '评价草稿已改变，请刷新后重新保存。', 'expected')
-      const draft = validateReviewDraft(input.draft)
+      const draft = contracts.parse('reviewDraft', 'input', input.draft)
       for (const id of draft.evidence_run_ids) this.getRun(id)
       for (const [field, type] of [['review_artifact_id', 'review'], ['experience_artifact_id', 'experience']] as const) {
         const id = draft[field]
@@ -916,7 +912,7 @@ export class WorkbenchStore {
   saveRunReview(input: ReviewDraftUpdate & { workspaceId: string; workId: string; runId: string; saveExperience?: boolean; modelScope?: { model: GenerationInput['model']; base_model_id: string | null } }): { review: SavedReview; experience_id: string | null } {
     return transaction(this.database, () => {
       const run = this.assertReviewRun(input.workspaceId, input.workId, input.runId)
-      const draft = validateReviewDraft(input.draft)
+      const draft = contracts.parse('reviewDraft', 'input', input.draft)
       if (!input.saveExperience && !draft.observation.trim() && !draft.conclusion.trim()) fail('WORKBENCH_INVALID_INPUT', '请填写观察或评价结论后保存。', 'draft')
       const task = this.getTask(run.workbench_task_id); const branch = this.getBranch(task.branch_id)
       const review: SavedReview = { verdict: draft.verdict, observation: draft.observation, conclusion: draft.conclusion, source_artifact_id: draft.review_artifact_id }
@@ -949,7 +945,7 @@ export class WorkbenchStore {
       const id = previous?.experience_id ?? randomUUID()
       this.run('INSERT INTO workbench_experiences(experience_id,work_id,branch_id,task_id,title,conditions,note,base_model_id,model_id,evidence_run_ids_json,source_run_id,source_experience_id,source_artifact_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(experience_id) DO UPDATE SET title=excluded.title,conditions=excluded.conditions,note=excluded.note,base_model_id=excluded.base_model_id,model_id=excluded.model_id', id, previous?.work_id ?? null, previous?.branch_id ?? null, previous?.task_id ?? null, input.title, input.conditions, input.note, input.baseModelId ?? previous?.base_model_id ?? null, input.modelId ?? previous?.model_id ?? null, JSON.stringify(previous?.evidence_run_ids ?? []), previous?.source_run_id ?? null, previous?.source_experience_id ?? null, previous?.source_artifact_id ?? null)
       if (input.provenance) {
-        const reference = validateInputReferences({ reference_experiences: [{ experience_id: id, title: input.title, conditions: input.conditions, note: input.note, provenance: input.provenance }] }).reference_experiences[0]!
+        const reference = contracts.parse('inputReferences', 'input', { reference_experiences: [{ experience_id: id, title: input.title, conditions: input.conditions, note: input.note, provenance: input.provenance }] }).reference_experiences[0]!
         const evidence = reference.provenance.evidence.map(item => ({ ...item, generation_task_id: this.getRun(item.run_id).workbench_task_id || null }))
         if (reference.provenance.created_by_task_id) this.getTask(reference.provenance.created_by_task_id)
         this.run('UPDATE workbench_experiences SET provenance_json=?,evidence_run_ids_json=?,task_id=? WHERE experience_id=?', JSON.stringify({ ...reference.provenance, evidence }), JSON.stringify(evidence.map(item => item.run_id)), reference.provenance.created_by_task_id, id)
@@ -983,15 +979,15 @@ export class WorkbenchStore {
     return transaction(this.database, () => {
       this.assertScope(input.workspaceId, input.workId, input.branchId)
       const branch = this.getBranch(input.branchId), current = branch.editing_draft ?? branch.draft
-      let draft = input.draft === null ? null : validateTaskDraft(input.draft)
+      let draft = input.draft === null ? null : contracts.parse('taskDraft', 'input', input.draft)
       if (Object.hasOwn(input, 'expected')) {
         if (input.expected === null) {
           if (branch.editing_draft !== null) fail('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新编辑。', 'expected')
         } else {
-          const expected = validateTaskDraft(input.expected)
+          const expected = contracts.parse('taskDraft', 'input', input.expected)
           if (draft === null) {
             if (!equalValue(current, expected)) fail('WORKBENCH_EDIT_CONFLICT', '编辑内容已改变，请核对当前内容后重新编辑。', 'expected')
-          } else draft = validateTaskDraft(mergeTaskDraft(expected, draft, current))
+          } else draft = contracts.parse('taskDraft', 'input', mergeTaskDraft(expected, draft, current))
         }
       }
       this.run('UPDATE workbench_branches SET editing_draft_json=? WHERE branch_id=?', draft ? JSON.stringify(draft) : null, input.branchId)

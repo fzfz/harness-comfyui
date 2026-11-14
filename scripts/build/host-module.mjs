@@ -9,6 +9,7 @@ const packageImport = /^(?:@[^/]+\/)?[^./][^/]*(?:\/.*)?$/u
 
 function isExternalPackageImport(specifier) {
   return packageImport.test(specifier)
+    && !specifier.startsWith('#')
     && !builtinModules.includes(specifier)
     && !specifier.startsWith('node:')
 }

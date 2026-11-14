@@ -1,7 +1,8 @@
+import type { JsonValue } from '#contracts'
 import { spawn } from 'node:child_process'
 import { isAbsolute } from 'node:path'
 
-import type { JsonValue } from '../../generation/run-input-contract.ts'
+
 import type { ChromeComfyFrontendOptions, FrontendAttemptDiagnostic } from './comfy-frontend-browser.ts'
 import { nodeScriptEnvironment } from '../node-script-environment.ts'
 import { GenerationRuntimeError } from './generation-error.ts'

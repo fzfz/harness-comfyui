@@ -1,5 +1,6 @@
+import type { JsonValue } from '#contracts'
 import { useEffect, useMemo, useState } from 'react'
-import type { JsonValue, WorkbenchRun, WorkbenchRunInput } from '../../workbench/contract.ts'
+import type { WorkbenchRun, WorkbenchRunInput } from '../../workbench/contract.ts'
 import type { ExperimentRemote } from './experiment-contract.ts'
 import { flattenWorkflowRuntimeParameters } from '../../generation/inspection-contract.ts'
 

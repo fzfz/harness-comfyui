@@ -1,5 +1,6 @@
+import { contracts } from '#contracts'
 import Schema from '@deepseek-ai/schemastery'
-import { cliInputSchemas } from '../../src/cli/input-schema.ts'
+
 import { mkdtempSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -274,7 +275,7 @@ describe('ImageReaderService', () => {
     ['x'.repeat(32_769), 'IMAGE_READER_PROMPT_TOO_LONG'],
   ])('rejects an invalid per-call prompt before provider access %#', async (prompt, code) => {
     const { service, filePath, scope, saveImage, prepareCall } = fixture()
-    expect(() => Schema.resolve({ file_path: filePath, prompt }, cliInputSchemas['image inspect'], {})).toThrow()
+    expect(() => contracts.parse('image inspect', 'input', { file_path: filePath, prompt })).toThrow()
     const configuration = scope.get().configuration
     expect(() => Schema.resolve({ ...configuration, profiles: [{ ...configuration.profiles[0], defaultPrompt: prompt }] }, imageReaderConfigurationSchema, {})).toThrow()
 
@@ -286,7 +287,7 @@ describe('ImageReaderService', () => {
   it('accepts a per-call prompt at the configured maximum length', async () => {
     const { service, filePath, prepareCall } = fixture()
     const prompt = 'x'.repeat(IMAGE_READER_PROMPT_MAX_LENGTH)
-    expect(Schema.resolve({ file_path: filePath, prompt }, cliInputSchemas['image inspect'], {})[0]).toEqual({ file_path: filePath, prompt })
+    expect(contracts.parse('image inspect', 'input', { file_path: filePath, prompt })).toEqual({ file_path: filePath, prompt })
 
     await service.inspect(filePath, { prompt })
 
