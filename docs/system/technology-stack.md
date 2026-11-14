@@ -31,7 +31,12 @@
 
 1. 根 `package.json` 保存 SDK peers、运行依赖、开发工具的精确版本及公开导出。`pnpm-lock.yaml` 保存解析结果。
 2. 公开子路径见 `package.json` 的 `exports` 字段，Client 注入表见 `dsh.client.inject` 字段。`exports` 引用的插件运行文件必须包含在安装用 tarball 中。
-3. Desktop `0.2.1-rc.3` 与 SDK 的依赖证据见[宿主升级依赖证据目录](../verification/host-0.2.1-rc.3/)。
+3. Desktop `0.2.2-rc.3` 与 SDK 的依赖证据见[宿主升级依赖证据目录](../verification/host-0.2.2-rc.3/)。
+
+## 开发依赖安装
+
+1. 开发者在当前 checkout 根目录运行 `pnpm install --frozen-lockfile --ignore-scripts`。开发 SDK 的精确版本由根 `package.json` 的 `devDependencies` 声明。
+2. 各 checkout 使用自身的 `node_modules`。依赖解析范围由[工程合同测试](../../tests/contract/engineering-baseline.test.ts)验证。
 
 ## 安装与验收入口
 

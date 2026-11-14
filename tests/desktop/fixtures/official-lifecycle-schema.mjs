@@ -78,7 +78,7 @@ const IDENTITY_READBACK_KEYS = ['sessionId', 'cwd']
 const SETTING_KEYS = ['entryId', browserSettings.fieldName]
 const BUNDLE_KEYS = ['name', 'version', 'installed', 'enabled']
 const BUNDLE_INFO_REQUIRED_KEYS = ['official', 'availability', 'name', 'enabled', 'installed', 'optional', 'removable', 'rows', 'overrides']
-const BUNDLE_INFO_OPTIONAL_KEYS = ['installTarget', 'source', 'version', 'meta', 'description', 'readOnlyReason', 'error']
+const BUNDLE_INFO_OPTIONAL_KEYS = ['installTarget', 'source', 'version', 'meta', 'description', 'readOnlyReason', 'error', 'listedByDefault']
 const BUNDLE_ROW_REQUIRED_KEYS = ['rowId', 'moduleName']
 const BUNDLE_ROW_OPTIONAL_KEYS = ['meta', 'entryId']
 const BUNDLE_ERROR_CODES = new Set([
@@ -445,6 +445,9 @@ function validateBundleInfo(value, label) {
   const bundle = knownKeys(value, BUNDLE_INFO_REQUIRED_KEYS, BUNDLE_INFO_OPTIONAL_KEYS, label)
   nonEmptyString(bundle.name, `${label}.name`)
   if (bundle.version !== undefined) nonEmptyString(bundle.version, `${label}.version`)
+  if (bundle.listedByDefault !== undefined && typeof bundle.listedByDefault !== 'boolean') {
+    throw new TypeError(`${label}.listedByDefault must be boolean`)
+  }
   for (const key of ['official', 'enabled', 'installed', 'optional', 'removable']) {
     if (typeof bundle[key] !== 'boolean') throw new TypeError(`${label}.${key} must be boolean`)
   }

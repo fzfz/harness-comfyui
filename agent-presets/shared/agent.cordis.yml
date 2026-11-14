@@ -36,10 +36,8 @@
     enableRunInBackground: false
 - id: workbench-tools
   name: harness-comfyui/workbench-tools
-- id: tool-presentation
-  name: '@deepseek-ai/dsh-agent-tool-presentation'
-  config:
-    mode: native
+- id: tool-executor
+  name: '@deepseek-ai/dsh-tool-executor-native'
 - id: workbench-skills
   name: cordis:group
   group: true
@@ -56,8 +54,6 @@
         customSkillDirs: []
     - id: tool-skill
       name: '@deepseek-ai/dsh-tool-skill'
-- id: tool-subagent-list
-  name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
 - id: compaction
   name: cordis:group
   group: true

@@ -15,3 +15,12 @@ export function fixtureTool(name) {
     execute: async () => ({}),
   }
 }
+
+export async function executeFixtureTool(tools, { name, arguments: args, callId, agent, signal }) {
+  const batch = await tools.execute({
+    calls: [{ type: 'tool-call', id: callId, name, arguments: JSON.stringify(args) }],
+    agent,
+    signal,
+  })
+  return batch.results[0].result
+}

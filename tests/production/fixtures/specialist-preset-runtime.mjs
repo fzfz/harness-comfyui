@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import configuration from '../../../config/workbench-agent-roles.json' with { type: 'json' }
 import { specialistComposition } from '../../../agent-presets/specialist-preset.mjs'
-import { fixtureTool } from './native-preset-tool.mjs'
+import { executeFixtureTool, fixtureTool } from './native-preset-tool.mjs'
 
 const sdk = createRequire(process.argv[2])
 registerHooks({ resolve(specifier, context, next) {
@@ -55,7 +55,7 @@ try {
   root.provide('harnessComfyuiWorkbench', { service: { async authorizeGeneration() {} } })
   root.provide('imageReader', {})
   root.provide('workspaceRegistry', { async resolveByPath() { return { id: 'native-workspace' } } })
-  root.provide('subagents', { list: async () => [], listDescendants: async () => ({ agents: [] }) })
+  root.provide('subagents', { list: async () => [], listDescendants: async () => [], namesOf: agent => ({ self: agent.id }) })
   await root.plugin(sessions.default)
   await root.plugin(projections.default)
   await root.plugin(agents.default)
@@ -123,7 +123,7 @@ try {
         const submit = (callId, signal) => {
           const input = { items: [{ request_id: randomUUID(), request: { title: 'controlled portrait', instance_id: '2', template_id: '34', model: null, parameters: {}, loras: [] } }] }
           agent.session.append('tool/call', { callId, name: 'workbench_run_submit', turn: 1, step: 1, arguments: JSON.stringify(input) })
-          return root.tools.execute({ name: 'workbench_run_submit', arguments: input, agent, callId, signal })
+          return executeFixtureTool(root.tools, { name: 'workbench_run_submit', arguments: input, agent, callId, signal })
         }
         const registered = () => new Promise(resolveRegistered => {
           const off = root.jobs.events.subscribe({ owner: agent.id }, event => { if (event.type === 'registered') { off(); resolveRegistered(event.job.id) } })

@@ -2,6 +2,13 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.55.0
+
+## 宿主兼容性
+
+1. 插件适配官方 DeepSeek Harness Desktop `0.2.2-rc.3`。
+2. 工作台使用原生工具执行器和子 Agent 控制组件。“ComfyUI 持续实验预设”支持 `wait_agent`。
+
 # Harness ComfyUI v0.54.2
 
 ## 工作台分支导航

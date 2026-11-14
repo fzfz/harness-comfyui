@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
@@ -17,7 +18,7 @@ describe('source workspace engineering contract', () => {
       private: true,
       type: 'module',
       packageManager: 'pnpm@11.11.0',
-      engines: { node: '^22.19.0 || >=24.0.0', dsh: readJson('config/desktop-e2e.json').application.version },
+      engines: { node: '>=24.9.0', dsh: readJson('config/desktop-e2e.json').application.version },
     })
     expect(manifest).not.toHaveProperty('bin')
     expect(manifest).not.toHaveProperty('files')
@@ -31,7 +32,7 @@ describe('source workspace engineering contract', () => {
       './cli': { types: './src/host/cli/plugin.ts', default: './.local/source-host/cli.js' },
       './web': { types: './src/host/web/plugin.ts', default: './.local/source-host/web.js' },
     })
-    expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('22.19.0')
+    expect(readFileSync(resolve(root, '.node-version'), 'utf8').trim()).toBe('24.21.0')
     expect(runtimeArtifacts).toMatchObject({
       frontendCompilerWorker: {
         sourceEntryRelativePath: 'src/host/generation/comfy-frontend-worker.ts',
@@ -68,17 +69,31 @@ describe('source workspace engineering contract', () => {
       expect(version, `dependencies.${name}`).toMatch(exactVersion)
     }
     for (const [name, version] of Object.entries(manifest.devDependencies as Record<string, string>)) {
-      expect(name === '@deepseek-ai/cordis' || name.startsWith('@deepseek-ai/dsh')).toBe(false)
+      if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe(manifest.engines.dsh)
       expect(version, `devDependencies.${name}`).toMatch(exactVersion)
     }
     for (const [name, version] of Object.entries(manifest.peerDependencies as Record<string, string>)) {
       if (name.startsWith('@deepseek-ai/dsh-')) expect(version).toBe(readJson('config/desktop-e2e.json').application.version)
       else expect(version, `peerDependencies.${name}`).toMatch(exactVersion)
     }
+    for (const [name, version] of Object.entries(manifest.peerDependencies)) {
+      expect(manifest.devDependencies[name], `development SDK ${name}`).toBe(version)
+    }
     expect(Object.keys(manifest.peerDependenciesMeta).sort()).toEqual(Object.keys(manifest.peerDependencies).sort())
   })
 
-  it('does not ask the registry to install unpublished optional Harness peers', () => {
+  it('resolves the declared development SDK inside this checkout', () => {
+    const require = createRequire(resolve(root, 'package.json'))
+    const dependencyRoot = resolve(realpathSync(root), 'node_modules') + '/'
+    expect(realpathSync(resolve(root, 'node_modules')) + '/').toBe(dependencyRoot)
+    for (const name of Object.keys(readJson('package.json').devDependencies)) {
+      if (!name.startsWith('@deepseek-ai/')) continue
+      const packagePath = realpathSync(require.resolve(`${name}/package.json`))
+      expect(packagePath.startsWith(dependencyRoot), name).toBe(true)
+    }
+  })
+
+  it('installs the explicitly declared development SDK', () => {
     expect(readFileSync(resolve(root, 'pnpm-workspace.yaml'), 'utf8')).toContain('autoInstallPeers: false')
   })
 

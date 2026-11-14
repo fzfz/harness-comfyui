@@ -282,6 +282,7 @@ it('associates accepted Runs with Workbench tasks through the mounted Core trans
 function createBrowserSettingsForms() {
   const root = mkdtempSync(join(tmpdir(), 'harness-comfyui-browser-config-form-'))
   temporaryDirectories.push(root)
+  const ctx = new Context()
   const entry = {
     id: SOURCE_PROFILE_ENTRY_ID,
     options: { id: SOURCE_PROFILE_ENTRY_ID, name: 'Harness ComfyUI Core', config: {} },
@@ -289,7 +290,8 @@ function createBrowserSettingsForms() {
       uid: 1,
       runtime: { Config: CoreConfig },
       state: 2,
-      config: CoreConfig({ configurationProfile: 'production' }),
+      ctx,
+      effectiveConfig: CoreConfig({ configurationProfile: 'production' }),
     },
   }
   let profilePatch: Record<string, unknown> = {}
@@ -302,7 +304,6 @@ function createBrowserSettingsForms() {
       entry.options.config = profilePatch
     },
   }
-  const ctx = new Context()
   ctx.root.provide('loader' as never, { await: () => Promise.resolve() } as never)
   ctx.provide('configEditor' as never, configEditor as never)
   ctx.provide('profileContext' as never, { home: root, dir: root, installAnchor: root } as never)

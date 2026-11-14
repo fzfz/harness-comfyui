@@ -71,7 +71,9 @@ export async function apply(ctx: Context): Promise<void> {
         if (!parent) throw new WorkbenchError('WORKBENCH_PARENT_UNAVAILABLE', '实验主会话当前不可用，请在工作台查看实验状态。', 'task_id')
         return ctx.subagents.startActivation({
           provider: 'spawn', childId: SessionId(request.sessionId), label: request.label, delivery: 'parent', signal: request.signal,
-          request: { parent, agentPreset: request.presetId, agentOptions: { ...request.agentModel, reasoningEffort: request.agentModel.reasoningEffort === undefined ? undefined : ReasoningEffortId(request.agentModel.reasoningEffort) }, prompt: [{ type: 'text', text: request.text }], maxDepth: ctx.subagents.resolveMaxDepth() },
+          parent, agentPreset: request.presetId,
+          agentOptions: { ...request.agentModel, reasoningEffort: request.agentModel.reasoningEffort === undefined ? undefined : ReasoningEffortId(request.agentModel.reasoningEffort) },
+          prompt: [{ type: 'text', text: request.text }], maxDepth: ctx.subagents.resolveMaxDepth(),
         })
       },
       async resume(request) {
@@ -79,7 +81,7 @@ export async function apply(ctx: Context): Promise<void> {
         if (!task.parent_experiment_task_id) return false
         const parent = store.getTask(task.parent_experiment_task_id)
         if (!parent.session_id) throw new WorkbenchError('WORKBENCH_PARENT_UNAVAILABLE', '实验主会话当前不可用，请在工作台查看实验状态。', 'task_id')
-        await ctx.subagents.prompt({ requestId: randomUUID() as SubagentPromptRequest['requestId'], parentSessionId: SessionId(parent.session_id), childSessionId: SessionId(request.sessionId), mode: 'continuable', delivery: 'queue', content: [{ type: 'text', text: request.text }] }, request.signal)
+        await ctx.subagents.prompt({ requestId: randomUUID() as SubagentPromptRequest['requestId'], childSessionId: SessionId(request.sessionId), delivery: 'queue', content: [{ type: 'text', text: request.text }] }, request.signal)
         return true
       },
       async skills(taskId, presetId) { return (await presetSkills(store.taskWorkspace(taskId), presetId)).map(skill => ({ ...skill, invocation: { modelInvocable: true } })) },

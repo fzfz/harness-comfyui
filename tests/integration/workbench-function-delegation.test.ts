@@ -53,7 +53,7 @@ it('rejects recursive experiment delegation and a stopped parent without creatin
 
 it('passes the selected preset and route to the official child API after binding its task', async () => {
   const f = await fixture()
-  const start = vi.fn(async (spec: { childId: string; request: { parent: unknown; agentPreset: string; agentOptions: unknown }; delivery: string }) => {
+  const start = vi.fn(async (spec: { childId: string; parent: unknown; agentPreset: string; agentOptions: unknown; delivery: string }) => {
     expect(f.store.taskForSession(spec.childId)?.parent_experiment_task_id).toBe(f.parent.task_id)
     return { childId: spec.childId, result: Promise.resolve({ stopReason: 'completed' }), dispose: async () => {} }
   })
@@ -63,7 +63,8 @@ it('passes the selected preset and route to the official child API after binding
   const result = await f.ctx.harnessComfyuiWorkbench.service.delegateFunction({ task_id: f.parent.task_id, function_id: 'prompt', instructions: 'Warm lighting', source: { type: 'initial' }, reference_artifact_ids: [] }, f.identity)
   expect(start).toHaveBeenCalledWith(expect.objectContaining({
     provider: 'spawn', childId: result.session_id, delivery: 'parent',
-    request: expect.objectContaining({ parent: f.official.agents.get(f.parent.session_id!), agentPreset: 'specific-prompt', agentOptions: { provider: 'lan', model: 'luna', reasoningEffort: 'off' }, maxDepth: 1 }),
+    parent: f.official.agents.get(f.parent.session_id!), agentPreset: 'specific-prompt',
+    agentOptions: { provider: 'lan', model: 'luna', reasoningEffort: 'off' }, maxDepth: 1,
   }))
 })
 

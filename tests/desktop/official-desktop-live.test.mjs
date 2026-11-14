@@ -71,11 +71,11 @@ const WORKSPACE_SKILL_MARKER = OFFICIAL_BUSINESS_FIXTURE.skills.workspaceMarker
 const USER_SKILL_NAME = OFFICIAL_BUSINESS_FIXTURE.skills.userName
 const USER_SKILL_DESCRIPTION = OFFICIAL_BUSINESS_FIXTURE.skills.userDescription
 const USER_SKILL_MARKER = OFFICIAL_BUSINESS_FIXTURE.skills.userMarker
-const HOST_BUNDLED_SKILL_NAMES = new Set(['office', 'office-docx', 'office-export-pdf', 'office-pptx', 'office-recalculate', 'office-render', 'office-xlsx'])
+const HOST_BUNDLED_SKILL_NAMES = new Set(['office', 'office-docx', 'office-pptx', 'office-xlsx'])
 const RETIRED_BUSINESS_TOOL_NAMES = ['query_semantic_comfyui_instances', 'query_semantic_comfyui_templates',
   'query_semantic_generation_models', 'query_semantic_loras', 'generate_with_comfyui',
   'get_generation_run_media', 'inspect_image', 'read_comfyui_run_inputs']
-const CORDIS_SKILL_NAMES = ['agent-experience', 'cordis-composition-reference', 'cordis-plugin-development', 'editing-cordis-compositions']
+const PRESET_SKILL_NAMES = { standard: ['dsh-doc'], ptc: [], cordis: ['dsh-doc'] }
 const EXPERIMENT_BRANCH_VIEWPORT_WIDTHS = [1024, 1280, 1440]
 const DURABLE_BUSINESS_EVIDENCE_FILES = [
   'official-business-branch-sidebar.json',
@@ -1485,7 +1485,18 @@ async function verifyOfficialMcpScope(page, services, mcp, workspaceId, evidence
     const activated = /^started subagent (\S+)$/u.exec(activation)
     expect(activated, activation).not.toBeNull()
     native.parentSessionId = parentSessionId
-    native.childSessionId = activated[1]
+    native.childName = activated[1]
+    const parentHistory = await page.evaluate(`(async () => {
+      const remote = window.__runPanelTestContext.get('remote.session')
+      const projection = await remote.projections({ sessionId: ${JSON.stringify(parentSessionId)} })
+      return remote.page({ address: { kind: 'session', sessionId: ${JSON.stringify(parentSessionId)} },
+        throughSeq: projection.value.asOfSeq, maxMessages: 1000 })
+    })()`)
+    expect(parentHistory).toMatchObject({ ok: true, value: { hasMore: false } })
+    const childEntries = parentHistory.value.records.filter(record => record.event.type === 'subagent/catalog'
+      && record.event.data.name === native.childName)
+    expect(childEntries).toHaveLength(1)
+    native.childSessionId = childEntries[0].event.data.childId
     const childTools = (childModelRequest.body.tools ?? []).map(tool => tool.function?.name ?? tool.name)
     assertToolScope(childTools, {
       required: [...mcpToolNames, 'subagent', 'send_message', 'interrupt_agent', 'list_agents', 'working_directory', 'skill', 'bash'],
@@ -1902,7 +1913,7 @@ async function verifyWorkbenchGoal(page, services, native, evidenceDirectory, re
   expect(await readWorkbenchGoal(page, sessionId, goal => goal == null)).toBeUndefined()
   services.enqueueModelResponse(matches, call('goal-create', 'create_goal', { objective: prompt, max_goal_rounds: 4 }))
   services.enqueueModelResponse(after('goal-create'), call('goal-child-send', 'send_message', {
-    agent_id: native.childSessionId, message: 'Verify Goal child authority and the existing Run.',
+    agent: native.childName, message: 'Verify Goal child authority and the existing Run.',
   }))
   const childRequest = request => request.sequence >= requestStart && (request.body.messages ?? [])
     .some(message => message.role === 'user' && requestMessageText(message).includes('Verify Goal child authority'))
@@ -2065,19 +2076,19 @@ async function verifyNativeSubagentContinuation(page, services, native, evidence
         message.role === 'user' && requestMessageText(message).includes(childMessage))
     const call = (id, name, args) => controlledToolResponse([{ id: `${phase}-${id}`, name, arguments: args }])
     services.enqueueModelResponse(parentRequest,
-      call('send', 'send_message', { agent_id: native.childSessionId, message: childMessage }))
+      call('send', 'send_message', { agent: native.childName, message: childMessage }))
     const controlledChild = phase === 'active' || phase === 'interrupted'
       ? services.pauseNextModelResponse(childRequest) : null
     let parentPause
     if (phase === 'active') {
       services.enqueueModelResponse(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-send`),
-        call('append', 'send_message', { agent_id: native.childSessionId, message: activeMessage }))
+        call('append', 'send_message', { agent: native.childName, message: activeMessage }))
     } else if (phase === 'interrupted') {
       const afterSend = request => parentRequest(request) && hasControlledToolResult(request, `${phase}-send`)
-      services.enqueueModelResponse(afterSend, call('interrupt', 'interrupt_agent', { agent_id: native.childSessionId }))
+      services.enqueueModelResponse(afterSend, call('interrupt', 'interrupt_agent', { agent: native.childName }))
       parentPause = services.pauseNextModelResponse(afterSend)
       services.enqueueModelResponse(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-interrupt`),
-        call('resume', 'send_message', { agent_id: native.childSessionId, message: `${childMessage} Resume after interruption.` }))
+        call('resume', 'send_message', { agent: native.childName, message: `${childMessage} Resume after interruption.` }))
     }
     const lastCall = phase === 'active' ? 'append' : phase === 'interrupted' ? 'resume' : 'send'
     services.enqueueModelResponse(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-${lastCall}`),
@@ -2100,7 +2111,7 @@ async function verifyNativeSubagentContinuation(page, services, native, evidence
       { role: 'assistant', content: completionText })
     const parentNotified = request => parentRequest(request) && (request.body.messages ?? []).some(message =>
       message.role === 'user' && requestMessageText(message).includes('Background subagent')
-      && requestMessageText(message).includes(native.childSessionId)
+      && requestMessageText(message).includes(native.childName)
       && requestMessageText(message).includes(completionText))
     services.enqueueModelResponse(parentNotified, call('result-read', 'bash', {
       description: 'Read continued child task result', command: `cat ${shellQuoteArgument(phaseResultPath)}`,
@@ -2115,7 +2126,7 @@ async function verifyNativeSubagentContinuation(page, services, native, evidence
         await controlledChild.started
         if (phase === 'active') {
           const appended = await services.requestWhere(request => parentRequest(request) && hasControlledToolResult(request, `${phase}-append`), 30_000)
-          expect(controlledToolResult(appended, `${phase}-append`)).toBe(`message delivered to agent ${native.childSessionId}`)
+          expect(controlledToolResult(appended, `${phase}-append`)).toBe(`message delivered to agent ${native.childName}`)
           controlledChild.release()
           const received = await services.requestWhere(request => childRequest(request) && (request.body.messages ?? []).some(message =>
             message.role === 'user' && requestMessageText(message).includes(activeMessage)), 30_000)
@@ -2132,10 +2143,10 @@ async function verifyNativeSubagentContinuation(page, services, native, evidence
         && hasControlledToolResult(request, `${phase}-list`), 30_000)
       const agentLines = controlledToolResult(listed, `${phase}-list`).split('\n')
       expect(agentLines.some(line => ['running', 'inactive'].some(status =>
-        line === `${native.childSessionId} [${status}] — Controlled MCP child`))).toBe(true)
-      expect(controlledToolResult(listed, `${phase}-send`)).toBe(`message delivered to agent ${native.childSessionId}`)
+        line === `${native.childName} [${status}] — Controlled MCP child`))).toBe(true)
+      expect(controlledToolResult(listed, `${phase}-send`)).toBe(`message delivered to agent ${native.childName}`)
       if (phase === 'interrupted') {
-        expect(controlledToolResult(listed, `${phase}-interrupt`)).toBe(`interrupt requested for agent ${native.childSessionId}`)
+        expect(controlledToolResult(listed, `${phase}-interrupt`)).toBe(`interrupt requested for agent ${native.childName}`)
       }
       const childEnded = await waitForOfficialSessionEnd(page, native.childSessionId, 'completed', childBefore.value.asOfSeq,
         { kind: 'subagent', parentSessionId: native.parentSessionId, childSessionId: native.childSessionId, mode: 'continuable' })
@@ -2473,8 +2484,8 @@ async function verifyDefaultSkillDiscovery(page, workspaceId, {
       .toEqual([expectedWorkspaceSkills[0]])
     expect.soft(sources.filter(source => source === 'unclassified')).toEqual([])
     const extraSkills = visibleSkills.filter((_, index) => sources[index] === 'other-path')
-    expect(extraSkills.map(skill => skill.name).sort()).toEqual(id === 'cordis' ? [...CORDIS_SKILL_NAMES].sort() : [])
-    if (id === 'cordis') {
+    expect(extraSkills.map(skill => skill.name).sort()).toEqual([...PRESET_SKILL_NAMES[id]].sort())
+    if (PRESET_SKILL_NAMES[id].length > 0) {
       const desktopConfig = await loadDesktopE2EConfig()
       const presetSkills = join(desktopConfig.application.bundlePath, 'Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-agent-preset/skills')
       expect(extraSkills.every(skill => isPathWithin(skill.path, presetSkills))).toBe(true)

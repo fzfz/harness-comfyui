@@ -73,6 +73,10 @@
     "list_agents": {
       "purpose": "查询官方子 Agent 的执行状态",
       "step": "读取子任务状态"
+    },
+    "wait_agent": {
+      "purpose": "等待协作 Agent 的消息或任务结束通知",
+      "step": "等待子任务"
     }
   },
   "mcpServices": {
@@ -267,7 +271,8 @@
       "hostTools": [
         "send_message",
         "interrupt_agent",
-        "list_agents"
+        "list_agents",
+        "wait_agent"
       ]
     }
   ],

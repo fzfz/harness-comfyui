@@ -1,7 +1,7 @@
 import type { DelegatedSessionRequest } from '../../workbench/delegation.ts'
 import { randomUUID } from 'node:crypto'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-tools'
+import type {} from '@deepseek-ai/dsh-tool-executor-ptc/types'
 import type { AgentModel, ExecutionState, SkillReadRef, WorkbenchIdentity } from '../../workbench/contract.ts'
 
 export interface OfficialSessionController {

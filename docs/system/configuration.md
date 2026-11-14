@@ -170,7 +170,7 @@
 
 ## 子 Agent 派发配置
 
-1. 工作台的 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 加载 `@deepseek-ai/dsh-tool-subagent` 与 `@deepseek-ai/dsh-tool-subagent-control`。共享组合加载官方 `list-agents` 组件。派发组件字段如下。
+1. 工作台的 [agent.cordis.yml](../../agent-presets/harness-comfyui-cli-candidate/agent.cordis.yml) 加载 `@deepseek-ai/dsh-tool-subagent` 与 `@deepseek-ai/dsh-tool-subagent-control`。子 Agent 控制组件提供 `send_message`、`interrupt_agent`、`list_agents` 和 `wait_agent`。派发组件字段如下。
 
    | 字段 | 用途与规则 |
    | --- | --- |

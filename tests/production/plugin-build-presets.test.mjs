@@ -52,7 +52,7 @@ it('packages the shared MCP configuration for the workbench Preset', async () =>
       })
       for (const name of [
         '@deepseek-ai/dsh-tool-subagent-control',
-        '@deepseek-ai/dsh-tool-subagent-control/list-agents',
+        '@deepseek-ai/dsh-tool-executor-native',
         '@deepseek-ai/dsh-tool-working-directory',
       ]) expect(composition.filter(row => row.name === name)).toHaveLength(1)
       const includes = composition.filter(row => row.name === 'cordis:include' && row.config?.path === '../noobai-mcp.cordis.yml')

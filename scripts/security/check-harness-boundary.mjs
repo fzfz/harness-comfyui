@@ -37,6 +37,7 @@ const allowedHarnessImports = new Map([
   ['@deepseek-ai/dsh-subagent', 'type-only'],
   ['@deepseek-ai/dsh-settings', 'value-or-type'],
   ['@deepseek-ai/dsh-tools', 'value-or-type'],
+  ['@deepseek-ai/dsh-tool-executor-ptc/types', 'type-only'],
   ['@deepseek-ai/dsh-typert-protocol', 'value-or-type'],
   ['@deepseek-ai/dsh-workspace', 'type-only'],
   ['@deepseek-ai/schemastery', 'value-or-type'],

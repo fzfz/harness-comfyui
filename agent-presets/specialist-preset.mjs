@@ -29,8 +29,7 @@ export function specialistComposition(roleId) {
       ...(role.skills.length ? [{ id: 'tool-skill', name: '@deepseek-ai/dsh-tool-skill' }] : []),
     ] },
     ...(role.hostTools.includes('send_message') ? [{ id: 'tool-subagent-control', name: '@deepseek-ai/dsh-tool-subagent-control' }] : []),
-    ...(role.hostTools.includes('list_agents') ? [{ id: 'tool-subagent-list', name: '@deepseek-ai/dsh-tool-subagent-control/list-agents' }] : []),
-    { id: 'tool-presentation', name: '@deepseek-ai/dsh-agent-tool-presentation', config: { mode: 'native' } },
+    { id: 'tool-executor', name: '@deepseek-ai/dsh-tool-executor-native' },
     { id: 'persona', name: '@deepseek-ai/dsh-persona', config: {
       complete: true, includeRuntimeContext: true, prefix: `${role.persona}\n\n${role.functions.includes('prompt') ? configuration.promptReplyPersona : configuration.taskPersona}`,
     } },

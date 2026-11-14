@@ -60,7 +60,7 @@ describe('project Agent Preset resource reader', () => {
     })
     expect(resources.composition.length).toBeGreaterThan(0)
     expect(resources.composition.every(row => typeof row.name === 'string')).toBe(true)
-    expect(resources.composition.filter(row => row.name === '@deepseek-ai/dsh-tool-subagent-control/list-agents')).toHaveLength(1)
+    expect(resources.composition.filter(row => row.name === '@deepseek-ai/dsh-tool-executor-native')).toHaveLength(1)
   })
 
   it.each([productAgent.preset.id])(
@@ -95,7 +95,7 @@ describe('project Agent Preset resource reader', () => {
     expect(composition.filter(row => row.id === 'tool-subagent-control')).toEqual([{
       id: 'tool-subagent-control', name: '@deepseek-ai/dsh-tool-subagent-control',
     }])
-    expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-subagent-control/list-agents')).toHaveLength(1)
+    expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-executor-native')).toHaveLength(1)
     expect(composition.filter(row => row.name === '@deepseek-ai/dsh-tool-working-directory')).toHaveLength(1)
   })
 

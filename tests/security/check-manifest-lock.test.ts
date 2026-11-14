@@ -66,6 +66,7 @@ describe('manifest and lockfile policy', () => {
     const manifestPath = join(value.root, 'package.json')
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<string, any>
     manifest.peerDependencies['@deepseek-ai/dsh-agent'] = '0.2.0-rc.2'
+    manifest.devDependencies['@deepseek-ai/dsh-agent'] = '0.2.0-rc.2'
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
     expect(() => validateDependencyPolicy(value.root)).not.toThrow()
     manifest.peerDependencies['@deepseek-ai/dsh-agent'] = '>=0.1.7-rc.2 <0.1.8'

@@ -5,18 +5,18 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { fixtureTool } from './native-preset-tool.mjs'
+import { executeFixtureTool, fixtureTool } from './native-preset-tool.mjs'
 
 const sdkRequire = createRequire(process.argv[3])
 const [cordis, loader, include, presets, sessions, projections, prompt, tools, scope, group, skillRegistry,
-  agents, goals, commands, agentLoop, llm, jobsLocal] = [
+  agents, goals, commands, llm, jobsLocal] = [
   '@deepseek-ai/cordis', '@deepseek-ai/cordis-plugin-loader',
   '@deepseek-ai/cordis-plugin-include', '@deepseek-ai/dsh-agent-preset-registry',
   '@deepseek-ai/dsh-session', '@deepseek-ai/dsh-session-projection',
   '@deepseek-ai/dsh-system-prompt', '@deepseek-ai/dsh-tools', '@deepseek-ai/dsh-scope',
   '@deepseek-ai/cordis-plugin-group', '@deepseek-ai/dsh-skill',
   '@deepseek-ai/dsh-agent', '@deepseek-ai/dsh-goal', '@deepseek-ai/dsh-commands',
-  '@deepseek-ai/dsh-agent-loop', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-jobs-local',
+  '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-jobs-local',
 ].map(name => sdkRequire(name))
 
 const directory = await mkdtemp(join(tmpdir(), 'native-workbench-preset-'))
@@ -30,7 +30,7 @@ let removeDependencies
 
 async function declare(id = 'workbench', config = {}, customSkillDirs) {
   const sharedPatches = ['noobai-mcp', 'tool-working-directory', 'tool-bash',
-    'tool-pwsh', 'tool-presentation', 'tool-subagent-list', 'compaction']
+    'tool-pwsh', 'compaction']
     .map(id => ({ id, disabled: true }))
   if (customSkillDirs !== undefined) {
     const rows = sdkRequire('js-yaml').load(await readFile(resolve(import.meta.dirname,
@@ -138,7 +138,8 @@ const scenarios = {
     assert.equal(notices.parent.length, 1)
     assert.equal(notices.parent[0].kind, 'followup')
     assert.equal(notices.child.length, 0)
-    assert.deepEqual(JSON.parse(root.jobs.read(receipt.job_id, parent.agent.id).result), { runs: [{ run_id: 'run_child', status: 'succeeded' }] })
+    assert.ok(notices.parent[0].message.content.some(block => block.type === 'text'
+      && block.text.includes(JSON.stringify({ runs: [{ run_id: 'run_child', status: 'succeeded' }] }))))
     parent.agent.status = 'running'
     statuses.set('run_child', 'remote_running')
     const second = await observation.register(owner, ['run_child'])
@@ -155,7 +156,7 @@ const scenarios = {
     assert.equal(notices.parent[2].kind, 'followup')
     statuses.set('run_child', 'remote_running')
     const killed = await observation.register(owner, ['run_child'])
-    const toolResult = await root.tools.execute({ name: 'job_kill', arguments: { job_id: killed.job_id },
+    const toolResult = await executeFixtureTool(root.tools, { name: 'job_kill', arguments: { job_id: killed.job_id },
       agent: parent.agent, callId: 'kill-call', signal: new AbortController().signal })
     assert.equal(toolResult.isError, false, JSON.stringify(toolResult))
     await root.jobs.wait(killed.job_id, 1000, parent.agent.id)
@@ -188,7 +189,7 @@ const scenarios = {
       }), { surfaceOp: 'append' })
     }
     const execute = (mounted, name, args = {}) => root.agents.withInitiator(mounted.agent,
-      () => root.tools.execute({ name, arguments: args, agent: mounted.agent,
+      () => executeFixtureTool(root.tools, { name, arguments: args, agent: mounted.agent,
         callId: name, signal: new AbortController().signal }))
     const read = async (mounted, name, args) => {
       const result = await execute(mounted, name, args)
@@ -272,7 +273,7 @@ const scenarios = {
       removeDependencies = root.tools.register(fixtureTool('load_workspace_dependencies'))
       for (const key of [parent.agent, child.agent, standing.key]) {
         assert.equal(root.tools.get('load_workspace_dependencies', key), undefined)
-        const result = await root.tools.execute({ name: 'load_workspace_dependencies', arguments: {},
+        const result = await executeFixtureTool(root.tools, { name: 'load_workspace_dependencies', arguments: {},
           agent: key, callId: 'late-denied-dependencies', signal: new AbortController().signal })
         assert.ok(result.error, JSON.stringify(result))
         assert.match(JSON.stringify(result), /unknown tool/u)
@@ -287,7 +288,8 @@ const scenarios = {
     await child.scope.dispose()
     await parent.scope.dispose()
     removeDependencies = root.tools.register(fixtureTool('load_workspace_dependencies'))
-    await assertTools(retiredKey, ['host_global', 'load_workspace_dependencies'])
+    assert.deepEqual(names(retiredKey), ['host_global', 'load_workspace_dependencies'])
+    await assert.rejects(root.systemPrompt.assemble({ scope: retiredKey }), /executor is unavailable/u)
   },
 
   async inheritance() {
@@ -299,7 +301,7 @@ const scenarios = {
     root.tools.register(fixtureTool('host_late'))
     for (const mounted of [parent, child]) {
       assert.equal(root.tools.get('load_workspace_dependencies', mounted.agent), undefined)
-      const result = await root.tools.execute({ name: 'load_workspace_dependencies', arguments: {},
+      const result = await executeFixtureTool(root.tools, { name: 'load_workspace_dependencies', arguments: {},
         agent: mounted.agent, callId: 'denied-dependencies', signal: new AbortController().signal })
       assert.ok(result.error, JSON.stringify(result))
       assert.match(JSON.stringify(result), /unknown tool/u)
@@ -328,7 +330,8 @@ const scenarios = {
     await assertTools(child.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
     await child.scope.dispose()
     await parent.scope.dispose()
-    await assertTools(retiredKey, ['host_global', 'load_workspace_dependencies'])
+    assert.deepEqual(names(retiredKey), ['host_global', 'load_workspace_dependencies'])
+    await assert.rejects(root.systemPrompt.assemble({ scope: retiredKey }), /executor is unavailable/u)
     await declare()
     const reloaded = await mountAgent('reloaded-parent')
     await assertTools(reloaded.agent, ['create_goal', 'get_goal', 'host_global', 'job_kill', 'job_list', 'job_output', 'preset_tool', 'skill', 'update_goal', ...workbenchToolNames])
@@ -447,11 +450,11 @@ try {
   await root.plugin(projections.default)
   await root.plugin(agents.default)
   await root.plugin(jobsLocal.default)
-  root.sessionProjections.register(agentLoop.turnBoundaryProjectionDefinition)
   await root.plugin(goals.default)
   await root.plugin(commands.default)
   await root.plugin(prompt.default)
   await root.plugin(tools.default)
+  await root.plugin(sdkRequire('@deepseek-ai/dsh-tool-executor-native'))
   await root.plugin(presets.default, { default: 'workbench' })
   root.tools.register(fixtureTool('host_global'))
   removeDependencies = root.tools.register(fixtureTool('load_workspace_dependencies'))

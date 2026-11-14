@@ -77,7 +77,7 @@ describe('controlled model response scripts', () => {
       })
       services.enqueueModelResponse(request => request.body.messages[0].content === 'continue child', {
         role: 'assistant', tool_calls: [{ index: 0, id: 'native-followup', type: 'function', function: {
-          name: 'send_message', arguments: JSON.stringify({ agent_id: 'child-id', message: 'Read the reference file.' }),
+          name: 'send_message', arguments: JSON.stringify({ agent: 'child', message: 'Read the reference file.' }),
         } }],
       })
       expect((await request('unrelated'))[0].choices[0].delta.content).toBe('captured')

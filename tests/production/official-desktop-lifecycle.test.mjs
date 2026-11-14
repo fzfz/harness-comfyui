@@ -234,6 +234,7 @@ describe('official Desktop lifecycle fixture configuration', () => {
         installed: true,
         optional: false,
         official: false,
+        listedByDefault: false,
         availability: 'profile',
         source: '/tmp/candidate.tgz',
         installTarget: { spec: 'harness-comfyui@0.44.3', version: '0.44.3' },
@@ -245,6 +246,10 @@ describe('official Desktop lifecycle fixture configuration', () => {
     expect(parseOfficialPluginManagerListBundlesResponse(response, 'harness-comfyui', '0.44.3')).toEqual({
       name: 'harness-comfyui', version: '0.44.3', installed: true, enabled: true,
     })
+    expect(() => parseOfficialPluginManagerListBundlesResponse({
+      ...response,
+      value: [{ ...response.value[0], listedByDefault: 'false' }],
+    }, 'harness-comfyui', '0.44.3')).toThrow(/listedByDefault must be boolean/u)
     expect(() => parseOfficialPluginManagerListBundlesResponse(response.value, 'harness-comfyui', '0.44.3'))
       .toThrow(/RemoteResult envelope/u)
     expect(() => parseOfficialPluginManagerListBundlesResponse({ ok: false, error: { code: 'operation-error' } }, 'harness-comfyui', '0.44.3'))
