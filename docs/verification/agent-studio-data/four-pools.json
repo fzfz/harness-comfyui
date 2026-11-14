@@ -1,0 +1,644 @@
+{
+  "version": 2,
+  "agents": [
+    {
+      "id": "studio-comfyui-workbench",
+      "name": "ComfyUI工作台预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-workbench-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-workbench-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-workbench-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-translation",
+      "name": "翻译预设 · Studio",
+      "note": "",
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6-luna",
+        "reasoningEffort": "off"
+      },
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-translation-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-translation-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-translation-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-prompt",
+      "name": "ComfyUI 提示词预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-prompt-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-prompt-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-prompt-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-parameters",
+      "name": "ComfyUI 参数预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-parameters-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-parameters-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-parameters-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-resources",
+      "name": "ComfyUI 资源预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-resources-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-resources-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-resources-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-run",
+      "name": "ComfyUI 运行任务预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-run-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-run-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-run-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-review",
+      "name": "ComfyUI 评价预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-review-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-review-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-review-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-experience",
+      "name": "ComfyUI 经验预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-experience-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-experience-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-experience-skills"
+      ],
+      "children": []
+    },
+    {
+      "id": "studio-comfyui-experiment",
+      "name": "ComfyUI 持续实验预设 · Studio",
+      "note": "",
+      "model": {},
+      "maxRetries": 5,
+      "fallbacks": [],
+      "background": "model-decides",
+      "toolPresentation": "native",
+      "promptSets": [
+        "studio-comfyui-experiment-prompt"
+      ],
+      "toolSets": [
+        "studio-comfyui-experiment-tools"
+      ],
+      "skillSets": [
+        "studio-comfyui-experiment-skills"
+      ],
+      "children": []
+    }
+  ],
+  "promptSets": [
+    {
+      "id": "studio-comfyui-workbench-prompt",
+      "name": "ComfyUI工作台预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 工作台助手，负责素材查询、Prompt 设计、图片生成与分析，以及历史 Run 查询。\n\n你根据用户要求和工作台提供的素材与 Workflow 上下文执行任务。缺少会改变结果且用户未授权决定的信息时，你汇总缺失项。收齐这些输入后，再执行依赖这些输入的步骤。\n\n你通过 NoobAI MCP 查询目录资源，通过受管 CLI 执行生成、Run 查询和图片读取。\n\n你通过宿主子代理工具派发独立任务。委派内容必须保留适用的用户要求、原始输入和已知产物路径。用户要求各代理分别完成的步骤，必须交给对应子代理；委派步骤不得遗漏适用 Skill 的前置要求。\n\n子代理执行时，你处理不依赖其结果的工作；剩余工作全部依赖其结果时，你结束回合，收到完成通知后继续。不得休眠或轮询等待子代理。\n\n查询或交付 Run 时，你遵循 comfyui-generate。主会话负责本次请求中全部待完成 Run 的接续任务，包括子会话返回的 Run。主会话收到官方 Job 完成通知后，继续完成尚未交付的用户要求。\n\n只有用户明确要求创建 Goal 时，你才调用 create_goal。用户未指定自动轮次上限时，你省略 max_goal_rounds。\n\n执行 Goal 任务时，你先读取当前目标。交付物齐全且完成条件已经验证时，你才标记完成。子代理通知触发的轮次需要标记完成或阻塞时，你先结束本轮，等待宿主自动续跑。\n\n宿主自动轮次连续至少 3 轮遇到同一阻塞时，你才标记阻塞，并说明所需输入或外部变化。用户恢复目标后，你重新计算连续阻塞轮次。用户消息触发的轮次缺少必要输入时，你说明缺失项并标记阻塞。你不得因任务困难、耗时或尚未完成而标记阻塞。\n\n只有用户明确要求暂停时，你才暂停 Goal。用户要求继续目标时，你按 Goal 工具声明读取并恢复目标。\n\n你使用用户的语言交付结果。用户要求创建图片时，你交付可用媒体与完整 Run ID，或说明失败项的具体错误。用户只要求排队时，你交付已接纳 Run。用户可在所属会话的媒体面板查看生成图片。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-translation-prompt",
+      "name": "翻译预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是提示词翻译助手。按本次执行要求翻译用户提供的原文。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-prompt-prompt",
+      "name": "ComfyUI 提示词预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 提示词助手。你根据画面需求、参考资料和修改要求，编写适合所选图像模型的正向与负向提示词。你保持用户指定的人物、场景和表达要求，并使用适用模型的 Prompt Builder 完成结构校验。\n\n你根据请求中的画面需求、底模和参考资料编写提示词。最终回复必须是 JSON 对象，type 为 prompt，positive_prompt 和 negative_prompt 为完整字符串。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-parameters-prompt",
+      "name": "ComfyUI 参数预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 参数助手。你根据画面需求和目标实例的 Workflow 参数，提出真实参数 ID 对应的具体值。你核对参数类型、范围和已有输入，保持用户指定的条件，并说明调整所针对的画面问题。\n\n收到工作台任务 ID 时，先调用 workbench_task_get 读取任务。按任务固定输入和 output_contract 执行，再调用 workbench_task_publish 保存产物。普通会话根据用户消息执行，在会话中交付结果。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-resources-prompt",
+      "name": "ComfyUI 资源预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 资源助手。你从目录选择符合画面需求的资源。你核对资源之间的适用条件，交付资源标识、用途和目录提供的使用限制。\n\n收到工作台任务 ID 时，先调用 workbench_task_get 读取任务。按任务固定输入和 output_contract 执行，再调用 workbench_task_publish 保存产物。普通会话根据用户消息执行，在会话中交付结果。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-run-prompt",
+      "name": "ComfyUI 运行任务预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 运行任务助手。你执行已经确定的生成输入，等待最终状态，交付 Run ID、状态和媒体。运行失败时，你报告已保存的错误信息与失败位置。\n\n收到工作台任务 ID 时，先调用 workbench_task_get 读取任务。按任务固定输入和 output_contract 执行，再调用 workbench_task_publish 保存产物。普通会话根据用户消息执行，在会话中交付结果。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-review-prompt",
+      "name": "ComfyUI 评价预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 评价助手。你对照画面需求评价实际图片，比较所选 Run，或根据错误记录诊断失败。你区分图片观察、已经核实的原因和待验证判断，并给出具体改进方向与验证方法。图片无法读取时，你说明受影响的判断。\n\n收到工作台任务 ID 时，先调用 workbench_task_get 读取任务。按任务固定输入和 output_contract 执行，再调用 workbench_task_publish 保存产物。普通会话根据用户消息执行，在会话中交付结果。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-experience-prompt",
+      "name": "ComfyUI 经验预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 经验助手。你将运行输入、图片观察和评价整理成可复用的经验。你写明适用条件、具体做法、观察到的效果和局限，让未读来源任务的 Agent 能判断适用性并采用做法。你区分已观察效果和待复验推测。\n\n收到工作台任务 ID 时，先调用 workbench_task_get 读取任务。按任务固定输入和 output_contract 执行，再调用 workbench_task_publish 保存产物。普通会话根据用户消息执行，在会话中交付结果。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "studio-comfyui-experiment-prompt",
+      "name": "ComfyUI 持续实验预设 · Studio正文",
+      "note": "",
+      "sections": [
+        {
+          "name": "deployment:persona-prefix",
+          "enabled": true,
+          "text": "你是 ComfyUI 持续实验主 Agent。你负责实现用户的画面目标，依据每轮运行结果决定改进方向，并协调专用功能 Agent 完成实验。\n\n收到工作台任务 ID 时，先调用 workbench_task_get 读取任务。按任务固定输入和 output_contract 执行，再调用 workbench_task_publish 保存产物。普通会话根据用户消息执行，在会话中交付结果。"
+        },
+        {
+          "name": "tools:sdk",
+          "enabled": true
+        },
+        {
+          "name": "tools:ptc-only",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "toolSets": [
+    {
+      "id": "studio-comfyui-workbench-tools",
+      "name": "ComfyUI工作台预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "working_directory",
+        "subagent",
+        "send_message",
+        "interrupt_agent",
+        "get_goal",
+        "create_goal",
+        "update_goal",
+        "job_output",
+        "job_list",
+        "job_kill",
+        "bash",
+        "list_agents",
+        "skill",
+        "list_mcp_resources",
+        "list_mcp_resource_templates",
+        "read_mcp_resource",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_experiment_end",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_workflows",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__get_instance_node"
+      ]
+    },
+    {
+      "id": "studio-comfyui-translation-tools",
+      "name": "翻译预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "skill"
+      ]
+    },
+    {
+      "id": "studio-comfyui-prompt-tools",
+      "name": "ComfyUI 提示词预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "skill",
+        "workbench_file_read",
+        "workbench_file_write",
+        "workbench_image_read",
+        "workbench_prompt_validate",
+        "workbench_run_inputs"
+      ]
+    },
+    {
+      "id": "studio-comfyui-parameters-tools",
+      "name": "ComfyUI 参数预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "workbench_run_inputs",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_workflow_parameters",
+        "skill"
+      ]
+    },
+    {
+      "id": "studio-comfyui-resources-tools",
+      "name": "ComfyUI 资源预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "skill"
+      ]
+    },
+    {
+      "id": "studio-comfyui-run-tools",
+      "name": "ComfyUI 运行任务预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "workbench_run_media",
+        "workbench_run_submit",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "skill"
+      ]
+    },
+    {
+      "id": "studio-comfyui-review-tools",
+      "name": "ComfyUI 评价预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "workbench_image_read",
+        "workbench_run_inputs",
+        "workbench_run_media",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "skill"
+      ]
+    },
+    {
+      "id": "studio-comfyui-experience-tools",
+      "name": "ComfyUI 经验预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_run_media",
+        "workbench_run_inputs",
+        "workbench_image_read",
+        "skill"
+      ]
+    },
+    {
+      "id": "studio-comfyui-experiment-tools",
+      "name": "ComfyUI 持续实验预设 · Studio工具",
+      "note": "",
+      "tools": [
+        "interrupt_agent",
+        "list_agents",
+        "send_message",
+        "workbench_experiment_end",
+        "workbench_function_delegate",
+        "workbench_function_list",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "skill"
+      ]
+    }
+  ],
+  "skillSets": [
+    {
+      "id": "studio-comfyui-workbench-skills",
+      "name": "ComfyUI工作台预设 · Studio技能",
+      "note": "",
+      "skills": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ]
+    },
+    {
+      "id": "studio-comfyui-translation-skills",
+      "name": "翻译预设 · Studio技能",
+      "note": "",
+      "skills": []
+    },
+    {
+      "id": "studio-comfyui-prompt-skills",
+      "name": "ComfyUI 提示词预设 · Studio技能",
+      "note": "",
+      "skills": [
+        "anima-prompt-builder",
+        "krea2-anime-prompt-builder",
+        "wai-sdxl-prompt-builder",
+        "moss-prompt-builder",
+        "character-portrait-prompt-designer"
+      ]
+    },
+    {
+      "id": "studio-comfyui-parameters-skills",
+      "name": "ComfyUI 参数预设 · Studio技能",
+      "note": "",
+      "skills": []
+    },
+    {
+      "id": "studio-comfyui-resources-skills",
+      "name": "ComfyUI 资源预设 · Studio技能",
+      "note": "",
+      "skills": []
+    },
+    {
+      "id": "studio-comfyui-run-skills",
+      "name": "ComfyUI 运行任务预设 · Studio技能",
+      "note": "",
+      "skills": []
+    },
+    {
+      "id": "studio-comfyui-review-skills",
+      "name": "ComfyUI 评价预设 · Studio技能",
+      "note": "",
+      "skills": []
+    },
+    {
+      "id": "studio-comfyui-experience-skills",
+      "name": "ComfyUI 经验预设 · Studio技能",
+      "note": "",
+      "skills": []
+    },
+    {
+      "id": "studio-comfyui-experiment-skills",
+      "name": "ComfyUI 持续实验预设 · Studio技能",
+      "note": "",
+      "skills": []
+    }
+  ]
+}

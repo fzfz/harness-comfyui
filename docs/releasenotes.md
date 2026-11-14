@@ -2,6 +2,14 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.54.4
+
+## Agent Studio 预设数据
+
+1. Release 附件 `four-pools.json` 提供 9 个 Agent 及对应的提示词集、工具集和 Skill 集，使用 Agent Studio `0.1.8` 的导入格式。
+2. 用户在 Agent 中心导入数据后，可将预设绑定到对应 Agent。配置步骤见[Agent Studio 数据配置](user/agent-studio-data.md)。
+3. 原版 Agent Studio 中的验收覆盖 9 个预设的真实会话、提示词编辑、Skill 读取和应用重启后的配置保留。
+
 # Harness ComfyUI v0.54.3
 
 ## 工作台任务读取

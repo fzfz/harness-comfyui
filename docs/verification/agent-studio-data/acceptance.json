@@ -1,0 +1,379 @@
+{
+  "applicationVersion": "0.2.1-rc.3",
+  "agentStudioVersion": "0.1.8",
+  "comfyuiVersion": "0.54.2",
+  "sourceCommit": "f7d68ea",
+  "scope": "preset-data",
+  "runId": "1ce57f37-ab23-4e6a-8bc1-2595a28c24a4",
+  "processId": 94837,
+  "ports": {
+    "host": 58007,
+    "rendererCdp": 58008,
+    "hostInspector": 58009
+  },
+  "environmentRoot": "/Users/fzfz/.codex/worktrees/agent-studio-integration/harness-comfyui/.local/desktop-development/studio-data-environment",
+  "profilePath": "/Users/fzfz/.codex/worktrees/agent-studio-integration/harness-comfyui/.local/desktop-development/studio-data-environment/dsh-home/profiles/desktop/cordis.patch.yml",
+  "nativeUi": {
+    "createdPresets": 9,
+    "importedAgents": 9,
+    "bindings": 9,
+    "promptEditObservedInSystemMessage": true,
+    "promptEditObservedInModelReply": true,
+    "sourcePromptRestored": true
+  },
+  "persistence": {
+    "configurationMatchesBeforeRestart": true,
+    "allPresetsLoaded": true,
+    "sourcePresetsPreserved": true,
+    "beforeEvidence": ".local/agent-studio-data/persistence-before.json",
+    "afterEvidence": ".local/agent-studio-data/persistence-after.json",
+    "processesDiffer": true
+  },
+  "promptEditTrace": ".local/agent-studio-data/trace-prompt-edit/trace-index.json",
+  "skillReadTrace": ".local/agent-studio-data/trace-workbench/trace-index.json",
+  "sourceTranslationSessionModel": {
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "high"
+  },
+  "verificationSessions": [
+    {
+      "presetId": "studio-comfyui-workbench",
+      "sessionId": "session-1e9a49a4-93bf-41b9-bd56-5021227729a4",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "bash",
+        "create_goal",
+        "get_goal",
+        "interrupt_agent",
+        "job_kill",
+        "job_list",
+        "job_output",
+        "list_agents",
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "send_message",
+        "skill",
+        "subagent",
+        "update_goal",
+        "workbench_experiment_end",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "working_directory"
+      ],
+      "skillNames": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "comfyui-generate",
+        "comfyui-image-review",
+        "krea2-anime-prompt-builder",
+        "local-image-reader",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-workbench-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-translation",
+      "sessionId": "session-90becbaa-1cfb-4f2b-88e4-50edc904437b",
+      "systemPromptMatchesSource": true,
+      "toolNames": [],
+      "skillNames": [],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-translation-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-prompt",
+      "sessionId": "session-df7fdfc9-8a46-4e69-a42b-abd0e7a5b6d8",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "skill",
+        "workbench_file_read",
+        "workbench_file_write",
+        "workbench_image_read",
+        "workbench_prompt_validate",
+        "workbench_run_inputs"
+      ],
+      "skillNames": [
+        "anima-prompt-builder",
+        "character-portrait-prompt-designer",
+        "krea2-anime-prompt-builder",
+        "moss-prompt-builder",
+        "wai-sdxl-prompt-builder"
+      ],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-prompt-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-parameters",
+      "sessionId": "session-6aea20c2-32a1-496f-973d-4884b59fd80a",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "workbench_run_inputs",
+        "workbench_task_get",
+        "workbench_task_publish",
+        "workbench_workflow_parameters"
+      ],
+      "skillNames": [],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-parameters-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-resources",
+      "sessionId": "session-5f481c71-6b97-45aa-9407-703d99369466",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "workbench_task_get",
+        "workbench_task_publish"
+      ],
+      "skillNames": [],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-resources-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-run",
+      "sessionId": "session-d41d98e9-0bb3-4131-8016-f15df8066af9",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "workbench_run_media",
+        "workbench_run_submit",
+        "workbench_task_get",
+        "workbench_task_publish"
+      ],
+      "skillNames": [],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-run-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-review",
+      "sessionId": "session-8ba08523-0196-442d-be13-dc8d722df0e5",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "list_mcp_resource_templates",
+        "list_mcp_resources",
+        "mcp__noobai__get_catalog_resource",
+        "mcp__noobai__get_instance_connection",
+        "mcp__noobai__get_instance_node",
+        "mcp__noobai__get_instance_queue",
+        "mcp__noobai__get_instance_status",
+        "mcp__noobai__list_prompt_term_categories",
+        "mcp__noobai__query_semantic_characters",
+        "mcp__noobai__query_semantic_prompt_terms",
+        "mcp__noobai__query_semantic_works",
+        "mcp__noobai__search_artist_prompt_strings",
+        "mcp__noobai__search_base_models",
+        "mcp__noobai__search_instance_nodes",
+        "mcp__noobai__search_instances",
+        "mcp__noobai__search_loras",
+        "mcp__noobai__search_models",
+        "mcp__noobai__search_styles",
+        "mcp__noobai__search_workflows",
+        "read_mcp_resource",
+        "workbench_image_read",
+        "workbench_run_inputs",
+        "workbench_run_media",
+        "workbench_task_get",
+        "workbench_task_publish"
+      ],
+      "skillNames": [],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-review-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-experience",
+      "sessionId": "session-01d3aa44-0c74-4b1e-b80b-b93705d3fdb3",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "workbench_image_read",
+        "workbench_run_inputs",
+        "workbench_run_media",
+        "workbench_task_get",
+        "workbench_task_publish"
+      ],
+      "skillNames": [],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-experience-final-history.json"
+    },
+    {
+      "presetId": "studio-comfyui-experiment",
+      "sessionId": "session-276165fc-2ce1-4f35-93d8-24c4901ed73b",
+      "systemPromptMatchesSource": true,
+      "toolNames": [
+        "interrupt_agent",
+        "list_agents",
+        "send_message",
+        "workbench_experiment_end",
+        "workbench_function_delegate",
+        "workbench_function_list",
+        "workbench_task_get",
+        "workbench_task_publish"
+      ],
+      "skillNames": [],
+      "model": {
+        "provider": "lan-gpt",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high"
+      },
+      "endReason": "completed",
+      "evidence": ".local/agent-studio-data/studio-comfyui-experiment-final-history.json"
+    }
+  ],
+  "formatNormalization": {
+    "source": "/Users/fzfz/.dsh/work/dsh-agent-studio/src/client/parts/panel-draft.ts",
+    "nativeUiAddsToolName": "skill",
+    "nativeUiAddsDynamicSections": [
+      "tools:sdk",
+      "tools:ptc-only"
+    ],
+    "agentToolPresentation": "native"
+  },
+  "resourcePaths": "preset-definitions.json contains paths for this isolated Profile",
+  "originalStudioFiles": {
+    "comparedFiles": 32,
+    "allBytesEqual": true,
+    "source": "/Users/fzfz/.dsh/profiles/desktop/node_modules/dsh-agent-studio"
+  },
+  "sourceTranslationModelEvidence": ".local/agent-studio-data/source-translation-result.json",
+  "lifecycle": {
+    "evidence": ".local/agent-studio-data/lifecycle/acceptance.json",
+    "parentSessionId": "session-45192227-057d-4e92-b974-3b2adc45ef3b",
+    "childSessionId": "3d277c97-fb89-4170-a191-203bd9bde8a1",
+    "checks": [
+      {
+        "id": "first-dispatch",
+        "realModelStatus": "passed"
+      },
+      {
+        "id": "continuation",
+        "realModelStatus": "passed"
+      },
+      {
+        "id": "interruption",
+        "realModelStatus": "passed"
+      },
+      {
+        "id": "max-depth-1",
+        "realModelStatus": "partial"
+      },
+      {
+        "id": "preset-switch",
+        "realModelStatus": "passed"
+      },
+      {
+        "id": "cold-recovery",
+        "realModelStatus": "passed"
+      }
+    ]
+  },
+  "depthGuardRegression": {
+    "command": "pnpm quality",
+    "testFile": "tests/desktop/official-desktop-live.test.mjs",
+    "assertion": "subagent depth 2 exceeds maxDepth 1",
+    "sourceAndTargetComponent": "@deepseek-ai/dsh-tool-subagent",
+    "sourceAndTargetConfig": {
+      "provider": "spawn",
+      "maxDepth": 1
+    },
+    "log": ".local/agent-studio-data/quality-final.log",
+    "result": ".local/agent-studio-data/quality-final-result.json"
+  }
+}
