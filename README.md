@@ -21,6 +21,10 @@
 8. **从文件批量生成与单张重做。** 助手可直接使用提示词文件，一次提交最多 20 项任务。重复提交原请求时沿用原生成记录，修改指定项后可单独重做。
 9. **持续推进明确目标。** 用户要求持续完成目标时，工作台使用宿主 Goal 管理进度。用户可在会话中查看、暂停和恢复目标。
 
+## Agent Studio 数据
+
+1. [Agent Studio 数据配置](docs/user/agent-studio-data.md)提供 9 个 Agent 的导入与预设绑定步骤。提示词集、工具集和 Skill 集可在 Agent 中心编辑。
+
 ## 使用实验工作台
 
 ### 创建工作与保存输入
@@ -83,7 +87,7 @@
 
 ## 适用版本
 
-1. 插件 `0.54.3` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0543>)。
+1. 插件 `0.54.4` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.1-rc.3` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0544>)。
 
 ## CLI 帮助与图片读取
 
