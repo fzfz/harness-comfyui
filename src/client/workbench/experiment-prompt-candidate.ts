@@ -37,7 +37,6 @@ export class PromptCandidateEditor {
     if (!this.state.resultDirty && !this.state.resultSaving) { this.baseline = this.saved; this.epoch++ }
     this.revision++
     this.update({ result, resultDirty: true })
-    void this.save()
   }
   async save() {
     const { result } = this.state, revision = this.revision, epoch = this.epoch

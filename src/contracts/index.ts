@@ -237,7 +237,7 @@ function bind(id: string, channel: string, options?: unknown): unknown {
         namespace,
         method,
         invocation: { kind: 'direct' },
-        ...(method === 'subscribe' ? { mode: 'stream' } : {}),
+        ...(method === 'subscribe' || method === 'translate' ? { mode: 'stream' } : {}),
         parameters: [{
           name: 'request',
           wire: 'request',

@@ -737,7 +737,7 @@ it('fills missing builtin bindings without replacing saved workspace configurati
 it('mounts Workbench Remotes, creates one main branch and isolates Workspace projections', async () => {
   const { ctx, remote, official, fiber, remoteFiber } = await fixture()
   expect(remoteMethods(remote)).toEqual([
-    ...['promptSaveCandidate', 'queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'translateStart', 'translateGet', 'translateCancel'].map(method => ({ method, invocation: { kind: 'direct' } })),
+    ...['promptSaveCandidate', 'queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt'].map(method => ({ method, invocation: { kind: 'direct' } })),
     { method: 'getRunInput', invocation: { kind: 'direct' } },
     { method: 'getEnvironment', invocation: { kind: 'direct' } },
     { method: 'getProjection', invocation: { kind: 'direct' } },
@@ -746,6 +746,7 @@ it('mounts Workbench Remotes, creates one main branch and isolates Workspace pro
     { method: 'saveTaskDraft', invocation: { kind: 'direct' } },
     { method: 'mutate', invocation: { kind: 'direct' } },
     { method: 'subscribe', invocation: { kind: 'direct' }, mode: 'stream' },
+    { method: 'translate', invocation: { kind: 'direct' }, mode: 'stream' },
   ])
   const empty = await remote.getProjection({ workspaceId: 'workspace_1' }, signal())
   expect(empty).toMatchObject({ works: [], branches: [], tasks: [] })

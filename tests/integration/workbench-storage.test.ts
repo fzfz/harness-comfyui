@@ -164,19 +164,17 @@ describe('workbench storage public boundary', () => {
     expect(completed.candidate).toBeNull()
   })
 
-  it('persists translation origins and terminal replies across store recreation without reopening completed requests', () => {
+  it('overwrites only the latest translation for an exact scope and preserves it across recreation', () => {
     const f = fixture()
-    const pending = { request_id: 'translation-durable', workspace_id: 'workspace', work_id: f.work.work_id, branch_id: f.branch.branch_id, field: 'positive_prompt' as const, source_text: 'rain', session_id: 'translation-session', harness_turn: 4, start_seq: 7, created_at: 100, finished_at: null, status: 'running' as const }
-    f.store.saveTranslation(pending)
-    expect(f.store.listPendingTranslations()).toEqual([pending])
-    const completed = { ...pending, status: 'succeeded' as const, text: '雨', finished_at: 200 }
-    f.store.saveTranslation(completed)
+    const scope = { workspace_id: 'workspace', work_id: f.work.work_id, branch_id: f.branch.branch_id, target: 'before' as const, field: 'positive_prompt' as const }
+    f.store.saveTranslationLatest({ ...scope, source_text: 'rain', text: '雨' })
+    f.store.saveTranslationLatest({ ...scope, source_text: 'snow', text: '雪' })
+    f.store.saveTranslationLatest({ ...scope, target: 'result', source_text: 'light', text: '光' })
     const restored = new WorkbenchStore({ database: f.database, artifactDirectory: f.directory })
-    expect(restored.getTranslation(pending.request_id)).toEqual(completed)
-    expect(restored.listTranslations({ workspaceId: 'workspace', workId: f.work.work_id })).toEqual([completed])
-    expect(restored.listTranslations({ workspaceId: 'other-workspace' })).toEqual([])
-    expect(restored.listPendingTranslations()).toEqual([])
-    expect(restored.saveTranslation(pending)).toEqual(completed)
+    expect(restored.getTranslationLatest(scope)).toEqual({ ...scope, source_text: 'snow', text: '雪' })
+    expect(restored.getTranslationLatest({ ...scope, target: 'result' })).toEqual({ ...scope, target: 'result', source_text: 'light', text: '光' })
+    expect(restored.getTranslationLatest({ ...scope, field: 'negative_prompt' })).toBeNull()
+    expect(() => restored.saveTranslationLatest({ ...scope, workspace_id: 'other-workspace', source_text: 'rain', text: '雨' })).toThrow()
   })
 
   it('settles generation at the committed Run change and delivers its saved task with the media change', async () => {

@@ -11,7 +11,7 @@ function reply(requestId: string, text: string): SessionEvent[] {
   ] as SessionEvent[]
 }
 
-it.each(['prompt', 'translation'] as const)('reports a failed background %s read and processes the next event for the same request', async kind => {
+it('reports a failed background prompt read and processes the next event for the same request', async () => {
   const host = await createWorkbenchHostFixture()
   const cancellation = new AbortController()
   try {
@@ -32,13 +32,12 @@ it.each(['prompt', 'translation'] as const)('reports a failed background %s read
       })
       return { accepted: true }
     })
-    const requestId = `background-${kind}`
+    const requestId = 'background-prompt'
     const scope = { workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, request_id: requestId }
-    if (kind === 'prompt') await host.remote.promptStart({ ...scope, function_id: 'prompt', intent: 'generate', input: { original_request: 'Rain', base_model_id: '1', positive_prompt: '', negative_prompt: '', change_request: '' } }, cancellation.signal)
-    else await host.remote.translateStart({ ...scope, field: 'positive_prompt', source_text: 'rain' }, cancellation.signal)
+    await host.remote.promptStart({ ...scope, function_id: 'prompt', intent: 'generate', input: { original_request: 'Rain', base_model_id: '1', positive_prompt: '', negative_prompt: '', change_request: '' } }, cancellation.signal)
     await reading
-    const sessionId = kind === 'prompt' ? host.store.getPromptTurn(requestId)!.session_id : host.store.getTranslation(requestId)!.session_id
-    const service = kind === 'prompt' ? host.ctx.harnessComfyuiWorkbench.prompts : host.ctx.harnessComfyuiWorkbench.translations
+    const sessionId = host.store.getPromptTurn(requestId)!.session_id
+    const service = host.ctx.harnessComfyuiWorkbench.prompts
     const nextRead = service.handleSessionEvents(sessionId)
     const failure = (async () => {
       try { while (!(await stream.next()).done) {} }
@@ -48,10 +47,10 @@ it.each(['prompt', 'translation'] as const)('reports a failed background %s read
     rejectRead(fault)
     await expect(failure).resolves.toBe(fault)
     await nextRead
-    const text = kind === 'prompt' ? JSON.stringify({ type: 'prompt', positive_prompt: 'rain at night', negative_prompt: '' }) : '雨'
+    const text = JSON.stringify({ type: 'prompt', positive_prompt: 'rain at night', negative_prompt: '' })
     host.official.events.set(sessionId, reply(requestId, text))
     await service.handleSessionEvents(sessionId)
-    expect(kind === 'prompt' ? host.store.getPromptTurn(requestId)?.status : host.store.getTranslation(requestId)?.status).toBe('succeeded')
+    expect(host.store.getPromptTurn(requestId)?.status).toBe('succeeded')
     expect(host.official.controller.prompt).toHaveBeenCalledOnce()
   } finally { cancellation.abort(); await host.dispose() }
 })
@@ -84,11 +83,15 @@ it('marks a translation failed when the Agent fails without a terminal session e
   const host = await createWorkbenchHostFixture()
   try {
     const { work, branch } = host.store.createWork({ workspaceId: 'workspace_1', name: 'Rain', goal: 'Rain' })
-    await host.remote.translateStart({ workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, request_id: 'agent-failure', field: 'positive_prompt', source_text: 'rain' }, new AbortController().signal)
-    const record = host.store.getTranslation('agent-failure')!
-    host.ctx.emit('agent/error', { agent: { id: record.session_id } } as never)
-    expect(host.store.getTranslation(record.request_id)).toMatchObject({ status: 'failed', error: expect.any(String) })
-    expect(host.store.getTranslation(record.request_id)!.finished_at).toEqual(expect.any(Number))
+    const request = { workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, request_id: 'agent-failure', target: 'draft' as const, field: 'positive_prompt' as const, source_text: 'rain' }
+    const stream = host.remote.translate(request, new AbortController().signal)[Symbol.asyncIterator]()
+    await stream.next()
+    await vi.waitFor(() => expect(host.official.controller.prompt).toHaveBeenCalledOnce())
+    const { sessionId } = await host.official.controller.create.mock.results.at(-1)!.value
+    host.ctx.emit('agent/error', { agent: { id: sessionId } } as never)
+    expect((await stream.next()).value).toMatchObject({ request_id: request.request_id, status: 'failed', error: expect.any(String) })
+    expect(await stream.next()).toMatchObject({ done: true })
+    expect(host.store.getTranslationLatest(request)).toBeNull()
   } finally { await host.dispose() }
 })
 

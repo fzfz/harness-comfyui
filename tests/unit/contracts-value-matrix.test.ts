@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { assertSupportedJsonSchema, validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
 import { contracts, ContractError, type ContractId } from '#contracts'
+import type { TranslationLatest, TranslationRequest, TranslationResult, TranslationScope } from '../../src/workbench/translation.ts'
 
 const execution = () => ({ signal: new AbortController().signal }) as never
 const fileReadResult = { file_path: '/tmp/prompt.txt', offset: 0, total_lines: 1, text: 'rain', next_offset: null }
@@ -37,6 +38,20 @@ function nestedJson(depth: number): unknown {
 }
 
 describe('public contract value semantics', () => {
+  it.each(['before', 'result', 'draft'] as const)('preserves exact translation scope and discriminated replies for %s', target => {
+    const scope = { workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'branch-a', target, field: 'positive_prompt' } satisfies TranslationScope
+    const request = { ...scope, request_id: 'translation-a', source_text: 'rain\n<lora:rain:0.7>' } satisfies TranslationRequest
+    const latest = { ...scope, source_text: request.source_text, text: '雨\n<lora:rain:0.7>' } satisfies TranslationLatest
+    expect(contracts.parse('translationScope', 'input', scope)).toEqual(scope)
+    const parsed = contracts.parse('workbench remote translate', 'input', request)
+    expect([parsed.workspace_id, parsed.work_id, parsed.branch_id, parsed.target, parsed.field, parsed.request_id, parsed.source_text]).toEqual(['workspace-a', 'work-a', 'branch-a', target, 'positive_prompt', 'translation-a', 'rain\n<lora:rain:0.7>'])
+    expect(contracts.parse('translationLatest', 'output', latest)).toEqual(latest)
+    const results: TranslationResult[] = [{ request_id: 'translation-a', status: 'running' }, { request_id: 'translation-a', status: 'succeeded', text: latest.text }, { request_id: 'translation-a', status: 'failed', error: 'Provider unavailable' }]
+    for (const result of results) expect(contracts.parse('workbench remote translate', 'output', result)).toEqual(result)
+    for (const invalid of [{ ...request, target: 'history' }, { ...request, field: 'instructions' }, { ...request, source_text: '' }, { ...request, session_id: 'session-a' }]) expect(() => contracts.parse('workbench remote translate', 'input', invalid)).toThrow(ContractError)
+    for (const invalid of [{ request_id: 'translation-a', status: 'running', text: 'rain' }, { request_id: 'translation-a', status: 'succeeded' }, { request_id: 'translation-a', status: 'failed', error: '' }]) expect(() => contracts.parse('workbench remote translate', 'output', invalid)).toThrow(ContractError)
+  })
+
   it('preserves extra fields on an open discovery result through native delivery', async () => {
     const output = { task_id: 'task-a', functions: [], extension: { choices: [null, true, 12, { name: 'rain' }] } }
     await deliver('workbench_function_list', { task_id: 'task-a' }, output)

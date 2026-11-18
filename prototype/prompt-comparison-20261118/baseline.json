@@ -1,0 +1,45 @@
+{
+  "purpose": "prompt-comparison-ui-baseline",
+  "product_commit": "cf531595c0c1e8828b44dc603dcb335aba22cd40",
+  "product_version": "0.55.0",
+  "product_source_checkout": "/Volumes/4Tdisk/work/AI2/harness-comfyui",
+  "prototype_entry": "index.html?edit=prompts&compare=long",
+  "files": [
+    "index.html",
+    "prompt-comparison.ts",
+    "prompt-comparison.js",
+    "prompt-comparison.css",
+    "prompt-comparison-example.json",
+    "resource-catalog.json",
+    "serve.py"
+  ],
+  "viewports": [
+    {
+      "width": 1539,
+      "height": 877
+    },
+    {
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "scope": [
+    "prompt-comparison-dialog",
+    "prompt-translation-current-result"
+  ],
+  "created_on": "2026-11-18",
+  "screenshots": [
+    "screenshots/final-bilingual.png",
+    "screenshots/final-negative.png",
+    "screenshots/final-running.png",
+    "screenshots/final-close-confirm.png",
+    "screenshots/final-compact.png",
+    "screenshots/final-stale.png",
+    "screenshots/final-failed.png",
+    "screenshots/final-translation-stale-1539x877.png",
+    "screenshots/final-translation-stale-1280x720.png",
+    "screenshots/final-translation-failed-1539x877.png",
+    "screenshots/final-translation-failed-1280x720.png"
+  ],
+  "prototype_acceptance": "prototype-acceptance.json"
+}

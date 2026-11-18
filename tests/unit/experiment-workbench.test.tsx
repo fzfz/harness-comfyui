@@ -122,7 +122,7 @@ const mount = async (
   const deliveryListeners = new Set<(update: import('../../src/workbench-remote.ts').WorkbenchUpdate) => void>()
   let deliverySequence = 0
   const publish = (projection = data, promptTurns: PromptTurn[] = []) => {
-    const update: import('../../src/workbench-remote.ts').WorkbenchUpdate = { kind: 'change', sequence: ++deliverySequence, projection, promptTurns, translations: [] }
+    const update: import('../../src/workbench-remote.ts').WorkbenchUpdate = { kind: 'change', sequence: ++deliverySequence, projection, promptTurns }
     for (const listener of deliveryListeners) listener(update)
   }
   const onAction = vi.fn(),
@@ -135,7 +135,7 @@ const mount = async (
         deliveryListeners.add(listener)
         signal.addEventListener('abort', () => wake?.(), { once: true })
         try {
-          yield { kind: 'snapshot' as const, sequence: deliverySequence, projection: data, promptTurns: [], translations: [] }
+          yield { kind: 'snapshot' as const, sequence: deliverySequence, projection: data, promptTurns: [] }
           while (!signal.aborted) {
             if (!queue.length) await new Promise<void>(resolve => { wake = resolve })
             while (!signal.aborted && queue.length) yield queue.shift()!
@@ -169,9 +169,7 @@ const mount = async (
       queryRecords: vi.fn(async () => []),
       resolveImages: vi.fn(async () => ({ images: [] })),
       importImages: vi.fn(async () => ({ images: [] })),
-      translateStart: vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'running' as const })),
-      translateGet: vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'succeeded' as const, text: '译文' })),
-      translateCancel: vi.fn(async () => undefined),
+      translate: vi.fn(async function* (request: import('../../src/workbench/translation.ts').TranslationRequest, _signal?: AbortSignal) { yield { request_id: request.request_id, status: 'succeeded' as const, text: '译文' } }),
       getInputDescription: vi.fn(async (_request: import('../../src/workbench-remote.ts').WorkbenchInputDescriptionRequest) => inputDescription),
     }
   const deliver = async () => {
@@ -807,31 +805,17 @@ describe('preparation image and translation integration', () => {
     expect(data.branches[0]!.draft.image_refs).toEqual([image])
   })
 
-  it.each(['matching', 'other-branch'] as const)('opens stored translation history after clearing and reopening the page: %s', async scope => {
+  it('disables translation after clearing the current prompt and reopening the page', async () => {
     const data = fullProjection()
-    const record: import('../../src/workbench/translation.ts').TranslationRecord = { request_id: 'historical-translation', workspace_id: data.workspace_id, work_id: data.work_id!, branch_id: scope === 'matching' ? data.branches[0]!.branch_id : 'other-branch',
-      field: 'positive_prompt', source_text: 'previous source', text: '已保存的历史译文', status: 'succeeded', session_id: 'translation-session', harness_turn: 1, start_seq: 0, created_at: 1, finished_at: 2 }
-    const subscribe: ExperimentWorkbenchProps['remote']['subscribe'] = async function* (_request, signal) {
-      yield { kind: 'snapshot', sequence: 0, projection: data, promptTurns: [], translations: [record] }
-      if (!signal.aborted) await new Promise<void>(resolve => signal.addEventListener('abort', () => resolve(), { once: true }))
-    }
-    const first = await mountReady(data, { remote: { subscribe } })
+    const first = await mountReady(data)
     await click(first.renderer, '编辑参数')
     await change(first.renderer, '正向提示词', '')
     await click(first.renderer, '保存参数')
-    expect(data.branches[0]!.draft.prompt_input.positive_prompt).toBe('')
     await act(() => first.renderer.unmount())
-    const reopened = await mountReady(data, { remote: { subscribe } })
+    const reopened = await mountReady(data)
     const prompt = reopened.renderer.root.findAllByProps({ 'aria-label': '正向提示词' }).find(item => item.props.className === 'input-readout prompt-readout')!
-    const trigger = prompt.findAllByType('button')[0]!
-    expect(trigger.props.disabled).toBe(scope !== 'matching')
-    if (scope === 'matching') {
-      await act(() => trigger.props.onClick())
-      const dialog = reopened.renderer.root.findByProps({ role: 'dialog' })
-      expect(nodeText(dialog)).toContain('previous source')
-      expect(nodeText(dialog)).toContain('已保存的历史译文')
-    }
-    expect(reopened.remote.translateStart).not.toHaveBeenCalled()
+    expect(prompt.findAllByType('button')[0]!.props.disabled).toBe(true)
+    expect(reopened.remote.translate).not.toHaveBeenCalled()
   })
 
   it.each([false, true])('opens prompt translation from preparation or historical inputs and restores focus: history=%s', async history => {
@@ -844,7 +828,7 @@ describe('preparation image and translation integration', () => {
     Object.defineProperty(document, 'activeElement', { value: { focus: hostFocus, shadowRoot: root }, configurable: true })
     const prompt = renderer.root.findAllByProps({ 'aria-label': '正向提示词' }).find(item => item.props.className === 'input-readout prompt-readout')!
     await act(async () => prompt.findAllByType('button')[0]!.props.onClick())
-    expect(remote.translateStart).toHaveBeenCalledWith(expect.objectContaining({ workspace_id: 'workspace-a', source_text: history ? String(data.runs[0]!.generation_input.parameters.positive_1) : 'glass house' }))
+    expect(remote.translate).toHaveBeenCalledWith(expect.objectContaining({ workspace_id: 'workspace-a', source_text: history ? String(data.runs[0]!.generation_input.parameters.positive_1) : 'glass house' }), expect.any(AbortSignal))
     await click(renderer, '关闭翻译')
     expect(focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(hostFocus).not.toHaveBeenCalled()
@@ -944,9 +928,9 @@ describe('reference source and removal operations', () => {
     const { data, records, remote, run } = sourceFixture()
     const image: import('../../src/workbench/contract.ts').ImageRef = { image_ref_id: 'source-image', source: { kind: 'uploaded_file', file_id: 'file' }, purpose: 'both', reference_requirement: '来源图片要求' }
     const sourceInput = contracts.parse('workbenchRunInput', 'output', { ...runInputDefaults(run.generation_input), run_id: run.run_id, branch_id: 'root', generation_input: run.generation_input, submitted_input: run.generation_input, effective_input: run.generation_input, input_description: runInputDescription(run.generation_input.parameters), prompt_input: { positive_prompt: 'source prompt', negative_prompt: 'source negative' }, image_refs: [image], workflow_image_bindings: [], image_uploads: [], parameter_mapping: null, base_model_id: null })
-    const translateStart = vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'succeeded' as const, text: '来源译文' }))
+    const translate = vi.fn(async function* (request: { request_id: string }) { yield { request_id: request.request_id, status: 'succeeded' as const, text: '来源译文' } })
     const focus = vi.fn(), hostFocus = vi.fn(), root = { activeElement: { focus } }
-    const { renderer } = await mountReady(data, { remote: { ...remote, getRunInput: async () => sourceInput, translateStart,
+    const { renderer } = await mountReady(data, { remote: { ...remote, getRunInput: async () => sourceInput, translate,
       resolveImages: async () => ({ images: [{ image_ref_id: image.image_ref_id, name: 'source.png', file_path: '/source.png', url: '/source.png' }] }),
     } }, { createNodeMock: () => ({ getRootNode: () => root }) })
     Object.defineProperty(document, 'activeElement', { value: { focus: hostFocus, shadowRoot: root }, configurable: true })
@@ -957,7 +941,7 @@ describe('reference source and removal operations', () => {
     await click(renderer, '关闭对话框')
     const source = renderer.root.findByProps({ role: 'dialog', 'aria-label': '参考内容' })
     await act(async () => source.findAllByType('button').find(button => nodeText(button) === '翻译')!.props.onClick())
-    expect(translateStart).toHaveBeenCalledWith(expect.objectContaining({ source_text: 'source prompt' }))
+    expect(translate).toHaveBeenCalledWith(expect.objectContaining({ source_text: 'source prompt' }), expect.any(AbortSignal))
     await click(renderer, '关闭翻译')
     expect(focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(hostFocus).not.toHaveBeenCalled()
@@ -1054,7 +1038,7 @@ describe('experiment workbench connection tips', () => {
     let recoveredConnection = false, fail!: () => void
     const failure = new Promise<void>(resolve => { fail = resolve })
     const subscribe = vi.fn<ExperimentWorkbenchProps['remote']['subscribe']>(async function* (_request, signal) {
-      yield { kind: 'snapshot', sequence: 0, projection: recoveredConnection ? recovered : data, promptTurns: [], translations: [] }
+      yield { kind: 'snapshot', sequence: 0, projection: recoveredConnection ? recovered : data, promptTurns: [] }
       if (!recoveredConnection) { await failure; throw new Error('业务订阅已断开') }
       if (!signal.aborted) await new Promise<void>(resolve => signal.addEventListener('abort', () => resolve(), { once: true }))
     })
@@ -4468,9 +4452,7 @@ describe('experiment workbench overlay and loading lifecycle', () => {
       queryRecords: vi.fn(async () => []),
       resolveImages: vi.fn(async () => ({ images: [] })),
       importImages: vi.fn(async () => ({ images: [] })),
-      translateStart: vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'running' as const })),
-      translateGet: vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'succeeded' as const, text: '译文' })),
-      translateCancel: vi.fn(async () => undefined),
+      translate: vi.fn(async function* (request: import('../../src/workbench/translation.ts').TranslationRequest, _signal?: AbortSignal) { yield { request_id: request.request_id, status: 'succeeded' as const, text: '译文' } }),
       getInputDescription: vi.fn(async (_request: import('../../src/workbench-remote.ts').WorkbenchInputDescriptionRequest) => inputDescription),
       getProjection: vi
         .fn()
@@ -6630,20 +6612,19 @@ describe('prompt editing through the visible workbench', () => {
         onAction: request => host.remote.mutate(request, signal),
         remote: { ...promptRemote(host, signal), getProjection: request => host.remote.getProjection(request, signal), getInputDescription: request => host.remote.getInputDescription(request, signal) } })
       await click(renderer, '查看待采用结果')
-      await click(renderer, '采用生成结果')
+      await click(renderer, '采用正负提示词')
       await vi.waitFor(() => expect(readField(renderer.root, '正向提示词')).toBe('first Agent result'))
       const first = await host.remote.promptGet({ workspace_id: root.workspaceId, request_id: turn.request_id }, signal)
       expect(first.adopted?.positive_prompt).toBe('first Agent result')
       await vi.waitFor(() => expect(renderer.root.findAllByProps({ role: 'dialog' })).toHaveLength(0))
       await click(renderer, '对比提示词')
-      const adoption = () => renderer.root.findAllByType('button').find(button => nodeText(button) === '采用生成结果')!
-      expect(adoption().props.disabled).toBe(true)
-      await change(renderer, '生成的正向提示词', 'edited after adoption')
+      const adoption = () => renderer.root.findAllByType('button').find(button => nodeText(button) === '采用正负提示词')!
+      expect(adoption().props.disabled).toBe(false)
+      await change(renderer, '生成结果的正向提示词', 'edited after adoption')
       await vi.waitFor(() => expect(adoption().props.disabled).toBe(false))
       const edited = await host.remote.promptGet({ workspace_id: root.workspaceId, request_id: turn.request_id }, signal)
-      expect(edited).toMatchObject({ candidate: { positive_prompt: 'edited after adoption' }, adopted: first.adopted, applied_at: first.applied_at, result: { positive_prompt: 'first Agent result' } })
-      expect(nodeText(renderer.root)).toContain('待采用结果已保存')
-      await click(renderer, '采用生成结果')
+      expect(edited).toMatchObject({ candidate: first.candidate, adopted: first.adopted, applied_at: first.applied_at, result: { positive_prompt: 'first Agent result' } })
+      await click(renderer, '采用正负提示词')
       await vi.waitFor(() => expect(readField(renderer.root, '正向提示词')).toBe('edited after adoption'))
       await click(renderer, '保存参数')
       expect(host.store.getBranch(root.branchId!).draft.prompt_input.positive_prompt).toBe('edited after adoption')
@@ -6654,7 +6635,7 @@ describe('prompt editing through the visible workbench', () => {
     } finally { await host.dispose() }
   })
 
-  it('shows a saved default result without offering it for adoption again', async () => {
+  it('shows both saved fields through the comparison tabs and allows adoption', async () => {
     const data = fullProjection(), task = makeTask('saved-prompt-task', 'root', 'prompt')
     data.tasks.push(task)
     const turn: PromptTurn = { request_id: 'saved-prompt-request', task_id: task.task_id, turn_index: 1, function_id: 'prompt', kind: 'prompt', intent: 'generate', candidate: null,
@@ -6664,16 +6645,17 @@ describe('prompt editing through the visible workbench', () => {
       result: { type: 'prompt', positive_prompt: 'full saved positive', negative_prompt: 'full saved negative' }, artifact_id: 'saved-artifact', adopted: null, applied_at: null, created_at: 1, finished_at: 2, start_seq: 0 }
     data.branches[0]!.draft = { ...data.branches[0]!.draft, prompt_edit_task_id: task.task_id, prompt_input: { positive_prompt: 'full saved positive', negative_prompt: 'full saved negative' } }
     const subscribe: ExperimentWorkbenchProps['remote']['subscribe'] = async function* (_request, signal) {
-      yield { kind: 'snapshot', sequence: 0, projection: data, promptTurns: [turn], translations: [] }
+      yield { kind: 'snapshot', sequence: 0, projection: data, promptTurns: [turn] }
       if (!signal.aborted) await new Promise<void>(resolve => signal.addEventListener('abort', () => resolve(), { once: true }))
     }
     const { renderer, remote } = await mountReady(data, { remote: { subscribe, promptList: async () => [turn] } })
     expect(nodeText(renderer.root.findByProps({ id: 'preparation-state' }))).toBe('已保存的参数')
     await click(renderer, '对比提示词')
     expect(nodeText(renderer.root)).not.toContain('待采用结果已保存')
-    expect(readField(renderer.root, '生成的正向提示词')).toBe('full saved positive')
-    expect(readField(renderer.root, '生成的负向提示词')).toBe('full saved negative')
-    expect(renderer.root.findAllByType('button').find(button => nodeText(button) === '采用生成结果')!.props.disabled).toBe(true)
+    expect(readField(renderer.root, '生成结果的正向提示词')).toBe('full saved positive')
+    await act(() => renderer.root.findAllByProps({ role: 'tab' }).find(tab => nodeText(tab) === '负向提示词')!.props.onClick())
+    expect(readField(renderer.root, '生成结果的负向提示词')).toBe('full saved negative')
+    expect(renderer.root.findAllByType('button').find(button => nodeText(button) === '采用正负提示词')!.props.disabled).toBe(false)
     expect(remote.promptAdopt).not.toHaveBeenCalled()
   })
   it('shows a failed configuration preview without losing editable requirements', async () => {
@@ -6752,27 +6734,28 @@ describe('prompt editing through the visible workbench', () => {
       const inputBefore = host.store.getBranch(root.branchId!).editing_draft!.generation_input
       await click(renderer, '对比提示词')
       await change(renderer, '改动意见', '增加雨景')
-      await click(renderer, '改写提示词')
+      await click(renderer, '继续改写')
       await click(renderer, '关闭')
       const second = (await host.remote.promptList({ workspace_id: root.workspaceId, task_id: first.task_id }, signal))[1]!
       expect(second).toMatchObject({ session_id: firstTurn.session_id, input: { positive_prompt: 'portrait, side lighting', change_request: '增加雨景' } })
       completePrompt(host, second, { type: 'prompt', positive_prompt: 'portrait, rain', negative_prompt: 'blur' })
       await vi.waitFor(() => expect(renderer.root.findAllByType('button').some(button => nodeText(button) === '对比提示词')).toBe(true))
       await click(renderer, '对比提示词')
-      await vi.waitFor(() => expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, rain'), { timeout: 3000 })
-      await change(renderer, '生成的正向提示词', 'portrait, rain, manual detail')
+      await vi.waitFor(() => expect(readField(renderer.root, '生成结果的正向提示词')).toBe('portrait, rain'), { timeout: 3000 })
+      await change(renderer, '生成结果的正向提示词', 'portrait, rain, manual detail')
       await change(renderer, '改动意见', '保留手改并增加反射')
       await click(renderer, '关闭')
+      await click(renderer, '保存并关闭')
       await click(renderer, '对比提示词')
       expect(readField(renderer.root, '改动意见')).toBe('保留手改并增加反射')
-      expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, rain, manual detail')
-      await click(renderer, '改写提示词')
+      expect(readField(renderer.root, '生成结果的正向提示词')).toBe('portrait, rain, manual detail')
+      await click(renderer, '继续改写')
       const third = (await host.remote.promptList({ workspace_id: root.workspaceId, task_id: first.task_id }, signal))[2]!
       expect(third).toMatchObject({ session_id: firstTurn.session_id, input: { positive_prompt: 'portrait, rain, manual detail', change_request: '保留手改并增加反射' } })
       completePrompt(host, third, { type: 'prompt', positive_prompt: 'portrait, reflections', negative_prompt: 'fog' })
-      await vi.waitFor(() => expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, reflections'), { timeout: 3000 })
-      await change(renderer, '生成的正向提示词', 'portrait, reflections, adopted edit')
-      await click(renderer, '采用生成结果')
+      await vi.waitFor(() => expect(readField(renderer.root, '生成结果的正向提示词')).toBe('portrait, reflections'), { timeout: 3000 })
+      await change(renderer, '生成结果的正向提示词', 'portrait, reflections, adopted edit')
+      await click(renderer, '采用正负提示词')
       expect(readField(renderer.root, '正向提示词')).toBe('portrait, reflections, adopted edit')
       expect(host.store.getBranch(root.branchId!).editing_draft!.generation_input).toEqual(inputBefore)
       const saved = await host.remote.promptList({ workspace_id: root.workspaceId, task_id: first.task_id }, signal)
@@ -6781,12 +6764,12 @@ describe('prompt editing through the visible workbench', () => {
       await vi.waitFor(() => expect(nodeText(renderer.root.findByProps({ className: 'prompt-task-turns' }))).toContain('实际采用内容'), { timeout: 3000 })
       expect(renderer.root.findAllByProps({ className: 'agent-task-card' })).toHaveLength(1)
       await click(renderer, '编辑提示词')
-      expect(readField(renderer.root, '生成的正向提示词')).toBe('portrait, reflections, adopted edit')
+      expect(readField(renderer.root, '生成结果的正向提示词')).toBe('portrait, reflections, adopted edit')
       await click(renderer, '关闭')
       await act(() => renderer.unmount())
       const refreshed = await mount(await host.remote.getProjection(root, signal), options)
       await click(refreshed.renderer, '对比提示词')
-      await vi.waitFor(() => expect(readField(refreshed.renderer.root, '生成的正向提示词')).toBe('portrait, reflections, adopted edit'))
+      await vi.waitFor(() => expect(readField(refreshed.renderer.root, '生成结果的正向提示词')).toBe('portrait, reflections, adopted edit'))
       await click(refreshed.renderer, '关闭')
     } finally { await host.dispose() }
   })
@@ -6817,7 +6800,7 @@ describe('prompt editing through the visible workbench', () => {
     await act(() => { finish(completed); data.tasks.push(makeTask('manual-task', 'root', 'prompt')); remote.publish(data, [completed]) })
     await click(renderer, '对比提示词')
     expect(readField(renderer.root, '正向提示词')).toBe('途中手工输入')
-    expect(readField(renderer.root, '生成的正向提示词')).toBe('Agent result')
+    expect(readField(renderer.root, '生成结果的正向提示词')).toBe('Agent result')
     await click(renderer, '关闭')
   })
 })
@@ -7829,8 +7812,8 @@ describe('experiment workbench Run review through Remote', () => {
       expect(nodeText(renderer.root.findByProps({ className: 'config-head' }))).toContain('当前浏览分支')
       await click(renderer, '切换分支 提示词目标')
       await click(renderer, '对比提示词')
-      await vi.waitFor(() => expect(readField(renderer.root, '生成的正向提示词')).toBe('固定分支的新提示词'), { timeout: 3000 })
-      await click(renderer, '采用生成结果')
+      await vi.waitFor(() => expect(readField(renderer.root, '生成结果的正向提示词')).toBe('固定分支的新提示词'), { timeout: 3000 })
+      await click(renderer, '采用正负提示词')
       expect(readField(renderer.root, '正向提示词')).toBe('固定分支的新提示词')
       await click(renderer, '切换分支 主分支')
       await click(renderer, '查看运行 ' + runId)

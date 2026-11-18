@@ -13,7 +13,7 @@ import { functionNameProblem } from '../../workbench/function-name.ts'
 import { WORKBENCH_FUNCTIONS } from '../../workbench/functions.ts'
 import { defaultPresetForFunction } from '../../workbench/agent-roles.ts'
 import type { PromptTurn, PromptReply } from '../../workbench/prompt-edit.ts'
-import type { TranslationRecord } from '../../workbench/translation.ts'
+import type { TranslationLatest, TranslationScope } from '../../workbench/translation.ts'
 import promptEditConfig from '../../workbench/prompt-edit-config.json' with { type: 'json' }
 import { DEFAULT_PROMPT_REQUEST_PARTS } from '../../workbench/request-template.ts'
 import { renderRequestTemplate } from '../../workbench/request-template.ts'
@@ -126,12 +126,10 @@ export class WorkbenchStore {
       artifact_id TEXT REFERENCES workbench_task_artifacts(artifact_id), adopted_json TEXT, applied_at INTEGER,
       created_at INTEGER NOT NULL, finished_at INTEGER, start_seq INTEGER NOT NULL, UNIQUE(task_id,turn_index));
       CREATE INDEX IF NOT EXISTS workbench_prompt_turn_task ON workbench_prompt_turns(task_id);
-      CREATE TABLE IF NOT EXISTS workbench_translations (
-        request_id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, work_id TEXT NOT NULL REFERENCES workbench_works(work_id),
-        branch_id TEXT NOT NULL REFERENCES workbench_branches(branch_id), field TEXT NOT NULL, source_text TEXT NOT NULL,
-        session_id TEXT NOT NULL, harness_turn INTEGER, start_seq INTEGER NOT NULL, created_at INTEGER NOT NULL,
-        finished_at INTEGER, status TEXT NOT NULL, text TEXT, error TEXT);
-      CREATE INDEX IF NOT EXISTS workbench_translations_origin ON workbench_translations(workspace_id,work_id);
+      CREATE TABLE IF NOT EXISTS workbench_prompt_translation_latest (
+        workspace_id TEXT NOT NULL, work_id TEXT NOT NULL REFERENCES workbench_works(work_id),
+        branch_id TEXT NOT NULL REFERENCES workbench_branches(branch_id), target TEXT NOT NULL, field TEXT NOT NULL,
+        source_text TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY(workspace_id,work_id,branch_id,target,field));
     `)
     if (!this.rows('PRAGMA table_info(workbench_prompt_turns)').some(column => column.name === 'intent')) this.database.exec("ALTER TABLE workbench_prompt_turns ADD COLUMN intent TEXT NOT NULL DEFAULT 'rewrite'")
     if (!this.rows('PRAGMA table_info(workbench_prompt_turns)').some(column => column.name === 'candidate_json')) this.database.exec('ALTER TABLE workbench_prompt_turns ADD COLUMN candidate_json TEXT')
@@ -376,31 +374,16 @@ export class WorkbenchStore {
     if (workId) this.assertScope(workspaceId, workId, branchId)
     return this.rows('SELECT t.* FROM workbench_tasks t JOIN workbench_branches b ON b.branch_id=t.branch_id JOIN workbench_works w ON w.work_id=b.work_id WHERE w.workspace_id=? AND (? IS NULL OR w.work_id=?) AND (? IS NULL OR b.branch_id=?) ORDER BY t.created_at,t.rowid', workspaceId, workId ?? null, workId ?? null, branchId ?? null, branchId ?? null).map(row => this.task(row))
   }
-  getTranslation(requestId: string): TranslationRecord | null {
-    const row = this.row('SELECT * FROM workbench_translations WHERE request_id=?', requestId)
-    return row ? this.translation(row) : null
+  getTranslationLatest(scope: TranslationScope): TranslationLatest | null {
+    const row = this.row('SELECT * FROM workbench_prompt_translation_latest WHERE workspace_id=? AND work_id=? AND branch_id=? AND target=? AND field=?', scope.workspace_id, scope.work_id, scope.branch_id, scope.target, scope.field)
+    return row ? contracts.parse('translationLatest', 'output', row) : null
   }
-  private translation(row: Row): TranslationRecord {
-    const { text, error, ...record } = row
-    return { ...record, ...(text === null ? {} : { text }), ...(error === null ? {} : { error }) } as TranslationRecord
-  }
-  saveTranslation(record: TranslationRecord): TranslationRecord {
+  saveTranslationLatest(latest: TranslationLatest): TranslationLatest {
     return transaction(this.database, () => {
-      this.assertScope(record.workspace_id, record.work_id, record.branch_id)
-      const previous = this.getTranslation(record.request_id)
-      if (previous) {
-        if (!equalValue([previous.workspace_id, previous.work_id, previous.branch_id, previous.field, previous.source_text], [record.workspace_id, record.work_id, record.branch_id, record.field, record.source_text])) fail('WORKBENCH_EDIT_CONFLICT', '请求来源已改变，请使用新的请求 ID。', 'request_id')
-        if (previous.status !== 'running') return previous
-      }
-      this.run('INSERT INTO workbench_translations VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(request_id) DO UPDATE SET session_id=excluded.session_id,harness_turn=excluded.harness_turn,start_seq=excluded.start_seq,finished_at=excluded.finished_at,status=excluded.status,text=excluded.text,error=excluded.error', record.request_id, record.workspace_id, record.work_id, record.branch_id, record.field, record.source_text, record.session_id, record.harness_turn, record.start_seq, record.created_at, record.finished_at, record.status, record.status === 'succeeded' ? record.text : null, record.status === 'failed' ? record.error : null)
-      return this.getTranslation(record.request_id)!
+      this.assertScope(latest.workspace_id, latest.work_id, latest.branch_id)
+      this.database.prepare('INSERT INTO workbench_prompt_translation_latest VALUES(?,?,?,?,?,?,?) ON CONFLICT(workspace_id,work_id,branch_id,target,field) DO UPDATE SET source_text=excluded.source_text,text=excluded.text').run(latest.workspace_id, latest.work_id, latest.branch_id, latest.target, latest.field, latest.source_text, latest.text)
+      return this.getTranslationLatest(latest)!
     })
-  }
-  listTranslations(scope: { workspaceId: string; workId?: string }): TranslationRecord[] {
-    return this.rows('SELECT * FROM workbench_translations WHERE workspace_id=? AND (? IS NULL OR work_id=?) ORDER BY created_at,rowid', scope.workspaceId, scope.workId ?? null, scope.workId ?? null).map(row => this.translation(row))
-  }
-  listPendingTranslations(): Extract<TranslationRecord, { status: 'running' }>[] {
-    return this.rows("SELECT * FROM workbench_translations WHERE status='running' ORDER BY created_at,rowid").map(row => this.translation(row)).filter((record): record is Extract<TranslationRecord, { status: 'running' }> => record.status === 'running')
   }
   listPendingPromptTurns(): PromptTurn[] {
     return this.rows("SELECT request_id FROM workbench_prompt_turns WHERE status IN ('queued','running') ORDER BY created_at,rowid").map(row => this.getPromptTurn(String(row.request_id))!)
