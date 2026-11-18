@@ -22,36 +22,37 @@ const turn: PromptTurn = {
   created_at: 1000, finished_at: 2000, start_seq: 0,
 }
 
-async function comparisonFixture(status: 'running' | 'succeeded') {
+async function comparisonFixture(status: 'running' | 'succeeded' | 'interrupted', options?: { createNodeMock: (element: React.ReactElement) => unknown }) {
   vi.stubGlobal('document', new EventTarget())
   const current: PromptTurn = { ...turn, status, result: status === 'succeeded' ? turn.result : null,
     candidate: status === 'succeeded' ? { positive_prompt: 'new positive', negative_prompt: 'new negative' } : null }
   const editor = new PreparationEditor(makeBranch('source', null), { edit: async (_expected, draft) => draft, save: async () => {}, onError: vi.fn() })
-  const api: PromptEditingRemote = { promptStart: vi.fn(), promptGet: vi.fn(), promptList: vi.fn(async () => [current]),
+  const api: PromptEditingRemote = { promptStart: vi.fn(async request => ({ ...current, request_id: request.request_id, status: 'running' as const, result: null, candidate: null, input: { ...current.input, ...request.input } })), promptGet: vi.fn(), promptList: vi.fn(async () => [current]),
     promptCancel: vi.fn(async () => ({ ...current, status: 'interrupted' as const, result: null })),
     promptSaveCandidate: vi.fn(async request => ({ ...current, candidate: { positive_prompt: request.positive_prompt, negative_prompt: request.negative_prompt } })), promptAdopt: vi.fn() }
   const controller = new PromptEditingController({ workspace_id: 'workspace', work_id: 'work', branch_id: 'source' }, api, editor)
   editor.change({ prompt_edit_task_id: current.task_id })
   await controller.restore()
   controller.open(makeBinding('prompt'))
-  const translations = { translateStart: vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'running' as const })), translateGet: vi.fn(), translateCancel: vi.fn() }
+  const translations = { translate: vi.fn(async function* (request: { request_id: string }) { yield { request_id: request.request_id, status: 'succeeded' as const, text: '当前译文' } }) }
   function Dialog() {
     const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
     return state.open ? <ExperimentPromptDialog controller={controller} state={state} workspaceId="workspace" workId="work" branchId="source" originalRequest="肖像" baseModelName="SDXL" remote={translations} /> : null
   }
   let renderer: any
-  await act(() => { renderer = create(<Dialog />) }); mounts.push(renderer)
+  await act(() => { renderer = create(<Dialog />, options) }); mounts.push(renderer)
   return { controller, renderer, api, current }
 }
 
 it('saves failed local result edits from the close confirmation before closing', async () => {
   const { controller, renderer, api } = await comparisonFixture('succeeded')
   vi.mocked(api.promptSaveCandidate).mockRejectedValueOnce(new Error('生成结果保存失败'))
-  await act(() => renderer.root.findByProps({ 'aria-label': '生成的正向提示词' }).props.onChange({ target: { value: 'manual result to save' } }))
-  await vi.waitFor(() => expect(controller.getSnapshot().error).toBe('生成结果保存失败'))
+  await act(() => renderer.root.findByProps({ 'aria-label': '生成结果的正向提示词' }).props.onChange({ target: { value: 'manual result to save' } }))
+  await act(() => controller.saveResult())
+  expect(controller.getSnapshot().error).toBe('生成结果保存失败')
   await click(renderer, '关闭')
   expect(renderer.root.findByProps({ role: 'alertdialog' })).toBeDefined()
-  await click(renderer, '保存生成结果')
+  await click(renderer, '保存并关闭')
   await vi.waitFor(() => expect(controller.getSnapshot().open).toBe(false))
   expect(api.promptSaveCandidate).toHaveBeenCalledTimes(2)
   expect(api.promptSaveCandidate).toHaveBeenLastCalledWith({ workspace_id: 'workspace', request_id: turn.request_id, positive_prompt: 'manual result to save', negative_prompt: 'new negative' })
@@ -59,44 +60,103 @@ it('saves failed local result edits from the close confirmation before closing',
   controller.dispose()
 })
 
+it('continues editing and discards local edits without adopting or changing the saved candidate', async () => {
+  const { controller, renderer, api } = await comparisonFixture('succeeded')
+  await act(() => renderer.root.findByProps({ 'aria-label': '生成结果的正向提示词' }).props.onChange({ target: { value: 'discard this edit' } }))
+  await click(renderer, '关闭')
+  await click(renderer, '继续编辑')
+  expect(controller.getSnapshot()).toMatchObject({ open: true, confirmClose: false, resultDirty: true, result: { positive_prompt: 'discard this edit' } })
+  await click(renderer, '关闭')
+  await click(renderer, '放弃修改')
+  expect(controller.getSnapshot()).toMatchObject({ open: false, confirmClose: false, resultDirty: false, result: { positive_prompt: 'new positive' } })
+  await act(() => controller.open(makeBinding('prompt')))
+  expect(renderer.root.findByProps({ 'aria-label': '生成结果的正向提示词' }).props.value).toBe('new positive')
+  expect(api.promptSaveCandidate).not.toHaveBeenCalled()
+  expect(api.promptAdopt).not.toHaveBeenCalled()
+  controller.dispose()
+})
+
 it('stops the displayed running request and renders its persisted interruption notification', async () => {
   const { controller, renderer, api, current } = await comparisonFixture('running')
-  await click(renderer, '停止')
+  await click(renderer, '停止改写')
   expect(api.promptCancel).toHaveBeenCalledExactlyOnceWith({ workspace_id: 'workspace', request_id: current.request_id })
   expect(controller.getSnapshot().busy).toBe(true)
   await act(() => controller.receiveRecords([{ ...current, status: 'interrupted' }], new Set([current.task_id])))
-  expect(nodeText(renderer.root)).toContain('提示词请求已停止。')
+  expect(nodeText(renderer.root)).toContain('改写已停止')
   expect(controller.getSnapshot().busy).toBe(false)
   controller.dispose()
 })
 
-it('keeps a previous translation visible after the comparison result changes', async () => {
-  vi.stubGlobal('document', new EventTarget())
-  const branch = makeBranch('source', null)
-  const editor = new PreparationEditor(branch, { edit: async (_expected, draft) => draft, save: async () => {}, onError: vi.fn() })
-  const completed = { ...turn, input: { ...turn.input, negative_prompt: '' }, result: { ...turn.result!, negative_prompt: '' } }
-  const api: PromptEditingRemote = { promptStart: vi.fn(), promptGet: vi.fn(), promptList: vi.fn(async () => [completed]), promptCancel: vi.fn(), promptSaveCandidate: vi.fn(), promptAdopt: vi.fn() }
-  const controller = new PromptEditingController({ workspace_id: 'workspace', work_id: 'work', branch_id: 'source' }, api, editor)
-  editor.change({ prompt_edit_task_id: completed.task_id })
-  await controller.restore()
-  controller.open(makeBinding('prompt'))
-  const record = { request_id: 'translation-a', workspace_id: 'workspace', work_id: 'work', branch_id: 'source', field: 'positive_prompt' as const, source_text: 'old positive', text: '原提示词译文', status: 'succeeded' as const, session_id: 'translation-session', harness_turn: 1, start_seq: 0, created_at: 1, finished_at: 2 }
-  const failed = { ...record, request_id: 'failed-translation', status: 'failed' as const, text: undefined, error: '翻译连接失败', created_at: 0 }
-  const remote = { translateStart: vi.fn(async (request: import('../../src/workbench/translation.ts').TranslationRequest) => ({ request_id: request.request_id, status: 'running' as const })), translateGet: vi.fn(), translateCancel: vi.fn() }
-  let renderer: any
-  await act(() => { renderer = create(<WorkbenchDeliveryContext.Provider value={{ promptTurns: [], translations: [failed, record] }}>
-    <ExperimentPromptDialog controller={controller} state={controller.getSnapshot()} workspaceId="workspace" workId="work" branchId="source" originalRequest="肖像" baseModelName="SDXL" remote={remote} />
-  </WorkbenchDeliveryContext.Provider>) }); mounts.push(renderer)
-  expect(remote.translateStart).not.toHaveBeenCalled()
-  const after = renderer.root.findAllByProps({ className: 'prompt-translation' })[1]
-  expect(nodeText(after)).toContain('old positive')
-  expect(nodeText(after)).toContain('原提示词译文')
-  await act(() => after.findByProps({ 'aria-label': '翻译记录' }).props.onChange({ target: { value: failed.request_id } }))
-  expect(nodeText(after)).toContain('翻译连接失败')
-  await act(() => after.findAllByType('button').find((button: any) => nodeText(button) === '重试翻译').props.onClick())
-  expect(remote.translateStart).toHaveBeenCalledWith(expect.objectContaining({ source_text: 'old positive' }))
-  await act(() => after.findAllByType('button').find((button: any) => nodeText(button) === '翻译当前提示词').props.onClick())
-  expect(remote.translateStart).toHaveBeenCalledWith(expect.objectContaining({ source_text: 'new positive' }))
+it('keeps manual edits and current translations independent across positive and negative tabs', async () => {
+  const { controller, renderer } = await comparisonFixture('succeeded')
+  await act(() => renderer.root.findByProps({ 'aria-label': '生成结果的正向提示词' }).props.onChange({ target: { value: 'manual positive' } }))
+  await act(() => renderer.root.findAllByProps({ role: 'tab' }).find((tab: any) => nodeText(tab) === '负向提示词').props.onClick())
+  await act(() => renderer.root.findByProps({ 'aria-label': '生成结果的负向提示词' }).props.onChange({ target: { value: 'manual negative' } }))
+  await act(() => renderer.root.findAllByProps({ role: 'tab' }).find((tab: any) => nodeText(tab) === '正向提示词').props.onClick())
+  expect(renderer.root.findByProps({ 'aria-label': '生成结果的正向提示词' }).props.value).toBe('manual positive')
+  expect(controller.getSnapshot().result).toEqual({ positive_prompt: 'manual positive', negative_prompt: 'manual negative' })
+  expect(nodeText(renderer.root)).toContain('原文已修改，请重新翻译。')
+  expect(renderer.root.findAllByType('select')).toHaveLength(0)
+  controller.dispose()
+})
+
+it('copies each column original and current translation and expands the original requirement', async () => {
+  const writeText = vi.fn(async () => {})
+  vi.stubGlobal('navigator', { clipboard: { writeText } })
+  const { controller, renderer } = await comparisonFixture('succeeded')
+  for (const [title, source] of [['改写前', 'old positive'], ['生成结果', 'new positive']]) {
+    const column = renderer.root.findByProps({ 'aria-label': title })
+    await act(() => column.findByProps({ 'aria-label': `复制原文：${title}的正向提示词` }).props.onClick())
+    expect(writeText).toHaveBeenLastCalledWith(source)
+    await act(() => column.findAllByType('button').find((button: any) => nodeText(button) === '复制译文').props.onClick())
+    expect(writeText).toHaveBeenLastCalledWith('当前译文')
+  }
+  expect(writeText).toHaveBeenCalledTimes(4)
+  expect(renderer.root.findByProps({ 'aria-expanded': false })).toBeDefined()
+  await click(renderer, '展开')
+  expect(renderer.root.findByProps({ 'aria-expanded': true })).toBeDefined()
+  expect(nodeText(renderer.root.findByProps({ className: 'pc-requirement is-open' }))).toContain('肖像')
+  await click(renderer, '收起')
+  expect(renderer.root.findByProps({ 'aria-expanded': false })).toBeDefined()
+  controller.dispose()
+})
+
+it('restores each prompt field reading position after tab changes', async () => {
+  const elements = new Map<string, { scrollTop: number }[]>()
+  const { controller, renderer } = await comparisonFixture('succeeded', { createNodeMock: element => {
+    if (element.type !== 'textarea') return null
+    const label = (element.props as { 'aria-label': string })['aria-label']
+    const mock = { scrollTop: 0 }
+    elements.set(label, [...(elements.get(label) ?? []), mock])
+    return mock
+  } })
+  const read = (label: string, scrollTop: number) => act(() => renderer.root.findByProps({ 'aria-label': label }).props.onScroll({ currentTarget: { scrollTop } }))
+  const select = (label: string) => act(() => renderer.root.findAllByProps({ role: 'tab' }).find((tab: any) => nodeText(tab) === label).props.onClick())
+  await read('改写前的正向提示词', 120)
+  await read('生成结果的正向提示词', 240)
+  await select('负向提示词')
+  await read('改写前的负向提示词', 35)
+  await read('生成结果的负向提示词', 75)
+  await select('正向提示词')
+  expect(elements.get('改写前的正向提示词')!.at(-1)!.scrollTop).toBe(120)
+  expect(elements.get('生成结果的正向提示词')!.at(-1)!.scrollTop).toBe(240)
+  await select('负向提示词')
+  expect(elements.get('改写前的负向提示词')!.at(-1)!.scrollTop).toBe(35)
+  expect(elements.get('生成结果的负向提示词')!.at(-1)!.scrollTop).toBe(75)
+  controller.dispose()
+})
+
+it('rewrites the edited before fields after stopping and closes with Escape', async () => {
+  const { controller, renderer, api } = await comparisonFixture('interrupted')
+  expect(renderer.root.findByProps({ 'aria-label': '改写前的正向提示词' }).props.readOnly).toBe(false)
+  await act(() => renderer.root.findByProps({ 'aria-label': '改写前的正向提示词' }).props.onChange({ target: { value: 'edited portrait' } }))
+  await act(() => renderer.root.findAllByProps({ role: 'tab' }).find((tab: any) => nodeText(tab) === '负向提示词').props.onClick())
+  await act(() => renderer.root.findByProps({ 'aria-label': '改写前的负向提示词' }).props.onChange({ target: { value: 'edited blur' } }))
+  await act(() => renderer.root.findByProps({ 'aria-label': '改动意见' }).props.onChange({ target: { value: 'change lighting' } }))
+  await click(renderer, '改写提示词')
+  expect(api.promptStart).toHaveBeenCalledWith(expect.objectContaining({ input: expect.objectContaining({ positive_prompt: 'edited portrait', negative_prompt: 'edited blur', change_request: 'change lighting' }) }))
+  await act(() => document.dispatchEvent(Object.assign(new Event('keydown'), { key: 'Escape' })))
+  expect(controller.getSnapshot().open).toBe(false)
   controller.dispose()
 })
 

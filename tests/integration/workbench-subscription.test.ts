@@ -23,7 +23,7 @@ it('limits snapshots and completed media to the requested work while retaining c
   })
   const cancellation = new AbortController()
   try {
-    const owned: { workId: string; branchId: string; taskId: string; runId: string; translationId: string }[] = []
+    const owned: { workId: string; branchId: string; taskId: string; runId: string }[] = []
     for (const name of ['Selected', 'Other']) {
       const { work, branch } = host.store.createWork({ workspaceId: 'workspace_1', name, goal: 'Rain' })
       host.store.saveBranchDraft({ workspaceId: 'workspace_1', workId: work.work_id, branchId: branch.branch_id, expected: branch.draft, draft: { ...branch.draft, generation_input: { ...branch.draft.generation_input, instance_id: '8', template_id: '5' } } })
@@ -33,9 +33,7 @@ it('limits snapshots and completed media to the requested work while retaining c
       const runId = accepted.items[0]!.runId
       for (let step = 0; step < 5; step++) await host.runtime.advance()
       await host.ctx.harnessComfyuiWorkbench.service.publish({ taskId: task.task_id, artifact: { type: 'review', observation: 'Rain is visible', conclusion: 'Keep the input', run_ids: [runId] } }, identity)
-      const translationId = `translation-${name}`
-      await host.remote.translateStart({ workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, request_id: translationId, field: 'positive_prompt', source_text: 'rain' }, cancellation.signal)
-      owned.push({ workId: work.work_id, branchId: branch.branch_id, taskId: task.task_id, runId, translationId })
+      owned.push({ workId: work.work_id, branchId: branch.branch_id, taskId: task.task_id, runId })
     }
     const selected = owned[0]!
     const iterator = host.remote.subscribe({ workspaceId: 'workspace_1', workIds: [selected.workId] }, cancellation.signal)[Symbol.asyncIterator]()
@@ -47,7 +45,7 @@ it('limits snapshots and completed media to the requested work while retaining c
     expect(snapshot.projection.experiments.map(experiment => experiment.task_id)).toEqual([selected.taskId])
     expect(snapshot.projection.runs.map(run => run.run_id)).toEqual([selected.runId])
     expect(snapshot.projection.runs[0]!.media).toEqual([expect.objectContaining({ url: expect.stringContaining('/content?session_id='), download_url: expect.stringContaining('/download?session_id=') })])
-    expect(snapshot.translations.map(record => record.request_id)).toEqual([selected.translationId])
+    expect(snapshot).not.toHaveProperty('translations')
     cancellation.abort()
     expect(await iterator.next()).toMatchObject({ done: true })
   } finally { cancellation.abort(); await host.dispose() }
@@ -78,7 +76,7 @@ it('delivers committed snapshots in order and releases a cancelled subscription'
   try {
     const stream = host.remote.subscribe({ workspaceId: 'workspace_1' }, cancellation.signal)[Symbol.asyncIterator]()
     const first = await stream.next()
-    expect(first.value).toMatchObject({ kind: 'snapshot', projection: { tasks: [] }, promptTurns: [], translations: [] })
+    expect(first.value).toMatchObject({ kind: 'snapshot', projection: { tasks: [] }, promptTurns: [] })
     const created = host.store.createWork({ workspaceId: 'workspace_1', name: 'Rain', goal: 'Rain' })
     const second = await stream.next()
     expect(second.value.kind).toBe('change')
@@ -127,9 +125,11 @@ it('keeps a completed translation available after the display is closed and igno
   const host = await createWorkbenchHostFixture()
   try {
     const { work, branch } = host.store.createWork({ workspaceId: 'workspace_1', name: 'Rain', goal: 'Rain' })
-    const request = { workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, field: 'positive_prompt' as const, request_id: 'translation-event', source_text: 'rain' }
-    await host.remote.translateStart(request, new AbortController().signal)
-    const record = host.store.getTranslation(request.request_id)!
+    const request = { workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, target: 'before' as const, field: 'positive_prompt' as const, request_id: 'translation-event', source_text: 'rain' }
+    const stream = host.remote.translate(request, new AbortController().signal)[Symbol.asyncIterator]()
+    await stream.next()
+    await vi.waitFor(() => expect(host.official.controller.prompt).toHaveBeenCalledOnce())
+    const { sessionId } = await host.official.controller.create.mock.results.at(-1)!.value
     const events = [
       { type: 'turn/start', seq: 1, data: { turn: 1 } },
       { type: 'user/message', seq: 2, data: { source: { kind: 'user', rpcId: request.request_id } } },
@@ -138,9 +138,14 @@ it('keeps a completed translation available after the display is closed and igno
       { type: 'turn/start', seq: 5, data: { turn: 2 } },
       { type: 'assistant/message', seq: 6, data: { turn: 2, message: { content: [{ type: 'text', text: 'wrong' }] } } },
     ] as unknown as SessionEvent[]
-    host.official.events.set(record.session_id, events)
-    host.ctx.emit('session/event', { id: record.session_id } as Session, events[3]!)
-    await vi.waitFor(() => expect(host.store.getTranslation(request.request_id)).toMatchObject({ status: 'succeeded', text: '雨', source_text: 'rain' }))
+    host.official.events.set(sessionId, events)
+    host.ctx.emit('session/event', { id: sessionId } as Session, events[3]!)
+    expect((await stream.next()).value).toEqual({ request_id: request.request_id, status: 'succeeded', text: '雨' })
+    await stream.return?.()
+    const restored = host.remote.translate({ ...request, request_id: 'reopened' }, new AbortController().signal)[Symbol.asyncIterator]()
+    expect((await restored.next()).value).toEqual({ request_id: 'reopened', status: 'succeeded', text: '雨' })
+    await restored.return?.()
+    expect(host.official.controller.create).toHaveBeenCalledOnce()
     expect(host.official.controller.cancel).not.toHaveBeenCalled()
   } finally { await host.dispose() }
 })

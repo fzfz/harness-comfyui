@@ -46,18 +46,22 @@ it('treats prompt dispatch as request acceptance without completing or applying 
   controller.dispose()
 })
 
-it('keeps translation execution active when its display closes and never starts status polling', async () => {
-  vi.useFakeTimers()
+it('cancels the current translation when its display closes', async () => {
   vi.stubGlobal('document', new EventTarget())
-  const remote = { translateStart: vi.fn(async (request: { request_id: string }) => ({ request_id: request.request_id, status: 'running' as const })), translateGet: vi.fn(), translateCancel: vi.fn() }
+  let signal!: AbortSignal
+  const remote = { translate: vi.fn(async function* (request: { request_id: string }, abort?: AbortSignal) {
+    signal = abort!
+    yield { request_id: request.request_id, status: 'running' as const }
+    await new Promise<void>(resolve => abort!.addEventListener('abort', () => resolve(), { once: true }))
+  }) }
   let renderer!: ReturnType<typeof create>
   await act(() => { renderer = create(<ExperimentTranslationDialog workId="work" branchId="source" workspaceId="workspace" initialField="positive_prompt" prompts={{ positive_prompt: 'portrait', negative_prompt: '' }} remote={remote} modelLabel="翻译模型" onClose={vi.fn()} />) })
   mounted.push(renderer)
-  await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
-  expect(remote.translateGet).not.toHaveBeenCalled()
+  expect(signal.aborted).toBe(false)
   await act(() => renderer.unmount())
   mounted.pop()
-  expect(remote.translateCancel).not.toHaveBeenCalled()
+  expect(signal.aborted).toBe(true)
+  expect(remote.translate).toHaveBeenCalledOnce()
 })
 
 it.each(['query-first', 'snapshot-first'] as const)('keeps the completion snapshot and rejects older or foreign updates: %s', async order => {
@@ -67,11 +71,11 @@ it.each(['query-first', 'snapshot-first'] as const)('keeps the completion snapsh
   store.setWorkspace(baseline.workspace_id)
   const completed = { ...baseline, favorites: [{ target_type: 'run' as const, target_id: 'completed' }] }
   if (order === 'query-first') { resolve(baseline); await Promise.resolve(); await Promise.resolve() }
-  store.receive({ kind: 'snapshot', sequence: 8, projection: completed, promptTurns: [], translations: [] })
+  store.receive({ kind: 'snapshot', sequence: 8, projection: completed, promptTurns: [] })
   if (order === 'snapshot-first') resolve(baseline)
   await Promise.resolve(); await Promise.resolve()
-  store.receive({ kind: 'change', sequence: 7, projection: baseline, promptTurns: [], translations: [] })
-  store.receive({ kind: 'change', sequence: 9, projection: { ...baseline, workspace_id: 'foreign' }, promptTurns: [], translations: [] })
+  store.receive({ kind: 'change', sequence: 7, projection: baseline, promptTurns: [] })
+  store.receive({ kind: 'change', sequence: 9, projection: { ...baseline, workspace_id: 'foreign' }, promptTurns: [] })
   expect(store.getSnapshot().projection?.favorites).toEqual([{ target_type: 'run', target_id: 'completed' }])
   store.dispose()
 })
@@ -115,13 +119,13 @@ it('accepts a new connection snapshot and ignores a late update from its release
   let release!: () => void
   const gate = new Promise<void>(resolve => { release = resolve })
   store.connect(async function* () {
-    yield { kind: 'snapshot', sequence: 3, projection: baseline, promptTurns: [], translations: [] }
+    yield { kind: 'snapshot', sequence: 3, projection: baseline, promptTurns: [] }
     await gate
-    yield { kind: 'change', sequence: 99, projection: baseline, promptTurns: [], translations: [] }
+    yield { kind: 'change', sequence: 99, projection: baseline, promptTurns: [] }
   })
   await Promise.resolve(); await Promise.resolve()
   const completed = { ...baseline, favorites: [{ target_type: 'run' as const, target_id: 'completed-offline' }] }
-  store.connect(async function* () { yield { kind: 'snapshot', sequence: 0, projection: completed, promptTurns: [], translations: [] } })
+  store.connect(async function* () { yield { kind: 'snapshot', sequence: 0, projection: completed, promptTurns: [] } })
   await vi.waitFor(() => expect(store.getSnapshot().projection?.favorites).toEqual(completed.favorites))
   release()
   await Promise.resolve(); await Promise.resolve()

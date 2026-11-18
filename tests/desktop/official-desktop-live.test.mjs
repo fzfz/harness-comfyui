@@ -59,6 +59,7 @@ import { collectOfficialSessionTrace } from '../../scripts/verification/collect-
 import translationConfig from '../../config/workbench-translation.json' with { type: 'json' }
 import translationFixture from './fixtures/official-translation-fixture.json' with { type: 'json' }
 import { assertTranslationPresetObservation } from './fixtures/official-translation-acceptance.mjs'
+import { PROMPT_COMPARISON_EVIDENCE_FILES, verifyPromptComparison, verifyPromptComparisonPersistence } from './fixtures/prompt-comparison-acceptance.mjs'
 
 const sourceRepositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -91,6 +92,7 @@ const RETIRED_BUSINESS_TOOL_NAMES = ['query_semantic_comfyui_instances', 'query_
 const PRESET_SKILL_NAMES = { standard: ['dsh-doc'], ptc: [], cordis: ['dsh-doc'] }
 const EXPERIMENT_BRANCH_VIEWPORT_WIDTHS = [1024, 1280, 1440]
 const DURABLE_BUSINESS_EVIDENCE_FILES = [
+  ...PROMPT_COMPARISON_EVIDENCE_FILES,
   'official-business-branch-sidebar.json',
   'official-business-branch-sidebar-failure.png',
   ...EXPERIMENT_BRANCH_VIEWPORT_WIDTHS.flatMap(width => ['resources', 'tasks'].map(tab =>
@@ -3358,6 +3360,7 @@ description: ${USER_SKILL_DESCRIPTION}
     let identity
     let mediaFixture
     let generationEvidence
+    let promptComparisonEvidence
     let goalEvidence
     let goalRestartResponse
     let generationRestartEvidence
@@ -3570,6 +3573,12 @@ description: ${USER_SKILL_DESCRIPTION}
       })
       await verifyTranslationPresetScope(page, promptCapture, mcp, presetSessions.translationSessionId,
         dirname(installation.installedPackagePath), context.businessEvidenceDirectory)
+      promptComparisonEvidence = await verifyPromptComparison(page, promptCapture, {
+        workspaceId: identity.workspaceId, evidenceDirectory: context.businessEvidenceDirectory,
+        agentModel: { provider: OFFICIAL_BUSINESS_FIXTURE.provider.id, model: OFFICIAL_BUSINESS_FIXTURE.provider.modelId },
+        baseModelId: String(OFFICIAL_BUSINESS_FIXTURE.catalog.baseModel.id),
+        identity: { runId: run.record.runId, sourceIdentity, packageVersion: installation.installedPackageVersion },
+      })
       await verifyPackagedSkillReads(
         page,
         promptCapture,
@@ -4543,6 +4552,10 @@ description: ${USER_SKILL_DESCRIPTION}
       generationRestartEvidence = await verifyGenerationAfterRestart(
         page, generationEvidence, context.businessEvidenceDirectory,
       )
+      await verifyPromptComparisonPersistence(page, promptCapture, {
+        ...promptComparisonEvidence,
+        identity: { runId: finalRun.record.runId, sourceIdentity, packageVersion: installation.installedPackageVersion },
+      }, context.businessEvidenceDirectory, 'restart')
       await verifyWorkflowBrowserSettings(page, context, desktopConfig, profileYamlAdapter, savedBrowserPath)
       installation.artifactComparisonsAfterRestart = await compareOfficialCandidateFiles({
         sourceIdentity,

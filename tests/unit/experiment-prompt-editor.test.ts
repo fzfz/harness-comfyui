@@ -26,6 +26,7 @@ describe('prompt editing at the source branch', () => {
     controller.open(makeBinding('prompt'))
     vi.mocked(remote.promptSaveCandidate).mockRejectedValueOnce(new Error('保存失败，请重试。'))
     controller.editResult({ positive_prompt: 'edited while comparing', negative_prompt: 'blur' })
+    await controller.saveResult()
     await vi.waitFor(() => expect(controller.getSnapshot().error).toBe('保存失败，请重试。'))
     await controller.saveResult()
     expect(remote.promptSaveCandidate).toHaveBeenCalledTimes(2)
@@ -34,11 +35,11 @@ describe('prompt editing at the source branch', () => {
     controller.dispose()
   })
   it.each([
-    { name: 'saved generation', intent: 'generate' as const, candidate: null, adopted: null, allowed: false },
+    { name: 'saved generation', intent: 'generate' as const, candidate: null, adopted: null, allowed: true },
     { name: 'generation conflict', intent: 'generate' as const, candidate: { positive_prompt: 'portrait', negative_prompt: '' }, adopted: null, allowed: true },
-    { name: 'adopted candidate', intent: 'rewrite' as const, candidate: { positive_prompt: 'portrait', negative_prompt: '' }, adopted: { positive_prompt: 'portrait', negative_prompt: '' }, allowed: false },
+    { name: 'adopted candidate', intent: 'rewrite' as const, candidate: { positive_prompt: 'portrait', negative_prompt: '' }, adopted: { positive_prompt: 'portrait', negative_prompt: '' }, allowed: true },
     { name: 'edited after adoption', intent: 'rewrite' as const, candidate: { positive_prompt: 'changed portrait', negative_prompt: '' }, adopted: { positive_prompt: 'portrait', negative_prompt: '' }, allowed: true },
-  ])('adopts only an explicit pending candidate: $name', async value => {
+  ])('adopts the current completed result: $name', async value => {
     const { controller, remote, editor, turn } = fixture()
     const saved = { ...turn, intent: value.intent, candidate: value.candidate, adopted: value.adopted, applied_at: value.adopted ? 3 : null }
     vi.mocked(remote.promptList).mockResolvedValue([saved])
@@ -165,6 +166,23 @@ describe('prompt editing at the source branch', () => {
     expect(controller.getSnapshot()).toMatchObject({ busy: false, turn: { status: 'interrupted' } })
     controller.dispose()
   })
+  it('keeps edits pending until save and continues rewriting from both edited fields', async () => {
+    const { controller, remote, editor, turn } = fixture()
+    editor.change({ prompt_edit_task_id: turn.task_id })
+    await controller.restore()
+    controller.open(makeBinding('prompt'))
+    controller.editResult({ positive_prompt: 'edited portrait', negative_prompt: 'edited blur' })
+    await Promise.resolve()
+    expect(remote.promptSaveCandidate).not.toHaveBeenCalled()
+    controller.close()
+    expect(controller.getSnapshot()).toMatchObject({ confirmClose: true, resultDirty: true })
+    controller.continueEditing()
+    controller.setChangeRequest('change lighting')
+    await controller.start()
+    expect(remote.promptSaveCandidate).toHaveBeenCalledWith(expect.objectContaining({ positive_prompt: 'edited portrait', negative_prompt: 'edited blur' }))
+    expect(remote.promptStart).toHaveBeenCalledWith(expect.objectContaining({ input: expect.objectContaining({ positive_prompt: 'edited portrait', negative_prompt: 'edited blur', change_request: 'change lighting' }) }))
+    controller.dispose()
+  })
   it.each(['queued', 'submitted'] as const)('discards candidate edits in storage after a %s save', async state => {
     const { controller, remote, editor, turn } = fixture()
     const original = { positive_prompt: 'original candidate', negative_prompt: 'original negative' }
@@ -180,6 +198,7 @@ describe('prompt editing at the source branch', () => {
       return { ...turn, candidate: stored }
     })
     controller.editResult({ positive_prompt: 'discarded candidate', negative_prompt: 'discarded negative' })
+    void controller.saveResult()
     if (state === 'submitted') await vi.waitFor(() => expect(remote.promptSaveCandidate).toHaveBeenCalledOnce())
     const discarding = controller.discardResult()
     release()
@@ -202,6 +221,7 @@ describe('prompt editing at the source branch', () => {
       .mockRejectedValueOnce(new Error('恢复生成结果失败，请重试。'))
       .mockImplementation(async request => { stored = { positive_prompt: request.positive_prompt, negative_prompt: request.negative_prompt }; return { ...turn, candidate: stored } })
     controller.editResult({ positive_prompt: 'discarded candidate', negative_prompt: '' })
+    void controller.saveResult()
     await vi.waitFor(() => expect(remote.promptSaveCandidate).toHaveBeenCalledOnce())
     controller.close()
     const discarding = controller.discardResult()
@@ -220,6 +240,7 @@ describe('prompt editing at the source branch', () => {
     let failSave!: (reason: Error) => void
     vi.mocked(remote.promptSaveCandidate).mockImplementationOnce(() => new Promise((_resolve, reject) => { failSave = reject }))
     controller.editResult({ positive_prompt: 'A local edit', negative_prompt: '' })
+    void controller.saveResult()
     await vi.waitFor(() => expect(remote.promptSaveCandidate).toHaveBeenCalledOnce())
     const other = { ...turn, task_id: 'task-b', request_id: 'request-b', candidate: { positive_prompt: 'B candidate', negative_prompt: '' } }
     vi.mocked(remote.promptList).mockResolvedValue([other])
@@ -258,6 +279,7 @@ describe('prompt editing at the source branch', () => {
     let release!: (turn: PromptTurn) => void
     vi.mocked(remote.promptSaveCandidate).mockImplementationOnce(() => new Promise(resolve => { release = resolve }))
     controller.editResult({ positive_prompt: 'manual candidate', negative_prompt: 'blur' })
+    void controller.saveResult()
     controller.close()
     expect(controller.getSnapshot()).toMatchObject({ confirmClose: true, resultDirty: true })
     await Promise.resolve()

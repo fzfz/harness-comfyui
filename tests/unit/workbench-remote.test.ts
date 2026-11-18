@@ -38,13 +38,27 @@ it('imports image bytes and resolves each reference independently through the mo
   } finally { await host.dispose() }
 })
 
-it('starts, reads and cancels isolated translations through the mounted Remote', async () => {
+it('reports empty translation input through the mounted stream without starting an Agent', async () => {
   const host = await createWorkbenchHostFixture()
   try {
-    const signal = new AbortController().signal
     const { work, branch } = host.store.createWork({ workspaceId: 'workspace_1', name: 'Translation', goal: 'Translate prompts' })
-    const request = { request_id: 'translate-positive', workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, field: 'positive_prompt' as const, source_text: '(light:1.2)\n<lora:portrait:0.7>' }
-    expect(await host.remote.translateStart(request, signal)).toEqual({ request_id: request.request_id, status: 'running' })
+    const stream = host.remote.translate({ request_id: 'empty-source', workspace_id: 'workspace_1', work_id: work.work_id,
+      branch_id: branch.branch_id, target: 'draft', field: 'positive_prompt', source_text: '   ' }, new AbortController().signal)
+    await expect(stream[Symbol.asyncIterator]().next()).rejects.toMatchObject({ message: '请先填写提示词，再翻译。',
+      details: { code: 'WORKBENCH_TRANSLATION_EMPTY', issues: [{ path: 'source_text', message: '请先填写提示词，再翻译。' }] } })
+    expect(host.official.controller.create).not.toHaveBeenCalled()
+  } finally { await host.dispose() }
+})
+
+it('streams, reuses and cancels translations through the mounted Remote', async () => {
+  const host = await createWorkbenchHostFixture()
+  try {
+    const cancellation = new AbortController()
+    const { work, branch } = host.store.createWork({ workspaceId: 'workspace_1', name: 'Translation', goal: 'Translate prompts' })
+    const request = { request_id: 'translate-positive', workspace_id: 'workspace_1', work_id: work.work_id, branch_id: branch.branch_id, target: 'draft' as const, field: 'positive_prompt' as const, source_text: '(light:1.2)\n<lora:portrait:0.7>' }
+    const stream = host.remote.translate(request, cancellation.signal)[Symbol.asyncIterator]()
+    expect((await stream.next()).value).toEqual({ request_id: request.request_id, status: 'running' })
+    await vi.waitFor(() => expect(host.official.controller.prompt).toHaveBeenCalledOnce())
     const created = await host.official.controller.create.mock.results.at(-1)!.value
     const binding = host.store.getFunctionBinding('workspace_1', 'translate')
     expect(host.official.controller.create).toHaveBeenLastCalledWith({ workspaceId: 'workspace_1', agentPreset: binding.preset_id })
@@ -57,13 +71,21 @@ it('starts, reads and cancels isolated translations through the mounted Remote',
       { type: 'turn/end', seq: 3, data: { turn: 1, reason: { kind: 'completed' } } },
     ] as SessionEvent[])
     await host.ctx.harnessComfyuiWorkbench.translations.handleSessionEvents(created.sessionId)
-    expect(await host.remote.translateGet({ request_id: request.request_id }, signal)).toEqual({ request_id: request.request_id, status: 'succeeded', text: '(光线:1.2)\n<lora:portrait:0.7>' })
-    await host.remote.translateStart({ ...request, request_id: 'translate-cancelled', source_text: 'blur' }, signal)
+    expect((await stream.next()).value).toEqual({ request_id: request.request_id, status: 'succeeded', text: '(光线:1.2)\n<lora:portrait:0.7>' })
+    expect(await stream.next()).toMatchObject({ done: true })
+    const cached = host.remote.translate({ ...request, request_id: 'cached' }, cancellation.signal)[Symbol.asyncIterator]()
+    expect((await cached.next()).value).toMatchObject({ request_id: 'cached', status: 'succeeded', text: '(光线:1.2)\n<lora:portrait:0.7>' })
+    await cached.next()
+    expect(host.official.controller.create).toHaveBeenCalledOnce()
+    const interrupted = host.remote.translate({ ...request, request_id: 'translate-cancelled', source_text: 'blur' }, cancellation.signal)[Symbol.asyncIterator]()
+    await interrupted.next()
+    await vi.waitFor(() => expect(host.official.controller.prompt).toHaveBeenCalledTimes(2))
     const cancelled = await host.official.controller.create.mock.results.at(-1)!.value
-    expect(cancelled.sessionId).not.toBe(created.sessionId)
-    expect(await host.remote.translateCancel({ request_id: 'translate-cancelled' }, signal)).toMatchObject({ request_id: 'translate-cancelled', status: 'failed' })
+    const pending = interrupted.next()
+    cancellation.abort()
+    expect(await pending).toMatchObject({ done: true })
     expect(host.official.controller.cancel).toHaveBeenLastCalledWith({ sessionId: cancelled.sessionId })
-    expect(await host.remote.translateGet({ request_id: 'translate-cancelled' }, signal)).toMatchObject({ request_id: 'translate-cancelled', status: 'failed' })
+    expect(host.store.getTranslationLatest(request)).toMatchObject({ source_text: request.source_text, text: '(光线:1.2)\n<lora:portrait:0.7>' })
     expect(host.store.getProjection({ workspaceId: 'workspace_1' }).tasks).toEqual([])
   } finally { await host.dispose() }
 })
@@ -141,15 +163,21 @@ function fixture() {
   return { remote: new WorkbenchRemoteService(context), initializeWorkspace, getProjection, environment }
 }
 
+it('declares translation replies as a RemoteStream', () => {
+  expect(WORKBENCH_REMOTE.descriptors.find(descriptor => descriptor.method === 'translate')?.mode).toBe('stream')
+})
+
 it('validates record, image and translation request and result codecs by operation', () => {
   const image = { image_ref_id: 'image-1', source: { kind: 'uploaded_file', file_id: 'file-1' }, purpose: 'workflow', reference_requirement: '' }
   const cases = [
     { method: 'queryRecords', request: { type: 'run', workspaceId: 'workspace_1', keyword: 'Rain' }, result: [{ type: 'run', id: 'run_1', workspace_id: 'workspace_1', work_id: 'work_1', branch_id: 'branch_1', task_id: null, title: 'Rain', run: projection().runs[0] }], badRequest: { type: 'image' }, badResult: [{}] },
     { method: 'importImages', request: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [0, 255] }] }, result: { images: [image] }, badRequest: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [256] }] }, badResult: { images: [{ ...image, purpose: 'unknown' }] } },
     { method: 'resolveImages', request: { image_refs: [image] }, result: { images: [{ image_ref_id: 'image-1', file_path: '/images/reference.png', name: 'reference.png', url: '/api/reference.png' }] }, badRequest: { image_refs: [{ ...image, source: { kind: 'uploaded_file' } }] }, badResult: { images: [{ image_ref_id: 'image-1', file_path: 7 }] } },
-    { method: 'translateStart', request: { request_id: 'translation-1', workspace_id: 'workspace_1', work_id: 'work_1', branch_id: 'branch_1', field: 'positive_prompt', source_text: '(warm light:1.2)' }, result: { request_id: 'translation-1', status: 'running' }, badRequest: { request_id: 'translation-1', workspace_id: 'workspace_1', source_text: '' }, badResult: { request_id: 'translation-1', status: 'unknown' } },
-    { method: 'translateGet', request: { request_id: 'translation-1' }, result: { request_id: 'translation-1', status: 'succeeded', text: '（暖光：1.2）' }, badRequest: {}, badResult: { request_id: 'translation-1', status: 'succeeded', text: 7 } },
-    { method: 'translateCancel', request: { request_id: 'translation-1' }, result: { request_id: 'translation-1', status: 'failed', error: 'Translation was cancelled.' }, badRequest: { request_id: '' }, badResult: { request_id: 'translation-1', status: 'failed', error: 7 } },
+    ...[
+      { status: 'running' },
+      { status: 'succeeded', text: '（暖光：1.2）' },
+      { status: 'failed', error: 'Translation failed.' },
+    ].map(result => ({ method: 'translate', request: { request_id: 'translation-1', workspace_id: 'workspace_1', work_id: 'work_1', branch_id: 'branch_1', target: 'before', field: 'positive_prompt', source_text: '(warm light:1.2)' }, result: { request_id: 'translation-1', ...result }, badRequest: { request_id: 'translation-1', workspace_id: 'workspace_1', source_text: '' }, badResult: { request_id: 'translation-1', status: 'unknown' } })),
   ]
   for (const item of cases) {
     const descriptor = WORKBENCH_REMOTE.descriptors.find(value => value.method === item.method)!
@@ -426,7 +454,7 @@ it('validates each RPC request from JSON with exact field names and identifier c
 it('round trips a complete projection through the declared result codec and rejects non-object results', () => {
   for (const descriptor of WORKBENCH_REMOTE.descriptors) {
     const codec = strictCodec(descriptor.result)
-    if (['queryRecords', 'importImages', 'resolveImages', 'translateStart', 'translateGet', 'translateCancel', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'promptSaveCandidate', 'subscribe'].includes(descriptor.method)) continue
+    if (['queryRecords', 'importImages', 'resolveImages', 'translate', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'promptSaveCandidate', 'subscribe'].includes(descriptor.method)) continue
     if (descriptor.method === 'getTaskDraft' || descriptor.method === 'saveTaskDraft') {
       const draft = { instructions: '', resources: { instance_id: '8', template_id: null } }
       expect(codec.parse(draft)).toEqual(draft)
@@ -478,7 +506,7 @@ it('validates shared nested data in projection, environment and subscription out
   const codec = (method: string) => strictCodec(WORKBENCH_REMOTE.descriptors.find(item => item.method === method)!.result)
   const snapshot = projection()
   const environment = environmentResultFixture()
-  const update = { kind: 'snapshot', sequence: 1, projection: snapshot, promptTurns: [], translations: [] }
+  const update = { kind: 'snapshot', sequence: 1, projection: snapshot, promptTurns: [] }
   expect(codec('getProjection').parse(snapshot)).toEqual(snapshot)
   expect(codec('getEnvironment').parse(environment)).toEqual(environment)
   expect(codec('subscribe').parse(update)).toEqual(update)

@@ -1,6 +1,6 @@
 import { ContractError } from '#contracts'
 import { randomUUID } from 'node:crypto'
-import type { WorkbenchImageImportRequest, WorkbenchImageResolveRequest, WorkbenchTranslationLookup } from '../../workbench-remote.ts'
+import type { WorkbenchImageImportRequest, WorkbenchImageResolveRequest } from '../../workbench-remote.ts'
 import type { WorkbenchRecord, WorkbenchRecordQuery, WorkbenchRun, ImageRef } from '../../workbench/contract.ts'
 import type { PromptStartRequest, PromptLookupRequest, PromptListRequest, PromptAdoptRequest } from '../../workbench/prompt-edit.ts'
 import type { TranslationRequest } from '../../workbench/translation.ts'
@@ -55,8 +55,7 @@ export class WorkbenchRemoteService extends TypertRemoteService {
       }
       projection.runs = projection.runs.map(run => ({ ...run, media: run.media.map(media => ({ ...media, url: generationMediaContentUrl(media.media_id, run.session_id), download_url: generationMediaDownloadUrl(media.media_id, run.session_id) })) }))
       const promptTurns = projection.tasks.flatMap(task => store.listPromptTurns(task.task_id))
-      const translations = store.listTranslations({ workspaceId: request.workspaceId }).filter(record => !request.workIds || request.workIds.includes(record.work_id))
-      queue.push({ kind, sequence, projection, promptTurns, translations })
+      queue.push({ kind, sequence, projection, promptTurns })
       wake?.()
     }
     const release = store.subscribe(sequence => {
@@ -131,20 +130,15 @@ export class WorkbenchRemoteService extends TypertRemoteService {
     signal.throwIfAborted()
     return report(async () => this.host.harnessComfyuiWorkbench.prompts.adopt(request))
   }
-  async translateStart(request: TranslationRequest, signal: AbortSignal) {
+  async *translate(request: TranslationRequest, signal: AbortSignal): import('@deepseek-ai/dsh-typert-protocol').RemoteStream<import('../../workbench/translation.ts').TranslationResult> {
+    signal = AbortSignal.any([signal, this.host.harnessComfyuiWorkbench.signal])
     signal.throwIfAborted()
-    return report(async () => {
+    await report(async () => {
       await this.host.harnessComfyuiWorkbench.initializeWorkspace(request.workspace_id)
-      return this.host.harnessComfyuiWorkbench.translations.start(request)
+      signal.throwIfAborted()
     })
-  }
-  async translateGet(request: WorkbenchTranslationLookup, signal: AbortSignal) {
-    signal.throwIfAborted()
-    return report(async () => this.host.harnessComfyuiWorkbench.translations.get(request.request_id))
-  }
-  async translateCancel(request: WorkbenchTranslationLookup, signal: AbortSignal) {
-    signal.throwIfAborted()
-    return report(async () => this.host.harnessComfyuiWorkbench.translations.cancel(request.request_id))
+    try { yield* this.host.harnessComfyuiWorkbench.translations.translate(request, signal) }
+    catch (error) { await report(async () => { throw error }) }
   }
   async getEnvironment(request: WorkbenchEnvironmentRequest, signal: AbortSignal) {
     signal.throwIfAborted()
@@ -201,12 +195,14 @@ export class WorkbenchRemoteService extends TypertRemoteService {
   }
 }
 const initializers: Array<(service: WorkbenchRemoteService) => void> = []
-for (const name of ['promptSaveCandidate', 'queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'translateStart', 'translateGet', 'translateCancel', 'getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
+for (const name of ['promptSaveCandidate', 'queryRecords', 'importImages', 'resolveImages', 'promptPreview', 'promptStart', 'promptGet', 'promptList', 'promptCancel', 'promptAdopt', 'getRunInput', 'getEnvironment', 'getProjection', 'getInputDescription', 'getTaskDraft', 'saveTaskDraft', 'mutate'] as const) {
   Remote(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
     addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
   } as never)
 }
 
-Remote({ mode: 'stream' })(WorkbenchRemoteService.prototype.subscribe as never, { private: false, static: false, name: 'subscribe',
-  addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
-} as never)
+for (const name of ['subscribe', 'translate'] as const) {
+  Remote({ mode: 'stream' })(WorkbenchRemoteService.prototype[name] as never, { private: false, static: false, name,
+    addInitializer(initialize: (this: WorkbenchRemoteService) => void) { initializers.push(service => initialize.call(service)) },
+  } as never)
+}

@@ -1,26 +1,11 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { WorkbenchDeliveryContext } from './experiment-delivery.tsx'
-import { usePromptTranslation, type TranslationRemote } from './experiment-translation-state.ts'
+import { usePromptTranslation, promptFields, type PromptField, type TranslationRemote } from './experiment-translation-state.ts'
+import { PromptTranslationContent } from './experiment-translation-content.tsx'
 import type { ExperimentRemote } from './experiment-contract.ts'
-import { promptResultStatus, type PromptEditingController, type PromptEditingSnapshot } from './experiment-prompt-editor.ts'
+import { type PromptEditingController, type PromptEditingSnapshot } from './experiment-prompt-editor.ts'
 import type { PromptTurn } from '../../workbench/prompt-edit.ts'
-import { Button, Modal } from './experiment-controls.tsx'
-
-function PromptTranslation({ workspaceId, workId, branchId, field, source, remote }: { readonly workspaceId: string; readonly workId: string; readonly branchId: string; readonly field: 'positive_prompt' | 'negative_prompt'; readonly source: string; readonly remote: TranslationRemote }) {
-  const translation = usePromptTranslation({ workspace_id: workspaceId, work_id: workId, branch_id: branchId, field, source_text: source }, remote)
-  useEffect(() => { if (!translation.current && !translation.records.length) translation.request() }, [])
-  const result = translation.current
-  return !source.trim() && !result ? null : <div className="prompt-translation" aria-live="polite" aria-busy={result?.status === 'running'}>
-    {!!translation.records.length && <label>翻译记录<select aria-label="翻译记录" value={result?.request_id ?? ''} onChange={event => translation.select(event.target.value)}>
-      {result && !translation.records.some(record => record.request_id === result.request_id) && <option value={result.request_id}>本次翻译</option>}
-      {translation.records.map((record, index) => <option key={record.request_id} value={record.request_id}>第 {index + 1} 次翻译</option>)}
-    </select></label>}
-    {result && result.source_text !== source && <div><span>记录原文</span><pre>{result.source_text}</pre></div>}
-    {result?.status === 'running' ? <span>正在翻译…</span> : result?.status === 'succeeded' ? <p>{result.text}</p>
-      : result?.error && <><p role="alert">{result.error}</p><Button kind="small quiet" onClick={() => translation.request(result.source_text)}>重试翻译</Button></>}
-    <Button kind="small quiet" disabled={!source.trim() || (result?.status === 'running' && result.source_text === source)} onClick={() => translation.request()}>翻译当前提示词</Button>
-  </div>
-}
+import { Button, trapDialogFocus } from './experiment-controls.tsx'
 
 export function ExperimentPromptDialog({ controller, state, workspaceId, workId, branchId, originalRequest, baseModelName, remote }: {
   readonly controller: PromptEditingController
@@ -32,32 +17,61 @@ export function ExperimentPromptDialog({ controller, state, workspaceId, workId,
   readonly baseModelName: string
   readonly remote: TranslationRemote
 }) {
+  const [field, setField] = useState<PromptField>('positive_prompt')
+  const [requirementOpen, setRequirementOpen] = useState(false)
+  const scroll = useRef<Record<string, number>>({})
   const result = state.result
-  const revision = !!(state.before.positive_prompt.trim() || state.before.negative_prompt.trim())
-  return <Modal title="对比提示词" kind="prompt-comparison-modal" onClose={controller.close}>
-    <div className="prompt-edit-context"><h3>原始需求</h3><p>{originalRequest}</p><p>图像底模：{baseModelName}</p></div>
-    {(['positive_prompt', 'negative_prompt'] as const).map(field => <section className="prompt-comparison-field" key={field}>
-      <h3>{field === 'positive_prompt' ? '正向提示词' : '负向提示词'}</h3><div className="prompt-comparison-columns">
-        <section><h4>改写前</h4><div className="prompt-comparison-source">{state.before[field] || '未填写'}</div>
-          <PromptTranslation key={`before:${field}:${state.turn?.request_id ?? 'initial'}`} workspaceId={workspaceId} workId={workId} branchId={branchId} field={field} source={state.before[field]} remote={remote} /></section>
-        <section><h4>生成结果</h4><textarea aria-label={`生成的${field === 'positive_prompt' ? '正向' : '负向'}提示词`} value={result?.[field] ?? ''} readOnly={state.busy || !result}
-          onChange={event => { if (result) controller.editResult({ ...result, [field]: event.target.value }) }} />
-          <PromptTranslation key={`after:${field}:${state.turn?.request_id ?? 'initial'}:${!!result}`} workspaceId={workspaceId} workId={workId} branchId={branchId} field={field} source={result?.[field] ?? ''} remote={remote} /></section>
-      </div>
-    </section>)}
-    <label className="field"><span>改动意见</span><textarea aria-label="改动意见" className="short" value={state.changeRequest} readOnly={state.busy} onChange={event => controller.setChangeRequest(event.target.value)} /></label>
-    {state.confirmClose && <div role="alertdialog" aria-label="保存生成结果">
-      <p>生成结果的修改尚未保存。</p>
-      <Button onClick={() => { void controller.saveAndClose() }}>保存生成结果</Button>
-      <Button onClick={controller.discardResult}>放弃修改</Button>
-      <Button onClick={controller.continueEditing}>继续编辑</Button>
-    </div>}
-    {state.error && <p className="binding-problem" role="alert">{state.error}</p>}
-    <div className="prompt-request-state" aria-live="polite">{state.busy ? revision ? '正在改写提示词…' : '正在生成提示词…' : state.turn?.status === 'interrupted' ? '提示词请求已停止。' : ''}</div>
-    <footer className="modal-actions"><Button kind="quiet" onClick={controller.close}>关闭</Button>
-      {state.busy ? <Button onClick={() => { void controller.cancel() }}>停止</Button> : <Button disabled={state.resultDirty || state.resultSaving} onClick={() => { void controller.start() }}>改写提示词</Button>}
-      <Button kind="primary" disabled={!result || state.busy || state.resultSaving || state.resultDirty || promptResultStatus(state.turn) !== 'pending'} onClick={() => { void controller.adopt() }}>采用生成结果</Button></footer>
-  </Modal>
+  const scope = { workspace_id: workspaceId, work_id: workId, branch_id: branchId }
+  const revision = state.turn?.request_id ?? 'initial'
+  const beforePositive = usePromptTranslation({ ...scope, target: 'before', field: 'positive_prompt', source_text: state.before.positive_prompt }, remote, { enabled: field === 'positive_prompt', revision })
+  const beforeNegative = usePromptTranslation({ ...scope, target: 'before', field: 'negative_prompt', source_text: state.before.negative_prompt }, remote, { enabled: field === 'negative_prompt', revision })
+  const resultRevision = revision + (result ? ':result' : ':empty')
+  const resultPositive = usePromptTranslation({ ...scope, target: 'result', field: 'positive_prompt', source_text: result?.positive_prompt ?? '' }, remote, { enabled: field === 'positive_prompt', revision: resultRevision })
+  const resultNegative = usePromptTranslation({ ...scope, target: 'result', field: 'negative_prompt', source_text: result?.negative_prompt ?? '' }, remote, { enabled: field === 'negative_prompt', revision: resultRevision })
+  useEffect(() => {
+    const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') { event.stopImmediatePropagation(); state.confirmClose ? controller.continueEditing() : controller.close() } }
+    document.addEventListener('keydown', keydown)
+    return () => document.removeEventListener('keydown', keydown)
+  }, [controller, state.confirmClose])
+  const copy = (text: string) => { void navigator.clipboard.writeText(text) }
+  const column = (generated: boolean) => {
+    const title = generated ? '生成结果' : '改写前'
+    const source = generated ? result?.[field] ?? '' : state.before[field]
+    const translation = generated ? field === 'positive_prompt' ? resultPositive : resultNegative : field === 'positive_prompt' ? beforePositive : beforeNegative
+    const key = (generated ? 'generated_' : 'current_') + field
+    const editable = !state.busy && (generated ? !!result : !result)
+    const preserveScroll = (pane: string) => ({
+      ref: (element: HTMLElement | null) => { if (element) element.scrollTop = scroll.current[key + pane] ?? 0 },
+      onScroll: (event: React.UIEvent<HTMLElement>) => { scroll.current[key + pane] = event.currentTarget.scrollTop },
+    })
+    return <section key={key} className={`pc-column ${generated ? 'pc-result' : ''}`} aria-label={title}>
+      <header><div><h3>{title}</h3></div><div className="pc-column-tools">{source.trim() && <Button kind="small quiet" label={`复制原文：${title}的${promptFields[field]}`} onClick={() => copy(source)}>复制原文</Button>}</div></header>
+      <div className="pc-column-body">{generated && !result ? <div className="pc-empty" role="status">{state.busy ? <><span className="prompt-spinner" />正在改写提示词</> : state.turn?.status === 'interrupted' ? '改写已停止' : '填写改动意见后生成提示词'}</div> : <div className="pc-dual">
+        <section><div className="pc-pane-label">原文</div><textarea {...preserveScroll('-original')} aria-label={`${title}的${promptFields[field]}`} spellCheck={false} value={source} readOnly={!editable} onChange={event => {
+          if (generated && result) controller.editResult({ ...result, [field]: event.target.value })
+          else if (!generated) controller.editBefore({ ...state.before, [field]: event.target.value })
+        }} /></section>
+        <section><div className="pc-pane-label"><span>中文译文</span>{translation.current?.status === 'succeeded' && <Button kind="small quiet" onClick={() => { if (translation.current?.status === 'succeeded') copy(translation.current.text) }}>复制译文</Button>}</div>
+          <PromptTranslationContent source={source} translation={translation} request={translation.request} scrollRef={preserveScroll('-translation').ref} onScroll={preserveScroll('-translation').onScroll} />
+        </section>
+      </div>}</div>
+      <footer><span>{source.length.toLocaleString()} 字符</span>{generated && result && <span>可直接编辑原文</span>}</footer>
+    </section>
+  }
+  const status = state.busy ? <><span className="prompt-spinner" />正在改写</> : state.error || (state.turn?.status === 'interrupted' ? '改写已停止' : result ? `第 ${state.turn?.turn_index ?? 1} 轮结果` : '')
+  return <div className="modal-backdrop pc-backdrop"><section className="modal pc-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onKeyDown={state.confirmClose ? undefined : trapDialogFocus}>
+    <header className="pc-header"><div><h2 id="modal-title">对比提示词</h2><span className="pc-model">{baseModelName}</span></div><Button kind="quiet pc-close" label="关闭对话框" autoFocus onClick={controller.close}>×</Button></header>
+    <section className={`pc-requirement ${requirementOpen ? 'is-open' : ''}`}><strong>原始需求</strong><p>{originalRequest || '未填写'}</p><button type="button" className="btn small quiet" aria-expanded={requirementOpen} onClick={() => setRequirementOpen(!requirementOpen)}>{requirementOpen ? '收起' : '展开'}</button></section>
+    <div className="pc-toolbar"><div className="pc-field-tabs" role="tablist" aria-label="提示词类型">{(Object.keys(promptFields) as PromptField[]).map(id => <button key={id} type="button" role="tab" aria-selected={field === id} onClick={() => setField(id)}>{promptFields[id]}</button>)}</div></div>
+    <div className="pc-main"><div className="pc-columns">{column(false)}{column(true)}</div></div>
+    <section className="pc-compose"><label htmlFor="rewrite-instruction">改动意见</label><div className="pc-compose-row"><textarea id="rewrite-instruction" aria-label="改动意见" placeholder="例如：保留人物外貌，改成平涂赛璐璐画风" readOnly={state.busy} value={state.changeRequest} onChange={event => controller.setChangeRequest(event.target.value)} />
+      {state.busy ? <Button kind="pc-rewrite" onClick={() => { void controller.cancel() }}>停止改写</Button> : <Button kind="pc-rewrite" disabled={state.resultSaving} onClick={() => { void controller.start() }}>{result ? '继续改写' : '改写提示词'}</Button>}
+    </div></section>
+    <footer className="pc-footer"><div className={`pc-status ${state.error ? 'pc-error' : ''}`} role={state.error ? 'alert' : 'status'}>{status}</div><div><Button kind="quiet" onClick={controller.close}>关闭</Button><Button kind="primary" disabled={!result || state.busy || state.resultSaving} onClick={() => { void controller.adopt() }}>采用正负提示词</Button></div></footer>
+    {state.confirmClose && <div className="pc-confirm"><section role="alertdialog" aria-label="保留编辑内容" onKeyDown={trapDialogFocus}><h3>生成结果有未保存的修改</h3><p>保存后可继续改写或采用。</p><div>
+      <Button kind="quiet" autoFocus onClick={controller.continueEditing}>继续编辑</Button><Button disabled={state.resultSaving} onClick={() => { void controller.discardResult() }}>放弃修改</Button><Button kind="primary" disabled={state.resultSaving} onClick={() => { void controller.saveAndClose() }}>保存并关闭</Button>
+    </div></section></div>}
+  </section></div>
 }
 
 export function PromptTaskTurns({ workspaceId, taskId, remote, onEdit }: { readonly workspaceId: string; readonly taskId: string; readonly remote: Pick<ExperimentRemote, 'promptList' | 'promptCancel'>; readonly onEdit?: () => void }) {

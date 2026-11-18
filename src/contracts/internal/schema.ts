@@ -1093,7 +1093,26 @@ const results = (() => {
     cliJobResultSchemas
   };
 })();
+const identifier = () => Schema.string().min(1).max(500).pattern(/^\S+$/u);
 const translation = (() => {
+  const translationScopeFields = {
+    workspace_id: identifier().required(),
+    work_id: identifier().required(),
+    branch_id: identifier().required(),
+    target: Schema.union(['before', 'result', 'draft']).required(),
+    field: Schema.union(['positive_prompt', 'negative_prompt']).required()
+  };
+  const translationScopeSchema = contractObject(translationScopeFields, { exact: true });
+  const translationRequestSchema = contractObject({
+    ...translationScopeFields,
+    request_id: identifier().required(),
+    source_text: Schema.string().min(1).required()
+  }, { exact: true });
+  const translationLatestSchema = contractObject({
+    ...translationScopeFields,
+    source_text: Schema.string().min(1).required(),
+    text: Schema.string().min(1).required()
+  }, { exact: true });
   const translationResultSchema = Schema.union([
     contractObject({ request_id: Schema.string().min(1).required(), status: Schema.const('running').required() }, { exact: true }),
     contractObject({
@@ -1107,7 +1126,7 @@ const translation = (() => {
       error: Schema.string().min(1).required()
     }, { exact: true }),
   ]).required();
-  return { translationResultSchema };
+  return { translationScopeSchema, translationRequestSchema, translationLatestSchema, translationResultSchema };
 })();
 const remote = (() => {
   const { workflowRuntimeParameterInspectionSchema } = inspection;
@@ -1115,7 +1134,6 @@ const remote = (() => {
   const { promptStartFields, promptLookupSchema, promptListSchema, promptAdoptSchema, promptTurnSchema, promptRequestInputSchema } = prompt;
   const { translationResultSchema } = translation;
   const json = jsonValueSchema({ keySchema: Schema.string().min(1).required(), maxDepth: 64 });
-  const identifier = () => Schema.string().min(1).max(500).pattern(/^\S+$/u);
   const scopeSchema = contractObject({
     workspaceId: identifier().required(),
     workId: identifier(),
@@ -1173,15 +1191,6 @@ const remote = (() => {
   }, { exact: true });
   const imageResolveSchema = contractObject({ image_refs: Schema.array(imageRefSchema).required() }, { exact: true });
   const promptStartSchema = contractObject({ ...promptStartFields, draft: optional(taskDraftSchema) }, { exact: true });
-  const translationStartSchema = contractObject({
-    request_id: identifier().required(),
-    workspace_id: identifier().required(),
-    work_id: identifier().required(),
-    branch_id: identifier().required(),
-    field: Schema.union(['positive_prompt', 'negative_prompt']).required(),
-    source_text: Schema.string().min(1).required()
-  }, { exact: true });
-  const translationLookupSchema = contractObject({ request_id: identifier().required() }, { exact: true });
   const recordResultSchema = Schema.array(workbenchRecordSchema).required();
   const imageImportResultSchema = contractObject({ images: Schema.array(imageRefSchema).required() }, { exact: true });
   const imageResolveResultSchema = contractObject({ images: Schema.array(imageSourceSchema).required() }, { exact: true });
@@ -1224,9 +1233,7 @@ const remote = (() => {
     queryRecords: recordResultSchema,
     importImages: imageImportResultSchema,
     resolveImages: imageResolveResultSchema,
-    translateStart: translationResultSchema,
-    translateGet: translationResultSchema,
-    translateCancel: translationResultSchema
+    translate: translationResultSchema
   };
   const subscriptionSchema = contractObject({ workspaceId: identifier().required(), workIds: Schema.array(identifier().required()) }, { exact: true });
   const requestSchemas = {
@@ -1241,9 +1248,7 @@ const remote = (() => {
     queryRecords: queryRecordsSchema,
     importImages: imageImportSchema,
     resolveImages: imageResolveSchema,
-    translateStart: translationStartSchema,
-    translateGet: translationLookupSchema,
-    translateCancel: translationLookupSchema,
+    translate: translation.translationRequestSchema,
     getRunInput: runInputSchema,
     getTaskDraft: taskDraftRequestSchema,
     saveTaskDraft: taskDraftSaveSchema,
@@ -1269,8 +1274,6 @@ const remote = (() => {
     imageImportSchema,
     imageResolveSchema,
     promptStartSchema,
-    translationStartSchema,
-    translationLookupSchema,
     recordResultSchema,
     imageImportResultSchema,
     imageResolveResultSchema,
@@ -1387,8 +1390,6 @@ const baseDataSchemas = {
   "imageImport": remote.imageImportSchema,
   "imageResolve": remote.imageResolveSchema,
   "promptStart": remote.promptStartSchema,
-  "translationStart": remote.translationStartSchema,
-  "translationLookup": remote.translationLookupSchema,
   "recordResult": remote.recordResultSchema,
   "imageImportResult": remote.imageImportResultSchema,
   "imageResolveResult": remote.imageResolveResultSchema,
@@ -1587,22 +1588,11 @@ const workbenchEnvironmentSchema = contractObject({
   skills: Schema.array(contractObject({ name: Schema.string().required(), description: Schema.string().required() })).required(),
   instances: Schema.array(contractObject({ id: Schema.string().required(), name: Schema.string().required() })).required()
 });
-const translationRecordFields = {
-  ...contractFields(remote.translationStartSchema),
-  session_id: Schema.string().required(),
-  harness_turn: requiredNullable(Schema.number().required()),
-  start_seq: Schema.number().required(),
-  created_at: Schema.number().required(),
-  finished_at: requiredNullable(Schema.number().required())
-};
-type TranslationRecordValue = Parsed<typeof remote.translationStartSchema> & Parsed<typeof translation.translationResultSchema> & ObjectValue<typeof translationRecordFields>;
-const translationRecordSchema = Schema.union(translation.translationResultSchema.list!.map(branch => contractObject({ ...translationRecordFields, ...contractFields(branch) }))) as Schema<unknown, TranslationRecordValue, 'defined'>;
 const workbenchUpdateSchema = contractObject({
   kind: Schema.union(['snapshot', 'change']).required(),
   sequence: Schema.number().required(),
   projection: workbenchProjectionSchema,
-  promptTurns: Schema.array(prompt.promptTurnSchema).required(),
-  translations: Schema.array(translationRecordSchema).required()
+  promptTurns: Schema.array(prompt.promptTurnSchema).required()
 });
 const requestTemplateSelectionFields = {
   kind: defaulted(Schema.string(), 'run'),
@@ -1622,8 +1612,9 @@ export const dataSchemas = {
   workbenchProjection: workbenchProjectionSchema,
   workbenchEnvironment: workbenchEnvironmentSchema,
   workbenchUpdate: workbenchUpdateSchema,
-  translationRequest: remote.translationStartSchema,
-  translationRecord: translationRecordSchema,
+  translationScope: translation.translationScopeSchema,
+  translationRequest: translation.translationRequestSchema,
+  translationLatest: translation.translationLatestSchema,
   taskInputForKindInput: taskInputForKindInputSchema,
   taskInputForKind: taskInputForKindSchema,
   generationInputReady: generationInputReadySchema,

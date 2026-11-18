@@ -52,7 +52,6 @@ import type { WorkbenchUpdate, WorkbenchSubscription } from '../../workbench-rem
 
 export interface ExperimentSnapshot {
   readonly promptTurns: WorkbenchUpdate['promptTurns']
-  readonly translations: WorkbenchUpdate['translations']
   readonly connection: 'connected' | 'disconnected'
   readonly workspaceId: string | null
   readonly projection: WorkbenchProjection | null
@@ -63,7 +62,7 @@ export interface ExperimentSnapshot {
 
 export class ExperimentWorkbenchStore {
   private snapshot: ExperimentSnapshot = {
-    promptTurns: [], translations: [], connection: 'disconnected',
+    promptTurns: [], connection: 'disconnected',
     workspaceId: null,
     projection: null,
     view: initialView(),
@@ -162,7 +161,7 @@ export class ExperimentWorkbenchStore {
     const view = workspaceId ? this.restore(workspaceId) : initialView()
     this.emit({
       workspaceId,
-      projection: null, promptTurns: [], translations: [],
+      projection: null, promptTurns: [],
       view: this.snapshot.view.page === 'settings' ? { ...view, page: 'settings' } : view,
       loading: !!workspaceId,
       error: null,
@@ -331,7 +330,7 @@ export class ExperimentWorkbenchStore {
     this.deliverySequence = update.sequence
     this.sequence++
     this.deliveredProjection = update.projection
-    this.emit({ promptTurns: update.promptTurns, translations: update.translations, connection: 'connected' })
+    this.emit({ promptTurns: update.promptTurns, connection: 'connected' })
     this.applyProjection(update.projection)
   }
   connect(source: (request: WorkbenchSubscription, signal: AbortSignal) => AsyncIterable<WorkbenchUpdate>): void {

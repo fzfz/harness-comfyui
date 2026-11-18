@@ -11,7 +11,6 @@ export const WORKBENCH_REMOTE_SERVICE = `remote.${WORKBENCH_REMOTE_NAMESPACE}` a
 
 export type WorkbenchImageImportRequest = ContractInput<'workbench remote importImages'>
 export type WorkbenchImageResolveRequest = ContractInput<'workbench remote resolveImages'>
-export type WorkbenchTranslationLookup = ContractInput<'workbench remote translateGet'>
 export type WorkbenchScope = ContractInput<'workbench remote getProjection'>
 export type WorkbenchActionReceipt = ContractOutput<'workbench remote mutate'>
 export type WorkbenchTaskDraftRequest = ContractInput<'workbench remote getTaskDraft'>
@@ -40,9 +39,7 @@ export interface WorkbenchRemoteMethods {
   promptCancel(request: PromptLookupRequest): Promise<RemoteResult<PromptTurn>>
   promptSaveCandidate(request: PromptAdoptRequest): Promise<RemoteResult<PromptTurn>>
   promptAdopt(request: PromptAdoptRequest): Promise<RemoteResult<PromptTurn>>
-  translateStart(request: TranslationRequest): Promise<RemoteResult<TranslationResult>>
-  translateGet(request: WorkbenchTranslationLookup): Promise<RemoteResult<TranslationResult>>
-  translateCancel(request: WorkbenchTranslationLookup): Promise<RemoteResult<TranslationResult>>
+  translate(request: TranslationRequest, signal?: AbortSignal): RemoteStream<TranslationResult>
   getRunInput(request: WorkbenchRunInputRequest): Promise<RemoteResult<WorkbenchRunInput>>
   getTaskDraft(request: WorkbenchTaskDraftRequest): Promise<RemoteResult<TaskRequestDraft | null>>
   saveTaskDraft(request: WorkbenchSaveTaskDraftRequest): Promise<RemoteResult<TaskRequestDraft>>

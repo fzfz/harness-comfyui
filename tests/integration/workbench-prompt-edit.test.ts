@@ -171,14 +171,10 @@ describe('prompt editing through the workbench remote', () => {
   it.each([
     { kind: 'prompt', active: false, expected: 'interrupted' },
     { kind: 'prompt', active: true, expected: 'running' },
-    { kind: 'translation', active: false, expected: 'failed' },
-    { kind: 'translation', active: true, expected: 'running' },
-  ] as const)('recovers a $kind accepted before Host restart (active=$active)', async ({ kind, active, expected }) => {
+  ] as const)('recovers a $kind accepted before Host restart (active=$active)', async ({ active, expected }) => {
     const f = await setup(), signal = new AbortController().signal
     const requestId = f.request.request_id
-    const sessionId = kind === 'prompt'
-      ? (await f.remote.promptStart(f.request, signal)).session_id
-      : (await f.remote.translateStart({ request_id: requestId, workspace_id: 'workspace_1', work_id: f.work.work_id, branch_id: f.branch.branch_id, field: 'positive_prompt', source_text: 'rain' }, signal), f.store.getTranslation(requestId)!.session_id)
+    const sessionId = (await f.remote.promptStart(f.request, signal)).session_id
     f.official.events.set(sessionId, [
       { type: 'turn/start', seq: 0, data: { turn: 1 } },
       { type: 'user/message', seq: 1, data: { source: { kind: 'user', rpcId: requestId } } },
@@ -188,7 +184,7 @@ describe('prompt editing through the workbench remote', () => {
     await f.fiber.dispose()
     const restarted = await f.ctx.plugin(workbenchPlugin)
     try {
-      await vi.waitFor(() => expect(kind === 'prompt' ? f.store.getPromptTurn(requestId)?.status : f.store.getTranslation(requestId)?.status).toBe(expected))
+      await vi.waitFor(() => expect(f.store.getPromptTurn(requestId)?.status).toBe(expected))
       expect(f.official.controller.create).toHaveBeenCalledOnce()
       expect(f.official.controller.prompt).toHaveBeenCalledOnce()
     } finally { await restarted.dispose() }

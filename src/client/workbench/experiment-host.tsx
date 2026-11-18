@@ -26,7 +26,7 @@ import { promptEditingStyles } from './experiment-prompt-styles.ts'
 export const EXPERIMENT_PANEL_ID = 'harness-comfyui-experiment' as MainPanelId
 type RemoteReply<T> = RemoteResult<T>
 export type ExperimentEnvironment = WorkbenchEnvironment
-export interface ExperimentHostRemote extends Pick<import('../../workbench-remote.ts').WorkbenchRemoteMethods, 'subscribe' | 'queryRecords' | 'importImages' | 'resolveImages' | 'translateStart' | 'translateGet' | 'translateCancel' | 'promptPreview' | 'promptStart' | 'promptGet' | 'promptList' | 'promptCancel' | 'promptSaveCandidate' | 'promptAdopt'> {
+export interface ExperimentHostRemote extends Pick<import('../../workbench-remote.ts').WorkbenchRemoteMethods, 'subscribe' | 'queryRecords' | 'importImages' | 'resolveImages' | 'translate' | 'promptPreview' | 'promptStart' | 'promptGet' | 'promptList' | 'promptCancel' | 'promptSaveCandidate' | 'promptAdopt'> {
   readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<RemoteReply<WorkbenchRunInput>>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft | null>>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<RemoteReply<TaskRequestDraft>>
@@ -134,9 +134,10 @@ export function ExperimentWorkbenchHost({
       promptCancel: async (request: import('../../workbench/prompt-edit.ts').PromptLookupRequest) => unwrap(await remote.promptCancel(request)),
       promptSaveCandidate: async (request: import('../../workbench/prompt-edit.ts').PromptAdoptRequest) => unwrap(await remote.promptSaveCandidate(request)),
       promptAdopt: async (request: import('../../workbench/prompt-edit.ts').PromptAdoptRequest) => unwrap(await remote.promptAdopt(request)),
-      translateStart: async (request: import('../../workbench/translation.ts').TranslationRequest) => unwrap(await remote.translateStart(request)),
-      translateGet: async (request: import('../../workbench-remote.ts').WorkbenchTranslationLookup) => unwrap(await remote.translateGet(request)),
-      translateCancel: async (request: import('../../workbench-remote.ts').WorkbenchTranslationLookup) => unwrap(await remote.translateCancel(request)),
+      translate: async function* (request: import('../../workbench/translation.ts').TranslationRequest, signal?: AbortSignal) {
+        const reply: RemoteReply<void> | undefined = yield* remote.translate(request, signal)
+        if (reply) unwrap(reply)
+      },
       getRunInput: async (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => unwrap(await remote.getRunInput(request)),
       getTaskDraft: async (request: WorkbenchTaskDraftRequest) =>
         unwrap(await remote.getTaskDraft(request)),

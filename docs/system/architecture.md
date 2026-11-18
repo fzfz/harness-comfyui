@@ -124,7 +124,7 @@
 
 6. [WorkbenchInputFileService](../../src/host/generation/input-file-service.ts) 保存本机导入图片。[输入图片解析](../../src/host/workbench/input-images.ts)提供 Run 媒体与导入文件的本地路径及预览地址。[SourceGenerationPreparer](../../src/host/generation/source-preparer.ts)向所选实例上传 Workflow 用途图片，保存上传响应并生成实际输入；Run 同时保留提交输入。
 
-7. [WorkbenchTranslations](../../src/host/workbench/translation-service.ts) 使用独立官方会话执行翻译，并按请求 ID 持久保存原文、译文及来源字段。翻译预设的配置入口见[工作台装配配置](configuration.md#工作台装配配置)。
+7. [WorkbenchTranslations](../../src/host/workbench/translation-service.ts) 使用独立官方会话执行翻译，通过请求流返回状态，并为每个提示词区域保存最后一份成功译文。翻译预设的配置入口见[工作台装配配置](configuration.md#工作台装配配置)。
 
 8. [WorkbenchPrompts](../../src/host/workbench/prompt-service.ts) 管理提示词编辑任务、连续会话和每轮回复。[请求模板](../../src/workbench/request-template.ts) 供 Host 与页面预览共用；[提示词请求合同](../../src/workbench/prompt-edit.ts) 定义请求意图、候选编辑、停止和采用接口。
 

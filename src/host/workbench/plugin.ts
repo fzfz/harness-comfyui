@@ -176,7 +176,7 @@ export async function apply(ctx: Context): Promise<void> {
     },
   })
   ctx.effect(() => () => prompts.dispose(), 'Workbench prompt editing')
-  const translations = new WorkbenchTranslations({ store, controller, isSessionActive: id => ctx.agents.get(SessionId(id))?.status === 'running', reportError: error => reportFailure(error), binding: workspaceId => store.getFunctionBinding(workspaceId, 'translate'), events: sessionId => sessions.events(sessionId) })
+  const translations = new WorkbenchTranslations({ store, controller, binding: workspaceId => store.getFunctionBinding(workspaceId, 'translate'), events: sessionId => sessions.events(sessionId) })
   ctx.effect(() => () => translations.dispose(), 'Workbench translations')
   const reportFailure = (error: unknown) => {
     ctx.logger('harness-comfyui').error('Workbench result delivery failed: %s', error instanceof Error ? error.message : String(error))
@@ -224,10 +224,8 @@ export async function apply(ctx: Context): Promise<void> {
   const recover = async () => {
     const tasks = ctx.workspaceRegistry.list().flatMap(workspace => store.listTasks(String(workspace.id)))
     await prompts.recover()
-    await translations.recover()
     const ids = new Set<string>([
       ...store.listPendingPromptTurns().map(turn => turn.session_id),
-      ...store.listPendingTranslations().map(record => record.session_id),
     ])
     for (const workspace of ctx.workspaceRegistry.list()) {
       for (const task of store.listTasks(String(workspace.id))) {

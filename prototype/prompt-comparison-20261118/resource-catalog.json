@@ -1,0 +1,16 @@
+{
+  "source_origin": "http://127.0.0.1:18093",
+  "discovery_path": "/internal/semantic",
+  "base_models_path": "/internal/semantic/base-models",
+  "instances_path": "/internal/semantic/comfyui-instances",
+  "kinds": [
+    {"id":"model","label":"生成模型","path":"/internal/semantic/generation-models","label_field":"file_name","scoped":true,"multiple":false,"prompt_fields":["base_model_id","file_name","description","usage","skill_name"]},
+    {"id":"comfyui-template","label":"Workflow 模板","path":"/internal/semantic/comfyui-templates","label_field":"title","scoped":true,"multiple":false,"prompt_fields":["base_model_id","title","template_type"]},
+    {"id":"lora","label":"LoRA","path":"/internal/semantic/loras","label_field":"file_name","scoped":true,"multiple":true,"prompt_fields":["base_model_id","file_name","description","usage","trigger_words_json"]},
+    {"id":"work","label":"作品","path":"/internal/semantic/works","label_field":"name","scoped":false,"multiple":true,"prompt_fields":["name","aliases_json","category_name","character_names"]},
+    {"id":"character","label":"角色","path":"/internal/semantic/characters","label_field":"name","scoped":false,"multiple":true,"prompt_fields":["work_id","works.name","name","aliases_json","prompt_text"]},
+    {"id":"style","label":"画师或画风","path":"/internal/semantic/styles","label_field":"name","scoped":true,"multiple":true,"prompt_fields":["base_model_id","name","aliases_json","prompt_text","style_description"]},
+    {"id":"prompt-term","label":"提示词条目","path":"/internal/semantic/prompt-terms","label_field":"canonical_tag","scoped":false,"multiple":true,"prompt_fields":["canonical_tag","aliases_json"]},
+    {"id":"artist-string","label":"画师串","path":"/internal/semantic/artist-prompt-strings","label_field":"title","scoped":true,"multiple":true,"prompt_fields":["base_model_id","title","description","artist_string","style_ids"]}
+  ]
+}

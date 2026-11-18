@@ -58,7 +58,7 @@ const environment = {
   instances: [{ id: '2', name: 'win3080' }],
 }
 const remote = (): ExperimentHostRemote => ({
-  subscribe: vi.fn(async function* () { yield { kind: 'snapshot' as const, sequence: 0, projection: fullProjection(), promptTurns: [], translations: [] } }),
+  subscribe: vi.fn(async function* () { yield { kind: 'snapshot' as const, sequence: 0, projection: fullProjection(), promptTurns: [] } }),
   promptSaveCandidate: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
   promptPreview: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
   promptStart: vi.fn(async () => { throw new Error('prompt fixture not configured') }),
@@ -69,9 +69,7 @@ const remote = (): ExperimentHostRemote => ({
   queryRecords: vi.fn(async () => ({ ok: true as const, value: [] })),
   resolveImages: vi.fn(async () => ({ ok: true as const, value: { images: [] } })),
   importImages: vi.fn(async () => ({ ok: true as const, value: { images: [] } })),
-  translateStart: vi.fn(async request => ({ ok: true as const, value: { request_id: request.request_id, status: 'running' as const } })),
-  translateGet: vi.fn(async request => ({ ok: true as const, value: { request_id: request.request_id, status: 'succeeded' as const, text: '中文译文' } })),
-  translateCancel: vi.fn(async request => ({ ok: true as const, value: { request_id: request.request_id, status: 'failed' as const, error: '翻译已取消。' } })),
+  translate: vi.fn(async function* (request) { yield { request_id: request.request_id, status: 'succeeded' as const, text: '中文译文' } }),
   getRunInput: vi.fn(async request => {
     const data = fullProjection(), run = data.runs.find(run => run.run_id === request.runId)!, task = data.tasks.find(task => task.task_id === run.workbench_task_id)!
     return { ok: true as const, value: contracts.parse('workbenchRunInput', 'output', { run_id: run.run_id, branch_id: task.branch_id, submitted_input: run.generation_input, effective_input: run.generation_input, image_uploads: [], parameter_mapping: task.input.parameter_mapping, base_model_id: task.input.base_model_id, generation_input: run.generation_input,
@@ -182,9 +180,6 @@ describe('official experiment workbench adapter', () => {
       queryRecords: { type: 'run' as const, workspaceId: 'workspace-other', keyword: '窗框' },
       importImages: { files: [{ name: 'reference.png', media_type: 'image/png', bytes: [1, 2, 3] }] },
       resolveImages: { image_refs: [{ image_ref_id: 'ref', source: { kind: 'uploaded_file' as const, file_id: 'file' }, purpose: 'agent' as const, reference_requirement: '保留窗框' }] },
-      translateStart: { request_id: 'temporary-translation', workspace_id: 'workspace-a', source_text: '(window:1.2)' },
-      translateGet: { request_id: 'temporary-translation' },
-      translateCancel: { request_id: 'temporary-translation' },
     }
     for (const name of Object.keys(requests) as (keyof typeof requests)[]) {
       const host = api[name] as (request: unknown) => Promise<unknown>, consumer = shell.remote[name] as (request: unknown) => Promise<unknown>
@@ -197,6 +192,22 @@ describe('official experiment workbench adapter', () => {
       vi.mocked(host).mockResolvedValueOnce({ ok: false, error: failure })
       await expect(consumer(requests[name])).rejects.toBe(failure)
     }
+  })
+
+  it('forwards translation streams, cancellation and thrown Remote failures', async () => {
+    const api = remote(), renderer = await mount(api)
+    const shell = renderer.root.findByType(ExperimentWorkbench).props as ExperimentWorkbenchProps
+    const request = { request_id: 'translation-request', workspace_id: 'workspace-a', work_id: 'work-a', branch_id: 'root', target: 'draft' as const, field: 'positive_prompt' as const, source_text: '(window:1.2)' }
+    const abort = new AbortController()
+    const values = []
+    for await (const value of shell.remote.translate(request, abort.signal)) values.push(value)
+    expect(values).toEqual([{ request_id: 'translation-request', status: 'succeeded', text: '中文译文' }])
+    expect(api.translate).toHaveBeenCalledWith(request, abort.signal)
+    const failure = new RemoteError('workbench/operation-failed', '翻译失败，请重试。', { code: 'WORKBENCH_INVALID_INPUT', issues: [] })
+    vi.mocked(api.translate).mockImplementationOnce(async function* () { throw failure })
+    await expect((async () => { for await (const _ of shell.remote.translate(request)) {} })()).rejects.toBe(failure)
+    vi.mocked(api.translate).mockImplementationOnce(async function* () { return { ok: false, error: failure } })
+    await expect((async () => { for await (const _ of shell.remote.translate(request)) {} })()).rejects.toBe(failure)
   })
 
   it('forwards task draft scope and payload and preserves Remote failures and accepted task identity', async () => {

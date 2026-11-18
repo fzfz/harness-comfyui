@@ -36,9 +36,7 @@ export interface ExperimentRemote extends PromptEditingRemote {
   readonly queryRecords: (request: import('../../workbench/contract.ts').WorkbenchRecordQuery) => Promise<import('../../workbench/contract.ts').WorkbenchRecord[]>
   readonly resolveImages: (request: { image_refs: import('../../workbench/contract.ts').ImageRef[] }) => Promise<{ images: import('../../workbench/contract.ts').ImageSource[] }>
   readonly importImages: (request: { files: { name: string; media_type: string; bytes: number[] }[] }) => Promise<{ images: import('../../workbench/contract.ts').ImageRef[] }>
-  readonly translateStart: (request: import('../../workbench/translation.ts').TranslationRequest) => Promise<{ request_id: string; status: 'running' | 'succeeded' | 'failed'; text?: string; error?: string }>
-  readonly translateGet: (request: { request_id: string }) => Promise<{ request_id: string; status: 'running' | 'succeeded' | 'failed'; text?: string; error?: string }>
-  readonly translateCancel: (request: { request_id: string }) => Promise<unknown>
+  readonly translate: (request: import('../../workbench/translation.ts').TranslationRequest, signal?: AbortSignal) => AsyncIterable<import('../../workbench/translation.ts').TranslationResult>
   readonly getRunInput: (request: import('../../workbench-remote.ts').WorkbenchRunInputRequest) => Promise<WorkbenchRunInput>
   readonly getTaskDraft: (request: WorkbenchTaskDraftRequest) => Promise<TaskRequestDraft | null>
   readonly saveTaskDraft: (request: WorkbenchSaveTaskDraftRequest) => Promise<TaskRequestDraft>

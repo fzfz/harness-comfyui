@@ -119,6 +119,7 @@ export class PromptEditingController {
     const state = candidate.getSnapshot()
     return state.resultDirty || state.resultSaving
   })
+  editBefore = (before: PromptEditingSnapshot['before']) => { if (!this.state.busy && !this.state.result) this.update({ before }) }
   editResult = (result: NonNullable<PromptEditingSnapshot['result']>) => this.currentCandidate()?.change(result)
   saveResult = async () => { await this.currentCandidate()?.save() }
   private candidateFor(turn: PromptTurn): PromptCandidateEditor | undefined {
@@ -145,6 +146,10 @@ export class PromptEditingController {
     }
     const revision = !!(prompts.positive_prompt.trim() || prompts.negative_prompt.trim())
     if (revision && !this.state.changeRequest.trim()) { this.update({ error: '请填写改动意见。', open: true }); return }
+    if (this.state.resultDirty || this.state.resultSaving) {
+      await this.currentCandidate()?.save()
+      if (!this.isCurrent(selection) || this.state.resultDirty || this.state.resultSaving) return
+    }
     this.restoration = null
     const requestId = crypto.randomUUID()
     const requestState = { selection, delivered: false, cancelRequested: false }
@@ -210,8 +215,9 @@ export class PromptEditingController {
   async adopt() {
     const selection = this.selection
     const { turn, result } = this.state
-    if (!turn || !result || this.state.busy || promptResultStatus(turn) !== 'pending') return
+    if (!turn || !result || this.state.busy) return
     try {
+      if (this.state.resultDirty || this.state.resultSaving) await this.currentCandidate()?.save()
       await this.currentCandidate()?.flush()
       let accepted = turn
       await this.editor.applyPrompts(result, async () => { accepted = await this.remote.promptAdopt({ workspace_id: this.scope.workspace_id, request_id: turn.request_id, ...result }) })
