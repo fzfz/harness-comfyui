@@ -280,6 +280,9 @@ export async function verifyPromptComparison(page, services, options) {
     evidence.rewrite = { request_id: rewritten.request_id, input: rewritten.input }
     evidence.steps.push('rewrite-current-edited-prompts')
 
+    const finalState = { before: rewrite.result, beforeTranslation: rewrite.resultTranslation,
+      result: rewrite.result, resultTranslation: rewrite.resultTranslation }
+    queueCurrentTranslations(finalState)
     const stopStart = services.requestLog.length
     const stopRequest = request => request.sequence >= stopStart && matchesRequest(request, PROMPT_MARKER)
     held = services.pauseNextModelResponse(stopRequest)
@@ -287,6 +290,7 @@ export async function verifyPromptComparison(page, services, options) {
     await fill(page, 'textarea[aria-label="改动意见"]', '保留当前人物与场景。')
     await clickButton(page, '继续改写', '.pc-compose')
     await awaitControlled(held.started, 'Prompt rewrite did not start')
+    await waitFor(page, `(${ROOT}).querySelector('.pc-column[aria-label="改写前"] .pc-translated')?.textContent`, text => text === finalState.beforeTranslation.positive_prompt)
     assert.equal(await page.evaluate(`(() => { const root = ${ROOT}; return [...root.querySelectorAll('.pc-footer button')].find(button => button.textContent.trim() === '采用正负提示词')?.disabled })()`), true)
     await screenshot('running')
     await clickButton(page, '停止改写', '.pc-compose')
@@ -297,9 +301,6 @@ export async function verifyPromptComparison(page, services, options) {
     evidence.stopped = interrupted.request_id
     evidence.steps.push('stop-rewrite', 'adopt-disabled-while-running')
 
-    const finalState = { before: rewrite.result, beforeTranslation: rewrite.resultTranslation,
-      result: rewrite.result, resultTranslation: rewrite.resultTranslation }
-    queueCurrentTranslations(finalState)
     services.enqueueModelResponse(request => matchesRequest(request, PROMPT_MARKER), { role: 'assistant', content: 'invalid controlled prompt response' })
     await fill(page, 'textarea[aria-label="改动意见"]', feedback)
     await clickButton(page, '改写提示词', '.pc-compose')
