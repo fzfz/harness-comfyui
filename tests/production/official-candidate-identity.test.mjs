@@ -62,6 +62,7 @@ describe('official Desktop candidate source identity', () => {
     ['harness-comfyui/client.js', '@deepseek-ai/dsh-api-remotes/client.js', '@deepseek-ai/dsh-client-connection/client.js'],
     ['@deepseek-ai/dsh-api-remotes/client.js', 'harness-comfyui/client.js', '@deepseek-ai/dsh-client-connection/client.js'],
     ['@deepseek-ai/dsh-api-remotes/client.js', '@deepseek-ai/dsh-client-connection/client.js', 'harness-comfyui/client.js'],
+    ['@local/selection/client.js', 'harness-comfyui/client.js', 'billion-context/client.js'],
   ])('accepts the unique candidate at every combo position: %j', (...moduleRoutes) => {
     expect(parseOfficialCandidateClientComboRoute(`dsh-app://app/plugins/??${moduleRoutes.join(',')}&rev=abcdef123456`, 'harness-comfyui'))
       .toEqual({ revision: 'abcdef123456', moduleRoutes, candidateModuleIndex: moduleRoutes.indexOf('harness-comfyui/client.js') })
@@ -217,9 +218,10 @@ describe('official Desktop candidate source identity', () => {
     expect(isOfficialCandidateClientScriptUrl('dsh-app://app/plugins/??harness-comfyui/client.js,@deepseek-ai/dsh-client-ui-layout/client.js&rev=66fdfd55bb7d', sourceIdentity)).toBe(true)
     expect(isOfficialCandidateClientScriptUrl('file:///candidate/client.js', sourceIdentity)).toBe(false)
 
+    const bootBatch = { url: scriptUrl, rev: '66fdfd55bb7d', entries: moduleRoutes.map(route => route.split('/').slice(0, -1).join('/')) }
     const page = { evaluate: async expression => {
       expect(expression).toContain("redirect: 'error'")
-      return { url: `dsh-app://app/plugins/${sourceMapUrl}`, sourceMapText }
+      return { url: `dsh-app://app/plugins/${sourceMapUrl}`, sourceMapText, batches: [bootBatch] }
     } }
     await expect(readOfficialCandidateClientSourceMap({ page, sourceIdentity, scriptUrl, sourceMapUrl }))
       .resolves.toBe(sourceMapText)
@@ -227,6 +229,12 @@ describe('official Desktop candidate source identity', () => {
       page: { evaluate: async () => ({ url: 'dsh-app://app/redirected-map', sourceMapText }) },
       sourceIdentity, scriptUrl, sourceMapUrl,
     })).rejects.toThrow(/invalid response record/u)
+    for (const batches of [[], [bootBatch, bootBatch], [{ ...bootBatch, entries: [...bootBatch.entries].reverse() }], [{ ...bootBatch, rev: 'abcdef123456' }], [{ ...bootBatch, url: 'https://example.com/' }]]) {
+      await expect(readOfficialCandidateClientSourceMap({
+        page: { evaluate: async () => ({ url: `dsh-app://app/plugins/${sourceMapUrl}`, sourceMapText, batches }) },
+        sourceIdentity, scriptUrl, sourceMapUrl,
+      })).rejects.toThrow(/boot batch/u)
+    }
     let mismatchedMapFetchCalls = 0
     await expect(readOfficialCandidateClientSourceMap({
       page: { evaluate: async () => { mismatchedMapFetchCalls += 1; return { url: '', sourceMapText } } },

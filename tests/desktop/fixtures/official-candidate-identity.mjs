@@ -254,10 +254,20 @@ export async function readOfficialCandidateClientSourceMap({ page, sourceIdentit
     if (!response.ok || response.redirected || response.url !== ${JSON.stringify(requestUrl)}) {
       throw new Error('Official candidate source map fetch did not return the exact requested URL')
     }
-    return { url: response.url, sourceMapText: await response.text() }
+    const batches = window.__DSH_BOOT__.batches.map(batch => ({
+      url: new URL(batch.url, document.baseURI).href, rev: batch.rev, entries: batch.entries,
+    })).filter(batch => batch.url === ${JSON.stringify(scriptUrl)})
+    return { url: response.url, sourceMapText: await response.text(), batches }
   })()`)
   if (result?.url !== requestUrl || typeof result.sourceMapText !== 'string') {
     throw new Error('Official candidate source map fetch returned an invalid response record')
+  }
+  const route = parseOfficialCandidateClientComboRoute(scriptUrl, sourceIdentity.packageName)
+  const batch = result.batches?.[0]
+  if (result.batches?.length !== 1 || batch?.url !== scriptUrl || batch.rev !== route.revision
+    || !Array.isArray(batch.entries) || batch.entries.length !== route.moduleRoutes.length
+    || !batch.entries.every((id, index) => `${id}/client.js` === route.moduleRoutes[index])) {
+    throw new Error('Renderer boot batch does not match the loaded candidate URL, revision and module order')
   }
   return result.sourceMapText
 }

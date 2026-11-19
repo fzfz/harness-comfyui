@@ -233,7 +233,7 @@ export function parseOfficialLifecycleFixture(value) {
     || candidateClientScript.sourceMapRequestPrefix !== 'dsh-app://app/plugins/'
     || candidateClientScript.revisionQueryPrefix !== '&rev='
     || candidateClientScript.revisionPattern !== '^[a-f0-9]{12}$'
-    || candidateClientScript.moduleRoutePattern !== '^(?:@deepseek-ai/[a-z0-9][a-z0-9-]*|harness-comfyui)/client\\.js$'
+    || candidateClientScript.moduleRoutePattern !== '^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*/client\\.js$'
     || candidateClientScript.moduleMapSuffix !== '.map'
     || candidateClientScript.sourceUrlDirectivePrefix !== '//# sourceURL='
     || candidateClientScript.sourceUrlDirectiveValuePattern !== '+'

@@ -80,10 +80,10 @@
     }
   },
   "application": {
-    "bundlePath": "/Applications/DeepSeek Harness.app",
+    "bundlePath": "/Applications/DeepSeek Harness 0.2.2-rc.5.app",
     "executableRelativePath": "Contents/MacOS/DeepSeek Harness",
     "bundleId": "com.deepseek.dsh",
-    "version": "0.2.2-rc.3"
+    "version": "0.2.2-rc.5"
   },
   "paths": {
     "runRootRelativePath": ".local/desktop-e2e",

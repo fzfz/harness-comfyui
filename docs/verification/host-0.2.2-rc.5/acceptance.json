@@ -1,0 +1,96 @@
+{
+  "desktopBaseline": "0.2.2-rc.3",
+  "desktopCandidate": "0.2.2-rc.5",
+  "productionSwitched": false,
+  "candidate": "harness-comfyui@0.55.2",
+  "mixedRendererCandidateSourceVerified": true,
+  "candidateIdentityAndLifecycleTestsPassed": 45,
+  "data": {
+    "rc3": {
+      "workspaces": 10,
+      "sessionReferences": 286,
+      "runs": 3744,
+      "mediaRows": 3474,
+      "matchingMediaSizes": 3474,
+      "sampleReadable": true
+    },
+    "rc5": {
+      "workspaces": 10,
+      "sessionReferences": 286,
+      "runs": 3744,
+      "mediaRows": 3474,
+      "matchingMediaSizes": 3474,
+      "sampleReadable": true
+    }
+  },
+  "plugins": {
+    "harness-comfyui": {
+      "previous": "0.55.1",
+      "candidate": "0.55.2",
+      "officialDesktopInstall": "passed"
+    },
+    "dsh-agent-studio": {
+      "version": "0.2.2",
+      "configSaveHttp": 200,
+      "presets": 15,
+      "workbenchToolDiscovery": "unverified"
+    },
+    "@local/dsh-selection-to-input": {
+      "version": "0.1.0",
+      "rendererRegistered": true,
+      "fixtureTestsPassed": 69,
+      "desktopSelectionInsertion": "unverified"
+    },
+    "@local/plugin-atlas": {
+      "before": "false",
+      "snapshot": {
+        "status": 200,
+        "ok": true,
+        "nodes": 218,
+        "edges": 0
+      }
+    },
+    "billion-context": {
+      "version": "0.1.216",
+      "proxyStarted": true,
+      "compressionAndReopen": "unverified"
+    },
+    "@yuxianglin/dsh-bridge-browser": {
+      "baselineRejectedBy": [
+        "rc.3",
+        "rc.5"
+      ],
+      "candidateSourceTag": "v0.1.5",
+      "sourceCommitPrefix": "2e9a55f",
+      "browserConnections": [
+        {
+          "connected": true,
+          "fixtureLoaded": "Desktop compatibility fixture 1119"
+        },
+        {
+          "connected": true,
+          "fixtureLoaded": "Desktop compatibility fixture 1119"
+        }
+      ],
+      "hostSnapshotTool": "unverified",
+      "upstreamWorkspaceProductionAudit": {
+        "info": 0,
+        "low": 5,
+        "moderate": 6,
+        "high": 4,
+        "critical": 0
+      }
+    }
+  },
+  "historySample": {
+    "history": true,
+    "events": 3,
+    "sample": "session-9cf1878a-da1d-4ec3-8268-23f426b0763e"
+  },
+  "recovery": {
+    "baselineDesktopStartedWithRestoredRunsDatabase": true,
+    "studioPresetCount": 15,
+    "allPluginBusinessActions": "unverified"
+  },
+  "productionReadiness": "pending"
+}
