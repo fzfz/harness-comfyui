@@ -2,6 +2,12 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.55.2
+
+## Desktop 兼容版本
+
+1. 插件适配官方 macOS DeepSeek Harness Desktop `0.2.2-rc.5`。
+
 # Harness ComfyUI v0.55.1
 
 ## 提示词对比与改写

@@ -31,7 +31,7 @@
 
 1. 根 `package.json` 保存 SDK peers、运行依赖、开发工具的精确版本及公开导出。`pnpm-lock.yaml` 保存解析结果。
 2. 公开子路径见 `package.json` 的 `exports` 字段，Client 注入表见 `dsh.client.inject` 字段。`exports` 引用的插件运行文件必须包含在安装用 tarball 中。
-3. Desktop `0.2.2-rc.3` 与 SDK 的依赖证据见[宿主升级依赖证据目录](../verification/host-0.2.2-rc.3/)。
+3. Desktop `0.2.2-rc.5` 与 SDK 的依赖证据见[宿主升级依赖证据目录](../verification/host-0.2.2-rc.5/)。
 
 ## 开发依赖安装
 

@@ -90,9 +90,9 @@ describe('official Desktop probe configuration and records', () => {
   it('loads the approved installed app identity and bounded probe policy', async () => {
     const config = await loadDesktopE2EConfig()
     expect(config.application).toMatchObject({
-      bundlePath: '/Applications/DeepSeek Harness.app',
+      bundlePath: '/Applications/DeepSeek Harness 0.2.2-rc.5.app',
       bundleId: 'com.deepseek.dsh',
-      version: '0.2.2-rc.3',
+      version: '0.2.2-rc.5',
     })
     expect(config.ports.allocation).toBe('held-loopback-ephemeral')
     expect(config.paths.runRootRelativePath).toBe('.local/desktop-e2e')
