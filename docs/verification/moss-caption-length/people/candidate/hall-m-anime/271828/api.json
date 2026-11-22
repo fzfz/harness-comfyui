@@ -1,0 +1,196 @@
+{
+  "1": {
+    "inputs": {
+      "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+      "type": "moss_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "2": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "3": {
+    "inputs": {
+      "text": "一幅日式二次元动画关键帧，画面设在室内一座老火车站的候车大厅。镜头位于通往检票厅的两级石阶较高的一端，朝下看向正走上台阶的男性检修员；他位于中景的视觉中心，面朝镜头，面孔清晰，从头顶到两只工作鞋完整入画，身体和双脚均不被画框截断。阶面与踏步的高低关系清楚可辨，通向镜头这一侧的检票厅。\n\n检修员穿深蓝色工作夹克、灰色长裤和深色工作鞋，夹克略显厚实，衣摆和裤腿随着迈步自然起伏。他正在上台阶，自己的右脚已经踩上较高一级，左脚仍留在较低一级，身体重心顺着向上的动作微微前倾。他自己的右手位于画面左侧，手臂自然垂下，牢牢提着一只黄色工具箱；自己的左手位于画面右侧，伸向并抓住沿石阶旁延伸的绿色金属扶手。两只手、工具箱、双脚与两级台阶的接触关系清晰，动作连贯而稳定。\n\n前景左下角是一辆被画框截断的行李推车，只露出部分车架和轮子，在近处形成前景遮挡；中景的石阶带着岁月磨损的边缘，画面右侧的绿色金属扶手顺着上行方向延伸，其漆面和接头带有旧物的细微质感。后景是高阔的候车大厅，拱形高窗下有两名等车的旅客，他们身旁放着行李，人物较小但彼此可辨。窗框、墙面和地面共同引导视线穿过大厅，前景推车、中景检修员与石阶、后景旅客和高窗之间层次分明。\n\n暖色阳光从画面左侧的高窗斜射进大厅，在石阶和地面上形成明亮的斜向光带。检修员和黄色工具箱各自向画面右侧投下形状可辨的影子；人物面部、深蓝夹克和金属扶手的受光边缘泛着温暖的金色，背光一侧则保留冷色环境光和清楚的细节。人物采用干净明确的轮廓线与分块的赛璐璐明暗，面部表情自然专注；场景是细腻的手绘动画背景，石材、旧金属和窗光以柔和笔触呈现，暖阳与冷色阴影形成安静而有生活气息的对比。\n",
+      "clip": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "提示词",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "4": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "负面提示词",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "5": {
+    "inputs": {
+      "width": [
+        "6",
+        0
+      ],
+      "height": [
+        "6",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "6": {
+    "inputs": {
+      "aspect_ratio": "3:4 (Portrait Standard)",
+      "megapixels": 1,
+      "multiple": 16
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "分辨率选择器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "7": {
+    "inputs": {
+      "unet_name": "mossimage\\Moss-dirtyMoss_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "8": {
+    "inputs": {
+      "seed": [
+        "11",
+        0
+      ],
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "9": {
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "10": {
+    "inputs": {
+      "filename_prefix": "Moss-8step-%date:yyyyMMddhhmmss%",
+      "images": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "11": {
+    "inputs": {
+      "seed": 271828
+    },
+    "class_type": "Seed (rgthree)",
+    "_meta": {
+      "title": "Seed (rgthree)",
+      "cnr_id": "rgthree-comfy",
+      "aux_id": "rgthree/rgthree-comfy",
+      "ver": "8ff50e4521881eca1fe26aec9615fc9362474931"
+    }
+  },
+  "12": {
+    "inputs": {
+      "lora_name": "moss\\MOSS-Image-SFT-8-steps.safetensors",
+      "strength_model": 1,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  }
+}

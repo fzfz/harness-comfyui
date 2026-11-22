@@ -1,0 +1,2098 @@
+{
+  "criteriaOrder": [
+    "subject",
+    "body",
+    "hands",
+    "feet",
+    "light",
+    "depth",
+    "background",
+    "style"
+  ],
+  "blindImageRatings": [
+    {
+      "label": "P10",
+      "case": "hall-f-photo",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性右手提黄箱、左手握绿栏；右脚在低级，左脚在高级。暖光从左照入，台阶上影子朝右；后景除右侧两人外还有左侧坐客。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性衣着和双手持物符合；自身右脚在低阶、左脚在高阶。暖光从左射入，阶面人影向右；后景除右侧两人外，左侧另有人。"
+      }
+    },
+    {
+      "label": "P11",
+      "case": "hall-f-photo",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性全身完整，持箱和扶栏左右正确；右脚低、左脚高。右向投影清楚；后景有右侧两人和左侧坐客，人数超过两名。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性全身入画，右手提黄箱、左手扶绿栏；右脚低、左脚高。右侧阶面可见人影，后景右侧两人与左侧座椅旁多人同时可见。"
+      }
+    },
+    {
+      "label": "P14",
+      "case": "hall-m-photo",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性蓝夹克灰裤，双手位置正确；右脚落在低处，左脚在较高台阶。影子朝右下；后方可见三名旅客。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性服装与持物符合，右脚落在较低阶，左脚抬在上方。暖光及向右投影可见；后景可辨至少三个人影。"
+      }
+    },
+    {
+      "label": "P16",
+      "case": "hall-m-anime",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性外观、蓝夹克灰裤和双手位置符合；右脚低、左脚高。后景右侧两人之外还可见左侧及中部旅客。脸部有动画轮廓，背景石阶、旅客及景深呈摄影或写实渲染外观。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性全身、衣着和双手持物符合；右脚低、左脚高。暖光下人影向右下延伸，后景多于两人；人物有动画面容，空间及旅客呈摄影质感。"
+      }
+    },
+    {
+      "label": "P18",
+      "case": "hall-f-anime",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性全身完整，右手提单只黄箱、左手握绿栏；右脚低、左脚高。后景右侧两人外还有左侧一人。人物脸部动画化，服装与背景以写实光影、摄影景深呈现。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性全身完整，右手黄箱、左手绿栏；右脚处于低阶。人物影子向右，后景右侧两人之外左侧另有一人；背景呈摄影材质及景深。"
+      }
+    },
+    {
+      "label": "P20",
+      "case": "quay-f-anime",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性右手提箱、左手扶栏，右脚明显悬空；后景两名工人可辨，湿地投影方向不清；背景呈摄影质感，缺少手绘动画风格。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性着装、手位和完整身形符合；右脚悬空。后景两名工人；暖光来自右上，湿阶投影方向难辨。人物有动画面貌，背景及衣料呈摄影质感。"
+      }
+    },
+    {
+      "label": "P21",
+      "case": "quay-m-photo",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性服装和双手对应正确，左脚明显悬空；后景可见多于两名工人，湿地暗部无法明确区分投影与倒影。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性着装、双手位置和全身比例符合；左脚悬空。右上暖光明确，湿地倒影使投影方向难辨；后景可见超过两名工人。"
+      }
+    },
+    {
+      "label": "P26",
+      "case": "hall-f-photo",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "女性全身、黄箱和绿栏清楚；右脚在低一级，左脚在高一级。左侧暖光及右向投影可见，左后方有两名坐客。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "女性全身完整，右手提黄箱、左手扶绿栏；右脚在低阶、左脚在高阶。左后方两名坐着的旅客清晰可辨，阶面影子向右。"
+      }
+    },
+    {
+      "label": "P30",
+      "case": "quay-f-photo",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性双手对应正确，左脚踏向前方较高台阶，右脚在后方，脚位方向相反；后景超过两人，投影方向被湿地倒影干扰。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性着装和双手符合，双鞋完整；左脚在前方较高一级，右脚在后方低级。右上暖光可见，地面暗影与倒影难分；背景超过两人。"
+      }
+    },
+    {
+      "label": "P33",
+      "case": "hall-f-anime",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性四肢完整，双手位置正确；右脚在低级，左脚在高级。后景可见超过两名旅客。人物轮廓线与分块明暗明确，背景石材、金属和模糊旅客呈摄影质感。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性轮廓线和衣服分块明暗清楚，双手符合；右脚在低处、左脚在高阶。后景多于两名旅客，阶石和空间呈摄影质感，人影向右。"
+      }
+    },
+    {
+      "label": "P34",
+      "case": "hall-m-photo",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性四肢自然，右手提黄箱、左手扶绿栏；右脚低、左脚高。左侧暖光投出右向阴影；后景有坐客及站立旅客，超过两人。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性衣着、双手和三层空间符合；右脚在低阶，左脚抬高。向右投影可见，左后方座椅旁及中后方可辨多于两人。"
+      }
+    },
+    {
+      "label": "P39",
+      "case": "quay-m-anime",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性左脚悬空，右侧暖光在阶面形成偏左的暗影；后景超过两名工人；脸部有动画特征，背景仍呈摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性着装、手位和全身符合；左脚悬空。背景至少三名工人；暖光来自右上，地面倒影影响投影判断。脸部动画化，环境呈摄影质感。"
+      }
+    },
+    {
+      "label": "P40",
+      "case": "hall-f-anime",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性蓝夹克灰裤，右手黄箱、左手绿栏清楚；右脚低、左脚高。后景左右各一名坐客。人物有动画轮廓和色块，背景旅客与石阶具有摄影景深和写实材质。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性衣着、双手和全身构图符合；右脚在低阶、左脚在高阶。两名坐客分处后方左右，左光产生向右的人影；背景石面和景深呈摄影质感。"
+      }
+    },
+    {
+      "label": "P42",
+      "case": "hall-m-anime",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性全身完整，双手持物正确；右脚低、左脚高。后方有多名旅客。脸部具有动画特征，衣物、石阶及后景以立体写实光影和摄影景深呈现。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性全身及持物符合；自身右脚在低阶，左脚抬至高阶。暖光及向右投影可辨，后景多名旅客；背景具有摄影景深与写实材质。"
+      }
+    },
+    {
+      "label": "P46",
+      "case": "hall-m-photo",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性全身完整，双手对应正确；右脚在低处，左脚抬在高阶。左侧暖光和向右投影清楚；后景多名旅客。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性全身及双手持物符合；右脚在低阶，左脚在高处。人物阴影向右延伸；左侧两名坐客之外，两侧还可见其他旅客。"
+      }
+    },
+    {
+      "label": "P48",
+      "case": "quay-f-anime",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性右脚悬空，后景船上可见三名工人；右侧暖光明确，投影方向不清；服装和环境以写实摄影质感为主。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性着装、手位和全身符合；右脚悬空。船上三名工人，码头远处另有人；右上暖光可见，投影方向难辨。背景呈摄影质感。"
+      }
+    },
+    {
+      "label": "P50",
+      "case": "quay-f-photo",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性右手提箱、左手扶栏；右脚在前方低阶，左脚在后方高阶；后景超过两人，投影方向不清。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性着装和双手符合；石阶朝后升高，右脚在前方低级，左脚在后方高级。暖光来自右上，人物投影方向难辨；后景超过两名工人。"
+      }
+    },
+    {
+      "label": "P52",
+      "case": "quay-m-anime",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "N",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "男性头顶被画面上缘裁切，右脚悬空；右侧暖光与朝左下阶面的投影可见；后景两名工人清楚，背景缺少手绘动画风格。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "N",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "男性着装、左右手位置符合；头发被上边界截断，右脚悬空。船上两名工人；暖光来自右上，投影方向难辨。背景和衣物呈摄影质感。"
+      }
+    },
+    {
+      "label": "P56",
+      "case": "hall-m-anime",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性右手提箱、左手扶栏；右脚低、左脚高。后景前方两名旅客之外另有多人。人物面部动画化，服装褶皱和背景石材、旅客具有写实摄影外观。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性服装与持物正确，右脚低、左脚高。阶面可见向右投影，右后方近处两人之外还有多个人影；背景呈摄影质感。"
+      }
+    },
+    {
+      "label": "P59",
+      "case": "quay-f-anime",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性右鞋悬在后方阶沿前，未见明确支撑；后景两名工人清楚，湿地暗部投影方向不清；人物与环境主要呈写实质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "U",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性着装、手位和全身符合；右脚在后方高阶边缘，但鞋底支撑接触难确认。后景两名工人；右上暖光可见，投影方向难辨。背景呈摄影质感。"
+      }
+    },
+    {
+      "label": "P61",
+      "case": "hall-m-photo",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "男性蓝夹克灰裤，右手提箱、左手扶栏；右脚低、左脚高。右向影子清楚，后景两名站立旅客可区分。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "男性深蓝夹克灰裤，双手位置符合；自身右脚在低阶，左脚高于右脚。后景右方两名带行李旅客可辨，阶面人物投影朝右。"
+      }
+    },
+    {
+      "label": "P64",
+      "case": "quay-m-photo",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "Y",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "男性右脚踩后方高阶、左脚踩前方低阶，双手和两名后景工人清楚；右侧暖光可见，湿地上投影边界不清。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "Y",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "男性全身自然，右手提箱、左手扶栏；右脚踩后方高阶、左脚踩前方低阶。背景两名工人，缆绳和船层次明确；暖光明确但投影方向难辨。"
+      }
+    },
+    {
+      "label": "P65",
+      "case": "hall-m-anime",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性蓝夹克灰裤，持箱与扶栏左右正确；右脚低、左脚高。后方左右均有多名旅客。动画脸部与写实服装、摄影质感背景混合。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性全身完整，右手提黄箱、左手扶绿栏；右脚在低阶。人影向右下投射；后景左右均有多名旅客，背景的材质和虚化呈摄影外观。"
+      }
+    },
+    {
+      "label": "P66",
+      "case": "quay-m-anime",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "男性左脚踏向前方较高台阶，右脚留在后方，脚位方向相反；后景两名工人清楚，地面投影边界不清；背景呈摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "男性着装、手位和全身符合；左脚踩前方高阶，右脚踩后方低阶。两名工人和渔船可区分；暖光来自右上，湿地投影难辨。背景呈摄影质感。"
+      }
+    },
+    {
+      "label": "P73",
+      "case": "quay-f-photo",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "女性双手对应正确，左鞋悬在后方阶面上方，缺少支撑接触；两名工人清楚，地面暗部无法可靠辨认投影方向。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "U",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "女性着装和手位符合，右脚在前方高阶；左鞋可见但支撑接触被腿部和阶沿遮挡。背景两名工人；暖光来自右上，投影与湿地倒影难分。"
+      }
+    },
+    {
+      "label": "P75",
+      "case": "quay-m-photo",
+      "seed": 314159,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "男性右脚位于前方低阶，左脚位于后方高阶；两名后景工人清楚，右侧暖光明确而投影方向不清。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "男性着装、手位和完整身形符合；右脚在前方低阶，左脚在后方高阶。后景两名工人；右侧暖光可见，人物投影方向难辨。"
+      }
+    },
+    {
+      "label": "P77",
+      "case": "quay-f-photo",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "女性右脚位于前方低阶，左脚位于后方高阶；后景两名工人可辨，湿地暗部难以分清投影与倒影。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "女性着装和手位符合；右脚位于前方低阶，左脚在后方高阶。两名工人与船清楚分层；右上暖光可见，湿地投影方向难辨。"
+      }
+    },
+    {
+      "label": "P78",
+      "case": "quay-m-anime",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "男性右脚明显悬空，右侧暖光使阶面上的投影向左延伸；两名后景工人可辨；脸部具有动画特征，背景仍为写实摄影外观。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "男性着装、手位和全身符合；右脚悬空。船上两名工人，远处码头另有一人；右上暖光可见，投影方向难辨。动画脸部配摄影质感背景。"
+      }
+    },
+    {
+      "label": "P80",
+      "case": "hall-f-anime",
+      "seed": 271828,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性全身完整，右手提黄箱、左手扶绿栏；右脚在最低处，左脚在高阶。后景只见左侧一名旅客。脸部动画化，衣物和车站背景呈立体写实质感。 左侧暖光及朝右投影可见，左下推车、中景人物、后景拱窗分层明确。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "N"
+        ],
+        "evidence": "女性衣着与双手符合，右脚低、左脚高。左侧暖光产生向右下的人影；后景仅清楚出现一名带行李旅客，背景呈摄影质感。"
+      }
+    },
+    {
+      "label": "P86",
+      "case": "quay-f-anime",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性右脚悬空，左脚支撑；右侧暖光与向左下延伸的地面暗影可见；两名工人清楚，背景缺少手绘动画风格。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "N"
+        ],
+        "evidence": "女性着装、手位和全身符合；右脚悬空。后景两名工人与船可区分；暖光来自右上，地面暗影与倒影难分。脸部动画化，背景呈摄影质感。"
+      }
+    },
+    {
+      "label": "P88",
+      "case": "quay-m-photo",
+      "seed": 314159,
+      "phase": "baseline",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "Y",
+          "Y"
+        ],
+        "evidence": "男性左脚明显悬空，右手提箱、左手扶栏；后景两名搬货工人清楚，另有远处小人影，湿地投影方向难以确认。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "U",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "男性着装、手位和全身符合；左脚明显悬空。后方除两名搬筐工人外还有一人；右上暖光明确，人物投影方向难辨。"
+      }
+    },
+    {
+      "label": "P90",
+      "case": "hall-f-photo",
+      "seed": 271828,
+      "phase": "candidate",
+      "first": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性全身完整，右手提黄箱、左手扶绿栏；右脚低、左脚高。左侧暖光形成右向阴影；后景除两名坐客外还有多名旅客。 前景左下推车、中景人物与后景拱窗分层明确，具有摄影质感。"
+      },
+      "second": {
+        "scores": [
+          "Y",
+          "Y",
+          "Y",
+          "N",
+          "Y",
+          "Y",
+          "N",
+          "Y"
+        ],
+        "evidence": "女性全身与持物符合，右脚低、左脚高。左下推车、石阶人物与拱窗层次清楚；后景除两名坐客外还有多个人影，阶面影子朝右。"
+      }
+    }
+  ],
+  "pairedRatings": [
+    {
+      "case": "hall-f-anime",
+      "seed": 271828,
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "Y",
+        "style": "N"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "improved",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "hall-f-anime",
+      "seed": 314159,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "sameN",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "hall-f-photo",
+      "seed": 271828,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "Y",
+        "style": "Y"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "worsened",
+        "style": "sameY"
+      }
+    },
+    {
+      "case": "hall-f-photo",
+      "seed": 314159,
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "sameN",
+        "style": "sameY"
+      }
+    },
+    {
+      "case": "hall-m-anime",
+      "seed": 271828,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "sameN",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "hall-m-anime",
+      "seed": 314159,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "sameN",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "hall-m-photo",
+      "seed": 271828,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "sameN",
+        "style": "sameY"
+      }
+    },
+    {
+      "case": "hall-m-photo",
+      "seed": 314159,
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "Y",
+        "depth": "Y",
+        "background": "Y",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "sameY",
+        "depth": "sameY",
+        "background": "worsened",
+        "style": "sameY"
+      }
+    },
+    {
+      "case": "quay-f-anime",
+      "seed": 271828,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "D",
+        "light": "U",
+        "depth": "Y",
+        "background": "Y",
+        "style": "N"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "D",
+        "depth": "Y",
+        "background": "Y",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "disputed",
+        "light": "disputed",
+        "depth": "sameY",
+        "background": "sameY",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "quay-f-anime",
+      "seed": 314159,
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "Y",
+        "style": "N"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "unresolved",
+        "depth": "sameY",
+        "background": "improved",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "quay-f-photo",
+      "seed": 271828,
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "unresolved",
+        "depth": "sameY",
+        "background": "sameN",
+        "style": "sameY"
+      }
+    },
+    {
+      "case": "quay-f-photo",
+      "seed": 314159,
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "D",
+        "light": "U",
+        "depth": "Y",
+        "background": "Y",
+        "style": "Y"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "Y",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "disputed",
+        "light": "unresolved",
+        "depth": "sameY",
+        "background": "sameY",
+        "style": "sameY"
+      }
+    },
+    {
+      "case": "quay-m-anime",
+      "seed": 271828,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "D",
+        "depth": "Y",
+        "background": "N",
+        "style": "N"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "Y",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "disputed",
+        "depth": "sameY",
+        "background": "improved",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "quay-m-anime",
+      "seed": 314159,
+      "candidate": {
+        "subject": "Y",
+        "body": "N",
+        "hands": "Y",
+        "feet": "N",
+        "light": "D",
+        "depth": "Y",
+        "background": "Y",
+        "style": "N"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "D",
+        "depth": "Y",
+        "background": "D",
+        "style": "N"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "worsened",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "disputed",
+        "depth": "sameY",
+        "background": "disputed",
+        "style": "sameN"
+      }
+    },
+    {
+      "case": "quay-m-photo",
+      "seed": 271828,
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "N",
+        "style": "Y"
+      },
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "Y",
+        "light": "U",
+        "depth": "Y",
+        "background": "Y",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "improved",
+        "light": "unresolved",
+        "depth": "sameY",
+        "background": "improved",
+        "style": "sameY"
+      }
+    },
+    {
+      "case": "quay-m-photo",
+      "seed": 314159,
+      "candidate": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "Y",
+        "style": "Y"
+      },
+      "baseline": {
+        "subject": "Y",
+        "body": "Y",
+        "hands": "Y",
+        "feet": "N",
+        "light": "U",
+        "depth": "Y",
+        "background": "D",
+        "style": "Y"
+      },
+      "outcomes": {
+        "subject": "sameY",
+        "body": "sameY",
+        "hands": "sameY",
+        "feet": "sameN",
+        "light": "unresolved",
+        "depth": "sameY",
+        "background": "disputed",
+        "style": "sameY"
+      }
+    }
+  ],
+  "summary": {
+    "total": {
+      "improved": 5,
+      "worsened": 3,
+      "sameY": 81,
+      "sameN": 27,
+      "disputed": 7,
+      "unresolved": 5
+    },
+    "subject": {
+      "improved": 0,
+      "worsened": 0,
+      "sameY": 16,
+      "sameN": 0,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "anime": {
+      "improved": 3,
+      "worsened": 1,
+      "sameY": 36,
+      "sameN": 18,
+      "disputed": 5,
+      "unresolved": 1
+    },
+    "hall": {
+      "improved": 1,
+      "worsened": 2,
+      "sameY": 44,
+      "sameN": 17,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "女性": {
+      "improved": 2,
+      "worsened": 1,
+      "sameY": 42,
+      "sameN": 13,
+      "disputed": 3,
+      "unresolved": 3
+    },
+    "hall-f-anime": {
+      "improved": 1,
+      "worsened": 0,
+      "sameY": 10,
+      "sameN": 5,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "body": {
+      "improved": 0,
+      "worsened": 1,
+      "sameY": 15,
+      "sameN": 0,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "hands": {
+      "improved": 0,
+      "worsened": 0,
+      "sameY": 16,
+      "sameN": 0,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "feet": {
+      "improved": 1,
+      "worsened": 0,
+      "sameY": 0,
+      "sameN": 13,
+      "disputed": 2,
+      "unresolved": 0
+    },
+    "light": {
+      "improved": 0,
+      "worsened": 0,
+      "sameY": 8,
+      "sameN": 0,
+      "disputed": 3,
+      "unresolved": 5
+    },
+    "depth": {
+      "improved": 0,
+      "worsened": 0,
+      "sameY": 16,
+      "sameN": 0,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "background": {
+      "improved": 4,
+      "worsened": 2,
+      "sameY": 2,
+      "sameN": 6,
+      "disputed": 2,
+      "unresolved": 0
+    },
+    "style": {
+      "improved": 0,
+      "worsened": 0,
+      "sameY": 8,
+      "sameN": 8,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "photo": {
+      "improved": 2,
+      "worsened": 2,
+      "sameY": 45,
+      "sameN": 9,
+      "disputed": 2,
+      "unresolved": 4
+    },
+    "hall-f-photo": {
+      "improved": 0,
+      "worsened": 1,
+      "sameY": 12,
+      "sameN": 3,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "男性": {
+      "improved": 3,
+      "worsened": 2,
+      "sameY": 39,
+      "sameN": 14,
+      "disputed": 4,
+      "unresolved": 2
+    },
+    "hall-m-anime": {
+      "improved": 0,
+      "worsened": 0,
+      "sameY": 10,
+      "sameN": 6,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "hall-m-photo": {
+      "improved": 0,
+      "worsened": 1,
+      "sameY": 12,
+      "sameN": 3,
+      "disputed": 0,
+      "unresolved": 0
+    },
+    "quay": {
+      "improved": 4,
+      "worsened": 1,
+      "sameY": 37,
+      "sameN": 10,
+      "disputed": 7,
+      "unresolved": 5
+    },
+    "quay-f-anime": {
+      "improved": 1,
+      "worsened": 0,
+      "sameY": 9,
+      "sameN": 3,
+      "disputed": 2,
+      "unresolved": 1
+    },
+    "quay-f-photo": {
+      "improved": 0,
+      "worsened": 0,
+      "sameY": 11,
+      "sameN": 2,
+      "disputed": 1,
+      "unresolved": 2
+    },
+    "quay-m-anime": {
+      "improved": 1,
+      "worsened": 1,
+      "sameY": 7,
+      "sameN": 4,
+      "disputed": 3,
+      "unresolved": 0
+    },
+    "quay-m-photo": {
+      "improved": 2,
+      "worsened": 0,
+      "sameY": 10,
+      "sameN": 1,
+      "disputed": 1,
+      "unresolved": 2
+    }
+  },
+  "imageRatings": {
+    "baseline": {
+      "Y": 84,
+      "N": 33,
+      "U": 6,
+      "D": 5
+    },
+    "candidate": {
+      "Y": 88,
+      "N": 31,
+      "U": 6,
+      "D": 3
+    }
+  },
+  "agreementByCriterion": {
+    "subject": {
+      "agree": 32,
+      "disagree": 0
+    },
+    "body": {
+      "agree": 32,
+      "disagree": 0
+    },
+    "hands": {
+      "agree": 32,
+      "disagree": 0
+    },
+    "feet": {
+      "agree": 30,
+      "disagree": 2
+    },
+    "light": {
+      "agree": 28,
+      "disagree": 4
+    },
+    "depth": {
+      "agree": 32,
+      "disagree": 0
+    },
+    "background": {
+      "agree": 30,
+      "disagree": 2
+    },
+    "style": {
+      "agree": 32,
+      "disagree": 0
+    }
+  },
+  "writingSessions": {
+    "baseline": [
+      {
+        "case": "hall-m-photo",
+        "characters": 381,
+        "hanCharacters": 347,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "hall-m-anime",
+        "characters": 385,
+        "hanCharacters": 354,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "hall-f-photo",
+        "characters": 374,
+        "hanCharacters": 342,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "hall-f-anime",
+        "characters": 400,
+        "hanCharacters": 368,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-m-photo",
+        "characters": 374,
+        "hanCharacters": 344,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-m-anime",
+        "characters": 381,
+        "hanCharacters": 348,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-f-photo",
+        "characters": 374,
+        "hanCharacters": 340,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-f-anime",
+        "characters": 351,
+        "hanCharacters": 321,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      }
+    ],
+    "candidate": [
+      {
+        "case": "hall-m-photo",
+        "characters": 718,
+        "hanCharacters": 653,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "hall-m-anime",
+        "characters": 704,
+        "hanCharacters": 643,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "hall-f-photo",
+        "characters": 690,
+        "hanCharacters": 625,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "hall-f-anime",
+        "characters": 638,
+        "hanCharacters": 587,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-m-photo",
+        "characters": 605,
+        "hanCharacters": 545,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-m-anime",
+        "characters": 659,
+        "hanCharacters": 599,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-f-photo",
+        "characters": 757,
+        "hanCharacters": 687,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      },
+      {
+        "case": "quay-f-anime",
+        "characters": 662,
+        "hanCharacters": 605,
+        "skillVersionObserved": true,
+        "compilerHelpObserved": true,
+        "compilerInvocationObserved": true,
+        "draftMatchesPrompt": true,
+        "turnEnd": "completed"
+      }
+    ]
+  },
+  "workflowDifferences": [
+    {
+      "case": "hall-m-photo",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "hall-m-photo",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "hall-m-anime",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "hall-m-anime",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "hall-f-photo",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "hall-f-photo",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "hall-f-anime",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "hall-f-anime",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-m-photo",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-m-photo",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-m-anime",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-m-anime",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-f-photo",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-f-photo",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-f-anime",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "quay-f-anime",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    }
+  ]
+}

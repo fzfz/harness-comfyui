@@ -1,0 +1,58 @@
+[
+  {
+    "case": "hall-m-photo",
+    "sessionId": "session-a1e6f92f-2df9-4606-aea1-1d6094f82b8f",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  {
+    "case": "hall-m-anime",
+    "sessionId": "session-a610ea82-bcd6-408f-ac27-4680be08ab1c",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  {
+    "case": "hall-f-photo",
+    "sessionId": "session-b5fb3e5f-d387-4d9f-a2a6-d4ef446a5191",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  {
+    "case": "hall-f-anime",
+    "sessionId": "session-78ea811e-d01c-4b68-82f3-07ebb2076e25",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  {
+    "case": "quay-m-photo",
+    "sessionId": "session-07ea49ad-1d0f-4067-bb54-04587bb0dd13",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  {
+    "case": "quay-m-anime",
+    "sessionId": "session-36095ce0-773c-45a0-b888-82596cb1ad9c",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  {
+    "case": "quay-f-photo",
+    "sessionId": "session-6af67f5a-baf7-477c-9eb7-f582605c0473",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  },
+  {
+    "case": "quay-f-anime",
+    "sessionId": "session-61ddbd8f-2420-4129-884a-bfc31c356f78",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high"
+  }
+]
