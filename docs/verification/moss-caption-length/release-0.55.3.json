@@ -1,0 +1,56 @@
+{
+  "desktopVersion": "0.2.2-rc.5",
+  "pluginVersion": "0.55.3",
+  "archive": "harness-comfyui-0.55.3.tgz",
+  "installedPreset": "harness-comfyui-cli-candidate",
+  "installedSkill": ".agents/skills/moss-prompt-builder/SKILL.md",
+  "workspace": ".local/moss-release-0553/workspace",
+  "workspaceId": "c6de1091-95bd-4db0-b3f9-7bac524d4c58",
+  "sessionId": "session-88e8e83b-afe1-4c4b-adf7-5723b03ced18",
+  "probeRunId": "4f114567-085d-465f-89d0-bb10489e023b",
+  "model": "gpt-6.1-terra",
+  "provider": "lan-gpt",
+  "request": "使用 moss-prompt-builder 写一句中文 Caption：窗边桌面左侧放着一只透明水杯，柔和日光从右侧照来。只交付提示词。把草稿保存为 draft.json，经编译器生成的结果保存为 prompt.txt。",
+  "skillMatchesSource": true,
+  "toolCalls": [
+    {
+      "name": "skill",
+      "seq": 17,
+      "callId": "call_72e78bf68444434c94c4e2e2e1d405ab",
+      "arguments": {
+        "name": "moss-prompt-builder"
+      },
+      "resultSeq": 18,
+      "isError": false,
+      "toolOutput": "<skill_content name=\"moss-prompt-builder\">\n<skill_resources>\nBase directory for this skill: $SKILL\nResolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed.\n</skill_resources>\n\n<skill_instructions>\n# MOSS-Image Prompt Builder\n\n## Choose the deliverable\n\n1. Honor an explicit request for a caption or Layout. Otherwise, use a caption for ordinary scenes, photographs and illustrations. Use Layout when text placement, posters, multiple panels or controlled object relationships require bounding boxes.\n2. Preserve the user's subjects, counts, relationships, medium, style and exclusions. Resolve ordinary creative gaps; ask when a missing decision would materially change the image. Do not invent factual event logistics or specifications.\n3. Default to English descriptive prose unless the user requests another language. Identify the wording the user intends to render and preserve it verbatim, including punctuation, capitalization and line breaks.\n\n## Develop the image\n\n1. When the user supplies novel text, character profiles or evidence packets, use `character-portrait-prompt-designer` to develop the character and scene. If a design is already handed over, read its appearance baseline, story stage, scene description and source notes. Preserve the distinction between source facts and creative additions.\n2. Describe the subject and action, appearance, setting, framing, medium, lighting, materials, palette and mood as needed for the requested image. Keep minimalist briefs minimalist and develop rich briefs with specific visible details.\n3. For designed images, establish reading order, relative prominence, coherent groups and readable text at the chosen resolution. Write the intended copy. Use supplied references when useful; research facts when accuracy requires it or the user requests it.\n4. Keep JSON instructions, bounding-box annotations, source notes and conversion steps out of image-description fields. Turn the visible design into the selected Caption or Layout draft, then follow “Compile and deliver”.\n\n## Caption\n\n1. Use cohesive prose with spatial relationships in words and quote the intended visible wording. The caption may contain paragraphs. Prepare the draft using the compiler help; keep coordinates and Layout fields outside the caption.\n2. For a detailed Chinese caption, continue past roughly 500 Chinese characters when the scene calls for more visible detail. Develop the features that matter to the user, such as how fabric catches side light or where reflections fall. Stop when the requested features and their relationships are clear. Follow any length or brevity the user specifies.\n\n## Layout\n\n1. Before writing a Layout draft, read the compiler help using the entry in “Compile and deliver” for input fields and the coordinate convention.\n2. Honor supplied dimensions. With only an aspect ratio, choose compatible pixel dimensions; otherwise use 1024×1024 unless the medium suggests another shape. If explicit dimensions violate the compiler help's constraints, report the conflict and ask for compatible dimensions.\n3. Use boxes for coherent visible units and split items when independent placement matters. Preserve each unit's content and relationships; allow natural overlap and occlusion. Describe borders, panels or stickers in captions when requested.\n4. Describe global treatment in `summary.caption` and each item's appearance in its `caption`. Keep boxes consistent with the spatial description and keep exact visible strings in text items' `text` fields.\n5. Check that text length, line breaks and glyph scale fit each box. Enlarge or recompose unreadable layouts while preserving the copy. For knowledge graphics, develop explanations and supporting imagery; for posters, preserve the intended visual identity and information hierarchy.\n6. When revising a draft, preserve content outside the requested changes. Recompile after editing geometry or canvas dimensions.\n\n## Compile and deliver\n\n1. Before preparing compiler input, run `python3 scripts/compile_prompt.py --help` from this Skill's directory. Reuse help still in context during the same session; reread it after context compression removes the invocation contract. Save the editable draft in the user's working directory.\n2. Compile the draft and read the output file at the path returned on stdout. End the tool call by returning the compiled text.\n3. After receiving the compiled text, check the subject, exact text, geometry and canvas against the request. If validation fails, correct the draft and repeat from step 2. Do not manually convert the coordinates.\n4. After the check passes, return the compiled prompt without reformatting, or link to its file, and retain the editable draft. For Layout, state the required width×height outside the prompt.\n5. When generation is requested, submit only the checked compiled content as MOSS-Image's positive prompt in a later tool call.\n</skill_instructions>\n</skill_content>"
+    },
+    {
+      "name": "bash",
+      "seq": 22,
+      "callId": "call_4f5254c8ea1a41c39ddee22d814cb988",
+      "arguments": {
+        "description": "查看 MOSS 提示词编译器用法",
+        "command": "python3 scripts/compile_prompt.py --help",
+        "workdir": "$SKILL"
+      },
+      "resultSeq": 23,
+      "isError": false,
+      "toolOutput": "usage: python3 scripts/compile_prompt.py [-h] [--output PATH] draft\n\nCompile a caption or absolute-pixel Layout draft into a MOSS-Image prompt.\n\npositional arguments:\n  draft          Required string: UTF-8 Caption/Layout JSON file path, or '-'\n                 for UTF-8 JSON from stdin (no default)\n\noptions:\n  -h, --help     show this help message and exit\n  --output PATH  Optional file path (default: prompt.txt in a new temporary\n                 directory for each call)\n\nInput JSON:\n  Caption: exactly ['caption']; caption is nonempty text.\n  Layout: exactly ['bbox_coord_space', 'bbox_format', 'height', 'items', 'summary', 'width'].\n  width and height: required positive integers, multiples of 16.\n  bbox_coord_space: 'abs'; bbox_format: 'xyxy'.\n  summary: object with allowed fields ['canvas', 'caption', 'meta', 'palette'].\n    Required: ['caption']. caption is nonempty text.\n    meta and palette: optional arrays of nonempty strings; empty arrays are allowed.\n    canvas: optional enum ['single', 'multi_panel', 'collage'].\n  items: required nonempty flat array. Each item allows ['bbox', 'caption', 'label', 'palette', 'tags', 'text'].\n    Required: ['bbox', 'caption', 'label']. label is one of ['object', 'character', 'text'].\n    caption is nonempty text. A text label also requires nonempty literal text.\n    text is optional on other labels. tags and palette are optional string arrays.\n    bbox: ['x_min', 'y_min', 'x_max', 'y_max'], four finite numbers measured from the top-left.\n    0 <= x_min < x_max <= width; 0 <= y_min < y_max <= height.\n    Fractional edges are accepted. JSON keys must be unique; NaN and Infinity fail.\n\nOutput and side effects:\n  Success: exit 0; stderr is empty; stdout is the absolute result path plus newline.\n  Relative paths resolve from the command's working directory.\n  The UTF-8 result file contains Caption text, or one line of Layout JSON.\n  Layout preserves summary and items, converts boxes to abs_centralized/yxyx,\n  rounds edges to 9 decimals, encloses them with floor/ceil, then subtracts\n  half the canvas dimensions rounded down. Width and height are omitted from output.\n  Result files end with a newline. Existing --output files are replaced after validation.\n  The output path must differ from the draft and contain no carriage return or newline.\n  Parent directories are created. Omitting --output creates an independent temporary result.\n  Concurrent calls must use distinct output paths or omit --output.\n\nRetries and result reuse:\n  Invalid arguments, JSON, fields or files: exit 2; stdout is empty; stderr reports\n  the problem and help command. Correct the named field, path or permissions, then retry.\n  A failed file write may leave a partial result. Use the output only after a successful run.\n  After success, reuse the result until the draft changes.\n  Repeating --output replaces that result; omitting it allocates another result file.\n\nExamples (from the Skill directory):\n  python3 scripts/compile_prompt.py draft.json\n  python3 scripts/compile_prompt.py draft.json --output prompt.txt\n  cat draft.json | python3 scripts/compile_prompt.py -\n\nCaption example:\n  {\"caption\":\"An ivory cup marked \\\"Tea\\\".\"}\nLayout example:\n  {\"width\":1024,\"height\":1024,\"bbox_coord_space\":\"abs\",\"bbox_format\":\"xyxy\",\"summary\":{\"caption\":\"A cup on a table.\"},\"items\":[{\"label\":\"object\",\"caption\":\"An ivory cup.\",\"bbox\":[256,256,768,768]}]}\n"
+    },
+    {
+      "name": "bash",
+      "seq": 27,
+      "callId": "call_eca67ab2fb5a4727a546b9fdcdf37f61",
+      "arguments": {
+        "description": "保存草稿并编译中文提示词",
+        "command": "printf '%s\\n' '{\"caption\":\"窗边的桌面左侧放着一只透明水杯，柔和的日光从右侧照来。\"}' > draft.json\npython3 $SKILL/scripts/compile_prompt.py draft.json --output prompt.txt && cat prompt.txt"
+      },
+      "resultSeq": 28,
+      "isError": false,
+      "toolOutput": "$WORKSPACE/prompt.txt\n窗边的桌面左侧放着一只透明水杯，柔和的日光从右侧照来。\n"
+    }
+  ],
+  "compiledPrompt": "窗边的桌面左侧放着一只透明水杯，柔和的日光从右侧照来。\n",
+  "turnEnd": "completed",
+  "portsReleased": true
+}
