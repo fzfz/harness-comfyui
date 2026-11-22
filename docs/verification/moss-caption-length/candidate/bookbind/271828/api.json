@@ -1,0 +1,196 @@
+{
+  "1": {
+    "inputs": {
+      "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+      "type": "moss_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "2": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "3": {
+    "inputs": {
+      "text": "古籍修复工作台的竖幅近景纪实摄影。相机从桌面上方略带倾角俯拍，画面只收进木桌、修复师的双手和修复工具。摊开的线装书占据画面下半部，书页与桌面之间保留真实的厚度和阴影。修补处位于左页，竹镊与毛笔的接触点成为视线中心。\n\n左页有一道从左上斜向右下的裂口。裂口两侧的纸边自然贴近，边缘露出细小的毛状纤维。一小片半透明薄纸平铺在裂口上，覆盖范围略宽于裂口。薄纸下方仍能透出裂口的轮廓和书页的底色。旧书页呈浅黄褐色，表面有粗细不一的纤维和细小起伏。薄纸呈浅乳白色，疏密相间的细纤维交织成轻薄纸面。薄纸边缘的纤维散开，与旧书页较暗的纸面形成可见的层次。书页边缘略有磨损，摊开处的弯曲把叠放纸页的厚薄显露出来。\n\n修复师的左手从画面左侧伸入，拇指和食指握着竹镊。竹镊的细尖压住薄纸的一角，接触点只占纸角的一小处。竹镊表面呈哑光浅竹色，纵向纹理沿镊身延伸。右手从画面右侧伸入，指间握着细毛笔。毛笔的笔尖正贴着薄纸边缘刷水，柔软的笔毫在接触处稍稍分开。笔尖走过的位置形成一道窄窄的湿带。湿带颜色比邻近干燥纸面深，纤维浸水后的纹理仍然清楚。湿带外缘带着细小的纤维状渗水轮廓，干燥纸面保留浅色和哑光质感。薄纸中央保持干燥，刷湿范围紧贴笔尖经过的边缘。\n\n右上方放着一只盛有清水的浅瓷碟。瓷碟釉面光滑，左侧碟沿映出一道窄而明亮的弧形高光。清水表面平静，映着柔和的窗光，水面与碟壁相接处显出弯曲的亮边。瓷碟底部在木桌上投下贴近碟身的阴影。木桌呈温暖的棕色，木纹和细浅划痕横过画面。木桌表面的反光宽而柔和，亮处随木纹起伏而断续，瓷碟上的高光边缘更清楚。\n\n窗光从画面左侧低低地贴着桌面照来。纸纤维的凸起迎光发亮，凹处留有细微阴影。双手的皮肤纹路、笔毫、竹镊尖和补纸边缘都清晰可辨。湿带、干燥纸面和瓷碟保留各自的亮度层次。画面采用自然色彩和克制的对比度，呈现修复动作停留在笔尖接触纸边的一瞬间。\n",
+      "clip": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "提示词",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "4": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "负面提示词",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "5": {
+    "inputs": {
+      "width": [
+        "6",
+        0
+      ],
+      "height": [
+        "6",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "6": {
+    "inputs": {
+      "aspect_ratio": "3:4 (Portrait Standard)",
+      "megapixels": 1,
+      "multiple": 16
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "分辨率选择器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "7": {
+    "inputs": {
+      "unet_name": "mossimage\\Moss-dirtyMoss_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "8": {
+    "inputs": {
+      "seed": [
+        "11",
+        0
+      ],
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "9": {
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "10": {
+    "inputs": {
+      "filename_prefix": "Moss-8step-%date:yyyyMMddhhmmss%",
+      "images": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "11": {
+    "inputs": {
+      "seed": 271828
+    },
+    "class_type": "Seed (rgthree)",
+    "_meta": {
+      "title": "Seed (rgthree)",
+      "cnr_id": "rgthree-comfy",
+      "aux_id": "rgthree/rgthree-comfy",
+      "ver": "8ff50e4521881eca1fe26aec9615fc9362474931"
+    }
+  },
+  "12": {
+    "inputs": {
+      "lora_name": "moss\\MOSS-Image-SFT-8-steps.safetensors",
+      "strength_model": 1,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  }
+}
