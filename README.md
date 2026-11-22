@@ -95,7 +95,7 @@
 
 ## 适用版本
 
-1. 插件 `0.55.2` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.2-rc.5` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0552>)。
+1. 插件 `0.55.3` 必须搭配官方 macOS DeepSeek Harness Desktop `0.2.2-rc.5` 使用。版本功能见[发布说明](<https://github.com/fzfz/harness-comfyui/blob/main/docs/releasenotes.md#harness-comfyui-v0553>)。
 
 ## CLI 帮助与图片读取
 

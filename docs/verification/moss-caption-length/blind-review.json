@@ -1,0 +1,322 @@
+{
+  "captionWriter": {
+    "profile": "Executor",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "xhigh",
+    "sessionsPerCaseAndVersion": 1
+  },
+  "pairedApiDifferences": [
+    {
+      "case": "bookbind",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "bookbind",
+      "seed": 314159,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    },
+    {
+      "case": "cup",
+      "seed": 271828,
+      "changedApiFields": [
+        "/3/inputs/text"
+      ]
+    }
+  ],
+  "handednessNote": "第 5 项的“符合”仅指笔尖位置。古籍图中画面左右可见，人物解剖学上的左右手均未确认。",
+  "images": [
+    {
+      "blindLabel": "D",
+      "stage": "baseline",
+      "case": "bookbind",
+      "seed": 271828,
+      "grades": [
+        {
+          "criterion": 1,
+          "result": "符合",
+          "observation": "双手入镜，脸部在画外。"
+        },
+        {
+          "criterion": 2,
+          "result": "无法辨认",
+          "observation": "书在下半部摊开，装订线不清。"
+        },
+        {
+          "criterion": 3,
+          "result": "欠缺",
+          "observation": "薄纸偏在裂口右侧，大部分裂口露出。"
+        },
+        {
+          "criterion": 4,
+          "result": "无法辨认",
+          "observation": "画面左侧双股工具触及薄纸上缘，工具是否为竹制、持工具的是左手还是右手，均难以辨认。"
+        },
+        {
+          "criterion": 5,
+          "result": "符合",
+          "observation": "画面右侧的笔尖落在薄纸右缘附近。"
+        },
+        {
+          "criterion": 6,
+          "result": "符合",
+          "observation": "右缘亮润的窄带连续且边界清楚。"
+        },
+        {
+          "criterion": 7,
+          "result": "欠缺",
+          "observation": "纸层颜色和透明度不同，表面纹理相近。"
+        },
+        {
+          "criterion": 8,
+          "result": "无法辨认",
+          "observation": "右上浅碟有液面反光，液体和瓷材难以确证。"
+        },
+        {
+          "criterion": 9,
+          "result": "无法辨认",
+          "observation": "左上较亮，笔影朝右下，入射角难辨。"
+        },
+        {
+          "criterion": 10,
+          "result": "符合",
+          "observation": "碟内有集中的窗形亮斑，木桌亮区较宽、较柔和。"
+        }
+      ]
+    },
+    {
+      "blindLabel": "F",
+      "stage": "candidate",
+      "case": "bookbind",
+      "seed": 271828,
+      "grades": [
+        {
+          "criterion": 1,
+          "result": "符合",
+          "observation": "双手入镜，脸部在画外。"
+        },
+        {
+          "criterion": 2,
+          "result": "无法辨认",
+          "observation": "书和叠页可见，装订线不清。"
+        },
+        {
+          "criterion": 3,
+          "result": "欠缺",
+          "observation": "薄纸盖住裂口下半段，上半段露出。"
+        },
+        {
+          "criterion": 4,
+          "result": "欠缺",
+          "observation": "画面左侧工具的接触点在纸片内部，离纸角有距离。"
+        },
+        {
+          "criterion": 5,
+          "result": "符合",
+          "observation": "画面右侧笔尖落在薄纸右缘旁的条带上。"
+        },
+        {
+          "criterion": 6,
+          "result": "符合",
+          "observation": "右缘的细长亮带与周围纸面有清晰边界。"
+        },
+        {
+          "criterion": 7,
+          "result": "符合",
+          "observation": "旧书页可见分散长纤维，修补纸的纹理更细密。"
+        },
+        {
+          "criterion": 8,
+          "result": "无法辨认",
+          "observation": "右上浅碟有液面反光，液体和瓷材难以确证。"
+        },
+        {
+          "criterion": 9,
+          "result": "无法辨认",
+          "observation": "左上较亮，笔影朝右下，入射角难辨。"
+        },
+        {
+          "criterion": 10,
+          "result": "符合",
+          "observation": "碟内窗形亮斑边缘清楚，桌面亮区较分散。"
+        }
+      ]
+    },
+    {
+      "blindLabel": "R",
+      "stage": "baseline",
+      "case": "bookbind",
+      "seed": 314159,
+      "grades": [
+        {
+          "criterion": 1,
+          "result": "符合",
+          "observation": "双手入镜，脸部在画外。"
+        },
+        {
+          "criterion": 2,
+          "result": "无法辨认",
+          "observation": "书页摊在下部，可见线状物，装订结构不清。"
+        },
+        {
+          "criterion": 3,
+          "result": "欠缺",
+          "observation": "主要裂口在书脊右侧，裂口左下段露在修补纸外。"
+        },
+        {
+          "criterion": 4,
+          "result": "无法辨认",
+          "observation": "画面左侧工具接触修补纸上缘，工具材质及持工具的是左手还是右手，均难以辨认。"
+        },
+        {
+          "criterion": 5,
+          "result": "欠缺",
+          "observation": "笔尖落在两块纸交叠的变色区，与薄纸边缘的关系不清。"
+        },
+        {
+          "criterion": 6,
+          "result": "欠缺",
+          "observation": "修补纸内深色亮润区域明显宽于窄带。"
+        },
+        {
+          "criterion": 7,
+          "result": "欠缺",
+          "observation": "可见颜色和透明度差别，独立纤维不清。"
+        },
+        {
+          "criterion": 8,
+          "result": "无法辨认",
+          "observation": "右上浅碟内部颜色均匀，液面与材质难辨。"
+        },
+        {
+          "criterion": 9,
+          "result": "无法辨认",
+          "observation": "左侧强光与长阴影可见，贴桌入射角难辨。"
+        },
+        {
+          "criterion": 10,
+          "result": "欠缺",
+          "observation": "木桌有强烈亮区，碟内亮斑较弱。"
+        }
+      ]
+    },
+    {
+      "blindLabel": "N",
+      "stage": "candidate",
+      "case": "bookbind",
+      "seed": 314159,
+      "grades": [
+        {
+          "criterion": 1,
+          "result": "符合",
+          "observation": "双手入镜，脸部在画外。"
+        },
+        {
+          "criterion": 2,
+          "result": "无法辨认",
+          "observation": "书、叠页与小孔可见，装订线不清。"
+        },
+        {
+          "criterion": 3,
+          "result": "欠缺",
+          "observation": "裂口在书脊右侧，修补纸偏右，裂口左缘仍露出。"
+        },
+        {
+          "criterion": 4,
+          "result": "无法辨认",
+          "observation": "画面左侧工具尖端压在修补纸左上附近，工具材质及持工具的是左手还是右手，均难以辨认。"
+        },
+        {
+          "criterion": 5,
+          "result": "符合",
+          "observation": "画面右侧笔尖接触薄纸右边缘。"
+        },
+        {
+          "criterion": 6,
+          "result": "欠缺",
+          "observation": "边缘湿痕向两侧扩成不规则块状。"
+        },
+        {
+          "criterion": 7,
+          "result": "欠缺",
+          "observation": "两层纸都呈相近的长纤维和粗糙纹理。"
+        },
+        {
+          "criterion": 8,
+          "result": "无法辨认",
+          "observation": "右上有浅碟，液面与釉面反光难区分。"
+        },
+        {
+          "criterion": 9,
+          "result": "无法辨认",
+          "observation": "左上桌面明亮，工具阴影朝右下，入射角难辨。"
+        },
+        {
+          "criterion": 10,
+          "result": "欠缺",
+          "observation": "木桌也有强烈条带与点状反光，漫反光不突出。"
+        }
+      ]
+    },
+    {
+      "blindLabel": "P",
+      "stage": "baseline",
+      "case": "cup",
+      "seed": 271828,
+      "grades": [
+        {
+          "criterion": 1,
+          "result": "符合",
+          "observation": "只有一只白色釉面瓷杯。"
+        },
+        {
+          "criterion": 2,
+          "result": "符合",
+          "observation": "杯子整体居中，白色背景上有柔和投影。"
+        },
+        {
+          "criterion": 3,
+          "result": "符合",
+          "observation": "杯口前侧的细蓝线清楚。"
+        },
+        {
+          "criterion": 4,
+          "result": "符合",
+          "observation": "轮廓完整，没有额外道具或显眼装饰。"
+        }
+      ]
+    },
+    {
+      "blindLabel": "K",
+      "stage": "candidate",
+      "case": "cup",
+      "seed": 271828,
+      "grades": [
+        {
+          "criterion": 1,
+          "result": "符合",
+          "observation": "只有一只白色釉面瓷杯。"
+        },
+        {
+          "criterion": 2,
+          "result": "欠缺",
+          "observation": "杯子偏下，上方留白多于下方。"
+        },
+        {
+          "criterion": 3,
+          "result": "符合",
+          "observation": "杯口前侧的细蓝线清楚。"
+        },
+        {
+          "criterion": 4,
+          "result": "符合",
+          "observation": "杯子完整，无额外道具或显眼装饰。"
+        }
+      ]
+    }
+  ]
+}

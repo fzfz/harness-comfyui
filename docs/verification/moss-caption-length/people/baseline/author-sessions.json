@@ -1,0 +1,90 @@
+[
+  {
+    "case": "hall-m-photo",
+    "sessionId": "session-64bbc0df-89aa-49cd-8ed8-364c2f70bf20",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "5e4e8820-0e34-4136-9708-d33026ff16c8",
+    "workspace": ".local/people/baseline/prompts/hall-m-photo",
+    "trace": "author-traces.json#/sessions/hall-m-photo"
+  },
+  {
+    "case": "hall-m-anime",
+    "sessionId": "session-524d5d9b-c2cf-4816-990a-100cadf3b045",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "cf9525ab-64c2-4353-95bd-e620d95a0f0d",
+    "workspace": ".local/people/baseline/prompts/hall-m-anime",
+    "trace": "author-traces.json#/sessions/hall-m-anime"
+  },
+  {
+    "case": "hall-f-photo",
+    "sessionId": "session-e7a205e1-c173-4912-93e4-d4bff82125c4",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "2fee0f69-a856-4f65-af1d-2acccc11b1d1",
+    "workspace": ".local/people/baseline/prompts/hall-f-photo",
+    "trace": "author-traces.json#/sessions/hall-f-photo"
+  },
+  {
+    "case": "hall-f-anime",
+    "sessionId": "session-bb2eac2e-b048-42a5-bf61-bf53213921c6",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "65e32a63-9bca-44ae-91d1-8e6bcd49c555",
+    "workspace": ".local/people/baseline/prompts/hall-f-anime",
+    "trace": "author-traces.json#/sessions/hall-f-anime"
+  },
+  {
+    "case": "quay-m-photo",
+    "sessionId": "session-3975eb37-df8f-4450-84dd-a9e22d5b0ee7",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "81503cc1-41a9-4e77-aff9-41dd4e2f0e64",
+    "workspace": ".local/people/baseline/prompts/quay-m-photo",
+    "trace": "author-traces.json#/sessions/quay-m-photo"
+  },
+  {
+    "case": "quay-m-anime",
+    "sessionId": "session-1ddef0c0-d407-4d3b-a4aa-5eac4a62c3d8",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "5e0b8414-47dc-4087-bd98-8fc6720a79b7",
+    "workspace": ".local/people/baseline/prompts/quay-m-anime",
+    "trace": "author-traces.json#/sessions/quay-m-anime"
+  },
+  {
+    "case": "quay-f-photo",
+    "sessionId": "session-1a66e384-d109-49ec-bdd5-03905750f65f",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "cd3f0182-a208-4ce7-92bb-f6fcc85cfef4",
+    "workspace": ".local/people/baseline/prompts/quay-f-photo",
+    "trace": "author-traces.json#/sessions/quay-f-photo"
+  },
+  {
+    "case": "quay-f-anime",
+    "sessionId": "session-74bf6a16-3fe7-4996-a791-44105a6df878",
+    "provider": "lan-gpt",
+    "model": "gpt-6.1-terra",
+    "reasoningEffort": "high",
+    "presetId": "harness-comfyui-cli-candidate",
+    "workspaceId": "f4faa1be-6e55-421d-af74-24ab73979d57",
+    "workspace": ".local/people/baseline/prompts/quay-f-anime",
+    "trace": "author-traces.json#/sessions/quay-f-anime"
+  }
+]

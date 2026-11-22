@@ -2,6 +2,13 @@
 文档用途: 说明各发行版本的功能与验收范围。
 读取时机: 选择插件版本或核对更新内容时。
 ---
+# Harness ComfyUI v0.55.3
+
+## MOSS 中文提示词
+
+1. 详细中文 Caption 写到约 500 字时，如果仍有画面细节需要交代，MOSS 提示词助手可以继续扩写。助手写清这些细节及其关系后收笔。用户指定篇幅时，助手按指定篇幅写作。
+2. 同一种子下的人物成图对照覆盖室内车站、室外码头、男女主角、纪实摄影与二次元画风。[查看 32 张成图的逐项比较](https://github.com/fzfz/harness-comfyui/blob/v0.55.3/docs/verification/moss-caption-length/people/results.md)
+
 # Harness ComfyUI v0.55.2
 
 ## Desktop 兼容版本

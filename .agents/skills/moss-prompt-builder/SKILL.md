@@ -21,6 +21,7 @@ description: 用户要求构建、改写或编译 MOSS-Image 的 Caption 或 Lay
 ## Caption
 
 1. Use cohesive prose with spatial relationships in words and quote the intended visible wording. The caption may contain paragraphs. Prepare the draft using the compiler help; keep coordinates and Layout fields outside the caption.
+2. For a detailed Chinese caption, continue past roughly 500 Chinese characters when the scene calls for more visible detail. Develop the features that matter to the user, such as how fabric catches side light or where reflections fall. Stop when the requested features and their relationships are clear. Follow any length or brevity the user specifies.
 
 ## Layout
 

@@ -1,0 +1,707 @@
+{
+  "id": "19ff40c5-823c-462e-9343-6ee8349601ae",
+  "revision": 0,
+  "last_node_id": 12,
+  "last_link_id": 13,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "CLIPLoader",
+      "pos": [
+        3763.8281744932183,
+        2988.261323102422
+      ],
+      "size": [
+        357.61551626552193,
+        106
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1,
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPLoader",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        "qwen3.5_9b_int8_convrot.safetensors",
+        "moss_image",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+        "type": "moss_image",
+        "device": "default"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "pos": [
+        4140.483408650161,
+        2989.715543899058
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        "flux2-vae.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "flux2-vae.safetensors"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 3,
+      "type": "CLIPTextEncode",
+      "pos": [
+        3761.159784969487,
+        3160.1366880398873
+      ],
+      "size": [
+        593.2065386094863,
+        268.49069985553433
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "title": "提示词",
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        "古籍修复工作台的纪实摄影，竖幅近景，从桌面上方略带倾斜的角度靠近拍摄，画面范围收紧到木桌、修复师的双手与正在使用的工具。摊开的线装书占据画面下半部，书脊沿纵向延伸，薄薄的书页在装订处自然弯起，页面的大部分区域平展在桌上。左页中部有一道斜向延伸的裂口，裂口两侧的纸边略微翘起，露出细小、参差的纸纤维。一小片半透明的修补薄纸覆盖裂口，薄纸下仍能辨认裂口的走向和两侧纸边的轮廓。\n\n修复师的左手从画面左侧伸入，拇指与食指稳定地握住竹镊，细窄的镊尖压住修补薄纸的一角；这一角贴住书页，薄纸其余部分顺着纸面轻轻铺开。右手从右侧握住细毛笔，笔杆斜向左下方，柔软而细密的笔毫正在薄纸边缘接触纸面，笔尖因轻压稍稍弯曲。镜头捕捉毛笔沿边缘刷水的瞬间，已经刷过的位置形成一条细窄、连续而略有起伏的深色湿带，湿带跟随笔锋的行进方向，边缘保留水分缓慢渗入纤维时细碎的过渡。尚未刷到的薄纸仍然浅白、干爽，湿带旁边的书页保持原本的浅黄褐色。湿润处的半透明感更明显，下面的旧纸纹理透出来；干燥处的纤维保持清晰、轻盈的表面质感。\n\n光线把两种纸的差别呈现在同一片清晰区域里：旧书页色泽温暖而不均匀，表面有细小起伏与疏密不同的纤维，裂口边缘尤其粗糙；修补薄纸颜色较浅，薄而轻，细密交错的纤维透着底下的纸色，边缘像一层轻薄的纱贴在旧页上。手指的皮肤纹路、指尖压持工具时的细微变化、竹镊的纵向纹理和笔毫末端的水分都清楚可见。\n\n画面右上方放着一只盛有清水的浅瓷碟，碟口低而圆，内壁平滑，水面接近静止。左侧窗光以贴近桌面的低角度横向照入，瓷釉上出现明亮、边界清楚的窗光反射，弧形碟沿带着细窄的高光，清水表面映出柔亮的光斑。木桌顺着纹理呈现宽而柔和的反光，细微凹凸使亮度缓慢变化，木纹在光中仍然可辨。竹镊、手指和薄纸边缘向右侧投下轻浅的细影，斜光托出纸纤维的起伏。画面保留自然的暖木色、旧纸的黄褐色与修补薄纸的浅白色，曝光柔和，亮部有细节；清晰范围覆盖裂口、湿带、双手动作以及瓷碟与桌面的反光，呈现安静、专注、可仔细观察材料变化的修复现场。\n"
+      ],
+      "widgets_values_named": {
+        "text": "古籍修复工作台的纪实摄影，竖幅近景，从桌面上方略带倾斜的角度靠近拍摄，画面范围收紧到木桌、修复师的双手与正在使用的工具。摊开的线装书占据画面下半部，书脊沿纵向延伸，薄薄的书页在装订处自然弯起，页面的大部分区域平展在桌上。左页中部有一道斜向延伸的裂口，裂口两侧的纸边略微翘起，露出细小、参差的纸纤维。一小片半透明的修补薄纸覆盖裂口，薄纸下仍能辨认裂口的走向和两侧纸边的轮廓。\n\n修复师的左手从画面左侧伸入，拇指与食指稳定地握住竹镊，细窄的镊尖压住修补薄纸的一角；这一角贴住书页，薄纸其余部分顺着纸面轻轻铺开。右手从右侧握住细毛笔，笔杆斜向左下方，柔软而细密的笔毫正在薄纸边缘接触纸面，笔尖因轻压稍稍弯曲。镜头捕捉毛笔沿边缘刷水的瞬间，已经刷过的位置形成一条细窄、连续而略有起伏的深色湿带，湿带跟随笔锋的行进方向，边缘保留水分缓慢渗入纤维时细碎的过渡。尚未刷到的薄纸仍然浅白、干爽，湿带旁边的书页保持原本的浅黄褐色。湿润处的半透明感更明显，下面的旧纸纹理透出来；干燥处的纤维保持清晰、轻盈的表面质感。\n\n光线把两种纸的差别呈现在同一片清晰区域里：旧书页色泽温暖而不均匀，表面有细小起伏与疏密不同的纤维，裂口边缘尤其粗糙；修补薄纸颜色较浅，薄而轻，细密交错的纤维透着底下的纸色，边缘像一层轻薄的纱贴在旧页上。手指的皮肤纹路、指尖压持工具时的细微变化、竹镊的纵向纹理和笔毫末端的水分都清楚可见。\n\n画面右上方放着一只盛有清水的浅瓷碟，碟口低而圆，内壁平滑，水面接近静止。左侧窗光以贴近桌面的低角度横向照入，瓷釉上出现明亮、边界清楚的窗光反射，弧形碟沿带着细窄的高光，清水表面映出柔亮的光斑。木桌顺着纹理呈现宽而柔和的反光，细微凹凸使亮度缓慢变化，木纹在光中仍然可辨。竹镊、手指和薄纸边缘向右侧投下轻浅的细影，斜光托出纸纤维的起伏。画面保留自然的暖木色、旧纸的黄褐色与修补薄纸的浅白色，曝光柔和，亮部有细节；清晰范围覆盖裂口、湿带、双手动作以及瓷碟与桌面的反光，呈现安静、专注、可仔细观察材料变化的修复现场。\n"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 4,
+      "type": "CLIPTextEncode",
+      "pos": [
+        4201.5318667006195,
+        3099.8340121327665
+      ],
+      "size": [
+        472.8817504183196,
+        88
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "title": "负面提示词",
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "text": ""
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 5,
+      "type": "EmptyLatentImage",
+      "pos": [
+        4384.499821832587,
+        3069.643472135749
+      ],
+      "size": [
+        274.03676623268393,
+        106
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 3
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        1024,
+        1024,
+        1
+      ],
+      "widgets_values_named": {
+        "width": 1024,
+        "height": 1024,
+        "batch_size": 1
+      }
+    },
+    {
+      "id": 6,
+      "type": "ResolutionSelector",
+      "pos": [
+        4375.0815571358635,
+        3273.27227218147
+      ],
+      "size": [
+        279.15553413245306,
+        150
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "showAdvanced": true,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ResolutionSelector",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        "3:4 (Portrait Standard)",
+        1,
+        16
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "3:4 (Portrait Standard)",
+        "megapixels": 1,
+        "multiple": 16
+      },
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 7,
+      "type": "UNETLoader",
+      "pos": [
+        3759.983693027093,
+        2717.4093221902913
+      ],
+      "size": [
+        586.3994285497396,
+        83.90280173958217
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "UNETLoader",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        "mossimage\\Moss-dirtyMoss_int8_convrot.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "mossimage\\Moss-dirtyMoss_int8_convrot.safetensors",
+        "weight_dtype": "default"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 8,
+      "type": "KSampler",
+      "pos": [
+        4695.456933988248,
+        2730.878451946697
+      ],
+      "size": [
+        257.4737727939423,
+        696.5264726559395
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 5
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 6
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 7
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 8
+        },
+        {
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": 9
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        666,
+        "randomize",
+        8,
+        1,
+        "euler",
+        "simple",
+        1
+      ],
+      "widgets_values_named": {
+        "seed": 666,
+        "control_after_generate": "randomize",
+        "steps": 8,
+        "cfg": 1,
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "denoise": 1
+      }
+    },
+    {
+      "id": 9,
+      "type": "VAEDecode",
+      "pos": [
+        4501.169542531641,
+        2930.4723499586044
+      ],
+      "size": [
+        140,
+        46
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 10
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "color": "#332922",
+      "bgcolor": "#593930"
+    },
+    {
+      "id": 10,
+      "type": "SaveImage",
+      "pos": [
+        4975.373270107347,
+        2727.4940296363748
+      ],
+      "size": [
+        378.39809087244873,
+        707.3407404592724
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveImage",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        "Moss-8step-%date:yyyyMMddhhmmss%"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "Moss-8step-%date:yyyyMMddhhmmss%"
+      }
+    },
+    {
+      "id": 11,
+      "type": "Seed (rgthree)",
+      "pos": [
+        4380.408574390756,
+        2730.1795015369607
+      ],
+      "size": [
+        276.5904503738128,
+        130
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "dir": 4,
+          "label": "随机种",
+          "name": "SEED",
+          "shape": 3,
+          "type": "INT",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "randomMax": 1125899906842624,
+        "randomMin": 0,
+        "aux_id": "rgthree/rgthree-comfy",
+        "ver": "8ff50e4521881eca1fe26aec9615fc9362474931",
+        "cnr_id": "rgthree-comfy",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.5.2",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        314159,
+        "",
+        "",
+        ""
+      ],
+      "widgets_values_named": {
+        "seed": 314159,
+        "🎲 Randomize Each Time": "",
+        "🎲 New Fixed Random": "",
+        "USE_LAST_SEED": ""
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 12,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        3764.0791170298935,
+        2850.702393274383
+      ],
+      "size": [
+        581.5444416055908,
+        82
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "cnr_id": "comfy-core",
+        "ver": "0.41.0"
+      },
+      "widgets_values": [
+        "moss\\MOSS-Image-SFT-8-steps.safetensors",
+        1
+      ],
+      "widgets_values_named": {
+        "lora_name": "moss\\MOSS-Image-SFT-8-steps.safetensors",
+        "strength_model": 1
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      3,
+      0,
+      "CLIP"
+    ],
+    [
+      2,
+      1,
+      0,
+      4,
+      0,
+      "CLIP"
+    ],
+    [
+      3,
+      6,
+      0,
+      5,
+      0,
+      "INT"
+    ],
+    [
+      4,
+      6,
+      1,
+      5,
+      1,
+      "INT"
+    ],
+    [
+      5,
+      12,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      6,
+      3,
+      0,
+      8,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      7,
+      4,
+      0,
+      8,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      8,
+      5,
+      0,
+      8,
+      3,
+      "LATENT"
+    ],
+    [
+      9,
+      11,
+      0,
+      8,
+      4,
+      "INT"
+    ],
+    [
+      10,
+      8,
+      0,
+      9,
+      0,
+      "LATENT"
+    ],
+    [
+      11,
+      2,
+      0,
+      9,
+      1,
+      "VAE"
+    ],
+    [
+      12,
+      9,
+      0,
+      10,
+      0,
+      "IMAGE"
+    ],
+    [
+      13,
+      7,
+      0,
+      12,
+      0,
+      "MODEL"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.740024994425817,
+      "offset": [
+        -3114.856623203704,
+        -2360.907427676985
+      ]
+    },
+    "frontendVersion": "1.57.6"
+  },
+  "version": 0.4
+}
