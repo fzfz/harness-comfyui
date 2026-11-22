@@ -1,0 +1,196 @@
+{
+  "1": {
+    "inputs": {
+      "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+      "type": "moss_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "2": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "3": {
+    "inputs": {
+      "text": "真人环境纪实摄影，室内的老火车站候车大厅。镜头位于两级石阶较高的一端，使用35毫米镜头，朝向正在上台阶的男性检修员；他面向镜头，从头顶到双脚的深色工作鞋完整入画，面孔清晰。他穿深蓝色工作夹克和灰色长裤，身体随着登阶自然前倾：他自己的右手位于画面左侧，提着一只黄色工具箱；左手位于画面右侧，抓住绿色金属扶手。右脚已经踩上较高一级石阶，左脚仍踏在低一级，动作清楚可辨。前景左下角是一辆被画面边缘截断的行李推车；中景的两级石阶通向检票厅，绿色金属扶手沿画面右侧延伸；后景的拱形高窗下有两名等车的旅客和他们的行李，层次分明。暖色阳光从画面左侧的高窗斜射入大厅，在石阶和地面上形成明暗变化，检修员和黄色工具箱向画面右侧投下清晰可辨的影子；背光处有冷色环境光，冷暖光线自然交织。保留人物皮肤、工作夹克和长裤的自然纹理，曝光兼顾清晰的人脸和窗下背景，呈现真实、安静的车站日常。\n",
+      "clip": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "提示词",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "4": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "负面提示词",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "5": {
+    "inputs": {
+      "width": [
+        "6",
+        0
+      ],
+      "height": [
+        "6",
+        1
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "6": {
+    "inputs": {
+      "aspect_ratio": "3:4 (Portrait Standard)",
+      "megapixels": 1,
+      "multiple": 16
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "分辨率选择器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "7": {
+    "inputs": {
+      "unet_name": "mossimage\\Moss-dirtyMoss_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "8": {
+    "inputs": {
+      "seed": [
+        "11",
+        0
+      ],
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "9": {
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "10": {
+    "inputs": {
+      "filename_prefix": "Moss-8step-%date:yyyyMMddhhmmss%",
+      "images": [
+        "9",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  },
+  "11": {
+    "inputs": {
+      "seed": 271828
+    },
+    "class_type": "Seed (rgthree)",
+    "_meta": {
+      "title": "Seed (rgthree)",
+      "cnr_id": "rgthree-comfy",
+      "aux_id": "rgthree/rgthree-comfy",
+      "ver": "8ff50e4521881eca1fe26aec9615fc9362474931"
+    }
+  },
+  "12": {
+    "inputs": {
+      "lora_name": "moss\\MOSS-Image-SFT-8-steps.safetensors",
+      "strength_model": 1,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）",
+      "cnr_id": "comfy-core",
+      "ver": "0.41.0"
+    }
+  }
+}
